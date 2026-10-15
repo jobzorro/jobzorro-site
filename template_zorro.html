@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>취업조로와 함께하기 — 신입·중고신입·경력이직·선퇴사자 취업 컨설팅</title>
+<meta name="description" content="누가 봐도 뽑고 싶은 인재의 비밀, 취업조로. 신입·중고신입·경력 이직·선퇴사자 맞춤 컨설팅과 무료 상담 신청 방법.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/*__SHARED_CSS__*/
+/* 페이지: 히어로(두 줄 헤드라인 + 실적 수치) → 상황별 4개 카드(일러스트) → 특별한 이유 3가지 → 프로세스 4단계 → 프로필 → 채널·상담 신청 → 푸터 */
+.hero { background: var(--surface); border-bottom: 1px solid var(--line); }
+.hero-in { max-width: 1120px; margin: 0 auto; padding: 48px 20px 36px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 40px; align-items: center; }
+.hero h1 { font-size: clamp(26px, 3.6vw, 40px); line-height: 1.3; }
+.hero h1 .light { display: block; font-weight: 400; color: var(--fg-soft); }
+.hero h1 .strong { display: block; font-weight: 900; color: var(--black); }
+.hero .lede { margin-top: 16px; font-size: 15.5px; color: var(--fg-soft); max-width: 60ch; }
+.hero .lede b { font-weight: 700; color: var(--black); background: linear-gradient(transparent 60%, var(--yellow) 60%); }
+.stats { display: flex; gap: 28px; margin: 24px 0 0; flex-wrap: wrap; }
+.stats div { display: flex; flex-direction: column; }
+.stats dt { font-size: 12px; color: var(--muted); }
+.stats dd { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -.02em; color: var(--black); font-variant-numeric: tabular-nums; }
+.stats dd small { font-size: 13px; font-weight: 700; margin-left: 2px; }
+.hero-card { background: var(--black); color: #fff; border-radius: 18px; padding: 24px; }
+.hero-card .t { font-size: 13px; opacity: .75; }
+.hero-card .h { font-size: 20px; font-weight: 900; margin-top: 4px; line-height: 1.35; }
+.hero-card .h em { font-style: normal; color: var(--red); }
+.hero-card p.d { margin-top: 10px; font-size: 13.5px; opacity: .85; line-height: 1.6; }
+.hero-card .btn { margin-top: 16px; }
+.sec-head { padding: 40px 0 16px; }
+.sec-head h2 { font-size: 22px; }
+.sec-head h2 b { color: var(--red); }
+.sec-head p { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+.cases { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.case { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px 18px; box-shadow: var(--shadow); overflow: hidden; min-height: 190px; }
+.case .q { font-size: 13.5px; color: var(--fg-soft); }
+.case h3 { font-size: 22px; margin-top: 2px; color: var(--black); }
+.case h3::after { content: " >"; }
+.case ul { margin-top: 10px; display: grid; gap: 4px; }
+.case li { font-size: 13px; color: var(--fg-soft); padding-left: 12px; position: relative; line-height: 1.5; }
+.case li::before { content: ""; position: absolute; left: 0; top: .6em; width: 5px; height: 5px; border-radius: 50%; background: var(--black); }
+.case .tag { position: static; margin-left: 10px; vertical-align: middle; }
+.case img { align-self: end; justify-self: end; width: 150px; height: auto; max-width: 100%; }
+.case .go { display: inline-flex; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--black); text-decoration: none; vertical-align: middle; }
+.case .go:hover { color: var(--red); }
+.why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.why div { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; }
+.why .n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--black); color: #fff; font-weight: 900; font-size: 14px; }
+.why h3 { font-size: 17px; margin-top: 12px; color: var(--black); }
+.why p { margin-top: 8px; font-size: 14px; color: var(--fg-soft); line-height: 1.6; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 16px; position: relative; }
+.step .k { font-size: 11.5px; font-weight: 900; color: var(--red); letter-spacing: .06em; }
+.step h3 { font-size: 16px; margin-top: 6px; color: var(--black); }
+.step p { margin-top: 6px; font-size: 13.5px; color: var(--fg-soft); line-height: 1.55; }
+.profile { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 26px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 26px; box-shadow: var(--shadow); }
+.avatar { width: 220px; aspect-ratio: 1; border-radius: 18px; background: var(--black); display: grid; place-items: center; overflow: hidden; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar .ph { color: #fff; text-align: center; font-size: 12.5px; padding: 16px; line-height: 1.6; }
+.avatar .ph b { display: block; font-size: 34px; font-weight: 900; }
+.profile h3 { font-size: 22px; color: var(--black); }
+.profile h3 small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 8px; }
+.profile .role { margin-top: 4px; font-size: 14px; font-weight: 700; color: var(--red); }
+.profile ul { margin-top: 12px; display: grid; gap: 5px; }
+.profile li { font-size: 14px; color: var(--fg-soft); padding-left: 14px; position: relative; line-height: 1.55; }
+.profile li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--black); }
+.profile .books { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.profile .books span { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg-soft); }
+.channels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.ch { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; text-decoration: none; color: var(--black); text-align: center; }
+.ch:hover { border-color: var(--black); }
+.ch .ic { width: 54px; height: 54px; border-radius: 50%; background: var(--black); color: #fff; display: grid; place-items: center; font-weight: 900; font-size: 12px; letter-spacing: .04em; }
+.ch .ic svg { width: 26px; height: 26px; }
+.ch b { font-size: 14px; }
+.ch span { font-size: 12px; color: var(--muted); word-break: break-all; }
+.contact { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.contact > div { background: var(--black); color: #fff; border-radius: 18px; padding: 26px; }
+.contact h3 { font-size: 20px; color: inherit; }
+.contact p { margin-top: 8px; font-size: 14px; opacity: .85; line-height: 1.65; }
+.contact ol { margin-top: 12px; display: grid; gap: 8px; counter-reset: s; }
+.contact ol li { position: relative; padding-left: 30px; font-size: 14px; counter-increment: s; }
+.contact ol li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; border-radius: 50%; background: var(--red); color: #fff; font-size: 12px; font-weight: 900; display: grid; place-items: center; }
+.contact .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.contact .white { background: var(--surface); color: var(--black); border: 1px solid var(--line); }
+.contact .white p { opacity: 1; color: var(--fg-soft); }
+.contact .white code { font-family: inherit; font-weight: 700; color: var(--black); user-select: all; }
+.notice { margin-top: 18px; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+@media (max-width: 900px) {
+  .hero-in { grid-template-columns: 1fr; gap: 22px; }
+  .why { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr 1fr; }
+  .channels { grid-template-columns: 1fr 1fr; }
+  .contact { grid-template-columns: 1fr; }
+  .profile { grid-template-columns: 1fr; }
+  .avatar { width: 160px; }
+}
+@media (max-width: 600px) {
+  .cases { grid-template-columns: 1fr; }
+  .case { grid-template-columns: minmax(0, 1fr) 110px; }
+  .case img { width: 110px; }
+  .steps { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+/*__NAV__*/
+
+<section class="hero">
+  <div class="hero-in">
+    <div>
+      <h1><span class="light">누가 봐도 뽑고 싶은</span><span class="strong">인재의 비밀, 취업조로 😎</span></h1>
+      <p class="lede">취업조로는 <b>재무제표와 보고서로 지원 회사를 뜯어보는 기업분석</b>과 <b>어떤 질문에도 바로 쓰는 생생 면접 스크립트</b>로 합격을 만듭니다. 공장식 컨설팅 대신, 지금 가진 스펙과 상황에서 취업하는 방향을 1:1로 잡아 드립니다.</p>
+      <dl class="stats">
+        <div><dt>함께한 합격자</dt><dd>1,132<small>명</small></dd></div>
+        <div><dt>현직자 인터뷰·자료</dt><dd>/*__EVIDENCE__*/<small>건</small></dd></div>
+        <div><dt>직무사전 수록 직무</dt><dd>/*__JOBS__*/<small>개</small></dd></div>
+        <div><dt>컨설팅 경력</dt><dd>15<small>년 차</small></dd></div>
+        <div><dt>회사 경력</dt><dd>13<small>년 차</small></dd></div>
+      </dl>
+    </div>
+    <aside class="hero-card">
+      <p class="t">무료 상담부터 시작하세요</p>
+      <p class="h">내 상황에 맞는 길을 <em>30분</em> 안에 정리해 드립니다</p>
+      <p class="d">신입, 중고신입, 재직 중 이직, 퇴사 후 이직. 어느 쪽이든 먼저 상황을 듣고 방향을 잡습니다. 상담은 무료이고, 컨설팅 진행 여부는 그 뒤에 정하셔도 됩니다.</p>
+      <a class="btn primary" href="/*__APPLY__*/">무료 상담 신청하기 ⚡</a>
+    </aside>
+  </div>
+</section>
+
+<main class="wrap">
+  <div class="sec-head">
+    <h2>나에게 맞는 <b>취업상황</b>을 선택하세요 📢</h2>
+    <p>상황마다 준비 순서와 강조할 것이 다릅니다. 취업조로는 네 가지 상황을 따로 설계합니다.</p>
+  </div>
+  <section class="cases">
+    <article class="case">
+      <div>
+        <p class="q">첫 취업을 목표한다면?</p>
+        <h3>신입</h3>
+        <ul>
+          <li>첫 직장이 향후 20년의 연봉·직무·직장 기준을 정합니다</li>
+          <li>써야 할 공고와 쓰지 말아야 할 공고를 함께 고릅니다</li>
+          <li>중고신입에게도 지지 않는 면접 스크립트와 기업분석</li>
+          <li>현직자 매칭으로 부족한 직무 지식을 채웁니다</li>
+        </ul>
+        <a class="go" href="https://jobzorro.kr/recruit-new" target="_blank" rel="noopener">신입 취업 상담받기 →</a>
+      </div>
+      <img src="/*__ILL_NEW__*/" alt="">
+    </article>
+    <article class="case">
+      <div>
+        <p class="q">산업 or 직무 변경을 꿈꾸고 있다면?</p>
+        <h3>중고 신입</h3>
+        <ul>
+          <li>나를 힘들게 했던 첫 회사를 전방위로 분석합니다</li>
+          <li>짧은 경력이라도 주도적으로 수행한 역량을 포트폴리오로 정리</li>
+          <li>직무부터 고민이라면 나에게 맞는 직무를 다시 설정</li>
+          <li>중고신입이라 공격받을 수 있는 모든 질문에 면접 대비</li>
+        </ul>
+        <a class="go" href="https://jobzorro.kr/recruit-old" target="_blank" rel="noopener">중고신입 상담받기 →</a>
+      </div>
+      <img src="/*__ILL_OLD__*/" alt="">
+    </article>
+    <article class="case">
+      <div>
+        <p class="q">더 나은 커리어패스를 고민한다면?</p>
+        <h3>경력 이직</h3>
+        <ul>
+          <li>이직은 취업보다 쉽습니다. 경력기술서·포트폴리오부터 제대로</li>
+          <li>수백 개 회사에 효율적으로 지원하고 최고의 오퍼를 고릅니다</li>
+          <li>내 회사 경험을 지원 회사에 맞게 다듬는 면접 과정</li>
+          <li>수백 번의 연봉협상 경험으로 협상까지 함께</li>
+        </ul>
+        <a class="go" href="https://jobzorro.kr/turnover-change" target="_blank" rel="noopener">경력 이직 상담받기 →</a>
+        <span class="badge tag">재직자</span>
+      </div>
+      <img src="/*__ILL_CHANGE__*/" alt="">
+    </article>
+    <article class="case">
+      <div>
+        <p class="q">다니던 회사를 퇴사부터 했다면?</p>
+        <h3>선 퇴사자 경력 이직</h3>
+        <ul>
+          <li>다른 지원자보다 빠르게 지원부터 시작합니다</li>
+          <li>2주차에 준비를 끝내고 실제 지원에 들어가는 압도적 속도</li>
+          <li>회사와 대화할 확률을 극대화해 걱정 기간을 줄입니다</li>
+          <li>좋은 회사로의 이직과 연봉협상까지</li>
+        </ul>
+        <a class="go" href="https://jobzorro.kr/turnover-quit" target="_blank" rel="noopener">선퇴사자 상담받기 →</a>
+        <span class="badge green tag">선퇴사자</span>
+      </div>
+      <img src="/*__ILL_QUIT__*/" alt="">
+    </article>
+  </section>
+
+  <div class="sec-head">
+    <h2>그래서 취업조로 컨설팅은 <b>뭐가 다른데?</b> 💡</h2>
+    <p>차별화된 지원동기와 면접 답변이 가능한 취업조로만의 스킬 세 가지.</p>
+  </div>
+  <section class="why">
+    <div><span class="n">1</span><h3>재무제표와 보고서로 지원 회사를 뜯어보는 기업분석</h3><p>남들 잘 모르는 좋은 회사, 지원 회사의 분위기와 산업군 정보까지. 취업조로의 데이터로 써야 할 곳과 쓰지 말아야 할 곳을 가립니다.</p></div>
+    <div><span class="n">2</span><h3>어떤 질문을 해도 바로 활용 가능한 생생 면접 스크립트</h3><p>자기 자신을 가장 잘 드러내는 것이 필승 전략입니다. MBTI가 I든 E든, 진솔하고 엣지 있는 면접자로 만듭니다.</p></div>
+    <div><span class="n">3</span><h3>공장식이 아닌 개개인 맞춤형 컨설팅</h3><p>팀 컨설팅이지만 함께 공유하는 것은 강의뿐입니다. 첨삭, 질의응답, 관리는 모두 1:1로 진행합니다.</p></div>
+  </section>
+
+  <div class="sec-head">
+    <h2>취업조로를 만나면 <b>이렇게 같이</b> 합니다 🎉</h2>
+    <p>무료 상담부터 합격 후 연봉협상까지, 취업조로의 컨설팅 프로세스.</p>
+  </div>
+  <section class="steps">
+    <div class="step"><span class="k">STEP 1</span><h3>무료 상담</h3><p>현재 스펙·상황·목표를 듣고, 지금 가진 것으로 취업하는 방향을 잡습니다.</p></div>
+    <div class="step"><span class="k">STEP 2</span><h3>직무·공고 설계</h3><p>직무사전으로 직무를 좁히고, 써야 할 공고 리스트를 함께 만듭니다.</p></div>
+    <div class="step"><span class="k">STEP 3</span><h3>서류·면접 제작</h3><p>기업분석을 바탕으로 자소서·경력기술서를 1:1 첨삭하고 면접 스크립트를 완성합니다.</p></div>
+    <div class="step"><span class="k">STEP 4</span><h3>합격·연봉협상</h3><p>여러 오퍼 중 최고의 회사를 고르고, 무리되지 않는 선에서 연봉협상을 돕습니다.</p></div>
+  </section>
+
+  <div class="sec-head">
+    <h2>취업조로는 <b>누구인가요?</b></h2>
+    <p>직무사전과 커리어브리핑을 만드는 사람입니다.</p>
+  </div>
+  <section class="profile">
+    <div class="avatar">/*__AVATAR__*/</div>
+    <div>
+      <h3>조현빈 <small>취업조로 · 커리어프로젝트 주식회사 대표</small></h3>
+      <p class="role">면접·취업 컨설턴트 / 기업분석·직무교육·경력이직 전문가</p>
+      <ul>
+        <li>취업·이직 컨설팅 15년 차, 커리어프로젝트 대표 컨설턴트</li>
+        <li>회사 생활 13년 차. 대기업 경영기획팀 재직 (S·K·P 그룹을 거쳐 현재 금융그룹), 현직자라서 채용 현장을 압니다</li>
+        <li>기획인 커뮤니티 '기획인의 방' 창립자, 취업·이직 오픈채팅방 운영</li>
+        <li>기수제 취업 동아리 '청취' 창립 및 컨설팅, 함께한 합격자 1,132명</li>
+        <li>현직자 직무 인터뷰 /*__EVIDENCE__*/건을 모아 직무사전으로 공개</li>
+      </ul>
+      <div class="books"><span>📘 누가 봐도 뽑고 싶은 이공계 자소서</span><span>📘 수시채용 대비서</span></div>
+    </div>
+  </section>
+
+  <div class="sec-head">
+    <h2>다양한 채널에서 <b>더 많은 취업 정보</b>를 얻어가세요!</h2>
+    <p>후기, 공고 분석, 면접 팁은 채널에서 매주 올라갑니다.</p>
+  </div>
+  <section class="channels">
+    <a class="ch" href="https://www.instagram.com/career_zorro" target="_blank" rel="noopener"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></span><b>인스타그램</b><span>@career_zorro</span></a>
+    <a class="ch" href="https://www.youtube.com/@ZORROCAREER" target="_blank" rel="noopener"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></svg></span><b>유튜브</b><span>@ZORROCAREER</span></a>
+    <a class="ch" href="http://pf.kakao.com/_xgyxeeK" target="_blank" rel="noopener"><span class="ic">TALK</span><b>카카오톡 채널</b><span>pf.kakao.com/_xgyxeeK</span></a>
+    <a class="ch" href="https://blog.naver.com/zorr0" target="_blank" rel="noopener"><span class="ic">blog</span><b>네이버 블로그</b><span>blog.naver.com/zorr0</span></a>
+  </section>
+
+  <section class="contact">
+    <div>
+      <h3>무료 상담 신청, 이렇게 하세요</h3>
+      <p>상담은 무료이고 부담 없이 상황만 들어도 됩니다. 컨설팅 진행은 상담 뒤에 정하세요.</p>
+      <ol>
+        <li>이 사이트의 "무료 상담 신청하기" 버튼을 눌러 폼을 작성합니다 (카카오톡 채널도 가능)</li>
+        <li>간단한 사전 질문(현재 상황, 목표 직무·회사, 희망 일정)에 답합니다</li>
+        <li>취업조로가 일정을 잡아 1:1로 상황을 듣고 방향을 정리해 드립니다</li>
+        <li>맞는 과정이 있으면 커리큘럼과 비용을 안내받고 결정합니다</li>
+      </ol>
+      <div class="row"><a class="btn primary" href="/*__APPLY__*/">무료 상담 신청하기 ⚡</a><a class="btn ghost" href="http://pf.kakao.com/_xgyxeeK" target="_blank" rel="noopener">카카오톡으로 문의</a></div>
+    </div>
+    <div class="white">
+      <h3>이런 분이 먼저 연락 주세요</h3>
+      <p>어떤 공고를 써야 할지 모르겠는 분. 서류는 붙는데 면접에서 떨어지는 분. 물경력 같아 이직이 두려운 분. 퇴사부터 해 버려 마음이 급한 분. 직무 자체가 고민이라면 직무사전부터 보고 오셔도 좋습니다.</p>
+      <p>문의 채널 <code>pf.kakao.com/_xgyxeeK</code><br>홈페이지 <code>jobzorro.kr</code></p>
+    </div>
+  </section>
+  <p class="notice">합격자 수와 경력은 취업조로 홈페이지 및 저자 소개 기준이며, 상담 일정과 과정 안내는 홈페이지의 최신 공지가 우선합니다.</p>
+</main>
+
+/*__FOOTER__*/
+/*__FAB__*/
+</body>
+</html>

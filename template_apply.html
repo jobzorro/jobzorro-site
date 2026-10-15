@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>무료 상담 신청 — 취업조로</title>
+<meta name="description" content="더 이상 취업고민 혼자 하지 말고 취업전문가와 함께하세요. 취업조로 무료 상담 신청.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/*__SHARED_CSS__*/
+/* 페이지: 검정 배경 폼 카드(취업조로 홈페이지 상담 폼과 같은 구성) + 오른쪽 안내 */
+body { padding-bottom: 40px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; padding-top: 28px; }
+.formcard { background: var(--black); color: #fff; border-radius: 20px; padding: 36px 32px; }
+.formcard h1 { text-align: center; font-size: clamp(20px, 2.6vw, 26px); line-height: 1.4; }
+.formcard h1 .light { display: block; font-weight: 500; color: #ddd; font-size: .85em; }
+.formcard h1 .strong { display: block; font-weight: 900; color: #fff; }
+.formcard .sub { text-align: center; margin-top: 10px; font-size: 13.5px; color: #aaa; }
+fieldset { border: 0; padding: 0; margin: 28px 0 0; min-width: 0; }
+legend { font-size: 15px; font-weight: 700; color: #fff; padding: 0; margin-bottom: 12px; line-height: 1.45; }
+legend .req { color: var(--red); margin-left: 4px; font-size: 12px; vertical-align: top; }
+legend .opt { color: #999; font-weight: 500; font-size: 12px; margin-left: 6px; }
+.radios { display: grid; gap: 10px; }
+.radio { display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 15px; color: #fff; }
+.radio input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.radio .dot { width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2px solid #fff; display: grid; place-items: center; flex: none; }
+.radio .dot::after { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--red); opacity: 0; }
+.radio input:checked + .dot::after { opacity: 1; }
+.radio input:focus-visible + .dot { outline: 2px solid var(--red); outline-offset: 2px; }
+input[type=text], input[type=tel], textarea { width: 100%; font: inherit; font-size: 15px; color: var(--black); background: #fff; border: 2px solid #fff; border-radius: 6px; padding: 11px 13px; }
+input:focus, textarea:focus { outline: 0; border-color: var(--red); }
+input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--red); box-shadow: 0 0 0 2px rgba(251, 43, 69, .35); }
+textarea { min-height: 96px; resize: vertical; }
+.phone { display: flex; align-items: center; gap: 8px; }
+.phone input { width: 92px; text-align: center; padding-inline: 6px; }
+.phone span { color: #fff; font-weight: 700; }
+.sub3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.sub3 label { display: block; font-size: 12.5px; color: #bbb; margin-bottom: 5px; }
+.hint { font-size: 12.5px; color: #999; margin-top: 6px; }
+.err { font-size: 12.5px; color: var(--red); font-weight: 700; margin-top: 6px; display: none; }
+.f.bad .err { display: block; }
+.policy { height: 150px; overflow-y: auto; background: #fff; color: var(--black); border-radius: 6px; padding: 14px 16px; font-size: 12.5px; line-height: 1.65; }
+.policy h4 { margin: 10px 0 4px; font-size: 12.5px; }
+.policy p { margin: 0 0 6px; }
+.policy a { color: var(--black); }
+.consent { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 14.5px; font-weight: 700; color: #fff; cursor: pointer; }
+.consent input { width: 20px; height: 20px; accent-color: var(--red); flex: none; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.submit { margin-top: 28px; }
+.submit button { width: 100%; background: #fff; color: var(--black); border: 2px solid #fff; border-radius: 8px; padding: 15px; font-size: 16px; font-weight: 900; }
+.submit button:hover { background: var(--red); border-color: var(--red); color: #fff; }
+.submit button[disabled] { opacity: .6; cursor: wait; }
+.submit .st { display: block; text-align: center; margin-top: 10px; font-size: 13px; color: #aaa; }
+.submit .st.bad { color: var(--red); font-weight: 700; }
+.notice { margin-top: 18px; padding: 12px 14px; border-radius: 8px; background: var(--yellow); font-size: 13px; color: var(--black); line-height: 1.6; }
+.done { text-align: center; padding: 30px 10px; }
+.done .big { font-size: 56px; }
+.done h2 { font-size: 24px; margin-top: 8px; color: #fff; }
+.done p { margin-top: 10px; color: #ccc; font-size: 15px; max-width: 46ch; margin-inline: auto; }
+.done .row2 { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 20px; }
+.side { position: sticky; top: calc(56px + 16px + env(safe-area-inset-top, 0px)); display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px; box-shadow: var(--shadow); }
+.card h3 { font-size: 16px; color: var(--black); }
+.card ul { margin-top: 10px; display: grid; gap: 6px; }
+.card li { font-size: 13.5px; color: var(--fg-soft); padding-left: 14px; position: relative; line-height: 1.55; }
+.card li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
+.card p { font-size: 13.5px; color: var(--fg-soft); margin-top: 6px; line-height: 1.6; }
+.card code { font-family: inherit; font-weight: 700; color: var(--black); user-select: all; }
+.card .btn.dark { background: var(--black); color: #fff; margin-top: 12px; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } .side { position: static; } }
+@media (max-width: 560px) { .formcard { padding: 28px 18px; border-radius: 14px; } .sub3 { grid-template-columns: 1fr; } .phone input { width: 30%; } }
+</style>
+</head>
+<body>
+/*__NAV__*/
+
+<main class="wrap">
+  <div class="layout">
+    <section class="formcard">
+      <h1><span class="light">더 이상 취업고민 혼자 하지말고</span><span class="strong">취업전문가와 함께하세요</span></h1>
+      <p class="sub">작성해 주시면 취업조로가 확인하고 직접 연락드립니다. 상담은 무료입니다.</p>
+      <div class="notice" id="notice" hidden></div>
+
+      <form id="applyForm" novalidate>
+        <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+        <fieldset class="f" id="f-type">
+          <legend>① 현재 목표하는 취업의 형태가 어떻게 되나요?<span class="req">●</span></legend>
+          <div class="radios" role="radiogroup">
+            <label class="radio"><input type="radio" name="type" value="신입"><span class="dot"></span>신입</label>
+            <label class="radio"><input type="radio" name="type" value="중고신입"><span class="dot"></span>중고신입</label>
+            <label class="radio"><input type="radio" name="type" value="경력(이직)"><span class="dot"></span>경력(이직)</label>
+            <label class="radio"><input type="radio" name="type" value="경력(선퇴사자)"><span class="dot"></span>경력(선퇴사자)</label>
+          </div>
+          <span class="err">취업 형태를 골라 주세요.</span>
+        </fieldset>
+
+        <fieldset class="f" id="f-name">
+          <legend><label for="name">② 성함을 입력해주세요</label><span class="req">●</span></legend>
+          <input type="text" id="name" name="name" autocomplete="name">
+          <span class="err">성함을 입력해 주세요.</span>
+        </fieldset>
+
+        <fieldset class="f" id="f-phone">
+          <legend>③ 연락처를 알려주세요. (폰번 잘 기입하셨는지 한번 더 확인 부탁드립니다)<span class="req">●</span></legend>
+          <div class="phone">
+            <input type="tel" id="p1" inputmode="numeric" maxlength="3" value="010" aria-label="연락처 앞자리"><span>-</span>
+            <input type="tel" id="p2" inputmode="numeric" maxlength="4" aria-label="연락처 가운데"><span>-</span>
+            <input type="tel" id="p3" inputmode="numeric" maxlength="4" aria-label="연락처 뒷자리">
+          </div>
+          <input type="hidden" name="phone" id="phone">
+          <span class="err">연락처를 확인해 주세요.</span>
+        </fieldset>
+
+        <fieldset class="f" id="f-reason">
+          <legend><label for="reason">④ 신청 사유</label><span class="req">●</span></legend>
+          <textarea id="reason" name="reason" placeholder="예: 하반기 공채 준비 중인데 서류에서 계속 떨어집니다"></textarea>
+          <span class="err">신청 사유를 적어 주세요.</span>
+        </fieldset>
+
+        <fieldset class="f" id="f-status">
+          <legend>⑤ 재직여부(연차 포함, 쌩신입일 경우 신입 기입) / 지원 직무 / 사는 곳(시, 군 단위까지)<span class="req">●</span></legend>
+          <div class="sub3">
+            <div><label for="status">재직여부·연차</label><input type="text" id="status" name="status" placeholder="예: 신입 / 재직 3년차 / 퇴사"></div>
+            <div><label for="job">지원 직무</label><input type="text" id="job" name="job" placeholder="예: 서비스 기획"></div>
+            <div><label for="region">사는 곳</label><input type="text" id="region" name="region" placeholder="예: 서울 강남구, 용인시"></div>
+          </div>
+          <span class="hint" id="jobHint"></span>
+          <span class="err">재직여부와 사는 곳을 적어 주세요.</span>
+        </fieldset>
+
+        <fieldset class="f" id="f-message">
+          <legend><label for="message">⑥ 현재 가장 큰 고민이나 컨설팅 관련 궁금한 사항이 무엇인지 적어주십시오.</label><span class="req">●</span></legend>
+          <textarea id="message" name="message"></textarea>
+          <span class="err">한 줄이라도 적어 주세요.</span>
+        </fieldset>
+
+        <fieldset class="f" id="f-consent">
+          <legend>개인정보 수집 및 이용 동의<span class="req">●</span></legend>
+          <div class="policy" tabindex="0">
+            <p>커리어프로젝트 주식회사(이하 '회사'라 한다)는 개인정보보호법 제30조에 따라 정보 주체의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리지침을 수립, 공개합니다.</p>
+            <h4>제1조 (개인정보의 처리목적)</h4>
+            <p>회사는 무료 상담 신청에 대한 연락, 상담 진행 및 컨설팅 안내를 위하여 개인정보를 처리합니다. 처리한 개인정보는 이 목적 이외의 용도로 이용되지 않습니다.</p>
+            <h4>제2조 (수집 항목)</h4>
+            <p>성함, 연락처, 신청 사유, 재직여부·연차, 지원 직무, 거주 지역, 상담 내용. 직무사전에서 신청한 경우 보던 직무명이 함께 전달됩니다.</p>
+            <h4>제3조 (보유 및 이용 기간)</h4>
+            <p>상담 종료 후 1년까지 보유하며, 정보 주체가 삭제를 요청하면 지체 없이 파기합니다.</p>
+            <h4>제4조 (동의 거부 권리)</h4>
+            <p>정보 주체는 동의를 거부할 수 있습니다. 다만 동의하지 않으면 상담 신청이 접수되지 않습니다.</p>
+            <h4>제5조 (개인정보 보호책임자)</h4>
+            <p>조현빈 (커리어프로젝트 주식회사 대표). 전체 처리방침은 <a href="https://job-zoro.imweb.me/?mode=privacy" target="_blank" rel="noopener">취업조로 개인정보처리방침</a>에서 확인할 수 있습니다.</p>
+          </div>
+          <label class="consent"><input type="checkbox" id="consent" name="consent" value="동의">개인정보 수집 및 이용에 동의합니다.</label>
+          <span class="err">동의가 필요합니다.</span>
+        </fieldset>
+
+        <input type="hidden" name="jobId" id="jobId">
+        <input type="hidden" name="page" id="page">
+        <div class="submit">
+          <button type="submit" id="submitBtn">작성</button>
+          <span class="st" id="status-msg"></span>
+        </div>
+      </form>
+
+      <div class="done" id="done" hidden>
+        <div class="big">😎</div>
+        <h2>신청이 접수됐습니다</h2>
+        <p>취업조로가 확인한 뒤 남겨 주신 연락처로 연락드립니다. 급하시면 카카오톡 채널로 바로 말씀해 주세요.</p>
+        <div class="row2"><a class="btn primary" href="/*__KAKAO__*/" target="_blank" rel="noopener">카카오톡 채널 열기</a><a class="btn ghost" href="../index.html">직무사전 둘러보기</a></div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="card">
+        <h3>상담은 이렇게 진행됩니다</h3>
+        <ul>
+          <li>신청 내용을 보고 취업조로가 직접 연락드립니다</li>
+          <li>30분 안팎으로 현재 상황과 목표를 듣고 방향을 정리합니다</li>
+          <li>맞는 과정이 있으면 커리큘럼과 비용을 안내합니다</li>
+          <li>진행 여부는 상담 뒤에 편하게 정하세요</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>폼 대신 카톡이 편하다면</h3>
+        <p>카카오톡 채널 <code>pf.kakao.com/_xgyxeeK</code> 로 "상담 신청"이라고 보내 주셔도 됩니다.</p>
+        <a class="btn dark" href="/*__KAKAO__*/" target="_blank" rel="noopener">카카오톡 채널 열기</a>
+      </div>
+    </aside>
+  </div>
+</main>
+
+/*__FOOTER__*/
+
+<script id="site-config" type="application/json">/*__CONFIG__*/</script>
+<script id="job-names" type="application/json">/*__JOB_NAMES__*/</script>
+<script>
+(function () {
+  var CFG = JSON.parse(document.getElementById('site-config').textContent);
+  var JOBS = JSON.parse(document.getElementById('job-names').textContent);
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $('applyForm');
+
+  // 직무사전 상세의 버튼에서 오면 #직무id 가 붙어 온다 → 지원 직무를 미리 채운다
+  var jobId = location.hash.replace('#', '');
+  if (jobId && JOBS[jobId]) {
+    $('job').value = JOBS[jobId];
+    $('jobId').value = jobId;
+    $('jobHint').textContent = '직무사전에서 보던 직무를 넣어 두었습니다. 바꾸셔도 됩니다.';
+  }
+  $('page').value = document.referrer || location.pathname;
+
+  if (!CFG.formEndpoint) {
+    var n = $('notice'); n.hidden = false;
+    n.textContent = '접수 시스템 연결 전입니다. 지금은 신청 내용이 전송되지 않으니 카카오톡 채널로 보내 주세요. (관리자: data/site.json 의 formEndpoint 를 설정하세요)';
+  }
+
+  function mark(id, bad) { var f = $('f-' + id); if (!f) return; f.classList.toggle('bad', bad); f.querySelectorAll('input[type=text],input[type=tel],textarea').forEach(function (c) { c.setAttribute('aria-invalid', bad ? 'true' : 'false'); }); }
+  function phone() { return [$('p1').value, $('p2').value, $('p3').value].map(function (v) { return v.replace(/\D/g, ''); }).join('-'); }
+  function validate() {
+    var p = phone();
+    var checks = [
+      ['type', !!form.querySelector('input[name=type]:checked')],
+      ['name', $('name').value.trim().length >= 2],
+      ['phone', /^0\d{1,2}-\d{3,4}-\d{4}$/.test(p)],
+      ['reason', $('reason').value.trim().length >= 2],
+      ['status', $('status').value.trim().length >= 1 && $('region').value.trim().length >= 1],
+      ['message', $('message').value.trim().length >= 2],
+      ['consent', $('consent').checked]
+    ];
+    var first = null;
+    checks.forEach(function (c) { mark(c[0], !c[1]); if (!c[1] && !first) first = c[0]; });
+    if (first) { var el = $('f-' + first); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); var c = el.querySelector('input:not([type=hidden]),textarea'); if (c) c.focus(); }
+    return !first;
+  }
+  form.addEventListener('input', function (e) { var f = e.target.closest('.f'); if (f) f.classList.remove('bad'); });
+  // 연락처 칸: 숫자만, 다 차면 다음 칸으로
+  [['p1', 'p2'], ['p2', 'p3'], ['p3', null]].forEach(function (pair) {
+    $(pair[0]).addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); if (pair[1] && this.value.length >= this.maxLength) $(pair[1]).focus(); });
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!validate()) return;
+    var data = {};
+    new FormData(form).forEach(function (v, k) { data[k] = String(v).trim(); });
+    data.phone = phone(); data.consent = '동의';
+    var btn = $('submitBtn'), st = $('status-msg');
+    if (!CFG.formEndpoint) { st.className = 'st bad'; st.textContent = '접수 시스템이 아직 연결되지 않았습니다. 카카오톡 채널로 보내 주세요.'; return; }
+    btn.disabled = true; st.className = 'st'; st.textContent = '보내는 중...';
+    // Apps Script 웹앱은 text/plain 본문이면 CORS 사전요청 없이 받는다. 응답은 읽지 않는다(no-cors).
+    fetch(CFG.formEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) })
+      .then(function () { form.hidden = true; $('notice').hidden = true; $('done').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); })
+      .catch(function () { btn.disabled = false; st.className = 'st bad'; st.textContent = '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡 채널로 보내 주세요.'; });
+  });
+})();
+</script>
+</body>
+</html>

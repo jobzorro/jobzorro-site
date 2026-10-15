@@ -1,0 +1,477 @@
+<title>취업조로 직무사전</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 레이아웃: 검정 상단바(로고+검색) → 흰 히어로(두 줄 헤드라인) → 문과/이공계 탭 → 직군 칩 → 흰 카드 그리드 → 검정 푸터 / 하단 고정 상담 버튼 / 상세는 오른쪽 패널
+   취업조로(jobzorro.kr) 톤: 흑백 대비, 아주 굵은 헤드라인, 빨간 포인트 배지, 둥근 흰 카드 */
+/*__SHARED_CSS__*/
+.num { font-variant-numeric: tabular-nums; }
+
+/* 검색 (히어로 아래) */
+.search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--black); border-radius: 999px; padding: 0 16px; height: 46px; max-width: 640px; margin-top: 22px; box-shadow: var(--shadow); }
+.search svg { width: 18px; height: 18px; color: var(--muted); flex: none; }
+.search input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--black); font: inherit; font-size: 15px; }
+.search input::placeholder { color: var(--muted); }
+.search button { color: var(--muted); font-size: 12.5px; padding: 4px 8px; border-radius: 6px; }
+.search button:hover { color: var(--black); background: var(--surface-2); }
+
+/* 히어로 */
+.hero { background: var(--surface); border-bottom: 1px solid var(--line); }
+.hero-in { max-width: 1120px; margin: 0 auto; padding: 44px 20px 32px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 40px; align-items: end; }
+.hero h1 { font-size: clamp(26px, 3.6vw, 40px); line-height: 1.3; }
+.hero h1 .light { display: block; font-weight: 400; color: var(--fg-soft); }
+.hero h1 .strong { display: block; font-weight: 900; color: var(--black); }
+.hero .lede { margin-top: 16px; font-size: 15.5px; color: var(--fg-soft); max-width: 60ch; }
+.hero .lede b { font-weight: 700; color: var(--black); background: linear-gradient(transparent 60%, var(--yellow) 60%); }
+.facts { display: flex; gap: 26px; margin: 22px 0 0; flex-wrap: wrap; }
+.facts div { display: flex; flex-direction: column; }
+.facts dt { font-size: 12px; color: var(--muted); }
+.facts dd { margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -.02em; color: var(--black); font-variant-numeric: tabular-nums; }
+.hero-side { background: var(--black); color: #fff; border-radius: 16px; padding: 20px 22px; }
+.hero-side .t { font-size: 13px; opacity: .75; }
+.hero-side .h { font-size: 18px; font-weight: 900; margin-top: 4px; line-height: 1.35; }
+.hero-side .h em { font-style: normal; color: var(--red); }
+.hero-side ul { margin-top: 12px; display: grid; gap: 6px; font-size: 13.5px; }
+.hero-side li { display: flex; gap: 8px; align-items: flex-start; }
+.hero-side li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-top: 8px; flex: none; }
+
+/* 트랙 탭 + 필터 */
+.section-head { padding: 30px 0 14px; }
+.section-head h2 { font-size: 20px; font-weight: 900; }
+.section-head h2 b { color: var(--red); }
+.section-head p { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+.tracks { display: flex; gap: 8px; padding-bottom: 12px; flex-wrap: wrap; }
+.track { padding: 10px 18px; border-radius: 999px; font-size: 14.5px; font-weight: 700; background: var(--surface); border: 1.5px solid var(--line-strong); color: var(--fg-soft); }
+.track:hover { border-color: var(--black); color: var(--black); }
+.track[aria-pressed="true"] { background: var(--black); color: #fff; border-color: var(--black); }
+.track .n { font-weight: 500; opacity: .7; margin-left: 4px; font-size: 12.5px; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-bottom: 10px; }
+.chip { padding: 6px 13px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 13.5px; color: var(--fg-soft); background: var(--surface); line-height: 1.3; }
+.chip:hover { border-color: var(--black); color: var(--black); }
+.chip[aria-pressed="true"] { background: var(--black); color: #fff; border-color: var(--black); }
+.chip .n { font-size: 11.5px; opacity: .6; margin-left: 3px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 4px 10px; padding-bottom: 12px; }
+.toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--fg-soft); padding: 5px 8px; border-radius: 8px; }
+.toggle:hover { background: var(--surface); }
+.toggle .box { width: 16px; height: 16px; border: 1.5px solid var(--line-strong); border-radius: 4px; display: grid; place-items: center; background: var(--surface); }
+.toggle .box svg { width: 11px; height: 11px; opacity: 0; }
+.toggle[aria-pressed="true"] { color: var(--black); font-weight: 700; }
+.toggle[aria-pressed="true"] .box { background: var(--black); border-color: var(--black); color: #fff; }
+.toggle[aria-pressed="true"] .box svg { opacity: 1; }
+.count { font-size: 13px; color: var(--muted); padding-bottom: 14px; }
+.count b { color: var(--black); font-weight: 700; }
+
+/* 카드 */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(296px, 1fr)); gap: 14px; }
+.card { display: flex; flex-direction: column; gap: 9px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px 20px 16px; cursor: pointer; box-shadow: var(--shadow); transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
+.card:hover { transform: translateY(-2px); border-color: var(--black); box-shadow: 0 10px 26px rgba(0, 0, 0, .10); }
+.card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.group { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+.ai { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); }
+.ai i { display: inline-flex; gap: 2px; align-items: flex-end; }
+.ai i b { display: block; width: 4px; background: var(--line-strong); border-radius: 1px; }
+.ai i b:nth-child(1) { height: 6px; } .ai i b:nth-child(2) { height: 9px; } .ai i b:nth-child(3) { height: 12px; }
+.ai.l1 i b:nth-child(-n+1) { background: var(--lvl1); }
+.ai.l2 i b:nth-child(-n+2) { background: var(--lvl2); }
+.ai.l3 i b:nth-child(-n+3) { background: var(--lvl3); }
+.card h3 { font-size: 18.5px; line-height: 1.35; color: var(--black); }
+.card h3::after { content: " >"; font-weight: 700; color: var(--black); }
+.en { font-size: 12.5px; color: var(--muted); margin-top: -5px; }
+.tagline { color: var(--fg-soft); font-size: 14px; line-height: 1.55; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tags li { font-size: 12px; padding: 3px 9px; border-radius: 6px; background: var(--surface-2); color: var(--fg-soft); }
+.card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--red); color: #fff; white-space: nowrap; }
+.badge.soft { background: var(--red-soft); color: var(--red); }
+.badge.green { background: var(--green); color: #fff; }
+.badge.gray { background: var(--surface-2); color: var(--muted); }
+.card-foot .pay { color: var(--fg-soft); white-space: nowrap; }
+.card-foot .pay b { font-weight: 700; color: var(--black); font-variant-numeric: tabular-nums; }
+.empty { padding: 60px 20px; text-align: center; color: var(--muted); }
+.empty b { display: block; color: var(--black); font-size: 20px; margin-bottom: 6px; font-weight: 900; }
+
+/* 상세 패널 */
+.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, .5); z-index: 30; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(700px, 100%); background: var(--surface); z-index: 40; box-shadow: var(--shadow-lift); display: flex; flex-direction: column; }
+.drawer.anim { animation: slide .22s ease-out; }
+@keyframes slide { from { transform: translateX(40px); opacity: .6; } to { transform: translateX(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .drawer.anim { animation: none; } .card { transition: none; } }
+.d-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 22px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); background: var(--black); color: #fff; }
+.d-head .group { color: #ddd; }
+.d-actions { display: flex; gap: 6px; }
+.icon-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 999px; font-size: 13px; color: #fff; border: 1px solid #555; }
+.icon-btn:hover { background: #fff; color: var(--black); border-color: #fff; }
+.icon-btn svg { width: 15px; height: 15px; }
+.d-body { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; padding: 28px 24px 40px; }
+.d-body h2.name { font-size: 27px; line-height: 1.3; color: var(--black); }
+.d-body .en { font-size: 13px; margin-top: 2px; }
+.d-body .tagline { font-size: 16.5px; color: var(--black); margin-top: 14px; font-weight: 700; line-height: 1.5; }
+.d-body .summary { margin-top: 10px; color: var(--fg-soft); max-width: 64ch; }
+.quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 22px; }
+.quick div { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.quick dt { font-size: 11.5px; color: var(--muted); }
+.quick dd { margin: 4px 0 0; font-size: 14px; font-weight: 700; line-height: 1.4; color: var(--black); }
+.day { margin-top: 18px; padding: 14px 16px; border-left: 3px solid var(--black); background: var(--surface-2); border-radius: 0 10px 10px 0; font-size: 14px; color: var(--fg-soft); line-height: 1.65; }
+.day b { display: block; font-size: 12px; color: var(--black); margin-bottom: 4px; }
+.sec { margin-top: 30px; }
+.sec-h { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.sec-h .ic { width: 30px; height: 30px; border-radius: 50%; background: var(--black); color: #fff; display: grid; place-items: center; flex: none; }
+.sec-h .ic svg { width: 16px; height: 16px; }
+.sec-h h3 { font-size: 15.5px; font-weight: 900; }
+.sec-h .hint { margin-left: auto; font-size: 12px; color: var(--muted); }
+.list li { position: relative; padding-left: 16px; color: var(--fg-soft); margin-bottom: 6px; line-height: 1.55; }
+.list li::before { content: ""; position: absolute; left: 2px; top: .72em; width: 6px; height: 6px; border-radius: 50%; background: var(--black); }
+.list.mark li::before { background: var(--red); }
+.skill-row { display: grid; grid-template-columns: 76px 1fr; gap: 8px 12px; align-items: baseline; margin-bottom: 10px; }
+.skill-row .k { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.tags.big li { font-size: 13px; padding: 5px 11px; }
+.tags.accent li { background: var(--black); color: #fff; font-weight: 500; }
+.entry { display: grid; gap: 10px; }
+.entry div { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+.entry .k { font-size: 13px; font-weight: 700; color: var(--black); }
+.entry .v { font-size: 14px; color: var(--fg-soft); line-height: 1.55; }
+.entry .ok { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--green-soft); color: var(--green); margin-left: 6px; font-weight: 700; }
+.path { position: relative; padding-left: 22px; }
+.path::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
+.path li { position: relative; padding-bottom: 14px; }
+.path li::before { content: ""; position: absolute; left: -22px; top: 6px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); border: 3px solid var(--black); }
+.path li:last-child { padding-bottom: 0; }
+.path li:last-child::before { border-color: var(--red); }
+.path .stage { font-weight: 700; font-size: 14px; color: var(--black); }
+.path .desc { color: var(--fg-soft); font-size: 14px; }
+.sal { display: grid; gap: 10px; }
+.sal-row { display: grid; grid-template-columns: 56px 1fr 118px; gap: 12px; align-items: center; font-size: 13px; }
+.sal-row .k { color: var(--fg-soft); font-weight: 700; }
+.sal-row .bar { position: relative; height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.sal-row .bar i { position: absolute; top: 0; bottom: 0; background: var(--black); border-radius: 6px; }
+.sal-row:nth-child(2) .bar i { opacity: .7; }
+.sal-row:nth-child(3) .bar i { opacity: .45; }
+.sal-row .v { text-align: right; font-variant-numeric: tabular-nums; }
+.sal-axis { display: grid; grid-template-columns: 56px 1fr 118px; gap: 12px; }
+.sal-axis div { position: relative; height: 16px; font-size: 11px; color: var(--muted); }
+.sal-axis span { position: absolute; transform: translateX(-50%); }
+.note { margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.trans { display: flex; flex-wrap: wrap; gap: 8px; }
+.trans button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 13.5px; color: var(--black); background: var(--surface); }
+.trans button:hover { border-color: var(--black); background: var(--black); color: #fff; }
+.trans button svg { width: 14px; height: 14px; }
+.voices { display: grid; gap: 10px; }
+.voices blockquote { margin: 0; padding: 14px 16px 12px 42px; position: relative; background: var(--surface-2); border-radius: 10px; font-size: 14px; line-height: 1.6; color: var(--ink); }
+.voices blockquote::before { content: "\201C"; position: absolute; left: 14px; top: 4px; font-size: 36px; font-weight: 900; line-height: 1; color: var(--red); }
+.voices cite { display: flex; gap: 8px; align-items: center; margin-top: 6px; font-style: normal; font-size: 12px; color: var(--muted); }
+.voices cite .badge { font-size: 10px; padding: 1px 7px; }
+.ai-box { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; padding: 14px 16px; border-radius: 10px; background: var(--surface-2); }
+.ai-box .lvl { font-size: 12px; font-weight: 900; padding: 4px 9px; border-radius: 999px; background: var(--surface); white-space: nowrap; }
+.ai-box .lvl.l1 { color: var(--lvl1); } .ai-box .lvl.l2 { color: var(--lvl2); } .ai-box .lvl.l3 { color: var(--lvl3); }
+.ai-box p { font-size: 14px; color: var(--fg-soft); line-height: 1.6; }
+.src { margin-top: 26px; padding: 14px 16px; border-radius: 10px; border: 1px dashed var(--line-strong); font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+.src b { color: var(--black); font-weight: 700; }
+.src ul { margin-top: 6px; display: grid; gap: 2px; }
+.src li a { color: var(--fg-soft); text-decoration: underline; text-underline-offset: 2px; }
+.cta { margin-top: 30px; padding: 22px; border-radius: 14px; background: var(--black); color: #fff; }
+.cta h3 { font-size: 18px; color: inherit; }
+.cta p { margin-top: 6px; font-size: 13.5px; opacity: .8; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 700; text-decoration: none; }
+.btn.primary { background: #fff; color: var(--black); }
+.btn.primary:hover { background: var(--red); color: #fff; }
+.btn.ghost { border: 1px solid rgba(255, 255, 255, .4); color: #fff; }
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--black); color: #fff; padding: 9px 16px; border-radius: 999px; font-size: 13px; z-index: 50; }
+
+@media (max-width: 860px) {
+  .hero-in { grid-template-columns: 1fr; gap: 22px; }
+}
+@media (max-width: 560px) {
+  .wrap { padding-inline: 16px; }
+  .hero-in { padding: 30px 16px 24px; }
+  .facts { gap: 18px; }
+  .grid { grid-template-columns: 1fr; }
+  .quick { grid-template-columns: 1fr 1fr; }
+  .skill-row, .entry div { grid-template-columns: 1fr; gap: 4px; }
+  .sal-row, .sal-axis { grid-template-columns: 44px 1fr 100px; gap: 8px; }
+  .d-body { padding: 22px 18px 36px; }
+  .d-body h2.name { font-size: 23px; }
+  .ai-box { grid-template-columns: 1fr; }
+}
+</style>
+
+/*__NAV__*/
+
+<section class="hero">
+  <div class="hero-in">
+    <div>
+      <h1><span class="light">채용공고엔 안 나오는</span><span class="strong">그 직무의 진짜 모습, 직무사전 😎</span></h1>
+      <p class="lede">취업조로가 <b>현직자 인터뷰·자료 <span id="ledeSources">0</span>건</b>을 바탕으로, 상담실에서 설명하는 말투 그대로 정리했습니다. 하는 일, 하루 일과, 들어가는 길, 연봉대, 옮겨갈 수 있는 직무, 현직자가 말하는 현실까지 한 장에서 봅니다.</p>
+      <form class="search" role="search" id="searchForm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="직무명, 역량, 도구, 업종으로 검색" autocomplete="off" aria-label="직무 검색">
+        <button type="button" id="clearQ" hidden>지우기</button>
+      </form>
+      <dl class="facts">
+        <div><dt>직무</dt><dd id="factJobs">0</dd></div>
+        <div><dt>직군</dt><dd id="factGroups">0</dd></div>
+        <div><dt>현직자 인터뷰·자료</dt><dd id="factSources">0</dd></div>
+        <div><dt>기준</dt><dd id="factDate"></dd></div>
+      </dl>
+    </div>
+    <aside class="hero-side">
+      <p class="t">이렇게 보세요</p>
+      <p class="h">내 상황에 맞는 직무를 <em>3분</em>이면 고릅니다</p>
+      <ul>
+        <li>문과·사무직 / 이공계·기술직 탭으로 시작</li>
+        <li>직군을 고르고 카드를 누르면 상세가 열립니다</li>
+        <li>'옮겨갈 수 있는 직무'로 이직 경로를 이어서 봅니다</li>
+        <li>직무 링크를 복사해 상담 때 함께 봅니다</li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<main class="wrap">
+  <div class="section-head">
+    <h2>나에게 맞는 <b>직군</b>을 선택하세요 👇</h2>
+    <p>카드의 빨간 배지는 그 직무 설명의 근거가 된 현직자 자료 수입니다.</p>
+  </div>
+  <div class="tracks" id="tracks"></div>
+  <section class="controls" aria-label="직군 필터" id="chips"></section>
+  <div class="toggles">
+    <button class="toggle" id="tNonmajor" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>비전공 입문 가능</button>
+    <button class="toggle" id="tAiLow" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>AI 영향 낮은 직무만</button>
+    <button class="toggle" id="tSourced" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>현직자 인터뷰가 있는 직무만</button>
+  </div>
+  <p class="count" id="count"></p>
+  <section class="grid" id="grid" aria-live="polite"></section>
+  <div class="empty" id="empty" hidden><b>맞는 직무가 없습니다</b>검색어를 줄이거나 필터를 풀어 보세요.</div>
+</main>
+
+/*__FOOTER__*/
+/*__FAB__*/
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dName" hidden>
+  <div class="d-head">
+    <span class="group" id="dGroup"></span>
+    <div class="d-actions">
+      <button class="icon-btn" id="copyLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>링크 복사</button>
+      <button class="icon-btn" id="closeDrawer" type="button" aria-label="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>닫기</button>
+    </div>
+  </div>
+  <div class="d-body" id="dBody"></div>
+</aside>
+
+<script id="jobs-data" type="application/json">/*__JOBS_JSON__*/</script>
+<script>
+(function () {
+  var DATA = JSON.parse(document.getElementById('jobs-data').textContent);
+  var JOBS = DATA.jobs, META = DATA.meta;
+  var byId = {}; JOBS.forEach(function (j) { byId[j.id] = j; });
+  var TRACKS = META.tracks || [];
+  var GROUPS = META.groups.filter(function (g) { return JOBS.some(function (j) { return j.group === g.id; }); });
+  var GNAME = {}, GTRACK = {}; META.groups.forEach(function (g) { GNAME[g.id] = g.name; GTRACK[g.id] = g.track; });
+  function gname(id) { return GNAME[id] || id; }
+  function srcCount(j) { return (j.sources && j.sources.count) || 0; }
+  function pubCount(j) { return (j.sources && j.sources.public) || 0; }
+  function evidence(j) { return srcCount(j) + pubCount(j); }
+
+  var I = {
+    tasks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
+    skills: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>',
+    entry: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3h6v18h-6"/><path d="M3 12h11"/><path d="m10 8 4 4-4 4"/></svg>',
+    path: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h5v-5h5v-5h5V5h3"/></svg>',
+    salary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m7 8 2 8 3-6 3 6 2-8M7 12h10"/></svg>',
+    trans: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11l-3-3M20 17H9l3 3"/></svg>',
+    interview: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+    fit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 14 0"/><path d="m16 11 2 2 4-4"/></svg>',
+    ai: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg>',
+    certs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="m8.5 13.5-1.5 7 5-2.5 5 2.5-1.5-7"/></svg>',
+    quote: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h5v5H8v3H6v-6a2 2 0 0 1 1-2zM15 7h5v5h-4v3h-2v-6a2 2 0 0 1 1-2z"/></svg>',
+    arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>'
+  };
+  var AI_LABEL = { 1: '영향 낮음', 2: '영향 보통', 3: '영향 큼' };
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function fmt(n) { return n.toLocaleString('ko-KR'); }
+  function range(r) { return fmt(r[0]) + '~' + fmt(r[1]); }
+
+  var state = { q: '', track: '전체', group: '전체', nonmajor: false, aiLow: false, sourced: false };
+  var $ = function (id) { return document.getElementById(id); };
+
+  $('factJobs').textContent = JOBS.length;
+  $('factGroups').textContent = GROUPS.length;
+  var nDocs = META.evidenceTotal || JOBS.reduce(function (s, j) { return s + evidence(j); }, 0);
+  $('factSources').textContent = nDocs.toLocaleString('ko-KR') + '건';
+  $('ledeSources').textContent = nDocs.toLocaleString('ko-KR');
+  $('factDate').textContent = META.updated.slice(0, 7).replace('-', '.');
+
+  function visibleGroups() { return GROUPS.filter(function (g) { return state.track === '전체' || g.track === state.track; }); }
+  function renderTracks() {
+    var h = '<button class="track" data-t="전체" aria-pressed="' + (state.track === '전체') + '">전체<span class="n">' + JOBS.length + '</span></button>';
+    TRACKS.forEach(function (t) {
+      var n = JOBS.filter(function (j) { return GTRACK[j.group] === t.id; }).length;
+      h += '<button class="track" data-t="' + esc(t.id) + '" aria-pressed="' + (state.track === t.id) + '">' + esc(t.name) + '<span class="n">' + n + '</span></button>';
+    });
+    $('tracks').innerHTML = h;
+  }
+  function renderGroupControls() {
+    var chips = '<button class="chip" data-g="전체" aria-pressed="' + (state.group === '전체') + '">전체 직군</button>';
+    visibleGroups().forEach(function (g) {
+      var n = JOBS.filter(function (j) { return j.group === g.id; }).length;
+      chips += '<button class="chip" data-g="' + esc(g.id) + '" aria-pressed="' + (state.group === g.id) + '">' + esc(g.name) + '<span class="n">' + n + '</span></button>';
+    });
+    $('chips').innerHTML = chips;
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-t]');
+    if (t) { state.track = t.getAttribute('data-t'); state.group = '전체'; renderTracks(); renderGroupControls(); renderGrid(); return; }
+    var b = e.target.closest('[data-g]');
+    if (b) { state.group = b.getAttribute('data-g'); renderGroupControls(); renderGrid(); }
+  });
+  function bindToggle(id, key) {
+    $(id).addEventListener('click', function () { state[key] = !state[key]; this.setAttribute('aria-pressed', String(state[key])); renderGrid(); });
+  }
+  bindToggle('tNonmajor', 'nonmajor'); bindToggle('tAiLow', 'aiLow'); bindToggle('tSourced', 'sourced');
+
+  $('q').addEventListener('input', function () { state.q = this.value.trim(); $('clearQ').hidden = !state.q; renderGrid(); });
+  $('searchForm').addEventListener('submit', function (e) { e.preventDefault(); });
+  $('clearQ').addEventListener('click', function () { $('q').value = ''; state.q = ''; this.hidden = true; renderGrid(); $('q').focus(); });
+
+  function haystack(j) {
+    var inds = (j.sources && j.sources.industries || []).join(' ');
+    return [j.name, j.en, gname(j.group), j.tagline, j.summary, j.skills.hard.join(' '), j.skills.soft.join(' '), j.tools.join(' '), j.certs.join(' '), inds].join(' ').toLowerCase();
+  }
+  function filtered() {
+    var q = state.q.toLowerCase();
+    return JOBS.filter(function (j) {
+      if (state.track !== '전체' && GTRACK[j.group] !== state.track) return false;
+      if (state.group !== '전체' && j.group !== state.group) return false;
+      if (state.nonmajor && !j.nonmajorOk) return false;
+      if (state.aiLow && j.ai.level > 1) return false;
+      if (state.sourced && srcCount(j) === 0) return false;
+      if (q && haystack(j).indexOf(q) < 0) return false;
+      return true;
+    });
+  }
+  function evBadge(j, cls) {
+    var n = evidence(j);
+    if (!n) return '<span class="badge gray">초안</span>';
+    return '<span class="badge ' + (cls || '') + '">현직자 자료 ' + n + '건</span>';
+  }
+  function card(j) {
+    return '<article class="card" data-id="' + j.id + '" tabindex="0" role="button" aria-label="' + esc(j.name) + ' 자세히 보기">' +
+      '<div class="card-top"><span class="group">' + esc(gname(j.group)) + '</span>' +
+      '<span class="ai l' + j.ai.level + '" title="AI ' + AI_LABEL[j.ai.level] + '"><i><b></b><b></b><b></b></i>AI ' + AI_LABEL[j.ai.level] + '</span></div>' +
+      '<h3>' + esc(j.name) + '</h3><p class="en">' + esc(j.en) + '</p>' +
+      '<p class="tagline">' + esc(j.tagline) + '</p>' +
+      '<ul class="tags">' + j.skills.hard.slice(0, 3).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
+      '<div class="card-foot">' + evBadge(j) + '<span class="pay">신입 <b>' + range(j.salary.junior) + '</b>만원</span></div>' +
+      '</article>';
+  }
+  function renderGrid() {
+    var list = filtered();
+    $('grid').innerHTML = list.map(card).join('');
+    $('empty').hidden = list.length > 0;
+    var label = state.group === '전체' ? (state.track === '전체' ? '전체' : (TRACKS.filter(function (t) { return t.id === state.track; })[0] || {}).name) : gname(state.group);
+    $('count').innerHTML = '<b>' + esc(label) + '</b> ' + list.length + '개 직무' + (state.q ? ' · "' + esc(state.q) + '" 검색' : '');
+  }
+  $('grid').addEventListener('click', function (e) { var c = e.target.closest('.card'); if (c) openJob(c.getAttribute('data-id')); });
+  $('grid').addEventListener('keydown', function (e) { var c = e.target.closest('.card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openJob(c.getAttribute('data-id')); } });
+
+  var SAL_MIN = 2500, SAL_MAX = 18000;
+  function pct(v) { return ((v - SAL_MIN) / (SAL_MAX - SAL_MIN) * 100).toFixed(1); }
+  function salBar(r) { return '<div class="bar"><i style="left:' + pct(r[0]) + '%;width:' + ((r[1] - r[0]) / (SAL_MAX - SAL_MIN) * 100).toFixed(1) + '%"></i></div>'; }
+  function sec(icon, title, body, hint) { return '<section class="sec"><div class="sec-h"><span class="ic">' + I[icon] + '</span><h3>' + title + '</h3>' + (hint ? '<span class="hint">' + hint + '</span>' : '') + '</div>' + body + '</section>'; }
+  function li(arr, cls) { return '<ul class="list ' + (cls || '') + '">' + arr.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>'; }
+  function tags(arr, cls) { return '<ul class="tags ' + (cls || '') + '">' + arr.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>'; }
+
+  var lastFocus = null, current = null;
+  function detail(j) {
+    var h = '';
+    h += '<h2 class="name" id="dName">' + esc(j.name) + '</h2><p class="en">' + esc(j.en) + '</p>';
+    h += '<p class="tagline">' + esc(j.tagline) + '</p><p class="summary">' + esc(j.summary) + '</p>';
+    h += '<dl class="quick"><div><dt>신입 연봉대</dt><dd class="num">' + range(j.salary.junior) + '만원</dd></div>' +
+      '<div><dt>비전공 입문</dt><dd>' + (j.nonmajorOk ? '가능' : '어려운 편') + '</dd></div>' +
+      '<div><dt>AI 영향</dt><dd>' + AI_LABEL[j.ai.level] + '</dd></div>' +
+      '<div><dt>근거 자료</dt><dd>' + (evidence(j) ? evidence(j) + '건' : '초안') + '</dd></div></dl>';
+    if (j.dayInLife) h += '<div class="day"><b>하루는 이렇게 흘러갑니다</b>' + esc(j.dayInLife) + '</div>';
+    h += sec('tasks', '하는 일', li(j.tasks));
+    if (j.realities && j.realities.length) h += sec('interview', '현직자가 말하는 현실', li(j.realities, 'mark'));
+    if (j.voices && j.voices.length) h += sec('quote', '현직자의 말', '<div class="voices">' + j.voices.map(function (v) {
+      var tag = v.source === 'public' ? '<span class="badge gray">공개 인터뷰</span>' : '<span class="badge soft">취업조로 인터뷰</span>';
+      return '<blockquote>' + esc(v.quote) + '<cite>' + esc(v.who || '현직자') + tag + '</cite></blockquote>';
+    }).join('') + '</div>');
+    h += sec('skills', '필요한 역량', '<div class="skill-row"><span class="k">하드 스킬</span>' + tags(j.skills.hard, 'big accent') + '</div>' +
+      '<div class="skill-row"><span class="k">소프트 스킬</span>' + tags(j.skills.soft, 'big') + '</div>' +
+      '<div class="skill-row"><span class="k">자주 쓰는 도구</span>' + tags(j.tools, 'big') + '</div>');
+    h += sec('entry', '들어가는 길', '<div class="entry">' +
+      '<div><span class="k">관련 전공·신입</span><span class="v">' + esc(j.entry.major) + '</span></div>' +
+      '<div><span class="k">비전공' + (j.nonmajorOk ? '<span class="ok">가능</span>' : '') + '</span><span class="v">' + esc(j.entry.nonmajor) + '</span></div>' +
+      '<div><span class="k">경력 전환</span><span class="v">' + esc(j.entry.switch) + '</span></div></div>');
+    h += sec('path', '커리어 패스', '<ol class="path">' + j.path.map(function (p) { return '<li><div class="stage">' + esc(p.stage) + '</div><div class="desc">' + esc(p.desc) + '</div></li>'; }).join('') + '</ol>');
+    h += sec('salary', '연봉대', '<div class="sal">' +
+      '<div class="sal-row"><span class="k">신입</span>' + salBar(j.salary.junior) + '<span class="v">' + range(j.salary.junior) + '</span></div>' +
+      '<div class="sal-row"><span class="k">미들</span>' + salBar(j.salary.mid) + '<span class="v">' + range(j.salary.mid) + '</span></div>' +
+      '<div class="sal-row"><span class="k">시니어</span>' + salBar(j.salary.senior) + '<span class="v">' + range(j.salary.senior) + '</span></div>' +
+      '<div class="sal-axis"><span></span><div><span style="left:' + pct(5000) + '%">5,000</span><span style="left:' + pct(10000) + '%">10,000</span><span style="left:' + pct(15000) + '%">15,000</span></div><span></span></div>' +
+      '</div><p class="note">단위 만원, 세전 기본급 기준 추정치. 산업·기업 규모·인센티브에 따라 범위를 벗어나는 경우가 흔합니다.</p>', '만원 · 추정');
+    h += sec('trans', '옮겨갈 수 있는 직무', '<div class="trans">' + j.transitions.filter(function (id) { return byId[id]; }).map(function (id) {
+      return '<button type="button" data-open="' + id + '">' + esc(byId[id].name) + I.arrow + '</button>';
+    }).join('') + '</div>');
+    h += sec('interview', '면접에서 꼭 묻는 것', li(j.interview, 'mark'));
+    if (j.prep && j.prep.length) h += sec('certs', '현직자가 권하는 준비', li(j.prep));
+    h += sec('fit', '이런 분에게 맞습니다', li(j.fit));
+    h += sec('ai', 'AI가 이 직무를 바꾸는 방식', '<div class="ai-box"><span class="lvl l' + j.ai.level + '">' + AI_LABEL[j.ai.level] + '</span><p>' + esc(j.ai.note) + '</p></div>');
+    h += sec('certs', '도움이 되는 자격·학습', tags(j.certs, 'big'));
+    var inds = (j.sources && j.sources.industries || []).slice(0, 12);
+    var ws = j.webSources || [];
+    h += '<div class="src"><b>근거 자료</b> ' +
+      (srcCount(j) ? '취업조로 현직자 직무 인터뷰 ' + srcCount(j) + '건 (' + esc(j.sources.years || '2020~2026') + ')' : '') +
+      (srcCount(j) && pubCount(j) ? ' + ' : '') + (pubCount(j) ? '공개 현직자 인터뷰·직무 자료 ' + pubCount(j) + '건' : '') +
+      (!evidence(j) ? '현직자 자료 수집 전 초안입니다. 검수 후 보강 예정.' : '') +
+      (inds.length ? '<br><b>인터뷰 현직자 업종</b> ' + esc(inds.join(', ')) : '') +
+      (ws.length ? '<ul>' + ws.slice(0, 8).map(function (w) { return '<li><a href="' + esc(w.url) + '" target="_blank" rel="noopener">' + esc(w.title) + '</a></li>'; }).join('') + '</ul>' : '') +
+      '</div>';
+    h += '<div class="cta"><h3>이 직무로 취업·이직을 고민 중이라면</h3><p>지금 경력에서 이 직무로 가는 가장 빠른 경로를 취업조로 컨설턴트가 1:1로 정리해 드립니다.</p>' +
+      '<div class="cta-row"><a class="btn primary" href="apply/index.html#' + j.id + '">무료 상담 신청하기 ⚡</a><button class="btn ghost" type="button" data-copy="1">이 직무 링크 복사</button></div></div>';
+    return h;
+  }
+
+  function openJob(id, fromHash) {
+    var j = byId[id]; if (!j) return;
+    current = id;
+    if (!fromHash) lastFocus = document.activeElement;
+    $('dGroup').textContent = gname(j.group);
+    $('dBody').innerHTML = detail(j);
+    $('dBody').scrollTop = 0;
+    $('scrim').hidden = false;
+    var d = $('drawer'); d.hidden = false; d.classList.remove('anim'); void d.offsetWidth; d.classList.add('anim');
+    document.body.style.overflow = 'hidden';
+    if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+    $('closeDrawer').focus();
+  }
+  function closeDrawer() {
+    $('drawer').hidden = true; $('scrim').hidden = true; current = null;
+    document.body.style.overflow = '';
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  $('closeDrawer').addEventListener('click', closeDrawer);
+  $('scrim').addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && current) closeDrawer(); });
+  $('dBody').addEventListener('click', function (e) {
+    var o = e.target.closest('[data-open]'); if (o) { openJob(o.getAttribute('data-open')); return; }
+    if (e.target.closest('[data-copy]')) copyLink();
+  });
+  $('copyLink').addEventListener('click', copyLink);
+  function toast(msg) { var t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 1800); }
+  function copyLink() {
+    var url = location.href.split('#')[0] + '#' + current;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { toast('링크를 복사했습니다'); }, function () { toast('복사가 막혀 있습니다. 주소창의 주소를 복사해 주세요'); });
+    } else { toast('복사가 막혀 있습니다. 주소창의 주소를 복사해 주세요'); }
+  }
+  window.addEventListener('hashchange', function () { var id = location.hash.slice(1); if (id && byId[id]) openJob(id, true); else if (!id && current) closeDrawer(); });
+
+  renderTracks(); renderGroupControls(); renderGrid();
+  var initial = location.hash.slice(1);
+  if (initial && byId[initial]) openJob(initial, true);
+})();
+</script>
