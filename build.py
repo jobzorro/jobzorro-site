@@ -2,7 +2,8 @@
 세 페이지짜리 정적 사이트를 만든다 (취업조로 스타일, 공용 상단 탭·푸터).
 
   site/index.html        직무사전   <- data/jobs.json + template.html
-  site/news/index.html   취업뉴스   <- ../news-collector/site/index.html 에 상단 탭만 끼워 넣음
+  site/news/index.html   취업뉴스   <- news-collector/site/index.html 에 상단 탭만 끼워 넣음
+                                    (news-collector/collect_news.py → build_site.py 로 먼저 만든다)
   site/zorro/index.html  취업조로와 함께하기 <- template_zorro.html
 
 사용법:
@@ -23,8 +24,8 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 
 BASE = Path(__file__).parent
 ASSETS = BASE / "assets"
-NEWS_SRC = BASE.parent / "news-collector" / "site" / "index.html"
-# GitHub Actions 등 뉴스 수집기 폴더가 없는 환경에서는 배포된 뉴스 페이지를 내려받아 쓴다
+NEWS_SRC = BASE / "news-collector" / "site" / "index.html"
+# 뉴스 수집기 결과물이 없을 때 배포된 뉴스 페이지를 내려받아 쓰는 비상용 (Actions 워크플로가 첫 실행 때만 사용)
 NEWS_URL = os.environ.get("NEWS_URL", "")  # 예: https://jobzorro.github.io/career-briefing/
 NEWS_ASSET_NAMES = ["logo.png", "logo-dark.png", "teamzorro.png", "mark.png", "favicon-32.png", "favicon-180.png"]
 

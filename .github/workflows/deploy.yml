@@ -1,6 +1,11 @@
-# 취업조로 사이트(직무사전 · 취업뉴스 · 함께하기 · 상담 신청)를 GitHub Pages에 올린다.
-#   push(main) → 즉시 / 매일 아침 09:20 KST → 뉴스 페이지 갱신 반영 / Actions 탭 "Run workflow" → 수동
-# 취업뉴스 탭은 career-briefing 저장소가 배포한 페이지를 내려받아 공용 탭만 끼워 넣는다.
+# 취업조로 사이트(직무사전 · 취업뉴스 · 함께하기 · 상담 신청)를 한 번에 만들어 GitHub Pages에 올린다.
+#
+#   예약(아침 07:52 · 08:22 · 08:52 KST) : news-collector 로 뉴스 수집 + AI 브리핑 → archive 커밋 → 사이트 전체 빌드 → 배포
+#       (GitHub 예약 실행은 '최선 노력'이라 빠지는 날이 있어 세 번 걸어 두고, 오늘 지면이 이미 있으면 뒤 실행은 건너뛴다)
+#   push(main)                           : 뉴스는 다시 수집하지 않고(캐시된 오늘 지면 재사용) 사이트만 다시 빌드 → 배포
+#   Actions 탭 "Run workflow"           : 예약과 같은 동작 (뉴스 수집부터)
+#
+# 비밀값: Settings > Secrets > ANTHROPIC_API_KEY (없으면 AI 브리핑 "Zorro의 한마디"만 빠지고 나머지는 정상)
 
 name: deploy-site
 
@@ -8,48 +13,140 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "20 0 * * *"      # UTC 00:20 = 한국시간 09:20 (뉴스 브리핑이 07:52~08:52 KST에 갱신된 뒤)
+    - cron: "52 22 * * *"    # UTC 22:52 = 한국시간 07:52
+    - cron: "22 23 * * *"    # UTC 23:22 = 한국시간 08:22 (1차 누락 대비)
+    - cron: "52 23 * * *"    # UTC 23:52 = 한국시간 08:52 (2차 누락 대비)
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write            # archive 커밋
   pages: write
   id-token: write
+  issues: write              # 실패 알림 이슈
 
 concurrency:
   group: deploy-site
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
-  NEWS_URL: https://jobzorro.github.io/career-briefing/
+  TZ: Asia/Seoul
   PYTHONIOENCODING: utf-8
+  LEGACY_NEWS_URL: https://jobzorro.github.io/career-briefing/   # 통합 전 뉴스 페이지 (캐시가 없을 때 비상용)
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.guard.outputs.skip }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: 실행 모드 결정 (수집할지 / 건너뛸지)
+        id: guard
+        run: |
+          today="news-collector/archive/$(date +%F).json"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "collect=false" >> "$GITHUB_OUTPUT"; echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "push → 뉴스 재수집 없이 사이트만 빌드"
+          elif [ "${{ github.event_name }}" = "schedule" ] && [ -f "$today" ]; then
+            echo "collect=false" >> "$GITHUB_OUTPUT"; echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "$today 이 이미 있어 이번 예약 실행은 건너뜁니다."
+          else
+            echo "collect=true" >> "$GITHUB_OUTPUT"; echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "뉴스 수집부터 시작"
+          fi
+
       - uses: actions/setup-python@v5
+        if: steps.guard.outputs.skip != 'true'
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: news-collector/requirements.txt
 
-      - name: 의존성 설치 (프로필 사진 축소용 Pillow)
-        run: pip install pillow
+      - run: pip install -r news-collector/requirements.txt
+        if: steps.guard.outputs.skip != 'true'
 
-      - name: 사이트 빌드
+      # ---- 뉴스 ----
+      - name: 뉴스 수집 + AI 브리핑
+        if: steps.guard.outputs.collect == 'true'
+        working-directory: news-collector
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python collect_news.py
+
+      - name: 오늘 지면(news_data.json) 캐시에 저장 (push 빌드가 재사용)
+        if: steps.guard.outputs.collect == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: news-collector/news_data.json
+          key: news-data-${{ github.run_id }}
+
+      - name: 캐시된 지면 꺼내기 (push 빌드)
+        if: steps.guard.outputs.collect != 'true' && steps.guard.outputs.skip != 'true'
+        id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: news-collector/news_data.json
+          key: news-data-
+          restore-keys: news-data-
+
+      - name: 캐시가 없으면 비상용 지면 준비 (통합 전 페이지 → 없으면 아카이브)
+        if: steps.guard.outputs.collect != 'true' && steps.guard.outputs.skip != 'true'
+        run: |
+          if [ -f news-collector/news_data.json ]; then
+            echo "캐시된 지면 사용"; exit 0
+          fi
+          if curl -sf "$LEGACY_NEWS_URL" | grep -q 'class="stamp"'; then
+            echo "NEWS_URL=$LEGACY_NEWS_URL" >> "$GITHUB_ENV"
+            echo "SKIP_NEWS_BUILD=1" >> "$GITHUB_ENV"
+            echo "통합 전 뉴스 페이지를 내려받아 사용"
+          else
+            latest=$(ls news-collector/archive/*.json | sort | tail -1)
+            cp "$latest" news-collector/news_data.json
+            echo "아카이브 $latest 로 지면 생성 (썸네일 없음)"
+          fi
+
+      - name: 뉴스 페이지 생성
+        if: steps.guard.outputs.skip != 'true' && env.SKIP_NEWS_BUILD != '1'
+        working-directory: news-collector
+        run: python build_site.py
+
+      - name: 아카이브 커밋 (주간·월간 랭킹과 검색의 원천)
+        if: steps.guard.outputs.collect == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add news-collector/archive
+          git diff --cached --quiet || git commit -m "briefing: $(date +%F)"
+          git push
+
+      # ---- 사이트 전체 ----
+      - name: 사이트 빌드 (직무사전 · 뉴스 탭 · 함께하기 · 상담 신청)
+        if: steps.guard.outputs.skip != 'true'
         run: python build.py
 
       - uses: actions/configure-pages@v5
+        if: steps.guard.outputs.skip != 'true'
         with:
           enablement: true
 
       - uses: actions/upload-pages-artifact@v3
+        if: steps.guard.outputs.skip != 'true'
         with:
           path: site
 
+      - name: 실패 알림
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "사이트 빌드 실패 $(date +%F)" \
+            --body "자동 실행이 실패했습니다. 로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
   deploy:
     needs: build
+    if: needs.build.outputs.skip != 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -1,0 +1,587 @@
+{
+  "title": "CAREER BRIEFING",
+  "date": "2026-10-14",
+  "generated_at": "2026-10-14 13:19",
+  "stats": {
+    "collected": 2179,
+    "deduped": 2052,
+    "recent": 852,
+    "relevant": 130,
+    "published": 21,
+    "feeds": 30,
+    "dead_feeds": []
+  },
+  "sections": [
+    {
+      "key": "hiring",
+      "name": "채용 시즌·공고",
+      "en": "HIRING NOW",
+      "desc": "대기업·계열사·중견·외국계·공기업이 지금 사람을 뽑는 공고와 일정",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "하반기 대기업 채용 막바지…삼성 19개 계열사 이달 GSAT, 11월 면접",
+          "lead": "주요 대기업의 2026년 하반기 신입사원 채용이 서류 접수를 마치고 필기시험과 면접 단계로 넘어가고 있다.",
+          "summary": "삼성은 19개 계열사가 참여한 하반기 공채에서 이달 삼",
+          "url": "https://www.issueon.co.kr/news/articleView.html?idxno=14094",
+          "source": "ISSUE ON (이슈온)",
+          "published": "2026-10-14 12:39",
+          "score": 41,
+          "keywords": [
+            "대기업 채용",
+            "채용 막바지",
+            "GSAT",
+            "채용"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "삼성 19개 계열사가 이달 GSAT를 치르고 11월 면접 단계로 넘어간다.",
+          "ai_why": "서류 붙은 신입이라면 지금은 GSAT 실전 연습과 직무면접 준비에만 집중하세요. 11월 면접까지 시간이 정말 얼마 안 남았거든요?",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "[오늘의 공기업 채용정보] 한국자산관리공사, 2026년도 하반기 체험형 인턴 142명 채용",
+          "lead": "[아웃소싱타임스 김윤철 기자] 한국자산관리공사에서 2026년도 하반기 체험형 인턴을 공개 채용하고 있다.​체험형 인턴 채용 분야 및 인원은 ▲일반(130명) ▲자",
+          "summary": "",
+          "url": "https://www.outsourcing.co.kr/news/articleView.html?idxno=204061",
+          "source": "아웃소싱타임스",
+          "published": "2026-10-14 10:59",
+          "score": 41,
+          "keywords": [
+            "채용정보",
+            "체험형 인턴",
+            "명 채용",
+            "채용"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "한국자산관리공사가 일반 분야 130명 등 하반기 체험형 인턴 142명을 뽑는다.",
+          "ai_why": "금융 공기업을 노리는 신입이라면 지원하세요. 채용전환형은 아니어도 공기업 실무 경험 한 줄이 다음 서류에서 차이를 만듭니다.",
+          "ai_tags": [
+            "재무",
+            "공통"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "코오롱인더스트리, 채용전환형 인턴 모집…19일까지 접수",
+          "lead": "(서울=연합뉴스) 조성흠 기자 = 화학소재 기업 코오롱인더스트리는 제조 부문에서 2026년 채용전환형 인턴 채용을 실시한다고 13일 밝혔다.",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261014039100003",
+          "source": "연합뉴스",
+          "published": "2026-10-14 09:13",
+          "score": 33,
+          "keywords": [
+            "채용전환",
+            "채용",
+            "인턴",
+            "코오롱"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "코오롱인더스트리가 제조 부문 채용전환형 인턴을 19일까지 모집한다.",
+          "ai_why": "제조 기업 커리어를 생각하는 신입은 이번 주 안에 지원하세요. 채용전환형 인턴은 사실상 기간이 긴 최종면접이라고 보시면 됩니다.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "롯데건설, 신입 채용 2배 늘리고 희망퇴직 시행···\"체질 개선·경쟁력 강화 차원\"",
+          "lead": "롯데건설이 신입사원 채용을 99명으로 대폭 확대하며 기존 인력의 희망퇴직을 병행한다.",
+          "summary": "이번 조치는 인력 구조 재편을 통한 조직 효율성과 미래 경쟁력 강화를 목표로 한다. 희망퇴직은 장기근속자를 대상으로 진행되며, 근속연수에 따라 퇴직 위로금이 제공된다. 이를 통해 회사는 인사 적체 해소와 새로운 경영 환경에 대응하려는 방침이다.",
+          "url": "https://www.newsway.co.kr/news/view?ud=2026101216250626738",
+          "source": "뉴스웨이",
+          "published": "2026-10-12 16:37",
+          "score": 23,
+          "keywords": [
+            "신입 채용",
+            "채용",
+            "신입",
+            "롯데"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "롯데건설, 올해 두 번째 희망퇴직 시행… “조직구조 고도화”",
+              "source": "IT조선",
+              "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE0wVnl1a3A1R05GZ05DWDd0ajNQaktwdmZZVkJZYnF6eFFIb0lwQ21rdDJnR1kzTUs3dnpRRFRiY0tvM3cwTHJVbnlsRUlNT0U3UlFSekNrQXhOcnEwV3JwdU53Y3UzZkhQQVNSOGtLU21sU3cy0gF0QVVfeXFMTTBWeXVrcDVHTkZnTkNYN3RqM1BqS3B2ZllWQllicXp4UUhvSXBDbWt0MmdHWTNNSzd2elFEVGJjS28zdzBMclVueWxFSU1PRTdSUVJ6Q2tBeE5ycTBXcnB1TndjdTNmSFBBU1I4a0tTbWxTdzI?oc=5"
+            },
+            {
+              "title": "롯데건설, 올해 두 번째 희망퇴직 받는다…“미래 경쟁력 강화 차원”",
+              "source": "이데일리",
+              "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxPRkp1ZlBDNmctelZyRmt4Ul9aYzBtbG1WbTdvbWJjS0JidjRzYmdubF9oQ0ptNUs1RTlyU2xfOHotNFRkeXRVMzl5Rlc2MnlFYnRRZURhclA1NnNjclhwbGtQUFkxN3V2QXdiWkxXUXB1SDQ3cW5VRDlYdE1GUmFSMQ?oc=5"
+            }
+          ],
+          "ai_line": "롯데건설이 신입 채용을 99명으로 늘리는 동시에 장기근속자 희망퇴직을 병행한다.",
+          "ai_why": "신입에겐 문이 넓어진 건 맞습니다. 다만 같은 해 희망퇴직이 겹친다는 점도 같이 봐야 하니, 지원하되 다른 카드와 함께 쓰세요.",
+          "ai_tags": [
+            "인사",
+            "공통"
+          ]
+        },
+        {
+          "rank": 5,
+          "title": "동서식품, 상반기 채용 확대…새로운 인재 모집",
+          "lead": "",
+          "summary": "",
+          "url": "https://www.todaytimes.co.kr/news/560704",
+          "source": "투데이타임즈",
+          "published": "2026-10-12 15:56",
+          "score": 23,
+          "keywords": [
+            "채용 확대",
+            "상반기 채용",
+            "채용",
+            "모집"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "동서식품이 상반기 채용 규모를 늘려 새로운 인재를 모집한다.",
+          "ai_why": "식품업계 영업·MD를 노리는 신입은 공고 원문부터 확인하세요. 기사 정보가 적으니 직무와 일정은 홈페이지에서 직접 체크하셔야 합니다.",
+          "ai_tags": [
+            "영업",
+            "MD"
+          ]
+        },
+        {
+          "rank": 6,
+          "title": "그렙 AI 역량평가, 은행 신입 채용에서 PT 면접 대신 쓰인다",
+          "lead": "지원자가 AI를 얼마나 잘 다루는지 따로 시험해 뽑는 채용 전형이 늘고 있다.",
+          "summary": "한 시중은행은 하반기 신입 행원 채용에서 기존 프레젠테이션(PT) 면접을 AI 활용 역량 평가로 바꿨다.",
+          "url": "https://platum.kr/archives/296063",
+          "source": "플래텀(Platum)",
+          "published": "2026-10-12 17:19",
+          "score": 20,
+          "keywords": [
+            "신입 채용",
+            "채용",
+            "신입",
+            "은행"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "그렙 AI 역량평가, 시중은행 하반기 신입 행원 채용에 적용",
+              "source": "베타뉴스",
+              "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE5YNEIyNGxzX0w1TkdnWWJDaXlqN0NBVjRhZVNNVlE4T3E5TWlQNXFrb3FMRXY3X3BGVjJDZE1Ob2wwWkJrLVZ1b3JJVGhXSFpsWjJGSzNaUldFRGtibFdlWGNaNWE?oc=5"
+            }
+          ],
+          "ai_line": "한 시중은행이 하반기 신입 행원 채용에서 PT 면접을 AI 활용 역량 평가로 바꿨다.",
+          "ai_why": "은행 준비하는 신입은 AI로 과제를 풀고 그 과정을 설명하는 연습을 지금 시작하세요. 이제는 발표 스킬보다 도구 다루는 과정을 보거든요?",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 7,
+          "title": "한화오션, 원자력 추진 함정 분야 경력직 채용…접수 10월 25일까지",
+          "lead": "한화오션은 원자력 추진 함정 분야 경력 직원을 채용한다고 밝혔다.",
+          "summary": "서류 접수는 10월 25일까지다.이번 채용은 차세대 함정 기술 경쟁력 확보와 미래 해양 방산 시",
+          "url": "https://www.saegeoje.com/news/articleView.html?idxno=309528",
+          "source": "새거제신문",
+          "published": "2026-10-12 10:11",
+          "score": 20,
+          "keywords": [
+            "경력직 채용",
+            "채용",
+            "한화",
+            "접수"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "한화오션, 원자력 추진 함정 분야 경력직 채용",
+              "source": "중소기업신문",
+              "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9QYzZYOEJWUHVQWk5JWnBrdkFSUW1UM0dQMGxjZkNXUTF2TDJrVlpBdzh5NDdydVF3MVVWQWcyTzBRZENmU1BfdDdmU1RHeDBCX1ZJenVKY2RMdGZQMm80RFpiVWhRTTV6enUxcg?oc=5"
+            }
+          ],
+          "ai_line": "한화오션이 원자력 추진 함정 분야 경력직을 10월 25일까지 모집한다.",
+          "ai_why": "방산·조선 기술 경력자라면 재직 중에 조용히 지원해 보세요. 신사업 초기 멤버는 연봉 협상에서 쓸 카드가 생기거든요.",
+          "ai_tags": [
+            "개발"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "moves",
+      "name": "이직·연봉·HR",
+      "en": "MOVES & PAY",
+      "desc": "경력직 수요, 연봉·성과급, 희망퇴직, 평가·승진, 면접과 채용 프로세스의 변화",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "AI·구조조정 불안에 직장인 54% “임금 삭감도 감수”",
+          "lead": "직장인들이 높은 연봉이나 재택근무보다",
+          "summary": "‘고용 안정성’을 더 중요하게 여기는 것으로 나타났다. 인공지능(AI) 확산과 경기 불확실성, 기업들의 구조조정이 이어지면서 안정적인 직장을 지키려는 심리가 강해지고 있는 셈이다...",
+          "url": "https://www.koreadaily.com/article/20261012192003243",
+          "source": "미주중앙일보",
+          "published": "2026-10-13 11:19",
+          "score": 35,
+          "keywords": [
+            "구조조정",
+            "직장인",
+            "직장"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "AI 확산과 구조조정 불안 속에 직장인 54%가 임금 삭감도 감수하겠다고 답했다.",
+          "ai_why": "재직자분들, 불안하다고 연봉을 낮춰 버티기만 하면 협상력도 같이 떨어집니다. 지금 자리는 지키면서 이력서부터 업데이트해 두세요.",
+          "ai_tags": [
+            "공통",
+            "인사"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "\"AI로 쓴 자소서, AI가 걸러낸다\"…AI發 채용시장, 평가 투명성 문제 대두",
+          "lead": "",
+          "summary": "",
+          "url": "https://www.news1.kr/industry/general-industry/6317290",
+          "source": "뉴스1",
+          "published": "2026-10-13 06:15",
+          "score": 29,
+          "keywords": [
+            "자소서",
+            "채용시장",
+            "평가"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "AI로 쓴 자소서를 AI가 걸러내면서 채용 평가의 투명성 문제가 제기되고 있다.",
+          "ai_why": "신입 여러분, AI 초안은 써도 됩니다. 다만 내 경험의 숫자와 장면은 직접 넣으세요. 복붙한 티는 사람보다 AI가 먼저 알아봅니다.",
+          "ai_tags": [
+            "인사",
+            "공통"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "[단독] 건설경기 침체에 롯데건설 또 희망퇴직…올해만 두 번째",
+          "lead": "서울 서초구 잠원동 롯데건설 본사 모습.",
+          "summary": "/ 사진 = 뉴스1 제공 건설경기 침체가 긴 수렁에 빠진 가운데 롯데건설이 올해 두 번째 희망퇴직을 실시한다. 지난 4월에 이어 약 6개월 만에 추가 희망퇴직에 나선 것으로, 수석급은 물론 일정 요건을 충족한 대리급 직원까지 신청 대상이다. 12일 건설업계에 따르면 롯데건설은 이날부터 오는 26일까지 정직원을 대상으로 희망퇴직 신청을 받는다. 롯데건설 관계자는 \"인력구조 재편의 일환\"이라며 건설경기 침체에 따른 경쟁력 제고와 인사적체 해소 등을 희망퇴직 시행 배경으로 제시했다. 구체적인 신청",
+          "url": "https://news.mtn.co.kr/article/2026101215033995281",
+          "source": "MTN 머니투데이방송",
+          "published": "2026-10-12 15:06",
+          "score": 17,
+          "keywords": [
+            "희망퇴직"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "롯데건설이 4월에 이어 6개월 만에 대리급까지 포함한 희망퇴직을 26일까지 받는다.",
+          "ai_why": "롯데건설 재직자라면 위로금만 보고 선퇴사하지 말고, 갈 곳부터 확보한 뒤 판단하세요. 대리급까지 대상이라는 건 재편 폭이 넓다는 뜻입니다.",
+          "ai_tags": [
+            "인사"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "“당연히 줘야 할 돈인데”…반발 부딪힌 홈플러스 희망퇴직",
+          "lead": "[헤럴드경제=김진 기자] 기업회생절차를 밟는 홈플러스에서 희망퇴직과 관련한 내부 반발이 고개 들고 있다.",
+          "summary": "사측이 밀린 임금과 퇴직금만 조건으로 한 ‘위로금 없는’ 희",
+          "url": "https://biz.heraldcorp.com/article/10899186",
+          "source": "헤럴드경제",
+          "published": "2026-10-12 09:56",
+          "score": 17,
+          "keywords": [
+            "희망퇴직"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "회생절차 중인 홈플러스가 위로금 없는 희망퇴직을 추진하며 내부 반발을 사고 있다.",
+          "ai_why": "홈플러스 신규 지원은 회생 결과가 나올 때까지 기다리세요. 재직자라면 위로금 없는 퇴직보다 이직처 확보가 먼저입니다.",
+          "ai_tags": [
+            "MD",
+            "인사"
+          ]
+        },
+        {
+          "rank": 5,
+          "title": "\"재무제표·기술 경쟁력 함께 본다\"…기보·유암코, 구조조정 평가 협력",
+          "lead": "",
+          "summary": "",
+          "url": "https://www.news1.kr/industry/sb-founded/6317691",
+          "source": "뉴스1",
+          "published": "2026-10-13 08:56",
+          "score": 16,
+          "keywords": [
+            "구조조정",
+            "평가"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "기보와 유암코가 재무제표와 기술 경쟁력을 함께 보는 구조조정 평가에 협력한다.",
+          "ai_why": "재무 경력자라면 숫자 분석에 산업·기술 이해를 엮는 역량을 준비하세요. 재무제표만 읽는 분석가는 점점 차별화가 어려워지거든요.",
+          "ai_tags": [
+            "재무"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "company",
+      "name": "기업·산업 레이더",
+      "en": "COMPANY WATCH",
+      "desc": "실적·적자·사업재편·증설·폐점 — 지원해도 되는 회사인지 가르는 신호",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "LGD, 3분기 영업익 흑자전환 '확실'...하지만?",
+          "lead": "LG디스플레이는 지난 3분기 흑자전환에 성공했을까.",
+          "summary": "컨센서스(증권사 추정치)는 긍정적이다.하반기는 애플의 중소형 유기발광다이오드(OLED) 수요가 시장을 견인하는 시기다. LG디스플레이도 상반기에 비해 하반기 실적이 좋다. 이 추세는 올해도 마찬가지일 전망이다. 만족할 만한 성적은 아니다. 메모리반도체 가격 급등 탓에 디스플레이 등 부품 가격 인하 압박이 강화했다. 완제품 판매도 부진하다..14일 업계에 따르면 올 3분기 LG디스플레이 매출액과 영업이익 컨센서스는 각각 6조7100억원과 3200억원 내외다. 매출액은 전년동기대비 한",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156045",
+          "source": "테크M",
+          "published": "2026-10-14 18:29",
+          "score": 38,
+          "keywords": [
+            "영업익",
+            "흑자",
+            "LG"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "LG디스플레이의 3분기 영업이익 컨센서스는 3200억원 내외로 흑자전환이 유력하다.",
+          "ai_why": "LGD 지원자는 흑자전환만 보지 말고 부품 단가 압박 리스크까지 면접에서 말할 수 있게 준비하세요. 그게 회사를 읽는 지원자입니다.",
+          "ai_tags": [
+            "기획",
+            "재무"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "[테크M 이슈] 10조 몸값 CJ올리브영, 상장보다 합병?…이선호 승계 시나리오 주목",
+          "lead": "CJ그룹의 경영 승계 구도에서 CJ올리브영의 존재감이 커지고 있다.",
+          "summary": "K뷰티 열풍으로 기업가치가 급등한 CJ올리브영이 지주사 CJ와 합병할 경우 이재현 회장의 장남 이선호 미래기획그룹장의 지배력 확대에도 중요한 전환점이 될 수 있어서다. 정부의 중복상장 규제 강화로 독자 기업공개(IPO)의 부담이 커지면서 증권가에서는 CJ올리브영의 성장 가치를 지주사에 흡수하는 방안이 유력한 선택지로 거론되고 있다.13일 금융투자업계에 따르면 CJ올리브영의 기업가치는 최근 7조~10조원 수준으로 평가받고 있다. 2022년 IPO를 추진할 당시 시장에",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156048",
+          "source": "테크M",
+          "published": "2026-10-13 23:39",
+          "score": 37,
+          "keywords": [
+            "합병",
+            "상장",
+            "CJ"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "기업가치 7조~10조원으로 평가받는 CJ올리브영의 지주사 합병 가능성이 거론된다.",
+          "ai_why": "올리브영 지원자는 지원하되, 지배구조 변화가 조직 개편으로 이어질 수 있다는 점은 알고 가세요. 면접에서 K뷰티 성장 논리를 말하면 플러스입니다.",
+          "ai_tags": [
+            "MD",
+            "기획"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "ESS 올라탄 K배터리…LG엔솔·삼성SDI 3분기 실적 기대감↑",
+          "lead": "국내 배터리 업계에서 에너지저장장치(ESS)가 실적 개선의 핵심 축으로 부상했다.",
+          "summary": "LG에너지솔루션이 북미 ESS 출하 확대에 힘입어 3분기 분기 최대 매출을 기록한 가운데 삼성SDI도 ESS 성장에 힘입어 시장 기대를 웃도는 실적을 낼 것이란 전망이 나온다. LG에너지솔루션은 3분기 잠정실적으로 매출 9조6434억원, 영업이익 7560억원을 기록했다고 밝혔다. 전년 동기 대비 각각 59.0%, 25.7% 증가했다. 전분기와 비교하면 매출은 27",
+          "url": "https://www.etnews.com/20261012000004",
+          "source": "전자신문",
+          "published": "2026-10-12 08:29",
+          "score": 32,
+          "keywords": [
+            "실적",
+            "배터리",
+            "삼성",
+            "LG"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "LG에너지솔루션이 북미 ESS 출하 확대로 3분기 매출 9조6434억원을 기록했다.",
+          "ai_why": "배터리 업계를 노리는 경력자는 ESS 관련 포지션부터 지원하세요. 실적이 받쳐주는 사업에 채용과 처우의 힘이 실리거든요?",
+          "ai_tags": [
+            "영업",
+            "기획"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "신한금융, 롯데손해보험 7000억원에 인수",
+          "lead": "지분 77%부터 선 인수 당국 승인뒤 잔여지분 인수 손해보험 경쟁력 강화 포석",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/economy/12174345",
+          "source": "매일경제",
+          "published": "2026-10-13 12:55",
+          "score": 29,
+          "keywords": [
+            "인수",
+            "금융",
+            "보험",
+            "롯데"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "신한금융, 6933억에 롯데손보 인수",
+              "source": "서울신문",
+              "url": "https://www.seoul.co.kr/news/newsView.php?id=20261014030003"
+            },
+            {
+              "title": "신한금융, 롯데손보 품는다…6933억원에 지분 77% 인수",
+              "source": "경향신문",
+              "url": "https://www.khan.co.kr/article/202610131529011/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news"
+            },
+            {
+              "title": "신한금융, 6933억에 롯데손보 인수…손보업계 7위로 도약",
+              "source": "한겨레",
+              "url": "https://www.hani.co.kr/arti/economy/finance/1282142.html"
+            }
+          ],
+          "ai_line": "신한금융이 롯데손해보험을 7000억원에 인수하며 지분 77%를 먼저 사들인다.",
+          "ai_why": "롯데손보 재직자는 선퇴사하지 말고 인수 이후 조직 방향을 지켜보며 기다리세요. 금융지주 편입기에는 처우와 직무가 함께 재편될 수 있습니다.",
+          "ai_tags": [
+            "재무",
+            "인사"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "macro",
+      "name": "고용지표·정책",
+      "en": "MACRO",
+      "desc": "통계청 고용동향, 청년고용, 최저임금·실업급여, 노동법 — 시장 전체의 온도",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "청년 고용보험 가입자 5만5천명↓…구직급여 年예산 81% 소진",
+          "lead": "(서울=연합뉴스) 한혜원 기자 = 고용보험 상시 가입자 수가 1년 전보다",
+          "summary": "28만8천명 증가했지만, 모든 연령대 가운데 29세 이하 청년층에서는 ...",
+          "url": "https://www.yna.co.kr/view/AKR20261014084400530",
+          "source": "연합뉴스",
+          "published": "2026-10-14 12:00",
+          "score": 41,
+          "keywords": [
+            "청년 고용",
+            "고용보험",
+            "구직급여",
+            "고용"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "고용보험 60대 늘고 청년 5만5천명↓…구직급여 예산 '빨간불'",
+              "source": "청년일보",
+              "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE9PU3lrOV9xZ1diM0FoWUVRV0x2YTM0QU40ZnIyZ0Fuby1qNzVtcVp1TEc3dFBNejBDUWREc2N0NXd4bldyUUl4d2JhaW5DWnYxTVN2Mk5LWm1WcFRlWGJueURZRVo4ZVU0Tmc?oc=5"
+            }
+          ],
+          "ai_line": "고용보험 가입자는 28만8천명 늘었지만 청년층은 5만5천명 줄었다.",
+          "ai_why": "신입분들, 전체 고용이 늘어도 청년 자리는 줄고 있습니다. 남은 하반기 공채를 놓치지 말고 중고신입 경로까지 함께 준비하세요.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "고용노동부 청년일자리 예산 7조 넘게 투입에도 청년 고용률 하락",
+          "lead": "고용노동부가 막대한 예산을 투입하며 청년일자리 사업을 확대하고 있지만, 실제 청년 고용 지표는 오히려 악화된 것으로 나타났다.",
+          "summary": "국회 기후에너지환경노동위원회 소속",
+          "url": "https://www.atpaju.com/news/articleView.html?idxno=46833",
+          "source": "파주에서신문",
+          "published": "2026-10-13 16:04",
+          "score": 37,
+          "keywords": [
+            "고용률",
+            "청년 고용",
+            "고용노동부",
+            "일자리"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "박정 의원, \"고용노동부 청년일자리 예산 3년간 7조4천억\" 넘게 쓰고도 청년 고용률은 하락!!!",
+              "source": "경기종합뉴스",
+              "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFA0ZFcxeUdNY3ljUXJvRDlQTHBWY3BoVEhteVhzN01jVnhMdFo1ZHpJMURVQjNrYkZ1QXRlS1UtN3ZrbVdoZnVrWFdwZFotYkZIMFU5YUg0QlpTN1QxSzVnX2JZYWU2ZjA3ODdKVEJFcC1HajFw?oc=5"
+            }
+          ],
+          "ai_line": "청년일자리에 7조원 넘는 예산이 투입됐지만 청년 고용률은 오히려 떨어졌다.",
+          "ai_why": "정부 지원사업만 기다리지 마세요. 예산이 늘어도 지표가 나빠졌다는 건, 결국 본인 직무 경험을 쌓는 쪽이 빠르다는 뜻이거든요.",
+          "ai_tags": [
+            "공통"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "future",
+      "name": "커리어의 변화",
+      "en": "CAREER SHIFT",
+      "desc": "AI가 바꾸는 직무, 40대 이후의 생존, 중장년 재이직, N잡과 멀티커리어",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "AI 일자리 대체…IMF ‘청년 우선 우려’",
+          "lead": "",
+          "summary": "",
+          "url": "https://kr.beincrypto.com/ai-taking-jobs-young-workers-imf/",
+          "source": "BeInCrypto",
+          "published": "2026-10-13 21:01",
+          "score": 22,
+          "keywords": [
+            "AI 일자리",
+            "일자리 대체",
+            "AI",
+            "일자리"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "IMF는 AI로 인한 일자리 대체가 청년층에 먼저 닥칠 수 있다고 우려했다.",
+          "ai_why": "신입은 단순 업무보다 판단이 들어가는 직무 경험을 준비하세요. 40대도 예외는 아니니 AI를 보조 도구로 쓰는 법부터 익히셔야 합니다.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "자가용으로 배달 부업…10명 중 8명은 운송보험 없었다",
+          "lead": "10명 중 8명 무보험. 자가용으로 배달 부업하는 분들 요즘 적지 않습니다. 그런데 문제는, 상당수가 배달 중 사고를 보장하는 보험 없이 운행하고 있다는 점입니다.",
+          "summary": "",
+          "url": "https://news.sbs.co.kr/news/endPage.do?news_id=N1008792227&plink=ORI&cooper=RSS",
+          "source": "SBS 뉴스",
+          "published": "2026-10-12 08:19",
+          "score": 20,
+          "keywords": [
+            "부업"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "자가용으로 배달 부업을 하는 사람 10명 중 8명이 운송보험 없이 운행한다.",
+          "ai_why": "부업하는 직장인이라면 보험부터 확인하세요. 사고 한 번이면 부업으로 번 돈보다 잃는 게 더 클 수 있거든요.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "[단독] 승용차로 배달 부업, 80%는 무보험으로 달린다",
+          "lead": "승용차를 활용한 배달 부업 증가로 유상 운송 보험 미가입자가 늘고 있습니다.",
+          "summary": "사고 시 보험금을 받으려 개인 용무로 위장하는 사례가 3년간 9천 건을 넘었습니다. 배달 플랫폼의 보험 가입 확인 의무 부재가 주요 원인으로 지목되며, 제도 개선과 합리적 보험 상품 개발의 필요성이 제기되고 있습니다.",
+          "url": "https://www.chosun.com/national/transport-environment/2026/10/12/EQHB7QMOIRFWHBBHJPGJXFYBR4/",
+          "source": "조선일보",
+          "published": "2026-10-12 05:03",
+          "score": 20,
+          "keywords": [
+            "부업"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "사고 보험금을 받으려 개인 용무로 위장한 사례가 3년간 9천 건을 넘었다.",
+          "ai_why": "부업 소득을 노리는 재직자분들, 위장 청구는 법적 문제로 번질 수 있습니다. 길게 보면 본업 커리어에 투자하는 쪽이 남는 장사예요.",
+          "ai_tags": [
+            "공통"
+          ]
+        }
+      ]
+    }
+  ],
+  "briefing": [
+    "하반기 공채가 GSAT와 면접 단계로 넘어갔거든요? 이제 승부처는 서류가 아니라 필기와 면접 준비입니다.",
+    "롯데건설은 신입을 두 배로 뽑으면서 올해만 두 번째 희망퇴직을 하고, 홈플러스는 위로금 없는 희망퇴직으로 반발이 큽니다. 불안할수록 선퇴사보다 환승 루트부터 확보하세요.",
+    "청년 고용보험 가입자가 줄고 AI가 자소서와 면접 평가까지 들어오는 지금, 오늘은 19일 마감인 코오롱인더스트리 채용전환형 인턴 지원서부터 여세요."
+  ]
+}

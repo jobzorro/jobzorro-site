@@ -5,20 +5,25 @@
 | 경로 | 내용 | 원본 |
 |---|---|---|
 | `index.html` | **직무사전** — 13개 직군 76개 직무. 현직자 인터뷰·공개 자료 기반 | `data/jobs.json` + `template.html` |
-| `news/index.html` | **취업뉴스** — 커리어브리핑(별도 저장소 `career-briefing`이 매일 생성) | 배포 페이지를 내려받아 공용 탭만 삽입 |
+| `news/index.html` | **취업뉴스** — 커리어브리핑. `news-collector/`가 매일 아침 수집·생성 | `news-collector/site/index.html`에 공용 탭만 삽입 |
 | `zorro/index.html` | **취업조로와 함께하기** — 상황별 상담 안내, 프로필, 채널 | `template_zorro.html` |
 | `apply/index.html` | **무료 상담 신청** — 폼 → 구글 시트(Apps Script) | `template_apply.html` + `data/site.json` |
 
 ## 빌드
 
 ```
-pip install pillow
-python build.py                 # ../news-collector/site/index.html 이 있으면 그걸 씀
-NEWS_URL=https://jobzorro.github.io/career-briefing/ python build.py   # 배포된 뉴스 페이지를 내려받아 씀
+pip install -r news-collector/requirements.txt
+(cd news-collector && python collect_news.py && python build_site.py)   # 뉴스 수집 → news-collector/site/index.html
+python build.py                 # 네 페이지 모두 (뉴스 탭은 위 결과물을 씀)
 python build.py --no-news       # 뉴스 탭 없이
 ```
 
-결과는 `site/`. GitHub Actions(`.github/workflows/deploy.yml`)가 push·매일 09:20 KST·수동 실행 때 빌드해 GitHub Pages에 올린다.
+결과는 `site/`. GitHub Actions(`.github/workflows/deploy.yml`) 하나가 전부 처리한다.
+- 매일 아침 07:52·08:22·08:52 KST 예약: 뉴스 수집 + AI 브리핑(`ANTHROPIC_API_KEY` 시크릿) → `news-collector/archive/` 커밋 → 전체 빌드 → 배포. 오늘 지면이 이미 있으면 뒤 예약은 건너뛴다.
+- push: 뉴스는 재수집하지 않고 캐시된 오늘 지면을 재사용해 빌드·배포.
+- 수동(Run workflow): 예약과 동일.
+
+뉴스 수집기 자체 설명은 `news-collector/README.md`. (2026-10-15 이전에는 별도 저장소 `career-briefing`이었고, 그 페이지는 더 이상 갱신되지 않는다.)
 
 ## 데이터
 
