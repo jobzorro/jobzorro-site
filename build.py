@@ -214,12 +214,13 @@ def build(out_dir: Path, with_news: bool) -> None:
 
     # 2-1) 무료 상담 신청 폼: data/site.json 의 formEndpoint(Apps Script 웹앱)로 전송
     site_cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
-    cfg_public = {"formEndpoint": site_cfg.get("formEndpoint", ""), "kakaoChannel": site_cfg.get("kakaoChannel", COMPANY["kakao"])}
+    cfg_public = {"formEndpoint": site_cfg.get("formEndpoint", ""), "kakaoChannel": site_cfg.get("kakaoChannel", COMPANY["kakao"]), "kakaoOpen": site_cfg.get("kakaoOpen", "https://open.kakao.com/me/zorro")}
     job_names = {j["id"]: j["name"] for j in data["jobs"]}
     a = (BASE / "template_apply.html").read_text(encoding="utf-8")
     a = (a.replace("/*__SHARED_CSS__*/", SHARED_CSS)
           .replace("/*__NAV__*/", nav_html(APPLY, "../", logo))
           .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
+          .replace("/*__KAKAO_OPEN__*/", cfg_public["kakaoOpen"])
           .replace("/*__KAKAO__*/", cfg_public["kakaoChannel"])
           .replace("/*__CONFIG__*/", json.dumps(cfg_public, ensure_ascii=False).replace("</", "<\\/"))
           .replace("/*__JOB_NAMES__*/", json.dumps(job_names, ensure_ascii=False).replace("</", "<\\/")))
