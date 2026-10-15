@@ -182,6 +182,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     print(f"직무사전: 직무 {n_jobs}개 · 직군 {len(data['meta']['groups'])}개 · 근거 {n_evidence}건 -> {out_dir / 'index.html'}")
 
     # 2) 취업조로와 함께하기
+    site_cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
     z = (BASE / "template_zorro.html").read_text(encoding="utf-8")
     avatar = ASSETS / "profile.jpg"
     if not avatar.exists() and (ASSETS / "profile_web.jpg").exists():
@@ -213,7 +214,6 @@ def build(out_dir: Path, with_news: bool) -> None:
     print(f"취업조로와 함께하기 -> {out_dir / 'zorro' / 'index.html'}")
 
     # 2-1) 무료 상담 신청 폼: data/site.json 의 formEndpoint(Apps Script 웹앱)로 전송
-    site_cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
     cfg_public = {"formEndpoint": site_cfg.get("formEndpoint", ""), "kakaoOpen": site_cfg.get("kakaoOpen", "https://open.kakao.com/me/zorro")}
     job_names = {j["id"]: j["name"] for j in data["jobs"]}
     a = (BASE / "template_apply.html").read_text(encoding="utf-8")
