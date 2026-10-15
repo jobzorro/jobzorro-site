@@ -51,7 +51,6 @@ COMPANY = {
     "reg": "819-88-02851",
     "addr": "경기도 용인시 기흥구 공세로 150-29, 비01-에이86호(공세동, 테라스가든)",
     "home": "https://jobzorro.kr/",
-    "kakao": "http://pf.kakao.com/_xgyxeeK",
 }
 
 TABS = [("index.html", "직무사전"), ("news/index.html", "취업뉴스"), ("zorro/index.html", "취업조로와 함께하기")]
@@ -203,6 +202,7 @@ def build(out_dir: Path, with_news: bool) -> None:
           .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
           .replace("/*__FAB__*/", fab_html("../"))
           .replace("/*__APPLY__*/", "../" + APPLY)
+          .replace("/*__KAKAO_OPEN__*/", site_cfg.get("kakaoOpen", "https://open.kakao.com/me/zorro"))
           .replace("/*__EVIDENCE__*/", f"{n_evidence:,}")
           .replace("/*__JOBS__*/", str(n_jobs))
           .replace("/*__AVATAR__*/", avatar_html))
@@ -214,14 +214,13 @@ def build(out_dir: Path, with_news: bool) -> None:
 
     # 2-1) 무료 상담 신청 폼: data/site.json 의 formEndpoint(Apps Script 웹앱)로 전송
     site_cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
-    cfg_public = {"formEndpoint": site_cfg.get("formEndpoint", ""), "kakaoChannel": site_cfg.get("kakaoChannel", COMPANY["kakao"]), "kakaoOpen": site_cfg.get("kakaoOpen", "https://open.kakao.com/me/zorro")}
+    cfg_public = {"formEndpoint": site_cfg.get("formEndpoint", ""), "kakaoOpen": site_cfg.get("kakaoOpen", "https://open.kakao.com/me/zorro")}
     job_names = {j["id"]: j["name"] for j in data["jobs"]}
     a = (BASE / "template_apply.html").read_text(encoding="utf-8")
     a = (a.replace("/*__SHARED_CSS__*/", SHARED_CSS)
           .replace("/*__NAV__*/", nav_html(APPLY, "../", logo))
           .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
           .replace("/*__KAKAO_OPEN__*/", cfg_public["kakaoOpen"])
-          .replace("/*__KAKAO__*/", cfg_public["kakaoChannel"])
           .replace("/*__CONFIG__*/", json.dumps(cfg_public, ensure_ascii=False).replace("</", "<\\/"))
           .replace("/*__JOB_NAMES__*/", json.dumps(job_names, ensure_ascii=False).replace("</", "<\\/")))
     (out_dir / "apply").mkdir(exist_ok=True)

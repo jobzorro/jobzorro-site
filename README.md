@@ -24,7 +24,7 @@ python build.py --no-news       # 뉴스 탭 없이
 
 - `data/taxonomy.json` — 직군·직무 체계 (문과·사무직 / 이공계·기술직 트랙)
 - `data/jobs.json` — 직무 본문. **회사명·사람 이름은 넣지 않는다** (업종·연차로만 표기)
-- `data/site.json` — 상담 폼 전송 주소(`formEndpoint`), 카카오톡 채널
+- `data/site.json` — 상담 폼 전송 주소(`formEndpoint`), 카카오톡 오픈프로필(`kakaoOpen`)
 - `assets/` — 로고, 일러스트, 프로필(`profile_web.jpg`)
 
 ## 상담 신청 폼 → 구글 시트

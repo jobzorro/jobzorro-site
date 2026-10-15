@@ -165,8 +165,8 @@ textarea { min-height: 96px; resize: vertical; }
       <div class="done" id="done" hidden>
         <div class="big">😎</div>
         <h2>신청이 접수됐습니다</h2>
-        <p>취업조로가 확인한 뒤 남겨 주신 연락처로 연락드립니다. 급하시면 카카오톡 채널로 바로 말씀해 주세요.</p>
-        <div class="row2"><a class="btn primary" href="/*__KAKAO__*/" target="_blank" rel="noopener">카카오톡 채널 열기</a><a class="btn ghost" href="../index.html">직무사전 둘러보기</a></div>
+        <p>취업조로가 확인한 뒤 남겨 주신 연락처로 연락드립니다. 급하시면 카카오톡 오픈프로필로 바로 말씀해 주세요.</p>
+        <div class="row2"><a class="btn primary" href="/*__KAKAO_OPEN__*/" target="_blank" rel="noopener">카카오톡 오픈프로필 열기</a><a class="btn ghost" href="../index.html">직무사전 둘러보기</a></div>
       </div>
     </section>
 
@@ -211,7 +211,7 @@ textarea { min-height: 96px; resize: vertical; }
 
   if (!CFG.formEndpoint) {
     var n = $('notice'); n.hidden = false;
-    n.textContent = '접수 시스템 연결 전입니다. 지금은 신청 내용이 전송되지 않으니 카카오톡 채널로 보내 주세요. (관리자: data/site.json 의 formEndpoint 를 설정하세요)';
+    n.textContent = '접수 시스템 연결 전입니다. 지금은 신청 내용이 전송되지 않으니 카카오톡 오픈프로필로 보내 주세요. (관리자: data/site.json 의 formEndpoint 를 설정하세요)';
   }
 
   function mark(id, bad) { var f = $('f-' + id); if (!f) return; f.classList.toggle('bad', bad); f.querySelectorAll('input[type=text],input[type=tel],textarea').forEach(function (c) { c.setAttribute('aria-invalid', bad ? 'true' : 'false'); }); }
@@ -245,12 +245,12 @@ textarea { min-height: 96px; resize: vertical; }
     new FormData(form).forEach(function (v, k) { data[k] = String(v).trim(); });
     data.phone = phone(); data.consent = '동의';
     var btn = $('submitBtn'), st = $('status-msg');
-    if (!CFG.formEndpoint) { st.className = 'st bad'; st.textContent = '접수 시스템이 아직 연결되지 않았습니다. 카카오톡 채널로 보내 주세요.'; return; }
+    if (!CFG.formEndpoint) { st.className = 'st bad'; st.textContent = '접수 시스템이 아직 연결되지 않았습니다. 카카오톡 오픈프로필로 보내 주세요.'; return; }
     btn.disabled = true; st.className = 'st'; st.textContent = '보내는 중...';
     // Apps Script 웹앱은 text/plain 본문이면 CORS 사전요청 없이 받는다. 응답은 읽지 않는다(no-cors).
     fetch(CFG.formEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) })
       .then(function () { form.hidden = true; $('notice').hidden = true; $('done').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); })
-      .catch(function () { btn.disabled = false; st.className = 'st bad'; st.textContent = '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡 채널로 보내 주세요.'; });
+      .catch(function () { btn.disabled = false; st.className = 'st bad'; st.textContent = '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡 오픈프로필로 보내 주세요.'; });
   });
 })();
 </script>
