@@ -65,7 +65,10 @@
 .profile li { font-size: 14px; color: var(--fg-soft); padding-left: 14px; position: relative; line-height: 1.55; }
 .profile li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--black); }
 .profile .books { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
-.profile .books span { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg-soft); }
+.profile .books-label { margin-top: 14px; font-size: 12px; font-weight: 900; color: var(--black); letter-spacing: .02em; }
+.profile .books { margin-top: 6px; }
+.profile .books a { font-size: 12.5px; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); color: var(--fg-soft); text-decoration: none; border: 1px solid transparent; }
+.profile .books a:hover { border-color: var(--black); color: var(--black); }
 .channels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .ch { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; text-decoration: none; color: var(--black); text-align: center; }
 .ch:hover { border-color: var(--black); }
@@ -111,11 +114,11 @@
       <h1><span class="light">누가 봐도 뽑고 싶은</span><span class="strong">인재의 비밀, 취업조로 😎</span></h1>
       <p class="lede">취업조로는 <b>재무제표와 보고서로 지원 회사를 뜯어보는 기업분석</b>과 <b>어떤 질문에도 바로 쓰는 생생 면접 스크립트</b>로 합격을 만듭니다. 공장식 컨설팅 대신, 지금 가진 스펙과 상황에서 취업하는 방향을 1:1로 잡아 드립니다.</p>
       <dl class="stats">
-        <div><dt>함께한 합격자</dt><dd>1,132<small>명</small></dd></div>
+        <div><dt>함께한 합격자</dt><dd>1,100<small>+</small></dd></div>
         <div><dt>현직자 인터뷰·자료</dt><dd>/*__EVIDENCE__*/<small>건</small></dd></div>
         <div><dt>직무사전 수록 직무</dt><dd>/*__JOBS__*/<small>개</small></dd></div>
         <div><dt>컨설팅 경력</dt><dd>15<small>년 차</small></dd></div>
-        <div><dt>회사 경력</dt><dd>13<small>년 차</small></dd></div>
+        <div><dt>회사 재직 경력</dt><dd>13<small>년</small></dd></div>
       </dl>
     </div>
     <aside class="hero-card">
@@ -225,12 +228,17 @@
       <p class="role">면접·취업 컨설턴트 / 기업분석·직무교육·경력이직 전문가</p>
       <ul>
         <li>취업·이직 컨설팅 15년 차, 커리어프로젝트 대표 컨설턴트</li>
-        <li>회사 생활 13년 차. 대기업 경영기획팀 재직 (S·K·P 그룹을 거쳐 현재 금융그룹), 현직자라서 채용 현장을 압니다</li>
-        <li>기획인 커뮤니티 '기획인의 방' 창립자, 취업·이직 오픈채팅방 운영</li>
-        <li>기수제 취업 동아리 '청취' 창립 및 컨설팅, 함께한 합격자 1,132명</li>
-        <li>현직자 직무 인터뷰 /*__EVIDENCE__*/건을 모아 직무사전으로 공개</li>
+        <li>대기업 경영기획팀(S·K·P 그룹·금융그룹)에서 13년 재직했던 현직자 출신이라 채용 현장을 압니다</li>
+        <li>기획인 커뮤니티 '기획인의 공간', 인사 '인사이더', 구매 '구매인싸이트' 창립, 취업·이직 오픈채팅방 운영</li>
+        <li>기수제 취업 동아리 '청취' 창립 및 컨설팅</li>
+        <li>현재까지 함께한 합격자 1,100+. 다양한 사례와 상황을 통해 최고의 컨설팅을 제시합니다</li>
       </ul>
-      <div class="books"><span>📘 누가 봐도 뽑고 싶은 이공계 자소서</span><span>📘 수시채용 대비서</span></div>
+      <div class="books-label">저서</div>
+      <div class="books">
+        <a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=292060612" target="_blank" rel="noopener">📘 누가 봐도 뽑고 싶은 이공계 자소서</a>
+        <a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=277019799" target="_blank" rel="noopener">📘 누가 봐도 뽑고 싶은 인문계 자소서</a>
+        <a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=302956728" target="_blank" rel="noopener">📘 수시채용이 두렵지 않은 READY TO 취업</a>
+      </div>
     </div>
   </section>
 
