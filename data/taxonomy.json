@@ -1,110 +1,500 @@
 {
   "tracks": [
-    { "id": "business", "name": "문과·사무직" },
-    { "id": "engineering", "name": "이공계·기술직" }
+    {
+      "id": "business",
+      "name": "문과·사무직"
+    },
+    {
+      "id": "engineering",
+      "name": "이공계·기술직"
+    }
   ],
   "groups": [
-    { "id": "sales", "name": "영업", "track": "business", "jobs": [
-      { "id": "b2b-sales", "name": "B2B 영업 (산업재·기술영업)", "en": "B2B Sales / Account Manager" },
-      { "id": "overseas-sales", "name": "해외영업·상사", "en": "Overseas Sales / Trading" },
-      { "id": "sales-management", "name": "영업관리 (유통·소비재)", "en": "Sales Management / Channel Sales" },
-      { "id": "ecommerce-sales", "name": "이커머스·온라인 영업", "en": "E-commerce Sales" },
-      { "id": "pharma-sales", "name": "제약영업", "en": "Pharmaceutical Sales" },
-      { "id": "saas-sales", "name": "SaaS·IT 솔루션 영업", "en": "SaaS / Solution Sales" },
-      { "id": "technical-sales", "name": "기술영업·FAE (세일즈 엔지니어)", "en": "Technical Sales / Field Application Engineer" }
-    ]},
-    { "id": "marketing", "name": "마케팅·홍보", "track": "business", "jobs": [
-      { "id": "brand-marketer", "name": "브랜드 마케팅", "en": "Brand Marketing" },
-      { "id": "performance-marketer", "name": "퍼포먼스·그로스 마케팅", "en": "Performance / Growth Marketing" },
-      { "id": "content-marketer", "name": "콘텐츠 마케팅", "en": "Content Marketing" },
-      { "id": "pr", "name": "홍보 (PR)", "en": "Public Relations" },
-      { "id": "ad-planner", "name": "광고기획 (AE)·미디어플래닝", "en": "Account Executive / Media Planner" },
-      { "id": "broadcast-pd", "name": "홈쇼핑·방송 PD", "en": "Broadcast Producer" }
-    ]},
-    { "id": "planning", "name": "기획·전략", "track": "business", "jobs": [
-      { "id": "strategy", "name": "전략기획", "en": "Corporate Strategy" },
-      { "id": "biz-planning", "name": "경영기획·경영관리", "en": "Business Planning / Management Control" },
-      { "id": "sales-planning", "name": "영업기획·판매기획", "en": "Sales Planning" },
-      { "id": "consulting", "name": "경영 컨설팅", "en": "Management Consulting" },
-      { "id": "bd", "name": "사업개발·해외사업 (BD)", "en": "Business Development" },
-      { "id": "service-planning", "name": "서비스 기획 (PM/PO)", "en": "Product Manager / Service Planner" },
-      { "id": "it-planning", "name": "IT 기획·시스템 PM", "en": "IT Planning / System PM" }
-    ]},
-    { "id": "support", "name": "경영지원", "track": "business", "jobs": [
-      { "id": "hr", "name": "인사 (HR)", "en": "Human Resources" },
-      { "id": "recruiter", "name": "채용 담당 (리크루터)", "en": "Recruiter / Talent Acquisition" },
-      { "id": "general-affairs", "name": "총무", "en": "General Affairs" },
-      { "id": "finance", "name": "재무·자금", "en": "Finance / Treasury" },
-      { "id": "accounting", "name": "회계·결산·세무", "en": "Accounting / Tax" },
-      { "id": "purchasing", "name": "구매", "en": "Procurement / Sourcing" },
-      { "id": "legal", "name": "법무", "en": "Legal Affairs" },
-      { "id": "esg", "name": "ESG·지속가능경영", "en": "ESG / Sustainability" }
-    ]},
-    { "id": "finance-industry", "name": "금융·부동산", "track": "business", "jobs": [
-      { "id": "bank", "name": "은행원 (금융일반)", "en": "Bank Clerk / Retail Banking" },
-      { "id": "corporate-finance", "name": "기업금융·여신", "en": "Corporate Banking / Credit" },
-      { "id": "risk-management", "name": "리스크관리", "en": "Risk Management" },
-      { "id": "underwriting", "name": "언더라이팅 (보험 심사)", "en": "Underwriting" },
-      { "id": "fund-ops", "name": "자산운용 백오피스·펀드회계", "en": "Fund Operations" },
-      { "id": "real-estate", "name": "부동산 개발·부동산금융", "en": "Real Estate Development / Finance" }
-    ]},
-    { "id": "logistics", "name": "물류·유통·MD", "track": "business", "jobs": [
-      { "id": "forwarding", "name": "포워딩 (국제물류)", "en": "Freight Forwarding" },
-      { "id": "scm", "name": "SCM·수요관리·물류기획", "en": "Supply Chain Management" },
-      { "id": "md", "name": "MD (상품기획·바잉)", "en": "Merchandiser" },
-      { "id": "online-md", "name": "온라인 MD (이커머스·홈쇼핑)", "en": "E-commerce Merchandiser" }
-    ]},
-    { "id": "it-data", "name": "IT·데이터", "track": "engineering", "jobs": [
-      { "id": "sw-dev", "name": "소프트웨어 개발 (SI·인하우스)", "en": "Software Developer" },
-      { "id": "backend", "name": "백엔드 개발", "en": "Backend Developer" },
-      { "id": "frontend", "name": "프론트엔드 개발", "en": "Frontend Developer" },
-      { "id": "data-analyst", "name": "데이터 분석", "en": "Data Analyst" },
-      { "id": "data-engineer", "name": "데이터 엔지니어", "en": "Data Engineer" },
-      { "id": "ai-engineer", "name": "AI 엔지니어·리서처", "en": "AI / ML Engineer, Researcher" },
-      { "id": "qa", "name": "QA 엔지니어 (소프트웨어)", "en": "QA / Test Engineer" },
-      { "id": "ux-designer", "name": "UX/UI 디자이너", "en": "Product Designer" },
-      { "id": "cx", "name": "CX·고객경험", "en": "Customer Experience" }
-    ]},
-    { "id": "rnd", "name": "연구개발 (R&D)", "track": "engineering", "jobs": [
-      { "id": "rnd-chem", "name": "화학·소재 연구개발", "en": "Chemical / Materials R&D" },
-      { "id": "battery-dev", "name": "배터리 셀·소재 개발", "en": "Battery Development Engineer" },
-      { "id": "device-rnd", "name": "반도체·디스플레이 소자 연구개발", "en": "Semiconductor / Display Device R&D" },
-      { "id": "product-dev", "name": "제품개발·하드웨어 R&D (가전·전자)", "en": "Product Development Engineer" },
-      { "id": "rnd-food", "name": "식품 연구개발·메뉴개발", "en": "Food R&D" }
-    ]},
-    { "id": "design-eng", "name": "설계 엔지니어링", "track": "engineering", "jobs": [
-      { "id": "mechanical-design", "name": "기계 설계", "en": "Mechanical Design Engineer" },
-      { "id": "electrical-design", "name": "전기·전장 설계", "en": "Electrical / E&E Design Engineer" },
-      { "id": "circuit-design", "name": "반도체 회로 설계", "en": "Circuit Design Engineer" },
-      { "id": "embedded-sw", "name": "임베디드 SW·펌웨어", "en": "Embedded Software Engineer" },
-      { "id": "robotics-automation", "name": "로봇·자동화·제어", "en": "Robotics / Automation Engineer" },
-      { "id": "plant-design", "name": "화공 공정설계·플랜트 설계", "en": "Process / Plant Design Engineer" }
-    ]},
-    { "id": "manufacturing", "name": "생산·공정", "track": "engineering", "jobs": [
-      { "id": "production-mgmt", "name": "생산관리", "en": "Production Management" },
-      { "id": "production-tech", "name": "생산기술·양산기술", "en": "Manufacturing Engineering" },
-      { "id": "process-tech", "name": "공정기술·공정설계 (반도체·소재)", "en": "Process Engineering" },
-      { "id": "semiconductor-pkg", "name": "반도체 패키징(PKG) 기술", "en": "Semiconductor Packaging Engineer" },
-      { "id": "equipment-eng", "name": "설비·장비 엔지니어", "en": "Equipment Engineer" }
-    ]},
-    { "id": "quality-safety", "name": "품질·안전·환경", "track": "engineering", "jobs": [
-      { "id": "quality", "name": "품질관리·품질보증 (QC/QA)", "en": "Quality Assurance / Control" },
-      { "id": "reliability", "name": "신뢰성·시험평가", "en": "Reliability / Test Engineer" },
-      { "id": "safety", "name": "안전·보건·환경 (EHS)", "en": "EHS / Safety Engineer" },
-      { "id": "environment-eng", "name": "환경 엔지니어 (수처리·대기·폐기물)", "en": "Environmental Engineer" }
-    ]},
-    { "id": "bio-pharma", "name": "바이오·제약", "track": "engineering", "jobs": [
-      { "id": "rnd-bio", "name": "바이오·제약 연구개발", "en": "Bio / Pharma R&D" },
-      { "id": "bio-process", "name": "바이오 공정·CDMO 생산", "en": "Bioprocess / Manufacturing" },
-      { "id": "gmp-qa", "name": "제약 품질보증 (GMP QA/QC)", "en": "Pharmaceutical QA / QC" },
-      { "id": "clinical", "name": "임상 (CRA·임상운영)", "en": "Clinical Research Associate" },
-      { "id": "ra", "name": "인허가 (RA)", "en": "Regulatory Affairs" }
-    ]},
-    { "id": "construction", "name": "건설·플랜트", "track": "engineering", "jobs": [
-      { "id": "construction-mgmt", "name": "건설·전기 시공관리", "en": "Construction / Electrical Site Management" },
-      { "id": "civil-eng", "name": "토목 설계·시공", "en": "Civil Engineer" },
-      { "id": "plant-epc", "name": "플랜트 EPC 엔지니어링", "en": "Plant EPC Engineer" },
-      { "id": "equipment-pm", "name": "설비·플랜트 프로젝트 PM", "en": "Equipment Project Manager" }
-    ]}
+    {
+      "id": "sales",
+      "name": "영업",
+      "track": "business",
+      "jobs": [
+        {
+          "id": "b2b-sales",
+          "name": "B2B 영업 (산업재·기술영업)",
+          "en": "B2B Sales / Account Manager"
+        },
+        {
+          "id": "overseas-sales",
+          "name": "해외영업·상사",
+          "en": "Overseas Sales / Trading"
+        },
+        {
+          "id": "sales-management",
+          "name": "영업관리 (유통·소비재)",
+          "en": "Sales Management / Channel Sales"
+        },
+        {
+          "id": "ecommerce-sales",
+          "name": "이커머스·온라인 영업",
+          "en": "E-commerce Sales"
+        },
+        {
+          "id": "pharma-sales",
+          "name": "제약영업",
+          "en": "Pharmaceutical Sales"
+        },
+        {
+          "id": "saas-sales",
+          "name": "SaaS·IT 솔루션 영업",
+          "en": "SaaS / Solution Sales"
+        },
+        {
+          "id": "technical-sales",
+          "name": "기술영업·FAE (세일즈 엔지니어)",
+          "en": "Technical Sales / Field Application Engineer"
+        },
+        {
+          "id": "trading",
+          "name": "종합상사 트레이딩",
+          "en": "Trading (General Trading Company)"
+        }
+      ]
+    },
+    {
+      "id": "marketing",
+      "name": "마케팅·홍보",
+      "track": "business",
+      "jobs": [
+        {
+          "id": "brand-marketer",
+          "name": "브랜드 마케팅",
+          "en": "Brand Marketing"
+        },
+        {
+          "id": "performance-marketer",
+          "name": "퍼포먼스·그로스 마케팅",
+          "en": "Performance / Growth Marketing"
+        },
+        {
+          "id": "content-marketer",
+          "name": "콘텐츠 마케팅",
+          "en": "Content Marketing"
+        },
+        {
+          "id": "pr",
+          "name": "홍보 (PR)",
+          "en": "Public Relations"
+        },
+        {
+          "id": "ad-planner",
+          "name": "광고기획 (AE)·미디어플래닝",
+          "en": "Account Executive / Media Planner"
+        },
+        {
+          "id": "broadcast-pd",
+          "name": "홈쇼핑·방송 PD",
+          "en": "Broadcast Producer"
+        }
+      ]
+    },
+    {
+      "id": "planning",
+      "name": "기획·전략",
+      "track": "business",
+      "jobs": [
+        {
+          "id": "strategy",
+          "name": "전략기획",
+          "en": "Corporate Strategy"
+        },
+        {
+          "id": "biz-planning",
+          "name": "경영기획·경영관리·경영분석",
+          "en": "Business Planning / Management Control & Analysis"
+        },
+        {
+          "id": "sales-planning",
+          "name": "영업기획·판매기획",
+          "en": "Sales Planning"
+        },
+        {
+          "id": "consulting",
+          "name": "경영 컨설팅",
+          "en": "Management Consulting"
+        },
+        {
+          "id": "bd",
+          "name": "사업개발·해외사업 (BD)",
+          "en": "Business Development"
+        },
+        {
+          "id": "service-planning",
+          "name": "서비스 기획 (PM/PO)",
+          "en": "Product Manager / Service Planner"
+        },
+        {
+          "id": "it-planning",
+          "name": "IT 기획·시스템 PM",
+          "en": "IT Planning / System PM"
+        }
+      ]
+    },
+    {
+      "id": "support",
+      "name": "경영지원",
+      "track": "business",
+      "jobs": [
+        {
+          "id": "hr",
+          "name": "인사 (HR)",
+          "en": "Human Resources"
+        },
+        {
+          "id": "recruiter",
+          "name": "채용 담당 (리크루터)",
+          "en": "Recruiter / Talent Acquisition"
+        },
+        {
+          "id": "general-affairs",
+          "name": "총무",
+          "en": "General Affairs"
+        },
+        {
+          "id": "finance",
+          "name": "재무·자금",
+          "en": "Finance / Treasury"
+        },
+        {
+          "id": "accounting",
+          "name": "회계·결산·세무",
+          "en": "Accounting / Tax"
+        },
+        {
+          "id": "purchasing",
+          "name": "구매",
+          "en": "Procurement / Sourcing"
+        },
+        {
+          "id": "legal",
+          "name": "법무",
+          "en": "Legal Affairs"
+        },
+        {
+          "id": "esg",
+          "name": "ESG·지속가능경영",
+          "en": "ESG / Sustainability"
+        },
+        {
+          "id": "public-admin",
+          "name": "공공기관·공기업 행정",
+          "en": "Public Sector Administration"
+        }
+      ]
+    },
+    {
+      "id": "finance-industry",
+      "name": "금융·부동산",
+      "track": "business",
+      "jobs": [
+        {
+          "id": "bank",
+          "name": "은행원 (금융일반)",
+          "en": "Bank Clerk / Retail Banking"
+        },
+        {
+          "id": "corporate-finance",
+          "name": "기업금융·여신",
+          "en": "Corporate Banking / Credit"
+        },
+        {
+          "id": "risk-management",
+          "name": "리스크관리",
+          "en": "Risk Management"
+        },
+        {
+          "id": "underwriting",
+          "name": "언더라이팅 (보험 심사)",
+          "en": "Underwriting"
+        },
+        {
+          "id": "fund-ops",
+          "name": "자산운용 백오피스·펀드회계",
+          "en": "Fund Operations"
+        },
+        {
+          "id": "real-estate",
+          "name": "부동산 개발·부동산금융",
+          "en": "Real Estate Development / Finance"
+        },
+        {
+          "id": "policy-finance",
+          "name": "정책금융기관 심사",
+          "en": "Policy Finance Institution"
+        }
+      ]
+    },
+    {
+      "id": "logistics",
+      "name": "물류·유통·MD",
+      "track": "business",
+      "jobs": [
+        {
+          "id": "forwarding",
+          "name": "포워딩 (국제물류)",
+          "en": "Freight Forwarding"
+        },
+        {
+          "id": "scm",
+          "name": "SCM·수요관리·물류기획",
+          "en": "Supply Chain Management"
+        },
+        {
+          "id": "md",
+          "name": "MD (상품기획·바잉)",
+          "en": "Merchandiser"
+        },
+        {
+          "id": "online-md",
+          "name": "온라인 MD (이커머스·홈쇼핑)",
+          "en": "E-commerce Merchandiser"
+        }
+      ]
+    },
+    {
+      "id": "it-data",
+      "name": "IT·데이터",
+      "track": "engineering",
+      "jobs": [
+        {
+          "id": "sw-dev",
+          "name": "소프트웨어 개발 (SI·인하우스)",
+          "en": "Software Developer"
+        },
+        {
+          "id": "backend",
+          "name": "백엔드 개발",
+          "en": "Backend Developer"
+        },
+        {
+          "id": "frontend",
+          "name": "프론트엔드 개발",
+          "en": "Frontend Developer"
+        },
+        {
+          "id": "data-analyst",
+          "name": "데이터 분석",
+          "en": "Data Analyst"
+        },
+        {
+          "id": "data-engineer",
+          "name": "데이터 엔지니어",
+          "en": "Data Engineer"
+        },
+        {
+          "id": "ai-engineer",
+          "name": "AI 엔지니어·리서처",
+          "en": "AI / ML Engineer, Researcher"
+        },
+        {
+          "id": "qa",
+          "name": "QA 엔지니어 (소프트웨어)",
+          "en": "QA / Test Engineer"
+        },
+        {
+          "id": "ux-designer",
+          "name": "UX/UI 디자이너",
+          "en": "Product Designer"
+        },
+        {
+          "id": "cx",
+          "name": "CX·고객경험",
+          "en": "Customer Experience"
+        }
+      ]
+    },
+    {
+      "id": "rnd",
+      "name": "연구개발 (R&D)",
+      "track": "engineering",
+      "jobs": [
+        {
+          "id": "rnd-chem",
+          "name": "화학·소재 연구개발",
+          "en": "Chemical / Materials R&D"
+        },
+        {
+          "id": "battery-dev",
+          "name": "배터리 셀·소재 개발",
+          "en": "Battery Development Engineer"
+        },
+        {
+          "id": "device-rnd",
+          "name": "반도체·디스플레이 소자 연구개발",
+          "en": "Semiconductor / Display Device R&D"
+        },
+        {
+          "id": "product-dev",
+          "name": "제품개발·하드웨어 R&D (가전·전자)",
+          "en": "Product Development Engineer"
+        },
+        {
+          "id": "rnd-food",
+          "name": "식품 연구개발·메뉴개발",
+          "en": "Food R&D"
+        }
+      ]
+    },
+    {
+      "id": "design-eng",
+      "name": "설계 엔지니어링",
+      "track": "engineering",
+      "jobs": [
+        {
+          "id": "mechanical-design",
+          "name": "기계 설계",
+          "en": "Mechanical Design Engineer"
+        },
+        {
+          "id": "electrical-design",
+          "name": "전기·전장 설계",
+          "en": "Electrical / E&E Design Engineer"
+        },
+        {
+          "id": "circuit-design",
+          "name": "반도체 회로 설계",
+          "en": "Circuit Design Engineer"
+        },
+        {
+          "id": "embedded-sw",
+          "name": "임베디드 SW·펌웨어",
+          "en": "Embedded Software Engineer"
+        },
+        {
+          "id": "robotics-automation",
+          "name": "로봇·자동화·제어",
+          "en": "Robotics / Automation Engineer"
+        },
+        {
+          "id": "plant-design",
+          "name": "화공 공정설계·플랜트 설계",
+          "en": "Process / Plant Design Engineer"
+        }
+      ]
+    },
+    {
+      "id": "manufacturing",
+      "name": "생산·공정",
+      "track": "engineering",
+      "jobs": [
+        {
+          "id": "production-mgmt",
+          "name": "생산관리",
+          "en": "Production Management"
+        },
+        {
+          "id": "production-tech",
+          "name": "생산기술·양산기술",
+          "en": "Manufacturing Engineering"
+        },
+        {
+          "id": "process-tech",
+          "name": "공정기술·공정설계 (반도체·소재)",
+          "en": "Process Engineering"
+        },
+        {
+          "id": "semiconductor-pkg",
+          "name": "반도체 패키징(PKG) 기술",
+          "en": "Semiconductor Packaging Engineer"
+        },
+        {
+          "id": "equipment-eng",
+          "name": "설비·장비 엔지니어",
+          "en": "Equipment Engineer"
+        }
+      ]
+    },
+    {
+      "id": "quality-safety",
+      "name": "품질·안전·환경",
+      "track": "engineering",
+      "jobs": [
+        {
+          "id": "quality",
+          "name": "품질관리·품질보증 (QC/QA)",
+          "en": "Quality Assurance / Control"
+        },
+        {
+          "id": "reliability",
+          "name": "신뢰성·시험평가",
+          "en": "Reliability / Test Engineer"
+        },
+        {
+          "id": "safety",
+          "name": "안전·보건·환경 (EHS)",
+          "en": "EHS / Safety Engineer"
+        },
+        {
+          "id": "environment-eng",
+          "name": "환경 엔지니어 (수처리·대기·폐기물)",
+          "en": "Environmental Engineer"
+        }
+      ]
+    },
+    {
+      "id": "bio-pharma",
+      "name": "바이오·제약",
+      "track": "engineering",
+      "jobs": [
+        {
+          "id": "rnd-bio",
+          "name": "바이오·제약 연구개발",
+          "en": "Bio / Pharma R&D"
+        },
+        {
+          "id": "bio-process",
+          "name": "바이오 공정·CDMO 생산",
+          "en": "Bioprocess / Manufacturing"
+        },
+        {
+          "id": "gmp-qa",
+          "name": "제약 품질보증 (GMP QA/QC)",
+          "en": "Pharmaceutical QA / QC"
+        },
+        {
+          "id": "clinical",
+          "name": "임상 (CRA·임상운영)",
+          "en": "Clinical Research Associate"
+        },
+        {
+          "id": "ra",
+          "name": "인허가 (RA)",
+          "en": "Regulatory Affairs"
+        }
+      ]
+    },
+    {
+      "id": "construction",
+      "name": "건설·플랜트",
+      "track": "engineering",
+      "jobs": [
+        {
+          "id": "construction-mgmt",
+          "name": "건설·전기 시공관리",
+          "en": "Construction / Electrical Site Management"
+        },
+        {
+          "id": "civil-eng",
+          "name": "토목 설계·시공",
+          "en": "Civil Engineer"
+        },
+        {
+          "id": "plant-epc",
+          "name": "플랜트 EPC 엔지니어링",
+          "en": "Plant EPC Engineer"
+        },
+        {
+          "id": "equipment-pm",
+          "name": "설비·플랜트 프로젝트 PM",
+          "en": "Equipment Project Manager"
+        }
+      ]
+    }
   ]
 }

@@ -158,8 +158,8 @@ def footer_html(root: str, logo: str, note: str) -> str:
     return (
         f'<footer class="zf"><div class="zf-in"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo}" alt="취업조로"></a>'
         f'<div class="zf-links"><a href="{root}index.html">직무사전</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
-        f'<a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a><a href="https://job-zoro.imweb.me/?mode=policy" target="_blank" rel="noopener">이용약관</a>'
-        f'<a href="https://job-zoro.imweb.me/?mode=privacy" target="_blank" rel="noopener">개인정보처리방침</a></div>'
+        f'<a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a>'
+        f'<a href="{root}privacy/index.html">개인정보처리방침</a></div>'
         f'<div class="zf-box"><b>법인명(상호)</b> {c["name"]} &nbsp;·&nbsp; <b>대표자</b> {c["ceo"]} &nbsp;·&nbsp; <b>개인정보보호책임자</b> {c["privacy"]}<br>'
         f'<b>사업자등록번호</b> {c["reg"]}<br><b>주소</b> {c["addr"]}<br>© Copyright 2026 All rights reserved by CAREERPROJECT inc.</div>'
         f'{f"<p class=\"zf-note\">{note}</p>" if note else ""}</div></footer>'
@@ -260,6 +260,17 @@ def build(out_dir: Path, with_news: bool) -> None:
           .replace("/*__JOB_NAMES__*/", json.dumps(job_names, ensure_ascii=False).replace("</", "<\\/")))
     (out_dir / "apply").mkdir(exist_ok=True)
     (out_dir / "apply" / "index.html").write_text(a, encoding="utf-8")
+    # 개인정보처리방침
+    pv = (BASE / "template_privacy.html").read_text(encoding="utf-8")
+    pv = (pv.replace("/*__SHARED_CSS__*/", SHARED_CSS)
+            .replace("/*__NAV__*/", nav_html("privacy/index.html", "../", logo_nav))
+            .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
+            .replace("/*__FAB__*/", fab_html("../"))
+            .replace("/*__KAKAO_OPEN__*/", cfg_public["kakaoOpen"])
+            .replace("/*__ADDR__*/", COMPANY["addr"]))
+    (out_dir / "privacy").mkdir(exist_ok=True)
+    (out_dir / "privacy" / "index.html").write_text(pv, encoding="utf-8")
+    print(f"개인정보처리방침 -> {out_dir / 'privacy' / 'index.html'}")
     print(f"무료 상담 신청 폼 -> {out_dir / 'apply' / 'index.html'} (전송: {cfg_public['formEndpoint'] or '미연결'})")
 
     # 3) 취업뉴스: 뉴스 수집기 결과물에 공용 탭·글꼴만 끼워 넣는다 (뉴스 페이지 자체 스타일은 건드리지 않음)

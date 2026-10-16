@@ -16,6 +16,36 @@ JOB_IDS = {j["id"] for g in TAX["groups"] for j in g["jobs"]}
 
 # 본문 확인 후 확정한 예외 (idx -> job)
 OVERRIDES = {
+    # 2026-10-16 3단계(새 인터뷰 206건) 수동 배정
+    "332": "public-admin",
+    "376": "biz-planning",
+    "383": "general-affairs",
+    "398": "hr",
+    "412": "real-estate",
+    "416": "biz-planning",
+    "427": "data-analyst",
+    "442": "production-mgmt",
+    "453": "sales-management",
+    "462": "b2b-sales",
+    "463": "real-estate",
+    "491": "service-planning",
+    "492": "service-planning",
+    "497": "equipment-pm",
+    "504": "bio-process",
+    "505": "sales-management",
+    "506": "policy-finance",
+    "508": "sales-management",
+    "509": "public-admin",
+    "511": "public-admin",
+    "513": "trading",
+    "516": "bank",
+    "517": "bank",
+    "520": "b2b-sales",
+    "523": "brand-marketer",
+    "527": "sales-management",
+    "207": "trading",
+    "235": "trading",
+    "286": "trading",
     "008": "bd",              # YG 디지털플랫폼 해외사업
     "129": "finance",         # 리멤버 자금
     "130": "accounting",      # 미래아이앤지 재무회계(결산·공시)
