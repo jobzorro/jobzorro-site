@@ -7,3 +7,5 @@ assets/profile.jpg
 assets/참고.jpg
 __pycache__/
 *.pyc
+# 로컬 백업 트리거 로그
+trigger_briefing.log
