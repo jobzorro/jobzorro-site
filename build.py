@@ -238,10 +238,15 @@ def build(out_dir: Path, with_news: bool) -> None:
         src = BASE / "news-collector" / "assets" / name
         if src.exists(): (out_dir / "assets" / name).write_bytes(src.read_bytes())
     og_main = seo.abs_url(base_url, "assets/og.png")
+    # 페이지별 공유 이미지
+    seo.og_image(out_dir / "assets" / "og-news.png", "취업조로의 커리어브리핑", "매일 아침 고른 채용·이직·기업·고용 뉴스와 Zorro의 한마디", "취업뉴스")
+    seo.og_image(out_dir / "assets" / "og-zorro.png", "취업조로와 함께하기", "신입·중고신입·경력이직·선퇴사자 맞춤 컨설팅, 합격자 1,100+", "TEAM ZORRO")
+    seo.og_image(out_dir / "assets" / "og-apply.png", "무료 상담 신청", "취업·이직 고민, 취업조로 컨설턴트와 먼저 이야기해 보세요", "무료 상담")
+    og_news, og_zorro, og_apply = (seo.abs_url(base_url, f"assets/og-{k}.png") for k in ("news", "zorro", "apply"))
     z = (BASE / "template_zorro.html").read_text(encoding="utf-8")
     z = z.replace("/*__SEO__*/", seo.seo_head(base_url, "취업조로와 함께하기 — 신입·중고신입·경력이직·선퇴사자 취업 컨설팅",
         "누가 봐도 뽑고 싶은 인재의 비밀, 취업조로. 컨설팅 15년 차·합격자 1,100명 이상. 신입·중고신입·경력 이직·선퇴사자 맞춤 컨설팅과 무료 상담 신청 방법.",
-        "zorro/", og_main, [seo.person_ld(base_url), seo.org_ld(base_url, COMPANY), seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업조로와 함께하기", "zorro/")])]))
+        "zorro/", og_zorro, [seo.person_ld(base_url), seo.org_ld(base_url, COMPANY), seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업조로와 함께하기", "zorro/")])]))
     avatar = ASSETS / "profile.jpg"
     if not avatar.exists() and (ASSETS / "profile_web.jpg").exists():
         avatar = ASSETS / "profile_web.jpg"  # 원본(5MB)은 저장소에 안 올리고 줄인 파일만 올린다
@@ -275,7 +280,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     cfg_public = {"formEndpoint": site_cfg.get("formEndpoint", ""), "kakaoOpen": site_cfg.get("kakaoOpen", "https://open.kakao.com/me/zorro")}
     job_names = {j["id"]: j["name"] for j in data["jobs"]}
     a = (BASE / "template_apply.html").read_text(encoding="utf-8")
-    a = a.replace("/*__SEO__*/", seo.seo_head(base_url, "무료 상담 신청 — 취업조로", "취업·이직 고민, 취업조로 컨설턴트와 무료로 먼저 이야기해 보세요. 신입·중고신입·경력 이직·선퇴사자 모두 가능.", "apply/", og_main, [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("무료 상담 신청", "apply/")])]))
+    a = a.replace("/*__SEO__*/", seo.seo_head(base_url, "무료 상담 신청 — 취업조로", "취업·이직 고민, 취업조로 컨설턴트와 무료로 먼저 이야기해 보세요. 신입·중고신입·경력 이직·선퇴사자 모두 가능.", "apply/", og_apply, [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("무료 상담 신청", "apply/")])]))
     a = (a.replace("/*__SHARED_CSS__*/", SHARED_CSS)
           .replace("/*__NAV__*/", nav_html(APPLY, "../", logo_nav))
           .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
@@ -349,7 +354,7 @@ def build(out_dir: Path, with_news: bool) -> None:
                     "description": "취업조로가 매일 아침 고르는 채용·이직·기업·고용 뉴스와 한마디", "isPartOf": {"@id": seo.abs_url(base_url, "#website")}, "author": {"@id": seo.abs_url(base_url, "zorro/#person")}}]
         n = re.sub(r'<meta property="og:image" content="assets/favicon-180.png">', '', n, count=1)
         n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&family=Noto+Serif+KR:wght@700&display=swap">'
-                      + f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:image" content="{og_main}"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">' + seo.verify_tags()
+                      + f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:image" content="{og_news}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">' + seo.verify_tags()
                       + "".join(seo.jsonld(o) for o in news_ld) + "</head>", 1)
         (out_dir / "news").mkdir(exist_ok=True)
         (out_dir / "news" / "index.html").write_text(n, encoding="utf-8")
