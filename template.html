@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- 모바일 필수: 이게 없으면 폰이 PC 폭(980px)으로 그린 뒤 축소해서 글자가 깨알같이 보인다 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>취업조로 직무사전</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
@@ -9,7 +15,7 @@
 /* 검색 (히어로 아래) */
 .search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--black); border-radius: 999px; padding: 0 16px; height: 46px; max-width: 640px; margin-top: 22px; box-shadow: var(--shadow); }
 .search svg { width: 18px; height: 18px; color: var(--muted); flex: none; }
-.search input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--black); font: inherit; font-size: 15px; }
+.search input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--black); font: inherit; font-size: 16px; }
 .search input::placeholder { color: var(--muted); }
 .search button { color: var(--muted); font-size: 12.5px; padding: 4px 8px; border-radius: 6px; }
 .search button:hover { color: var(--black); background: var(--surface-2); }
@@ -193,6 +199,8 @@
   .ai-box { grid-template-columns: 1fr; }
 }
 </style>
+</head>
+<body>
 
 /*__NAV__*/
 
@@ -475,3 +483,5 @@
   if (initial && byId[initial]) openJob(initial, true);
 })();
 </script>
+</body>
+</html>
