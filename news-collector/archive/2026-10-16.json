@@ -1,18 +1,17 @@
 {
   "title": "CAREER BRIEFING",
   "date": "2026-10-16",
-  "generated_at": "2026-10-16 09:53",
+  "generated_at": "2026-10-16 11:28",
   "stats": {
-    "collected": 1976,
-    "deduped": 1833,
-    "recent": 746,
-    "fresh": 713,
-    "relevant": 103,
+    "collected": 2074,
+    "deduped": 1950,
+    "recent": 783,
+    "fresh": 747,
+    "relevant": 106,
     "published": 21,
     "feeds": 30,
     "dead_feeds": [
-      "머니투데이 https://rss.mt.co.kr/mt_news.xml",
-      "부업 OR N잡 OR 사이드잡 OR 멀티커리어"
+      "머니투데이 https://rss.mt.co.kr/mt_news.xml"
     ]
   },
   "sections": [
@@ -24,6 +23,24 @@
       "articles": [
         {
           "rank": 1,
+          "title": "에쓰오일, 하반기 생산직 신입사원 채용…21일까지 서류 접수",
+          "lead": "(서울=연합뉴스) 임성호 기자 = 에쓰오일은 오는 21일까지 공식 채용 홈페이지를 통해 올해 하반기 생산직 신입사원 공개채용 지원 서류를 접수한...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261016045100003",
+          "source": "연합뉴스",
+          "published": "2026-10-16 09:47",
+          "score": 42,
+          "keywords": [
+            "서류 접수",
+            "신입사원",
+            "채용",
+            "신입"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
           "title": "[충남소식] 청년정책보좌관 채용에 청년 참여…평가위원 15명 모집",
           "lead": "(홍성=연합뉴스) 충남도는 청년정책보좌관 채용 면접 심사에 참여할 청년평가위원 15명을 모집한다고 16일 밝혔다.",
           "summary": "",
@@ -38,6 +55,22 @@
           ],
           "image": null,
           "related": []
+        },
+        {
+          "rank": 3,
+          "title": "한전KDN, 에너지 ICT 분야 청년·고졸 채용 문호 넓힌다",
+          "lead": "[전남광주=데일리한국 나성주 기자] 에너지 ICT 전문 공기업인 한전KDN이 지역 청년과 고졸 인재의 취업을 지원하기 위해 맞춤형 인재 발굴부터 채용까지 이어지는 지원 체계를 구축한다.한전KDN은 지난 15일 광주청년일자리스테이션(동명)에서 광주청년일자리스테이션 및 광주고용복지플러스센터와 ‘에너지 ICT 분야 우수 인재 양성 및 청년·고졸 채용 활성화를 위한 업무협약’을 맺었다고 16일 밝혔다.이번 협약은 교육 기관과 고용 지원 조직, 공공기관 현장을 하나로 연계해 지역 인재들에게 단순 교육을 넘어 실제 일자리 진입 기회까지 제공하",
+          "summary": "",
+          "url": "https://daily.hankooki.com/news/articleView.html?idxno=1415570",
+          "source": "데일리한국",
+          "published": "2026-10-16 10:29",
+          "score": 14,
+          "keywords": [
+            "채용 문",
+            "채용"
+          ],
+          "image": null,
+          "related": []
         }
       ]
     },
@@ -49,6 +82,22 @@
       "articles": [
         {
           "rank": 1,
+          "title": "유비소프트, 독일 스튜디오서 100명 희망퇴직… 전사 구조조정 가속",
+          "lead": "프랑스 게임사 유비소프트가 독일 내 스튜디오 3곳에서 약 100명 규모의 인력 감축을 추진한다.",
+          "summary": "전사 차원에서 진행 중인 대규모 구조조정 및 비용 절감 방안의 일환이다.15일(현지시각) 게임 파일 등 해외 게임 매체 보도를 종합하면, 유비소프트는 최근 독일 노사협의회와 협의를 시작하고",
+          "url": "https://it.chosun.com/news/articleView.html?idxno=2023092172142",
+          "source": "IT조선",
+          "published": "2026-10-16 10:27",
+          "score": 29,
+          "keywords": [
+            "희망퇴직",
+            "구조조정"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
           "title": "신한카드 올해 두 번째 희망퇴직…인력 구조조정 속도 낸다",
           "lead": "신한카드 올해 두 번째 희망퇴직…인력 구조조정 속도 낸다, 장현주 기자, 경제",
           "summary": "",
@@ -65,7 +114,7 @@
             {
               "title": "신한카드, 올해 두 번째 희망퇴직… 기본급 최대 24개월 치 보상",
               "source": "머니투데이",
-              "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE0yTVk0MFk1RWNQOTVkbXVKU3ZFeVEtcFVQbGdzT2E4ejRMYVJ4UDV2QWcySmxwT3MwRWptNTNwOUMwamNKdF9Ha0lTM2xEenFGeTVNTV94U2ZTenJyak5wQXVBTFlrNWp0d1BF0gFwQVVfeXFMUDBQTzhRQVI4azFoX3gzVnBFZExQZVgzYVE5NUZsQ0E2c2tpRDZGTDY0cTNBOEZxNjVzR18wSmUxMWxkbkxhLUFZY2xVWHpfQnpsVlRYb2FwWEJqNGNielh1ZzRfbXI1dEdUcU93S1pZdg?oc=5"
+              "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTFAwUE84UUFSOGsxaF94M1ZwRWRMUGVYM2FROTVGbENBNnNraUQ2Rkw2NHEzQThGcTY1c0dfMEplMTFsZG5MYS1BWWNsVVh6X0J6bFZUWG9hcFhCajRjYnpYdWc0X21yNXRHVHFPd0taWXbSAXBBVV95cUxQMFBPOFFBUjhrMWhfeDNWcEVkTFBlWDNhUTk1RmxDQTZza2lENkZMNjRxM0E4RnE2NXNHXzBKZTExbGRuTGEtQVljbFVYel9CemxWVFhvYXBYQmo0Y2J6WHVnNF9tcjV0R1RxT3dLWll2?oc=5"
             },
             {
               "title": "사옥까지 매각한 신한카드…2년새 네 번째 희망퇴직",
@@ -80,11 +129,11 @@
           ]
         },
         {
-          "rank": 2,
+          "rank": 3,
           "title": "‘숏폼’에 밀린 넷플릭스… 1000명 구조조정 예고",
           "lead": "최근 구독자 및 시청 시간 정체 등으로 성장 둔화를 겪고 있는 넷플릭스가 전 세계 직원의 약 6%인 1000여 명을 감원할 예정이라고 월스트리트저널(WSJ) 등이 14일(현지 시간) 보도했다.",
           "summary": "넷플릭스는 20일 올 3분기(7∼9월) 실적 발표를 앞두고 있다. 그레그 …",
-          "url": "https://www.donga.com/news/Economy/article/all/20261015/134850656/2",
+          "url": "https://www.donga.com/news/Inter/article/all/20261015/134850656/2",
           "source": "동아일보",
           "published": "2026-10-16 00:30",
           "score": 20,
@@ -95,7 +144,7 @@
           "related": []
         },
         {
-          "rank": 3,
+          "rank": 4,
           "title": "삼전 9% 폭락했는데 “주식 더 받게 10만원까지 떨어져라”…직원 익명글에 주주들 발끈",
           "lead": "삼성전자 주가가 하루 만에 9% 넘게 급락한 가운데, 내년 주식으로 지급될 특별경영성과급을 앞두고 일부 직원으로 추정되는 이용자들이 주가 하락을 바라는 글을 올려 논란이 일고 있다.",
           "summary": "주가가 낮을수록 같은 금액의 성과급으로 더 많은 주식을 받을 수 있다는 계산이 배경에 깔려 있다. 15일 직장인 익명 커뮤니티 블라인드의 삼성전자 게시판에는 “주가 10만원까지 떨어져라”, “주가가 내려가는 게 더 이득이다” 등의 글이 올라왔다. 다만 게시글 작성자",
@@ -114,7 +163,7 @@
           ]
         },
         {
-          "rank": 4,
+          "rank": 5,
           "title": "AI·반도체주 4일간 시총 1조달러 증발…중국발 충격 한국에 집중되나",
           "lead": "금리 인상 우려와 인공지능(AI) 투자 부담 우려, 중국 메모리 업체의 추격 전망이 한꺼번에 겹치면서 세계 AI·반도체주 급락세가 이어지고 있다.",
           "summary": "15일(현지시간) 미국 CNBC 방송에 따르면 세계 시가총액 상위 20개 AI·반도체 종목의 시총은 이번 주(12∼15일) 4거래일 동안 1조달러(약 1340조원) 넘게 증발했다. AI 대장주 엔비디아 주가...",
@@ -129,7 +178,7 @@
           "related": []
         },
         {
-          "rank": 5,
+          "rank": 6,
           "title": "퇴직 위로금도 없는데 \"제가 그만둘게요\"…홈플러스 희망퇴직 조기 마감된 까닭",
           "lead": "기업회생 절차를 밟고 있는 홈플러스가 희망퇴직 신청 접수를 당초 계획보다",
           "summary": "일주일가량 앞당겨 마감했다.",
@@ -141,16 +190,10 @@
             "희망퇴직"
           ],
           "image": null,
-          "related": [
-            {
-              "title": "위로금도 없는데…홈플러스, 희망퇴직 신청 몰려 조기 마감",
-              "source": "마이데일리",
-              "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE9sbm55aFZpR1JiSkZlU0Y2OGI5czRUZFlCS1RtR0RqdF9Sc2hxWWc0WG1oRk52TURwNGswN0N5eHdMSk9YVGhacVYyTXNBWWJDN05SalljNFhCT3BNaktHNw?oc=5"
-            }
-          ]
+          "related": []
         },
         {
-          "rank": 6,
+          "rank": 7,
           "title": "홈플러스, 희망퇴직 접수 조기 마감",
           "lead": "홈플러스가 경영 정상화를 위해 지난 7일 시작한 희망퇴직 접수를 당초보다",
           "summary": "이른 14일에 마감했다. 별도 목표 인원 없이 운영자금 한도 내에서 진행했지만 신청자가 예상보다 많았다. 미지급 급여와 상여금, 퇴직금은 지급되며, 매출 부진과 회생 불확실성이 배경으로 꼽힌다.",
@@ -181,7 +224,7 @@
           ]
         },
         {
-          "rank": 7,
+          "rank": 8,
           "title": "신한카드, 올해 두번째 희망퇴직 실시…근속 15년 이상 대상",
           "lead": "[서울=뉴시스]권안나 기자 = 신한카드가 근속 15년 이상 직원을 대상으로 희망퇴직을 실시한다",
           "summary": "",
@@ -196,7 +239,7 @@
           "related": []
         },
         {
-          "rank": 8,
+          "rank": 9,
           "title": "박창훈號 신한카드, 고인물 다 쳐낸다…취임 후 세 번째 희망퇴직",
           "lead": "박창훈 신한카드 대표가 취임 후 세 번째 희망퇴직을 15일 단행했다.",
           "summary": "/제공=신한카드 신한카드가 박창훈 대표 취임 이후 세 번째로 희망퇴직을 실시한다. 인건비가 높은 고연차 직원을 감축해 회사 전체의 수익성을 높이겠다는 목적에서다. 15일 신한카드는 오는 21일까지 근…",
@@ -207,51 +250,6 @@
           "keywords": [
             "희망퇴직"
           ],
-          "image": null,
-          "related": []
-        },
-        {
-          "rank": 9,
-          "title": "제이알글로벌리츠, 자율구조조정 협의기간 내달 13일까지 연장",
-          "lead": "(서울=연합뉴스) 정회인 기자 = 제이알글로벌리츠[348950]는 서울회생법원이 자율구조조정프로그램(ARS) 협의 기간을 다음 달 13일까지 한...",
-          "summary": "",
-          "url": "https://www.yna.co.kr/amp/view/AKR20261014180000008",
-          "source": "연합뉴스",
-          "published": "2026-10-14 19:41",
-          "score": 17,
-          "keywords": [
-            "구조조정"
-          ],
-          "image": null,
-          "related": []
-        },
-        {
-          "rank": 10,
-          "title": "계양구, AI 면접·자소서 첨삭 등 청년 취업 지원 연중 운영",
-          "lead": "(인천=국제뉴스) 문연수 기자 = 계양구(구청장 박형우)는 지역 청년들의 면접 역량 강화를 위해 계양청년마당에서 'AI 모의면접 프로그램'을 연중 운영한다고 밝혔다.이 프로그램은 계양구청 내 계양청년마당의 1인 미디어실을 활용해 청년들이 AI 모의면접을 체험하고 취업 준비 역량을 높일 수 있도록 마련됐다.운영 프로그램은 사람인, 에듀스, 잘봐요 등 3개 업체의 서비스로 구성된다.사람인은 개인 맞춤형 면접 트레이닝을, 에듀스는 AI 면접·자기소개서 첨삭·인적성 연습이 포함된 프리미엄 플랜을 제공한다.잘봐요는 AI 면접관의 면접 방식",
-          "summary": "",
-          "url": "https://www.gukjenews.com/news/articleView.html?idxno=3721333",
-          "source": "국제뉴스",
-          "published": "2026-10-14 14:51",
-          "score": 17,
-          "keywords": [
-            "AI 면접",
-            "면접",
-            "자소서"
-          ],
-          "image": null,
-          "related": []
-        },
-        {
-          "rank": 11,
-          "title": "출연연 박사 초봉 5천800만원…기관별 최대 2천300만원 차이",
-          "lead": "(서울=연합뉴스) 조승한 기자 = 과학기술 분야 정부출연연구기관의 박사급 초임 연구직 평균 연봉이 5천800만원 수준에 그치고, 기관별로는 최고...",
-          "summary": "",
-          "url": "https://www.yna.co.kr/view/AKR20261015139600017",
-          "source": "연합뉴스",
-          "published": "2026-10-16 07:00",
-          "score": 14,
-          "keywords": [],
           "image": null,
           "related": []
         }
@@ -348,7 +346,7 @@
       "articles": [
         {
           "rank": 1,
-          "title": "[속보]9월 취업자 11만명 증가…청년 고용률은 29개월째 내리막",
+          "title": "9월 취업자 11만명 증가…청년 고용률은 29개월째 내리막",
           "lead": "지난달 취업자 수가 11만3000명 늘었지만 증가폭은 한 달 만에 다시 둔화했다.",
           "summary": "15~64세 고용률은 상승했지만 청년층 고용률은 29개월 연속 하락하며 연령별 고용 격차가 이어졌다. 청년층 실업률도 9월 기준으로 4년 만에 가장 높은 수준을 기록했다. 국가데이터처가 16일 발표한 ‘2026년 9월 고용동향’을 보면 지난달 취업자 수는 전년 동월 대비...",
           "url": "https://www.khan.co.kr/article/202610160800011/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news",
@@ -364,53 +362,43 @@
           "image": null,
           "related": [
             {
-              "title": "9월 취업자 11만3000명↑…청년 고용률 29개월째 하락(2보)",
-              "source": "뉴시스",
-              "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTFBIVC1DV0VXRTUxNWZkdjBwODEtSWN3OUkyd3dwbGNMXy1xLVZnWlNTRk16bGptY3NfYzFDN19YM3lnN0RLTk1KeHBTcE5Fd3RZalRDNnNzSmZ3WHJkaWpaS9IBeEFVX3lxTE5QcFFFczRSMzNtc2VXaGlpTVIzN0s1VlpVcHBraFRvb0RpNlVLTzJPTU10dWpJMmpKVHlqZGdlb3FtRGhUWWNwQkI4V2c5S1N6QU10dHppYnBJSEgtekgtZlduVnE3czk2X01kQnhqWGZHSDBrWVNvNA?oc=5"
+              "title": "9월 취업자 11.3만명↑…청년층 고용률 29개월째↓",
+              "source": "서울신문",
+              "url": "https://www.seoul.co.kr/news/newsView.php?id=20261016500014"
+            },
+            {
+              "title": "9월 취업자 11.3만명 증가…제조업 반등에도 청년 고용은 '부진'",
+              "source": "전자신문",
+              "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTE9Ka2J3aEN2dExIeThDUENaNXR2clpOaHFpOU9lakd4dU4yZ2NfN1ZyREVNc0NKRmgtVUtnREFJc0V1UFVUeWlNZW1meTJZQQ?oc=5"
             },
             {
               "title": "지난달 취업자 11만명 증가했지만, 청년 취업은 14만명 감소...고용률 29개월째 감소세",
               "source": "조선일보",
               "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxOXzFhb0dqejdIMkF3NnF2V0tiS3pmLTBheTdGRHBCaVFMeUh4TWVXNkFGemZMRGlrWFM2WE42UEdidjY5THk3UUpuWUtsN0dpVTRiUVh0dVVSVVpSR2hWckJmcVhaMU16NkpXelllSnN1c1o1bGF2dTQzLUJQWW5qX3B3T21pNUFFRVlGTWFB?oc=5"
-            },
-            {
-              "title": "9월 취업자 11만3000명 증가…청년 고용률 44.0%",
-              "source": "비건뉴스",
-              "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTFBKbWhheHhxQUlkVjdiNkpZTnljQWFQelhkZ3BSWEZrMzk3T1RUQ3RTODc1VzhvaFhrUVNwWThhaFBabHhRSVJkbDlCV1JaTUtyYXhJa2dhTGJYNUozWlcya29WN092QQ?oc=5"
             }
           ]
         },
         {
           "rank": 2,
-          "title": "9월 취업자 11.3만명↑…청년층 고용률 29개월째↓",
-          "lead": "9월 취업자는 2926만6000명으로 1년 전보다",
-          "summary": "11만3000명 늘어 넉 달째 증가했다. 그러나 증가 폭은 전월보다 축소됐고, 청년층 고용률은 44.0%로 1.1%포인트 하락해 29개월 연속 내림세를 기록했다. 실업률은 2.0%로 낮아졌다.",
-          "url": "https://www.seoul.co.kr/news/newsView.php?id=20261016500014",
-          "source": "서울신문",
+          "title": "9월 취업자 11.3만명 증가…15~64세 고용률 늘고 실업률 하락",
+          "lead": "지난달 취업자 수가 전년 대비 11만3000명 증가한 것으로 나타났다.",
+          "summary": "OECD(경제협력개발기구) 비교기준인 15~64세 고용률은 전년 대비 0.2%p(포인트) 상승한 70.6%를 기록했으며 실업률은 전년 대비 0.1%p 하락한 2%로 집계됐다.",
+          "url": "https://www.mt.co.kr/economy/2026/10/16/2026101608012299789",
+          "source": "머니투데이",
           "published": "2026-10-16 08:09",
           "score": 41,
           "keywords": [
             "고용률",
+            "실업률",
             "취업자",
-            "고용",
-            "청년"
+            "고용"
           ],
           "image": null,
           "related": [
             {
-              "title": "9월 취업자 11.3만명 증가…15~64세 고용률 늘고 실업률 하락",
-              "source": "머니투데이",
-              "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE94WUw2N3hRc3paVHdmR0doMUNBd2kwYXFZaW1WcDNsZXRWSFpnX042UTVKNVl5Wm52VWwybk5sRlJvR1pOUW5BUWRoQ09QZWd3aUZRQ3YyMkxmUmk0WUw5TnVuSml2Yk1rWXU40gFwQVVfeXFMUGtTbUZQMTl4TG1oQk9BT2lvREh0R1lyWG9HWnZ1alh4eExvNHpud1BGTWpYak5EZXFQS0ZJamd1SDJhQTRLZmI4LVlMYUZ4Z2NKeDQzZDdQOFNxMV9VSUZmLUNPSXdiVGdEZ2dMUWpiRw?oc=5"
-            },
-            {
               "title": "9월 취업자 11만3000명↑…청년 고용률 29개월 연속 하락",
               "source": "더팩트",
               "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFAzVmdKdTg1b2tubVJVd2YxWWMyRU5aT2dlTGNmcVJZcS1jMDdmd2t1eVVjZXVaS1BwY0hTUDRmN1VvZXBIcUI0a2FTYmdwdktjdS1wV2hvTTVaZ9IBVEFVX3lxTFAwWkYwZ29CekJlS0FZRWZIVGZWaUEtencyRi1LRWZocHZTU2FDVWgwVnluWExJMEp2d1lCZV9xYjQ2Szl4aVFCalI4ZW1vQnpIMVZVaQ?oc=5"
-            },
-            {
-              "title": "9월 취업자 수 11.3만명↑…청년 고용률 1.1%p↓",
-              "source": "신아일보",
-              "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE14UnNMSFVfTVh6d21ZYkpLTUR4WUo2V1RPVzl4OFB0OVZvbGZkVHRLR3RsRGNiNmI2dFRtM0hnMGpIcXFGLXZHZnA0RmRSNzRvRjJNNThqakhiN1I5MWNBSHd1bDViSWdNQS1Obm5Ud1M?oc=5"
             }
           ]
         }
@@ -442,23 +430,6 @@
         },
         {
           "rank": 2,
-          "title": "생성형 AI 시대, 왜 AI 방화벽이 필요한가… AI보안 제언 2편",
-          "lead": "생성형 AI에서 가장 현실적인 보안 사고는 복잡한 해킹 기법보다",
-          "summary": "평범한 업무 과정에서 시작될 수 있다. 직원이 오류 해결을 위해 프롬프트에 소스코드를 붙여 넣거나, 계약서 요약을 위해 고객명과 거래 조건이 담긴 파일을 올리고, 인사 담당자가 지원자의 이력서를 분석하게 하는 순간 데이터는 기업이 관리하던 경계를 벗어난다. 악의가 없어도 정보 유출과 개인정보 처리, 영업비밀 관리 문제가 동시에 발생한다. 전통적인 DLP 솔루션은 주민등록번호, 카드",
-          "url": "https://www.etnews.com/20261015000410",
-          "source": "전자신문",
-          "published": "2026-10-16 09:00",
-          "score": 21,
-          "keywords": [
-            "AI 시대",
-            "AI",
-            "생성형 AI"
-          ],
-          "image": null,
-          "related": []
-        },
-        {
-          "rank": 3,
           "title": "출연연 떠나는 30·40대 연구자들…퇴직자 10명 중 9명",
           "lead": "(서울=연합뉴스) 조승한 기자 = 지난해 과학기술 분야 정부출연연구기관 연구직 자발적 퇴직자 10명 중 9명이 연구 현장의 핵심 인력인 30∼4...",
           "summary": "",
@@ -467,6 +438,21 @@
           "published": "2026-10-16 06:33",
           "score": 20,
           "keywords": [],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "보이스피싱 계좌 관리했다?... 충격적인 은행원의 부업 [자막뉴스]",
+          "lead": "방 한쪽에 있는 금고를 열자 5만 원권 뭉치가 쏟아져 나옵니다.",
+          "summary": "서랍장에선 고가의 시계와 액세서리가, 자동차 트렁크에선 은괴가 발견됩니다. 해외 보이스피싱 조직의 범죄수익금을 가상자산 등으로 세탁한 일당을 검거하는 과정에서 나온 금품입니다. 이들은 지난해 10월부터 10개월여간 대포 통장 81개를 모집하고 보이스피싱 피해금 3억여 원을 세탁한 혐의를 받습니다.",
+          "url": "https://www.ytn.co.kr/_ln/0134_202610141533429621",
+          "source": "YTN",
+          "published": "2026-10-14 15:33",
+          "score": 17,
+          "keywords": [
+            "부업"
+          ],
           "image": null,
           "related": []
         }
