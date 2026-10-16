@@ -1,18 +1,16 @@
 {
   "title": "CAREER BRIEFING",
   "date": "2026-10-16",
-  "generated_at": "2026-10-16 11:28",
+  "generated_at": "2026-10-16 12:42",
   "stats": {
-    "collected": 2074,
-    "deduped": 1950,
-    "recent": 783,
-    "fresh": 747,
-    "relevant": 106,
+    "collected": 2173,
+    "deduped": 2049,
+    "recent": 882,
+    "fresh": 849,
+    "relevant": 121,
     "published": 21,
     "feeds": 30,
-    "dead_feeds": [
-      "머니투데이 https://rss.mt.co.kr/mt_news.xml"
-    ]
+    "dead_feeds": []
   },
   "sections": [
     {
@@ -37,7 +35,18 @@
             "신입"
           ],
           "image": null,
-          "related": []
+          "related": [
+            {
+              "title": "S-OIL, 하반기 생산직 신입 공채…21일까지 접수",
+              "source": "팍스경제TV",
+              "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBqMHQ5Zy1oRGhHZ3BQQjFCa00ya1dhM1h0RXB3aVduaTJRZkw0bl9PSmZ0TXhaZDNPZG1JOUF0bWxZREx1anotUFdNWDNGdjhKdUFtZThlWEhHaHBNMG9TQnJSd0NLRmM?oc=5"
+            }
+          ],
+          "ai_line": "에쓰오일이 이달 21일까지 하반기 생산직 신입 공채 서류를 받는다.",
+          "ai_why": "생산직을 준비하던 신입분들, 마감까지 일주일도 안 남았거든요? 정유 대기업 생산직 공채는 자주 열리지 않으니 이번 주 안에 지원하세요.",
+          "ai_tags": [
+            "공통"
+          ]
         },
         {
           "rank": 2,
@@ -54,23 +63,32 @@
             "모집"
           ],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "충남도가 청년정책보좌관 면접에 참여할 청년평가위원 15명을 모집한다.",
+          "ai_why": "직접 지원하는 채용 공고는 아니지만 면접관의 시선을 경험해 볼 기회입니다. 공공기관을 준비하는 신입이라면 자격 조건을 확인하고 지원해 보세요.",
+          "ai_tags": [
+            "인사"
+          ]
         },
         {
           "rank": 3,
-          "title": "한전KDN, 에너지 ICT 분야 청년·고졸 채용 문호 넓힌다",
-          "lead": "[전남광주=데일리한국 나성주 기자] 에너지 ICT 전문 공기업인 한전KDN이 지역 청년과 고졸 인재의 취업을 지원하기 위해 맞춤형 인재 발굴부터 채용까지 이어지는 지원 체계를 구축한다.한전KDN은 지난 15일 광주청년일자리스테이션(동명)에서 광주청년일자리스테이션 및 광주고용복지플러스센터와 ‘에너지 ICT 분야 우수 인재 양성 및 청년·고졸 채용 활성화를 위한 업무협약’을 맺었다고 16일 밝혔다.이번 협약은 교육 기관과 고용 지원 조직, 공공기관 현장을 하나로 연계해 지역 인재들에게 단순 교육을 넘어 실제 일자리 진입 기회까지 제공하",
-          "summary": "",
-          "url": "https://daily.hankooki.com/news/articleView.html?idxno=1415570",
-          "source": "데일리한국",
-          "published": "2026-10-16 10:29",
-          "score": 14,
+          "title": "삼성전자가 5등?...구직자가 뽑은 관심 기업, 1위 어디길래",
+          "lead": "2026년 하반기 공채 열기가 뜨거운 가운데 최근 1년 동안 구직자들이 가장 많은 관심을 보인 기업은 SK하이닉스인 것으로 조사됐다.",
+          "summary": "인크루트가 최근 1년(2025년 9월 ~ 2026년 9월)간 구직자가 설정한 관심기업 데이터를 분석해 이같은 내용의 인기 기업 순위를 16일 공개했다.",
+          "url": "https://www.mt.co.kr/living/2026/10/16/2026101609445016504",
+          "source": "머니투데이",
+          "published": "2026-10-16 10:05",
+          "score": 29,
           "keywords": [
-            "채용 문",
-            "채용"
+            "삼성"
           ],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "인크루트 분석에서 최근 1년 구직자 관심기업 1위는 SK하이닉스로 나타났다.",
+          "ai_why": "인기 순위는 곧 경쟁률입니다. 신입분들은 상위권 회사만 보지 말고 같은 업종의 협력사와 소부장 기업까지 리스트를 넓혀 준비하세요.",
+          "ai_tags": [
+            "공통"
+          ]
         }
       ]
     },
@@ -84,17 +102,23 @@
           "rank": 1,
           "title": "유비소프트, 독일 스튜디오서 100명 희망퇴직… 전사 구조조정 가속",
           "lead": "프랑스 게임사 유비소프트가 독일 내 스튜디오 3곳에서 약 100명 규모의 인력 감축을 추진한다.",
-          "summary": "전사 차원에서 진행 중인 대규모 구조조정 및 비용 절감 방안의 일환이다.15일(현지시각) 게임 파일 등 해외 게임 매체 보도를 종합하면, 유비소프트는 최근 독일 노사협의회와 협의를 시작하고",
-          "url": "https://it.chosun.com/news/articleView.html?idxno=2023092172142",
+          "summary": "전사 차원에서 진행 중인 대규모 구조조정 및 비용 절감 방안의 일환이다. 15일(현지시각) 게임 파일 등 해외 게임 매체 보도를 종합하면, 유비소프트는 최근 독일 노사협의회와 협의를 시작하고 뒤셀도르프·베를린·마인츠 등 3개 스튜디오를 대상으로 자발적 퇴직(희망퇴직) 프로그램 논의에 착수했다.",
+          "url": "https://it.chosun.com/news/articleViewAmp.html?idxno=2023092172142",
           "source": "IT조선",
-          "published": "2026-10-16 10:27",
+          "published": "2026-10-16 10:38",
           "score": 29,
           "keywords": [
             "희망퇴직",
             "구조조정"
           ],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "유비소프트가 독일 스튜디오 3곳에서 약 100명 규모의 희망퇴직을 추진한다.",
+          "ai_why": "외국계 게임사로 이직을 노리는 경력직이라면 당분간 기다리세요. 전사 구조조정 중인 회사는 채용보다 감축이 먼저거든요?",
+          "ai_tags": [
+            "개발",
+            "기획"
+          ]
         },
         {
           "rank": 2,
@@ -114,7 +138,7 @@
             {
               "title": "신한카드, 올해 두 번째 희망퇴직… 기본급 최대 24개월 치 보상",
               "source": "머니투데이",
-              "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTFAwUE84UUFSOGsxaF94M1ZwRWRMUGVYM2FROTVGbENBNnNraUQ2Rkw2NHEzQThGcTY1c0dfMEplMTFsZG5MYS1BWWNsVVh6X0J6bFZUWG9hcFhCajRjYnpYdWc0X21yNXRHVHFPd0taWXbSAXBBVV95cUxQMFBPOFFBUjhrMWhfeDNWcEVkTFBlWDNhUTk1RmxDQTZza2lENkZMNjRxM0E4RnE2NXNHXzBKZTExbGRuTGEtQVljbFVYel9CemxWVFhvYXBYQmo0Y2J6WHVnNF9tcjV0R1RxT3dLWll2?oc=5"
+              "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE0yTVk0MFk1RWNQOTVkbXVKU3ZFeVEtcFVQbGdzT2E4ejRMYVJ4UDV2QWcySmxwT3MwRWptNTNwOUMwamNKdF9Ha0lTM2xEenFGeTVNTV94U2ZTenJyak5wQXVBTFlrNWp0d1BF0gFwQVVfeXFMUDBQTzhRQVI4azFoX3gzVnBFZExQZVgzYVE5NUZsQ0E2c2tpRDZGTDY0cTNBOEZxNjVzR18wSmUxMWxkbkxhLUFZY2xVWHpfQnpsVlRYb2FwWEJqNGNielh1ZzRfbXI1dEdUcU93S1pZdg?oc=5"
             },
             {
               "title": "사옥까지 매각한 신한카드…2년새 네 번째 희망퇴직",
@@ -123,9 +147,15 @@
             },
             {
               "title": "신한카드, 올해 두 번째 희망퇴직 단행…근속 15년 이상 대상",
-              "source": "연합뉴스",
-              "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5RWEpSdzRSS1BxSUk3Z3ZKRXBJVHB3Vm9JTmxPVDl2MTQ1UWhLY2dlUk1CVHBCSm1pM3VGbTJubnVCQzdNTFR2cG1Oel81ZnBCZUFfTnl1S1gyS2PSAWBBVV95cUxObnpwNTVtMkpsemYxUlE4enVFVW5vRTM5RjBqNFlyOV8zRGotdHB0M09IMHVkVlhXVS1XNkNsYVpjMGFBTTdhUVAwaUVhNXNpNC05RHZNaHZlb1RUdWNxNGY?oc=5"
+              "source": "뉴스1",
+              "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE90ZmFScXlTdkRHQXBocjlGdDVMLW44ZDFWSFhuSXpsMUl1S1BmeGF4V2thRTgtQjhHS2xsSHYxM1lXZDY1T0I0dmY0cEdlZ3pWSk9RZURhV0trcTFMdTZUNQ?oc=5"
             }
+          ],
+          "ai_line": "신한카드가 올해 두 번째 희망퇴직으로 인력 구조조정에 속도를 낸다.",
+          "ai_why": "카드사 지원을 고민하는 신입분들, 한 해 두 번의 희망퇴직은 업황 신호입니다. 지원 전에 수익 구조와 디지털 전환 방향부터 공부해 준비하세요.",
+          "ai_tags": [
+            "재무",
+            "영업"
           ]
         },
         {
@@ -133,7 +163,7 @@
           "title": "‘숏폼’에 밀린 넷플릭스… 1000명 구조조정 예고",
           "lead": "최근 구독자 및 시청 시간 정체 등으로 성장 둔화를 겪고 있는 넷플릭스가 전 세계 직원의 약 6%인 1000여 명을 감원할 예정이라고 월스트리트저널(WSJ) 등이 14일(현지 시간) 보도했다.",
           "summary": "넷플릭스는 20일 올 3분기(7∼9월) 실적 발표를 앞두고 있다. 그레그 …",
-          "url": "https://www.donga.com/news/Inter/article/all/20261015/134850656/2",
+          "url": "https://www.donga.com/news/Economy/article/all/20261015/134850656/2",
           "source": "동아일보",
           "published": "2026-10-16 00:30",
           "score": 20,
@@ -141,7 +171,13 @@
             "구조조정"
           ],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "넷플릭스가 전 세계 직원의 약 6%인 1000여 명을 감원할 예정이다.",
+          "ai_why": "콘텐츠·플랫폼 업계 경력직은 20일 실적 발표까지 기다리세요. 감원 규모와 방향을 확인하고 움직여도 늦지 않습니다.",
+          "ai_tags": [
+            "기획",
+            "마케팅"
+          ]
         },
         {
           "rank": 4,
@@ -160,10 +196,36 @@
               "source": "매일경제",
               "url": "https://www.mk.co.kr/news/economy/12177162"
             }
+          ],
+          "ai_line": "삼성전자 주가 급락 속에 주식 성과급을 두고 직원 추정 익명글이 논란이 됐다.",
+          "ai_why": "성과급 지급 방식은 이직 협상에서 꼭 따져야 할 항목입니다. 경력직은 현금과 주식 비중, 지급 시점까지 확인하고 오퍼를 비교하세요.",
+          "ai_tags": [
+            "재무",
+            "인사"
           ]
         },
         {
           "rank": 5,
+          "title": "[인사]기후에너지환경부",
+          "lead": "<승진> ▷국장급 △물관리정책실 수자원정책관 이정용",
+          "summary": "",
+          "url": "https://www.mt.co.kr/economy/2026/10/16/2026101610564671427",
+          "source": "머니투데이",
+          "published": "2026-10-16 11:03",
+          "score": 17,
+          "keywords": [
+            "인사"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "기후에너지환경부가 수자원정책관 국장급 승진 인사를 냈다.",
+          "ai_why": "공공 인사 소식은 조직이 어디에 힘을 싣는지 보여줍니다. 공기업을 준비하는 신입이라면 물관리 정책 흐름도 면접 대비로 준비해 두세요.",
+          "ai_tags": [
+            "기획"
+          ]
+        },
+        {
+          "rank": 6,
           "title": "AI·반도체주 4일간 시총 1조달러 증발…중국발 충격 한국에 집중되나",
           "lead": "금리 인상 우려와 인공지능(AI) 투자 부담 우려, 중국 메모리 업체의 추격 전망이 한꺼번에 겹치면서 세계 AI·반도체주 급락세가 이어지고 있다.",
           "summary": "15일(현지시간) 미국 CNBC 방송에 따르면 세계 시가총액 상위 20개 AI·반도체 종목의 시총은 이번 주(12∼15일) 4거래일 동안 1조달러(약 1340조원) 넘게 증발했다. AI 대장주 엔비디아 주가...",
@@ -175,10 +237,15 @@
             "주 4일"
           ],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "세계 상위 20개 AI·반도체주 시총이 4거래일 만에 1조달러 넘게 증발했다.",
+          "ai_why": "반도체 지원 신입분들, 주가는 흔들려도 채용은 실적과 투자 계획으로 움직입니다. 공고에는 그대로 지원하되 업황 리스크 질문 답변을 준비하세요.",
+          "ai_tags": [
+            "공통"
+          ]
         },
         {
-          "rank": 6,
+          "rank": 7,
           "title": "퇴직 위로금도 없는데 \"제가 그만둘게요\"…홈플러스 희망퇴직 조기 마감된 까닭",
           "lead": "기업회생 절차를 밟고 있는 홈플러스가 희망퇴직 신청 접수를 당초 계획보다",
           "summary": "일주일가량 앞당겨 마감했다.",
@@ -190,10 +257,15 @@
             "희망퇴직"
           ],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "기업회생 중인 홈플러스가 희망퇴직 접수를 일주일가량 앞당겨 마감했다.",
+          "ai_why": "위로금 없이도 먼저 나가겠다는 건 내부 불안이 크다는 뜻입니다. 유통 MD를 노리는 신입이라면 회생 결론이 날 때까지 이 회사는 피하세요.",
+          "ai_tags": [
+            "MD"
+          ]
         },
         {
-          "rank": 7,
+          "rank": 8,
           "title": "홈플러스, 희망퇴직 접수 조기 마감",
           "lead": "홈플러스가 경영 정상화를 위해 지난 7일 시작한 희망퇴직 접수를 당초보다",
           "summary": "이른 14일에 마감했다. 별도 목표 인원 없이 운영자금 한도 내에서 진행했지만 신청자가 예상보다 많았다. 미지급 급여와 상여금, 퇴직금은 지급되며, 매출 부진과 회생 불확실성이 배경으로 꼽힌다.",
@@ -221,10 +293,16 @@
               "source": "KBS 뉴스",
               "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTFBFME1jZEVQRmktdUFHSmFzYWdfTjRZQVpLbzgta1VNRmRYV3RpdWdHZURNdWZoSzUxdFZlNndiRmdCR2Y0VllYMERsWjkyTXNPNFFlVnZVWDg3bEU?oc=5"
             }
+          ],
+          "ai_line": "홈플러스 희망퇴직은 목표 인원 없이 진행됐지만 신청자가 예상보다 많았다.",
+          "ai_why": "홈플러스 재직자라면 퇴직금이 나올 때 정리하고 싶은 마음 이해합니다. 그래도 선퇴사보다 이력서부터 돌리는 환승이직을 준비하세요.",
+          "ai_tags": [
+            "MD",
+            "영업"
           ]
         },
         {
-          "rank": 8,
+          "rank": 9,
           "title": "신한카드, 올해 두번째 희망퇴직 실시…근속 15년 이상 대상",
           "lead": "[서울=뉴시스]권안나 기자 = 신한카드가 근속 15년 이상 직원을 대상으로 희망퇴직을 실시한다",
           "summary": "",
@@ -236,22 +314,13 @@
             "희망퇴직"
           ],
           "image": null,
-          "related": []
-        },
-        {
-          "rank": 9,
-          "title": "박창훈號 신한카드, 고인물 다 쳐낸다…취임 후 세 번째 희망퇴직",
-          "lead": "박창훈 신한카드 대표가 취임 후 세 번째 희망퇴직을 15일 단행했다.",
-          "summary": "/제공=신한카드 신한카드가 박창훈 대표 취임 이후 세 번째로 희망퇴직을 실시한다. 인건비가 높은 고연차 직원을 감축해 회사 전체의 수익성을 높이겠다는 목적에서다. 15일 신한카드는 오는 21일까지 근…",
-          "url": "https://news.mtn.co.kr/article/2026101515294966197",
-          "source": "MTN 머니투데이방송",
-          "published": "2026-10-15 15:51",
-          "score": 17,
-          "keywords": [
-            "희망퇴직"
-          ],
-          "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "신한카드의 이번 희망퇴직은 근속 15년 이상 직원을 대상으로 한다.",
+          "ai_why": "근속 15년 이상이면 대부분 40대 이후입니다. 해당 재직자라면 조건만 보고 바로 결정하지 말고 다음 자리부터 확보하는 환승을 준비하세요.",
+          "ai_tags": [
+            "인사",
+            "공통"
+          ]
         }
       ]
     },
@@ -276,7 +345,13 @@
             "IPO"
           ],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "앤트로픽의 3분기 매출이 전분기 대비 45% 늘고 2분기 연속 흑자를 냈다.",
+          "ai_why": "AI가 돈이 된다는 게 숫자로 확인되고 있습니다. 40대 기획·재무 직장인이라면 AI를 보조 도구로 쓴 실무 사례를 지금부터 쌓아 준비하세요.",
+          "ai_tags": [
+            "기획",
+            "재무"
+          ]
         },
         {
           "rank": 2,
@@ -291,7 +366,13 @@
             "IPO"
           ],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "무신사가 RCPS 전량을 보통주로 전환하며 내년 상반기 상장 기반을 다졌다.",
+          "ai_why": "상장을 앞둔 회사는 재무·관리 인력 수요가 커지는 경우가 많거든요? 재무·MD 경력직이라면 공고를 지켜보다 열리면 지원하세요.",
+          "ai_tags": [
+            "재무",
+            "MD"
+          ]
         },
         {
           "rank": 3,
@@ -312,6 +393,11 @@
               "source": "전자신문",
               "url": "https://www.etnews.com/20261015000375"
             }
+          ],
+          "ai_line": "TSMC의 3분기 영업이익이 전년 동기 대비 75% 늘며 AI 수혜가 이어졌다.",
+          "ai_why": "반도체 주가 급락 기사와 같은 날 나온 실적입니다. 반도체 밸류체인 지원자는 소음 말고 실적을 보고 하반기 공고에 계속 지원하세요.",
+          "ai_tags": [
+            "공통"
           ]
         },
         {
@@ -334,6 +420,12 @@
               "source": "한겨레",
               "url": "https://www.hani.co.kr/arti/economy/marketing/1282576.html"
             }
+          ],
+          "ai_line": "대한항공의 3분기 매출이 5조448억원으로 분기 기준 역대 최대를 기록했다.",
+          "ai_why": "여객과 화물이 함께 성장했다는 건 회사 체력이 탄탄하다는 뜻입니다. 영업·기획 지원 신입이라면 다음 공고를 놓치지 않게 준비하세요.",
+          "ai_tags": [
+            "영업",
+            "기획"
           ]
         }
       ]
@@ -362,6 +454,11 @@
           "image": null,
           "related": [
             {
+              "title": "지난달 취업자 11만명 증가했지만, 청년 취업은 14만명 감소...청년 고용률 29개월째 감소세",
+              "source": "조선일보",
+              "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxOXzFhb0dqejdIMkF3NnF2V0tiS3pmLTBheTdGRHBCaVFMeUh4TWVXNkFGemZMRGlrWFM2WE42UEdidjY5THk3UUpuWUtsN0dpVTRiUVh0dVVSVVpSR2hWckJmcVhaMU16NkpXelllSnN1c1o1bGF2dTQzLUJQWW5qX3B3T21pNUFFRVlGTWFB?oc=5"
+            },
+            {
               "title": "9월 취업자 11.3만명↑…청년층 고용률 29개월째↓",
               "source": "서울신문",
               "url": "https://www.seoul.co.kr/news/newsView.php?id=20261016500014"
@@ -370,12 +467,12 @@
               "title": "9월 취업자 11.3만명 증가…제조업 반등에도 청년 고용은 '부진'",
               "source": "전자신문",
               "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTE9Ka2J3aEN2dExIeThDUENaNXR2clpOaHFpOU9lakd4dU4yZ2NfN1ZyREVNc0NKRmgtVUtnREFJc0V1UFVUeWlNZW1meTJZQQ?oc=5"
-            },
-            {
-              "title": "지난달 취업자 11만명 증가했지만, 청년 취업은 14만명 감소...고용률 29개월째 감소세",
-              "source": "조선일보",
-              "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxOXzFhb0dqejdIMkF3NnF2V0tiS3pmLTBheTdGRHBCaVFMeUh4TWVXNkFGemZMRGlrWFM2WE42UEdidjY5THk3UUpuWUtsN0dpVTRiUVh0dVVSVVpSR2hWckJmcVhaMU16NkpXelllSnN1c1o1bGF2dTQzLUJQWW5qX3B3T21pNUFFRVlGTWFB?oc=5"
             }
+          ],
+          "ai_line": "청년 고용률이 29개월 연속 하락했고 청년 실업률은 4년 만에 가장 높았다.",
+          "ai_why": "청년 고용 하락은 개인 탓만은 아닙니다. 그래도 경쟁이 세진 만큼 신입분들은 이번 하반기 공채에서 지원 기업 수를 늘리세요.",
+          "ai_tags": [
+            "공통"
           ]
         },
         {
@@ -400,6 +497,11 @@
               "source": "더팩트",
               "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFAzVmdKdTg1b2tubVJVd2YxWWMyRU5aT2dlTGNmcVJZcS1jMDdmd2t1eVVjZXVaS1BwY0hTUDRmN1VvZXBIcUI0a2FTYmdwdktjdS1wV2hvTTVaZ9IBVEFVX3lxTFAwWkYwZ29CekJlS0FZRWZIVGZWaUEtencyRi1LRWZocHZTU2FDVWgwVnluWExJMEp2d1lCZV9xYjQ2Szl4aVFCalI4ZW1vQnpIMVZVaQ?oc=5"
             }
+          ],
+          "ai_line": "15~64세 고용률은 70.6%로 오르고 실업률은 2%로 내려갔다.",
+          "ai_why": "전체 지표는 좋아 보여도 청년 숫자는 반대입니다. 중고신입이라면 신입 공채만 기다리지 말고 경력 수시채용에도 함께 지원하세요.",
+          "ai_tags": [
+            "공통"
           ]
         }
       ]
@@ -412,21 +514,23 @@
       "articles": [
         {
           "rank": 1,
-          "title": "하나금융, 인천서 중장년 재취업 지원…일자리 연결부터 금융상담까지",
-          "lead": "하나금융그룹이 중장년층의 재취업 지원과 지역 중소기업의 인력난 해소를 위한 상생 행보를 이어가고 있다.",
-          "summary": "단순한 채용 기회 제공을 넘어 인공지능(AI)을 활용한 취업 준비와 새로운 직무 체험, 은퇴 이후 금융관리까지 지원 범위를 넓히며 중장년층의 경제활동 복귀를 돕고 있다.15일 금융권에 따르면 하나금융은 전날 인천 송도컨벤시아에서 '2026 하나 JOB매칭 페스타 in 인천'을 개최했다. 중장년 일자리 지원사업인 '하나 파워 온 세컨드라이프'의 일환으로, 지난 4월 부산을 시작으로 광주와 수원, 대전에 이어 올해 다섯 번째로 마련된",
-          "url": "https://www.techm.kr/news/articleView.html?idxno=156124",
-          "source": "테크M",
-          "published": "2026-10-15 20:48",
-          "score": 39,
+          "title": "'1000명 해고' 넷플릭스…'오겜' '웬즈데이' 만든 임원도 해고",
+          "lead": "15일(현지시간) 파이낸셜타임스(FT)에 따르면 넷플릭스는 벨라 바자리아 CCO를 디즈니와 폭스에서 임원을 지냈던 피터 라이스로 교체했다.",
+          "summary": "바자리아는 넷플릭스서 약 10년간 근무했다.",
+          "url": "https://www.mt.co.kr/world/2026/10/16/2026101609583511257",
+          "source": "머니투데이",
+          "published": "2026-10-16 10:31",
+          "score": 24,
           "keywords": [
-            "재취업",
-            "중장년 재취업",
-            "일자리",
-            "중장년"
+            "해고"
           ],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "넷플릭스가 약 10년 근무한 콘텐츠 최고책임자를 외부 인사로 교체했다.",
+          "ai_why": "10년 일한 핵심 임원도 바뀌는 게 현실입니다. 40대 재직자라면 사내 평판만 믿지 말고 바깥에서 통할 경력 정리를 준비하세요.",
+          "ai_tags": [
+            "기획"
+          ]
         },
         {
           "rank": 2,
@@ -439,7 +543,12 @@
           "score": 20,
           "keywords": [],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "출연연 연구직 자발적 퇴직자 10명 중 9명이 30~40대로 나타났다.",
+          "ai_why": "핵심 연령대가 움직인다는 건 처우와 경력 경로 고민이 크다는 신호입니다. 재직 연구자라면 퇴사 먼저 말고 옮길 곳을 정한 뒤 환승하세요.",
+          "ai_tags": [
+            "개발"
+          ]
         },
         {
           "rank": 3,
@@ -454,9 +563,19 @@
             "부업"
           ],
           "image": null,
-          "related": []
+          "related": [],
+          "ai_line": "대포통장 81개로 보이스피싱 피해금 3억여 원을 세탁한 일당이 검거됐다.",
+          "ai_why": "쉽고 달콤한 부업 제안은 일단 의심하세요. 재직자든 취준생이든 통장·계좌 대여는 커리어 전체를 끝낼 수 있으니 반드시 피하세요.",
+          "ai_tags": [
+            "공통"
+          ]
         }
       ]
     }
+  ],
+  "briefing": [
+    "오늘 지면은 홈플러스, 신한카드, 넷플릭스까지 희망퇴직과 감원 소식이 겹쳤습니다. 구조조정 중인 회사는 지원 전에 한 번 더 따져보셔야 합니다.",
+    "반대로 TSMC, 대한항공, 앤트로픽처럼 실적이 숫자로 찍힌 회사도 있거든요? 주가 소음보다 실적을 보고 회사를 고르세요.",
+    "청년 고용률이 29개월째 내려가는 지금, 신입분들은 이번 주 안에 에쓰오일처럼 마감이 임박한 공고부터 확인하고 지원하세요."
   ]
 }
