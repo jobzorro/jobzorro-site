@@ -8,6 +8,7 @@ SEO · GEO(생성형 엔진 최적화) 보조 모듈 — build.py 가 쓴다.
 """
 import html
 import json
+import os
 import re
 from datetime import date
 from pathlib import Path
@@ -291,43 +292,82 @@ JOB_PAGE_CSS = """
 
 # ───────────────────────── 공유 이미지 ─────────────────────────
 
-def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조로 직무사전") -> None:
-    """1200x630, 종이색 바탕 + 황동 라벨 + 큰 제목 + 조로 마크."""
-    from PIL import Image, ImageDraw, ImageFont
+FONT_DIRS = [Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "Windows" / "Fonts", Path("C:/Windows/Fonts")]
+
+
+def _font(name: str, size: int):
+    from PIL import ImageFont
+    for d in FONT_DIRS:
+        p = d / name
+        if p.exists():
+            return ImageFont.truetype(str(p), size)
+    return None
+
+
+def fonts_available() -> bool:
+    return all(_font(n, 10) for n in ("GmarketSansBold.otf", "GmarketSansMedium.otf", "GmarketSansLight.otf", "NanumBarunGothic.ttf"))
+
+
+def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조로 직무사전", light: str = "채용공고엔 안 나오는") -> bool:
+    """1200x630 공유 이미지. 먹색 바탕, 황동 라벨, 얇은 머리글 + 굵은 헤드라인, 오른쪽에 조로 마스크 워터마크.
+    글꼴(Gmarket Sans·나눔바른고딕)이 없는 환경(GitHub Actions)에서는 만들지 않고 False 를 돌려준다."""
+    from PIL import Image, ImageDraw
+    if not fonts_available():
+        return False
     W, H = 1200, 630
-    im = Image.new("RGB", (W, H), (249, 250, 251))
+    INK, PAPER, BRASS, SOFT, MUTED = (17, 24, 39), (255, 255, 255), (201, 160, 99), (195, 201, 214), (147, 155, 171)
+    im = Image.new("RGB", (W, H), INK)
     d = ImageDraw.Draw(im)
-    d.rectangle([0, 0, W, 14], fill=(17, 24, 39))
-    try:
-        bold = ImageFont.truetype("C:/Windows/Fonts/malgunbd.ttf", 72)
-        mid = ImageFont.truetype("C:/Windows/Fonts/malgun.ttf", 30)
-        small = ImageFont.truetype("C:/Windows/Fonts/malgunbd.ttf", 26)
-    except OSError:
-        bold = mid = small = ImageFont.load_default()
-    d.text((80, 90), kicker, font=small, fill=(139, 107, 63))
-    # 제목 줄바꿈 (한 줄 최대 ~16자)
-    words, lines, cur = title, [], ""
-    for ch in words:
-        cur += ch
-        if len(cur) >= 15 and ch in " ·/":
-            lines.append(cur.strip()); cur = ""
-    if cur:
-        lines.append(cur.strip())
-    if len(lines) > 2:
-        lines = [lines[0], "".join(lines[1:])[:17] + "…"]
-    y = 150
-    for ln in lines[:2]:
-        d.text((80, y), ln, font=bold, fill=(17, 24, 39)); y += 92
-    if subtitle:
-        sub = subtitle if len(subtitle) <= 38 else subtitle[:37] + "…"
-        d.text((80, y + 14), sub, font=mid, fill=(55, 65, 81))
-    # 조로 마크 + 워드마크
+    # 워터마크: 조로 마스크 마크를 크게, 아주 옅게
     logo = Image.open(ASSETS / "jobzorro_logo.png").convert("RGBA")
-    logo = logo.resize((int(logo.width * 1.1), int(logo.height * 1.1)))
-    im.paste(logo, (80, H - 60 - logo.height), logo)
-    d.text((W - 80 - d.textlength("jobzorro.kr", font=mid), H - 60 - 30), "jobzorro.kr", font=mid, fill=(107, 114, 128))
+    mark = logo.crop((15, 9, 78, 72)).resize((520, 520), Image.LANCZOS)
+    # 마크는 검정 사각 + 흰 마스크. 먹색 바탕 위에 그대로 아주 옅게 올리면 사각은 사라지고 마스크 윤곽만 남는다
+    r, g, bl, al = mark.split()
+    ghost = Image.merge("RGBA", (r, g, bl, al.point(lambda v: int(v * 0.10))))
+    im.paste(ghost, (W - 560, H - 540), ghost)
+    # 위 황동 바
+    d.rectangle([0, 0, W, 10], fill=BRASS)
+    # 라벨
+    f_k = _font("GmarketSansMedium.otf", 26)
+    d.text((80, 72), kicker.upper() if kicker.isascii() else kicker, font=f_k, fill=BRASS)
+    kw = d.textlength(kicker, font=f_k)
+    d.rectangle([80 + kw + 16, 85, 80 + kw + 76, 87], fill=BRASS)
+    # 얇은 머리글
+    y = 130
+    if light:
+        f_l = _font("GmarketSansLight.otf", 48)
+        d.text((78, y), light, font=f_l, fill=SOFT)
+        y += 70
+    # 굵은 헤드라인 (너비에 맞춰 축소, 2줄까지)
+    size = 92
+    while size > 40:
+        f_b = _font("GmarketSansBold.otf", size)
+        if d.textlength(title, font=f_b) <= 1040:
+            break
+        size -= 4
+    lines = [title]
+    if d.textlength(title, font=f_b) > 1040:   # 그래도 넘치면 2줄로
+        cut = max(title.rfind(" ", 0, len(title) // 2 + 4), len(title) // 2)
+        lines = [title[:cut].strip(), title[cut:].strip()]
+    for ln in lines:
+        d.text((78, y), ln, font=f_b, fill=PAPER)
+        y += size + 16
+    # 보조 설명
+    if subtitle:
+        f_s = _font("NanumBarunGothic.ttf", 28)
+        sub = subtitle if d.textlength(subtitle, font=f_s) <= 1000 else subtitle[:int(len(subtitle) * 1000 / d.textlength(subtitle, font=f_s)) - 1] + "…"
+        d.text((80, y + 14), sub, font=f_s, fill=MUTED)
+    # 아래: TEAMZORRO 워드마크(흰색) + 주소
+    tz = Image.open(ASSETS / "teamzorro_logo.png").convert("RGBA")
+    tz = tz.resize((int(tz.width * 48 / tz.height), 48), Image.LANCZOS)
+    r, g, bl, al = tz.split()
+    tzw = Image.merge("RGBA", (r.point(lambda v: 255 - v), g.point(lambda v: 255 - v), bl.point(lambda v: 255 - v), al))
+    im.paste(tzw, (80, H - 60 - 48), tzw)
+    f_u = _font("GmarketSansMedium.otf", 26)
+    d.text((W - 80 - d.textlength("job.jobzorro.kr", font=f_u), H - 60 - 34), "job.jobzorro.kr", font=f_u, fill=BRASS)
     out.parent.mkdir(parents=True, exist_ok=True)
     im.save(out, optimize=True)
+    return True
 
 
 # ───────────────────────── sitemap / robots / llms.txt ─────────────────────────

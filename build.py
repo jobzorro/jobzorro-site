@@ -231,17 +231,25 @@ def build(out_dir: Path, with_news: bool) -> None:
     updated = data["meta"].get("updated", "2026-10-16")
     by_id = {j["id"]: j for j in data["jobs"]}
     gname = {g["id"]: g["name"] for g in data["meta"]["groups"]}
-    # 공유 이미지 (사이트 공통 + 직무별)
+    # 공유 이미지: 글꼴이 있는 PC 에서 assets/share/ 에 만들어 git 에 넣고, 빌드 때 site/assets/ 로 복사 (Actions 엔 한글 글꼴이 없다)
+    share = BASE / "assets" / "share"; share.mkdir(exist_ok=True)
     (out_dir / "assets").mkdir(exist_ok=True)
-    seo.og_image(out_dir / "assets" / "og.png", "취업조로 직무사전", "현직자 인터뷰로 정리한 직무 설명 · 취업뉴스 · 무료 상담")
+    if seo.fonts_available():
+        seo.og_image(share / "og.png", "그 직무의 진짜 모습", f"현직자 인터뷰·자료 {data['meta'].get('sourceDocs', 0) + sum(j['sources'].get('public', 0) for j in data['jobs']):,}건으로 정리한 직무 {len(data['jobs'])}개 · 취업뉴스 · 무료 상담", "취업조로 직무사전", "채용공고엔 안 나오는")
+        seo.og_image(share / "og-news.png", "취업조로의 커리어브리핑", "채용·이직·기업·고용 뉴스를 매일 아침 고르고, Zorro의 한마디를 붙입니다", "취업뉴스", "커리어를 읽는 남자가 매일 아침 고른")
+        seo.og_image(share / "og-zorro.png", "취업조로와 함께하기", "신입·중고신입·경력이직·선퇴사자 맞춤 컨설팅 · 함께한 합격자 1,100+", "TEAM ZORRO", "누가 봐도 뽑고 싶은 인재의 비밀")
+        seo.og_image(share / "og-apply.png", "무료 상담 신청", "취업조로 컨설턴트가 내 상황에 맞는 길을 1:1로 정리해 드립니다", "무료 상담", "취업·이직 고민, 혼자 하지 마세요")
+    else:
+        print("  (한글 글꼴이 없어 공유 이미지는 다시 만들지 않고 assets/share 의 기존 파일을 씁니다)")
+    import shutil as _sh
+    for name in ("og.png", "og-news.png", "og-zorro.png", "og-apply.png"):
+        if (share / name).exists(): _sh.copy(share / name, out_dir / "assets" / name)
+    if (share / "jobs").exists():
+        _sh.copytree(share / "jobs", out_dir / "assets" / "og", dirs_exist_ok=True)
     for name in ("favicon-32.png", "favicon-180.png"):
         src = BASE / "news-collector" / "assets" / name
         if src.exists(): (out_dir / "assets" / name).write_bytes(src.read_bytes())
     og_main = seo.abs_url(base_url, "assets/og.png")
-    # 페이지별 공유 이미지
-    seo.og_image(out_dir / "assets" / "og-news.png", "취업조로의 커리어브리핑", "매일 아침 고른 채용·이직·기업·고용 뉴스와 Zorro의 한마디", "취업뉴스")
-    seo.og_image(out_dir / "assets" / "og-zorro.png", "취업조로와 함께하기", "신입·중고신입·경력이직·선퇴사자 맞춤 컨설팅, 합격자 1,100+", "TEAM ZORRO")
-    seo.og_image(out_dir / "assets" / "og-apply.png", "무료 상담 신청", "취업·이직 고민, 취업조로 컨설턴트와 먼저 이야기해 보세요", "무료 상담")
     og_news, og_zorro, og_apply = (seo.abs_url(base_url, f"assets/og-{k}.png") for k in ("news", "zorro", "apply"))
     z = (BASE / "template_zorro.html").read_text(encoding="utf-8")
     z = z.replace("/*__SEO__*/", seo.seo_head(base_url, "취업조로와 함께하기 — 신입·중고신입·경력이직·선퇴사자 취업 컨설팅",
@@ -309,7 +317,9 @@ def build(out_dir: Path, with_news: bool) -> None:
     entries = [("", updated, "daily", "1.0"), ("news/", updated, "daily", "0.9"), ("zorro/", updated, "monthly", "0.8"), ("apply/", updated, "monthly", "0.6")]
     for j in data["jobs"]:
         jid = j["id"]
-        seo.og_image(out_dir / "assets" / "og" / f"{jid}.png", j["name"], j["tagline"])
+        if seo.fonts_available():
+            seo.og_image(share / "jobs" / f"{jid}.png", j["name"], j["tagline"], f"취업조로 직무사전 · {gname.get(j['group'], '')}", "채용공고엔 안 나오는 진짜 모습")
+            _sh.copy(share / "jobs" / f"{jid}.png", out_dir / "assets" / "og" / f"{jid}.png")
         ld = seo.job_ld(base_url, j, by_id, data["meta"], gname.get(j["group"], ""), updated)
         head = seo.seo_head(base_url, f"{j['name']} 직무 — 하는 일·연봉·들어가는 길·현직자의 말 | 취업조로 직무사전",
                             f"{j['name']}: {j['tagline']}. {j['summary']}", f"jobs/{jid}/", seo.abs_url(base_url, f"assets/og/{jid}.png"), ld)
