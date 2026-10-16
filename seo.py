@@ -133,7 +133,7 @@ def job_faq(j: dict, by_id: dict):
     return qa
 
 
-def job_ld(base: str, j: dict, by_id: dict, meta: dict, group_name: str, updated: str) -> list:
+def job_ld(base: str, j: dict, by_id: dict, meta: dict, group_name: str, updated: str, image: str = "") -> list:
     path = f"jobs/{j['id']}/"
     url = abs_url(base, path)
     evidence = (j["sources"].get("count", 0) or 0) + (j["sources"].get("public", 0) or 0)
@@ -158,7 +158,7 @@ def job_ld(base: str, j: dict, by_id: dict, meta: dict, group_name: str, updated
         "@context": "https://schema.org", "@type": "Article",
         "@id": url + "#article", "headline": f"{j['name']} 직무 설명 — 하는 일·연봉·들어가는 길·현직자의 말",
         "description": desc, "inLanguage": "ko", "url": url,
-        "image": abs_url(base, f"assets/og/{j['id']}.png"),
+        "image": image or abs_url(base, f"assets/og/{j['id']}.png"),
         "author": {"@type": "Person", "name": "조현빈", "url": abs_url(base, "zorro/")},
         "publisher": {"@type": "Organization", "name": "커리어프로젝트 주식회사", "logo": {"@type": "ImageObject", "url": abs_url(base, "assets/og.png")}},
         "datePublished": "2026-10-15", "dateModified": updated,

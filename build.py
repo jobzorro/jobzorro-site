@@ -212,7 +212,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     _n_jobs = len(data["jobs"]); _n_ev = data["meta"].get("sourceDocs", 0) + sum(j["sources"].get("public", 0) for j in data["jobs"])
     html = html.replace("/*__SEO__*/", seo.seo_head(_base, f"취업조로 직무사전 — 직무 {_n_jobs}개, 현직자 인터뷰·자료 {_n_ev:,}건으로 정리한 직무 설명",
         f"취업·이직 컨설턴트 취업조로가 현직자 인터뷰 {_n_ev:,}건을 바탕으로 정리한 직무사전. 하는 일, 하루 일과, 연봉대, 들어가는 길, 옮겨갈 수 있는 직무, 면접 질문, 현직자의 말까지 직무 {_n_jobs}개를 한 곳에서.",
-        "", seo.abs_url(_base, "assets/og.png"), [seo.org_ld(_base, COMPANY), seo.website_ld(_base)]))
+        "", seo.abs_url(_base, "assets/og." + __import__("hashlib").md5((BASE / "assets" / "share" / "og.png").read_bytes()).hexdigest()[:8] + ".png") if (BASE / "assets" / "share" / "og.png").exists() else seo.abs_url(_base, "assets/og.png"), [seo.org_ld(_base, COMPANY), seo.website_ld(_base)]))
     for ph in ("/*__JOBS_JSON__*/", "/*__NAV__*/", "/*__FOOTER__*/", "/*__FAB__*/", "/*__SHARED_CSS__*/"):
         if ph not in html:
             raise SystemExit(f"template.html 에 {ph} 가 없습니다")
@@ -241,16 +241,25 @@ def build(out_dir: Path, with_news: bool) -> None:
         seo.og_image(share / "og-apply.png", "무료 상담 신청", "취업조로 컨설턴트가 내 상황에 맞는 길을 1:1로 정리해 드립니다", "무료 상담", "취업·이직 고민, 혼자 하지 마세요")
     else:
         print("  (한글 글꼴이 없어 공유 이미지는 다시 만들지 않고 assets/share 의 기존 파일을 씁니다)")
-    import shutil as _sh
-    for name in ("og.png", "og-news.png", "og-zorro.png", "og-apply.png"):
-        if (share / name).exists(): _sh.copy(share / name, out_dir / "assets" / name)
-    if (share / "jobs").exists():
-        _sh.copytree(share / "jobs", out_dir / "assets" / "og", dirs_exist_ok=True)
+    import shutil as _sh, hashlib as _hl
+    def share_url(rel: str) -> str:
+        """assets/share/<rel> 을 site/assets/ 로 복사하되 파일명에 내용 해시를 붙인다 (카카오 등이 옛 이미지를 캐시하지 않도록)."""
+        src = share / rel
+        if not src.exists():
+            return seo.abs_url(base_url, "assets/og.png")
+        h = _hl.md5(src.read_bytes()).hexdigest()[:8]
+        stem, ext = src.stem, src.suffix
+        dst_rel = f"assets/og/{stem}.{h}{ext}" if rel.startswith("jobs/") else f"assets/{stem}.{h}{ext}"
+        dst = out_dir / dst_rel; dst.parent.mkdir(parents=True, exist_ok=True)
+        _sh.copy(src, dst)
+        if rel == "og.png":   # 구조화 데이터의 로고(assets/og.png)가 계속 가리킬 수 있게 원래 이름으로도 둔다
+            _sh.copy(src, out_dir / "assets" / "og.png")
+        return seo.abs_url(base_url, dst_rel)
+    og_main = share_url("og.png")
+    og_news, og_zorro, og_apply = share_url("og-news.png"), share_url("og-zorro.png"), share_url("og-apply.png")
     for name in ("favicon-32.png", "favicon-180.png"):
         src = BASE / "news-collector" / "assets" / name
         if src.exists(): (out_dir / "assets" / name).write_bytes(src.read_bytes())
-    og_main = seo.abs_url(base_url, "assets/og.png")
-    og_news, og_zorro, og_apply = (seo.abs_url(base_url, f"assets/og-{k}.png") for k in ("news", "zorro", "apply"))
     z = (BASE / "template_zorro.html").read_text(encoding="utf-8")
     z = z.replace("/*__SEO__*/", seo.seo_head(base_url, "취업조로와 함께하기 — 신입·중고신입·경력이직·선퇴사자 취업 컨설팅",
         "누가 봐도 뽑고 싶은 인재의 비밀, 취업조로. 컨설팅 15년 차·합격자 1,100명 이상. 신입·중고신입·경력 이직·선퇴사자 맞춤 컨설팅과 무료 상담 신청 방법.",
@@ -319,10 +328,10 @@ def build(out_dir: Path, with_news: bool) -> None:
         jid = j["id"]
         if seo.fonts_available():
             seo.og_image(share / "jobs" / f"{jid}.png", j["name"], j["tagline"], f"취업조로 직무사전 · {gname.get(j['group'], '')}", "채용공고엔 안 나오는 진짜 모습")
-            _sh.copy(share / "jobs" / f"{jid}.png", out_dir / "assets" / "og" / f"{jid}.png")
-        ld = seo.job_ld(base_url, j, by_id, data["meta"], gname.get(j["group"], ""), updated)
+        og_job = share_url(f"jobs/{jid}.png")
+        ld = seo.job_ld(base_url, j, by_id, data["meta"], gname.get(j["group"], ""), updated, og_job)
         head = seo.seo_head(base_url, f"{j['name']} 직무 — 하는 일·연봉·들어가는 길·현직자의 말 | 취업조로 직무사전",
-                            f"{j['name']}: {j['tagline']}. {j['summary']}", f"jobs/{jid}/", seo.abs_url(base_url, f"assets/og/{jid}.png"), ld)
+                            f"{j['name']}: {j['tagline']}. {j['summary']}", f"jobs/{jid}/", og_job, ld)
         body = seo.render_job_body(j, by_id, gname.get(j["group"], ""), updated, base_url)
         page = ("<!doctype html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n"
                 "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n"
