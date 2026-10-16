@@ -322,8 +322,12 @@ def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조
     logo = Image.open(ASSETS / "jobzorro_logo.png").convert("RGBA")
     mark = logo.crop((15, 9, 78, 72)).resize((520, 520), Image.LANCZOS)
     # 마크는 검정 사각 + 흰 마스크. 먹색 바탕 위에 그대로 아주 옅게 올리면 사각은 사라지고 마스크 윤곽만 남는다
-    r, g, bl, al = mark.split()
-    ghost = Image.merge("RGBA", (r, g, bl, al.point(lambda v: int(v * 0.10))))
+    # 흰 마스크 획만 남기고(밝은 픽셀만) 옅게 올린다 → 사각 배경 없이 마스크 윤곽만
+    lum = mark.convert("L").point(lambda v: 255 if v > 140 else 0)
+    al = mark.split()[3]
+    from PIL import ImageChops
+    ghost_a = ImageChops.multiply(lum, al).point(lambda v: int(v * 0.12))
+    ghost = Image.merge("RGBA", (Image.new("L", mark.size, 255),) * 3 + (ghost_a,))
     im.paste(ghost, (W - 560, H - 540), ghost)
     # 위 황동 바
     d.rectangle([0, 0, W, 10], fill=BRASS)
