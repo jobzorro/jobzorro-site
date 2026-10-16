@@ -142,10 +142,10 @@ a { color: inherit; text-decoration: none; }
 :root[data-theme="dark"] .brand-logo-light { display: none; }
 :root[data-theme="dark"] .brand-logo-dark  { display: block; }
 .brand-text { border-left: 1px solid var(--hairline-2); padding-left: 16px; }
-.brand-name { font-size: 17px; font-weight: 800; letter-spacing: -.4px; line-height: 1.2; }
+.brand-name { font-size: 18px; font-weight: 800; letter-spacing: -.4px; line-height: 1.2; display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 0; }
 .brand-en {
-  font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em;
-  color: var(--muted); text-transform: uppercase;
+  font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 13.5px;
+  letter-spacing: .06em; color: var(--brass); text-transform: uppercase; margin-left: 6px; vertical-align: 1px;
 }
 .stamp {
   font-family: var(--mono); font-size: 11px; color: var(--muted);
@@ -386,17 +386,13 @@ a { color: inherit; text-decoration: none; }
 
 /* ---------------- 푸터 ---------------- */
 
-.foot { margin-top: 76px; border-top: 1px solid var(--ink); background: var(--paper); }
-.foot-inner { max-width: 1280px; margin: 0 auto; padding: 40px 32px 56px; }
-.foot-top { display: flex; flex-wrap: wrap; gap: 40px; justify-content: space-between; }
-.foot-label { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin-bottom: 9px; }
-.foot-text { font-size: 12.5px; line-height: 1.75; color: var(--muted); max-width: 52ch; }
-.foot-rule { height: 1px; background: var(--hairline); margin: 28px 0 18px; }
-.foot-note { font-family: var(--mono); font-size: 10.5px; color: var(--faint); line-height: 1.8; }
-.foot-brand { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
-.foot-brand img { width: 40px; height: 40px; border-radius: 9px; flex: none; }
-.foot-brand-name { font-weight: 800; font-size: 13.5px; letter-spacing: -.02em; }
-.foot-brand-slogan { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+.howto { margin-top: 64px; border-top: 1px solid var(--hairline); }
+.howto-inner { max-width: 1280px; margin: 0 auto; padding: 26px 32px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.howto-label { font-size: 12.5px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+.howto-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--ink-soft); }
+.howto-text b { color: var(--brass); }
+.foot-note { font-size: 12px; color: var(--muted); line-height: 1.8; }   /* render_health 가 쓰는 보조 문구 */
+@media (max-width: 900px) { .howto-inner { grid-template-columns: 1fr; gap: 18px; } }
 
 /* ---------------- 테마 토글 ---------------- */
 
@@ -543,7 +539,7 @@ mark { background: var(--brass-tint); color: inherit; padding: 0 1px; border-rad
   .chart-row.top .chart-rank { font-size: 23px; }
   .chart-score { grid-column: 2; width: auto; text-align: left; display: flex; align-items: center; gap: 10px; }
   .score-track { flex: 1 1 auto; margin-top: 0; max-width: 160px; }
-  .foot-inner { padding: 32px 20px 44px; }
+  .howto-inner { padding: 22px 20px 0; }
 }
 
 @media (max-width: 520px) {
@@ -561,7 +557,7 @@ mark { background: var(--brass-tint); color: inherit; padding: 0 1px; border-rad
   .funnel-num { font-size: 18px; }
   .brief-box { padding: 14px 14px 12px; }
   .trend { padding: 16px 12px 12px; }
-  .foot-inner { padding: 28px 16px 40px; }
+  .howto-inner { padding: 20px 16px 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1360,8 +1356,7 @@ def render(today, archive):
       <img class="brand-logo brand-logo-light" src="assets/logo.png" alt="취업조로" width="150" height="40">
       <img class="brand-logo brand-logo-dark" src="assets/logo-dark.png" alt="" aria-hidden="true" width="150" height="40">
       <div class="brand-text">
-        <div class="brand-name">커리어브리핑</div>
-        <div class="brand-en">커리어를 읽는 남자 · Career Briefing</div>
+        <div class="brand-name">커리어브리핑 <em class="brand-en">Career Briefing</em></div>
       </div>
     </a>
     <div class="mast-right">
@@ -1411,49 +1406,23 @@ def render(today, archive):
 
 <main class="container" id="view"></main>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-top">
-      <div class="foot-block">
-        <div class="foot-label">수집 방식</div>
-        <p class="foot-text">
-          언론사 RSS와 Google News 검색 피드를 매일 아침 병렬로 읽어옵니다.
-          제목과 요약문에서 고용·커리어 키워드를 찾아 점수를 매기고,
-          홍보성 보도자료와 유사 중복 기사를 걸러낸 뒤 섹션별 상위 기사만 남깁니다.
-        </p>
-      </div>
-      <div class="foot-block">
-        <div class="foot-label">점수와 랭킹</div>
-        <p class="foot-text">
-          점수는 키워드 가중치, 통계 수치 인용 여부, 언론사 신뢰도를 더한 값입니다.
-          주간·월간 랭킹은 그 기간 지면에 오른 기사를 점수순으로 줄 세운 것이고,
-          키워드 순위의 화살표는 직전 같은 길이 구간과 비교한 변동입니다.
-        </p>
-      </div>
-      <div class="foot-block">
-        <div class="foot-label">읽는 법</div>
-        <p class="foot-text">
-          카드를 누르면 원문으로 이동합니다. <b>AI</b> 표시가 붙은 문장과 "Zorro의 한마디"는
-          취업조로의 관점을 학습한 Claude가 기사 제목·요약만 보고 쓴 것이라 원문과 다를 수 있습니다.
-          그 아래 회색 글은 원문에서 그대로 가져온 요약입니다. #태그는 관련 직무, 키워드를 누르면 지난 기사를 검색합니다.
-        </p>
-      </div>
+<section class="howto" aria-label="이 지면 읽는 법">
+  <div class="howto-inner">
+    <div class="howto-block">
+      <div class="howto-label">읽는 법</div>
+      <p class="howto-text">카드를 누르면 원문으로 갑니다. <b>AI</b> 표시 문장과 "Zorro의 한마디"는 취업조로의 관점을 학습한 Claude가 제목·요약만 보고 쓴 것이라 원문과 다를 수 있고, 회색 글은 원문 요약입니다. #태그는 관련 직무, 키워드를 누르면 지난 기사를 검색합니다.</p>
     </div>
-    <div class="foot-rule"></div>
-    <div class="foot-brand">
-      <img src="assets/teamzorro.png" alt="TEAM ZORRO">
-      <div>
-        <div class="foot-brand-name">취업조로의 커리어브리핑</div>
-        <div class="foot-brand-slogan">TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.</div>
-      </div>
+    <div class="howto-block">
+      <div class="howto-label">수집 방식</div>
+      <p class="howto-text">언론사 RSS와 Google News 피드를 매일 아침 읽어 고용·커리어 키워드로 점수를 매기고, 홍보성 보도자료와 유사 중복 기사를 걸러 섹션별 상위 기사만 남깁니다.</p>
     </div>
-    <div class="foot-note">
-      취업조로 &middot; CAREER BRIEFING &middot; 생성 {e(today.get('generated_at', ''))} &middot;
-      원문 저작권은 각 언론사에 있습니다.
+    <div class="howto-block">
+      <div class="howto-label">점수와 랭킹</div>
+      <p class="howto-text">점수는 키워드 가중치, 통계 수치 인용, 언론사 신뢰도를 더한 값입니다. 주간·월간 랭킹은 그 기간 지면 기사를 점수순으로 세운 것이고, 키워드 화살표는 직전 같은 길이 구간 대비 변동입니다.</p>
     </div>
-{render_health(stats)}
   </div>
-</footer>
+{render_health(stats)}
+</section>
 
 <script id="brief-data" type="application/json">{data_json}</script>
 <script>window.__BRIEF__ = JSON.parse(document.getElementById('brief-data').textContent);</script>

@@ -94,8 +94,8 @@ button { font:inherit; color:inherit; background:none; border:0; cursor:pointer;
 button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visible { outline:2px solid var(--brass); outline-offset:3px; border-radius:3px; }
 .wrap { max-width:1120px; margin:0 auto; padding-inline:20px; }
 /* 라벨(모노·대문자 느낌)과 숫자 */
-.kicker { font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
-.badge { display:inline-flex; align-items:center; gap:4px; font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.04em; padding:3px 8px; border-radius:6px; background:var(--brass-tint); color:var(--brass); white-space:nowrap; }
+.kicker { font-family:var(--font); font-size:12px; font-weight:600; letter-spacing:.01em; color:var(--ink-soft); }
+.badge { display:inline-flex; align-items:center; gap:4px; font-family:var(--font); font-size:11.5px; font-weight:700; letter-spacing:0; padding:3px 9px; border-radius:6px; background:var(--brass-tint); color:var(--brass); white-space:nowrap; }
 .badge.soft { background:var(--brass-tint); color:var(--brass); } .badge.green { background:var(--green-soft); color:var(--green); } .badge.gray { background:var(--mist); color:var(--muted); border:1px solid var(--hairline); }
 .btn { display:inline-flex; align-items:center; gap:6px; padding:10px 16px; border-radius:8px; font-size:14px; font-weight:700; text-decoration:none; }
 .btn.primary { background:var(--inkfg); color:var(--inkbg); } .btn.primary:hover { background:var(--brass); color:#fff; }
@@ -121,11 +121,23 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zf-links a { text-decoration:none; } .zf-links a:hover { color:var(--brass); }
 .zf-box { margin-top:18px; background:var(--mist); border:1px solid var(--hairline); border-radius:10px; padding:14px 16px; font-size:12px; line-height:1.9; color:var(--muted); }
 .zf-box b { color:var(--ink-soft); font-weight:600; }
-.zf-note { margin-top:14px; font-family:var(--mono); font-size:10.5px; color:var(--faint); line-height:1.8; max-width:80ch; }
+.zf-note { margin-top:14px; font-size:12px; color:var(--muted); line-height:1.75; max-width:80ch; }
 /* 하단 고정 상담 버튼 */
 .zfab { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(18px + env(safe-area-inset-bottom,0px)); z-index:25; }
 .zfab a { display:inline-flex; align-items:center; gap:6px; background:var(--fill); color:var(--fillfg); border-radius:999px; padding:13px 26px; font-size:14px; font-weight:800; text-decoration:none; box-shadow:var(--shadow-lift); font-family:var(--font); }
 .zfab a:hover { background:var(--brass); color:#fff; }
+"""
+
+
+# 취업뉴스 페이지에 끼울 때 덮어쓰는 스타일 (보조 글자 선명하게). 제호는 build_site.py 의 .hero-top 이 그린다
+NEWS_MASTHEAD_CSS = """
+/* 보조 글자 선명하게: 모노·흐린 회색 라벨을 고딕 12px 진회색으로, 숫자는 Inter 굵게 */
+.eyebrow { font-family:"Inter","Noto Sans KR",sans-serif; font-size:12.5px; font-weight:600; letter-spacing:0; color:var(--ink-soft); padding:8px 15px; }
+.funnel-num { font-family:"Inter","Noto Sans KR",sans-serif; font-size:28px; font-weight:800; letter-spacing:-.03em; }
+.funnel-label { font-family:"Inter","Noto Sans KR",sans-serif; font-size:12px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--ink-soft); margin-top:5px; }
+.picks-note, .pick-sector, .foot-label { font-family:"Inter","Noto Sans KR",sans-serif; font-size:11.5px; font-weight:700; letter-spacing:.02em; text-transform:none; }
+.picks-note, .foot-label { color:var(--muted); }
+.stamp, .foot-note { font-family:"Inter","Noto Sans KR",sans-serif; font-size:12px; font-weight:500; letter-spacing:0; text-transform:none; color:var(--muted); }
 """
 
 
@@ -135,7 +147,7 @@ def nav_html(active: str, root: str, logo: str) -> str:
     )
     theme = "<script>try{var t=localStorage.getItem('cb-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>"
     return (
-        theme + f'<header class="zn"><div class="zn-in"><a class="zn-logo" href="{root}index.html"><img src="{logo}" alt="취업조로"></a>'
+        theme + f'<header class="zn"><div class="zn-in"><a class="zn-logo" href="{root}index.html"><img src="{logo}" alt="TEAM ZORRO"></a>'
         f'<nav class="zn-tabs" aria-label="사이트 탭">{tabs}</nav>'
         f'<a class="zn-cta" href="{root}{APPLY}">무료 상담 신청하기 ⚡</a></div></header>'
     )
@@ -183,6 +195,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     data = json.loads((BASE / "data" / "jobs.json").read_text(encoding="utf-8"))
     check_jobs(data)
     logo = data_uri(ASSETS / "jobzorro_logo.png")
+    logo_nav = data_uri(ASSETS / "teamzorro_logo.png")   # 맨 위 탭바만 TEAM ZORRO CI, 푸터는 취업조로
     n_jobs = len(data["jobs"])
     n_evidence = data["meta"].get("sourceDocs", 0) + sum(j["sources"].get("public", 0) for j in data["jobs"])
     data["meta"]["evidenceTotal"] = n_evidence
@@ -195,7 +208,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         if ph not in html:
             raise SystemExit(f"template.html 에 {ph} 가 없습니다")
     html = (html.replace("/*__SHARED_CSS__*/", SHARED_CSS)
-                .replace("/*__NAV__*/", nav_html("index.html", "", logo))
+                .replace("/*__NAV__*/", nav_html("index.html", "", logo_nav))
                 .replace("/*__FOOTER__*/", footer_html("", logo, disclaimer))
                 .replace("/*__FAB__*/", fab_html(""))
                 .replace("/*__JOBS_JSON__*/", payload))
@@ -221,7 +234,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     else:
         avatar_html = '<div class="ph"><b>😎</b>프로필 사진 자리<br>(assets/profile.jpg 를 넣으면 표시됩니다)</div>'
     z = (z.replace("/*__SHARED_CSS__*/", SHARED_CSS)
-          .replace("/*__NAV__*/", nav_html("zorro/index.html", "../", logo))
+          .replace("/*__NAV__*/", nav_html("zorro/index.html", "../", logo_nav))
           .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
           .replace("/*__FAB__*/", fab_html("../"))
           .replace("/*__APPLY__*/", "../" + APPLY)
@@ -240,7 +253,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     job_names = {j["id"]: j["name"] for j in data["jobs"]}
     a = (BASE / "template_apply.html").read_text(encoding="utf-8")
     a = (a.replace("/*__SHARED_CSS__*/", SHARED_CSS)
-          .replace("/*__NAV__*/", nav_html(APPLY, "../", logo))
+          .replace("/*__NAV__*/", nav_html(APPLY, "../", logo_nav))
           .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
           .replace("/*__KAKAO_OPEN__*/", cfg_public["kakaoOpen"])
           .replace("/*__CONFIG__*/", json.dumps(cfg_public, ensure_ascii=False).replace("</", "<\\/"))
@@ -258,12 +271,17 @@ def build(out_dir: Path, with_news: bool) -> None:
             raise SystemExit(f"뉴스 결과물이 없습니다: {NEWS_SRC} (news-collector/build_site.py 를 먼저 실행하거나 NEWS_URL 설정, 또는 --no-news)")
         n = news_src.read_text(encoding="utf-8")
         nav_css = "<style>" + "".join(
-            line + "\n" for line in SHARED_CSS.splitlines() if line.startswith((".zn", "@media (max-width:640px) { .zn"))) + (
+            line + "\n" for line in SHARED_CSS.splitlines() if line.startswith((".zn", ".zf", "@media (max-width:640px) { .zn"))) + (
             "@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) { --logo-filter: invert(1); } } :root[data-theme=\"dark\"] { --logo-filter: invert(1); }\n"
-        ) + "</style>"
-        inject = nav_css + nav_html("news/index.html", "../", logo)
+        ) + NEWS_MASTHEAD_CSS + "</style>"
+        # 공용 푸터·하단 버튼이 쓰는 토큰 중 뉴스 페이지에 없는 것들을 뉴스 토큰에 연결
+        nav_css = nav_css.replace("</style>", ":root { --font: var(--sans); --fill: var(--ink); --fillfg: var(--paper); --ink-soft: var(--ink-soft); }\n"
+                                  "body { padding-bottom: 96px; }\n.zfab a { box-shadow: 0 8px 24px var(--shadow-lift); }\n</style>")
+        inject = nav_css + nav_html("news/index.html", "../", logo_nav)
         n = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + inject, n, count=1)
-        n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&display=swap"></head>', 1)
+        foot = footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
+        n = n.replace("</body>", foot + "</body>", 1)
+        n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&family=Noto+Serif+KR:wght@700&display=swap"></head>', 1)
         (out_dir / "news").mkdir(exist_ok=True)
         (out_dir / "news" / "index.html").write_text(n, encoding="utf-8")
         import shutil  # 뉴스 페이지가 참조하는 로고·파비콘도 함께 복사
