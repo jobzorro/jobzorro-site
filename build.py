@@ -13,6 +13,7 @@
 
 import argparse
 import base64
+import seo
 import json
 import os
 import re
@@ -204,6 +205,13 @@ def build(out_dir: Path, with_news: bool) -> None:
     # 1) 직무사전
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     html = (BASE / "template.html").read_text(encoding="utf-8")
+    # site_cfg 는 아래(zorro 블록 앞)에서 읽지만 첫 페이지 SEO 에도 필요하므로 여기서 먼저 읽는다
+    _cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
+    _base = _cfg.get("baseUrl") or "https://jobzorro.github.io/jobzorro-site/"
+    _n_jobs = len(data["jobs"]); _n_ev = data["meta"].get("sourceDocs", 0) + sum(j["sources"].get("public", 0) for j in data["jobs"])
+    html = html.replace("/*__SEO__*/", seo.seo_head(_base, f"취업조로 직무사전 — 직무 {_n_jobs}개, 현직자 인터뷰·자료 {_n_ev:,}건으로 정리한 직무 설명",
+        f"취업·이직 컨설턴트 취업조로가 현직자 인터뷰 {_n_ev:,}건을 바탕으로 정리한 직무사전. 하는 일, 하루 일과, 연봉대, 들어가는 길, 옮겨갈 수 있는 직무, 면접 질문, 현직자의 말까지 직무 {_n_jobs}개를 한 곳에서.",
+        "", seo.abs_url(_base, "assets/og.png"), [seo.org_ld(_base, COMPANY), seo.website_ld(_base)]))
     for ph in ("/*__JOBS_JSON__*/", "/*__NAV__*/", "/*__FOOTER__*/", "/*__FAB__*/", "/*__SHARED_CSS__*/"):
         if ph not in html:
             raise SystemExit(f"template.html 에 {ph} 가 없습니다")
@@ -218,7 +226,21 @@ def build(out_dir: Path, with_news: bool) -> None:
 
     # 2) 취업조로와 함께하기
     site_cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
+    base_url = site_cfg.get("baseUrl") or "https://jobzorro.github.io/jobzorro-site/"
+    updated = data["meta"].get("updated", "2026-10-16")
+    by_id = {j["id"]: j for j in data["jobs"]}
+    gname = {g["id"]: g["name"] for g in data["meta"]["groups"]}
+    # 공유 이미지 (사이트 공통 + 직무별)
+    (out_dir / "assets").mkdir(exist_ok=True)
+    seo.og_image(out_dir / "assets" / "og.png", "취업조로 직무사전", "현직자 인터뷰로 정리한 직무 설명 · 취업뉴스 · 무료 상담")
+    for name in ("favicon-32.png", "favicon-180.png"):
+        src = BASE / "news-collector" / "assets" / name
+        if src.exists(): (out_dir / "assets" / name).write_bytes(src.read_bytes())
+    og_main = seo.abs_url(base_url, "assets/og.png")
     z = (BASE / "template_zorro.html").read_text(encoding="utf-8")
+    z = z.replace("/*__SEO__*/", seo.seo_head(base_url, "취업조로와 함께하기 — 신입·중고신입·경력이직·선퇴사자 취업 컨설팅",
+        "누가 봐도 뽑고 싶은 인재의 비밀, 취업조로. 컨설팅 15년 차·합격자 1,100명 이상. 신입·중고신입·경력 이직·선퇴사자 맞춤 컨설팅과 무료 상담 신청 방법.",
+        "zorro/", og_main, [seo.person_ld(base_url), seo.org_ld(base_url, COMPANY), seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업조로와 함께하기", "zorro/")])]))
     avatar = ASSETS / "profile.jpg"
     if not avatar.exists() and (ASSETS / "profile_web.jpg").exists():
         avatar = ASSETS / "profile_web.jpg"  # 원본(5MB)은 저장소에 안 올리고 줄인 파일만 올린다
@@ -252,6 +274,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     cfg_public = {"formEndpoint": site_cfg.get("formEndpoint", ""), "kakaoOpen": site_cfg.get("kakaoOpen", "https://open.kakao.com/me/zorro")}
     job_names = {j["id"]: j["name"] for j in data["jobs"]}
     a = (BASE / "template_apply.html").read_text(encoding="utf-8")
+    a = a.replace("/*__SEO__*/", seo.seo_head(base_url, "무료 상담 신청 — 취업조로", "취업·이직 고민, 취업조로 컨설턴트와 무료로 먼저 이야기해 보세요. 신입·중고신입·경력 이직·선퇴사자 모두 가능.", "apply/", og_main, [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("무료 상담 신청", "apply/")])]))
     a = (a.replace("/*__SHARED_CSS__*/", SHARED_CSS)
           .replace("/*__NAV__*/", nav_html(APPLY, "../", logo_nav))
           .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
@@ -262,6 +285,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     (out_dir / "apply" / "index.html").write_text(a, encoding="utf-8")
     # 개인정보처리방침
     pv = (BASE / "template_privacy.html").read_text(encoding="utf-8")
+    pv = pv.replace("/*__SEO__*/", seo.seo_head(base_url, "개인정보처리방침 — 취업조로 · 커리어프로젝트 주식회사", "커리어프로젝트 주식회사(취업조로)의 개인정보처리방침. 상담 신청 시 수집 항목, 목적, 보유 기간, 위탁, 정보주체의 권리.", "privacy/", og_main, [], noindex=True))
     pv = (pv.replace("/*__SHARED_CSS__*/", SHARED_CSS)
             .replace("/*__NAV__*/", nav_html("privacy/index.html", "../", logo_nav))
             .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
@@ -271,6 +295,33 @@ def build(out_dir: Path, with_news: bool) -> None:
     (out_dir / "privacy").mkdir(exist_ok=True)
     (out_dir / "privacy" / "index.html").write_text(pv, encoding="utf-8")
     print(f"개인정보처리방침 -> {out_dir / 'privacy' / 'index.html'}")
+
+    # ---- 직무별 정적 페이지 (SEO·GEO) ----
+    tpl = (BASE / "template.html").read_text(encoding="utf-8")
+    css = tpl[tpl.index("<style>") + 7:tpl.index("</style>")].replace("/*__SHARED_CSS__*/", SHARED_CSS) + seo.JOB_PAGE_CSS
+    fonts = tpl[tpl.index('<link rel="preconnect"'):tpl.index("<style>")]
+    entries = [("", updated, "daily", "1.0"), ("news/", updated, "daily", "0.9"), ("zorro/", updated, "monthly", "0.8"), ("apply/", updated, "monthly", "0.6")]
+    for j in data["jobs"]:
+        jid = j["id"]
+        seo.og_image(out_dir / "assets" / "og" / f"{jid}.png", j["name"], j["tagline"])
+        ld = seo.job_ld(base_url, j, by_id, data["meta"], gname.get(j["group"], ""), updated)
+        head = seo.seo_head(base_url, f"{j['name']} 직무 — 하는 일·연봉·들어가는 길·현직자의 말 | 취업조로 직무사전",
+                            f"{j['name']}: {j['tagline']}. {j['summary']}", f"jobs/{jid}/", seo.abs_url(base_url, f"assets/og/{jid}.png"), ld)
+        body = seo.render_job_body(j, by_id, gname.get(j["group"], ""), updated, base_url)
+        page = ("<!doctype html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n"
+                "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n"
+                + head + "\n" + fonts + "<style>" + css + "</style>\n</head>\n<body>\n"
+                + nav_html("index.html", "../../", logo_nav)
+                + "<main class=\"jobpage\"><div class=\"d-body\">" + body + "</div></main>\n"
+                + footer_html("../../", logo, disclaimer) + fab_html("../../") + "\n</body>\n</html>\n")
+        d = out_dir / "jobs" / jid
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "index.html").write_text(page, encoding="utf-8")
+        entries.append((f"jobs/{jid}/", updated, "weekly", "0.8"))
+    seo.write_sitemap(out_dir, base_url, entries)
+    seo.write_robots(out_dir, base_url)
+    seo.write_llms(out_dir, base_url, data["jobs"], data["meta"]["groups"], updated)
+    print(f"직무 페이지 {len(data['jobs'])}개 + sitemap.xml · robots.txt · llms.txt -> {out_dir / 'jobs'}")
     print(f"무료 상담 신청 폼 -> {out_dir / 'apply' / 'index.html'} (전송: {cfg_public['formEndpoint'] or '미연결'})")
 
     # 3) 취업뉴스: 뉴스 수집기 결과물에 공용 탭·글꼴만 끼워 넣는다 (뉴스 페이지 자체 스타일은 건드리지 않음)
@@ -292,7 +343,13 @@ def build(out_dir: Path, with_news: bool) -> None:
         n = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + inject, n, count=1)
         foot = footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
         n = n.replace("</body>", foot + "</body>", 1)
-        n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&family=Noto+Serif+KR:wght@700&display=swap"></head>', 1)
+        news_ld = [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/")]),
+                   {"@context": "https://schema.org", "@type": "WebPage", "@id": seo.abs_url(base_url, "news/"), "name": "취업조로의 커리어브리핑", "inLanguage": "ko",
+                    "description": "취업조로가 매일 아침 고르는 채용·이직·기업·고용 뉴스와 한마디", "isPartOf": {"@id": seo.abs_url(base_url, "#website")}, "author": {"@id": seo.abs_url(base_url, "zorro/#person")}}]
+        n = re.sub(r'<meta property="og:image" content="assets/favicon-180.png">', '', n, count=1)
+        n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&family=Noto+Serif+KR:wght@700&display=swap">'
+                      + f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:image" content="{og_main}"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">'
+                      + "".join(seo.jsonld(o) for o in news_ld) + "</head>", 1)
         (out_dir / "news").mkdir(exist_ok=True)
         (out_dir / "news" / "index.html").write_text(n, encoding="utf-8")
         import shutil  # 뉴스 페이지가 참조하는 로고·파비콘도 함께 복사

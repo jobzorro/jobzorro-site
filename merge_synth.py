@@ -41,7 +41,7 @@ def main():
     out = {
         "meta": {
             "title": "직무사전",
-            "updated": "2026-10-15",
+            "updated": __import__("datetime").date.today().isoformat(),
             "disclaimer": "연봉은 2026년 국내 민간 기업 채용공고와 상담 사례를 바탕으로 한 대략적인 범위(만원, 세전 기본급 기준)이며 기업 규모·산업·지역에 따라 크게 달라집니다. 직무 설명은 취업조로가 진행한 현직자 직무 인터뷰 기록과 공개된 현직자 자료를 바탕으로 작성했으며, 개인과 회사가 특정되지 않도록 업종·연차로만 표기했습니다.",
             "tracks": tax.get("tracks", []),
             "groups": [{"id": g["id"], "name": g["name"], "track": g.get("track", "business")} for g in tax["groups"]],

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <!-- 모바일 필수: 이게 없으면 폰이 PC 폭(980px)으로 그린 뒤 축소해서 글자가 깨알같이 보인다 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>취업조로 직무사전</title>
+/*__SEO__*/
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=Noto+Serif+KR:wght@700;900&family=Playfair+Display:wght@700;800&family=JetBrains+Mono:wght@500;600&display=swap">
 <style>
@@ -81,6 +81,7 @@
 .ai.l2 i b:nth-child(-n+2) { background: var(--lvl2); }
 .ai.l3 i b:nth-child(-n+3) { background: var(--lvl3); }
 .card h3 { font-size: 18.5px; line-height: 1.35; color: var(--black); }
+.card h3 a { color: inherit; text-decoration: none; }
 .card h3::after { content: " \2192"; font-weight: 400; color: var(--brass); }
 .en { font-size: 12.5px; color: var(--muted); margin-top: -5px; }
 .tagline { color: var(--fg-soft); font-size: 14px; line-height: 1.55; }
@@ -238,7 +239,7 @@
 <main class="wrap">
   <div class="section-head">
     <h2>나에게 맞는 <b>직군</b>을 선택하세요 👇</h2>
-    <p>카드의 빨간 배지는 그 직무 설명의 근거가 된 현직자 자료 수입니다.</p>
+    <p>카드의 금색 배지는 그 직무 설명의 근거가 된 현직자 자료 수입니다.</p>
   </div>
   <div class="tracks" id="tracks"></div>
   <section class="controls" aria-label="직군 필터" id="chips"></section>
@@ -368,7 +369,7 @@
     return '<article class="card" data-id="' + j.id + '" tabindex="0" role="button" aria-label="' + esc(j.name) + ' 자세히 보기">' +
       '<div class="card-top"><span class="group">' + esc(gname(j.group)) + '</span>' +
       '<span class="ai l' + j.ai.level + '" title="AI ' + AI_LABEL[j.ai.level] + '"><i><b></b><b></b><b></b></i>AI ' + AI_LABEL[j.ai.level] + '</span></div>' +
-      '<h3>' + esc(j.name) + '</h3><p class="en">' + esc(j.en) + '</p>' +
+      '<h3><a href="jobs/' + j.id + '/">' + esc(j.name) + '</a></h3><p class="en">' + esc(j.en) + '</p>' +
       '<p class="tagline">' + esc(j.tagline) + '</p>' +
       '<ul class="tags">' + j.skills.hard.slice(0, 3).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
       '<div class="card-foot">' + evBadge(j) + '<span class="pay">신입 <b>' + range(j.salary.junior) + '</b>만원</span></div>' +
@@ -381,7 +382,7 @@
     var label = state.group === '전체' ? (state.track === '전체' ? '전체' : (TRACKS.filter(function (t) { return t.id === state.track; })[0] || {}).name) : gname(state.group);
     $('count').innerHTML = '<b>' + esc(label) + '</b> ' + list.length + '개 직무' + (state.q ? ' · "' + esc(state.q) + '" 검색' : '');
   }
-  $('grid').addEventListener('click', function (e) { var c = e.target.closest('.card'); if (c) openJob(c.getAttribute('data-id')); });
+  $('grid').addEventListener('click', function (e) { var c = e.target.closest('.card'); if (c) { e.preventDefault(); openJob(c.getAttribute('data-id')); } });
   $('grid').addEventListener('keydown', function (e) { var c = e.target.closest('.card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openJob(c.getAttribute('data-id')); } });
 
   var SAL_MIN = 2500, SAL_MAX = 18000;
@@ -439,7 +440,7 @@
       (ws.length ? '<ul>' + ws.slice(0, 8).map(function (w) { return '<li><a href="' + esc(w.url) + '" target="_blank" rel="noopener">' + esc(w.title) + '</a></li>'; }).join('') + '</ul>' : '') +
       '</div>';
     h += '<div class="cta"><h3>이 직무로 취업·이직을 고민 중이라면</h3><p>지금 경력에서 이 직무로 가는 가장 빠른 경로를 취업조로 컨설턴트가 1:1로 정리해 드립니다.</p>' +
-      '<div class="cta-row"><a class="btn primary" href="apply/index.html#' + j.id + '">무료 상담 신청하기 ⚡</a><button class="btn ghost" type="button" data-copy="1">이 직무 링크 복사</button></div></div>';
+      '<div class="cta-row"><a class="btn primary" href="apply/index.html#' + j.id + '">무료 상담 신청하기 ⚡</a><a class="btn ghost" href="jobs/' + j.id + '/">이 직무 페이지 열기</a><button class="btn ghost" type="button" data-copy="1">링크 복사</button></div></div>';
     return h;
   }
 

@@ -123,16 +123,6 @@
           "id": "bd",
           "name": "사업개발·해외사업 (BD)",
           "en": "Business Development"
-        },
-        {
-          "id": "service-planning",
-          "name": "서비스 기획 (PM/PO)",
-          "en": "Product Manager / Service Planner"
-        },
-        {
-          "id": "it-planning",
-          "name": "IT 기획·시스템 PM",
-          "en": "IT Planning / System PM"
         }
       ]
     },
@@ -262,6 +252,16 @@
       "name": "IT·데이터",
       "track": "engineering",
       "jobs": [
+        {
+          "id": "it-planning",
+          "name": "IT 기획·시스템 PM",
+          "en": "IT Planning / System PM"
+        },
+        {
+          "id": "service-planning",
+          "name": "서비스 기획 (PM/PO)",
+          "en": "Product Manager / Service Planner"
+        },
         {
           "id": "sw-dev",
           "name": "소프트웨어 개발 (SI·인하우스)",
