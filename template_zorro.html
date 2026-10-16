@@ -5,88 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>취업조로와 함께하기 — 신입·중고신입·경력이직·선퇴사자 취업 컨설팅</title>
 <meta name="description" content="누가 봐도 뽑고 싶은 인재의 비밀, 취업조로. 신입·중고신입·경력 이직·선퇴사자 맞춤 컨설팅과 무료 상담 신청 방법.">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=Noto+Serif+KR:wght@700;900&family=Playfair+Display:wght@700;800&family=JetBrains+Mono:wght@500;600&display=swap">
 <style>
 /*__SHARED_CSS__*/
 /* 페이지: 히어로(두 줄 헤드라인 + 실적 수치) → 상황별 4개 카드(일러스트) → 특별한 이유 3가지 → 프로세스 4단계 → 프로필 → 채널·상담 신청 → 푸터 */
 .hero { background: var(--surface); border-bottom: 1px solid var(--line); }
 .hero-in { max-width: 1120px; margin: 0 auto; padding: 48px 20px 36px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 40px; align-items: center; }
-.hero h1 { font-size: clamp(26px, 3.6vw, 40px); line-height: 1.3; }
+.hero h1 { font-size: clamp(27px, 3.8vw, 42px); line-height: 1.2; letter-spacing: -.045em; }
 .hero h1 .light { display: block; font-weight: 400; color: var(--fg-soft); }
-.hero h1 .strong { display: block; font-weight: 900; color: var(--black); }
+.hero h1 .strong { display: block; font-weight: 800; color: var(--black); }
 .hero .lede { margin-top: 16px; font-size: 15.5px; color: var(--fg-soft); max-width: 60ch; }
 .hero .lede b { font-weight: 700; color: var(--black); background: linear-gradient(transparent 60%, var(--yellow) 60%); }
 .stats { display: flex; gap: 28px; margin: 24px 0 0; flex-wrap: wrap; }
 .stats div { display: flex; flex-direction: column; }
-.stats dt { font-size: 12px; color: var(--muted); }
-.stats dd { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -.02em; color: var(--black); font-variant-numeric: tabular-nums; }
-.stats dd small { font-size: 13px; font-weight: 700; margin-left: 2px; }
-.hero-card { background: var(--black); color: #fff; border-radius: 18px; padding: 24px; }
-.hero-card .t { font-size: 13px; opacity: .75; }
-.hero-card .h { font-size: 20px; font-weight: 900; margin-top: 4px; line-height: 1.35; }
+.stats dt { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.stats dd { margin: 0; font-family: var(--mono); font-size: 26px; font-weight: 600; letter-spacing: -.02em; color: var(--black); font-variant-numeric: tabular-nums; }
+.stats dd small { font-family: var(--font); font-size: 12px; font-weight: 600; margin-left: 3px; color: var(--muted); }
+.hero-card { background: var(--inkbg); color: var(--inkfg); border-radius: 12px; padding: 24px; }
+.hero-card .t { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--inkfg-soft); }
+.hero-card .h { font-size: 20px; font-weight: 800; margin-top: 4px; line-height: 1.35; }
 .hero-card .h em { font-style: normal; color: var(--red); }
 .hero-card p.d { margin-top: 10px; font-size: 13.5px; opacity: .85; line-height: 1.6; }
 .hero-card .btn { margin-top: 16px; }
 .sec-head { padding: 40px 0 16px; }
-.sec-head h2 { font-size: 22px; }
+.sec-head h2 { font-family: var(--serif); font-size: 24px; font-weight: 700; letter-spacing: -.01em; }
 .sec-head h2 b { color: var(--red); }
 .sec-head p { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
 .cases { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-.case { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px 18px; box-shadow: var(--shadow); overflow: hidden; min-height: 190px; }
+.case { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px 20px 18px; box-shadow: var(--shadow); overflow: hidden; min-height: 190px; }
 .case .q { font-size: 13.5px; color: var(--fg-soft); }
 .case h3 { font-size: 22px; margin-top: 2px; color: var(--black); }
 .case h3::after { content: " >"; }
 .case ul { margin-top: 10px; display: grid; gap: 4px; }
 .case li { font-size: 13px; color: var(--fg-soft); padding-left: 12px; position: relative; line-height: 1.5; }
-.case li::before { content: ""; position: absolute; left: 0; top: .6em; width: 5px; height: 5px; border-radius: 50%; background: var(--black); }
+.case li::before { content: ""; position: absolute; left: 0; top: .6em; width: 5px; height: 5px; border-radius: 50%; background: var(--fill); }
 .case .tag { position: static; margin-left: 10px; vertical-align: middle; }
 .case img { align-self: end; justify-self: end; width: 150px; height: auto; max-width: 100%; }
 .case .go { display: inline-flex; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--black); text-decoration: none; vertical-align: middle; }
 .case .go:hover { color: var(--red); }
 .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-.why div { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; }
-.why .n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--black); color: #fff; font-weight: 900; font-size: 14px; }
+.why div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px 20px; }
+.why .n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--fill); color: var(--fillfg); font-weight: 800; font-size: 14px; }
 .why h3 { font-size: 17px; margin-top: 12px; color: var(--black); }
 .why p { margin-top: 8px; font-size: 14px; color: var(--fg-soft); line-height: 1.6; }
 .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.step { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 16px; position: relative; }
-.step .k { font-size: 11.5px; font-weight: 900; color: var(--red); letter-spacing: .06em; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 16px; position: relative; }
+.step .k { font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: var(--brass); letter-spacing: .1em; }
 .step h3 { font-size: 16px; margin-top: 6px; color: var(--black); }
 .step p { margin-top: 6px; font-size: 13.5px; color: var(--fg-soft); line-height: 1.55; }
-.profile { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 26px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 26px; box-shadow: var(--shadow); }
-.avatar { width: 220px; aspect-ratio: 1; border-radius: 18px; background: var(--black); display: grid; place-items: center; overflow: hidden; }
+.profile { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 26px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 26px; box-shadow: var(--shadow); }
+.avatar { width: 220px; aspect-ratio: 1; border-radius: 12px; background: var(--fill); display: grid; place-items: center; overflow: hidden; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
-.avatar .ph { color: #fff; text-align: center; font-size: 12.5px; padding: 16px; line-height: 1.6; }
-.avatar .ph b { display: block; font-size: 34px; font-weight: 900; }
+.avatar .ph { color: var(--inkfg); text-align: center; font-size: 12.5px; padding: 16px; line-height: 1.6; }
+.avatar .ph b { display: block; font-size: 34px; font-weight: 800; }
 .profile h3 { font-size: 22px; color: var(--black); }
 .profile h3 small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 8px; }
 .profile .role { margin-top: 4px; font-size: 14px; font-weight: 700; color: var(--red); }
 .profile ul { margin-top: 12px; display: grid; gap: 5px; }
 .profile li { font-size: 14px; color: var(--fg-soft); padding-left: 14px; position: relative; line-height: 1.55; }
-.profile li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--black); }
+.profile li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--fill); }
 .profile .books { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
-.profile .books-label { margin-top: 14px; font-size: 12px; font-weight: 900; color: var(--black); letter-spacing: .02em; }
+.profile .books-label { margin-top: 14px; font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: var(--brass); letter-spacing: .1em; text-transform: uppercase; }
 .profile .books { margin-top: 6px; }
 .profile .books a { font-size: 12.5px; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); color: var(--fg-soft); text-decoration: none; border: 1px solid transparent; }
 .profile .books a:hover { border-color: var(--black); color: var(--black); }
 .channels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.ch { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; text-decoration: none; color: var(--black); text-align: center; }
+.ch { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: var(--black); text-align: center; }
 .ch:hover { border-color: var(--black); }
-.ch .ic { width: 54px; height: 54px; border-radius: 50%; background: var(--black); color: #fff; display: grid; place-items: center; font-weight: 900; font-size: 12px; letter-spacing: .04em; }
+.ch .ic { width: 54px; height: 54px; border-radius: 50%; background: var(--fill); color: var(--fillfg); display: grid; place-items: center; font-family: var(--mono); font-weight: 600; font-size: 11px; letter-spacing: .06em; }
 .ch .ic svg { width: 26px; height: 26px; }
 .ch b { font-size: 14px; }
 .ch span { font-size: 12px; color: var(--muted); word-break: break-all; }
 .contact { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
-.contact > div { background: var(--black); color: #fff; border-radius: 18px; padding: 26px; }
+.contact > div { background: var(--inkbg); color: var(--inkfg); border-radius: 12px; padding: 26px; }
 .contact h3 { font-size: 20px; color: inherit; }
 .contact p { margin-top: 8px; font-size: 14px; opacity: .85; line-height: 1.65; }
 .contact ol { margin-top: 12px; display: grid; gap: 8px; counter-reset: s; }
 .contact ol li { position: relative; padding-left: 30px; font-size: 14px; counter-increment: s; }
-.contact ol li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; border-radius: 50%; background: var(--red); color: #fff; font-size: 12px; font-weight: 900; display: grid; place-items: center; }
+.contact ol li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; border-radius: 50%; background: var(--brass); color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; }
 .contact .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .contact .white { background: var(--surface); color: var(--black); border: 1px solid var(--line); }
 .contact .white p { opacity: 1; color: var(--fg-soft); }
 .contact .white code { font-family: inherit; font-weight: 700; color: var(--black); user-select: all; }
+.contact .white .btn.primary { background: var(--fill); color: var(--fillfg); }
+.contact .white .btn.primary:hover { background: var(--brass); color: #fff; }
+.contact .white .btn.ghost { border-color: var(--hairline-2); color: var(--ink); }
+.contact .white .btn.ghost:hover { border-color: var(--brass); color: var(--brass); }
 .notice { margin-top: 18px; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
 @media (max-width: 900px) {
   .hero-in { grid-template-columns: 1fr; gap: 22px; }
@@ -115,10 +120,9 @@
       <p class="lede">취업조로는 <b>재무제표와 보고서로 지원 회사를 뜯어보는 기업분석</b>과 <b>어떤 질문에도 바로 쓰는 생생 면접 스크립트</b>로 합격을 만듭니다. 공장식 컨설팅 대신, 지금 가진 스펙과 상황에서 취업하는 방향을 1:1로 잡아 드립니다.</p>
       <dl class="stats">
         <div><dt>함께한 합격자</dt><dd>1,100<small>+</small></dd></div>
-        <div><dt>현직자 인터뷰·자료</dt><dd>/*__EVIDENCE__*/<small>건</small></dd></div>
-        <div><dt>직무사전 수록 직무</dt><dd>/*__JOBS__*/<small>개</small></dd></div>
         <div><dt>컨설팅 경력</dt><dd>15<small>년 차</small></dd></div>
-        <div><dt>회사 재직 경력</dt><dd>13<small>년</small></dd></div>
+        <div><dt>경영기획 &amp; 전략기획 경력</dt><dd>13<small>년</small></dd></div>
+        <div><dt>저서</dt><dd>3<small>권</small></dd></div>
       </dl>
     </div>
     <aside class="hero-card">
@@ -250,6 +254,7 @@
     <a class="ch" href="https://www.instagram.com/career_zorro" target="_blank" rel="noopener"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></span><b>인스타그램</b><span>@career_zorro</span></a>
     <a class="ch" href="https://www.youtube.com/@ZORROCAREER" target="_blank" rel="noopener"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></svg></span><b>유튜브</b><span>@ZORROCAREER</span></a>
     <a class="ch" href="https://blog.naver.com/zorr0" target="_blank" rel="noopener"><span class="ic">blog</span><b>네이버 블로그</b><span>blog.naver.com/zorr0</span></a>
+    <a class="ch" href="/*__KAKAO_OPEN__*/" target="_blank" rel="noopener"><span class="ic">TALK</span><b>카카오톡 오픈채팅</b><span>취업조로의 오픈채팅</span></a>
   </section>
 
   <section class="contact">
@@ -262,12 +267,11 @@
         <li>취업조로를 비롯한 TEAM ZORRO 소속 컨설턴트들이 일정을 잡아 1:1로 상황을 듣고 방향을 정리합니다</li>
         <li>컨설팅이 필요할 시 커리큘럼, 비용을 안내합니다</li>
       </ol>
-      <div class="row"><a class="btn primary" href="/*__APPLY__*/">무료 상담 신청하기 ⚡</a><a class="btn ghost" href="/*__KAKAO_OPEN__*/" target="_blank" rel="noopener">카카오톡 오픈프로필로 문의</a></div>
     </div>
     <div class="white">
       <h3>이런 분이 먼저 연락 주세요</h3>
       <p>어떤 공고를 써야 할지 모르겠는 분. 서류는 붙는데 면접에서 떨어지는 분. 물경력 같아 이직이 두려운 분. 퇴사부터 해 버려 마음이 급한 분. 직무 자체가 고민이라면 직무사전부터 보고 오셔도 좋습니다.</p>
-      <p>카카오톡 오픈프로필 <code>open.kakao.com/me/zorro</code><br>홈페이지 <code>jobzorro.kr</code></p>
+      <div class="row"><a class="btn primary" href="/*__APPLY__*/">무료 상담 신청하기 ⚡</a><a class="btn ghost" href="/*__KAKAO_OPEN__*/" target="_blank" rel="noopener">카카오톡 오픈프로필로 문의</a></div>
     </div>
   </section>
   <p class="notice">합격자 수와 경력은 취업조로 홈페이지 및 저자 소개 기준이며, 상담 일정과 과정 안내는 홈페이지의 최신 공지가 우선합니다.</p>
