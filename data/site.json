@@ -1,7 +1,11 @@
 {
-  "_설명": "사이트 공통 설정. formEndpoint 에 구글 Apps Script 웹앱 URL(https://script.google.com/macros/s/.../exec)을 넣으면 상담 신청 폼이 구글 시트로 전송된다. 비어 있으면 폼은 '접수 준비 중' 안내와 카카오톡 오픈프로필(kakaoOpen) 링크를 보여준다. baseUrl 은 canonical·sitemap·공유 링크에 쓰는 사이트 주소(끝에 /).",
+  "_설명": "사이트 공통 설정. formEndpoint 에 구글 Apps Script 웹앱 URL(https://script.google.com/macros/s/.../exec)을 넣으면 상담 신청 폼이 구글 시트로 전송된다. 비어 있으면 폼은 '접수 준비 중' 안내와 카카오톡 오픈프로필(kakaoOpen) 링크를 보여준다. baseUrl 은 canonical·sitemap·공유 링크에 쓰는 사이트 주소(끝에 /). verification.google / naver 는 서치콘솔·서치어드바이저 소유 확인 메타 태그의 content 값.",
   "formEndpoint": "https://script.google.com/macros/s/AKfycby0poPOiYObTSoFboK-edl5RkLU6D1m_t3hO7er1B0_k_lNZPFkUdLebPirSDlTCb0G/exec",
   "notifyEmail": "",
   "kakaoOpen": "https://open.kakao.com/me/zorro",
-  "baseUrl": "https://job.jobzorro.kr/"
+  "baseUrl": "https://job.jobzorro.kr/",
+  "verification": {
+    "google": "zauEV-5dp_-qe55Kly_haHf9WdmpLVzNHAqJA1ofaJE",
+    "naver": ""
+  }
 }

@@ -208,6 +208,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     # site_cfg 는 아래(zorro 블록 앞)에서 읽지만 첫 페이지 SEO 에도 필요하므로 여기서 먼저 읽는다
     _cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
     _base = _cfg.get("baseUrl") or "https://jobzorro.github.io/jobzorro-site/"
+    seo.VERIFY = _cfg.get("verification", {}) or {}
     _n_jobs = len(data["jobs"]); _n_ev = data["meta"].get("sourceDocs", 0) + sum(j["sources"].get("public", 0) for j in data["jobs"])
     html = html.replace("/*__SEO__*/", seo.seo_head(_base, f"취업조로 직무사전 — 직무 {_n_jobs}개, 현직자 인터뷰·자료 {_n_ev:,}건으로 정리한 직무 설명",
         f"취업·이직 컨설턴트 취업조로가 현직자 인터뷰 {_n_ev:,}건을 바탕으로 정리한 직무사전. 하는 일, 하루 일과, 연봉대, 들어가는 길, 옮겨갈 수 있는 직무, 면접 질문, 현직자의 말까지 직무 {_n_jobs}개를 한 곳에서.",
@@ -348,7 +349,7 @@ def build(out_dir: Path, with_news: bool) -> None:
                     "description": "취업조로가 매일 아침 고르는 채용·이직·기업·고용 뉴스와 한마디", "isPartOf": {"@id": seo.abs_url(base_url, "#website")}, "author": {"@id": seo.abs_url(base_url, "zorro/#person")}}]
         n = re.sub(r'<meta property="og:image" content="assets/favicon-180.png">', '', n, count=1)
         n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&family=Noto+Serif+KR:wght@700&display=swap">'
-                      + f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:image" content="{og_main}"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">'
+                      + f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:image" content="{og_main}"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">' + seo.verify_tags()
                       + "".join(seo.jsonld(o) for o in news_ld) + "</head>", 1)
         (out_dir / "news").mkdir(exist_ok=True)
         (out_dir / "news" / "index.html").write_text(n, encoding="utf-8")

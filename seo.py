@@ -15,6 +15,7 @@ from pathlib import Path
 BASE = Path(__file__).parent
 ASSETS = BASE / "assets"
 AI_LABEL = {1: "낮음", 2: "보통", 3: "큼"}
+VERIFY = {}   # build.py 가 site.json 의 verification 값을 넣는다 (google / naver)
 
 
 def e(s) -> str:
@@ -63,6 +64,10 @@ def seo_head(base: str, title: str, desc: str, path: str, image: str, ld=None, n
         f'<link rel="icon" type="image/png" sizes="32x32" href="{e(abs_url(base, "assets/favicon-32.png"))}">',
         f'<link rel="apple-touch-icon" sizes="180x180" href="{e(abs_url(base, "assets/favicon-180.png"))}">',
     ]
+    if VERIFY.get("google"):
+        parts.append(f'<meta name="google-site-verification" content="{e(VERIFY["google"])}">')
+    if VERIFY.get("naver"):
+        parts.append(f'<meta name="naver-site-verification" content="{e(VERIFY["naver"])}">')
     for obj in (ld or []):
         parts.append(jsonld(obj))
     if extra:
@@ -364,3 +369,13 @@ def write_llms(out_dir: Path, base: str, jobs, groups, updated: str) -> None:
         lines.append(f"- [{j['name']}]({abs_url(base, f'jobs/{j['id']}/')}): {gname.get(j['group'], '')} · {j['tagline']} · 신입 {rng(j['salary']['junior'])}만원")
     lines += ["", "## 기타", f"- [개인정보처리방침]({abs_url(base, 'privacy/')})", f"- [sitemap]({abs_url(base, 'sitemap.xml')})"]
     (out_dir / "llms.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def verify_tags() -> str:
+    """뉴스 페이지처럼 seo_head 를 안 쓰는 페이지용 소유 확인 태그."""
+    out = []
+    if VERIFY.get("google"):
+        out.append(f'<meta name="google-site-verification" content="{e(VERIFY["google"])}">')
+    if VERIFY.get("naver"):
+        out.append(f'<meta name="naver-site-verification" content="{e(VERIFY["naver"])}">')
+    return "".join(out)
