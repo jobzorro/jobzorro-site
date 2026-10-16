@@ -1,16 +1,19 @@
 {
   "title": "CAREER BRIEFING",
   "date": "2026-10-16",
-  "generated_at": "2026-10-16 09:50",
+  "generated_at": "2026-10-16 09:53",
   "stats": {
-    "collected": 2175,
-    "deduped": 2032,
-    "recent": 866,
-    "fresh": 827,
-    "relevant": 123,
+    "collected": 1976,
+    "deduped": 1833,
+    "recent": 746,
+    "fresh": 713,
+    "relevant": 103,
     "published": 21,
     "feeds": 30,
-    "dead_feeds": []
+    "dead_feeds": [
+      "머니투데이 https://rss.mt.co.kr/mt_news.xml",
+      "부업 OR N잡 OR 사이드잡 OR 멀티커리어"
+    ]
   },
   "sections": [
     {
@@ -279,21 +282,6 @@
         },
         {
           "rank": 2,
-          "title": "디아이티, 레이저 장비 피보팅으로 영업익 122% 급증… 재평가 기대",
-          "lead": "2026년 1~3월에는 SK하이닉스향 반도체 제조장비 공급계약 3건, 총 약 688억원을 공시했다.",
-          "summary": "스몰인사이트리서치는 청주 M15X 및 용인 Y1 증설 일정을 고려할 때 2026년 4분기부터 2027년 상반기까지 후속 수주 가능성이 있다고 판단했다.",
-          "url": "https://www.mt.co.kr/stock/2026/10/16/2026101608075720324",
-          "source": "머니투데이",
-          "published": "2026-10-16 08:12",
-          "score": 33,
-          "keywords": [
-            "영업익"
-          ],
-          "image": null,
-          "related": []
-        },
-        {
-          "rank": 3,
           "title": "'10조 IPO' 청신호 켜진 무신사…8500억 부채 부담 덜고 글로벌 성장 가속",
           "lead": "기업가치 10조원에 도전하는 무신사의 기업공개(IPO)에 청신호가 켜졌다.",
           "summary": "상장 준비 과정에서 핵심 과제로 꼽혔던 상환전환우선주(RCPS)의 보통주 전환을 모두 마무리하면서 재무구조 개선의 전기를 마련했다. 역대 최대 매출과 해외 사업 확대에 이어 재무적 불확실성까지 낮추면서 내년 상반기 코스피 상장을 위한 기반이 한층 탄탄해졌다는 평가다.15일 투자은행(IB) 및 유통업계에 따르면 무신사는 최근 재무적투자자(FI)들과 협의를 마치고 기존 RCPS 전량을 보통주로 전환했다. 지난달 말 관련 등기까지 완료하면서 전체 발행주식 2억46",
@@ -308,20 +296,47 @@
           "related": []
         },
         {
-          "rank": 4,
-          "title": "두산에너빌, 3분기 실적 기대치 밑돌듯…\"SMR 수주 기대감 유효\"-하나",
-          "lead": "하나증권이 16일 두산에너빌리티에 대해 투자의견 매수를 유지하되 목표주가는 기존 165만원에서 120만원으로 내렸다.",
-          "summary": "3분기 실적은 시장 기대치를 밑돌 것으로 예상되나 연내 SMR(소형모듈원자로) 수주 기대감이 남아 있다는 분석이다.",
-          "url": "https://www.mt.co.kr/stock/2026/10/16/2026101608333071723",
-          "source": "머니투데이",
-          "published": "2026-10-16 08:50",
+          "rank": 3,
+          "title": "TSMC, 3분기 영업이익률 60% 육박...AI 훈풍 '지속'",
+          "lead": "TSMC가 2026년 3분기 실적을 공개했다.",
+          "summary": "인공지능(AI) 순풍은 여전하다. TSMC는 반도체 위탁생산(파운드리) 점유율 1위다. 주요 AI 반도체는 TSMC의 손을 거친다.15일 TSMC는 2026년 3분기 매출액과 영업이익을 각각 1조4942억4300만대만달러(약 62조1900억원)와 8764억4500만대만달러(약 36조4700억원)로 집계했다고 밝혔다.매출액은 전기대비 17.6% 전년동기대비 50.9% 증가했다. 영업이익은 전기대비 14.3% 전년동기대비 75.0% 상승했다.미국 달러화로 환산한 이번 분기 매출액은 467억",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156144",
+          "source": "테크M",
+          "published": "2026-10-16 00:24",
           "score": 31,
           "keywords": [
-            "실적",
-            "수주"
+            "영업이익"
           ],
           "image": null,
-          "related": []
+          "related": [
+            {
+              "title": "TSMC, 3분기 매출 전년대비 41% 증가…2나노 비중 확대",
+              "source": "전자신문",
+              "url": "https://www.etnews.com/20261015000375"
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "대한항공 실적 날았다…3분기 역대급 매출 5조",
+          "lead": "대한항공이 올해 3분기 외국인 관광객 증가와 인공지능(AI)·반도체 관련 항공화물 수요 확대에 힘입어 역대 분기 최대 매출을 달성했다.",
+          "summary": "여객과 화물 사업이 동반 성장하면서 영업이익도 두 자릿수 증가율을 기록했다. 대한항공은 올 3분기 매출액이 5조448억원으로 전년 동기 대비 1조363억원(25.9%) 증가했다고 15일 공시했다. 이는 분기 기준 역대 최대..",
+          "url": "https://www.mk.co.kr/news/business/12177004",
+          "source": "매일경제",
+          "published": "2026-10-15 17:26",
+          "score": 30,
+          "keywords": [
+            "실적",
+            "매출"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "대한항공, 3분기 매출 ‘역대 최대’ 5조…고유가에도 환승 수요 몰려",
+              "source": "한겨레",
+              "url": "https://www.hani.co.kr/arti/economy/marketing/1282576.html"
+            }
+          ]
         }
       ]
     },
@@ -383,11 +398,6 @@
           "image": null,
           "related": [
             {
-              "title": "9월 취업자 11.3만명↑…15~64세 고용률 올랐지만 청년 실업문제는 심각",
-              "source": "머니투데이",
-              "url": "https://www.mt.co.kr/economy/2026/10/16/2026101608012299789"
-            },
-            {
               "title": "9월 취업자 11.3만명 증가…15~64세 고용률 늘고 실업률 하락",
               "source": "머니투데이",
               "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE94WUw2N3hRc3paVHdmR0doMUNBd2kwYXFZaW1WcDNsZXRWSFpnX042UTVKNVl5Wm52VWwybk5sRlJvR1pOUW5BUWRoQ09QZWd3aUZRQ3YyMkxmUmk0WUw5TnVuSml2Yk1rWXU40gFwQVVfeXFMUGtTbUZQMTl4TG1oQk9BT2lvREh0R1lyWG9HWnZ1alh4eExvNHpud1BGTWpYak5EZXFQS0ZJamd1SDJhQTRLZmI4LVlMYUZ4Z2NKeDQzZDdQOFNxMV9VSUZmLUNPSXdiVGdEZ2dMUWpiRw?oc=5"
@@ -396,6 +406,11 @@
               "title": "9월 취업자 11만3000명↑…청년 고용률 29개월 연속 하락",
               "source": "더팩트",
               "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFAzVmdKdTg1b2tubVJVd2YxWWMyRU5aT2dlTGNmcVJZcS1jMDdmd2t1eVVjZXVaS1BwY0hTUDRmN1VvZXBIcUI0a2FTYmdwdktjdS1wV2hvTTVaZ9IBVEFVX3lxTFAwWkYwZ29CekJlS0FZRWZIVGZWaUEtencyRi1LRWZocHZTU2FDVWgwVnluWExJMEp2d1lCZV9xYjQ2Szl4aVFCalI4ZW1vQnpIMVZVaQ?oc=5"
+            },
+            {
+              "title": "9월 취업자 수 11.3만명↑…청년 고용률 1.1%p↓",
+              "source": "신아일보",
+              "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE14UnNMSFVfTVh6d21ZYkpLTUR4WUo2V1RPVzl4OFB0OVZvbGZkVHRLR3RsRGNiNmI2dFRtM0hnMGpIcXFGLXZHZnA0RmRSNzRvRjJNNThqakhiN1I5MWNBSHd1bDViSWdNQS1Obm5Ud1M?oc=5"
             }
           ]
         }
