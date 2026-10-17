@@ -7,7 +7,8 @@ news_data.json + archive/*.json -> 정적 웹페이지(site/index.html) 생성
   월간 - 최근 30일 기준 동일
 
 만드는 파일:
-  site/index.html            오늘 지면 + 아카이브 보기(JS) + 주간·월간 랭킹 + 검색
+  site/index.html            오늘 지면(JS 데이터 __BRIEF__ 는 오늘 하루치만 박는다) + 아카이브 보기·주간·월간·검색 UI
+  site/assets/archive.json   지난 날짜 기사 전체 + 주간·월간 랭킹(키워드·추이) — 페이지 JS 가 과거가 필요한 첫 동작 때 한 번 받는다
   site/assets/thumbs/*.jpg   오늘 지면 기사 썸네일 (news_data.json 의 data URI 를 파일로 뺀 것)
   site/<YYYY-MM-DD>/index.html  날짜별 정적 지면 (검색엔진이 하루를 하나의 URL 로 읽게)
   site/archive/index.html    지난 지면 전체 목록 (월별)
@@ -327,6 +328,11 @@ a { color: inherit; text-decoration: none; }
 .tag { font-family: var(--mono); font-size: 12.5px; font-weight: 500; padding: 3px 9px; border: 1px solid var(--hairline-2); border-radius: 99px; color: var(--muted); }
 
 .empty { padding: 30px 0; color: var(--muted); font-size: 14px; border-bottom: 1px solid var(--hairline); }
+.loading { display: flex; align-items: center; gap: 10px; }
+.loading::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--hairline); border-top-color: var(--brass); animation: cb-spin .8s linear infinite; }
+@keyframes cb-spin { to { transform: rotate(360deg); } }
+.retry-btn { margin-left: 10px; padding: 6px 12px; border: 1px solid var(--hairline); border-radius: 8px; background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.retry-btn:hover { border-color: var(--brass); color: var(--brass); }
 
 /* ---------------- 주간·월간: 랭킹 차트 ---------------- */
 
@@ -650,9 +656,70 @@ SCRIPT = r"""
   var NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
   var SERIES = ['--s1', '--s2', '--s3', '--s4', '--s5'];   // 추이 차트 계열색 (고정 순서)
   var dates = D.days.map(function (d) { return d.date; });
+  var today = D.today || (dates.length ? dates[dates.length - 1] : null);
   var mode = 'daily';
-  var current = dates.length ? dates[dates.length - 1] : null;
+  var current = today;
   var query = '';
+
+  /* ---------- 지난 지면(archive.json) 지연 로딩 ----------
+     페이지에는 오늘 하루치(D.daily[today])만 박혀 있다. 다른 날짜·주간/월간·검색처럼 과거가
+     필요한 동작을 처음 할 때 assets/archive.json 을 한 번 받아 D 에 합치고, 그 다음부터는 재요청 없이
+     기존 렌더 로직을 그대로 쓴다. */
+  var ARCHIVE_URL = D.archive_url || 'assets/archive.json';
+  var archiveState = D.periods && Object.keys(D.periods).length ? 'ready' : 'idle';  // idle | loading | ready | error
+  var archiveError = '';
+  D.daily = D.daily || {};
+  D.periods = D.periods || {};
+
+  function mergeArchive(ar) {
+    var k;
+    for (k in (ar.daily || {})) if (!D.daily[k]) D.daily[k] = ar.daily[k];   // 오늘 지면(썸네일 포함)은 페이지 것이 우선
+    for (k in (ar.periods || {})) D.periods[k] = ar.periods[k];
+    corpus = null;   // 검색 말뭉치는 다음 검색 때 다시 편다
+  }
+
+  function needsArchive() {
+    if (archiveState === 'ready') return false;
+    if (mode === 'daily') return !D.daily[current];
+    return true;   // weekly / monthly / search
+  }
+
+  function loadArchive() {
+    if (archiveState === 'loading' || archiveState === 'ready') return;
+    archiveState = 'loading';
+    archiveError = '';
+    if (typeof fetch !== 'function') {
+      archiveState = 'error'; archiveError = '이 브라우저는 지원하지 않습니다.'; paint(); return;
+    }
+    fetch(ARCHIVE_URL, { credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (ar) { mergeArchive(ar); archiveState = 'ready'; paint(); })
+      .catch(function (err) {
+        if (archiveState === 'ready') throw err;   // 데이터는 받았고 그리기에서 난 오류 — 네트워크 오류로 오인하지 않는다
+        archiveState = 'error';
+        archiveError = location.protocol === 'file:'
+          ? '파일을 직접(file://) 열면 지난 지면을 불러올 수 없습니다. 배포된 주소나 로컬 웹 서버에서 열어 주세요.'
+          : '지난 지면을 불러오지 못했습니다. (' + (err && err.message ? err.message : '네트워크 오류') + ')';
+        paint();
+      });
+  }
+
+  /* 불러오는 동안 / 실패했을 때 본문 자리에 보여줄 안내 */
+  function archiveNotice() {
+    view.innerHTML = '';
+    if (archiveState === 'error') {
+      var p = el('p', 'empty', archiveError);
+      if (location.protocol !== 'file:') {
+        var b = el('button', 'retry-btn', '다시 시도');
+        b.type = 'button';
+        b.addEventListener('click', function () { archiveState = 'idle'; paint(); });
+        p.appendChild(b);
+      }
+      view.appendChild(p);
+    } else {
+      view.appendChild(el('p', 'empty loading', '지난 지면을 불러오는 중…'));
+    }
+  }
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -805,7 +872,7 @@ SCRIPT = r"""
     }
 
     // 오늘 브리핑은 상단 히어로에 있으니, 지난 날짜를 볼 때만 본문 위에 붙인다
-    if (day.briefing && day.briefing.length && date !== dates[dates.length - 1]) {
+    if (day.briefing && day.briefing.length && date !== today) {
       var wrap = el('div', null);
       wrap.style.paddingTop = '40px';
       wrap.appendChild(briefBox(day.briefing, date + ' 브리핑'));
@@ -1105,7 +1172,9 @@ SCRIPT = r"""
   /* ---------- 검색 (아카이브 전체) ---------- */
 
   // 모든 날짜의 기사를 한 번만 펼쳐 둔다. 같은 기사(제목 기준)가 여러 날 실렸으면 최신 날짜 1건만.
-  var corpus = (function () {
+  // (archive.json 을 받은 뒤 첫 검색 때 만들고, 이후 재사용)
+  var corpus = null;
+  function buildCorpus() {
     var seen = {}, out = [];
     dates.slice().reverse().forEach(function (date) {
       var day = D.daily[date];
@@ -1122,7 +1191,7 @@ SCRIPT = r"""
       });
     });
     return out;
-  })();
+  }
 
   function searchRow(hit, terms) {
     var a = link(hit.a.url, 'chart-row');
@@ -1152,6 +1221,7 @@ SCRIPT = r"""
   }
 
   function renderSearch() {
+    if (!corpus) corpus = buildCorpus();
     var terms = query.toLowerCase().split(/\s+/).filter(Boolean);
     var hits = terms.length ? corpus.filter(function (h) {
       return terms.every(function (t) { return h.text.indexOf(t) >= 0; });
@@ -1223,8 +1293,17 @@ SCRIPT = r"""
       if (location.hash !== hash) history.replaceState(null, '', hash || location.pathname + location.search);
     } catch (e) { /* 샌드박스(iframe) 안에서는 주소를 못 바꿀 수 있다 */ }
 
+    if (isDaily) syncDateNav();
+
+    // 오늘 지면·테마·탭바는 바로 동작하고, 과거 데이터가 필요한 화면만 archive.json 을 기다린다
+    if (needsArchive()) {
+      if (!isDaily && !isSearch) note.textContent = archiveState === 'error' ? '' : '불러오는 중…';
+      archiveNotice();
+      if (archiveState === 'idle') loadArchive();
+      return;
+    }
+
     if (isDaily) {
-      syncDateNav();
       renderDaily(current);
     } else if (isSearch) {
       renderSearch();
@@ -1607,6 +1686,27 @@ def render_health(stats):
             f'{len(dead)}개: {e(" / ".join(dead))}</div>')
 
 
+ARCHIVE_JSON = "assets/archive.json"   # index.html 기준 상대 경로 (JS 의 fetch 경로와 같아야 한다)
+
+
+def split_payload(today, archive):
+    """클라이언트 데이터를 둘로 나눈다.
+    page   - index.html 에 박는 __BRIEF__: 오늘 지면(썸네일 포함) + 날짜 목록. 첫 화면은 이것만으로 그린다
+    extra  - assets/archive.json: 지난 날짜 기사 전체(텍스트만) + 주간·월간 랭킹(키워드 순위·추이 포함).
+             다른 날짜 선택·주간/월간 탭·검색을 처음 할 때 JS 가 한 번 받는다"""
+    page = {
+        "today": today["date"],
+        "days": archive["days"],
+        "daily": {today["date"]: today},
+        "archive_url": ARCHIVE_JSON,
+    }
+    extra = {
+        "daily": {d["date"]: strip_images(d) for d in archive["full_days"] if d["date"] != today["date"]},
+        "periods": archive["periods"],
+    }
+    return page, extra
+
+
 def render(today, archive):
     stats = today.get("stats", {})
     sections = today.get("sections", [])
@@ -1635,15 +1735,9 @@ def render(today, archive):
         f'aria-selected="false">{e(archive["periods"][k]["label"])}</button>'
         for k in ("weekly", "monthly") if k in archive["periods"])
 
-    # 클라이언트가 쓸 데이터: 오늘만 썸네일 포함, 과거는 텍스트만
-    daily = {d["date"]: strip_images(d) for d in archive["full_days"]}
-    daily[today["date"]] = today
-
-    payload = {
-        "days": archive["days"],
-        "daily": daily,
-        "periods": archive["periods"],
-    }
+    # 클라이언트가 쓸 데이터: 페이지에는 오늘 지면(썸네일 포함)과 날짜 목록만 박고,
+    # 지난 날짜 기사·주간/월간 랭킹은 assets/archive.json 으로 뺀다 (첫 로딩 용량을 지키기 위해)
+    payload, _ = split_payload(today, archive)
     # '<' 를 이스케이프해 기사 제목에 </script> 가 섞여도 스크립트 블록이 깨지지 않게 한다
     data_json = (json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
                  .replace("<", "\u003c"))
@@ -1792,6 +1886,15 @@ def main():
     # CI 로고·파비콘: assets/ 를 site/assets/ 로 복사 (site/ 는 배포 때마다 새로 만들어진다)
     shutil.copytree(BASE_DIR / "assets", site_dir / "assets", dirs_exist_ok=True)
 
+    # 지난 지면 데이터(archive.json): assets/ 복사 뒤에 써야 덮어쓰이지 않는다
+    _, extra = split_payload(today, archive)
+    archive_json = json.dumps(extra, ensure_ascii=False, separators=(",", ":"))
+    if "data:image" in archive_json:
+        print("경고: archive.json 에 data URI 이미지가 남아 있습니다 (strip_images 확인)", file=sys.stderr)
+    archive_path = site_dir / ARCHIVE_JSON
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    archive_path.write_text(archive_json, encoding="utf-8")
+
     # 날짜별 정적 지면 + 아카이브 목록 + 날짜 목록(days.json)
     full_days = archive["full_days"]
     dates = [d["date"] for d in full_days]
@@ -1808,6 +1911,8 @@ def main():
     periods = ", ".join(
         f"{p['label']} {len(p['articles'])}건" for p in archive["periods"].values())
     print(f"생성 완료: {out_path}  ({out_path.stat().st_size / 1024:.0f} KB)")
+    print(f"  지난 지면 데이터 -> {archive_path}  ({archive_path.stat().st_size / 1024:.0f} KB, "
+          f"{len(extra['daily'])}일치 + 랭킹 {len(extra['periods'])}종)")
     print(f"  일간 아카이브 {archive['available']}일치" + (f" | {periods}" if periods else ""))
     print(f"  썸네일 {n_thumbs}장 -> {site_dir / THUMB_DIR}  (새로 저장 {new_thumbs}장, {thumb_bytes / 1024:.0f} KB)")
     print(f"  날짜별 지면 {len(dates)}쪽 + archive/index.html + days.json")

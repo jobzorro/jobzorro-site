@@ -246,6 +246,9 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     h.append(sec("자주 묻는 질문", f'<div class="faqs">{faq}</div>'))
     inds = (j["sources"].get("industries") or [])[:12]
     ws = j.get("webSources") or []
+    if j.get("news"):
+        items = "".join(f'<li><a href="{e(n["url"])}" target="_blank" rel="noopener nofollow"><span class="d">{e(n["date"][5:].replace("-", "."))} · {e(n["source"])}</span><b>{e(n["title"])}</b>' + (f'<span class="w">{e(n["why"])}</span>' if n.get("why") else "") + '</a></li>' for n in j["news"])
+        h.append(sec("이 직무 관련 최근 뉴스", f'<ul class="newsbox">{items}</ul><a class="more" href="../../news/">커리어브리핑 전체 보기 →</a>', "취업조로 커리어브리핑"))
     src = '<div class="src"><b>근거 자료</b> '
     if src_n:
         src += f'취업조로 현직자 직무 인터뷰 {src_n}건 ({e(j["sources"].get("years", "2020~2026"))})'
@@ -411,7 +414,8 @@ def write_llms(out_dir: Path, base: str, jobs, groups, updated: str) -> None:
     ]
     for j in jobs:
         lines.append(f"- [{j['name']}]({abs_url(base, f'jobs/{j['id']}/')}): {gname.get(j['group'], '')} · {j['tagline']} · 신입 {rng(j['salary']['junior'])}만원")
-    lines += ["", "## 기타", f"- [개인정보처리방침]({abs_url(base, 'privacy/')})", f"- [sitemap]({abs_url(base, 'sitemap.xml')})"]
+    lines += ["", "## 도구", f"- [직무 비교]({abs_url(base, 'compare/')}): 두 직무의 연봉·역량·경로를 나란히", f"- [3문항 직무 진단]({abs_url(base, 'fit/')}): 전공·성향·원하는 것으로 직무 5개 추천",
+              "", "## 기타", f"- [개인정보처리방침]({abs_url(base, 'privacy/')})", f"- [sitemap]({abs_url(base, 'sitemap.xml')})"]
     (out_dir / "llms.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

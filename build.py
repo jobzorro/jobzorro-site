@@ -32,7 +32,7 @@ ASSETS = BASE / "assets"
 NEWS_SRC = BASE / "news-collector" / "site" / "index.html"
 # 뉴스 수집기 결과물이 없을 때 배포된 뉴스 페이지를 내려받아 쓰는 비상용 (Actions 워크플로가 첫 실행 때만 사용)
 NEWS_URL = os.environ.get("NEWS_URL", "")  # 예: https://jobzorro.github.io/career-briefing/
-NEWS_ASSET_NAMES = ["logo.png", "logo-dark.png", "teamzorro.png", "mark.png", "favicon-32.png", "favicon-180.png"]
+NEWS_ASSET_NAMES = ["logo.png", "logo-dark.png", "teamzorro.png", "mark.png", "favicon-32.png", "favicon-180.png", "archive.json"]
 
 
 def fetch_news(tmp: Path) -> Path:
@@ -109,6 +109,62 @@ def slim_job(j: dict) -> dict:
         "sources": {"count": s.get("count", 0), "public": s.get("public", 0), "industries": s.get("industries", [])},  # 근거 배지·필터·업종 검색
         "og": _og_path(j["id"]),                                                 # v2 카드 썸네일(공유 이미지, 해시 파일명)
     }
+
+
+# 뉴스 태그(ai_tags) → 직무 id. 최근 45일 아카이브에서 직무별 최신 3건을 jobs.json 에 news 로 붙인다 (상세 패널·직무 페이지에 표시)
+NEWS_TAG_MAP = {
+    "인사": ["hr", "recruiter", "general-affairs"],
+    "영업": ["b2b-sales", "overseas-sales", "sales-management", "ecommerce-sales", "pharma-sales", "saas-sales", "technical-sales", "trading"],
+    "재무": ["finance", "accounting", "corporate-finance", "bank", "risk-management", "policy-finance", "fund-ops"],
+    "기획": ["strategy", "biz-planning", "sales-planning", "consulting", "bd"],
+    "PM": ["service-planning", "it-planning"],
+    "MD": ["md", "online-md"],
+    "구매": ["purchasing", "scm", "forwarding"],
+    "마케팅": ["brand-marketer", "performance-marketer", "content-marketer", "pr", "ad-planner"],
+    "개발": ["sw-dev", "backend", "frontend", "embedded-sw", "ai-engineer", "data-engineer", "data-analyst", "qa"],
+    "디자인": ["ux-designer"],
+    "생산": ["production-mgmt", "production-tech", "process-tech", "equipment-eng", "semiconductor-pkg"],
+    "연구": ["rnd-chem", "battery-dev", "device-rnd", "product-dev", "rnd-food", "rnd-bio", "bio-process"],
+    "품질": ["quality", "reliability", "safety", "environment-eng", "gmp-qa"],
+    "건설": ["construction-mgmt", "civil-eng", "plant-epc", "equipment-pm", "plant-design"],
+    "공공": ["public-admin"],
+}
+
+
+def attach_news(data: dict, days: int = 45) -> None:
+    import glob
+    arch = sorted(glob.glob(str(BASE / "news-collector" / "archive" / "*.json")))[-days:]
+    by_job = {}
+    for p in arch:
+        try:
+            d = json.loads(Path(p).read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        date = d.get("date", Path(p).stem)
+        for sec in d.get("sections", []):
+            for a in sec.get("articles", []):
+                tags = a.get("ai_tags") or []
+                ids = {jid for t in tags for jid in NEWS_TAG_MAP.get(t, [])}
+                if not ids:
+                    continue
+                item = {"date": date, "title": a.get("title", ""), "url": a.get("url", ""), "source": a.get("source", ""),
+                        "why": (a.get("ai_why") or a.get("ai_line") or "")[:140], "score": a.get("score", 0)}
+                for jid in ids:
+                    by_job.setdefault(jid, []).append(item)
+    n = 0
+    for j in data["jobs"]:
+        items = by_job.get(j["id"], [])
+        items.sort(key=lambda x: (x["date"], x["score"]), reverse=True)
+        seen, out = set(), []
+        for it in items:
+            if it["url"] in seen:
+                continue
+            seen.add(it["url"]); out.append({k: v for k, v in it.items() if k != "score"})
+            if len(out) == 3:
+                break
+        if out:
+            j["news"] = out; n += 1
+    print(f"관련 뉴스: 직무 {n}개에 최근 {days}일 기사 연결")
 
 
 def _og_path(jid: str) -> str:
@@ -367,6 +423,7 @@ def check_jobs(data: dict) -> None:
 def build(out_dir: Path, with_news: bool) -> None:
     data = json.loads((BASE / "data" / "jobs.json").read_text(encoding="utf-8"))
     check_jobs(data)
+    attach_news(data)
     # 로고는 data URI 로 페이지마다 박지 않고 site/assets/ 의 파일을 참조한다 (nav_html/footer_html 이 root 를 붙여 깊이별 상대경로로 만든다)
     logo = "assets/jobzorro_logo.png"            # 푸터: 취업조로
     logo_nav = "assets/teamzorro_logo.png"       # 맨 위 탭바만 TEAM ZORRO CI
@@ -503,11 +560,30 @@ def build(out_dir: Path, with_news: bool) -> None:
     (out_dir / "privacy" / "index.html").write_text(pv, encoding="utf-8")
     print(f"개인정보처리방침 -> {out_dir / 'privacy' / 'index.html'}")
 
+    # 직무 비교 / 3문항 진단
+    for tpl_name, sub, title, desc in (
+        ("template_compare.html", "compare", "직무 비교 — 두 직무를 나란히 | 취업조로 직무사전", "연봉대·필요 역량·들어가는 길·커리어 패스를 한 화면에서 비교합니다."),
+        ("template_fit.html", "fit", "3문항 직무 진단 — 나에게 맞는 직무 5개 | 취업조로 직무사전", "전공 계열·성향·원하는 것 세 가지 답으로 직무 79개 중 지금 상황에 맞는 직무를 골라 드립니다."),
+    ):
+        tp = BASE / tpl_name
+        if not tp.exists():
+            continue
+        pg = (tp.read_text(encoding="utf-8")
+                .replace("/*__SEO__*/", seo.seo_head(base_url, title, desc, f"{sub}/", og_main, [seo.breadcrumb_ld(base_url, [("직무사전", ""), (title.split(" — ")[0], f"{sub}/")])]))
+                .replace("/*__SHARED_CSS__*/", SHARED_CSS)
+                .replace("/*__NAV__*/", nav_html("index.html", "../", logo_nav))
+                .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
+                .replace("/*__FAB__*/", fab_html("../"))
+                .replace("/*__JOBS_JSON__*/", payload))
+        (out_dir / sub).mkdir(exist_ok=True)
+        (out_dir / sub / "index.html").write_text(pg, encoding="utf-8")
+        print(f"{sub}/ -> {out_dir / sub / 'index.html'}")
+
     # ---- 직무별 정적 페이지 (SEO·GEO) ----
     tpl = (BASE / "template.html").read_text(encoding="utf-8")
     css = tpl[tpl.index("<style>") + 7:tpl.index("</style>")].replace("/*__SHARED_CSS__*/", SHARED_CSS) + seo.JOB_PAGE_CSS
     fonts = tpl[tpl.index('<link rel="preconnect"'):tpl.index("<style>")]
-    entries = [("", updated, "daily", "1.0"), ("news/", updated, "daily", "0.9"), ("zorro/", updated, "monthly", "0.8"), ("apply/", updated, "monthly", "0.6")]
+    entries = [("", updated, "daily", "1.0"), ("news/", updated, "daily", "0.9"), ("zorro/", updated, "monthly", "0.8"), ("apply/", updated, "monthly", "0.6"), ("compare/", updated, "monthly", "0.6"), ("fit/", updated, "monthly", "0.7")]
     for j in data["jobs"]:
         jid = j["id"]
         if seo.fonts_available():

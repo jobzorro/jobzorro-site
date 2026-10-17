@@ -340,6 +340,40 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
   .v2-sec { flex-direction:column; align-items:start; }
 }
 
+/* 히어로 보조 버튼 */
+.v2-cta { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
+.v2-cta .pill { display:inline-flex; align-items:center; gap:8px; font-family:var(--v-display); font-weight:700; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; padding:11px 18px; border-radius:999px; text-decoration:none; border:1px solid var(--v-ink); color:var(--v-ink); }
+.v2-cta .pill.solid { background:var(--v-acc); color:var(--v-acc-ink); border-color:var(--v-acc); }
+.v2-cta .pill:hover { background:var(--v-ink); color:var(--v-bg); border-color:var(--v-ink); }
+/* 직군 칩 스크롤 표시 */
+.chips-wrap { position:relative; flex:1 1 auto; min-width:0; display:flex; align-items:center; overflow:hidden; }
+body.v2 .chips-wrap .controls { flex:1 1 auto; min-width:0; overflow-x:auto; scrollbar-width:none; padding:2px 0; -webkit-overflow-scrolling:touch; }
+body.v2 .chips-wrap .controls::-webkit-scrollbar { display:none; }
+.chips-wrap::after { content:""; position:absolute; right:40px; top:0; bottom:0; width:56px; background:linear-gradient(90deg, transparent, var(--v-bg)); pointer-events:none; opacity:0; transition:opacity .2s; }
+.chips-wrap.more::after { opacity:1; }
+.chips-wrap::before { content:""; position:absolute; left:0; top:0; bottom:0; width:32px; background:linear-gradient(270deg, transparent, var(--v-bg)); pointer-events:none; opacity:0; transition:opacity .2s; z-index:1; }
+.chips-wrap.scrolled::before { opacity:1; }
+.chips-next { flex:none; width:34px; height:34px; margin-left:6px; border-radius:50%; border:1px solid var(--v-line-2); background:var(--v-bg); color:var(--v-ink); font-size:20px; line-height:1; display:grid; place-items:center; opacity:0; pointer-events:none; transition:opacity .2s; }
+.chips-wrap.more .chips-next { opacity:1; pointer-events:auto; }
+.chips-next:hover { background:var(--v-ink); color:var(--v-bg); border-color:var(--v-ink); }
+/* 관련 뉴스 */
+.newsbox { display:grid; gap:0; border-top:1px solid var(--line); }
+.newsbox li { border-bottom:1px solid var(--line); }
+.newsbox a { display:grid; gap:4px; padding:12px 0; text-decoration:none; color:inherit; }
+.newsbox a:hover b { text-decoration:underline; text-underline-offset:3px; }
+.newsbox .d { font-family:var(--display); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.newsbox b { font-size:14.5px; line-height:1.4; color:var(--ink); }
+.newsbox .w { font-size:13px; color:var(--ink-soft); border-left:2px solid var(--acc); padding-left:10px; line-height:1.55; }
+.sec .more { display:inline-block; margin-top:12px; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink); text-decoration:none; border-bottom:2px solid var(--ink); }
+/* 비교함 바 */
+.cmpbar { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(78px + env(safe-area-inset-bottom,0px)); z-index:26; display:flex; align-items:center; gap:12px; max-width:calc(100vw - 32px); padding:10px 10px 10px 16px; border-radius:999px; background:var(--paper); color:var(--ink); border:1px solid var(--ink); box-shadow:var(--shadow-lift); font-size:13.5px; }
+.cmpbar .k { font-family:var(--display); font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.cmpbar #cmpNames { font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:42vw; }
+.cmpbar a { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:8px 14px; border-radius:999px; border:1px solid var(--line-strong); color:var(--muted); text-decoration:none; white-space:nowrap; }
+.cmpbar a.ready { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
+.cmpbar button { width:28px; height:28px; border-radius:50%; color:var(--muted); font-size:14px; }
+.cmpbar button:hover { background:var(--mist); color:var(--ink); }
+
 </style>
 </head>
 <body class="v2">
@@ -353,6 +387,7 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
         <div class="v2-kicker"><i></i>Job Dictionary · by 취업조로</div>
         <h1><span class="thin">채용공고엔 안 나오는</span><span class="line" data-fit>그 직무의 <span class="mark">진짜 모습.</span></span></h1>
         <p class="lede">취업조로가 <b>현직자 인터뷰·자료 <span id="ledeSources">0</span>건</b>을 바탕으로, 상담실에서 설명하는 말투 그대로 정리했습니다. 하는 일, 하루 일과, 들어가는 길, 연봉대, 옮겨갈 수 있는 직무, 현직자가 말하는 현실까지 한 장에서 봅니다.</p>
+        <div class="v2-cta"><a class="pill solid" href="fit/">3문항으로 내 직무 찾기 →</a><a class="pill" href="compare/">직무 비교</a></div>
         <form class="v2-search" role="search" id="searchForm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <input id="q" type="search" placeholder="직무명, 역량, 도구, 업종으로 검색" autocomplete="off" aria-label="직무 검색">
@@ -380,7 +415,7 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
   <div class="v2-in v2-bar-in">
     <div class="v2-row1">
       <div class="tracks" id="tracks"></div>
-      <section class="controls" aria-label="직군 필터" id="chips"></section>
+      <div class="chips-wrap" id="chipsWrap"><section class="controls" aria-label="직군 필터" id="chips"></section><button class="chips-next" id="chipsNext" type="button" aria-label="직군 더 보기">›</button></div>
     </div>
     <div class="toggles">
       <button class="toggle" id="tNonmajor" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>비전공 입문 가능</button>
@@ -423,6 +458,7 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
 /*__FOOTER__*/
 /*__FAB__*/
 
+<div class="cmpbar" id="cmpbar" hidden><span class="k">Compare</span><span id="cmpNames"></span><a id="cmpGo" href="compare/">하나 더 고르기</a><button id="cmpClear" type="button" aria-label="비교함 비우기">✕</button></div>
 <div class="scrim" id="scrim" hidden></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dName" hidden>
   <div class="d-head">
@@ -532,6 +568,14 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
   }
   bindToggle('tNonmajor', 'nonmajor'); bindToggle('tAiLow', 'aiLow'); bindToggle('tSourced', 'sourced');
 
+  // 직군 칩 가로 스크롤 표시: 더 있으면 오른쪽 페이드 + 화살표
+  (function () {
+    var wrap = $('chipsWrap'), sc = $('chips'), nx = $('chipsNext'); if (!wrap || !sc || !nx) return;
+    function upd() { var more = sc.scrollWidth - sc.clientWidth - sc.scrollLeft > 4; wrap.classList.toggle('more', more); wrap.classList.toggle('scrolled', sc.scrollLeft > 4); }
+    nx.addEventListener('click', function () { sc.scrollBy({ left: Math.max(200, sc.clientWidth * 0.7), behavior: 'smooth' }); });
+    sc.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', upd);
+    new MutationObserver(upd).observe(sc, { childList: true }); setTimeout(upd, 0);
+  })();
   $('q').addEventListener('input', function () { state.q = this.value.trim(); $('clearQ').hidden = !state.q; renderGrid(); });
   $('searchForm').addEventListener('submit', function (e) { e.preventDefault(); });
   $('clearQ').addEventListener('click', function () { $('q').value = ''; state.q = ''; this.hidden = true; renderGrid(); $('q').focus(); });
@@ -624,6 +668,9 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
     h += sec('fit', '이런 분에게 맞습니다', li(j.fit));
     h += sec('ai', 'AI가 이 직무를 바꾸는 방식', '<div class="ai-box"><span class="lvl l' + j.ai.level + '">' + AI_LABEL[j.ai.level] + '</span><p>' + esc(j.ai.note) + '</p></div>');
     h += sec('certs', '도움이 되는 자격·학습', tags(j.certs, 'big'));
+    if (j.news && j.news.length) h += sec('interview', '이 직무 관련 최근 뉴스', '<ul class="newsbox">' + j.news.map(function (n) {
+      return '<li><a href="' + esc(n.url) + '" target="_blank" rel="noopener"><span class="d">' + esc(n.date.slice(5).replace('-', '.')) + ' · ' + esc(n.source) + '</span><b>' + esc(n.title) + '</b>' + (n.why ? '<span class="w">' + esc(n.why) + '</span>' : '') + '</a></li>';
+    }).join('') + '</ul><a class="more" href="news/">커리어브리핑 전체 보기 →</a>', '취업조로 커리어브리핑');
     var inds = (j.sources && j.sources.industries || []).slice(0, 12);
     var ws = j.webSources || [];
     h += '<div class="src"><b>근거 자료</b> ' +
@@ -634,7 +681,7 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
       (ws.length ? '<ul>' + ws.slice(0, 8).map(function (w) { return '<li><a href="' + esc(w.url) + '" target="_blank" rel="noopener">' + esc(w.title) + '</a></li>'; }).join('') + '</ul>' : '') +
       '</div>';
     h += '<div class="cta"><h3>이 직무로 취업·이직을 고민 중이라면</h3><p>지금 경력에서 이 직무로 가는 가장 빠른 경로를 취업조로 컨설턴트가 1:1로 정리해 드립니다.</p>' +
-      '<div class="cta-row"><a class="btn primary" href="apply/index.html#' + j.id + '">무료 상담 신청하기 ⚡</a><a class="btn ghost" href="jobs/' + j.id + '/">이 직무 페이지 열기</a><button class="btn ghost" type="button" data-copy="1">링크 복사</button></div></div>';
+      '<div class="cta-row"><a class="btn primary" href="apply/index.html#' + j.id + '">무료 상담 신청하기 ⚡</a><a class="btn ghost" href="jobs/' + j.id + '/">이 직무 페이지 열기</a><button class="btn ghost" type="button" data-cmp="1">비교에 담기</button><button class="btn ghost" type="button" data-copy="1">링크 복사</button></div></div>';
     return h;
   }
 
@@ -646,6 +693,21 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
       '<div class="row"><button type="button" class="act" data-reload="1">새로고침</button><button type="button" class="act" data-open="' + esc(s.id) + '">다시 시도</button>' +
       '<a class="act" href="jobs/' + esc(s.id) + '/">이 직무 페이지 열기</a></div></div>';
   }
+
+  // 비교함: 최대 2개, 이 브라우저에만 저장
+  function cmpGet() { try { return JSON.parse(localStorage.getItem('jz_cmp') || '[]'); } catch (e) { return []; } }
+  function cmpSet(v) { try { localStorage.setItem('jz_cmp', JSON.stringify(v)); } catch (e) {} cmpRender(); }
+  function cmpAdd(id) { var v = cmpGet().filter(function (x) { return x !== id && byId[x]; }); v.push(id); if (v.length > 2) v = v.slice(-2); cmpSet(v); toast(v.length === 2 ? '두 직무가 담겼습니다. 아래 "비교하기"를 누르세요.' : '비교함에 담았습니다. 직무를 하나 더 고르세요.'); }
+  function cmpRender() {
+    var v = cmpGet().filter(function (x) { return byId[x]; }), bar = $('cmpbar'); if (!bar) return;
+    bar.hidden = v.length === 0;
+    if (!v.length) return;
+    $('cmpNames').textContent = v.map(function (x) { return byId[x].name; }).join(' vs ');
+    var go = $('cmpGo'); go.href = 'compare/?a=' + (v[0] || '') + '&b=' + (v[1] || ''); go.classList.toggle('ready', v.length === 2);
+    go.textContent = v.length === 2 ? '비교하기 →' : '하나 더 고르기';
+  }
+  document.addEventListener('click', function (e) { if (e.target.closest('#cmpClear')) { cmpSet([]); } });
+  cmpRender();
 
   function openJob(id, fromHash) {
     var s = byId[id]; if (!s) return;   // 슬림 목록에 없는 id 는 무시 (해시가 잘못됐을 때 등)
@@ -684,6 +746,7 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
   $('dBody').addEventListener('click', function (e) {
     var o = e.target.closest('[data-open]'); if (o) { openJob(o.getAttribute('data-open')); return; }   // 옮겨갈 수 있는 직무 · 다시 시도
     if (e.target.closest('[data-reload]')) { location.reload(); return; }
+    if (e.target.closest('[data-cmp]')) { cmpAdd(current); return; }
     if (e.target.closest('[data-copy]')) copyLink();
   });
   // 마우스가 카드 위에 올라오면 전체 데이터를 미리 받아 둔다 (터치 기기는 스크롤만 해도 걸리므로 제외)
