@@ -184,6 +184,15 @@
 .btn.primary:hover { background: var(--brass); color: #fff; }
 .btn.ghost { border: 1px solid var(--inkline); color: var(--inkfg); }
 .toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--inkbg); color: var(--inkfg); padding: 9px 16px; border-radius: 999px; font-size: 13px; z-index: 50; }
+/* 상세 패널의 로딩·실패 상태 (전체 데이터 data/jobs.json 을 첫 클릭 때 받아 오는 동안) */
+.d-state { margin-top: 26px; padding: 18px 20px; border-radius: 10px; background: var(--surface-2); color: var(--fg-soft); font-size: 14px; line-height: 1.6; }
+.d-state b { color: var(--black); font-weight: 700; }
+.d-state .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.d-state .act { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 13.5px; font-weight: 700; color: var(--black); background: var(--surface); text-decoration: none; }
+.d-state .act:hover { background: var(--fill); color: var(--fillfg); border-color: var(--fill); }
+.d-state.loading::before { content: ""; display: inline-block; width: 14px; height: 14px; margin-right: 8px; vertical-align: -2px; border-radius: 50%; border: 2px solid var(--line-strong); border-top-color: var(--black); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .d-state.loading::before { animation: none; } }
 
 @media (max-width: 860px) {
   .hero-in { grid-template-columns: 1fr; gap: 22px; }
@@ -268,12 +277,37 @@
   <div class="d-body" id="dBody"></div>
 </aside>
 
+<!-- 첫 로딩을 가볍게: 여기엔 카드·필터·검색에 쓰는 슬림 직무 목록만 들어 있다(build.py 의 slim_job).
+     상세 패널이 쓰는 전체 데이터는 첫 클릭 때 data/jobs.json 을 한 번만 받아 온다(아래 loadFull). -->
 <script id="jobs-data" type="application/json">/*__JOBS_JSON__*/</script>
 <script>
 (function () {
   var DATA = JSON.parse(document.getElementById('jobs-data').textContent);
   var JOBS = DATA.jobs, META = DATA.meta;
-  var byId = {}; JOBS.forEach(function (j) { byId[j.id] = j; });
+  var byId = {}; JOBS.forEach(function (j) { byId[j.id] = j; });   // 슬림 직무 (id·이름·직군·카드 필드)
+
+  // ---- 전체 데이터 지연 로딩: 성공하면 fullById 가 채워지고 이후엔 재요청하지 않는다. 실패하면 다음 클릭 때 다시 시도.
+  var FULL_URL = 'data/jobs.json' + (META.dataVersion ? '?v=' + META.dataVersion : '');
+  var fullById = null, fullWaiting = null;   // fullWaiting: 응답을 기다리는 콜백 목록(동시 요청 1번으로 합침)
+  function loadFull(cb) {
+    if (fullById) { cb(null); return; }
+    if (fullWaiting) { fullWaiting.push(cb); return; }
+    fullWaiting = [cb];
+    function done(err) { var cbs = fullWaiting; fullWaiting = null; cbs.forEach(function (f) { f(err); }); }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', FULL_URL, true);
+    xhr.onload = function () {
+      var ok = (xhr.status >= 200 && xhr.status < 300) || (xhr.status === 0 && xhr.responseText);   // status 0: file:// 로 열었을 때
+      if (!ok) { done(new Error('HTTP ' + xhr.status)); return; }
+      try {
+        var d = JSON.parse(xhr.responseText), m = {};
+        (d.jobs || []).forEach(function (j) { m[j.id] = j; });
+        fullById = m; done(null);
+      } catch (e) { done(e); }
+    };
+    xhr.onerror = xhr.ontimeout = function () { done(new Error('network')); };
+    xhr.send();
+  }
   var TRACKS = META.tracks || [];
   var GROUPS = META.groups.filter(function (g) { return JOBS.some(function (j) { return j.group === g.id; }); });
   var GNAME = {}, GTRACK = {}; META.groups.forEach(function (g) { GNAME[g.id] = g.name; GTRACK[g.id] = g.track; });
@@ -444,12 +478,33 @@
     return h;
   }
 
+  // 전체 데이터가 오기 전/실패했을 때 패널에 보여 주는 내용 (슬림 필드만으로 머리 부분은 먼저 그린다)
+  function headHtml(s) { return '<h2 class="name" id="dName">' + esc(s.name) + '</h2><p class="en">' + esc(s.en) + '</p><p class="tagline">' + esc(s.tagline) + '</p>'; }
+  function loadingHtml(s) { return headHtml(s) + '<div class="d-state loading" role="status">직무 상세를 불러오는 중…</div>'; }
+  function errorHtml(s) {
+    return headHtml(s) + '<div class="d-state" role="alert"><b>불러오지 못했습니다.</b> 네트워크 상태를 확인한 뒤 새로고침해 주세요.' +
+      '<div class="row"><button type="button" class="act" data-reload="1">새로고침</button><button type="button" class="act" data-open="' + esc(s.id) + '">다시 시도</button>' +
+      '<a class="act" href="jobs/' + esc(s.id) + '/">이 직무 페이지 열기</a></div></div>';
+  }
+
   function openJob(id, fromHash) {
-    var j = byId[id]; if (!j) return;
+    var s = byId[id]; if (!s) return;   // 슬림 목록에 없는 id 는 무시 (해시가 잘못됐을 때 등)
     current = id;
     if (!fromHash) lastFocus = document.activeElement;
-    $('dGroup').textContent = gname(j.group);
-    $('dBody').innerHTML = detail(j);
+    $('dGroup').textContent = gname(s.group);
+    var full = fullById && fullById[id];
+    if (full) {
+      $('dBody').innerHTML = detail(full);
+    } else {
+      // 전체 데이터가 아직 없으면 "불러오는 중"을 먼저 보여 주고 data/jobs.json 을 받은 뒤 상세를 그린다
+      $('dBody').innerHTML = loadingHtml(s);
+      loadFull(function (err) {
+        if (current !== id) return;   // 기다리는 동안 다른 직무를 열었거나 닫았으면 그 결과는 버린다
+        var j = fullById && fullById[id];
+        $('dBody').innerHTML = (err || !j) ? errorHtml(s) : detail(j);
+        $('dBody').scrollTop = 0;
+      });
+    }
     $('dBody').scrollTop = 0;
     $('scrim').hidden = false;
     var d = $('drawer'); d.hidden = false; d.classList.remove('anim'); void d.offsetWidth; d.classList.add('anim');
@@ -467,8 +522,15 @@
   $('scrim').addEventListener('click', closeDrawer);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && current) closeDrawer(); });
   $('dBody').addEventListener('click', function (e) {
-    var o = e.target.closest('[data-open]'); if (o) { openJob(o.getAttribute('data-open')); return; }
+    var o = e.target.closest('[data-open]'); if (o) { openJob(o.getAttribute('data-open')); return; }   // 옮겨갈 수 있는 직무 · 다시 시도
+    if (e.target.closest('[data-reload]')) { location.reload(); return; }
     if (e.target.closest('[data-copy]')) copyLink();
+  });
+  // 마우스가 카드 위에 올라오면 전체 데이터를 미리 받아 둔다 (터치 기기는 스크롤만 해도 걸리므로 제외)
+  $('grid').addEventListener('pointerover', function warm(e) {
+    if (e.pointerType && e.pointerType !== 'mouse') return;
+    $('grid').removeEventListener('pointerover', warm);
+    loadFull(function () {});
   });
   $('copyLink').addEventListener('click', copyLink);
   function toast(msg) { var t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 1800); }

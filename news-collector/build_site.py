@@ -6,8 +6,12 @@ news_data.json + archive/*.json -> 정적 웹페이지(site/index.html) 생성
   주간 - 최근 7일 기사 점수 랭킹 + 이슈 키워드 순위
   월간 - 최근 30일 기준 동일
 
-외부 리소스는 Google Fonts 하나뿐이고 이미지는 data URI로 박혀 있어서,
-파일 하나만 있으면 어디서든(로컬 더블클릭 / Artifact / 정적 호스팅) 그대로 열린다.
+만드는 파일:
+  site/index.html            오늘 지면 + 아카이브 보기(JS) + 주간·월간 랭킹 + 검색
+  site/assets/thumbs/*.jpg   오늘 지면 기사 썸네일 (news_data.json 의 data URI 를 파일로 뺀 것)
+  site/<YYYY-MM-DD>/index.html  날짜별 정적 지면 (검색엔진이 하루를 하나의 URL 로 읽게)
+  site/archive/index.html    지난 지면 전체 목록 (월별)
+  site/days.json             날짜 목록 — 상위 build.py 가 sitemap 등에 쓴다
 
 사용법:
   python build_site.py
@@ -15,6 +19,9 @@ news_data.json + archive/*.json -> 정적 웹페이지(site/index.html) 생성
 """
 
 import argparse
+import base64
+import hashlib
+import io
 import shutil
 import html
 import json
@@ -392,6 +399,9 @@ a { color: inherit; text-decoration: none; }
 .howto-text { margin: 0; font-size: 13.5px; line-height: 1.7; color: var(--ink-soft); }
 .howto-text b { color: var(--brass); }
 .foot-note { font-size: 13px; color: var(--muted); line-height: 1.8; }   /* render_health 가 쓰는 보조 문구 */
+.howto-more { max-width: 1280px; margin: 0 auto; padding: 18px 32px 0; font-size: 13.5px; font-weight: 600; }
+.howto-more a { color: var(--brass); }
+.howto-more a:hover { text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 900px) { .howto-inner { grid-template-columns: 1fr; gap: 18px; } }
 
 /* ---------------- 테마 토글 ---------------- */
@@ -558,6 +568,7 @@ mark { background: var(--brass-tint); color: inherit; padding: 0 1px; border-rad
   .brief-box { padding: 14px 14px 12px; }
   .trend { padding: 16px 12px 12px; }
   .howto-inner { padding: 20px 16px 0; }
+  .howto-more { padding: 16px 16px 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -566,6 +577,56 @@ mark { background: var(--brass-tint); color: inherit; padding: 0 1px; border-rad
 }
 
 html { scroll-behavior: smooth; }
+"""
+
+# 날짜별 정적 지면 · 아카이브 목록 페이지에서만 쓰는 규칙 (STYLE 뒤에 덧붙인다)
+STATIC_STYLE = """
+.day-head { padding: 44px 0 16px; border-bottom: 1px solid var(--ink); }
+.day-kicker { font-family: var(--mono); font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brass); margin-bottom: 10px; }
+.day-title { margin: 0; font-size: clamp(26px, 3.6vw, 40px); font-weight: 800; letter-spacing: -.04em; line-height: 1.15; }
+.day-sub { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.daynav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 12px 0; border-bottom: 1px solid var(--hairline); font-size: 13.5px; font-weight: 600; }
+.daynav a { color: var(--ink-soft); white-space: nowrap; }
+.daynav a:hover { color: var(--brass); }
+.daynav .spacer { flex: 1 1 auto; }
+.daynav .disabled { color: var(--faint); opacity: .5; }
+.day-brief { padding-top: 32px; }
+.day-brief .brief-box { max-width: 72ch; margin-bottom: 0; }
+.day-foot { padding: 40px 0 0; }
+.archive-month { padding: 44px 0 0; }
+.archive-month h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -.03em; padding-bottom: 10px; border-bottom: 1px solid var(--ink); }
+.archive-list { display: flex; flex-direction: column; }
+.archive-row { display: grid; grid-template-columns: 118px 56px minmax(0,1fr); gap: 16px; align-items: baseline; padding: 12px 14px; margin: 0 -14px; border-bottom: 1px solid var(--hairline); border-radius: 8px; transition: background .2s ease, box-shadow .2s ease; }
+.archive-row:hover { background: var(--paper); box-shadow: 0 8px 20px var(--shadow); }
+.archive-row:hover .archive-date { color: var(--brass); }
+.archive-date { font-family: var(--mono); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; transition: color .2s ease; }
+.archive-count { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.archive-snip { font-size: 13.5px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 860px) { .archive-row { grid-template-columns: 104px 52px minmax(0,1fr); gap: 12px; padding: 11px 12px; margin: 0 -12px; } }
+@media (max-width: 520px) { .archive-row { grid-template-columns: 1fr auto; } .archive-snip { grid-column: 1 / -1; white-space: normal; } }
+"""
+
+# 정적 페이지용 최소 스크립트: 테마 토글만 (index 의 SCRIPT 와 같은 localStorage 키를 쓴다)
+STATIC_SCRIPT = r"""
+(function () {
+  var themeBtn = document.getElementById('themebtn');
+  if (!themeBtn) return;
+  var THEMES = ['auto', 'light', 'dark'];
+  var THEME_LABEL = { auto: '자동', light: '라이트', dark: '다크' };
+  var theme = 'auto';
+  try { theme = localStorage.getItem('cb-theme') || 'auto'; } catch (e) {}
+  function applyTheme() {
+    if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', theme);
+    themeBtn.textContent = '테마 · ' + THEME_LABEL[theme];
+  }
+  themeBtn.addEventListener('click', function () {
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    try { localStorage.setItem('cb-theme', theme); } catch (e) {}
+    applyTheme();
+  });
+  applyTheme();
+})();
 """
 
 
@@ -1231,6 +1292,267 @@ SCRIPT = r"""
 
 
 # ============================================================
+# 썸네일: data URI -> 파일 (site/assets/thumbs/)
+# ============================================================
+
+THUMB_MAX_W = 480     # 카드 썸네일은 128px(모바일 전폭 ~480px)로 보여주므로 이보다 큰 원본은 줄인다
+THUMB_QUALITY = 72
+THUMB_DIR = "assets/thumbs"
+
+
+def _shrink_jpeg(raw):
+    """가로 THUMB_MAX_W 이하로 줄이고 JPEG(quality 72)로 다시 인코딩. Pillow 가 없거나 못 여는 파일이면 원본 그대로."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return raw
+    try:
+        im = Image.open(io.BytesIO(raw))
+        im.load()
+    except Exception:  # noqa: BLE001 - 깨진 이미지는 그대로 둔다 (브라우저가 알아서 처리)
+        return raw
+    resized = False
+    if im.width > THUMB_MAX_W:
+        im = im.resize((THUMB_MAX_W, max(1, round(im.height * THUMB_MAX_W / im.width))), Image.LANCZOS)
+        resized = True
+    if im.mode not in ("RGB", "L"):
+        im = im.convert("RGB")
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=THUMB_QUALITY, optimize=True, progressive=True)
+    out = buf.getvalue()
+    # 이미 작은 JPEG 원본을 다시 인코딩해서 오히려 커지면 원본을 쓴다 (JPEG 가 아니거나 줄였으면 새 파일)
+    if im.format == "JPEG" and not resized and len(out) >= len(raw):
+        return raw
+    return out
+
+
+def externalize_thumbs(today, site_dir):
+    """
+    오늘 지면 기사의 image(data URI)를 site/assets/thumbs/<md5 앞 12자>.jpg 로 저장하고
+    기사 image 값을 상대경로("assets/thumbs/xxx.jpg")로 바꾼다. 같은 내용은 한 번만 저장.
+    페이지(HTML/JSON)에 base64 가 박히지 않게 하는 것이 목적이다. 반환: (새로 저장한 수, 쓰는 파일 수, 파일 합계 바이트)
+    """
+    thumbs_dir = site_dir / THUMB_DIR
+    thumbs_dir.mkdir(parents=True, exist_ok=True)
+    keep, saved = set(), 0
+    for sec in today.get("sections", []):
+        for a in sec.get("articles", []):
+            img = a.get("image")
+            if not img:
+                a["image"] = None
+                continue
+            if not str(img).startswith("data:"):
+                continue                      # 이미 경로면 손대지 않는다
+            try:
+                raw = base64.b64decode(str(img).split(",", 1)[1], validate=False)
+            except (ValueError, IndexError):
+                a["image"] = None
+                continue
+            name = hashlib.md5(raw).hexdigest()[:12] + ".jpg"
+            path = thumbs_dir / name
+            if name not in keep and not path.exists():
+                path.write_bytes(_shrink_jpeg(raw))
+                saved += 1
+            keep.add(name)
+            a["image"] = f"{THUMB_DIR}/{name}"
+    # 오늘 지면이 쓰지 않는 옛 썸네일은 지운다 (로컬에서 매일 돌리면 쌓이기만 하므로)
+    for old in thumbs_dir.glob("*.jpg"):
+        if old.name not in keep:
+            old.unlink()
+    total = sum((thumbs_dir / n).stat().st_size for n in keep)
+    return saved, len(keep), total
+
+
+# ============================================================
+# 날짜별 정적 지면 · 아카이브 목록 (검색엔진용, JS 없이 읽힌다)
+# ============================================================
+
+def korean_date(d):
+    """'2026-10-16' -> '2026년 10월 16일'"""
+    y, m, dd = d.split("-")
+    return f"{int(y)}년 {int(m)}월 {int(dd)}일"
+
+
+def day_articles(day):
+    return [a for s in day.get("sections", []) for a in s.get("articles", [])]
+
+
+def day_description(day):
+    """<meta description>: 그날 브리핑 첫 문장, 없으면 점수 상위 기사 제목 3개"""
+    lines = [t for t in (day.get("briefing") or []) if t]
+    if lines:
+        return lines[0]
+    arts = sorted(day_articles(day), key=lambda a: -int(a.get("score") or 0))
+    return " / ".join(a["title"] for a in arts[:3])
+
+
+def static_head(title, desc, root="../"):
+    """정적 페이지 공통 <head> + 마스트헤드. 자산 경로는 root 기준(../assets/...)."""
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{e(title)}</title>
+<meta name="description" content="{e(desc)}">
+<link rel="icon" type="image/png" sizes="32x32" href="{root}assets/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="{root}assets/favicon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<style>{STYLE}{STATIC_STYLE}</style>
+<script>
+  try {{ var t = localStorage.getItem('cb-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); }} catch (e) {{}}
+</script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a class="brand" href="{root}" aria-label="취업조로의 커리어브리핑 홈">
+      <img class="brand-logo brand-logo-light" src="{root}assets/logo.png" alt="취업조로" width="150" height="40" loading="lazy" decoding="async">
+      <img class="brand-logo brand-logo-dark" src="{root}assets/logo-dark.png" alt="" aria-hidden="true" width="150" height="40" loading="lazy" decoding="async">
+      <div class="brand-text">
+        <div class="brand-name">커리어브리핑 <em class="brand-en">Career Briefing</em></div>
+      </div>
+    </a>
+    <div class="mast-right">
+      <button class="theme-btn" id="themebtn" type="button" aria-label="화면 테마 바꾸기">테마 · 자동</button>
+    </div>
+  </div>
+</header>
+"""
+
+
+def static_tail():
+    return f"""
+<script>{STATIC_SCRIPT}</script>
+</body>
+</html>
+"""
+
+
+def render_static_article(a, numeral):
+    """날짜별 정적 지면의 기사 카드. 클라이언트 newsCard() 와 같은 구조·같은 class 를 쓴다 (썸네일 자리는 로마숫자)."""
+    parts = [f'    <article class="news-card">',
+             f'      <div class="news-thumb"><div class="thumb-blank">{numeral}</div></div>',
+             f'      <div class="news-body">',
+             f'        <div class="news-meta"><span class="news-num">{int(a.get("rank") or 0):02d}</span>'
+             f'<span class="news-source">{e(a.get("source"))}</span><span class="news-dot">·</span>'
+             f'<time>{e(str(a.get("published") or "")[5:])}</time></div>',
+             f'        <h3 class="news-title"><a class="news-link" href="{e(a.get("url"))}" target="_blank" rel="noopener noreferrer">{e(a.get("title"))}</a></h3>']
+    original = " ".join(t for t in (a.get("lead"), a.get("summary")) if t)
+    if a.get("ai_line"):
+        parts.append(f'        <p class="news-lead"><span class="ai-tag">AI</span> {e(a["ai_line"])}</p>')
+        if original:
+            parts.append(f'        <p class="news-sum">{e(original)}</p>')
+    else:
+        if a.get("lead"):
+            parts.append(f'        <p class="news-lead">{e(a["lead"])}</p>')
+        if a.get("summary"):
+            parts.append(f'        <p class="news-sum">{e(a["summary"])}</p>')
+    if a.get("ai_why"):
+        label = "Zorro의 한마디" if a.get("ai_tags") else "커리어 시사점"
+        parts.append(f'        <p class="news-why"><b>{label}</b>{e(a["ai_why"])}</p>')
+    if a.get("ai_tags"):
+        parts.append('        <div class="news-tags job-tags">'
+                     + "".join(f'<span class="job-tag">#{e(t)}</span>' for t in a["ai_tags"]) + '</div>')
+    if a.get("keywords"):
+        # 키워드는 오늘 지면의 검색(#q=)으로 보낸다
+        parts.append('        <div class="news-tags">'
+                     + "".join(f'<a class="tag" href="../#q={e(k)}">{e(k)}</a>' for k in a["keywords"][:3]) + '</div>')
+    if a.get("related"):
+        parts.append('        <div class="news-related"><span>같은 사건 다른 보도</span>'
+                     + "".join(f'<a href="{e(r.get("url"))}" target="_blank" rel="noopener noreferrer" title="{e(r.get("title"))}">{e(r.get("source"))}</a>'
+                               for r in a["related"]) + '</div>')
+    parts.append('      </div>\n    </article>')
+    return "\n".join(parts)
+
+
+def render_daynav(prev_date, next_date):
+    prev_html = (f'<a href="../{e(prev_date)}/" rel="prev">&larr; {e(korean_date(prev_date))}</a>' if prev_date
+                 else '<span class="disabled">&larr; 이전 지면 없음</span>')
+    next_html = (f'<a href="../{e(next_date)}/" rel="next">{e(korean_date(next_date))} &rarr;</a>' if next_date
+                 else '<span class="disabled">다음 지면 없음 &rarr;</span>')
+    return (f'  <nav class="daynav" aria-label="날짜 이동">{prev_html}<span class="spacer"></span>'
+            f'<a href="../archive/">지난 지면 전체</a><a href="../">오늘 지면으로</a><span class="spacer"></span>{next_html}</nav>')
+
+
+def render_day_page(day, prev_date, next_date):
+    """site/<YYYY-MM-DD>/index.html — 독립 HTML (공용 탭바·푸터는 상위 build.py 가 끼운다)"""
+    date = day["date"]
+    kdate = korean_date(date)
+    numerals = ["I", "II", "III", "IV", "V", "VI"]
+    total = len(day_articles(day))
+    title = f"{kdate} 커리어브리핑 — 취업조로"
+    desc = day_description(day)
+
+    out = [static_head(title, desc), '<main class="container">',
+           f'  <div class="day-head"><div class="day-kicker">Career Briefing · Daily</div>'
+           f'<h1 class="day-title">{e(kdate)} 커리어브리핑</h1>'
+           f'<p class="day-sub">{e(date)} 지면 · 기사 {total}건 · 취업조로가 고른 채용·이직·기업·고용·커리어 뉴스</p></div>',
+           render_daynav(prev_date, next_date)]
+
+    lines = [t for t in (day.get("briefing") or []) if t]
+    if lines:
+        items = "".join(f"<li>{e(t)}</li>" for t in lines)
+        out.append(f'  <div class="day-brief"><div class="brief-box"><div class="brief-label"><span class="ai-tag">AI</span>'
+                   f'{e(kdate)} 브리핑</div><ol class="brief-list">{items}</ol></div></div>')
+
+    for i, sec in enumerate(day.get("sections", []), 1):
+        arts = sec.get("articles", [])
+        out.append(f'  <section class="sector">\n    <div class="sector-head"><div class="sector-head-left">'
+                   f'<span class="sector-numeral">{i}</span><div><h2 class="sector-title">{e(sec.get("name"))}</h2>'
+                   f'<p class="sector-desc">{e(sec.get("desc"))}</p></div></div>'
+                   f'<span class="sector-count">{e(sec.get("en"))}  /  {len(arts)} 건</span></div>')
+        if arts:
+            out.append('    <div class="news-grid">')
+            out.extend(render_static_article(a, numerals[j % len(numerals)]) for j, a in enumerate(arts))
+            out.append('    </div>')
+        else:
+            out.append('    <p class="empty">이 날은 이 섹션 기준을 넘긴 기사가 없습니다.</p>')
+        out.append('  </section>')
+
+    out.append('  <div class="day-foot">' + render_daynav(prev_date, next_date) + '</div>')
+    out.append('</main>')
+    out.append(static_tail())
+    return "\n".join(out)
+
+
+def render_archive_page(days):
+    """site/archive/index.html — 모든 날짜를 월별로 묶은 링크 목록"""
+    dates = [d["date"] for d in days]
+    title = "지난 지면 전체 보기 — 취업조로의 커리어브리핑"
+    desc = (f"{korean_date(dates[0])}부터 {korean_date(dates[-1])}까지 {len(dates)}일치 커리어브리핑 지면 목록. "
+            f"날짜를 고르면 그날 취업조로가 고른 채용·이직·기업·고용 뉴스와 한마디를 볼 수 있습니다.") if dates else "커리어브리핑 지난 지면 목록"
+
+    by_month = {}
+    for d in days:
+        by_month.setdefault(d["date"][:7], []).append(d)
+
+    out = [static_head(title, desc), '<main class="container">',
+           f'  <div class="day-head"><div class="day-kicker">Career Briefing · Archive</div>'
+           f'<h1 class="day-title">지난 지면 전체 보기</h1>'
+           f'<p class="day-sub">{len(dates)}일치 · 날짜를 고르면 그날 지면으로 갑니다</p></div>',
+           '  <nav class="daynav" aria-label="바로가기"><a href="../">오늘 지면으로</a></nav>']
+    for month in sorted(by_month, reverse=True):
+        y, m = month.split("-")
+        out.append(f'  <section class="archive-month"><h2>{int(y)}년 {int(m)}월</h2><div class="archive-list">')
+        for d in sorted(by_month[month], key=lambda x: x["date"], reverse=True):
+            count = len(day_articles(d))
+            snip = day_description(d)
+            if len(snip) > 90:
+                snip = snip[:88].rstrip() + "…"
+            out.append(f'    <a class="archive-row" href="../{e(d["date"])}/"><span class="archive-date">{e(d["date"])}</span>'
+                       f'<span class="archive-count">{count}건</span><span class="archive-snip">{e(snip)}</span></a>')
+        out.append('  </div></section>')
+    out.append('</main>')
+    out.append(static_tail())
+    return "\n".join(out)
+
+
+# ============================================================
 # 서버 렌더링 (마스트헤드 · 히어로 · 푸터)
 # ============================================================
 
@@ -1326,6 +1648,10 @@ def render(today, archive):
     data_json = (json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
                  .replace("<", "\u003c"))
 
+    if "data:image" in data_json:
+        # externalize_thumbs() 가 먼저 돌았다면 나올 수 없다. 남아 있으면 페이지가 다시 MB 단위로 불어나므로 바로 알린다
+        print("경고: 페이지 JSON 에 data URI 이미지가 남아 있습니다 (externalize_thumbs 확인)", file=sys.stderr)
+
     return f"""<!doctype html>
 <html lang="ko">
 <head>
@@ -1353,8 +1679,8 @@ def render(today, archive):
 <header class="masthead">
   <div class="masthead-inner">
     <a class="brand" href="./" aria-label="취업조로의 커리어브리핑 홈">
-      <img class="brand-logo brand-logo-light" src="assets/logo.png" alt="취업조로" width="150" height="40">
-      <img class="brand-logo brand-logo-dark" src="assets/logo-dark.png" alt="" aria-hidden="true" width="150" height="40">
+      <img class="brand-logo brand-logo-light" src="assets/logo.png" alt="취업조로" width="150" height="40" loading="lazy" decoding="async">
+      <img class="brand-logo brand-logo-dark" src="assets/logo-dark.png" alt="" aria-hidden="true" width="150" height="40" loading="lazy" decoding="async">
       <div class="brand-text">
         <div class="brand-name">커리어브리핑 <em class="brand-en">Career Briefing</em></div>
       </div>
@@ -1421,6 +1747,7 @@ def render(today, archive):
       <p class="howto-text">점수는 키워드 가중치, 통계 수치 인용, 언론사 신뢰도를 더한 값입니다. 주간·월간 랭킹은 그 기간 지면 기사를 점수순으로 세운 것이고, 키워드 화살표는 직전 같은 길이 구간 대비 변동입니다.</p>
     </div>
   </div>
+  <div class="howto-more"><a href="archive/">지난 지면 전체 보기 &rarr;</a> <span style="font-weight:500;color:var(--muted)">날짜별 지면을 각각의 주소로 볼 수 있습니다.</span></div>
 {render_health(stats)}
 </section>
 
@@ -1454,16 +1781,36 @@ def main():
                    "available": 1, "periods": {}, "full_days": [today]}
 
     out_path = Path(args.out)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    site_dir = out_path.parent
+    site_dir.mkdir(parents=True, exist_ok=True)
+
+    # 썸네일을 파일로 빼낸다 (렌더링 전에 해야 HTML/JSON 에 base64 가 안 박힌다)
+    new_thumbs, n_thumbs, thumb_bytes = externalize_thumbs(today, site_dir)
+
     out_path.write_text(render(today, archive), encoding="utf-8")
 
     # CI 로고·파비콘: assets/ 를 site/assets/ 로 복사 (site/ 는 배포 때마다 새로 만들어진다)
-    shutil.copytree(BASE_DIR / "assets", out_path.parent / "assets", dirs_exist_ok=True)
+    shutil.copytree(BASE_DIR / "assets", site_dir / "assets", dirs_exist_ok=True)
+
+    # 날짜별 정적 지면 + 아카이브 목록 + 날짜 목록(days.json)
+    full_days = archive["full_days"]
+    dates = [d["date"] for d in full_days]
+    for i, day in enumerate(full_days):
+        page_dir = site_dir / day["date"]
+        page_dir.mkdir(parents=True, exist_ok=True)
+        (page_dir / "index.html").write_text(
+            render_day_page(day, dates[i - 1] if i > 0 else None, dates[i + 1] if i + 1 < len(dates) else None),
+            encoding="utf-8")
+    (site_dir / "archive").mkdir(exist_ok=True)
+    (site_dir / "archive" / "index.html").write_text(render_archive_page(full_days), encoding="utf-8")
+    (site_dir / "days.json").write_text(json.dumps(dates), encoding="utf-8")
 
     periods = ", ".join(
         f"{p['label']} {len(p['articles'])}건" for p in archive["periods"].values())
     print(f"생성 완료: {out_path}  ({out_path.stat().st_size / 1024:.0f} KB)")
     print(f"  일간 아카이브 {archive['available']}일치" + (f" | {periods}" if periods else ""))
+    print(f"  썸네일 {n_thumbs}장 -> {site_dir / THUMB_DIR}  (새로 저장 {new_thumbs}장, {thumb_bytes / 1024:.0f} KB)")
+    print(f"  날짜별 지면 {len(dates)}쪽 + archive/index.html + days.json")
 
 
 if __name__ == "__main__":

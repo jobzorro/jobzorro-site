@@ -4,6 +4,8 @@
   site/index.html        직무사전   <- data/jobs.json + template.html
   site/news/index.html   취업뉴스   <- news-collector/site/index.html 에 상단 탭만 끼워 넣음
                                     (news-collector/collect_news.py → build_site.py 로 먼저 만든다)
+  site/news/<날짜>/      날짜별 지면 <- news-collector/site/<날짜>/index.html (days.json 에 적힌 날짜들)
+  site/news/archive/     지난 지면 목록 <- news-collector/site/archive/index.html
   site/zorro/index.html  취업조로와 함께하기 <- template_zorro.html
 
 사용법:
@@ -13,11 +15,13 @@
 
 import argparse
 import base64
+import hashlib
 import seo
 import json
 import os
 import re
 import sys
+from html import unescape as html_unescape   # 아래에서 `html` 이름은 페이지 문자열로 쓴다
 from pathlib import Path
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
@@ -61,6 +65,32 @@ APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 �
 
 def data_uri(path: Path, mime="image/png") -> str:
     return f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode()
+
+
+LOGO_FILES = ("jobzorro_logo.png", "teamzorro_logo.png")   # assets/ → site/assets/ 로 복사해 모든 페이지가 파일 경로로 참조한다
+
+
+def logo_src(logo: str, root: str) -> str:
+    """로고 인자가 data URI·절대 URL 이면 그대로, 'assets/x.png' 같은 상대경로면 페이지 깊이(root)를 앞에 붙인다."""
+    if logo.startswith(("data:", "http://", "https://", "/")):
+        return logo
+    return root + logo
+
+
+def slim_job(j: dict) -> dict:
+    """첫 페이지(index.html)에 박는 슬림 직무. template.html 의 JS 가 카드(card)·필터(filtered)·검색(haystack)·통계에서
+    읽는 필드만 남긴다. 상세 패널(detail)이 쓰는 나머지는 site/data/jobs.json 을 첫 클릭 때 받아 온다."""
+    s = j.get("sources") or {}
+    return {
+        "id": j["id"], "name": j["name"], "en": j["en"], "group": j["group"], "tagline": j["tagline"],
+        "summary": j["summary"],                                                 # 검색(haystack)용
+        "skills": {"hard": j["skills"]["hard"], "soft": j["skills"]["soft"]},   # 카드는 hard 앞 3개, 검색은 전부
+        "tools": j["tools"], "certs": j["certs"],                                # 검색용
+        "salary": {"junior": j["salary"]["junior"]},                             # 카드 하단 신입 연봉대
+        "ai": {"level": j["ai"]["level"]},                                       # 카드 AI 배지 · 'AI 영향 낮은 직무만' 필터
+        "nonmajorOk": j["nonmajorOk"], "draftOnly": j["draftOnly"],
+        "sources": {"count": s.get("count", 0), "public": s.get("public", 0), "industries": s.get("industries", [])},  # 근거 배지·필터·업종 검색
+    }
 
 
 # 모든 페이지가 공유하는 CSS: 색 토큰, 기본 글꼴, 상단 탭(zn-), 푸터(zf-), 하단 상담 버튼(zfab), 배지·버튼
@@ -148,7 +178,7 @@ def nav_html(active: str, root: str, logo: str) -> str:
     )
     theme = "<script>try{var t=localStorage.getItem('cb-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>"
     return (
-        theme + f'<header class="zn"><div class="zn-in"><a class="zn-logo" href="{root}index.html"><img src="{logo}" alt="TEAM ZORRO"></a>'
+        theme + f'<header class="zn"><div class="zn-in"><a class="zn-logo" href="{root}index.html"><img src="{logo_src(logo, root)}" alt="TEAM ZORRO"></a>'
         f'<nav class="zn-tabs" aria-label="사이트 탭">{tabs}</nav>'
         f'<a class="zn-cta" href="{root}{APPLY}">무료 상담 신청하기 ⚡</a></div></header>'
     )
@@ -157,7 +187,7 @@ def nav_html(active: str, root: str, logo: str) -> str:
 def footer_html(root: str, logo: str, note: str) -> str:
     c = COMPANY
     return (
-        f'<footer class="zf"><div class="zf-in"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo}" alt="취업조로"></a>'
+        f'<footer class="zf"><div class="zf-in"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"></a>'
         f'<div class="zf-links"><a href="{root}index.html">직무사전</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
         f'<a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a>'
         f'<a href="{root}privacy/index.html">개인정보처리방침</a></div>'
@@ -195,15 +225,26 @@ def check_jobs(data: dict) -> None:
 def build(out_dir: Path, with_news: bool) -> None:
     data = json.loads((BASE / "data" / "jobs.json").read_text(encoding="utf-8"))
     check_jobs(data)
-    logo = data_uri(ASSETS / "jobzorro_logo.png")
-    logo_nav = data_uri(ASSETS / "teamzorro_logo.png")   # 맨 위 탭바만 TEAM ZORRO CI, 푸터는 취업조로
+    # 로고는 data URI 로 페이지마다 박지 않고 site/assets/ 의 파일을 참조한다 (nav_html/footer_html 이 root 를 붙여 깊이별 상대경로로 만든다)
+    logo = "assets/jobzorro_logo.png"            # 푸터: 취업조로
+    logo_nav = "assets/teamzorro_logo.png"       # 맨 위 탭바만 TEAM ZORRO CI
+    (out_dir / "assets").mkdir(parents=True, exist_ok=True)
+    for name in LOGO_FILES:
+        (out_dir / "assets" / name).write_bytes((ASSETS / name).read_bytes())
     n_jobs = len(data["jobs"])
     n_evidence = data["meta"].get("sourceDocs", 0) + sum(j["sources"].get("public", 0) for j in data["jobs"])
     data["meta"]["evidenceTotal"] = n_evidence
     disclaimer = data["meta"]["disclaimer"]
 
     # 1) 직무사전
-    payload = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    #    전체 JSON(1.1MB)은 site/data/jobs.json 으로 따로 두고 상세 패널이 첫 클릭 때 한 번 받아 간다.
+    #    페이지에는 카드·필터·검색에 쓰는 슬림 버전(slim_job)만 박아 첫 로딩 HTML 을 250KB 아래로 유지한다.
+    full_payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    data["meta"]["dataVersion"] = hashlib.md5(full_payload.encode("utf-8")).hexdigest()[:8]   # JS 가 ?v= 로 붙여 CDN 캐시를 무효화
+    (out_dir / "data").mkdir(parents=True, exist_ok=True)
+    (out_dir / "data" / "jobs.json").write_text(full_payload, encoding="utf-8")
+    slim = {"meta": data["meta"], "jobs": [slim_job(j) for j in data["jobs"]]}
+    payload = json.dumps(slim, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     html = (BASE / "template.html").read_text(encoding="utf-8")
     # site_cfg 는 아래(zorro 블록 앞)에서 읽지만 첫 페이지 SEO 에도 필요하므로 여기서 먼저 읽는다
     _cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
@@ -223,7 +264,8 @@ def build(out_dir: Path, with_news: bool) -> None:
                 .replace("/*__JOBS_JSON__*/", payload))
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(html, encoding="utf-8")
-    print(f"직무사전: 직무 {n_jobs}개 · 직군 {len(data['meta']['groups'])}개 · 근거 {n_evidence}건 -> {out_dir / 'index.html'}")
+    print(f"직무사전: 직무 {n_jobs}개 · 직군 {len(data['meta']['groups'])}개 · 근거 {n_evidence}건 -> {out_dir / 'index.html'} "
+          f"({(out_dir / 'index.html').stat().st_size:,} bytes, 슬림 JSON {len(payload.encode('utf-8')):,}) · 전체 데이터 -> data/jobs.json ({len(full_payload.encode('utf-8')):,} bytes)")
 
     # 2) 취업조로와 함께하기
     site_cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
@@ -343,10 +385,10 @@ def build(out_dir: Path, with_news: bool) -> None:
         d.mkdir(parents=True, exist_ok=True)
         (d / "index.html").write_text(page, encoding="utf-8")
         entries.append((f"jobs/{jid}/", updated, "weekly", "0.8"))
-    seo.write_sitemap(out_dir, base_url, entries)
+    # sitemap.xml 은 뉴스 블록이 날짜별 지면 URL 을 entries 에 더한 뒤, 맨 끝에서 쓴다
     seo.write_robots(out_dir, base_url)
     seo.write_llms(out_dir, base_url, data["jobs"], data["meta"]["groups"], updated)
-    print(f"직무 페이지 {len(data['jobs'])}개 + sitemap.xml · robots.txt · llms.txt -> {out_dir / 'jobs'}")
+    print(f"직무 페이지 {len(data['jobs'])}개 + robots.txt · llms.txt -> {out_dir / 'jobs'}")
     print(f"무료 상담 신청 폼 -> {out_dir / 'apply' / 'index.html'} (전송: {cfg_public['formEndpoint'] or '미연결'})")
 
     # 3) 취업뉴스: 뉴스 수집기 결과물에 공용 탭·글꼴만 끼워 넣는다 (뉴스 페이지 자체 스타일은 건드리지 않음)
@@ -377,13 +419,65 @@ def build(out_dir: Path, with_news: bool) -> None:
                       + "".join(seo.jsonld(o) for o in news_ld) + "</head>", 1)
         (out_dir / "news").mkdir(exist_ok=True)
         (out_dir / "news" / "index.html").write_text(n, encoding="utf-8")
-        import shutil  # 뉴스 페이지가 참조하는 로고·파비콘도 함께 복사
+        import shutil  # 뉴스 페이지가 참조하는 로고·파비콘·기사 썸네일(assets/thumbs)도 함께 복사
         src_assets = news_src.parent / "assets"
         if src_assets.exists():
+            # 썸네일은 날마다 바뀌므로 지난 파일이 쌓이지 않게 비우고 다시 복사한다
+            shutil.rmtree(out_dir / "news" / "assets" / "thumbs", ignore_errors=True)
             shutil.copytree(src_assets, out_dir / "news" / "assets", dirs_exist_ok=True)
+        print(f"취업뉴스: {NEWS_URL or NEWS_SRC} ({(out_dir / 'news' / 'index.html').stat().st_size:,} bytes) + 탭 -> {out_dir / 'news' / 'index.html'}")
+
+        # 3-1) 날짜별 정적 지면 + 지난 지면 목록: build_site.py 가 만든 site/<날짜>/index.html, site/archive/index.html 에
+        #      같은 탭바·푸터·버튼과 SEO head 를 끼워 site/news/<날짜>/, site/news/archive/ 로 내보낸다.
+        #      (NEWS_URL 비상 모드는 index.html 만 내려받으므로 days.json 이 없고, 이 블록은 건너뛴다)
+        news_note = "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다."
+
+        def wrap_news_page(src: Path, rel: str, title: str, lastmod: str, ld: list, changefreq: str, priority: str) -> bool:
+            """news/<rel>index.html 로 쓴다. 페이지 자체 <title>/description 은 떼고 seo_head 것으로 바꾼다. 성공하면 sitemap entries 에 더한다."""
+            if not src.exists():
+                return False
+            page = src.read_text(encoding="utf-8")
+            m = re.search(r'<meta name="description" content="([^"]*)">', page)
+            desc = html_unescape(m.group(1)) if m else title
+            page = re.sub(r"<title>.*?</title>\s*", "", page, count=1, flags=re.S)
+            page = re.sub(r'<meta name="description" content="[^"]*">\s*', "", page, count=1)
+            page = re.sub(r'<link rel="(?:icon|apple-touch-icon)"[^>]*>\s*', "", page)   # seo_head 가 절대 경로로 다시 넣는다
+            page = page.replace("</head>", seo.seo_head(base_url, title, desc, f"news/{rel}", og_news, ld) + seo.verify_tags() + "\n</head>", 1)
+            page = re.sub(r"(<body[^>]*>)", lambda mm: mm.group(1) + nav_css + nav_html("news/index.html", "../../", logo_nav), page, count=1)
+            page = page.replace("</body>", footer_html("../../", logo, news_note) + fab_html("../../") + "</body>", 1)
+            dst = out_dir / "news" / rel / "index.html"
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_text(page, encoding="utf-8")
+            entries.append((f"news/{rel}", lastmod, changefreq, priority))
+            return True
+
+        days_file = news_src.parent / "days.json"
+        news_days = []
+        if days_file.exists():
+            try:
+                news_days = [d for d in json.loads(days_file.read_text(encoding="utf-8")) if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(d))]
+            except (json.JSONDecodeError, OSError):
+                news_days = []
+        n_day_pages = 0
+        for d in news_days:
+            y, mo, dd = (int(x) for x in d.split("-"))
+            kdate = f"{y}년 {mo}월 {dd}일"
+            ld = [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/"), (f"{kdate} 지면", f"news/{d}/")]),
+                  {"@context": "https://schema.org", "@type": "WebPage", "@id": seo.abs_url(base_url, f"news/{d}/"), "name": f"{kdate} 커리어브리핑",
+                   "inLanguage": "ko", "datePublished": d, "isPartOf": {"@id": seo.abs_url(base_url, "#website")}, "author": {"@id": seo.abs_url(base_url, "zorro/#person")}}]
+            if wrap_news_page(news_src.parent / d / "index.html", f"{d}/", f"{kdate} 커리어브리핑 — 취업조로", d, ld, "monthly", "0.5"):
+                n_day_pages += 1
+        has_archive = wrap_news_page(news_src.parent / "archive" / "index.html", "archive/", "지난 지면 전체 보기 — 취업조로의 커리어브리핑", updated,
+                                     [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/"), ("지난 지면 전체", "news/archive/")])], "weekly", "0.6")
+        if n_day_pages or has_archive:
+            print(f"  날짜별 지면 {n_day_pages}쪽 -> {out_dir / 'news' / '<날짜>'}" + (f" + 지난 지면 목록 -> {out_dir / 'news' / 'archive' / 'index.html'}" if has_archive else ""))
+        else:
+            print("  (days.json 이 없어 날짜별 지면은 만들지 않았습니다)")
         if NEWS_URL:
             shutil.rmtree(news_src.parent, ignore_errors=True)
-        print(f"취업뉴스: {NEWS_URL or NEWS_SRC} ({(out_dir / 'news' / 'index.html').stat().st_size:,} bytes) + 탭 -> {out_dir / 'news' / 'index.html'}")
+
+    seo.write_sitemap(out_dir, base_url, entries)
+    print(f"sitemap.xml: URL {len(entries)}개 -> {out_dir / 'sitemap.xml'}")
 
 
 if __name__ == "__main__":
