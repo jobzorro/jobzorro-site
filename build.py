@@ -190,6 +190,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 
 
 # 취업뉴스 페이지에 끼울 때 덮어쓰는 스타일 (보조 글자 선명하게). 제호는 build_site.py 의 .hero-top 이 그린다
+FIT_JS = "<script>(function(){function fit(el){el.style.fontSize='';var s=parseFloat(getComputedStyle(el).fontSize),m=22,g=40;while(el.scrollWidth>el.clientWidth+1&&s>m&&g-->0){s-=2;el.style.fontSize=s+'px';}}function all(){document.querySelectorAll('.hero h1').forEach(fit);}all();window.addEventListener('resize',all);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(all);})();</script>"
 TICKER_HTML = '<div class="v2-ticker" aria-hidden="true"><div class="v2-ticker-track"><span>Career Briefing</span><span>매일 아침 고른 채용 · 이직 · 기업 · 고용 뉴스</span><span>Zorro의 한마디</span><span>주간 · 월간 랭킹</span><span>지난 지면 아카이브</span><span>Team Zorro</span><span>Career Briefing</span><span>매일 아침 고른 채용 · 이직 · 기업 · 고용 뉴스</span><span>Zorro의 한마디</span><span>주간 · 월간 랭킹</span><span>지난 지면 아카이브</span><span>Team Zorro</span></div></div>'
 OUTRO_HTML = '<section class="v2-outro"><svg class="big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg><div class="row"><p>오늘 뉴스가 내 커리어에 어떤 뜻인지 모르겠다면, 취업조로 컨설턴트가 1:1로 정리해 드립니다. 상담은 무료입니다.</p><a class="go" href="../apply/index.html">무료 상담 신청하기 →</a></div></section>'
 
@@ -229,7 +230,7 @@ NEWS_MASTHEAD_CSS = """
 .hero { background:var(--paper); border-bottom:1px solid var(--hairline); }
 .hero-inner { max-width:1320px; padding:18px 20px 40px; gap:48px; align-items:end; }
 .eyebrow { display:none; }
-.hero h1 { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; font-size:clamp(34px, 5.4vw, 76px); line-height:1.02; letter-spacing:-.05em; margin:0 0 22px; max-width:14ch; }
+.hero h1 { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; font-size:clamp(34px, 5.4vw, 76px); line-height:1.02; letter-spacing:-.05em; margin:0 0 22px; white-space:nowrap; }
 .hero h1 em { color:inherit; background:linear-gradient(transparent 68%, #c6ff3d 68%); }
 .hero-sub { font-size:16px; color:var(--ink-soft); max-width:58ch; }
 .brief-box { border:0; border-top:1px solid var(--ink); border-radius:0; background:transparent; padding:18px 0 0; margin-top:0; }
@@ -551,7 +552,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         inject = nav_css + nav_html("news/index.html", "../", logo_nav)
         n = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + inject, n, count=1)
         n = n.replace('<section class="hero">', TICKER_HTML + '<section class="hero">', 1)
-        foot = OUTRO_HTML + footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
+        foot = FIT_JS + OUTRO_HTML + footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
         n = n.replace("</body>", foot + "</body>", 1)
         news_ld = [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/")]),
                    {"@context": "https://schema.org", "@type": "WebPage", "@id": seo.abs_url(base_url, "news/"), "name": "취업조로의 커리어브리핑", "inLanguage": "ko",
