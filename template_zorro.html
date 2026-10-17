@@ -5,278 +5,375 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 /*__SEO__*/
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=Noto+Serif+KR:wght@700;900&family=Playfair+Display:wght@700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
 /*__SHARED_CSS__*/
-/* 페이지: 히어로(두 줄 헤드라인 + 실적 수치) → 상황별 4개 카드(일러스트) → 특별한 이유 3가지 → 프로세스 4단계 → 프로필 → 채널·상담 신청 → 푸터 */
-.hero { background: var(--surface); border-bottom: 1px solid var(--line); }
-.hero-in { max-width: 1120px; margin: 0 auto; padding: 48px 20px 36px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 40px; align-items: center; }
-.hero h1 { font-size: clamp(27px, 3.8vw, 42px); line-height: 1.2; letter-spacing: -.045em; }
-.hero h1 .light { display: block; font-weight: 400; color: var(--fg-soft); }
-.hero h1 .strong { display: block; font-weight: 800; color: var(--black); }
-.hero .lede { margin-top: 16px; font-size: 15.5px; color: var(--fg-soft); max-width: 60ch; }
-.hero .lede b { font-weight: 700; color: var(--black); background: linear-gradient(transparent 60%, var(--yellow) 60%); }
-.stats { display: flex; gap: 28px; margin: 24px 0 0; flex-wrap: wrap; }
-.stats div { display: flex; flex-direction: column; }
-.stats dt { font-family: var(--font); font-size: 12px; font-weight: 600; letter-spacing: .01em; text-transform: none; color: var(--ink-soft); }
-.stats dd { margin: 2px 0 0; font-size: 28px; color: var(--black); font-family: var(--font); font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.stats dd small { font-size: 13px; font-weight: 700; margin-left: 3px; color: var(--ink-soft); letter-spacing: 0; }
-.hero-card { background: var(--inkbg); color: var(--inkfg); border-radius: 12px; padding: 24px; }
-.hero-card .t { font-size: 12.5px; font-weight: 600; color: var(--inkfg-soft); }
-.hero-card .h { font-size: 20px; font-weight: 800; margin-top: 4px; line-height: 1.35; }
-.hero-card .h em { font-style: normal; color: var(--red); }
-.hero-card p.d { margin-top: 10px; font-size: 13.5px; opacity: .85; line-height: 1.6; }
-.hero-card .btn { margin-top: 16px; }
-.sec-head { padding: 40px 0 16px; }
-.sec-head h2 { font-family: var(--serif); font-size: 24px; font-weight: 700; letter-spacing: -.01em; }
-.sec-head h2 b { color: var(--red); }
-.sec-head p { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
-.cases { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-.case { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px 20px 18px; box-shadow: var(--shadow); overflow: hidden; min-height: 190px; }
-.case .q { font-size: 13.5px; color: var(--fg-soft); }
-.case h3 { font-size: 22px; margin-top: 2px; color: var(--black); }
-.case h3::after { content: " >"; }
-.case ul { margin-top: 10px; display: grid; gap: 4px; }
-.case li { font-size: 13px; color: var(--fg-soft); padding-left: 12px; position: relative; line-height: 1.5; }
-.case li::before { content: ""; position: absolute; left: 0; top: .6em; width: 5px; height: 5px; border-radius: 50%; background: var(--fill); }
-.case .tag { position: static; margin-left: 10px; vertical-align: middle; }
-.case img { align-self: end; justify-self: end; width: 150px; height: auto; max-width: 100%; }
-.case .go { display: inline-flex; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--black); text-decoration: none; vertical-align: middle; }
-.case .go:hover { color: var(--red); }
-.why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-.why div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px 20px; }
-.why .n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--fill); color: var(--fillfg); font-weight: 800; font-size: 14px; }
-.why h3 { font-size: 17px; margin-top: 12px; color: var(--black); }
-.why p { margin-top: 8px; font-size: 14px; color: var(--fg-soft); line-height: 1.6; }
-.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 16px; position: relative; }
-.step .k { font-family: var(--font); font-size: 12px; font-weight: 700; letter-spacing: .01em; text-transform: none; color: var(--brass); }
-.step h3 { font-size: 16px; margin-top: 6px; color: var(--black); }
-.step p { margin-top: 6px; font-size: 13.5px; color: var(--fg-soft); line-height: 1.55; }
-.profile { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 26px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 26px; box-shadow: var(--shadow); }
-.avatar { width: 220px; aspect-ratio: 1; border-radius: 12px; background: var(--fill); display: grid; place-items: center; overflow: hidden; }
-.avatar img { width: 100%; height: 100%; object-fit: cover; }
-.avatar .ph { color: var(--inkfg); text-align: center; font-size: 12.5px; padding: 16px; line-height: 1.6; }
-.avatar .ph b { display: block; font-size: 34px; font-weight: 800; }
-.profile h3 { font-size: 22px; color: var(--black); }
-.profile h3 small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 8px; }
-.profile .role { margin-top: 4px; font-size: 14px; font-weight: 700; color: var(--red); }
-.profile ul { margin-top: 12px; display: grid; gap: 5px; }
-.profile li { font-size: 14px; color: var(--fg-soft); padding-left: 14px; position: relative; line-height: 1.55; }
-.profile li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--fill); }
-.profile .books { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
-.profile .books-label { margin-top: 14px; font-family: var(--font); font-size: 12px; font-weight: 700; letter-spacing: .01em; text-transform: none; color: var(--brass); }
-.profile .books { margin-top: 6px; }
-.profile .books a { font-size: 12.5px; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); color: var(--fg-soft); text-decoration: none; border: 1px solid transparent; }
-.profile .books a:hover { border-color: var(--black); color: var(--black); }
-.channels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.ch { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: var(--black); text-align: center; }
-.ch:hover { border-color: var(--black); }
-.ch .ic { width: 54px; height: 54px; border-radius: 50%; background: var(--fill); color: var(--fillfg); display: grid; place-items: center; font-weight: 800; font-size: 12px; letter-spacing: .02em; }
-.ch .ic svg { width: 26px; height: 26px; }
-.ch b { font-size: 14px; }
-.ch span { font-size: 12px; color: var(--muted); word-break: break-all; }
-.contact { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
-.contact > div { background: var(--inkbg); color: var(--inkfg); border-radius: 12px; padding: 26px; }
-.contact h3 { font-size: 20px; color: inherit; }
-.contact p { margin-top: 8px; font-size: 14px; opacity: .85; line-height: 1.65; }
-.contact ol { margin-top: 12px; display: grid; gap: 8px; counter-reset: s; }
-.contact ol li { position: relative; padding-left: 30px; font-size: 14px; counter-increment: s; }
-.contact ol li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; border-radius: 50%; background: var(--brass); color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; }
-.contact .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.contact .white { background: var(--surface); color: var(--black); border: 1px solid var(--line); }
-.contact .white p { opacity: 1; color: var(--fg-soft); }
-.contact .white code { font-family: inherit; font-weight: 700; color: var(--black); user-select: all; }
-.contact .white .btn.primary { background: var(--fill); color: var(--fillfg); }
-.contact .white .btn.primary:hover { background: var(--brass); color: #fff; }
-.contact .white .btn.ghost { border-color: var(--hairline-2); color: var(--ink); }
-.contact .white .btn.ghost:hover { border-color: var(--brass); color: var(--brass); }
-.notice { margin-top: 18px; font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; }
-@media (max-width: 900px) {
-  .hero-in { grid-template-columns: 1fr; gap: 22px; }
-  .why { grid-template-columns: 1fr; }
-  .steps { grid-template-columns: 1fr 1fr; }
-  .channels { grid-template-columns: 1fr 1fr; }
-  .contact { grid-template-columns: 1fr; }
-  .profile { grid-template-columns: 1fr; }
-  .avatar { width: 160px; }
+/* 페이지: 거대 헤드라인 히어로 + 지표 표 → 마키 → 고정 앵커 바 → 번호 붙은 큰 섹션(상황별 타일 · 왜 다른가 · 진행 과정 · 프로필 · 채널 · 상담) → 거대 워드마크 */
+.z-in { max-width:1320px; margin:0 auto; padding-inline:max(20px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-right, 0px)); }
+.kicker { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; gap:12px; align-items:center; }
+.kicker i { width:8px; height:8px; border-radius:50%; background:var(--acc); display:inline-block; }
+
+/* 히어로 */
+.z-hero { padding: clamp(40px, 7vw, 96px) 0 32px; border-bottom:1px solid var(--line); }
+.z-hero-grid { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:40px; align-items:end; }
+.z-hero h1 { margin-top:18px; font-family:var(--display); font-weight:900; font-size:clamp(40px, 8.4vw, 124px); line-height:.94; letter-spacing:-.055em; }
+.z-hero h1 .thin { display:block; font-weight:500; font-size:.42em; letter-spacing:-.03em; color:var(--ink-soft); margin-bottom:14px; line-height:1.15; }
+.z-hero h1 .mark { background:linear-gradient(transparent 68%, var(--acc) 68%); }
+.z-hero .lede { margin-top:26px; max-width:58ch; font-size:16px; line-height:1.7; color:var(--ink-soft); }
+.z-hero .lede b { color:var(--ink); }
+.z-hero .cta { display:flex; flex-wrap:wrap; gap:10px; margin-top:28px; }
+.z-btn { display:inline-flex; align-items:center; gap:10px; font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:14px 22px; border-radius:999px; text-decoration:none; border:1px solid var(--ink); color:var(--ink); }
+.z-btn.solid { background:var(--ink); color:var(--paper); }
+.z-btn.solid:hover { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
+.z-btn:not(.solid):hover { background:var(--mist); }
+.z-stats { display:grid; border-top:1px solid var(--ink); }
+.z-stats div { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:14px 0; border-bottom:1px solid var(--line); }
+.z-stats dt { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.z-stats dd { margin:0; font-family:var(--display); font-size:34px; font-weight:900; letter-spacing:-.04em; font-variant-numeric:tabular-nums; line-height:1; white-space:nowrap; }
+.z-stats dd small { font-size:13px; font-weight:700; margin-left:4px; color:var(--muted); letter-spacing:0; }
+
+/* 마키 */
+.z-ticker { overflow:hidden; border-bottom:1px solid var(--line); background:var(--ink); color:var(--paper); }
+.z-ticker-track { display:flex; width:max-content; animation:zmarquee 40s linear infinite; }
+.z-ticker span { font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.12em; text-transform:uppercase; padding:12px 28px; white-space:nowrap; }
+.z-ticker span::after { content:"✦"; margin-left:28px; color:var(--acc); }
+@keyframes zmarquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .z-ticker-track { animation:none; } }
+
+/* 고정 앵커 바 */
+.z-bar { position:sticky; top:calc(54px + env(safe-area-inset-top,0px)); z-index:15; background:var(--paper); border-bottom:1px solid var(--line); }
+.z-bar-in { display:flex; align-items:center; gap:6px; padding-block:10px; overflow-x:auto; scrollbar-width:none; }
+.z-bar-in::-webkit-scrollbar { display:none; }
+.z-bar a { flex:none; padding:9px 14px; border-radius:999px; font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.02em; color:var(--muted); text-decoration:none; border:1px solid transparent; white-space:nowrap; }
+.z-bar a .n { font-weight:500; opacity:.6; margin-right:6px; font-size:11px; }
+.z-bar a:hover { color:var(--ink); border-color:var(--line-strong); }
+.z-bar a.on { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.z-bar .cta { margin-left:auto; flex:none; }
+.z-bar .cta a { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
+
+/* 섹션 공통 */
+.z-sec { padding-top:72px; scroll-margin-top:120px; }
+.z-sec-head { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:20px 28px; align-items:end; margin-bottom:28px; }
+.z-sec-head .num { font-family:var(--display); font-weight:900; font-size:clamp(40px, 6vw, 88px); line-height:.9; letter-spacing:-.05em; color:transparent; -webkit-text-stroke:1.5px var(--ink); }
+.z-sec-head h2 { font-family:var(--display); font-size:clamp(28px, 4.2vw, 58px); font-weight:900; line-height:1; letter-spacing:-.05em; }
+.z-sec-head h2 b { background:linear-gradient(transparent 68%, var(--acc) 68%); }
+.z-sec-head p { max-width:42ch; font-size:14px; color:var(--muted); line-height:1.6; justify-self:end; text-align:right; }
+
+/* 1. 상황별 타일 */
+.cases { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:28px; }
+.case { position:relative; display:grid; grid-template-columns:minmax(0,1fr) 170px; gap:16px; padding:28px 0 26px; border-top:1px solid var(--ink); }
+.case .q { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.case h3 { font-family:var(--display); font-size:clamp(28px, 3vw, 40px); margin-top:10px; letter-spacing:-.05em; line-height:1; }
+.case .tag { position:absolute; right:0; top:28px; }
+.case ul { margin-top:16px; display:grid; gap:6px; }
+.case li { font-size:14px; color:var(--ink-soft); padding-left:14px; position:relative; line-height:1.55; }
+.case li::before { content:""; position:absolute; left:0; top:.62em; width:6px; height:6px; border-radius:50%; background:var(--acc); }
+.case .go { display:inline-flex; margin-top:18px; font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink); text-decoration:none; border-bottom:2px solid var(--ink); padding-bottom:2px; }
+.case .go:hover { border-color:var(--acc); }
+.case img { align-self:end; justify-self:end; width:170px; height:auto; max-width:100%; filter:grayscale(1) contrast(1.05); transition:filter .3s; }
+.case:hover img { filter:none; }
+
+/* 2. 왜 다른가 */
+.why { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:0; border-top:1px solid var(--ink); }
+.why > div { padding:28px 28px 32px 0; border-right:1px solid var(--line); }
+.why > div:last-child { border-right:0; }
+.why > div + div { padding-left:28px; }
+.why .n { display:block; font-family:var(--display); font-size:30px; font-weight:900; line-height:1; letter-spacing:-.04em; color:var(--ink); }
+.why h3 { font-family:var(--display); font-size:22px; margin-top:20px; letter-spacing:-.04em; line-height:1.2; }
+.why p { margin-top:10px; font-size:14.5px; color:var(--ink-soft); line-height:1.65; }
+
+/* 3. 진행 과정 */
+.steps { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:20px; }
+.step { border-top:1px solid var(--ink); padding-top:18px; }
+.step .k { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+.step .k b { color:var(--ink); font-size:30px; letter-spacing:-.04em; margin-right:8px; vertical-align:-4px; }
+.step h3 { font-family:var(--display); font-size:22px; margin-top:12px; letter-spacing:-.04em; }
+.step p { margin-top:8px; font-size:14px; color:var(--ink-soft); line-height:1.6; }
+
+/* 4. 프로필 */
+.profile { display:grid; grid-template-columns:320px minmax(0,1fr); gap:40px; align-items:start; }
+.avatar { width:100%; aspect-ratio:1; border-radius:12px; background:var(--mist); overflow:hidden; display:grid; place-items:center; }
+.avatar img { width:100%; height:100%; object-fit:cover; filter:grayscale(1); transition:filter .4s; }
+.avatar:hover img { filter:none; }
+.avatar .ph { color:var(--muted); text-align:center; font-size:12.5px; padding:16px; line-height:1.6; }
+.avatar .ph b { display:block; font-size:34px; font-weight:900; }
+.profile h3 { font-family:var(--display); font-size:clamp(32px, 4vw, 52px); letter-spacing:-.05em; line-height:1; }
+.profile h3 small { display:block; font-family:var(--font); font-size:14px; font-weight:500; color:var(--muted); margin-top:10px; letter-spacing:0; }
+.profile .role { margin-top:16px; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink); background:var(--acc); display:inline-block; padding:5px 10px; border-radius:999px; }
+.profile ul { margin-top:22px; display:grid; gap:0; border-top:1px solid var(--ink); }
+.profile li { font-size:14.5px; color:var(--ink-soft); padding:12px 0 12px 22px; position:relative; line-height:1.55; border-bottom:1px solid var(--line); }
+.profile li::before { content:"—"; position:absolute; left:0; top:12px; color:var(--muted); }
+.books-label { margin-top:22px; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+.books { margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
+.books a { font-size:13px; padding:8px 14px; border-radius:999px; border:1px solid var(--line-strong); color:var(--ink); text-decoration:none; }
+.books a:hover { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+/* 5. 채널 */
+.channels { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:0; border-top:1px solid var(--ink); border-left:1px solid var(--line); }
+.ch { display:flex; flex-direction:column; gap:14px; padding:26px 22px 24px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); text-decoration:none; color:var(--ink); min-height:190px; transition:background .2s; }
+.ch:hover { background:var(--ink); color:var(--paper); }
+.ch .ic { width:44px; height:44px; border-radius:50%; border:1px solid currentColor; display:grid; place-items:center; font-family:var(--display); font-weight:700; font-size:10.5px; letter-spacing:.06em; }
+.ch .ic svg { width:22px; height:22px; }
+.ch b { font-family:var(--display); font-size:20px; letter-spacing:-.04em; margin-top:auto; }
+.ch span { font-size:12.5px; opacity:.65; word-break:break-all; }
+
+/* 6. 상담 (검정 띠) */
+.contact { margin-top:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0; background:var(--inkbg); color:var(--inkfg); border-radius:12px; overflow:hidden; }
+.contact > div { padding:40px 36px; }
+.contact > div + div { border-left:1px solid var(--inkline); }
+.contact h3 { font-family:var(--display); font-size:clamp(26px, 3vw, 38px); letter-spacing:-.05em; line-height:1.05; color:inherit; }
+.contact p { margin-top:14px; font-size:14.5px; opacity:.8; line-height:1.7; }
+.contact ol { margin-top:20px; display:grid; gap:12px; counter-reset:s; }
+.contact ol li { position:relative; padding-left:38px; font-size:14.5px; counter-increment:s; line-height:1.55; }
+.contact ol li::before { content:counter(s, decimal-leading-zero); position:absolute; left:0; top:2px; font-family:var(--display); font-size:13px; font-weight:700; color:var(--acc); letter-spacing:.04em; }
+.contact .row { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
+.contact .z-btn { border-color:var(--inkline); color:var(--inkfg); }
+.contact .z-btn.solid { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
+.contact .z-btn.solid:hover { background:var(--inkfg); color:var(--inkbg); border-color:var(--inkfg); }
+.notice { margin-top:18px; font-size:12.5px; color:var(--muted); line-height:1.7; }
+
+/* 거대 워드마크 */
+.z-outro { margin-top:96px; border-top:1px solid var(--ink); padding:56px 0 20px; }
+.z-outro .big { display:block; width:100%; height:auto; overflow:visible; }
+.z-outro .big text { font-family:var(--display); font-weight:900; font-size:150px; letter-spacing:-.04em; }
+.z-outro .big .o { fill:none; stroke:var(--ink); stroke-width:2; }
+.z-outro .big .s { fill:var(--ink); }
+.z-outro .row { display:flex; flex-wrap:wrap; gap:16px 40px; align-items:center; justify-content:space-between; margin-top:28px; }
+.z-outro p { max-width:46ch; font-size:15px; color:var(--ink-soft); line-height:1.7; }
+.zf { margin-top:0; }
+
+@media (max-width: 960px) {
+  .z-hero-grid { grid-template-columns:1fr; gap:28px; }
+  .z-stats { grid-template-columns:repeat(2, 1fr); gap:0 24px; }
+  .cases { grid-template-columns:1fr; gap:0; }
+  .why { grid-template-columns:1fr; }
+  .why > div { border-right:0; border-bottom:1px solid var(--line); padding:24px 0; }
+  .why > div + div { padding-left:0; }
+  .steps { grid-template-columns:1fr 1fr; }
+  .profile { grid-template-columns:1fr; }
+  .avatar { width:min(100%, 320px); }
+  .channels { grid-template-columns:1fr 1fr; }
+  .contact { grid-template-columns:1fr; }
+  .contact > div + div { border-left:0; border-top:1px solid var(--inkline); }
+  .z-sec-head { grid-template-columns:auto minmax(0,1fr); }
+  .z-sec-head p { grid-column:1 / -1; justify-self:start; text-align:left; }
 }
 @media (max-width: 600px) {
-  .cases { grid-template-columns: 1fr; }
-  .case { grid-template-columns: minmax(0, 1fr) 110px; }
-  .case img { width: 110px; }
-  .steps { grid-template-columns: 1fr; }
+  .z-hero h1 .thin { font-size:.5em; }
+  .z-stats { grid-template-columns:1fr; }
+  .z-stats dd { font-size:28px; }
+  .case { grid-template-columns:minmax(0,1fr) 110px; }
+  .case img { width:110px; }
+  .steps { grid-template-columns:1fr; }
+  .channels { grid-template-columns:1fr; }
+  .ch { min-height:0; }
+  .contact > div { padding:28px 22px; }
 }
 </style>
 </head>
 <body>
 /*__NAV__*/
 
-<section class="hero">
-  <div class="hero-in">
-    <div>
-      <h1><span class="light">누가 봐도 뽑고 싶은</span><span class="strong">인재의 비밀, 취업조로 😎</span></h1>
-      <p class="lede">취업조로는 <b>재무제표와 보고서로 지원 회사를 뜯어보는 기업분석</b>과 <b>어떤 질문에도 바로 쓰는 생생 면접 스크립트</b>로 합격을 만듭니다. 공장식 컨설팅 대신, 지금 가진 스펙과 상황에서 취업하는 방향을 1:1로 잡아 드립니다.</p>
-      <dl class="stats">
+<section class="z-hero">
+  <div class="z-in">
+    <div class="z-hero-grid">
+      <div>
+        <div class="kicker"><i></i>Team Zorro · 취업·이직 컨설팅</div>
+        <h1><span class="thin">누가 봐도 뽑고 싶은</span>인재의 비밀, <span class="mark">취업조로.</span></h1>
+        <p class="lede">취업조로는 <b>재무제표와 보고서로 지원 회사를 뜯어보는 기업분석</b>과 <b>어떤 질문에도 바로 쓰는 생생 면접 스크립트</b>로 합격을 만듭니다. 공장식 컨설팅 대신, 지금 가진 스펙과 상황에서 취업하는 방향을 1:1로 잡아 드립니다.</p>
+        <div class="cta"><a class="z-btn solid" href="/*__APPLY__*/">무료 상담 신청하기 →</a><a class="z-btn" href="#cases">내 상황 고르기</a></div>
+      </div>
+      <dl class="z-stats">
         <div><dt>함께한 합격자</dt><dd>1,100<small>+</small></dd></div>
         <div><dt>컨설팅 경력</dt><dd>15<small>년 차</small></dd></div>
-        <div><dt>경영기획 &amp; 전략기획 경력</dt><dd>13<small>년</small></dd></div>
+        <div><dt>경영기획 · 전략기획</dt><dd>13<small>년</small></dd></div>
         <div><dt>저서</dt><dd>3<small>권</small></dd></div>
       </dl>
     </div>
-    <aside class="hero-card">
-      <p class="t">무료 상담부터 시작하세요</p>
-      <p class="h">내 상황에 맞는 길을 <em>30분</em> 안에 정리해 드립니다</p>
-      <p class="d">신입, 중고신입, 재직 중 이직, 퇴사 후 이직. 어느 쪽이든 먼저 상황을 듣고 방향을 잡습니다. 상담은 무료이고, 컨설팅 진행 여부는 그 뒤에 정하셔도 됩니다.</p>
-      <a class="btn primary" href="/*__APPLY__*/">무료 상담 신청하기 ⚡</a>
-    </aside>
   </div>
 </section>
 
-<main class="wrap">
-  <div class="sec-head">
-    <h2>나에게 맞는 <b>취업상황</b>을 선택하세요 📢</h2>
-    <p>상황마다 준비 순서와 강조할 것이 다릅니다. 취업조로는 네 가지 상황을 따로 설계합니다.</p>
+<div class="z-ticker" aria-hidden="true">
+  <div class="z-ticker-track">
+    <span>함께한 합격자 1,100+</span><span>신입 · 중고신입 · 경력 이직 · 선퇴사자</span><span>재무제표로 뜯어보는 기업분석</span><span>생생 면접 스크립트</span><span>1:1 첨삭 · 질의응답 · 관리</span><span>상담은 무료</span>
+    <span>함께한 합격자 1,100+</span><span>신입 · 중고신입 · 경력 이직 · 선퇴사자</span><span>재무제표로 뜯어보는 기업분석</span><span>생생 면접 스크립트</span><span>1:1 첨삭 · 질의응답 · 관리</span><span>상담은 무료</span>
   </div>
-  <section class="cases">
-    <article class="case">
-      <div>
-        <p class="q">첫 취업을 목표한다면?</p>
-        <h3>신입</h3>
-        <ul>
-          <li>첫 직장이 향후 20년의 연봉·직무·직장 기준을 정합니다</li>
-          <li>써야 할 공고와 쓰지 말아야 할 공고를 함께 고릅니다</li>
-          <li>중고신입에게도 지지 않는 면접 스크립트와 기업분석</li>
-          <li>현직자 매칭으로 부족한 직무 지식을 채웁니다</li>
-        </ul>
-        <a class="go" href="https://jobzorro.kr/recruit-new" target="_blank" rel="noopener">신입 취업 상담받기 →</a>
-      </div>
-      <img src="/*__ILL_NEW__*/" alt="">
-    </article>
-    <article class="case">
-      <div>
-        <p class="q">산업 or 직무 변경을 꿈꾸고 있다면?</p>
-        <h3>중고 신입</h3>
-        <ul>
-          <li>나를 힘들게 했던 첫 회사를 전방위로 분석합니다</li>
-          <li>짧은 경력이라도 주도적으로 수행한 역량을 포트폴리오로 정리</li>
-          <li>직무부터 고민이라면 나에게 맞는 직무를 다시 설정</li>
-          <li>중고신입이라 공격받을 수 있는 모든 질문에 면접 대비</li>
-        </ul>
-        <a class="go" href="https://jobzorro.kr/recruit-old" target="_blank" rel="noopener">중고신입 상담받기 →</a>
-      </div>
-      <img src="/*__ILL_OLD__*/" alt="">
-    </article>
-    <article class="case">
-      <div>
-        <p class="q">더 나은 커리어패스를 고민한다면?</p>
-        <h3>경력 이직</h3>
-        <ul>
-          <li>이직은 취업보다 쉽습니다. 경력기술서·포트폴리오부터 제대로</li>
-          <li>수백 개 회사에 효율적으로 지원하고 최고의 오퍼를 고릅니다</li>
-          <li>내 회사 경험을 지원 회사에 맞게 다듬는 면접 과정</li>
-          <li>수백 번의 연봉협상 경험으로 협상까지 함께</li>
-        </ul>
-        <a class="go" href="https://jobzorro.kr/turnover-change" target="_blank" rel="noopener">경력 이직 상담받기 →</a>
-        <span class="badge tag">재직자</span>
-      </div>
-      <img src="/*__ILL_CHANGE__*/" alt="">
-    </article>
-    <article class="case">
-      <div>
-        <p class="q">다니던 회사를 퇴사부터 했다면?</p>
-        <h3>선 퇴사자 경력 이직</h3>
-        <ul>
-          <li>다른 지원자보다 빠르게 지원부터 시작합니다</li>
-          <li>2주차에 준비를 끝내고 실제 지원에 들어가는 압도적 속도</li>
-          <li>회사와 대화할 확률을 극대화해 걱정 기간을 줄입니다</li>
-          <li>좋은 회사로의 이직과 연봉협상까지</li>
-        </ul>
-        <a class="go" href="https://jobzorro.kr/turnover-quit" target="_blank" rel="noopener">선퇴사자 상담받기 →</a>
-        <span class="badge green tag">선퇴사자</span>
-      </div>
-      <img src="/*__ILL_QUIT__*/" alt="">
-    </article>
+</div>
+
+<nav class="z-bar" aria-label="페이지 안 이동">
+  <div class="z-in z-bar-in" id="zbar">
+    <a href="#cases"><span class="n">01</span>상황별</a>
+    <a href="#why"><span class="n">02</span>왜 다른가</a>
+    <a href="#steps"><span class="n">03</span>진행 과정</a>
+    <a href="#profile"><span class="n">04</span>취업조로</a>
+    <a href="#channels"><span class="n">05</span>채널</a>
+    <a href="#contact"><span class="n">06</span>상담</a>
+    <span class="cta"><a href="/*__APPLY__*/">무료 상담 ⚡</a></span>
+  </div>
+</nav>
+
+<main class="z-in">
+  <section class="z-sec" id="cases">
+    <div class="z-sec-head"><div class="num">01</div><h2>나에게 맞는 <b>취업상황</b>을<br>선택하세요</h2><p>상황마다 준비 순서와 강조할 것이 다릅니다. 취업조로는 네 가지 상황을 따로 설계합니다.</p></div>
+    <div class="cases">
+      <article class="case">
+        <div>
+          <p class="q">첫 취업을 목표한다면?</p>
+          <h3>신입</h3>
+          <ul>
+            <li>첫 직장이 향후 20년의 연봉·직무·직장 기준을 정합니다</li>
+            <li>써야 할 공고와 쓰지 말아야 할 공고를 함께 고릅니다</li>
+            <li>중고신입에게도 지지 않는 면접 스크립트와 기업분석</li>
+            <li>현직자 매칭으로 부족한 직무 지식을 채웁니다</li>
+          </ul>
+          <a class="go" href="https://jobzorro.kr/recruit-new" target="_blank" rel="noopener">신입 취업 상담받기 →</a>
+        </div>
+        <img src="/*__ILL_NEW__*/" alt="">
+      </article>
+      <article class="case">
+        <div>
+          <p class="q">산업 or 직무 변경을 꿈꾸고 있다면?</p>
+          <h3>중고 신입</h3>
+          <ul>
+            <li>나를 힘들게 했던 첫 회사를 전방위로 분석합니다</li>
+            <li>짧은 경력이라도 주도적으로 수행한 역량을 포트폴리오로 정리</li>
+            <li>직무부터 고민이라면 나에게 맞는 직무를 다시 설정</li>
+            <li>중고신입이라 공격받을 수 있는 모든 질문에 면접 대비</li>
+          </ul>
+          <a class="go" href="https://jobzorro.kr/recruit-old" target="_blank" rel="noopener">중고신입 상담받기 →</a>
+        </div>
+        <img src="/*__ILL_OLD__*/" alt="">
+      </article>
+      <article class="case">
+        <div>
+          <p class="q">더 나은 커리어패스를 고민한다면?</p>
+          <h3>경력 이직</h3>
+          <ul>
+            <li>이직은 취업보다 쉽습니다. 경력기술서·포트폴리오부터 제대로</li>
+            <li>수백 개 회사에 효율적으로 지원하고 최고의 오퍼를 고릅니다</li>
+            <li>내 회사 경험을 지원 회사에 맞게 다듬는 면접 과정</li>
+            <li>수백 번의 연봉협상 경험으로 협상까지 함께</li>
+          </ul>
+          <a class="go" href="https://jobzorro.kr/turnover-change" target="_blank" rel="noopener">경력 이직 상담받기 →</a>
+          <span class="badge tag">재직자</span>
+        </div>
+        <img src="/*__ILL_CHANGE__*/" alt="">
+      </article>
+      <article class="case">
+        <div>
+          <p class="q">다니던 회사를 퇴사부터 했다면?</p>
+          <h3>선 퇴사자 경력 이직</h3>
+          <ul>
+            <li>다른 지원자보다 빠르게 지원부터 시작합니다</li>
+            <li>2주차에 준비를 끝내고 실제 지원에 들어가는 압도적 속도</li>
+            <li>회사와 대화할 확률을 극대화해 걱정 기간을 줄입니다</li>
+            <li>좋은 회사로의 이직과 연봉협상까지</li>
+          </ul>
+          <a class="go" href="https://jobzorro.kr/turnover-quit" target="_blank" rel="noopener">선퇴사자 상담받기 →</a>
+          <span class="badge green tag">선퇴사자</span>
+        </div>
+        <img src="/*__ILL_QUIT__*/" alt="">
+      </article>
+    </div>
   </section>
 
-  <div class="sec-head">
-    <h2>그래서 취업조로 컨설팅은 <b>뭐가 다른데?</b> 💡</h2>
-    <p>차별화된 지원동기와 면접 답변이 가능한 취업조로만의 스킬 세 가지.</p>
-  </div>
-  <section class="why">
-    <div><span class="n">1</span><h3>재무제표와 보고서로 지원 회사를 뜯어보는 기업분석</h3><p>남들 잘 모르는 좋은 회사, 지원 회사의 분위기와 산업군 정보까지. 취업조로의 데이터로 써야 할 곳과 쓰지 말아야 할 곳을 가립니다.</p></div>
-    <div><span class="n">2</span><h3>어떤 질문을 해도 바로 활용 가능한 생생 면접 스크립트</h3><p>자기 자신을 가장 잘 드러내는 것이 필승 전략입니다. MBTI가 I든 E든, 진솔하고 엣지 있는 면접자로 만듭니다.</p></div>
-    <div><span class="n">3</span><h3>공장식이 아닌 개개인 맞춤형 컨설팅</h3><p>팀 컨설팅이지만 함께 공유하는 것은 강의뿐입니다. 첨삭, 질의응답, 관리는 모두 1:1로 진행합니다.</p></div>
+  <section class="z-sec" id="why">
+    <div class="z-sec-head"><div class="num">02</div><h2>그래서 취업조로 컨설팅은<br><b>뭐가 다른데?</b></h2><p>차별화된 지원동기와 면접 답변이 가능한 취업조로만의 스킬 세 가지.</p></div>
+    <div class="why">
+      <div><span class="n">01</span><h3>재무제표와 보고서로 지원 회사를 뜯어보는 기업분석</h3><p>남들 잘 모르는 좋은 회사, 지원 회사의 분위기와 산업군 정보까지. 취업조로의 데이터로 써야 할 곳과 쓰지 말아야 할 곳을 가립니다.</p></div>
+      <div><span class="n">02</span><h3>어떤 질문을 해도 바로 활용 가능한 생생 면접 스크립트</h3><p>자기 자신을 가장 잘 드러내는 것이 필승 전략입니다. MBTI가 I든 E든, 진솔하고 엣지 있는 면접자로 만듭니다.</p></div>
+      <div><span class="n">03</span><h3>공장식이 아닌 개개인 맞춤형 컨설팅</h3><p>팀 컨설팅이지만 함께 공유하는 것은 강의뿐입니다. 첨삭, 질의응답, 관리는 모두 1:1로 진행합니다.</p></div>
+    </div>
   </section>
 
-  <div class="sec-head">
-    <h2>취업조로를 만나면 <b>이렇게 같이</b> 합니다 🎉</h2>
-    <p>무료 상담부터 합격 후 연봉협상까지, 취업조로의 컨설팅 프로세스.</p>
-  </div>
-  <section class="steps">
-    <div class="step"><span class="k">STEP 1</span><h3>무료 상담</h3><p>현재 스펙·상황·목표를 듣고, 지금 가진 것으로 취업하는 방향을 잡습니다.</p></div>
-    <div class="step"><span class="k">STEP 2</span><h3>직무·공고 설계</h3><p>직무사전으로 직무를 좁히고, 써야 할 공고 리스트를 함께 만듭니다.</p></div>
-    <div class="step"><span class="k">STEP 3</span><h3>서류·면접 제작</h3><p>기업분석을 바탕으로 자소서·경력기술서를 1:1 첨삭하고 면접 스크립트를 완성합니다.</p></div>
-    <div class="step"><span class="k">STEP 4</span><h3>합격·연봉협상</h3><p>여러 오퍼 중 최고의 회사를 고르고, 무리되지 않는 선에서 연봉협상을 돕습니다.</p></div>
+  <section class="z-sec" id="steps">
+    <div class="z-sec-head"><div class="num">03</div><h2>취업조로를 만나면<br><b>이렇게 같이</b> 합니다</h2><p>무료 상담부터 합격 후 연봉협상까지, 취업조로의 컨설팅 프로세스.</p></div>
+    <div class="steps">
+      <div class="step"><span class="k"><b>01</b>Step</span><h3>무료 상담</h3><p>현재 스펙·상황·목표를 듣고, 지금 가진 것으로 취업하는 방향을 잡습니다.</p></div>
+      <div class="step"><span class="k"><b>02</b>Step</span><h3>직무·공고 설계</h3><p>직무사전으로 직무를 좁히고, 써야 할 공고 리스트를 함께 만듭니다.</p></div>
+      <div class="step"><span class="k"><b>03</b>Step</span><h3>서류·면접 제작</h3><p>기업분석을 바탕으로 자소서·경력기술서를 1:1 첨삭하고 면접 스크립트를 완성합니다.</p></div>
+      <div class="step"><span class="k"><b>04</b>Step</span><h3>합격·연봉협상</h3><p>여러 오퍼 중 최고의 회사를 고르고, 무리되지 않는 선에서 연봉협상을 돕습니다.</p></div>
+    </div>
   </section>
 
-  <div class="sec-head">
-    <h2>취업조로는 <b>누구인가요?</b></h2>
-    <p>직무사전과 커리어브리핑을 만드는 사람입니다.</p>
-  </div>
-  <section class="profile">
-    <div class="avatar">/*__AVATAR__*/</div>
-    <div>
-      <h3>조현빈 <small>취업조로 · 커리어프로젝트 주식회사 대표</small></h3>
-      <p class="role">면접·취업 컨설턴트 / 기업분석·직무교육·경력이직 전문가</p>
-      <ul>
-        <li>취업·이직 컨설팅 15년 차, 커리어프로젝트 대표 컨설턴트</li>
-        <li>대기업 경영기획팀(S·K·P 그룹·금융그룹)에서 13년 재직했던 현직자 출신이라 채용 현장을 압니다</li>
-        <li>기획인 커뮤니티 '기획인의 공간', 인사 '인사이더', 구매 '구매인싸이트' 창립, 취업·이직 상담 오픈프로필 운영</li>
-        <li>기수제 취업 동아리 '청취' 창립 및 컨설팅</li>
-        <li>현재까지 함께한 합격자 1,100+. 다양한 사례와 상황을 통해 최고의 컨설팅을 제시합니다</li>
-      </ul>
-      <div class="books-label">저서</div>
-      <div class="books">
-        <a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=292060612" target="_blank" rel="noopener">📘 누가 봐도 뽑고 싶은 이공계 자소서</a>
-        <a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=277019799" target="_blank" rel="noopener">📘 누가 봐도 뽑고 싶은 인문계 자소서</a>
-        <a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=302956728" target="_blank" rel="noopener">📘 수시채용이 두렵지 않은 READY TO 취업</a>
+  <section class="z-sec" id="profile">
+    <div class="z-sec-head"><div class="num">04</div><h2>취업조로는<br><b>누구인가요?</b></h2><p>직무사전과 커리어브리핑을 만드는 사람입니다.</p></div>
+    <div class="profile">
+      <div class="avatar">/*__AVATAR__*/</div>
+      <div>
+        <h3>조현빈 <small>취업조로 · 커리어프로젝트 주식회사 대표</small></h3>
+        <p class="role">면접·취업 컨설턴트 / 기업분석·직무교육·경력이직</p>
+        <ul>
+          <li>취업·이직 컨설팅 15년 차, 커리어프로젝트 대표 컨설턴트</li>
+          <li>대기업 경영기획팀(S·K·P 그룹·금융그룹)에서 13년 재직했던 현직자 출신이라 채용 현장을 압니다</li>
+          <li>기획인 커뮤니티 '기획인의 공간', 인사 '인사이더', 구매 '구매인싸이트' 창립, 취업·이직 상담 오픈프로필 운영</li>
+          <li>기수제 취업 동아리 '청취' 창립 및 컨설팅</li>
+          <li>현재까지 함께한 합격자 1,100+. 다양한 사례와 상황을 통해 최고의 컨설팅을 제시합니다</li>
+        </ul>
+        <div class="books-label">Books</div>
+        <div class="books">
+          <a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=292060612" target="_blank" rel="noopener">누가 봐도 뽑고 싶은 이공계 자소서</a>
+          <a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=277019799" target="_blank" rel="noopener">누가 봐도 뽑고 싶은 인문계 자소서</a>
+          <a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=302956728" target="_blank" rel="noopener">수시채용이 두렵지 않은 READY TO 취업</a>
+        </div>
       </div>
     </div>
   </section>
 
-  <div class="sec-head">
-    <h2>다양한 채널에서 <b>더 많은 취업 정보</b>를 얻어가세요!</h2>
-    <p>후기, 공고 분석, 면접 팁은 채널에서 매주 올라갑니다.</p>
-  </div>
-  <section class="channels">
-    <a class="ch" href="https://www.instagram.com/career_zorro" target="_blank" rel="noopener"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></span><b>인스타그램</b><span>@career_zorro</span></a>
-    <a class="ch" href="https://www.youtube.com/@ZORROCAREER" target="_blank" rel="noopener"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></svg></span><b>유튜브</b><span>@ZORROCAREER</span></a>
-    <a class="ch" href="https://blog.naver.com/zorr0" target="_blank" rel="noopener"><span class="ic">blog</span><b>네이버 블로그</b><span>blog.naver.com/zorr0</span></a>
-    <a class="ch" href="/*__KAKAO_OPEN__*/" target="_blank" rel="noopener"><span class="ic">TALK</span><b>카카오톡 오픈프로필</b><span>취업조로의 오픈프로필</span></a>
+  <section class="z-sec" id="channels">
+    <div class="z-sec-head"><div class="num">05</div><h2>다양한 채널에서<br><b>더 많은 취업 정보</b>를</h2><p>후기, 공고 분석, 면접 팁은 채널에서 매주 올라갑니다.</p></div>
+    <div class="channels">
+      <a class="ch" href="https://www.instagram.com/career_zorro" target="_blank" rel="noopener"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></span><b>인스타그램</b><span>@career_zorro</span></a>
+      <a class="ch" href="https://www.youtube.com/@ZORROCAREER" target="_blank" rel="noopener"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></svg></span><b>유튜브</b><span>@ZORROCAREER</span></a>
+      <a class="ch" href="https://blog.naver.com/zorr0" target="_blank" rel="noopener"><span class="ic">BLOG</span><b>네이버 블로그</b><span>blog.naver.com/zorr0</span></a>
+      <a class="ch" href="/*__KAKAO_OPEN__*/" target="_blank" rel="noopener"><span class="ic">TALK</span><b>카카오톡 오픈프로필</b><span>취업조로의 오픈프로필</span></a>
+    </div>
   </section>
 
-  <section class="contact">
-    <div>
-      <h3>무료 상담 신청, 이렇게 하세요</h3>
-      <p>상담은 무료이고 부담 없이 상황만 들어도 됩니다. 컨설팅 진행은 상담 뒤에 정하세요.</p>
-      <ol>
-        <li>이 사이트의 "무료 상담 신청하기" 버튼을 눌러 폼을 작성합니다</li>
-        <li>취업/이직을 하며 겪는 내 애로사항, 궁금점을 성심성의껏 답해드립니다</li>
-        <li>취업조로를 비롯한 TEAM ZORRO 소속 컨설턴트들이 일정을 잡아 1:1로 상황을 듣고 방향을 정리합니다</li>
-        <li>컨설팅이 필요할 시 커리큘럼, 비용을 안내합니다</li>
-      </ol>
+  <section class="z-sec" id="contact">
+    <div class="z-sec-head"><div class="num">06</div><h2>무료 상담 신청,<br><b>이렇게 하세요</b></h2><p>상담은 무료이고 부담 없이 상황만 들어도 됩니다. 컨설팅 진행은 상담 뒤에 정하세요.</p></div>
+    <div class="contact">
+      <div>
+        <h3>네 단계면 끝납니다</h3>
+        <ol>
+          <li>이 사이트의 "무료 상담 신청하기" 버튼을 눌러 폼을 작성합니다</li>
+          <li>취업/이직을 하며 겪는 내 애로사항, 궁금점을 성심성의껏 답해드립니다</li>
+          <li>취업조로를 비롯한 TEAM ZORRO 소속 컨설턴트들이 일정을 잡아 1:1로 상황을 듣고 방향을 정리합니다</li>
+          <li>컨설팅이 필요할 시 커리큘럼, 비용을 안내합니다</li>
+        </ol>
+      </div>
+      <div>
+        <h3>이런 분이 먼저 연락 주세요</h3>
+        <p>어떤 공고를 써야 할지 모르겠는 분. 서류는 붙는데 면접에서 떨어지는 분. 물경력 같아 이직이 두려운 분. 퇴사부터 해 버려 마음이 급한 분. 직무 자체가 고민이라면 직무사전부터 보고 오셔도 좋습니다.</p>
+        <div class="row"><a class="z-btn solid" href="/*__APPLY__*/">무료 상담 신청하기 →</a><a class="z-btn" href="/*__KAKAO_OPEN__*/" target="_blank" rel="noopener">카카오톡 오픈프로필</a></div>
+      </div>
     </div>
-    <div class="white">
-      <h3>이런 분이 먼저 연락 주세요</h3>
-      <p>어떤 공고를 써야 할지 모르겠는 분. 서류는 붙는데 면접에서 떨어지는 분. 물경력 같아 이직이 두려운 분. 퇴사부터 해 버려 마음이 급한 분. 직무 자체가 고민이라면 직무사전부터 보고 오셔도 좋습니다.</p>
-      <div class="row"><a class="btn primary" href="/*__APPLY__*/">무료 상담 신청하기 ⚡</a><a class="btn ghost" href="/*__KAKAO_OPEN__*/" target="_blank" rel="noopener">카카오톡 오픈프로필로 문의</a></div>
+    <p class="notice">합격자 수와 경력은 취업조로 홈페이지 및 저자 소개 기준이며, 상담 일정과 과정 안내는 홈페이지의 최신 공지가 우선합니다.</p>
+  </section>
+
+  <section class="z-outro">
+    <svg class="big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg>
+    <div class="row">
+      <p>TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.</p>
+      <a class="z-btn solid" href="/*__APPLY__*/">무료 상담 신청하기 →</a>
     </div>
   </section>
-  <p class="notice">합격자 수와 경력은 취업조로 홈페이지 및 저자 소개 기준이며, 상담 일정과 과정 안내는 홈페이지의 최신 공지가 우선합니다.</p>
 </main>
 
 /*__FOOTER__*/
 /*__FAB__*/
+<script>
+(function () {
+  // 고정 앵커 바: 보고 있는 섹션을 검정으로
+  var links = Array.prototype.slice.call(document.querySelectorAll('#zbar a[href^="#"]'));
+  var secs = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  function mark() {
+    var y = window.scrollY + 140, cur = 0;
+    secs.forEach(function (s, i) { if (s && s.offsetTop <= y) cur = i; });
+    links.forEach(function (a, i) { a.classList.toggle('on', i === cur); });
+  }
+  window.addEventListener('scroll', mark, { passive: true }); mark();
+})();
+</script>
 </body>
 </html>

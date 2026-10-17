@@ -59,6 +59,23 @@ COMPANY = {
     "home": "https://jobzorro.kr/",
 }
 
+# 직군별 색 (공유 이미지·카드 라벨). (액센트 RGB, 배경 RGB)
+GROUP_COLORS = {
+    "sales":            ((198, 255, 61),  (12, 16, 10)),   # 라임
+    "marketing":        ((255, 110, 150), (20, 10, 14)),   # 핑크
+    "planning":         ((120, 170, 255), (10, 13, 22)),   # 블루
+    "support":          ((255, 196, 80),  (20, 16, 8)),    # 앰버
+    "finance-industry": ((90, 220, 190),  (8, 18, 17)),    # 민트
+    "logistics":        ((255, 150, 70),  (22, 13, 8)),    # 오렌지
+    "it-data":          ((170, 130, 255), (14, 10, 24)),   # 바이올렛
+    "rnd":              ((80, 200, 255),  (8, 15, 22)),    # 시안
+    "design-eng":       ((230, 230, 110), (18, 18, 8)),    # 옐로
+    "manufacturing":    ((255, 120, 90),  (22, 11, 9)),    # 코랄
+    "quality-safety":   ((120, 230, 120), (9, 19, 10)),    # 그린
+    "bio-pharma":       ((255, 140, 200), (20, 10, 18)),   # 로즈
+    "construction":     ((210, 180, 140), (18, 15, 11)),   # 샌드
+}
+
 TABS = [("index.html", "직무사전"), ("news/index.html", "취업뉴스"), ("zorro/index.html", "취업조로와 함께하기")]
 APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 신청하기" 버튼이 여기로 간다)
 
@@ -90,46 +107,56 @@ def slim_job(j: dict) -> dict:
         "ai": {"level": j["ai"]["level"]},                                       # 카드 AI 배지 · 'AI 영향 낮은 직무만' 필터
         "nonmajorOk": j["nonmajorOk"], "draftOnly": j["draftOnly"],
         "sources": {"count": s.get("count", 0), "public": s.get("public", 0), "industries": s.get("industries", [])},  # 근거 배지·필터·업종 검색
+        "og": _og_path(j["id"]),                                                 # v2 카드 썸네일(공유 이미지, 해시 파일명)
     }
+
+
+def _og_path(jid: str) -> str:
+    import hashlib
+    p = BASE / "assets" / "share" / "jobs" / f"{jid}.png"
+    if not p.exists():
+        return ""
+    return f"assets/og/{jid}.{hashlib.md5(p.read_bytes()).hexdigest()[:8]}.png"
 
 
 # 모든 페이지가 공유하는 CSS: 색 토큰, 기본 글꼴, 상단 탭(zn-), 푸터(zf-), 하단 상담 버튼(zfab), 배지·버튼
 SHARED_CSS = """
 /* 취업뉴스(커리어브리핑)와 같은 편집 디자인 톤: 먹색 글자, 종이색 바탕, 황동색 포인트, 라벨·숫자는 모노 글꼴, 다크모드 지원 */
-:root { --ink:#111827; --ink-soft:#374151; --muted:#6b7280; --faint:#9ca3af; --brass:#8b6b3f; --brass-tint:rgba(139,107,63,.09); --brass-bar:rgba(139,107,63,.22);
-  --paper:#ffffff; --ground:#f9fafb; --mist:#f7f9fc; --hairline:#e5e7eb; --hairline-2:#d5dae2;
+:root { --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#7a7a7a; --faint:#a3a3a3; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --acc:#c6ff3d; --acc-ink:#0b0b0b;
+  --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2;
   /* 아래는 기존 템플릿이 쓰는 이름 → 위 토큰에 연결 */
   --bg:var(--ground); --surface:var(--paper); --surface-2:var(--mist); --black:var(--ink); --fg-soft:var(--ink-soft); --line:var(--hairline); --line-strong:var(--hairline-2);
-  --red:var(--brass); --red-soft:var(--brass-tint); --yellow:var(--brass-bar); --green:#1baf7a; --green-soft:rgba(27,175,122,.12);
-  --lvl1:#1baf7a; --lvl2:#eda100; --lvl3:#b4453a;
+  --red:var(--ink); --red-soft:var(--mist); --yellow:var(--acc); --green:#1b8f63; --green-soft:rgba(27,143,99,.12);
+  --lvl1:#1b8f63; --lvl2:#c98500; --lvl3:#b4453a;
   /* 먹색으로 채운 큰 카드(히어로 옆 카드·CTA·상담 박스)와 작은 채움 요소(칩·아이콘·버튼) */
-  --inkbg:#111827; --inkfg:#ffffff; --inkfg-soft:rgba(255,255,255,.72); --inkline:rgba(255,255,255,.28);
-  --fill:#111827; --fillfg:#ffffff; --logo-filter:none;
-  --shadow:0 1px 3px rgba(17,24,39,.06); --shadow-lift:0 18px 50px rgba(17,24,39,.18);
-  --font:"Inter","Noto Sans KR","Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-  --serif:"Playfair Display","Noto Serif KR",Georgia,serif; --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace; color-scheme: light dark; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink:#e9ecf3; --ink-soft:#c3c9d6; --muted:#939bab; --faint:#6c7486; --brass:#c9a063; --brass-tint:rgba(201,160,99,.14); --brass-bar:rgba(201,160,99,.30);
-  --paper:#191d26; --ground:#12141a; --mist:#161a22; --hairline:#2b313d; --hairline-2:#3a4150; --green:#199e70; --lvl2:#c98500; --lvl3:#e0796c;
-  --inkbg:#232a38; --inkfg:#e9ecf3; --inkfg-soft:rgba(233,236,243,.7); --inkline:rgba(233,236,243,.25); --fill:#e9ecf3; --fillfg:#12141a; --logo-filter:invert(1);
-  --shadow:0 1px 3px rgba(0,0,0,.35); --shadow-lift:0 18px 50px rgba(0,0,0,.5); } }
-:root[data-theme="dark"] { --ink:#e9ecf3; --ink-soft:#c3c9d6; --muted:#939bab; --faint:#6c7486; --brass:#c9a063; --brass-tint:rgba(201,160,99,.14); --brass-bar:rgba(201,160,99,.30);
-  --paper:#191d26; --ground:#12141a; --mist:#161a22; --hairline:#2b313d; --hairline-2:#3a4150; --green:#199e70; --lvl2:#c98500; --lvl3:#e0796c;
-  --inkbg:#232a38; --inkfg:#e9ecf3; --inkfg-soft:rgba(233,236,243,.7); --inkline:rgba(233,236,243,.25); --fill:#e9ecf3; --fillfg:#12141a; --logo-filter:invert(1);
-  --shadow:0 1px 3px rgba(0,0,0,.35); --shadow-lift:0 18px 50px rgba(0,0,0,.5); }
+  --inkbg:#0b0b0b; --inkfg:#ffffff; --inkfg-soft:rgba(255,255,255,.72); --inkline:rgba(255,255,255,.28);
+  --fill:#0b0b0b; --fillfg:#ffffff; --logo-filter:none;
+  --shadow:none; --shadow-lift:0 18px 50px rgba(0,0,0,.18);
+  --font:"Noto Sans KR","Archivo",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --display:"Archivo","Noto Sans KR",sans-serif; --serif:var(--display); --mono:var(--display); color-scheme: light dark; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --faint:#6a6a6a; --brass:#f3f3f3; --brass-tint:#161616; --brass-bar:#c6ff3d;
+  --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; --green:#3fbf8a; --lvl2:#d9a441; --lvl3:#e0796c;
+  --inkbg:#f3f3f3; --inkfg:#0b0b0b; --inkfg-soft:rgba(11,11,11,.7); --inkline:rgba(11,11,11,.25); --fill:#f3f3f3; --fillfg:#0b0b0b; --logo-filter:invert(1);
+  --shadow:none; --shadow-lift:0 18px 50px rgba(0,0,0,.5); } }
+:root[data-theme="dark"] { --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --faint:#6a6a6a; --brass:#f3f3f3; --brass-tint:#161616; --brass-bar:#c6ff3d;
+  --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; --green:#3fbf8a; --lvl2:#d9a441; --lvl3:#e0796c;
+  --inkbg:#f3f3f3; --inkfg:#0b0b0b; --inkfg-soft:rgba(11,11,11,.7); --inkline:rgba(11,11,11,.25); --fill:#f3f3f3; --fillfg:#0b0b0b; --logo-filter:invert(1);
+  --shadow:none; --shadow-lift:0 18px 50px rgba(0,0,0,.5); }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word; padding-bottom:96px; }
-h1,h2,h3 { margin:0; font-weight:800; letter-spacing:-.03em; text-wrap:balance; }
+h1,h2,h3 { margin:0; font-weight:900; letter-spacing:-.04em; text-wrap:balance; }
 p { margin:0; } ul,ol { margin:0; padding:0; list-style:none; } a { color:inherit; }
 button { font:inherit; color:inherit; background:none; border:0; cursor:pointer; }
 button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visible { outline:2px solid var(--brass); outline-offset:3px; border-radius:3px; }
 .wrap { max-width:1120px; margin:0 auto; padding-inline:20px; }
 /* 라벨(모노·대문자 느낌)과 숫자 */
 .kicker { font-family:var(--font); font-size:12px; font-weight:600; letter-spacing:.01em; color:var(--ink-soft); }
-.badge { display:inline-flex; align-items:center; gap:4px; font-family:var(--font); font-size:11.5px; font-weight:700; letter-spacing:0; padding:3px 9px; border-radius:6px; background:var(--brass-tint); color:var(--brass); white-space:nowrap; }
-.badge.soft { background:var(--brass-tint); color:var(--brass); } .badge.green { background:var(--green-soft); color:var(--green); } .badge.gray { background:var(--mist); color:var(--muted); border:1px solid var(--hairline); }
+.badge { display:inline-flex; align-items:center; gap:4px; font-family:var(--display); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:4px 9px; border-radius:999px; background:var(--ink); color:var(--paper); white-space:nowrap; }
+.badge.soft { background:var(--ink); color:var(--paper); } .badge.green { background:var(--green-soft); color:var(--green); } .badge.gray { background:var(--mist); color:var(--muted); border:1px solid var(--hairline); }
 .btn { display:inline-flex; align-items:center; gap:6px; padding:10px 16px; border-radius:8px; font-size:14px; font-weight:700; text-decoration:none; }
-.btn.primary { background:var(--inkfg); color:var(--inkbg); } .btn.primary:hover { background:var(--brass); color:#fff; }
+.btn { border-radius:999px; font-family:var(--display); letter-spacing:.02em; }
+.btn.primary { background:var(--inkfg); color:var(--inkbg); } .btn.primary:hover { background:var(--acc); color:var(--acc-ink); }
 .btn.ghost { border:1px solid var(--inkline); color:var(--inkfg); }
 /* 공용 상단 탭 (취업뉴스 페이지에도 끼워 넣으므로 .zn 규칙은 뉴스 페이지에도 있는 토큰만 쓴다: --paper --ink --muted --hairline --brass) */
 .zn { position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--paper); color:var(--ink); border-bottom:1px solid var(--hairline); font-family:"Inter","Noto Sans KR",sans-serif; }
@@ -138,37 +165,151 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zn-logo img { height:22px; width:auto; filter:var(--logo-filter,none); display:block; }
 .zn-tabs { display:flex; gap:2px; height:100%; margin-left:6px; min-width:0; overflow-x:auto; scrollbar-width:none; }
 .zn-tabs::-webkit-scrollbar { display:none; }
-.zn-tabs a { display:flex; align-items:center; padding:0 12px; font-size:13.5px; font-weight:600; color:var(--muted); text-decoration:none; white-space:nowrap; border-bottom:2px solid transparent; }
+.zn-tabs a { display:flex; align-items:center; padding:0 12px; font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); text-decoration:none; white-space:nowrap; border-bottom:2px solid transparent; }
 .zn-tabs a:hover { color:var(--ink); }
-.zn-tabs a.on { color:var(--ink); border-bottom-color:var(--brass); }
-.zn-cta { margin-left:auto; flex:none; font-size:12.5px; font-weight:700; color:var(--paper); background:var(--ink); border-radius:8px; padding:8px 13px; text-decoration:none; white-space:nowrap; }
-.zn-cta:hover { background:var(--brass); color:#fff; }
+.zn-tabs a.on { color:var(--ink); border-bottom-color:var(--ink); }
+.zn-cta { margin-left:auto; flex:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--paper); background:var(--ink); border-radius:999px; padding:9px 15px; text-decoration:none; white-space:nowrap; }
+.zn-cta:hover { background:var(--acc); color:var(--acc-ink); }
 @media (max-width:640px) { .zn-cta { display:none; } .zn-in { gap:10px; padding:0 14px; } .zn-logo img { height:19px; } .zn-tabs a { padding:0 9px; font-size:13px; } }
 /* 공용 푸터 (뉴스 푸터처럼 먹색 윗선 + 종이색) */
 .zf { margin-top:72px; background:var(--paper); color:var(--ink); border-top:1px solid var(--ink); font-family:var(--font); }
 .zf-in { max-width:1120px; margin:0 auto; padding:36px 20px 44px; }
 .zf-logo img { height:20px; width:auto; filter:var(--logo-filter,none); display:block; }
 .zf-links { display:flex; flex-wrap:wrap; gap:16px; font-size:12.5px; margin-top:18px; color:var(--ink-soft); }
-.zf-links a { text-decoration:none; } .zf-links a:hover { color:var(--brass); }
+.zf-links a { text-decoration:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; } .zf-links a:hover { color:var(--muted); }
 .zf-box { margin-top:18px; background:var(--mist); border:1px solid var(--hairline); border-radius:10px; padding:14px 16px; font-size:12px; line-height:1.9; color:var(--muted); }
 .zf-box b { color:var(--ink-soft); font-weight:600; }
 .zf-note { margin-top:14px; font-size:12px; color:var(--muted); line-height:1.75; max-width:80ch; }
+.zf { border-top-color:var(--hairline); }
 /* 하단 고정 상담 버튼 */
 .zfab { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(18px + env(safe-area-inset-bottom,0px)); z-index:25; }
 .zfab a { display:inline-flex; align-items:center; gap:6px; background:var(--fill); color:var(--fillfg); border-radius:999px; padding:13px 26px; font-size:14px; font-weight:800; text-decoration:none; box-shadow:var(--shadow-lift); font-family:var(--font); }
-.zfab a:hover { background:var(--brass); color:#fff; }
+.zfab a:hover { background:var(--acc); color:var(--acc-ink); }
+.zfab a { font-family:var(--display); letter-spacing:.04em; }
 """
 
 
 # 취업뉴스 페이지에 끼울 때 덮어쓰는 스타일 (보조 글자 선명하게). 제호는 build_site.py 의 .hero-top 이 그린다
+TICKER_HTML = '<div class="v2-ticker" aria-hidden="true"><div class="v2-ticker-track"><span>Career Briefing</span><span>매일 아침 고른 채용 · 이직 · 기업 · 고용 뉴스</span><span>Zorro의 한마디</span><span>주간 · 월간 랭킹</span><span>지난 지면 아카이브</span><span>Team Zorro</span><span>Career Briefing</span><span>매일 아침 고른 채용 · 이직 · 기업 · 고용 뉴스</span><span>Zorro의 한마디</span><span>주간 · 월간 랭킹</span><span>지난 지면 아카이브</span><span>Team Zorro</span></div></div>'
+OUTRO_HTML = '<section class="v2-outro"><svg class="big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg><div class="row"><p>오늘 뉴스가 내 커리어에 어떤 뜻인지 모르겠다면, 취업조로 컨설턴트가 1:1로 정리해 드립니다. 상담은 무료입니다.</p><a class="go" href="../apply/index.html">무료 상담 신청하기 →</a></div></section>'
+
 NEWS_MASTHEAD_CSS = """
-/* 보조 글자 선명하게: 모노·흐린 회색 라벨을 고딕 12px 진회색으로, 숫자는 Inter 굵게 */
+/* v2 톤: 황동 포인트 → 검정, 명조 → Archivo, 라임은 배경 강조에만 */
+:root { --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --serif:"Archivo","Noto Sans KR",sans-serif; --sans:"Noto Sans KR","Archivo",-apple-system,sans-serif; --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#7a7a7a; --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --brass:#f3f3f3; --brass-tint:#161616; --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; } }
+:root[data-theme="dark"] { --brass:#f3f3f3; --brass-tint:#161616; --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; }
+.masthead .brand-name { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; letter-spacing:-.04em; font-size:22px; }
+.masthead .brand-en { font-family:"Archivo",sans-serif; font-style:normal; font-weight:700; font-size:11.5px; letter-spacing:.12em; color:var(--muted); background:var(--brass-bar); color:#0b0b0b; padding:3px 8px; border-radius:999px; margin-left:10px; }
+.hero h1 { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; letter-spacing:-.055em; }
+.hero h1 em { color:inherit; background:linear-gradient(transparent 68%, var(--brass-bar) 68%); }
+.eyebrow { border-radius:999px; }
+.rank-title, .picks-title, .sector-numeral, .howto-label { font-family:"Archivo","Noto Sans KR",sans-serif; }
+.seg[aria-selected="true"], .segmented .seg.on { background:var(--ink); color:var(--paper); }
+.job-tag { background:var(--ink); color:var(--paper); border-radius:999px; }
+.tag { border-radius:999px; }
+/* 보조 글자 선명하게 */
 .eyebrow { font-family:"Inter","Noto Sans KR",sans-serif; font-size:12.5px; font-weight:600; letter-spacing:0; color:var(--ink-soft); padding:8px 15px; }
 .funnel-num { font-family:"Inter","Noto Sans KR",sans-serif; font-size:28px; font-weight:800; letter-spacing:-.03em; }
 .funnel-label { font-family:"Inter","Noto Sans KR",sans-serif; font-size:12px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--ink-soft); margin-top:5px; }
 .picks-note, .pick-sector, .foot-label { font-family:"Inter","Noto Sans KR",sans-serif; font-size:11.5px; font-weight:700; letter-spacing:.02em; text-transform:none; }
 .picks-note, .foot-label { color:var(--muted); }
 .stamp, .foot-note { font-family:"Inter","Noto Sans KR",sans-serif; font-size:12px; font-weight:500; letter-spacing:0; text-transform:none; color:var(--muted); }
+
+/* ───── v2 구조: 직무사전과 같은 문법 ───── */
+.masthead { border-bottom:0; }
+.masthead-inner { padding:28px 20px 0; max-width:1320px; }
+.masthead .brand-logo { display:none !important; }
+.masthead .brand { gap:0; } .masthead .brand-text { border-left:0; padding-left:0; }
+.masthead .brand-name { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:12px; }
+.masthead .brand-name::before { content:""; width:8px; height:8px; border-radius:50%; background:#c6ff3d; display:inline-block; }
+.masthead .brand-en { font-family:"Archivo",sans-serif; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; background:none; color:var(--muted); padding:0; margin-left:0; }
+.masthead .brand-en::before { content:"· "; }
+.stamp { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.theme-btn { font-family:"Archivo",sans-serif; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; border-radius:999px; }
+.hero { background:var(--paper); border-bottom:1px solid var(--hairline); }
+.hero-inner { max-width:1320px; padding:18px 20px 40px; gap:48px; align-items:end; }
+.eyebrow { display:none; }
+.hero h1 { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; font-size:clamp(34px, 5.4vw, 76px); line-height:1.02; letter-spacing:-.05em; margin:0 0 22px; max-width:14ch; }
+.hero h1 em { color:inherit; background:linear-gradient(transparent 68%, #c6ff3d 68%); }
+.hero-sub { font-size:16px; color:var(--ink-soft); max-width:58ch; }
+.brief-box { border:0; border-top:1px solid var(--ink); border-radius:0; background:transparent; padding:18px 0 0; margin-top:0; }
+.brief-label { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+.funnel { border-top:1px solid var(--ink); margin-top:26px; padding-top:0; gap:0; }
+.funnel-step { padding:14px 28px 14px 0; margin-right:28px; border-right:1px solid var(--hairline); border-bottom:1px solid var(--hairline); }
+.funnel-num { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:34px; font-weight:900; letter-spacing:-.04em; }
+.funnel-label { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.hero-picks { flex:0 0 380px; max-width:380px; gap:0; border-top:1px solid var(--ink); }
+.picks-head { padding:12px 0; border-bottom:1px solid var(--hairline); }
+.picks-title { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+.picks-note { font-family:"Archivo",sans-serif; }
+.pick { border:0; border-bottom:1px solid var(--hairline); border-radius:0; padding:12px 0; background:transparent; box-shadow:none; }
+.pick:hover { background:transparent; }
+.pick-sector { font-family:"Archivo","Noto Sans KR",sans-serif; color:var(--muted); }
+.pick-title { font-weight:800; letter-spacing:-.02em; }
+/* 마키 */
+.v2-ticker { overflow:hidden; background:var(--ink); color:var(--paper); }
+.v2-ticker-track { display:flex; width:max-content; animation:v2marquee 40s linear infinite; }
+.v2-ticker span { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:700; font-size:13px; letter-spacing:.12em; text-transform:uppercase; padding:12px 28px; white-space:nowrap; }
+.v2-ticker span::after { content:"✦"; margin-left:28px; color:#c6ff3d; }
+@keyframes v2marquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .v2-ticker-track { animation:none; } }
+/* 고정 컨트롤 바 = 직무사전 필터 바 */
+.controls { top:calc(54px + env(safe-area-inset-top,0px)); border-bottom:1px solid var(--hairline); box-shadow:none; }
+.controls-inner { max-width:1320px; padding:10px 20px; gap:12px; overflow-x:auto; scrollbar-width:none; }
+.controls-inner::-webkit-scrollbar { display:none; }
+.segmented { border:0; border-radius:0; gap:4px; overflow:visible; }
+.seg { border:1px solid transparent; border-radius:999px; padding:9px 14px; font-family:"Archivo","Noto Sans KR",sans-serif; font-size:13px; font-weight:700; color:var(--muted); background:transparent; }
+.seg:hover { color:var(--ink); border-color:var(--hairline-2); }
+.seg[aria-selected="true"], .seg.on { background:var(--ink) !important; color:var(--paper) !important; border-color:var(--ink) !important; }
+.datenav { gap:6px; }
+.datebtn, .dateselect { border-radius:999px; border:1px solid var(--hairline-2); font-family:"Archivo","Noto Sans KR",sans-serif; font-size:13px; font-weight:700; padding:8px 12px; background:transparent; color:var(--ink); }
+.datebtn:hover { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+/* 섹션: 번호 아웃라인 + 큰 제목 */
+.container { max-width:1320px; padding:0 20px; }
+.sector { padding-top:64px; }
+.sector-head { align-items:end; border-bottom:1px solid var(--ink); padding-bottom:18px; margin-bottom:24px; }
+.sector-numeral { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(36px, 4.6vw, 64px); font-weight:900; line-height:.9; letter-spacing:-.05em; color:transparent; -webkit-text-stroke:1.5px var(--ink); }
+.sector-title { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(22px, 2.8vw, 36px); font-weight:900; letter-spacing:-.05em; line-height:1; }
+.sector-desc { font-size:14px; color:var(--muted); }
+.sector-count { font-family:"Archivo",sans-serif; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.news-card { border:0; border-top:1px solid var(--hairline); border-radius:0; padding:18px 0; box-shadow:none; background:transparent; }
+.news-card:hover { box-shadow:none; transform:none; background:transparent; }
+.news-thumb { border-radius:10px; overflow:hidden; }
+.news-thumb img { transition:transform .5s cubic-bezier(.2,.7,.2,1); }
+.news-card:hover .news-thumb img { transform:scale(1.04); }
+.news-num { font-family:"Archivo",sans-serif; font-weight:900; color:var(--ink); }
+.news-title { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; letter-spacing:-.035em; font-size:20px; line-height:1.25; }
+.news-source, .news-meta { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.news-why { border-left:2px solid #c6ff3d; padding-left:12px; }
+.news-why b { color:var(--ink); }
+.job-tag { background:var(--ink); color:var(--paper); border-radius:999px; font-family:"Archivo","Noto Sans KR",sans-serif; font-size:11.5px; font-weight:700; letter-spacing:.04em; }
+.tag { border-radius:999px; font-family:"Archivo","Noto Sans KR",sans-serif; }
+.sec-badge { background:#c6ff3d; color:#0b0b0b; border-radius:999px; font-family:"Archivo","Noto Sans KR",sans-serif; }
+/* 랭킹·키워드 */
+.rank-head { border-top:1px solid var(--ink); padding-top:40px; }
+.rank-title { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(28px, 4vw, 56px); font-weight:900; letter-spacing:-.05em; }
+.rank-title em { background:linear-gradient(transparent 68%, #c6ff3d 68%); color:inherit; font-style:normal; }
+.rank-meta { font-family:"Archivo",sans-serif; }
+.rail-title, .rail-head { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; letter-spacing:-.03em; }
+.kw-name { font-weight:700; }
+.score-fill { background:var(--ink); }
+.chart-rank, .kw-rank { font-family:"Archivo",sans-serif; font-weight:900; }
+/* 읽는 법 */
+.howto { border-top:1px solid var(--ink); margin-top:72px; }
+.howto-label { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+.howto-more a { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:700; letter-spacing:.04em; text-transform:uppercase; border-bottom:2px solid var(--ink); text-decoration:none; }
+/* 거대 워드마크 */
+.v2-outro { max-width:1320px; margin:72px auto 0; padding:56px 20px 20px; border-top:1px solid var(--ink); }
+.v2-outro .big { display:block; width:100%; height:auto; overflow:visible; }
+.v2-outro .big text { font-family:"Archivo",sans-serif; font-weight:900; font-size:150px; letter-spacing:-.04em; }
+.v2-outro .big .o { fill:none; stroke:var(--ink); stroke-width:2; }
+.v2-outro .big .s { fill:var(--ink); }
+.v2-outro .row { display:flex; flex-wrap:wrap; gap:16px 40px; align-items:center; justify-content:space-between; margin-top:28px; }
+.v2-outro p { max-width:46ch; font-size:15px; color:var(--ink-soft); line-height:1.7; margin:0; }
+.v2-outro a.go { display:inline-flex; align-items:center; gap:10px; font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:16px 26px; border-radius:999px; background:var(--ink); color:var(--paper); text-decoration:none; }
+.v2-outro a.go:hover { background:#c6ff3d; color:#0b0b0b; }
+.zf { margin-top:0 !important; }
+@media (max-width: 900px) { .hero-picks { max-width:none; flex:1 1 auto; } .funnel-step { padding-right:16px; margin-right:16px; } }
 """
 
 
@@ -369,7 +510,8 @@ def build(out_dir: Path, with_news: bool) -> None:
     for j in data["jobs"]:
         jid = j["id"]
         if seo.fonts_available():
-            seo.og_image(share / "jobs" / f"{jid}.png", j["name"], j["tagline"], f"취업조로 직무사전 · {gname.get(j['group'], '')}", "채용공고엔 안 나오는 진짜 모습")
+            _ac, _bg = GROUP_COLORS.get(j["group"], ((198, 255, 61), (11, 11, 11)))
+            seo.og_image(share / "jobs" / f"{jid}.png", j["name"], j["tagline"], f"취업조로 직무사전 · {gname.get(j['group'], '')}", "채용공고엔 안 나오는 진짜 모습", accent=_ac, bg=_bg)
         og_job = share_url(f"jobs/{jid}.png")
         ld = seo.job_ld(base_url, j, by_id, data["meta"], gname.get(j["group"], ""), updated, og_job)
         head = seo.seo_head(base_url, f"{j['name']} 직무 — 하는 일·연봉·들어가는 길·현직자의 말 | 취업조로 직무사전",
@@ -408,13 +550,14 @@ def build(out_dir: Path, with_news: bool) -> None:
                                   "body { padding-bottom: 96px; }\n.zfab a { box-shadow: 0 8px 24px var(--shadow-lift); }\n</style>")
         inject = nav_css + nav_html("news/index.html", "../", logo_nav)
         n = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + inject, n, count=1)
-        foot = footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
+        n = n.replace('<section class="hero">', TICKER_HTML + '<section class="hero">', 1)
+        foot = OUTRO_HTML + footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
         n = n.replace("</body>", foot + "</body>", 1)
         news_ld = [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/")]),
                    {"@context": "https://schema.org", "@type": "WebPage", "@id": seo.abs_url(base_url, "news/"), "name": "취업조로의 커리어브리핑", "inLanguage": "ko",
                     "description": "취업조로가 매일 아침 고르는 채용·이직·기업·고용 뉴스와 한마디", "isPartOf": {"@id": seo.abs_url(base_url, "#website")}, "author": {"@id": seo.abs_url(base_url, "zorro/#person")}}]
         n = re.sub(r'<meta property="og:image" content="assets/favicon-180.png">', '', n, count=1)
-        n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&family=Noto+Serif+KR:wght@700&display=swap">'
+        n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&family=Archivo:wght@700;900&display=swap">'
                       + f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:image" content="{og_news}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">' + seo.verify_tags()
                       + "".join(seo.jsonld(o) for o in news_ld) + "</head>", 1)
         (out_dir / "news").mkdir(exist_ok=True)

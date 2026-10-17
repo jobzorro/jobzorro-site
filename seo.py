@@ -271,11 +271,11 @@ JOB_PAGE_CSS = """
 .jobpage { max-width: 860px; margin: 0 auto; padding: 28px 20px 10px; }
 .jobpage .crumbs { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
 .jobpage .crumbs a { text-decoration: none; } .jobpage .crumbs a:hover { color: var(--brass); }
-.jobpage h1.name { font-size: clamp(28px, 4vw, 38px); line-height: 1.2; letter-spacing: -.04em; color: var(--black); }
+.jobpage h1.name { font-family: var(--display); font-size: clamp(34px, 5vw, 56px); line-height: 1.05; letter-spacing: -.05em; color: var(--black); }
 .jobpage .en { font-size: 13.5px; margin-top: 4px; color: var(--muted); }
 .jobpage .tagline { font-size: 17px; color: var(--black); margin-top: 14px; font-weight: 700; line-height: 1.5; }
 .jobpage .summary { margin-top: 10px; color: var(--fg-soft); max-width: 70ch; }
-.jobpage .sec-h h2 { font-family: var(--serif); font-size: 18px; font-weight: 700; }
+.jobpage .sec-h h2 { font-family: var(--display); font-size: 20px; font-weight: 900; letter-spacing: -.03em; }
 .jobpage .sec-h .ic { display: none; }
 .jobpage .trans .btn-link { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 13.5px; color: var(--black); background: var(--surface); text-decoration: none; }
 .jobpage .trans .btn-link:hover { border-color: var(--fill); background: var(--fill); color: var(--fillfg); }
@@ -308,14 +308,14 @@ def fonts_available() -> bool:
     return all(_font(n, 10) for n in ("GmarketSansBold.otf", "GmarketSansMedium.otf", "GmarketSansLight.otf", "NanumBarunGothic.ttf"))
 
 
-def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조로 직무사전", light: str = "채용공고엔 안 나오는") -> bool:
+def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조로 직무사전", light: str = "채용공고엔 안 나오는", accent=None, bg=None) -> bool:
     """1200x630 공유 이미지. 먹색 바탕, 황동 라벨, 얇은 머리글 + 굵은 헤드라인, 오른쪽에 조로 마스크 워터마크.
     글꼴(Gmarket Sans·나눔바른고딕)이 없는 환경(GitHub Actions)에서는 만들지 않고 False 를 돌려준다."""
     from PIL import Image, ImageDraw
     if not fonts_available():
         return False
     W, H = 1200, 630
-    INK, PAPER, BRASS, SOFT, MUTED = (17, 24, 39), (255, 255, 255), (201, 160, 99), (195, 201, 214), (147, 155, 171)
+    INK, PAPER, BRASS, SOFT, MUTED = (bg or (11, 11, 11)), (255, 255, 255), (accent or (198, 255, 61)), (205, 205, 205), (150, 150, 150)
     im = Image.new("RGB", (W, H), INK)
     d = ImageDraw.Draw(im)
     # 워터마크: 조로 마스크 마크를 크게, 아주 옅게
@@ -326,8 +326,8 @@ def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조
     lum = mark.convert("L").point(lambda v: 255 if v > 140 else 0)
     al = mark.split()[3]
     from PIL import ImageChops
-    ghost_a = ImageChops.multiply(lum, al).point(lambda v: int(v * 0.12))
-    ghost = Image.merge("RGBA", (Image.new("L", mark.size, 255),) * 3 + (ghost_a,))
+    ghost_a = ImageChops.multiply(lum, al).point(lambda v: int(v * 0.22))
+    ghost = Image.merge("RGBA", tuple(Image.new("L", mark.size, c) for c in BRASS) + (ghost_a,))
     im.paste(ghost, (W - 560, H - 540), ghost)
     # 위 황동 바
     d.rectangle([0, 0, W, 10], fill=BRASS)
