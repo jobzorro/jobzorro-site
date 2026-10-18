@@ -226,8 +226,8 @@ body.v2 h1, body.v2 h2, body.v2 h3 { letter-spacing:-.04em; }
 .v2-kicker i { width:8px; height:8px; border-radius:50%; background:var(--v-acc); display:inline-block; }
 .v2-hero h1 { margin-top:12px; font-family:var(--v-display); font-weight:900; font-size:clamp(36px, 6.6vw, 96px); line-height:.96; letter-spacing:-.05em; text-wrap:balance; }
 .v2-hero h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--v-ink-2); margin-bottom:14px; line-height:1.15; }
-.v2-hero h1 .mark { background:linear-gradient(transparent 68%, var(--v-acc) 68%); }
-.v2-hero h1 .line { display:block; white-space:nowrap; }
+.v2-hero h1 .mark { background:linear-gradient(transparent 68%, var(--mark) 68%); }
+.v2-hero h1 .line { display:block; white-space:nowrap; max-width:100%; min-width:0; }
 .v2-hero .lede { margin-top:26px; max-width:58ch; font-size:16px; line-height:1.7; color:var(--v-ink-2); }
 .v2-hero .lede b { color:var(--v-ink); }
 .v2-stats { display:grid; gap:0; border-top:1px solid var(--v-ink); }
@@ -327,9 +327,18 @@ body.v2 .sec-h .ic { display:none; }
 body.v2 .d-body .quick dd { font-family:var(--v-display); }
 
 @media (max-width: 960px) {
-  .v2-hero-grid { grid-template-columns:1fr; gap:28px; }
+  .v2-hero-grid { grid-template-columns:minmax(0,1fr); gap:28px; }
   .v2-stats { grid-template-columns:repeat(2, 1fr); gap:0 24px; }
   body.v2 .grid { grid-template-columns:repeat(2, minmax(0,1fr)); gap:32px 20px; }
+}
+@media (max-width: 720px) {
+  .v2-row1 { flex-wrap:wrap; gap:8px; }
+  body.v2 .tracks { width:100%; flex:none; border-right:0; padding-right:0; margin-right:0; overflow-x:auto; scrollbar-width:none; }
+  body.v2 .tracks::-webkit-scrollbar { display:none; }
+  .chips-wrap { width:100%; flex:none; }
+  body.v2 .toggles { gap:4px; }
+  body.v2 .toggle { font-size:12.5px; padding:7px 10px; }
+  .v2-bar { top:calc(54px + env(safe-area-inset-top,0px)); }
 }
 @media (max-width: 600px) {
   .v2-hero h1 .thin { font-size:.5em; }
@@ -351,8 +360,13 @@ body.v2 .chips-wrap .controls { flex:1 1 auto; min-width:0; overflow-x:auto; scr
 body.v2 .chips-wrap .controls::-webkit-scrollbar { display:none; }
 .chips-wrap::after { content:""; position:absolute; right:40px; top:0; bottom:0; width:56px; background:linear-gradient(90deg, transparent, var(--v-bg)); pointer-events:none; opacity:0; transition:opacity .2s; }
 .chips-wrap.more::after { opacity:1; }
-.chips-wrap::before { content:""; position:absolute; left:0; top:0; bottom:0; width:32px; background:linear-gradient(270deg, transparent, var(--v-bg)); pointer-events:none; opacity:0; transition:opacity .2s; z-index:1; }
+.chips-wrap::before { content:""; position:absolute; left:40px; top:0; bottom:0; width:32px; background:linear-gradient(270deg, transparent, var(--v-bg)); pointer-events:none; opacity:0; transition:opacity .2s; z-index:1; }
 .chips-wrap.scrolled::before { opacity:1; }
+.chips-prev { flex:none; width:34px; height:34px; margin-right:6px; border-radius:50%; border:1px solid var(--v-line-2); background:var(--v-bg); color:var(--v-ink); font-size:20px; line-height:1; display:grid; place-items:center; opacity:0; pointer-events:none; transition:opacity .2s; position:relative; z-index:2; }
+.chips-wrap.scrolled .chips-prev { opacity:1; pointer-events:auto; }
+.chips-prev:hover { background:var(--v-ink); color:var(--v-bg); border-color:var(--v-ink); }
+.chips-wrap:not(.scrolled) .chips-prev { display:none; }
+.chips-wrap:not(.scrolled)::before { display:none; }
 .chips-next { flex:none; width:34px; height:34px; margin-left:6px; border-radius:50%; border:1px solid var(--v-line-2); background:var(--v-bg); color:var(--v-ink); font-size:20px; line-height:1; display:grid; place-items:center; opacity:0; pointer-events:none; transition:opacity .2s; }
 .chips-wrap.more .chips-next { opacity:1; pointer-events:auto; }
 .chips-next:hover { background:var(--v-ink); color:var(--v-bg); border-color:var(--v-ink); }
@@ -415,7 +429,7 @@ body.v2 .chips-wrap .controls::-webkit-scrollbar { display:none; }
   <div class="v2-in v2-bar-in">
     <div class="v2-row1">
       <div class="tracks" id="tracks"></div>
-      <div class="chips-wrap" id="chipsWrap"><section class="controls" aria-label="직군 필터" id="chips"></section><button class="chips-next" id="chipsNext" type="button" aria-label="직군 더 보기">›</button></div>
+      <div class="chips-wrap" id="chipsWrap"><button class="chips-prev" id="chipsPrev" type="button" aria-label="직군 이전">‹</button><section class="controls" aria-label="직군 필터" id="chips"></section><button class="chips-next" id="chipsNext" type="button" aria-label="직군 더 보기">›</button></div>
     </div>
     <div class="toggles">
       <button class="toggle" id="tNonmajor" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>비전공 입문 가능</button>
@@ -449,7 +463,8 @@ body.v2 .chips-wrap .controls::-webkit-scrollbar { display:none; }
   function fit(el) {
     el.style.fontSize = '';
     var size = parseFloat(getComputedStyle(el).fontSize), min = 22, guard = 40;
-    while (el.scrollWidth > el.clientWidth + 1 && size > min && guard-- > 0) { size -= 2; el.style.fontSize = size + 'px'; }
+    var avail = Math.min(el.clientWidth, el.parentElement ? el.parentElement.clientWidth : el.clientWidth, document.documentElement.clientWidth - 32);
+    while (el.scrollWidth > avail + 1 && size > min && guard-- > 0) { size -= 2; el.style.fontSize = size + 'px'; }
   }
   function all() { document.querySelectorAll('[data-fit]').forEach(fit); }
   all(); window.addEventListener('resize', all); if (document.fonts && document.fonts.ready) document.fonts.ready.then(all);
@@ -570,7 +585,8 @@ body.v2 .chips-wrap .controls::-webkit-scrollbar { display:none; }
 
   // 직군 칩 가로 스크롤 표시: 더 있으면 오른쪽 페이드 + 화살표
   (function () {
-    var wrap = $('chipsWrap'), sc = $('chips'), nx = $('chipsNext'); if (!wrap || !sc || !nx) return;
+    var wrap = $('chipsWrap'), sc = $('chips'), nx = $('chipsNext'), pv = $('chipsPrev'); if (!wrap || !sc || !nx) return;
+    if (pv) pv.addEventListener('click', function () { sc.scrollBy({ left: -Math.max(200, sc.clientWidth * 0.7), behavior: 'smooth' }); });
     function upd() { var more = sc.scrollWidth - sc.clientWidth - sc.scrollLeft > 4; wrap.classList.toggle('more', more); wrap.classList.toggle('scrolled', sc.scrollLeft > 4); }
     nx.addEventListener('click', function () { sc.scrollBy({ left: Math.max(200, sc.clientWidth * 0.7), behavior: 'smooth' }); });
     sc.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', upd);

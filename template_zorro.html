@@ -18,8 +18,8 @@
 .z-hero-grid { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:40px; align-items:end; }
 .z-hero h1 { margin-top:12px; font-family:var(--display); font-weight:900; font-size:clamp(36px, 6.6vw, 96px); line-height:.96; letter-spacing:-.05em; }
 .z-hero h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--ink-soft); margin-bottom:14px; line-height:1.15; }
-.z-hero h1 .mark { background:linear-gradient(transparent 68%, var(--acc) 68%); }
-.z-hero h1 .line { display:block; white-space:nowrap; }
+.z-hero h1 .mark { background:linear-gradient(transparent 68%, var(--mark) 68%); }
+.z-hero h1 .line { display:block; white-space:nowrap; max-width:100%; min-width:0; }
 .z-hero .lede { margin-top:26px; max-width:58ch; font-size:16px; line-height:1.7; color:var(--ink-soft); }
 .z-hero .lede b { color:var(--ink); }
 .z-hero .cta { display:flex; flex-wrap:wrap; gap:10px; margin-top:28px; }
@@ -57,7 +57,7 @@
 .z-sec-head { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:20px 28px; align-items:end; margin-bottom:28px; }
 .z-sec-head .num { font-family:var(--display); font-weight:900; font-size:clamp(40px, 6vw, 88px); line-height:.9; letter-spacing:-.05em; color:transparent; -webkit-text-stroke:1.5px var(--ink); }
 .z-sec-head h2 { font-family:var(--display); font-size:clamp(28px, 4.2vw, 58px); font-weight:900; line-height:1; letter-spacing:-.05em; }
-.z-sec-head h2 b { background:linear-gradient(transparent 68%, var(--acc) 68%); }
+.z-sec-head h2 b { background:linear-gradient(transparent 68%, var(--mark) 68%); }
 .z-sec-head p { max-width:42ch; font-size:14px; color:var(--muted); line-height:1.6; justify-self:end; text-align:right; }
 
 /* 1. 상황별 타일 */
@@ -144,7 +144,7 @@
 .zf { margin-top:0; }
 
 @media (max-width: 960px) {
-  .z-hero-grid { grid-template-columns:1fr; gap:28px; }
+  .z-hero-grid { grid-template-columns:minmax(0,1fr); gap:28px; }
   .z-stats { grid-template-columns:repeat(2, 1fr); gap:0 24px; }
   .cases { grid-template-columns:1fr; gap:0; }
   .why { grid-template-columns:1fr; }
@@ -373,7 +373,7 @@
     links.forEach(function (a, i) { a.classList.toggle('on', i === cur); });
   }
   window.addEventListener('scroll', mark, { passive: true }); mark();
-  function fit(el) { el.style.fontSize = ''; var size = parseFloat(getComputedStyle(el).fontSize), min = 22, guard = 40; while (el.scrollWidth > el.clientWidth + 1 && size > min && guard-- > 0) { size -= 2; el.style.fontSize = size + 'px'; } }
+  function fit(el) { el.style.fontSize = ''; var size = parseFloat(getComputedStyle(el).fontSize), min = 22, guard = 40; var avail = Math.min(el.clientWidth, el.parentElement ? el.parentElement.clientWidth : el.clientWidth, document.documentElement.clientWidth - 32); while (el.scrollWidth > avail + 1 && size > min && guard-- > 0) { size -= 2; el.style.fontSize = size + 'px'; } }
   function all() { document.querySelectorAll('[data-fit]').forEach(fit); }
   all(); window.addEventListener('resize', all); if (document.fonts && document.fonts.ready) document.fonts.ready.then(all);
 })();

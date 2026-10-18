@@ -178,7 +178,7 @@ def _og_path(jid: str) -> str:
 # 모든 페이지가 공유하는 CSS: 색 토큰, 기본 글꼴, 상단 탭(zn-), 푸터(zf-), 하단 상담 버튼(zfab), 배지·버튼
 SHARED_CSS = """
 /* 취업뉴스(커리어브리핑)와 같은 편집 디자인 톤: 먹색 글자, 종이색 바탕, 황동색 포인트, 라벨·숫자는 모노 글꼴, 다크모드 지원 */
-:root { --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#7a7a7a; --faint:#a3a3a3; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --acc:#c6ff3d; --acc-ink:#0b0b0b;
+:root { --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#7a7a7a; --faint:#a3a3a3; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d;
   --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2;
   /* 아래는 기존 템플릿이 쓰는 이름 → 위 토큰에 연결 */
   --bg:var(--ground); --surface:var(--paper); --surface-2:var(--mist); --black:var(--ink); --fg-soft:var(--ink-soft); --line:var(--hairline); --line-strong:var(--hairline-2);
@@ -190,11 +190,11 @@ SHARED_CSS = """
   --shadow:none; --shadow-lift:0 18px 50px rgba(0,0,0,.18);
   --font:"Noto Sans KR","Archivo",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --display:"Archivo","Noto Sans KR",sans-serif; --serif:var(--display); --mono:var(--display); color-scheme: light dark; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --faint:#6a6a6a; --brass:#f3f3f3; --brass-tint:#161616; --brass-bar:#c6ff3d;
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --faint:#6a6a6a; --brass:#f3f3f3; --brass-tint:#161616; --brass-bar:rgba(198,255,61,.32); --mark:rgba(198,255,61,.32);
   --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; --green:#3fbf8a; --lvl2:#d9a441; --lvl3:#e0796c;
   --inkbg:#f3f3f3; --inkfg:#0b0b0b; --inkfg-soft:rgba(11,11,11,.7); --inkline:rgba(11,11,11,.25); --fill:#f3f3f3; --fillfg:#0b0b0b; --logo-filter:invert(1);
   --shadow:none; --shadow-lift:0 18px 50px rgba(0,0,0,.5); } }
-:root[data-theme="dark"] { --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --faint:#6a6a6a; --brass:#f3f3f3; --brass-tint:#161616; --brass-bar:#c6ff3d;
+:root[data-theme="dark"] { --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --faint:#6a6a6a; --brass:#f3f3f3; --brass-tint:#161616; --brass-bar:rgba(198,255,61,.32); --mark:rgba(198,255,61,.32);
   --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; --green:#3fbf8a; --lvl2:#d9a441; --lvl3:#e0796c;
   --inkbg:#f3f3f3; --inkfg:#0b0b0b; --inkfg-soft:rgba(11,11,11,.7); --inkline:rgba(11,11,11,.25); --fill:#f3f3f3; --fillfg:#0b0b0b; --logo-filter:invert(1);
   --shadow:none; --shadow-lift:0 18px 50px rgba(0,0,0,.5); }
@@ -246,15 +246,15 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 
 
 # 취업뉴스 페이지에 끼울 때 덮어쓰는 스타일 (보조 글자 선명하게). 제호는 build_site.py 의 .hero-top 이 그린다
-FIT_JS = "<script>(function(){function fit(el){el.style.fontSize='';var s=parseFloat(getComputedStyle(el).fontSize),m=22,g=40;while(el.scrollWidth>el.clientWidth+1&&s>m&&g-->0){s-=2;el.style.fontSize=s+'px';}}function all(){document.querySelectorAll('.hero h1').forEach(fit);}all();window.addEventListener('resize',all);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(all);})();</script>"
+FIT_JS = "<script>(function(){function fit(el){el.style.fontSize='';var s=parseFloat(getComputedStyle(el).fontSize),m=22,g=40;var av=Math.min(el.clientWidth,el.parentElement?el.parentElement.clientWidth:el.clientWidth,document.documentElement.clientWidth-32);while(el.scrollWidth>av+1&&s>m&&g-->0){s-=2;el.style.fontSize=s+'px';}}function all(){document.querySelectorAll('.hero h1').forEach(fit);}all();window.addEventListener('resize',all);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(all);})();</script>"
 TICKER_HTML = '<div class="v2-ticker" aria-hidden="true"><div class="v2-ticker-track"><span>Career Briefing</span><span>매일 아침 고른 채용 · 이직 · 기업 · 고용 뉴스</span><span>Zorro의 한마디</span><span>주간 · 월간 랭킹</span><span>지난 지면 아카이브</span><span>Team Zorro</span><span>Career Briefing</span><span>매일 아침 고른 채용 · 이직 · 기업 · 고용 뉴스</span><span>Zorro의 한마디</span><span>주간 · 월간 랭킹</span><span>지난 지면 아카이브</span><span>Team Zorro</span></div></div>'
 OUTRO_HTML = '<section class="v2-outro"><svg class="big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg><div class="row"><p>오늘 뉴스가 내 커리어에 어떤 뜻인지 모르겠다면, 취업조로 컨설턴트가 1:1로 정리해 드립니다. 상담은 무료입니다.</p><a class="go" href="../apply/index.html">무료 상담 신청하기 →</a></div></section>'
 
 NEWS_MASTHEAD_CSS = """
 /* v2 톤: 황동 포인트 → 검정, 명조 → Archivo, 라임은 배경 강조에만 */
-:root { --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --serif:"Archivo","Noto Sans KR",sans-serif; --sans:"Noto Sans KR","Archivo",-apple-system,sans-serif; --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#7a7a7a; --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --brass:#f3f3f3; --brass-tint:#161616; --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; } }
-:root[data-theme="dark"] { --brass:#f3f3f3; --brass-tint:#161616; --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; }
+:root { --mark:#c6ff3d; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --serif:"Archivo","Noto Sans KR",sans-serif; --sans:"Noto Sans KR","Archivo",-apple-system,sans-serif; --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#7a7a7a; --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mark:rgba(198,255,61,.32); --brass-bar:rgba(198,255,61,.32); --brass:#f3f3f3; --brass-tint:#161616; --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; } }
+:root[data-theme="dark"] { --mark:rgba(198,255,61,.32); --brass-bar:rgba(198,255,61,.32); --brass:#f3f3f3; --brass-tint:#161616; --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; }
 .masthead .brand-name { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; letter-spacing:-.04em; font-size:22px; }
 .masthead .brand-en { font-family:"Archivo",sans-serif; font-style:normal; font-weight:700; font-size:11.5px; letter-spacing:.12em; color:var(--muted); background:var(--brass-bar); color:#0b0b0b; padding:3px 8px; border-radius:999px; margin-left:10px; }
 .hero h1 { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; letter-spacing:-.055em; }
@@ -287,7 +287,7 @@ NEWS_MASTHEAD_CSS = """
 .hero-inner { max-width:1320px; padding:18px 20px 40px; gap:48px; align-items:end; }
 .eyebrow { display:none; }
 .hero h1 { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; font-size:clamp(34px, 5.4vw, 76px); line-height:1.02; letter-spacing:-.05em; margin:0 0 22px; white-space:nowrap; }
-.hero h1 em { color:inherit; background:linear-gradient(transparent 68%, #c6ff3d 68%); }
+.hero h1 em { color:inherit; background:linear-gradient(transparent 68%, var(--mark, #c6ff3d) 68%); }
 .hero-sub { font-size:16px; color:var(--ink-soft); max-width:58ch; }
 .brief-box { border:0; border-top:1px solid var(--ink); border-radius:0; background:transparent; padding:18px 0 0; margin-top:0; }
 .brief-label { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
@@ -345,7 +345,7 @@ NEWS_MASTHEAD_CSS = """
 /* 랭킹·키워드 */
 .rank-head { border-top:1px solid var(--ink); padding-top:40px; }
 .rank-title { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(28px, 4vw, 56px); font-weight:900; letter-spacing:-.05em; }
-.rank-title em { background:linear-gradient(transparent 68%, #c6ff3d 68%); color:inherit; font-style:normal; }
+.rank-title em { background:linear-gradient(transparent 68%, var(--mark, #c6ff3d) 68%); color:inherit; font-style:normal; }
 .rank-meta { font-family:"Archivo",sans-serif; }
 .rail-title, .rail-head { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; letter-spacing:-.03em; }
 .kw-name { font-weight:700; }
@@ -366,7 +366,16 @@ NEWS_MASTHEAD_CSS = """
 .v2-outro a.go { display:inline-flex; align-items:center; gap:10px; font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:16px 26px; border-radius:999px; background:var(--ink); color:var(--paper); text-decoration:none; }
 .v2-outro a.go:hover { background:#c6ff3d; color:#0b0b0b; }
 .zf { margin-top:0 !important; }
-@media (max-width: 900px) { .hero-picks { max-width:none; flex:1 1 auto; } .funnel-step { padding-right:16px; margin-right:16px; } }
+@media (max-width: 900px) {
+  .hero-inner { align-items:stretch; }
+  .hero-text, .hero-picks { min-width:0; width:100%; max-width:none; flex:1 1 auto; }
+  .hero h1 { white-space:normal; font-size:clamp(30px, 8.6vw, 44px); line-height:1.08; }
+  .funnel { flex-wrap:wrap; }
+  .funnel-step { flex:1 1 45%; padding:12px 12px 12px 0; margin-right:0; border-right:0; }
+  .funnel-num { font-size:28px; }
+  .masthead-inner { flex-wrap:wrap; gap:8px; }
+  .v2-outro { padding:40px 16px 16px; }
+}
 """
 
 
