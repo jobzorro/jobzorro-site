@@ -126,7 +126,7 @@ def job_faq(j: dict, by_id: dict):
     qa = [
         (f"{name}는 어떤 일을 하나요?", f"{j['tagline']}. {j['summary']}"),
         (f"{name} 신입 연봉은 어느 정도인가요?", f"신입 {rng(j['salary']['junior'])}만원, 미들(3~7년) {rng(j['salary']['mid'])}만원, 시니어 {rng(j['salary']['senior'])}만원 수준으로 추정합니다(세전 기본급, 산업·기업 규모·인센티브에 따라 달라집니다)."),
-        (f"비전공자도 {name}로 갈 수 있나요?", ("가능합니다. " if j.get("nonmajorOk") else "쉽지는 않습니다. ") + j["entry"]["nonmajor"]),
+        (f"비전공자도 {name}로 갈 수 있나요?", {"open": "가능합니다. 전공을 거의 보지 않는 직무입니다. ", "prep": "준비하면 가능합니다. ", "req": "쉽지는 않습니다. 관련 전공이 사실상 필요합니다. "}[(j.get("mj") or {}).get("lv", "open" if j.get("nonmajorOk") else "req")] + j["entry"]["nonmajor"]),
         (f"{name}에서 옮겨갈 수 있는 직무는 무엇인가요?", (", ".join(trans) + " 쪽으로 이동하는 경우가 많습니다. " if trans else "") + j["entry"]["switch"]),
         (f"AI가 {name}에 미치는 영향은?", f"영향 {AI_LABEL.get(j['ai']['level'], '보통')}. {j['ai']['note']}"),
     ]
@@ -172,6 +172,16 @@ def job_ld(base: str, j: dict, by_id: dict, meta: dict, group_name: str, updated
     return [occupation, article, faq, crumbs]
 
 
+def major_dd(j: dict) -> str:
+    """숫자 박스 '전공' 칸: 무관 / 우대 / 필수 + 관련 전공 + 석사 표시 (template.html 의 majorDd() 와 같은 모양)"""
+    m = j.get("mj") or {}
+    lv = m.get("lv", "open")
+    h = f'<span class="mjv {lv}">{e(m.get("box", "무관"))}</span>' + (f' <span class="mjd">{e(m["deg"])}</span>' if m.get("deg") else "")
+    if m.get("names"):
+        h += f'<small class="mjn">{e(m["names"])}</small>'
+    return h
+
+
 def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: str) -> str:
     """상세 패널(template.html 의 detail())과 같은 구성을 서버에서 그린다. 클래스는 template.html CSS 를 그대로 쓴다."""
     def li(arr, cls=""):
@@ -204,7 +214,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     h.append(f'<p class="summary"><b>{e(j["name"])}</b>는 {e(j["tagline"])}입니다. {e(j["summary"])}</p>')
     h.append('<dl class="quick">'
              f'<div><dt>신입 연봉대</dt><dd class="num">{rng(j["salary"]["junior"])}만원</dd></div>'
-             f'<div><dt>비전공 입문</dt><dd>{"가능" if j.get("nonmajorOk") else "어려운 편"}</dd></div>'
+             f'<div><dt>전공</dt><dd>{major_dd(j)}</dd></div>'
              f'<div><dt>AI 영향</dt><dd>{AI_LABEL.get(j["ai"]["level"], "보통")}</dd></div>'
              f'<div><dt>근거 자료</dt><dd>{str(ev) + "건" if ev else "초안"}</dd></div></dl>')
     if j.get("dayInLife"):
@@ -227,7 +237,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
             f'<li><div class="tt"><b>{e(t["t"])}</b>' + (f'<span class="te">{e(t["e"])}</span>' if t.get("e") else "") + f'</div><p>{e(t["s"])}</p></li>' for t in j["terms"]) + '</ol>', "현직자 말에 자주 나오는 단어"))
     h.append(sec("들어가는 길", '<div class="entry">'
                  f'<div><span class="k">관련 전공·신입</span><span class="v">{e(j["entry"]["major"])}</span></div>'
-                 f'<div><span class="k">비전공{"<span class=\"ok\">가능</span>" if j.get("nonmajorOk") else ""}</span><span class="v">{e(j["entry"]["nonmajor"])}</span></div>'
+                 f'<div><span class="k">비전공{"<span class=\"ok\">전공 무관</span>" if j.get("nonmajorOk") else ""}</span><span class="v">{e(j["entry"]["nonmajor"])}' + (f'<br><b>준비할 것</b> {e(j["mj"]["prep"])}' if (j.get("mj") or {}).get("prep") else "") + '</span></div>'
                  f'<div><span class="k">경력 전환</span><span class="v">{e(j["entry"]["switch"])}</span></div></div>'))
     h.append(sec("커리어 패스", '<ol class="path">' + "".join(f'<li><div class="stage">{e(p["stage"])}</div><div class="desc">{e(p["desc"])}</div></li>' for p in j["path"]) + "</ol>"))
     s = j["salary"]
@@ -425,7 +435,7 @@ def write_llms(out_dir: Path, base: str, jobs, groups, updated: str) -> None:
     ]
     for j in jobs:
         lines.append(f"- [{j['name']}]({abs_url(base, f'jobs/{j['id']}/')}): {gname.get(j['group'], '')} · {j['tagline']} · 신입 {rng(j['salary']['junior'])}만원")
-    lines += ["", "## 도구", f"- [직무 비교]({abs_url(base, 'compare/')}): 두 직무의 연봉·역량·경로를 나란히", f"- [3문항 직무 진단]({abs_url(base, 'fit/')}): 전공·성향·원하는 것으로 직무 5개 추천", f"- [직무별 면접 질문]({abs_url(base, 'interview/')})",
+    lines += ["", "## 도구", f"- [직무 비교]({abs_url(base, 'compare/')}): 두 직무의 연봉·역량·경로를 나란히", f"- [1분 직무 진단]({abs_url(base, 'fit/')}): 학력·전공 계열·성향·원하는 것으로 바로 지원할 직무와 준비하면 열리는 직무 추천", f"- [직무별 면접 질문]({abs_url(base, 'interview/')})",
               "", "## 기타", f"- [개인정보처리방침]({abs_url(base, 'privacy/')})", f"- [sitemap]({abs_url(base, 'sitemap.xml')})"]
     (out_dir / "llms.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -644,7 +654,7 @@ def render_interview_all(common: dict, iq: dict, jobs, groups) -> str:
     h.append('<nav class="iq-bar" aria-label="질문 이동"><div class="iq-bar-in">'
              '<a class="top" href="#common">공통 TOP 20</a>'
              f'<select id="iqJob" aria-label="직무 선택"><option value="">직무를 고르면 바로 이동</option>{opts}</select>'
-             f'<div class="iq-g">{gchips}</div></div></nav>')
+             f'<div class="iq-gw"><button class="iq-prev" type="button" aria-label="직군 이전">‹</button><div class="iq-g">{gchips}</div><button class="iq-next" type="button" aria-label="직군 더 보기">›</button></div></div></nav>')
     # 공통 TOP 10
     h.append('<section class="iq-sec" id="common"><div class="iq-head"><span class="num">01</span><h2>공통 빈출 <b>TOP 10</b></h2><p>직무와 상관없이 거의 모든 면접에서 나옵니다. 빈출도는 취업조로 면접 질문 모음집 기준입니다.</p></div><ol class="iq-top">')
     for k, t in enumerate(top[:10], 1):
@@ -685,7 +695,12 @@ INTERVIEW_ALL_CSS = """
 .iq-bar-in { display: flex; align-items: center; gap: 10px; padding: 10px 0; min-width: 0; }
 .iq-bar .top { flex: none; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 999px; background: var(--ink); color: var(--paper); text-decoration: none; }
 .iq-bar select { flex: none; font: inherit; font-size: 14px; font-weight: 700; padding: 9px 14px; border-radius: 999px; border: 1.5px solid var(--ink); background: var(--acc); color: var(--acc-ink); max-width: 46vw; }
-.iq-g { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1 1 auto; }
+.iq-gw { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 auto; }
+.iq-g { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1 1 auto; scroll-behavior: smooth; }
+.iq-prev, .iq-next { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); font-size: 20px; line-height: 1; display: grid; place-items: center; cursor: pointer; }
+.iq-prev:hover, .iq-next:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.iq-gw:not(.scrolled) .iq-prev, .iq-gw:not(.more) .iq-next { display: none; }
+.iq-g a.on { background: var(--ink); color: var(--paper); border-color: var(--ink); font-weight: 700; }
 .iq-g::-webkit-scrollbar { display: none; }
 .iq-g a { flex: none; font-size: 13px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink-soft); text-decoration: none; white-space: nowrap; }
 .iq-g a:hover { border-color: var(--ink); color: var(--ink); }
@@ -729,8 +744,10 @@ INTERVIEW_ALL_CSS = """
   .iq-bar-in { gap: 8px; padding: 8px 0; }
   .iq-bar .top { font-size: 12px; padding: 9px 12px; }
   .iq-bar select { max-width: none; flex: 1 1 auto; min-width: 0; font-size: 13.5px; padding: 9px 12px; }
-  .iq-g { display: none; }   /* 폰은 직군 칩 없이 한 줄: 직무 선택만으로 이동 */
-  .iq-sec, .iq-group, .iq-job { scroll-margin-top: 120px; }
+  .iq-bar-in { flex-wrap: wrap; }
+  .iq-gw { flex-basis: 100%; }   /* 폰: 1줄 = TOP20 + 직무 선택, 2줄 = 직군 칩(좌우 화살표) */
+  .iq-g a { font-size: 12.5px; padding: 7px 11px; }
+  .iq-prev, .iq-next { width: 30px; height: 30px; font-size: 18px; }
 }
 """
 
@@ -744,6 +761,35 @@ INTERVIEW_ALL_JS = """<script>
   }
   var sel = document.getElementById('iqJob');
   sel.addEventListener('change', function () { if (!this.value) return; history.replaceState(null, '', '#' + this.value.slice(2)); go(this.value, true); });
+  // 직군 칩: 좌우 화살표 + 스크롤 위치에 맞춰 지금 보고 있는 직군·직무 표시
+  var gw = document.querySelector('.iq-gw'), gs = document.querySelector('.iq-g');
+  function arrows() { gw.classList.toggle('scrolled', gs.scrollLeft > 4); gw.classList.toggle('more', gs.scrollLeft + gs.clientWidth < gs.scrollWidth - 4); }
+  gw.querySelector('.iq-prev').addEventListener('click', function () { gs.scrollLeft -= gs.clientWidth * .7; });
+  gw.querySelector('.iq-next').addEventListener('click', function () { gs.scrollLeft += gs.clientWidth * .7; });
+  gs.addEventListener('scroll', arrows, { passive: true }); window.addEventListener('resize', arrows); arrows();
+  gs.addEventListener('click', function (e) { var a = e.target.closest('a'); if (!a) return; e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); go(a.getAttribute('href').slice(1), true); });
+  var groups = [].slice.call(document.querySelectorAll('.iq-group')), jobs = [].slice.call(document.querySelectorAll('.iq-job')), curG = null, curJ = null, tk = false;
+  function spy() {
+    tk = false;
+    var bar = document.querySelector('.iq-bar'), line = 54 + (bar ? bar.offsetHeight : 0) + 24, g = null, j = null;
+    groups.forEach(function (el) { if (el.getBoundingClientRect().top <= line) g = el; });
+    jobs.forEach(function (el) { if (el.getBoundingClientRect().top <= line) j = el; });
+    // 페이지 끝까지 내려와 마지막 직군이 위로 더 올라갈 수 없으면, 화면 위쪽 절반 안에 들어온 마지막 직군을 지금 직군으로 본다
+    if (window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 4) {
+      groups.forEach(function (el) { if (el.getBoundingClientRect().top < window.innerHeight * .5) g = el; });
+      jobs.forEach(function (el) { if (el.getBoundingClientRect().top < window.innerHeight * .5) j = el; });
+    }
+    var gid = g ? g.id : null;
+    if (gid !== curG) {
+      curG = gid;
+      gs.querySelectorAll('a').forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === '#' + gid); });
+      var on = gid && gs.querySelector('a[href="#' + gid + '"]');
+      if (on) gs.scrollLeft = on.offsetLeft - gs.offsetLeft - (gs.clientWidth - on.offsetWidth) / 2;   // 지금 직군 칩을 가운데로
+    }
+    var jid = j ? j.id : '';
+    if (jid !== curJ) { curJ = jid; if (sel.value !== jid) sel.value = jid; }   // 직무 선택 상자도 지금 보는 직무로
+  }
+  window.addEventListener('scroll', function () { if (!tk) { tk = true; requestAnimationFrame(spy); } }, { passive: true }); spy();
   // 직무사전에서 #직무id 로 들어오면 그 직무로
   var h = location.hash.slice(1);
   if (h) { var id = document.getElementById('j-' + h) ? 'j-' + h : h; setTimeout(function () { go(id, false); if (id.indexOf('j-') === 0) sel.value = id; }, 60); }

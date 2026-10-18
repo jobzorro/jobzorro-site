@@ -212,7 +212,7 @@ textarea { min-height:96px; resize:vertical; line-height:1.6; }
       </div>
       <div>
         <h3>먼저 둘러보기</h3>
-        <p>직무가 아직 고민이라면 <a href="../fit/">3문항 직무 진단</a>이나 <a href="../index.html">직무사전</a>을 먼저 보고 오셔도 좋습니다.</p>
+        <p>직무가 아직 고민이라면 <a href="../fit/">1분 직무 진단</a>이나 <a href="../index.html">직무사전</a>을 먼저 보고 오셔도 좋습니다.</p>
       </div>
     </aside>
   </div>
@@ -238,14 +238,14 @@ textarea { min-height:96px; resize:vertical; line-height:1.6; }
     $('jobPillName').textContent = JOBS[jobId]; $('jobPill').hidden = false;
   }
   $('page').value = document.referrer || location.pathname;
-  // 3문항 진단에서 넘어오면: 진단 답과 추천 직무 5개를 함께 보낸다 (시트의 '신청페이지' 칸에 기록)
+  // 직무 진단에서 넘어오면: 진단 답과 추천 직무 5개를 함께 보낸다 (시트의 '신청페이지' 칸에 기록)
   if (jobId === 'fit') {
     var fitData = null; try { fitData = JSON.parse(localStorage.getItem('jz_fit') || 'null'); } catch (e) {}
     if (fitData && fitData.jobs && fitData.jobs.length) {
       var first = fitData.jobs[0];
       if (JOBS[first]) { $('job').value = JOBS[first]; $('jobId').value = first; }
-      $('page').value = '3문항 진단 | ' + fitData.answers.join(' · ') + ' | 추천: ' + fitData.names.join(', ');
-      $('jobPill').innerHTML = '3문항 진단 결과가 함께 전달됩니다 · <b></b>';
+      $('page').value = '직무 진단 | ' + fitData.answers.join(' · ') + ' | 추천: ' + fitData.names.join(', ');
+      $('jobPill').innerHTML = '직무 진단 결과가 함께 전달됩니다 · <b></b>';
       $('jobPill').querySelector('b').textContent = fitData.answers.join(' · ') + ' → ' + fitData.names.slice(0, 3).join(', ') + (fitData.names.length > 3 ? ' 외' : '');
       $('jobPill').hidden = false;
       $('jobHint').textContent = '진단 1위 직무를 넣어 두었습니다. 바꾸셔도 됩니다.';

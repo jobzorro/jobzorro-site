@@ -129,7 +129,8 @@
     var h = '<div class="cmp">';
     h += '<div class="k head"></div>' + head(A) + head(B);
     h += row('연봉대', sal(A), sal(B));
-    h += row('비전공 · AI', (A.nonmajorOk ? '비전공 입문 <b>가능</b>' : '비전공 입문 <b>어려운 편</b>') + ' · AI 영향 <span class="lvl">' + AI[A.ai.level] + '</span>', (B.nonmajorOk ? '비전공 입문 <b>가능</b>' : '비전공 입문 <b>어려운 편</b>') + ' · AI 영향 <span class="lvl">' + AI[B.ai.level] + '</span>');
+    function mj(X) { var m = X.mj || {}; return '전공 <b>' + esc(m.box || (X.nonmajorOk ? '무관' : '필수')) + '</b>' + (m.names ? ' (' + esc(m.names) + ')' : '') + (m.deg ? ' · ' + esc(m.deg) : ''); }
+    h += row('전공 · AI', mj(A) + ' · AI 영향 <span class="lvl">' + AI[A.ai.level] + '</span>', mj(B) + ' · AI 영향 <span class="lvl">' + AI[B.ai.level] + '</span>');
     h += row('하는 일', '<ul class="list">' + A.tasks.slice(0, 4).map(function (t) { return '<li>· ' + esc(t) + '</li>'; }).join('') + '</ul>', '<ul class="list">' + B.tasks.slice(0, 4).map(function (t) { return '<li>· ' + esc(t) + '</li>'; }).join('') + '</ul>');
     h += row('하드 스킬', tagList(A.skills.hard, B.skills.hard), tagList(B.skills.hard, A.skills.hard));
     h += row('도구', tagList(A.tools, B.tools), tagList(B.tools, A.tools));

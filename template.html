@@ -377,6 +377,11 @@ body.v2 .toggles { max-height:60px; overflow:hidden; transition:max-height .25s 
 /* #9 AI 영향 색 */
 body.v2 .card .ai { font-weight:700; }
 body.v2 .card .ai.l1 { color:var(--lvl1); } body.v2 .card .ai.l2 { color:var(--lvl2); } body.v2 .card .ai.l3 { color:var(--lvl3); }
+/* 전공 단계: 무관(초록) / 우대(주황) / 필수(빨강) */
+.mjc { margin-left:8px; padding-left:8px; border-left:1px solid var(--v-line-2, var(--line)); font-weight:700; letter-spacing:.02em; text-transform:none; }
+.mjc.open, .mjv.open { color:var(--lvl1); } .mjc.prep, .mjv.prep { color:var(--lvl2); } .mjc.req, .mjv.req { color:var(--lvl3); }
+.mjd { font-size:.82em; font-weight:700; padding:1px 7px; border-radius:999px; border:1px solid currentColor; color:var(--lvl3); vertical-align:1px; white-space:nowrap; }
+.mjn { display:block; margin-top:4px; font-family:var(--font, inherit); font-size:11.5px; font-weight:500; line-height:1.45; color:var(--v-muted, var(--muted)); }
 /* #10 빈 화면 */
 .e-act { margin-top:18px; }
 .e-reset { font-family:var(--v-display); font-weight:700; font-size:13px; letter-spacing:.04em; padding:11px 20px; border-radius:999px; background:var(--v-ink); color:var(--v-bg); }
@@ -469,7 +474,7 @@ body.v2 .card { position:relative; }
         <div class="v2-kicker"><i></i>Job Dictionary · by 취업조로</div>
         <h1><span class="thin">채용공고엔 안 나오는</span><span class="line" data-fit>그 직무의 <span class="mark">진짜 모습.</span></span></h1>
         <p class="lede">취업조로가 <b>현직자 인터뷰·자료 <span id="ledeSources">0</span>건</b>을 바탕으로, 상담실에서 설명하는 말투 그대로 정리했습니다. 하는 일, 하루 일과, 들어가는 길, 연봉대, 옮겨갈 수 있는 직무, 현직자가 말하는 현실까지 한 장에서 봅니다.</p>
-        <div class="v2-cta"><a class="pill solid" href="fit/">3문항으로 내 직무 찾기 →</a><a class="pill" href="compare/">직무 비교</a><a class="pill" href="interview/">면접 질문</a></div>
+        <div class="v2-cta"><a class="pill solid" href="fit/">1분 진단으로 내 직무 찾기 →</a><a class="pill" href="compare/">직무 비교</a><a class="pill" href="interview/">면접 질문</a></div>
         <form class="v2-search" role="search" id="searchForm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <input id="q" type="search" placeholder="직무명, 역량, 도구, 업종으로 검색" autocomplete="off" aria-label="직무 검색">
@@ -500,7 +505,7 @@ body.v2 .card { position:relative; }
       <div class="chips-wrap" id="chipsWrap"><button class="chips-prev" id="chipsPrev" type="button" aria-label="직군 이전">‹</button><section class="controls" aria-label="직군 필터" id="chips"></section><button class="chips-next" id="chipsNext" type="button" aria-label="직군 더 보기">›</button></div>
     </div>
     <div class="toggles">
-      <button class="toggle" id="tNonmajor" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>비전공 입문 가능</button>
+      <button class="toggle" id="tNonmajor" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>전공 무관</button>
       <button class="toggle" id="tAiLow" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>AI 영향 낮음</button>
       <button class="toggle" id="tSourced" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>인터뷰 있는 직무만</button>
       <button class="toggle fav-toggle" id="tFav" aria-pressed="false"><span class="star">★</span>저장한 직무 <b id="favN">0</b></button>
@@ -706,6 +711,11 @@ body.v2 .card { position:relative; }
       '<span class="kw">' + esc(kw) + '</span></div>';
   }
   // 제목의 괄호 부분은 작은 줄로 내린다: "B2B 영업 (산업재·기술영업)" → 큰 "B2B 영업" + 작은 "산업재·기술영업"
+  // 숫자 박스 '전공' 칸 (seo.py major_dd 와 같은 모양)
+  function majorDd(j) {
+    var m = j.mj || { lv: j.nonmajorOk ? 'open' : 'req', box: j.nonmajorOk ? '무관' : '필수' };
+    return '<span class="mjv ' + m.lv + '">' + esc(m.box) + '</span>' + (m.deg ? ' <span class="mjd">' + esc(m.deg) + '</span>' : '') + (m.names ? '<small class="mjn">' + esc(m.names) + '</small>' : '');
+  }
   function nameHtml(n) {
     var m = /^(.*?)\s*\(([^()]+)\)\s*$/.exec(n || '');
     return m ? esc(m[1]) + '<span class="paren">' + esc(m[2]) + '</span>' : esc(n);
@@ -715,7 +725,7 @@ body.v2 .card { position:relative; }
     return '<article class="card" data-id="' + j.id + '" tabindex="0" role="button" aria-label="' + esc(j.name) + ' 자세히 보기">' +
       (V2 ? art(j) : '') +
       '<button class="fav' + (favHas(j.id) ? ' on' : '') + '" type="button" data-fav="' + j.id + '" aria-pressed="' + (favHas(j.id) ? 'true' : 'false') + '" aria-label="' + esc(j.name) + ' 저장">★</button>' +
-      '<div class="card-top"><span class="group">' + esc(gname(j.group)) + '</span>' +
+      '<div class="card-top"><span class="group">' + esc(gname(j.group)) + (j.mj ? '<span class="mjc ' + j.mj.lv + '">' + esc(j.mj.card) + '</span>' : '') + '</span>' +
       '<span class="ai l' + j.ai.level + '" title="AI ' + AI_LABEL[j.ai.level] + '"><i><b></b><b></b><b></b></i>AI ' + AI_LABEL[j.ai.level] + '</span></div>' +
       '<h3><a href="jobs/' + j.id + '/">' + nameHtml(j.name) + '</a></h3><p class="en">' + esc(j.en) + '</p>' +
       '<p class="tagline">' + esc(j.tagline) + '</p>' +
@@ -778,7 +788,7 @@ body.v2 .card { position:relative; }
     h += '<h2 class="name" id="dName">' + nameHtml(j.name) + '</h2><p class="en">' + esc(j.en) + '</p>';
     h += '<p class="tagline">' + esc(j.tagline) + '</p>';
     h += '<dl class="quick"><div><dt>신입 연봉대</dt><dd class="num">' + range(j.salary.junior) + '만원</dd></div>' +
-      '<div><dt>비전공 입문</dt><dd>' + (j.nonmajorOk ? '가능' : '어려운 편') + '</dd></div>' +
+      '<div><dt>전공</dt><dd>' + majorDd(j) + '</dd></div>' +
       '<div><dt>AI 영향</dt><dd>' + AI_LABEL[j.ai.level] + '</dd></div>' +
       '<div><dt>근거 자료</dt><dd>' + (evidence(j) ? evidence(j) + '건' : '초안') + '</dd></div></dl>';
     h += '<div class="sum-wrap clamp"><p class="summary">' + esc(j.summary) + '</p><button type="button" class="more" data-more>더 읽기 ↓</button></div>';
@@ -797,7 +807,7 @@ body.v2 .card { position:relative; }
     }).join('') + '</ol>', '현직자 말에 자주 나오는 단어');
     h += sec('entry', '들어가는 길', '<div class="entry">' +
       '<div><span class="k">관련 전공·신입</span><span class="v">' + esc(j.entry.major) + '</span></div>' +
-      '<div><span class="k">비전공' + (j.nonmajorOk ? '<span class="ok">가능</span>' : '') + '</span><span class="v">' + esc(j.entry.nonmajor) + '</span></div>' +
+      '<div><span class="k">비전공' + (j.nonmajorOk ? '<span class="ok">전공 무관</span>' : '') + '</span><span class="v">' + esc(j.entry.nonmajor) + (j.mj && j.mj.prep ? '<br><b>준비할 것</b> ' + esc(j.mj.prep) : '') + '</span></div>' +
       '<div><span class="k">경력 전환</span><span class="v">' + esc(j.entry.switch) + '</span></div></div>');
     h += sec('path', '커리어 패스', '<ol class="path">' + j.path.map(function (p) { return '<li><div class="stage">' + esc(p.stage) + '</div><div class="desc">' + esc(p.desc) + '</div></li>'; }).join('') + '</ol>');
     h += sec('salary', '연봉대', '<div class="sal">' +

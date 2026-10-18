@@ -80,7 +80,57 @@
         "track": "engineering"
       }
     ],
-    "sourceDocs": 529
+    "sourceDocs": 529,
+    "majorFields": {
+      "biz": {
+        "name": "상경(경영·경제·회계)",
+        "short": "상경"
+      },
+      "hum": {
+        "name": "인문·어문",
+        "short": "인문"
+      },
+      "soc": {
+        "name": "사회·법·행정·미디어",
+        "short": "사회·법"
+      },
+      "art": {
+        "name": "예체능·디자인",
+        "short": "디자인"
+      },
+      "nat": {
+        "name": "수학·통계·물리",
+        "short": "수학·통계"
+      },
+      "life": {
+        "name": "생명·약학·간호·보건·식품",
+        "short": "생명·보건"
+      },
+      "chem": {
+        "name": "화학·화공·신소재",
+        "short": "화학·화공"
+      },
+      "mech": {
+        "name": "기계·메카트로닉스·항공·조선",
+        "short": "기계"
+      },
+      "ee": {
+        "name": "전기·전자·제어",
+        "short": "전기·전자"
+      },
+      "cs": {
+        "name": "컴퓨터·소프트웨어",
+        "short": "컴퓨터"
+      },
+      "ie": {
+        "name": "산업공학",
+        "short": "산업공학"
+      },
+      "civ": {
+        "name": "건축·토목·환경",
+        "short": "건축·토목"
+      }
+    }
   },
   "jobs": [
     {
@@ -272,7 +322,11 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "overseas-sales",
@@ -456,7 +510,11 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "sales-management",
@@ -641,7 +699,11 @@
         ],
         "years": "2018~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "ecommerce-sales",
@@ -799,7 +861,11 @@
         ],
         "years": "2023~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "pharma-sales",
@@ -956,7 +1022,11 @@
         ],
         "years": "2018~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "saas-sales",
@@ -1111,7 +1181,11 @@
         ],
         "years": "2023~2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "technical-sales",
@@ -1307,7 +1381,16 @@
         ],
         "years": "2019~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "ee",
+          "mech",
+          "chem",
+          "cs"
+        ]
+      }
     },
     {
       "id": "trading",
@@ -1508,7 +1591,11 @@
         ],
         "years": "2024~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "brand-marketer",
@@ -1693,7 +1780,11 @@
         ],
         "years": "2018~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "performance-marketer",
@@ -1867,7 +1958,11 @@
         ],
         "years": "2020~2023"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "content-marketer",
@@ -2061,7 +2156,11 @@
         ],
         "years": "2023~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "pr",
@@ -2233,7 +2332,11 @@
         ],
         "years": "2020~2023"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "ad-planner",
@@ -2427,7 +2530,11 @@
         ],
         "years": "2022~2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "broadcast-pd",
@@ -2615,7 +2722,11 @@
         ],
         "years": "2019~2024"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "strategy",
@@ -2800,7 +2911,11 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "biz-planning",
@@ -3036,7 +3151,11 @@
           "url": "https://community.linkareer.com/mentoring/6512630",
           "note": "회계팀(집행 후 정리) vs 원가·사업관리(집행 전 계획·허들) 비유, 회계 경력 인정의 한계, 경영기획과의 경계"
         }
-      ]
+      ],
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "sales-planning",
@@ -3223,7 +3342,11 @@
         ],
         "years": "2015~2024"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "consulting",
@@ -3394,7 +3517,11 @@
         ],
         "years": "2022~2024"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "bd",
@@ -3600,7 +3727,11 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "hr",
@@ -3791,7 +3922,11 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "recruiter",
@@ -3945,7 +4080,11 @@
         ],
         "years": "2022~2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "general-affairs",
@@ -4118,7 +4257,11 @@
         ],
         "years": "2020~2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "finance",
@@ -4283,7 +4426,7 @@
         "ERP정보관리사 회계 1급",
         "외환관리사(외화 업무 지향 시)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "sources": {
         "count": 42,
         "industries": [
@@ -4308,7 +4451,14 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "biz"
+        ],
+        "prep": "재경관리사·전산세무 자격과 회계원리·중급회계 수강으로 기본기를 보여 주세요."
+      }
     },
     {
       "id": "accounting",
@@ -4461,7 +4611,7 @@
         "CPA·세무사 1차(수험 경험도 어필)",
         "AICPA(외국계·글로벌 지향 시)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "sources": {
         "count": 6,
         "industries": [
@@ -4474,7 +4624,14 @@
         ],
         "years": "2022~2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "biz"
+        ],
+        "prep": "전산회계 1급·재경관리사와 회계 과목 3~4개 수강이 최소선입니다."
+      }
     },
     {
       "id": "purchasing",
@@ -4659,7 +4816,11 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "legal",
@@ -4701,7 +4862,7 @@
       ],
       "entry": {
         "major": "법학 전공자, 로스쿨·고시 준비 경험자가 주류입니다. 변호사 자격이 있으면 사내변호사로 채용되고, 비변호사는 기업 공채·수시의 법무·준법 직무로 들어갑니다. 인원이 적어 채용 공고 자체가 드물고, 일부 대기업은 법무팀장을 변호사로 제한합니다. 다만 경영학과 출신으로 20년 넘게 법무팀을 이끈 현직자도 있고, '변호사가 아닌 이상 전공과 무관하게 처음부터 가르치며 차이는 이해 속도 정도'라는 8년차 담당자의 말도 있습니다.",
-        "nonmajor": "진입 장벽이 높은 편이지만 불가능하지는 않습니다. 민법·상법 기초를 수강하거나 법률 관련 자격(공인노무사, 법무사 등)으로 기본기를 증명하고, 계약·총무·인사처럼 법과 맞닿은 실무에서 경험을 쌓아 이동하는 길이 현실적입니다. 기업 법무는 회계·재무·생산·유통 전 과정의 실무 지식을 요구하므로 비법학 배경이 오히려 자산이 되기도 합니다.",
+        "nonmajor": "진입 장벽이 높은 편이지만 불가능하지는 않습니다. 민법·상법 기초를 수강하거나 법률 관련 자격(공인노무사, 법무사 등)으로 기본기를 증명하고, 계약·총무·인사처럼 법과 맞닿은 실무에서 경험을 쌓아 이동하는 길이 현실적입니다. 기업 법무는 회계·재무·생산·유통 전 과정의 실무 지식을 요구하므로 비법학 배경이 오히려 자산이 되기도 합니다. 사내변호사로 일하려면 로스쿨을 졸업하고 변호사시험에 합격해야 합니다. 로스쿨은 학부 전공과 관계없이 LEET 성적·학점·어학 등으로 입학하므로, 비법학 전공자도 로스쿨을 거쳐 사내변호사가 되는 길이 열려 있습니다.",
         "switch": "로스쿨 입시를 준비하다 유관 직무로 들어오는 경우가 가장 흔합니다. 총무·인사에서 준법·개인정보 업무로, 영업관리·관리부서에서 계약관리로 영역을 옮겨 법무로 가는 경로도 있습니다. 변호사는 로펌에서 기업법무를 경험한 뒤 사내로 옮기는 경로가 많습니다."
       },
       "path": [
@@ -4872,7 +5033,14 @@
         ],
         "years": "2019~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "soc"
+        ],
+        "prep": "비변호사 기업 법무는 민법·상법 기초와 공인노무사 같은 자격으로 들어갑니다. 사내변호사를 원하면 로스쿨(학부 전공 무관, LEET 응시)을 거쳐 변호사시험에 합격하는 길이 있습니다."
+      }
     },
     {
       "id": "esg",
@@ -5074,7 +5242,11 @@
         ],
         "years": "2021~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "public-admin",
@@ -5275,7 +5447,11 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "bank",
@@ -5471,7 +5647,11 @@
         ],
         "years": "2019~2024"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "corporate-finance",
@@ -5637,7 +5817,7 @@
         "AFPK·CFP (보조)",
         "부동산 개발·PF 구조 학습(건설사·신탁사 사례)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "커리어 Q&A · 은행 RM의 업무와 필요한 역량 (시중은행 현직자 답변 2건)",
@@ -5669,7 +5849,14 @@
         ],
         "years": "2022~2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "biz"
+        ],
+        "prep": "재무회계·기업금융을 공부하고 동종업계 인턴 경험을 만드는 것이 가장 중요합니다."
+      }
     },
     {
       "id": "risk-management",
@@ -5826,7 +6013,7 @@
         "투자자산운용사 (증권업 관심 어필)",
         "회계 기초·SQL 학습"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "sources": {
         "count": 4,
         "industries": [
@@ -5835,7 +6022,15 @@
         ],
         "years": "2024~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "biz",
+          "nat"
+        ],
+        "prep": "통계·금융공학 기초를 익히고 금융권에 대한 관심을 보여 주세요."
+      }
     },
     {
       "id": "underwriting",
@@ -5982,7 +6177,7 @@
         "보험계리사 (장기 확장)",
         "간호사 면허 (의적 심사)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "공공 직업정보(한국고용직업분류 0319) · 보험인수심사원(언더라이터)",
@@ -6020,7 +6215,17 @@
         ],
         "years": "2018~2026 (공개 자료)"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "biz",
+          "life",
+          "soc",
+          "nat"
+        ],
+        "prep": "보험 상품 구조와 손해율 개념을 익히고 보험심사역·손해사정사 같은 자격으로 관심을 보여 주세요."
+      }
     },
     {
       "id": "fund-ops",
@@ -6225,7 +6430,11 @@
         ],
         "years": "2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "real-estate",
@@ -6391,7 +6600,7 @@
         "부동산 개발·PF 구조 학습",
         "주택관리사 (임대주택 PM 지향 시)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "sources": {
         "count": 7,
         "industries": [
@@ -6408,7 +6617,15 @@
         ],
         "years": "2021~2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "civ",
+          "biz"
+        ],
+        "prep": "공인중개사·투자자산운용사로 부동산과 금융에 대한 관심을 엮어 지원동기를 만드세요."
+      }
     },
     {
       "id": "policy-finance",
@@ -6564,7 +6781,7 @@
         "TESAT·매경TEST (경제 상식)",
         "CPA·세무사 1차 (전문자격 전형 또는 수험 경험 어필)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "코멘토 직무 위키 · 신용보증기관 영업(보증) 현직자 직무소개 (2018)",
@@ -6607,7 +6824,14 @@
         ],
         "years": "2017~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "biz"
+        ],
+        "prep": "경영·경제 전공 필기를 5~6개월 이상 준비해야 합니다."
+      }
     },
     {
       "id": "forwarding",
@@ -6767,7 +6991,11 @@
         ],
         "years": "2021~2024"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "scm",
@@ -6933,7 +7161,11 @@
         ],
         "years": "2023~2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "md",
@@ -7107,7 +7339,11 @@
         ],
         "years": "2019~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "online-md",
@@ -7278,7 +7514,11 @@
         ],
         "years": "2021~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "it-planning",
@@ -7439,7 +7679,7 @@
         "SQLD·데이터 분석 기초",
         "ITIL 등 IT 서비스 관리 학습"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "요즘IT · SI 회사의 PM/PL은 무슨 일을 할까?",
@@ -7484,7 +7724,15 @@
         ],
         "years": "2019~2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "cs",
+          "ie"
+        ],
+        "prep": "학원이나 독학으로 IT 기초를 쌓으세요. 개발·운영으로 시작해 기획으로 넘어가는 길도 있습니다."
+      }
     },
     {
       "id": "service-planning",
@@ -7666,7 +7914,11 @@
         ],
         "years": "2020~2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "sw-dev",
@@ -7822,7 +8074,7 @@
         "AWS·클라우드 기초 자격(선택)",
         "Java·Spring 부트캠프 수료"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "요즘IT · SI 개발자의 현실과 변화(대형 SI사 24년차)",
@@ -7876,7 +8128,14 @@
         ],
         "years": "2024~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "cs"
+        ],
+        "prep": "국비지원 부트캠프(6개월 내외)와 정보처리기사로 중소 SI사부터 시작하는 경로가 흔합니다."
+      }
     },
     {
       "id": "backend",
@@ -8032,7 +8291,7 @@
         "AWS Certified(선택)",
         "코딩테스트 플랫폼 실력"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "이랜서 블로그 · 백엔드 개발자 현직자 인터뷰, 영어 문학도가 IT 개발자가 되기까지",
@@ -8071,7 +8330,14 @@
         ],
         "years": "2017~2026 (공개 자료)"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "cs"
+        ],
+        "prep": "6개월~1년 집중 학습, 실제 배포한 프로젝트 1~2개, 네트워크·DB·OS 기초가 필요합니다."
+      }
     },
     {
       "id": "frontend",
@@ -8227,7 +8493,7 @@
         "정보처리기사(선택)",
         "웹 접근성 관련 학습"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "브런치 · 프론트엔드 개발자의 하루 10 to 7",
@@ -8287,7 +8553,14 @@
         ],
         "years": "2023~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "cs"
+        ],
+        "prep": "부트캠프 수료 후 실제 배포한 프로젝트 포트폴리오가 필수입니다."
+      }
     },
     {
       "id": "data-analyst",
@@ -8452,7 +8725,7 @@
         "정보처리기사(선택)",
         "공모전·분석 프로젝트 경험"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "링커리어 대기업 현직자 멘토 칼럼 · 프로덕트 분석가의 하루",
@@ -8490,7 +8763,17 @@
         ],
         "years": "2023~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "nat",
+          "ie",
+          "biz",
+          "cs"
+        ],
+        "prep": "SQL을 먼저 익히고, 이전 경험의 도메인 지식을 분석 관점으로 연결하세요."
+      }
     },
     {
       "id": "data-engineer",
@@ -8674,7 +8957,14 @@
         ],
         "years": "2020~2025"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "cs",
+          "nat"
+        ]
+      }
     },
     {
       "id": "ai-engineer",
@@ -8878,7 +9168,15 @@
         ],
         "years": "2025"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "req",
+        "fields": [
+          "cs",
+          "nat"
+        ],
+        "degree": "ms"
+      }
     },
     {
       "id": "qa",
@@ -9078,7 +9376,11 @@
         ],
         "years": "2021~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "ux-designer",
@@ -9238,7 +9540,7 @@
         "GTQ·컴퓨터그래픽스운용기능사(참고용)",
         "UX 리서치·HCI 강의 수강"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "브런치(모비인사이드) · AI와 함께하는 디자이너의 하루는 어떻게 달라졌을까",
@@ -9287,7 +9589,14 @@
         ],
         "years": "2025~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "art"
+        ],
+        "prep": "Figma를 익히고 리서치부터 결과까지 담은 케이스 스터디 2~3개를 만드세요."
+      }
     },
     {
       "id": "cx",
@@ -9496,7 +9805,11 @@
         ],
         "years": "2022~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "open",
+        "fields": []
+      }
     },
     {
       "id": "rnd-chem",
@@ -9708,7 +10021,14 @@
         ],
         "years": "2016~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "req",
+        "fields": [
+          "chem"
+        ],
+        "degree": "ms"
+      }
     },
     {
       "id": "battery-dev",
@@ -9907,7 +10227,14 @@
         ],
         "years": "2017~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "chem"
+        ],
+        "degree": "msp"
+      }
     },
     {
       "id": "device-rnd",
@@ -10100,7 +10427,16 @@
         ],
         "years": "2018~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "ee",
+          "nat",
+          "chem"
+        ],
+        "degree": "ms"
+      }
     },
     {
       "id": "product-dev",
@@ -10289,7 +10625,15 @@
         ],
         "years": "2019~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "ee",
+          "mech"
+        ],
+        "degree": "msp"
+      }
     },
     {
       "id": "rnd-food",
@@ -10451,7 +10795,7 @@
         "HACCP 교육",
         "관능평가 교육"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "코멘토 · 식품 R&D 신제품 개발 진로 Q&A",
@@ -10494,7 +10838,14 @@
         ],
         "years": "2019~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "req",
+        "fields": [
+          "life"
+        ],
+        "degree": "msp"
+      }
     },
     {
       "id": "mechanical-design",
@@ -10701,7 +11052,13 @@
         ],
         "years": "2017~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "mech"
+        ]
+      }
     },
     {
       "id": "electrical-design",
@@ -10860,7 +11217,7 @@
         "PLC 국비 교육(HRD-Net·폴리텍)",
         "컴퓨터활용능력(하네스·BOM 엑셀)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "코멘토 직무 Q&A · 종합건설사 전기설계 신입이 맡는 업무",
@@ -10909,7 +11266,13 @@
         ],
         "years": "2021~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "ee"
+        ]
+      }
     },
     {
       "id": "circuit-design",
@@ -11102,7 +11465,15 @@
         ],
         "years": "2023~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "req",
+        "fields": [
+          "ee",
+          "cs"
+        ],
+        "degree": "ms"
+      }
     },
     {
       "id": "embedded-sw",
@@ -11259,7 +11630,7 @@
         "AUTOSAR·ISO 26262 교육",
         "ARM 아키텍처·RTOS 온라인 과정"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "코멘토 직무 Q&A · 펌웨어와 임베디드 HW 직무 구분(의공학·전자 복수전공생)",
@@ -11303,7 +11674,15 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "ee",
+          "cs"
+        ],
+        "prep": "C 언어와 MCU 프로젝트를 직접 해 보고, 디지털 회로·전자 기초를 함께 공부하세요."
+      }
     },
     {
       "id": "robotics-automation",
@@ -11507,7 +11886,16 @@
         ],
         "years": "2016~2026 (공개 자료)"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "ee",
+          "mech",
+          "cs"
+        ],
+        "degree": "msp"
+      }
     },
     {
       "id": "plant-design",
@@ -11704,7 +12092,13 @@
         ],
         "years": "2022~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "chem"
+        ]
+      }
     },
     {
       "id": "production-mgmt",
@@ -11878,7 +12272,7 @@
         "6시그마 GB/BB",
         "CPIM(APICS)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "코멘토 직무 Q&A · 완성차 생산관리 업무 범위 (트러블슈팅·공정개선 포함 여부)",
@@ -11912,7 +12306,17 @@
         ],
         "years": "2022~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "ie",
+          "mech",
+          "chem",
+          "ee"
+        ],
+        "prep": "ERP 정보관리사·품질경영기사 같은 자격과 공정 교육으로 직무 이해도를 보여 주세요. 기사 응시 자격은 큐넷에서 확인하세요."
+      }
     },
     {
       "id": "production-tech",
@@ -12134,7 +12538,16 @@
         ],
         "years": "2021~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "req",
+        "fields": [
+          "mech",
+          "ee",
+          "chem",
+          "ie"
+        ]
+      }
     },
     {
       "id": "process-tech",
@@ -12332,7 +12745,16 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "req",
+        "fields": [
+          "ee",
+          "chem",
+          "nat"
+        ],
+        "degree": "msp"
+      }
     },
     {
       "id": "semiconductor-pkg",
@@ -12484,7 +12906,16 @@
         ],
         "years": "2025~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "req",
+        "fields": [
+          "ee",
+          "chem",
+          "mech",
+          "nat"
+        ]
+      }
     },
     {
       "id": "equipment-eng",
@@ -12635,7 +13066,7 @@
         "설비보전기사",
         "반도체·디스플레이 장비 교육과정"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "반도체 대기업 공식 뉴스룸 · 파운드리 직무 인터뷰 3탄 공정설비편",
@@ -12678,7 +13109,16 @@
         ],
         "years": "2019~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "mech",
+          "ee",
+          "chem"
+        ],
+        "prep": "반도체·디스플레이 장비 교육과정과 기사 자격으로 장비사 CS부터 들어갈 수 있습니다."
+      }
     },
     {
       "id": "quality",
@@ -12853,7 +13293,7 @@
         "업종별 기사(식품기사·화학분석기사·일반기계기사)",
         "ADsP(QA 데이터 분석력 어필)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "자소설닷컴 블로그 · 직무 분석 2편: QA 품질보증·QC 품질관리 차이점과 자격증",
@@ -12889,7 +13329,18 @@
         ],
         "years": "2016~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "mech",
+          "ee",
+          "ie",
+          "chem",
+          "life"
+        ],
+        "prep": "품질경영기사, HACCP·ISO 교육으로 품질 기본기를 증명하세요."
+      }
     },
     {
       "id": "reliability",
@@ -13081,7 +13532,16 @@
         ],
         "years": "2023~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "ee",
+          "mech",
+          "chem",
+          "ie"
+        ]
+      }
     },
     {
       "id": "safety",
@@ -13226,7 +13686,7 @@
         "가스기사·소방설비기사",
         "기계안전기술사·산업안전지도사(장기)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "sources": {
         "count": 8,
         "industries": [
@@ -13236,7 +13696,16 @@
         ],
         "years": "2025~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "civ",
+          "chem",
+          "mech"
+        ],
+        "prep": "산업안전기사가 사실상 필수입니다. 응시 요건(관련 학과 또는 실무 경력)을 먼저 확인하세요."
+      }
     },
     {
       "id": "environment-eng",
@@ -13443,7 +13912,15 @@
         ],
         "years": "2022~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "civ",
+          "chem",
+          "life"
+        ]
+      }
     },
     {
       "id": "rnd-bio",
@@ -13638,7 +14115,15 @@
         ],
         "years": "2015~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "life",
+          "chem"
+        ],
+        "degree": "ms"
+      }
     },
     {
       "id": "bio-process",
@@ -13851,7 +14336,14 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "req",
+        "fields": [
+          "life",
+          "chem"
+        ]
+      }
     },
     {
       "id": "gmp-qa",
@@ -14040,7 +14532,14 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "life",
+          "chem"
+        ]
+      }
     },
     {
       "id": "clinical",
@@ -14186,7 +14685,7 @@
         "영어 성적(토익스피킹·OPIc)",
         "ACRP CCRA(국제 자격, 경력 후)"
       ],
-      "nonmajorOk": true,
+      "nonmajorOk": false,
       "webSources": [
         {
           "title": "임상시험 실무자 모임 블로그 · 시험준비(PSV 등) 시 CRA의 업무",
@@ -14224,7 +14723,14 @@
         ],
         "years": "2015~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "prep",
+        "fields": [
+          "life"
+        ],
+        "prep": "CRA 교육 이수와 GCP 자격을 갖추고, 의학 용어와 영어를 미리 보강하세요."
+      }
     },
     {
       "id": "ra",
@@ -14413,7 +14919,14 @@
         ],
         "years": "2017~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "life",
+          "chem"
+        ]
+      }
     },
     {
       "id": "construction-mgmt",
@@ -14612,7 +15125,15 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "req",
+        "fields": [
+          "civ",
+          "ee",
+          "mech"
+        ]
+      }
     },
     {
       "id": "civil-eng",
@@ -14813,7 +15334,13 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "civ"
+        ]
+      }
     },
     {
       "id": "plant-epc",
@@ -15019,7 +15546,16 @@
         ],
         "years": "2020~2026"
       },
-      "draftOnly": true
+      "draftOnly": true,
+      "major": {
+        "level": "req",
+        "fields": [
+          "mech",
+          "chem",
+          "ee",
+          "civ"
+        ]
+      }
     },
     {
       "id": "equipment-pm",
@@ -15226,7 +15762,15 @@
         ],
         "years": "2024~2026"
       },
-      "draftOnly": false
+      "draftOnly": false,
+      "major": {
+        "level": "req",
+        "fields": [
+          "mech",
+          "ie",
+          "ee"
+        ]
+      }
     }
   ]
 }

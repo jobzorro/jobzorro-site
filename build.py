@@ -106,6 +106,7 @@ def slim_job(j: dict) -> dict:
         "salary": {"junior": j["salary"]["junior"]},                             # 카드 하단 신입 연봉대
         "ai": {"level": j["ai"]["level"]},                                       # 카드 AI 배지 · 'AI 영향 낮은 직무만' 필터
         "nonmajorOk": j["nonmajorOk"], "draftOnly": j["draftOnly"],
+        "mj": j["mj"], "mf": (j.get("major") or {}).get("fields", []), "deg": (j.get("major") or {}).get("degree", ""),   # 전공 단계 표시 · 진단 매칭
         "sources": {"count": s.get("count", 0), "public": s.get("public", 0), "industries": s.get("industries", [])},  # 근거 배지·필터·업종 검색
         "gc": _gc(j["group"]),                                                   # 웹 카드 그림 색 [액센트, 배경] (공유 이미지는 카톡 전용)
     }
@@ -442,6 +443,27 @@ def fab_html(root: str) -> str:
     return ''   # 하단 고정 상담 버튼은 2026-10-18 사용자 요청으로 제거
 
 
+DEG_LABEL = {"ms": "석사 기본", "msp": "석사 우대"}
+
+
+def attach_major(data: dict) -> None:
+    """jobs.json 의 major(level·fields·degree·prep)를 화면용 문구 mj 로 만든다. nonmajorOk 는 level 에서 파생(전공 무관 = True).
+    level: open 전공 무관 / prep 관련 전공 우대(비전공은 준비 필요) / req 관련 전공 필수"""
+    mf = data["meta"].get("majorFields", {})
+    for j in data["jobs"]:
+        m = j.get("major") or {"level": "open" if j.get("nonmajorOk") else "req", "fields": []}
+        lv, fl = m["level"], m.get("fields", [])
+        if lv not in ("open", "prep", "req"):
+            raise SystemExit(f"[{j['id']}] major.level 은 open / prep / req 중 하나여야 합니다: {lv!r}")
+        short = "·".join(mf[f]["short"] for f in fl[:2] if f in mf) + (" 등" if len(fl) > 2 else "")
+        names = ", ".join(mf[f]["name"] for f in fl if f in mf)
+        card = {"open": "전공 무관", "prep": f"{short} 우대", "req": f"{short} 전공"}[lv]
+        box = {"open": "무관", "prep": "우대", "req": "필수"}[lv]
+        deg = DEG_LABEL.get(m.get("degree", ""), "")
+        j["mj"] = {"lv": lv, "card": card, "box": box, "names": names, "deg": deg, "prep": m.get("prep", "")}
+        j["nonmajorOk"] = lv == "open"
+
+
 def check_jobs(data: dict) -> None:
     required = ["id", "name", "en", "group", "tagline", "summary", "dayInLife", "tasks", "skills", "tools",
                 "entry", "path", "salary", "transitions", "interview", "fit", "realities", "prep", "voices",
@@ -466,6 +488,7 @@ def check_jobs(data: dict) -> None:
 def build(out_dir: Path, with_news: bool) -> None:
     data = json.loads((BASE / "data" / "jobs.json").read_text(encoding="utf-8"))
     check_jobs(data)
+    attach_major(data)
     global GLOSS
     GLOSS = json.loads((BASE / "data" / "glossary.json").read_text(encoding="utf-8")) if (BASE / "data" / "glossary.json").exists() else {"terms": []}
     attach_terms(data, GLOSS)
@@ -607,10 +630,10 @@ def build(out_dir: Path, with_news: bool) -> None:
     (out_dir / "privacy" / "index.html").write_text(pv, encoding="utf-8")
     print(f"개인정보처리방침 -> {out_dir / 'privacy' / 'index.html'}")
 
-    # 직무 비교 / 3문항 진단
+    # 직무 비교 / 직무 진단
     for tpl_name, sub, title, desc in (
         ("template_compare.html", "compare", "직무 비교 — 두 직무를 나란히 | 취업조로 직무사전", "연봉대·필요 역량·들어가는 길·커리어 패스를 한 화면에서 비교합니다."),
-        ("template_fit.html", "fit", "3문항 직무 진단 — 나에게 맞는 직무 5개 | 취업조로 직무사전", "전공 계열·성향·원하는 것 세 가지 답으로 직무 79개 중 지금 상황에 맞는 직무를 골라 드립니다."),
+        ("template_fit.html", "fit", "1분 직무 진단 — 내 전공·학력으로 갈 수 있는 직무 | 취업조로 직무사전", "학력·전공 계열·성향·원하는 것으로 직무 79개 중 바로 지원할 직무와 준비하면 열리는 직무를 골라 드립니다."),
     ):
         tp = BASE / tpl_name
         if not tp.exists():

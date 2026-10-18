@@ -331,7 +331,10 @@ select option { background:var(--paper); color:var(--ink); }
       { key: 'entry.major', label: '전공자', type: 'area', req: true },
       { key: 'entry.nonmajor', label: '비전공자', type: 'area', req: true },
       { key: 'entry.switch', label: '직무 전환', type: 'area', req: true },
-      { key: 'nonmajorOk', label: '비전공 가능', type: 'bool', text: '비전공자도 도전할 만한 직무로 표시' },
+      { key: 'major.level', label: '전공 단계', type: 'text', help: 'open = 전공 무관 / prep = 관련 전공 우대(비전공은 준비 필요) / req = 관련 전공 필수. 필터의 "전공 무관"은 open 만 보여줍니다.' },
+      { key: 'major.fields', label: '관련 전공 계열 코드', type: 'lines', help: 'biz 상경, hum 인문, soc 사회·법, art 디자인, nat 수학·통계, life 생명·보건, chem 화학·화공, mech 기계, ee 전기·전자, cs 컴퓨터, ie 산업공학, civ 건축·토목. 한 줄에 하나.' },
+      { key: 'major.degree', label: '학위', type: 'text', help: 'ms = 석사 기본, msp = 석사 우대, 비워 두면 학사로 충분' },
+      { key: 'major.prep', label: '비전공이 준비할 것 (prep 일 때)', type: 'area' },
       { key: 'path', label: '커리어 경로', type: 'path', help: '한 줄에 하나씩 "단계 | 설명". 예: 주니어 (0~3년) | 첫 거래처를 맡아…' }
     ]],
     ['연봉 · 전환', [
