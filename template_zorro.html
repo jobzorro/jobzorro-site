@@ -139,8 +139,9 @@
 .z-outro .big text { font-family:var(--display); font-weight:900; font-size:150px; letter-spacing:-.04em; }
 .z-outro .big .o { fill:none; stroke:var(--ink); stroke-width:2; }
 .z-outro .big .s { fill:var(--ink); }
-.z-outro .row { display:flex; flex-wrap:wrap; gap:16px 40px; align-items:center; justify-content:space-between; margin-top:28px; }
-.z-outro p { max-width:46ch; font-size:15px; color:var(--ink-soft); line-height:1.7; }
+.z-outro .row { display:flex; flex-wrap:wrap; gap:16px 40px; align-items:center; justify-content:flex-start; margin-top:22px; }
+.z-outro p { max-width:none; font-size:15px; color:var(--ink-soft); line-height:1.7; white-space:nowrap; }
+@media (max-width:640px) { .z-outro p { white-space:normal; } }
 .zf { margin-top:0; }
 
 @media (max-width: 960px) {
@@ -355,7 +356,6 @@
     <svg class="big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg>
     <div class="row">
       <p>TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.</p>
-      <a class="z-btn solid" href="/*__APPLY__*/">무료 상담 신청하기 →</a>
     </div>
   </section>
 </main>

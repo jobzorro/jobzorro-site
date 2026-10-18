@@ -200,7 +200,7 @@ SHARED_CSS = """
   --shadow:none; --shadow-lift:0 18px 50px rgba(0,0,0,.5); }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word; padding-bottom:96px; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word; padding-bottom:24px; }
 h1,h2,h3 { margin:0; font-weight:900; letter-spacing:-.04em; text-wrap:balance; }
 p { margin:0; } ul,ol { margin:0; padding:0; list-style:none; } a { color:inherit; }
 button { font:inherit; color:inherit; background:none; border:0; cursor:pointer; }
@@ -248,7 +248,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 # 취업뉴스 페이지에 끼울 때 덮어쓰는 스타일 (보조 글자 선명하게). 제호는 build_site.py 의 .hero-top 이 그린다
 FIT_JS = "<script>(function(){function fit(el){el.style.fontSize='';var s=parseFloat(getComputedStyle(el).fontSize),m=22,g=40;var av=Math.min(el.clientWidth,el.parentElement?el.parentElement.clientWidth:el.clientWidth,document.documentElement.clientWidth-32);while(el.scrollWidth>av+1&&s>m&&g-->0){s-=2;el.style.fontSize=s+'px';}}function all(){document.querySelectorAll('.hero h1').forEach(fit);}all();window.addEventListener('resize',all);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(all);})();</script>"
 TICKER_HTML = '<div class="v2-ticker" aria-hidden="true"><div class="v2-ticker-track"><span>Career Briefing</span><span>매일 아침 고른 채용 · 이직 · 기업 · 고용 뉴스</span><span>Zorro의 한마디</span><span>주간 · 월간 랭킹</span><span>지난 지면 아카이브</span><span>Team Zorro</span><span>Career Briefing</span><span>매일 아침 고른 채용 · 이직 · 기업 · 고용 뉴스</span><span>Zorro의 한마디</span><span>주간 · 월간 랭킹</span><span>지난 지면 아카이브</span><span>Team Zorro</span></div></div>'
-OUTRO_HTML = '<section class="v2-outro"><svg class="big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg><div class="row"><p>오늘 뉴스가 내 커리어에 어떤 뜻인지 모르겠다면, 취업조로 컨설턴트가 1:1로 정리해 드립니다. 상담은 무료입니다.</p><a class="go" href="../apply/index.html">무료 상담 신청하기 →</a></div></section>'
+OUTRO_HTML = '<section class="v2-outro"><svg class="big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg><div class="row"><p>TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.</p></div></section>'
 
 NEWS_MASTHEAD_CSS = """
 /* v2 톤: 황동 포인트 → 검정, 명조 → Archivo, 라임은 배경 강조에만 */
@@ -361,8 +361,9 @@ NEWS_MASTHEAD_CSS = """
 .v2-outro .big text { font-family:"Archivo",sans-serif; font-weight:900; font-size:150px; letter-spacing:-.04em; }
 .v2-outro .big .o { fill:none; stroke:var(--ink); stroke-width:2; }
 .v2-outro .big .s { fill:var(--ink); }
-.v2-outro .row { display:flex; flex-wrap:wrap; gap:16px 40px; align-items:center; justify-content:space-between; margin-top:28px; }
-.v2-outro p { max-width:46ch; font-size:15px; color:var(--ink-soft); line-height:1.7; margin:0; }
+.v2-outro .row { display:flex; flex-wrap:wrap; gap:16px 40px; align-items:center; justify-content:flex-start; margin-top:22px; }
+.v2-outro p { max-width:none; font-size:15px; color:var(--ink-soft); line-height:1.7; margin:0; white-space:nowrap; }
+@media (max-width:640px) { .v2-outro p { white-space:normal; } }
 .v2-outro a.go { display:inline-flex; align-items:center; gap:10px; font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:16px 26px; border-radius:999px; background:var(--ink); color:var(--paper); text-decoration:none; }
 .v2-outro a.go:hover { background:#c6ff3d; color:#0b0b0b; }
 .zf { margin-top:0 !important; }
@@ -387,7 +388,7 @@ def nav_html(active: str, root: str, logo: str) -> str:
     return (
         theme + f'<header class="zn"><div class="zn-in"><a class="zn-logo" href="{root}index.html"><img src="{logo_src(logo, root)}" alt="TEAM ZORRO"></a>'
         f'<nav class="zn-tabs" aria-label="사이트 탭">{tabs}</nav>'
-        f'<a class="zn-cta" href="{root}{APPLY}">무료 상담 신청하기 ⚡</a></div></header>'
+        f'</div></header>'
     )
 
 
@@ -405,7 +406,7 @@ def footer_html(root: str, logo: str, note: str) -> str:
 
 
 def fab_html(root: str) -> str:
-    return f'<div class="zfab"><a href="{root}{APPLY}">무료 상담 신청하기 ⚡</a></div>'
+    return ''   # 하단 고정 상담 버튼은 2026-10-18 사용자 요청으로 제거
 
 
 def check_jobs(data: dict) -> None:
@@ -633,7 +634,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         ) + NEWS_MASTHEAD_CSS + "</style>"
         # 공용 푸터·하단 버튼이 쓰는 토큰 중 뉴스 페이지에 없는 것들을 뉴스 토큰에 연결
         nav_css = nav_css.replace("</style>", ":root { --font: var(--sans); --fill: var(--ink); --fillfg: var(--paper); --ink-soft: var(--ink-soft); }\n"
-                                  "body { padding-bottom: 96px; }\n.zfab a { box-shadow: 0 8px 24px var(--shadow-lift); }\n</style>")
+                                  "body { padding-bottom: 24px; }\n</style>")
         inject = nav_css + nav_html("news/index.html", "../", logo_nav)
         n = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + inject, n, count=1)
         n = n.replace('<section class="hero">', TICKER_HTML + '<section class="hero">', 1)

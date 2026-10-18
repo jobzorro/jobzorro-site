@@ -265,7 +265,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     src += f'<br><span class="upd">작성 취업조로(조현빈) · 최종 수정 {e(updated)}</span></div>'
     h.append(src)
     h.append('<div class="cta"><h2>이 직무로 취업·이직을 고민 중이라면</h2><p>지금 경력에서 이 직무로 가는 가장 빠른 경로를 취업조로 컨설턴트가 1:1로 정리해 드립니다.</p>'
-             f'<div class="cta-row"><a class="btn primary" href="../../apply/index.html#{e(j["id"])}">무료 상담 신청하기 ⚡</a><a class="btn ghost" href="../../#{e(j["id"])}">직무사전에서 다른 직무 보기</a></div></div>')
+             f'<div class="cta-row"><a class="btn ghost" href="../../#{e(j["id"])}">직무사전에서 다른 직무 보기</a><a class="btn primary" href="../../apply/index.html#{e(j["id"])}">무료 상담 신청하기 ⚡</a></div></div>')
     return "\n".join(h)
 
 
