@@ -178,7 +178,8 @@
         '<div class="pay">' + fmt(j.salary.junior[0]) + '~' + fmt(j.salary.junior[1]) + '만원<small>신입 추정</small></div></a>';
     }).join('');
     $('resSub').textContent = LABEL[ans.track] + ' · ' + LABEL[ans.orient] + ' · ' + LABEL[ans.want] + ' 기준';
-    $('ctaApply').href = '../apply/index.html#' + out[0].j.id;
+    try { localStorage.setItem('jz_fit', JSON.stringify({ at: Date.now(), answers: [LABEL[ans.track], LABEL[ans.orient], LABEL[ans.want]], jobs: out.map(function (r) { return r.j.id; }), names: out.map(function (r) { return r.j.name; }) })); } catch (e) {}
+    $('ctaApply').href = '../apply/index.html#fit';
     $('res').hidden = false; $('res').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 })();

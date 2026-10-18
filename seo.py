@@ -220,6 +220,9 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
                  f'<div class="skill-row"><span class="k">하드 스킬</span>{tags(j["skills"]["hard"], "big accent")}</div>'
                  f'<div class="skill-row"><span class="k">소프트 스킬</span>{tags(j["skills"]["soft"], "big")}</div>'
                  f'<div class="skill-row"><span class="k">자주 쓰는 도구</span>{tags(j["tools"], "big")}</div>'))
+    if j.get("terms"):
+        h.append(sec(f"필수 용어 TOP {len(j['terms'])}", '<ol class="terms">' + "".join(
+            f'<li><div class="tt"><b>{e(t["t"])}</b>' + (f'<span class="te">{e(t["e"])}</span>' if t.get("e") else "") + f'</div><p>{e(t["s"])}</p></li>' for t in j["terms"]) + '</ol>', "현직자 말에 자주 나오는 단어"))
     h.append(sec("들어가는 길", '<div class="entry">'
                  f'<div><span class="k">관련 전공·신입</span><span class="v">{e(j["entry"]["major"])}</span></div>'
                  f'<div><span class="k">비전공{"<span class=\"ok\">가능</span>" if j.get("nonmajorOk") else ""}</span><span class="v">{e(j["entry"]["nonmajor"])}</span></div>'
@@ -235,7 +238,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     trans = [t for t in j.get("transitions", []) if t in by_id]
     if trans:
         h.append(sec("옮겨갈 수 있는 직무", '<div class="trans">' + "".join(f'<a class="btn-link" href="../{t}/">{e(by_id[t]["name"])} →</a>' for t in trans) + "</div>"))
-    h.append(sec("면접에서 꼭 묻는 것", li(j["interview"], "mark")))
+    h.append(sec("면접에서 꼭 묻는 것", li(j["interview"], "mark") + f'<a class="more" href="../../interview/#{e(j["id"])}">이 직무 단골 면접 질문 5개 →</a>'))
     if j.get("prep"):
         h.append(sec("현직자가 권하는 준비", li(j["prep"])))
     h.append(sec("이런 분에게 맞습니다", li(j["fit"])))
@@ -290,6 +293,12 @@ JOB_PAGE_CSS = """
 .jobpage .faq p { padding: 0 0 14px; color: var(--fg-soft); font-size: 14px; line-height: 1.7; }
 .jobpage .src .upd { color: var(--muted); }
 .jobpage .cta h2 { font-size: 19px; color: inherit; font-family: var(--font); }
+.jobpage .terms { counter-reset: tm; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.jobpage .terms li { counter-increment: tm; position: relative; padding: 14px 16px 14px 46px; border: 1px solid var(--line); border-radius: 12px; }
+.jobpage .terms li::before { content: counter(tm, decimal-leading-zero); position: absolute; left: 14px; top: 14px; font-family: var(--display); font-weight: 900; font-size: 14px; color: var(--ink); }
+.jobpage .terms .tt b { font-family: var(--display); font-size: 16px; font-weight: 900; color: var(--ink); background: linear-gradient(transparent 62%, var(--mark) 62%); }
+.jobpage .terms .te { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.jobpage .terms p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--fg-soft); }
 """
 
 
@@ -389,7 +398,7 @@ def write_sitemap(out_dir: Path, base: str, entries) -> None:
 
 def write_robots(out_dir: Path, base: str) -> None:
     bots = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-User", "anthropic-ai", "PerplexityBot", "Google-Extended", "Googlebot", "Bingbot", "Yeti", "Daum", "NaverBot"]
-    txt = "# 취업조로 직무사전 — 검색엔진과 AI 검색(생성형 엔진) 모두 허용\nUser-agent: *\nAllow: /\n\n" + "".join(f"User-agent: {b}\nAllow: /\n\n" for b in bots)
+    txt = "# 취업조로 직무사전 — 검색엔진과 AI 검색(생성형 엔진) 모두 허용\nUser-agent: *\nAllow: /\nDisallow: /admin/\n\n" + "".join(f"User-agent: {b}\nAllow: /\n\n" for b in bots)
     txt += f"Sitemap: {abs_url(base, 'sitemap.xml')}\n"
     (out_dir / "robots.txt").write_text(txt, encoding="utf-8")
 
@@ -414,7 +423,7 @@ def write_llms(out_dir: Path, base: str, jobs, groups, updated: str) -> None:
     ]
     for j in jobs:
         lines.append(f"- [{j['name']}]({abs_url(base, f'jobs/{j['id']}/')}): {gname.get(j['group'], '')} · {j['tagline']} · 신입 {rng(j['salary']['junior'])}만원")
-    lines += ["", "## 도구", f"- [직무 비교]({abs_url(base, 'compare/')}): 두 직무의 연봉·역량·경로를 나란히", f"- [3문항 직무 진단]({abs_url(base, 'fit/')}): 전공·성향·원하는 것으로 직무 5개 추천",
+    lines += ["", "## 도구", f"- [직무 비교]({abs_url(base, 'compare/')}): 두 직무의 연봉·역량·경로를 나란히", f"- [3문항 직무 진단]({abs_url(base, 'fit/')}): 전공·성향·원하는 것으로 직무 5개 추천", f"- [직무별 면접 질문]({abs_url(base, 'interview/')})",
               "", "## 기타", f"- [개인정보처리방침]({abs_url(base, 'privacy/')})", f"- [sitemap]({abs_url(base, 'sitemap.xml')})"]
     (out_dir / "llms.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -427,3 +436,312 @@ def verify_tags() -> str:
     if VERIFY.get("naver"):
         out.append(f'<meta name="naver-site-verification" content="{e(VERIFY["naver"])}">')
     return "".join(out)
+
+
+def render_interview_body(j: dict, by_id: dict, group_name: str, updated: str) -> str:
+    """직무별 면접 질문·준비법 페이지 본문 (/interview/<id>/)"""
+    def li(arr, cls=""):
+        return f'<ol class="iq {cls}">' + "".join(f"<li>{e(s)}</li>" for s in arr) + "</ol>"
+    h = []
+    h.append(f'<nav class="crumbs" aria-label="경로"><a href="../../">직무사전</a> › <a href="../">면접 질문</a> › <span>{e(j["name"])}</span></nav>')
+    h.append(f'<div class="kick">Interview · {e(group_name)}</div>')
+    h.append(f'<h1 class="name">{e(j["name"])} 면접 질문과 준비법</h1>')
+    h.append(f'<p class="summary"><b>{e(j["name"])}</b> 면접에서 현직자와 컨설턴트가 꼽은 단골 질문·평가 포인트와 준비 방법입니다. {e(j["tagline"])}을(를) 뽑는 자리라는 걸 기억하세요.</p>')
+    h.append(f'<section class="sec"><div class="sec-h"><h2>면접에서 꼭 묻는 것</h2><span class="hint">{len(j["interview"])}개</span></div>{li(j["interview"], "mark")}</section>')
+    if j.get("prep"):
+        h.append(f'<section class="sec"><div class="sec-h"><h2>현직자가 권하는 준비</h2></div>{li(j["prep"])}</section>')
+    if j.get("realities"):
+        h.append(f'<section class="sec"><div class="sec-h"><h2>답변에 녹이면 좋은 현실 이해</h2><span class="hint">면접관은 이걸 아는지 봅니다</span></div>{li(j["realities"][:4])}</section>')
+    h.append(f'<section class="sec"><div class="sec-h"><h2>이런 사람을 뽑습니다</h2></div>{li(j["fit"])}</section>')
+    sk = j["skills"]
+    h.append('<section class="sec"><div class="sec-h"><h2>답변에 쓸 역량 키워드</h2></div><ul class="tags big">' + "".join(f"<li>{e(x)}</li>" for x in sk["hard"] + sk["soft"]) + '</ul></section>')
+    trans = [t for t in j.get("transitions", []) if t in by_id]
+    if trans:
+        h.append('<section class="sec"><div class="sec-h"><h2>같이 보면 좋은 직무 면접</h2></div><div class="trans">' + "".join(f'<a class="btn-link" href="../{t}/">{e(by_id[t]["name"])} 면접 →</a>' for t in trans) + '</div></section>')
+    h.append(f'<p class="src">작성 취업조로(조현빈) · 근거 현직자 인터뷰 {j["sources"].get("count", 0)}건 + 공개 자료 {j["sources"].get("public", 0)}건 · 최종 수정 {e(updated)} · <a href="../../jobs/{e(j["id"])}/">{e(j["name"])} 직무 설명 전체 보기 →</a></p>')
+    h.append(f'<div class="cta"><h2>면접 스크립트, 혼자 만들기 어렵다면</h2><p>지원 회사에 맞춘 면접 스크립트를 취업조로 컨설턴트가 1:1로 같이 만듭니다.</p><div class="cta-row"><a class="btn ghost" href="../../jobs/{e(j["id"])}/">직무 설명 보기</a><a class="btn primary" href="../../apply/index.html#{e(j["id"])}">무료 상담 신청하기 ⚡</a></div></div>')
+    return "\n".join(h)
+
+
+def render_interview_index(jobs, groups) -> str:
+    gname = {g["id"]: g["name"] for g in groups}
+    by_g = {}
+    for j in jobs:
+        by_g.setdefault(j["group"], []).append(j)
+    h = ['<nav class="crumbs" aria-label="경로"><a href="../">직무사전</a> › <span>면접 질문</span></nav>',
+         '<div class="kick">Interview · 직무별 면접 질문</div>',
+         f'<h1 class="name">직무별 면접 질문 {len(jobs)}개 직무</h1>',
+         '<p class="summary">현직자 인터뷰에서 나온 직무별 단골 면접 질문, 평가 포인트, 준비 방법을 모았습니다. 지원할 직무를 골라 보세요.</p>']
+    for g in groups:
+        js = by_g.get(g["id"])
+        if not js:
+            continue
+        h.append(f'<section class="sec"><div class="sec-h"><h2>{e(g["name"])}</h2><span class="hint">{len(js)}개</span></div><div class="trans">' +
+                 "".join(f'<a class="btn-link" href="{e(j["id"])}/">{e(j["name"])} <small>{len(j["interview"])}문항</small></a>' for j in js) + '</div></section>')
+    return "\n".join(h)
+
+
+INTERVIEW_CSS = """
+.jobpage .kick { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.jobpage ol.iq { counter-reset: q; display: grid; gap: 0; border-top: 1px solid var(--ink); }
+.jobpage ol.iq li { counter-increment: q; position: relative; padding: 14px 0 14px 44px; border-bottom: 1px solid var(--line); color: var(--fg-soft); line-height: 1.65; font-size: 15px; }
+.jobpage ol.iq li::before { content: counter(q, decimal-leading-zero); position: absolute; left: 0; top: 14px; font-family: var(--display); font-weight: 900; font-size: 15px; color: var(--ink); }
+.jobpage ol.iq.mark li::before { color: var(--ink); background: linear-gradient(transparent 60%, var(--mark) 60%); }
+.jobpage .trans small { color: var(--muted); margin-left: 4px; font-size: 12px; }
+.jobpage .src a { color: var(--ink); }
+"""
+
+
+GLOSS_CSS = """
+.gl { border-bottom: 1px dotted var(--muted); cursor: help; position: relative; }
+.gl:hover, .gl:focus { border-bottom-color: var(--ink); outline: none; }
+.gl-tip { position: fixed; z-index: 60; max-width: 300px; padding: 10px 12px; border-radius: 10px; background: var(--inkbg); color: var(--inkfg); font-size: 13px; line-height: 1.55; box-shadow: 0 10px 30px rgba(0,0,0,.25); pointer-events: none; }
+.gl-tip b { display: block; font-size: 12px; letter-spacing: .02em; margin-bottom: 3px; color: var(--acc); }
+.gl-tip a { pointer-events: auto; }
+"""
+
+# 본문 텍스트에서 용어를 찾아 점선 밑줄 + 툴팁. 한 묶음(섹션) 안에서는 같은 용어를 처음 한 번만 표시
+GLOSS_JS = r"""<script>
+(function () {
+  var el = document.getElementById('gloss-data'); if (!el) return;
+  var G = JSON.parse(el.textContent), LIST = [];
+  G.forEach(function (t) { [t.t].concat(t.a || []).forEach(function (w) { LIST.push({ w: w, t: t }); }); });
+  LIST.sort(function (a, b) { return b.w.length - a.w.length; });
+  function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  var RE = new RegExp(LIST.map(function (x) { return esc(x.w); }).join('|'), 'g');
+  var BY = {}; LIST.forEach(function (x) { BY[x.w] = x.t; });
+  function ascii(w) { return /^[A-Za-z0-9&\/+. -]+$/.test(w); }
+  function okBoundary(text, i, w) {
+    if (!ascii(w)) return true;
+    var a = text.charAt(i - 1), b = text.charAt(i + w.length);
+    return !/[A-Za-z0-9]/.test(a) && !/[A-Za-z0-9]/.test(b);
+  }
+  var SKIP = /^(A|BUTTON|SCRIPT|STYLE|ABBR|H1|H2|H3|INPUT|TEXTAREA|SELECT)$/;
+  function wrap(root) {
+    var sections = root.querySelectorAll('.sec, .summary, .day, .tagline, .quick');
+    (sections.length ? sections : [root]).forEach(function (sec) {
+      var seen = {}, walker = document.createTreeWalker(sec, NodeFilter.SHOW_TEXT, null), nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      nodes.forEach(function (n) {
+        for (var p = n.parentNode; p && p !== sec; p = p.parentNode) if (SKIP.test(p.nodeName) || (p.classList && p.classList.contains('gl'))) return;
+        var text = n.nodeValue, m, last = 0, frag = null; RE.lastIndex = 0;
+        while ((m = RE.exec(text))) {
+          var t = BY[m[0]]; if (!t || seen[t.t] || !okBoundary(text, m.index, m[0])) continue;
+          seen[t.t] = 1; frag = frag || document.createDocumentFragment();
+          frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+          var ab = document.createElement('abbr'); ab.className = 'gl'; ab.tabIndex = 0; ab.textContent = m[0];
+          ab.setAttribute('data-t', t.t); ab.setAttribute('data-s', t.s); if (t.e) ab.setAttribute('data-e', t.e);
+          frag.appendChild(ab); last = m.index + m[0].length;
+        }
+        if (frag) { frag.appendChild(document.createTextNode(text.slice(last))); n.parentNode.replaceChild(frag, n); }
+      });
+    });
+  }
+  var tip = null;
+  function show(ab) {
+    hide(); tip = document.createElement('div'); tip.className = 'gl-tip';
+    var b = document.createElement('b'); b.textContent = ab.getAttribute('data-t') + (ab.getAttribute('data-e') ? ' · ' + ab.getAttribute('data-e') : '');
+    tip.appendChild(b); tip.appendChild(document.createTextNode(ab.getAttribute('data-s'))); document.body.appendChild(tip);
+    var r = ab.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    var x = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)), y = r.bottom + 8; if (y + h > window.innerHeight - 8) y = r.top - h - 8;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function hide() { if (tip) { tip.remove(); tip = null; } }
+  document.addEventListener('mouseover', function (e) { var a = e.target.closest && e.target.closest('.gl'); if (a) show(a); });
+  document.addEventListener('mouseout', function (e) { if (e.target.closest && e.target.closest('.gl')) hide(); });
+  document.addEventListener('focusin', function (e) { if (e.target.classList && e.target.classList.contains('gl')) show(e.target); });
+  document.addEventListener('focusout', hide);
+  document.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('.gl'); if (a) { e.stopPropagation(); show(a); } else hide(); }, true);
+  window.addEventListener('scroll', hide, { passive: true });
+  window.glossify = wrap;
+  var d = document.querySelector('.jobpage .d-body'); if (d) wrap(d);
+  var db = document.getElementById('dBody');
+  if (db) new MutationObserver(function () { if (db.querySelector('.sec') && !db.getAttribute('data-gl')) { db.setAttribute('data-gl', '1'); wrap(db); } }).observe(db, { childList: true });
+})();
+</script>"""
+
+
+def gloss_compact(gl: dict, job_id: str = None) -> list:
+    out = []
+    for t in gl["terms"]:
+        if job_id and job_id not in t.get("jobs", []):
+            continue
+        out.append({"t": t["term"], "a": t.get("aliases", []), "s": t["short"], "e": t.get("en", "")})
+    return out
+
+
+def render_glossary(gl: dict, by_id: dict, gname: dict) -> str:
+    import unicodedata
+    def key(t):
+        w = t["term"]; c = w[0]
+        if "가" <= c <= "힣":
+            cho = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"[(ord(c) - 0xAC00) // 588]
+            cho = {"ㄲ": "ㄱ", "ㄸ": "ㄷ", "ㅃ": "ㅂ", "ㅆ": "ㅅ", "ㅉ": "ㅈ"}.get(cho, cho)
+            return (0, cho, w)
+        return (1, c.upper() if c.isalpha() else "#", w.upper())
+    terms = sorted(gl["terms"], key=key)
+    heads = []
+    for t in terms:
+        k = key(t)[1]
+        if not heads or heads[-1][0] != k:
+            heads.append((k, []))
+        heads[-1][1].append(t)
+    h = ['<nav class="crumbs" aria-label="경로"><a href="../">직무사전</a> › <span>용어 사전</span></nav>',
+         '<div class="kick">Glossary · 직무 용어 사전</div>',
+         f'<h1 class="name">직무 용어 사전 {len(terms)}개</h1>',
+         '<p class="summary">직무 설명과 현직자 인터뷰에 나오는 약어·업계 용어·채용 용어를 한 줄로 풀었습니다. 직무 설명 본문에서도 점선 밑줄이 그어진 단어에 마우스를 올리면 같은 풀이가 뜹니다.</p>',
+         '<div class="gl-jump">' + "".join(f'<a href="#g-{e(k)}">{e(k)}</a>' for k, _ in heads) + '</div>']
+    for k, ts in heads:
+        h.append(f'<section class="sec gl-sec" id="g-{e(k)}"><div class="sec-h"><h2>{e(k)}</h2><span class="hint">{len(ts)}</span></div><dl class="gl-list">')
+        for t in ts:
+            jobs = [j for j in t.get("jobs", []) if j in by_id][:4]
+            h.append(f'<div id="t-{e(t["term"])}"><dt>{e(t["term"])}' + (f' <span class="en">{e(t["en"])}</span>' if t.get("en") else "") +
+                     (f' <span class="al">= {e(", ".join(t["aliases"]))}</span>' if t.get("aliases") else "") + f'</dt><dd>{e(t["short"])}' +
+                     ('<span class="jl">' + "".join(f'<a href="../jobs/{e(j)}/">{e(by_id[j]["name"])}</a>' for j in jobs) + '</span>' if jobs else "") + '</dd></div>')
+        h.append('</dl></section>')
+    return "\n".join(h)
+
+
+GLOSSARY_CSS = """
+.gl-jump { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 20px; position: sticky; top: calc(54px + env(safe-area-inset-top,0px)); background: var(--paper); padding: 10px 0; z-index: 5; border-bottom: 1px solid var(--line); }
+.gl-jump a { font-family: var(--display); font-weight: 700; font-size: 13px; min-width: 34px; text-align: center; padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: 999px; text-decoration: none; color: var(--ink); }
+.gl-jump a:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.gl-sec { scroll-margin-top: 120px; }
+.gl-list { margin: 0; display: grid; border-top: 1px solid var(--ink); }
+.gl-list > div { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 8px 20px; padding: 14px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 120px; }
+.gl-list dt { font-family: var(--display); font-weight: 900; font-size: 17px; letter-spacing: -.02em; color: var(--ink); }
+.gl-list dt .en { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--muted); margin-top: 2px; }
+.gl-list dt .al { display: block; font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--muted); }
+.gl-list dd { margin: 0; color: var(--fg-soft); line-height: 1.65; font-size: 14.5px; }
+.gl-list .jl { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.gl-list .jl a { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-strong); text-decoration: none; color: var(--ink-soft); }
+.gl-list .jl a:hover { background: var(--ink); color: var(--paper); }
+@media (max-width: 640px) { .gl-list > div { grid-template-columns: 1fr; } }
+"""
+
+
+def render_interview_all(common: dict, iq: dict, jobs, groups) -> str:
+    """면접 질문 한 페이지: 공통 TOP 10(큰 카드) → 11~20(한 줄씩) → 직군별·직무별 단골 질문 5개. 질문마다 의도 칩."""
+    def chips(arr):
+        return '<ul class="intent">' + "".join(f"<li>{e(x)}</li>" for x in arr) + "</ul>"
+    def stars(n):
+        return f'<span class="freq" title="빈출도 {n}/5">' + "●" * n + '<i>' + "●" * (5 - n) + '</i></span>' if n else ""
+    top = common["top"]
+    by_g = {}
+    for j in jobs:
+        if iq.get(j["id"]):
+            by_g.setdefault(j["group"], []).append(j)
+    n_job_q = sum(len(iq.get(j["id"], [])) for j in jobs)
+    h = []
+    h.append('<section class="iq-hero"><div class="kick"><i></i>Interview · 면접 질문</div>'
+             f'<h1>면접에서 진짜 묻는 질문, <span class="mark">한 화면에.</span></h1>'
+             f'<p>공통 빈출 TOP 20과 직무별 단골 질문 {n_job_q}개입니다. 질문 아래 동그란 칩은 면접관이 그 질문으로 확인하려는 것, 곧 답변에 꼭 담아야 할 것입니다. 위에서 직무를 고르면 그 직무 질문으로 바로 이동합니다.</p></section>')
+    # 직무 선택 바
+    opts = "".join(f'<optgroup label="{e(g["name"])}">' + "".join(f'<option value="j-{e(j["id"])}">{e(j["name"])}</option>' for j in by_g[g["id"]]) + '</optgroup>' for g in groups if by_g.get(g["id"]))
+    gchips = "".join(f'<a href="#g-{e(g["id"])}">{e(g["name"])}</a>' for g in groups if by_g.get(g["id"]))
+    h.append('<nav class="iq-bar" aria-label="질문 이동"><div class="iq-bar-in">'
+             '<a class="top" href="#common">공통 TOP 20</a>'
+             f'<select id="iqJob" aria-label="직무 선택"><option value="">직무를 고르면 바로 이동 ▾</option>{opts}</select>'
+             f'<div class="iq-g">{gchips}</div></div></nav>')
+    # 공통 TOP 10
+    h.append('<section class="iq-sec" id="common"><div class="iq-head"><span class="num">01</span><h2>공통 빈출 <b>TOP 10</b></h2><p>직무와 상관없이 거의 모든 면접에서 나옵니다. 빈출도는 취업조로 면접 질문 모음집 기준입니다.</p></div><ol class="iq-top">')
+    for k, t in enumerate(top[:10], 1):
+        h.append(f'<li><div class="no">{k:02d}</div><div class="body"><div class="meta"><span class="tp">{e(t["topic"])}</span>{stars(t.get("f", 0))}</div><p class="q">{e(t["q"])}</p>{chips(t["i"])}</div></li>')
+    h.append('</ol>')
+    h.append('<div class="iq-head sub"><h3>11 — 20</h3></div><ol class="iq-list" start="11">')
+    for k, t in enumerate(top[10:20], 11):
+        h.append(f'<li><span class="no">{k}</span><div class="body"><p class="q">{e(t["q"])}</p>{chips(t["i"])}</div><span class="tp">{e(t["topic"])}</span></li>')
+    h.append('</ol></section>')
+    # 직무별
+    h.append('<section class="iq-sec" id="jobs"><div class="iq-head"><span class="num">02</span><h2>직무별 <b>단골 질문 5</b></h2><p>현직자 인터뷰와 컨설팅 사례에서 그 직무라서 나오는 질문만 골랐습니다.</p></div>')
+    for g in groups:
+        js = by_g.get(g["id"])
+        if not js:
+            continue
+        h.append(f'<div class="iq-group" id="g-{e(g["id"])}"><h3>{e(g["name"])}</h3>')
+        for j in js:
+            h.append(f'<article class="iq-job" id="j-{e(j["id"])}"><header><h4>{e(j["name"])}</h4><span class="en">{e(j.get("en", ""))}</span>'
+                     f'<a class="go" href="../jobs/{e(j["id"])}/">직무 설명 →</a></header><ol class="iq-list">')
+            for k, q in enumerate(iq[j["id"]][:5], 1):
+                h.append(f'<li><span class="no">{k}</span><div class="body"><p class="q">{e(q["q"])}</p>{chips(q.get("i", []))}</div></li>')
+            h.append('</ol></article>')
+        h.append('</div>')
+    h.append('</section>')
+    h.append('<div class="cta"><h2>답변 스크립트, 혼자 만들기 어렵다면</h2><p>지원 회사와 직무에 맞춘 면접 스크립트를 취업조로 컨설턴트가 1:1로 같이 만듭니다.</p><div class="cta-row"><a class="btn primary" href="../apply/index.html">무료 상담 신청하기 ⚡</a></div></div>')
+    return "\n".join(h)
+
+
+INTERVIEW_ALL_CSS = """
+.iqpage { max-width: 1120px; margin: 0 auto; padding: 0 20px 20px; }
+.iq-hero { padding: clamp(20px, 2.6vw, 36px) 0 26px; border-bottom: 1px solid var(--line); }
+.iq-hero .kick { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; gap: 12px; align-items: center; }
+.iq-hero .kick i { width: 8px; height: 8px; border-radius: 50%; background: var(--acc); display: inline-block; }
+.iq-hero h1 { margin-top: 12px; font-family: var(--display); font-weight: 900; font-size: clamp(32px, 5vw, 64px); line-height: 1.02; letter-spacing: -.05em; }
+.iq-hero h1 .mark { background: linear-gradient(transparent 68%, var(--mark) 68%); }
+.iq-hero p { margin-top: 16px; max-width: 66ch; color: var(--ink-soft); font-size: 15.5px; line-height: 1.7; }
+.iq-bar { position: sticky; top: calc(54px + env(safe-area-inset-top,0px)); z-index: 15; background: var(--paper); border-bottom: 1px solid var(--line); margin: 0 -20px; padding: 0 20px; }
+.iq-bar-in { display: flex; align-items: center; gap: 10px; padding: 10px 0; min-width: 0; }
+.iq-bar .top { flex: none; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 999px; background: var(--ink); color: var(--paper); text-decoration: none; }
+.iq-bar select { flex: none; font: inherit; font-size: 14px; font-weight: 700; padding: 9px 14px; border-radius: 999px; border: 1.5px solid var(--ink); background: var(--acc); color: var(--acc-ink); max-width: 46vw; }
+.iq-g { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1 1 auto; }
+.iq-g::-webkit-scrollbar { display: none; }
+.iq-g a { flex: none; font-size: 13px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink-soft); text-decoration: none; white-space: nowrap; }
+.iq-g a:hover { border-color: var(--ink); color: var(--ink); }
+.iq-sec, .iq-group, .iq-job { scroll-margin-top: 130px; }
+.iq-sec { padding-top: 56px; }
+.iq-head { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 6px 20px; align-items: end; border-bottom: 1px solid var(--ink); padding-bottom: 14px; margin-bottom: 8px; }
+.iq-head .num { grid-row: span 2; font-family: var(--display); font-weight: 900; font-size: clamp(40px, 5vw, 72px); line-height: .9; color: transparent; -webkit-text-stroke: 1.5px var(--ink); }
+.iq-head h2 { font-family: var(--display); font-weight: 900; font-size: clamp(26px, 3.4vw, 44px); letter-spacing: -.045em; line-height: 1; }
+.iq-head h2 b { background: linear-gradient(transparent 68%, var(--mark) 68%); }
+.iq-head p { font-size: 14px; color: var(--muted); }
+.iq-head.sub { grid-template-columns: 1fr; border-bottom: 0; margin: 34px 0 0; padding: 0; }
+.iq-head.sub h3 { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: .14em; color: var(--muted); }
+.intent { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.intent li { display: inline-flex; align-items: center; width: auto; height: auto; line-height: 1.3; white-space: nowrap; font-size: 12.5px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: var(--mist); border: 1px solid var(--line); color: var(--ink-soft); }
+.iq-top { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 28px; }
+.iq-top > li { display: grid; grid-template-columns: 64px minmax(0,1fr); gap: 14px; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.iq-top .no { font-family: var(--display); font-weight: 900; font-size: 44px; line-height: .9; letter-spacing: -.05em; color: var(--ink); }
+.iq-top .q { margin-top: 6px; font-family: var(--display); font-size: 19px; font-weight: 900; letter-spacing: -.03em; line-height: 1.35; color: var(--ink); }
+.iq-top .meta { display: flex; gap: 10px; align-items: center; }
+.tp { font-family: var(--display); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+.freq { font-size: 9px; letter-spacing: 2px; color: var(--ink); } .freq i { font-style: normal; color: var(--line-strong); }
+.iq-list > li { display: grid; grid-template-columns: 40px minmax(0,1fr) auto; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.iq-list .no { font-family: var(--display); font-weight: 900; font-size: 18px; color: var(--ink); padding-top: 1px; }
+.iq-list .q { font-size: 16px; font-weight: 700; line-height: 1.5; color: var(--ink); }
+.iq-list .tp { padding-top: 4px; white-space: nowrap; }
+.iq-group { padding-top: 34px; }
+.iq-group > h3 { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-bottom: 6px; }
+.iq-job { margin-top: 14px; padding: 6px 0 4px; border-top: 1px solid var(--ink); transition: background .6s; }
+.iq-job.flash { background: var(--mist); }
+.iq-job header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 14px 0 4px; }
+.iq-job h4 { font-family: var(--display); font-size: 24px; font-weight: 900; letter-spacing: -.04em; }
+.iq-job .en { font-family: var(--display); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.iq-job .go { margin-left: auto; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--ink); text-decoration: none; border-bottom: 2px solid var(--ink); }
+.iqpage .cta { margin-top: 48px; }
+@media (max-width: 760px) {
+  .iq-top { grid-template-columns: 1fr; }
+  .iq-top > li { grid-template-columns: 48px minmax(0,1fr); }
+  .iq-top .no { font-size: 34px; }
+  .iq-list > li { grid-template-columns: 30px minmax(0,1fr); }
+  .iq-list .tp { display: none; }
+  .iq-bar-in { flex-wrap: wrap; }
+  .iq-bar select { max-width: 100%; flex: 1 1 auto; }
+  .iq-g { flex-basis: 100%; }
+}
+"""
+
+INTERVIEW_ALL_JS = """<script>
+(function () {
+  function go(id, smooth) {
+    var el = document.getElementById(id); if (!el) return;
+    var bar = document.querySelector('.iq-bar'), off = 54 + (bar ? bar.offsetHeight : 0) + 12;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - off, behavior: smooth ? 'smooth' : 'auto' });
+    if (el.classList.contains('iq-job')) { el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 1400); }
+  }
+  var sel = document.getElementById('iqJob');
+  sel.addEventListener('change', function () { if (!this.value) return; history.replaceState(null, '', '#' + this.value.slice(2)); go(this.value, true); });
+  // 직무사전에서 #직무id 로 들어오면 그 직무로
+  var h = location.hash.slice(1);
+  if (h) { var id = document.getElementById('j-' + h) ? 'j-' + h : h; setTimeout(function () { go(id, false); if (id.indexOf('j-') === 0) sel.value = id; }, 60); }
+})();
+</script>"""

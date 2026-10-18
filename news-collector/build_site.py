@@ -36,6 +36,16 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 
 BASE_DIR = Path(__file__).parent
 
+# AI 직무 태그 → 직무사전 직무 페이지 (사이트 루트 기준 상대 경로, "" 는 직무사전 첫 페이지)
+# 뉴스 index(site/news/) 는 "../", 날짜별 지면(site/news/<날짜>/) 은 "../../" 를 앞에 붙인다
+JOB_TAG_LINKS = {
+    "인사": "jobs/hr/", "영업": "jobs/b2b-sales/", "재무": "jobs/finance/", "기획": "jobs/strategy/",
+    "PM": "jobs/service-planning/", "MD": "jobs/md/", "구매": "jobs/purchasing/",
+    "마케팅": "jobs/brand-marketer/", "개발": "jobs/sw-dev/", "디자인": "jobs/ux-designer/",
+    "생산": "jobs/production-mgmt/", "연구": "jobs/product-dev/", "품질": "jobs/quality/",
+    "건설": "jobs/construction-mgmt/", "공공": "jobs/public-admin/", "공통": "",
+}
+
 
 def e(text):
     """HTML 이스케이프 (None 안전)"""
@@ -465,6 +475,9 @@ a { color: inherit; text-decoration: none; }
 .tag { cursor: pointer; position: relative; z-index: 1; background: transparent; font: inherit; }
 .tag:hover { border-color: var(--brass); color: var(--brass); }
 .news-tags .tag { font-family: var(--mono); font-size: 9.5px; }
+/* 직무 태그 링크: 카드 전체 링크(::after) 위에 올려야 태그 클릭이 원문으로 새지 않는다 */
+a.job-tag { position: relative; z-index: 1; text-decoration: none; cursor: pointer; transition: background .15s ease, color .15s ease; }
+a.job-tag:hover, a.job-tag:focus-visible { background: #c6ff3d; color: #0b0b0b; }
 
 /* ---------------- 키워드 추이 차트 ---------------- */
 
@@ -643,6 +656,7 @@ STATIC_SCRIPT = r"""
 SCRIPT = r"""
 (function () {
   var D = window.__BRIEF__;
+  var JOB_TAG_LINKS = __JOB_TAG_LINKS__;  // build_site.py 의 JOB_TAG_LINKS (직무 태그 → 직무사전)
   var view = document.getElementById('view');
   var segs = Array.prototype.slice.call(document.querySelectorAll('.seg'));
   var nav = document.getElementById('datenav');
@@ -825,7 +839,15 @@ SCRIPT = r"""
     }
     if (article.ai_tags && article.ai_tags.length) {
       var jobs = el('div', 'news-tags job-tags');
-      article.ai_tags.forEach(function (t) { jobs.appendChild(el('span', 'job-tag', '#' + t)); });
+      article.ai_tags.forEach(function (t) {
+        // 매핑된 직무는 직무사전 페이지로 (index 는 site/news/ 라 루트가 ../)
+        if (!Object.prototype.hasOwnProperty.call(JOB_TAG_LINKS, t)) { jobs.appendChild(el('span', 'job-tag', '#' + t)); return; }
+        var ja = el('a', 'job-tag', '#' + t);
+        ja.href = '../' + JOB_TAG_LINKS[t];
+        ja.title = '직무사전에서 ' + t + ' 직무 보기';
+        ja.addEventListener('click', function (ev) { ev.stopPropagation(); });
+        jobs.appendChild(ja);
+      });
       body.appendChild(jobs);
     }
 
@@ -1368,6 +1390,8 @@ SCRIPT = r"""
   paint();
 })();
 """
+# 직무 태그 링크 표를 JS 상수로 박는다 (한글은 그대로, </script> 깨짐 방지로 < 는 이스케이프)
+SCRIPT = SCRIPT.replace("__JOB_TAG_LINKS__", json.dumps(JOB_TAG_LINKS, ensure_ascii=False).replace("<", "\\u003c"))
 
 
 # ============================================================
@@ -1512,6 +1536,14 @@ def static_tail():
 """
 
 
+def job_tag_html(tag, root):
+    """직무 태그 한 개. 매핑된 직무면 직무사전 페이지 링크, 아니면 글자만 (root: 사이트 루트까지의 상대 경로)"""
+    if tag in JOB_TAG_LINKS:
+        return (f'<a class="job-tag" href="{e(root + JOB_TAG_LINKS[tag])}" '
+                f'title="직무사전에서 {e(tag)} 직무 보기">#{e(tag)}</a>')
+    return f'<span class="job-tag">#{e(tag)}</span>'
+
+
 def render_static_article(a, numeral):
     """날짜별 정적 지면의 기사 카드. 클라이언트 newsCard() 와 같은 구조·같은 class 를 쓴다 (썸네일 자리는 로마숫자)."""
     parts = [f'    <article class="news-card">',
@@ -1536,7 +1568,7 @@ def render_static_article(a, numeral):
         parts.append(f'        <p class="news-why"><b>{label}</b>{e(a["ai_why"])}</p>')
     if a.get("ai_tags"):
         parts.append('        <div class="news-tags job-tags">'
-                     + "".join(f'<span class="job-tag">#{e(t)}</span>' for t in a["ai_tags"]) + '</div>')
+                     + "".join(job_tag_html(t, "../../") for t in a["ai_tags"]) + '</div>')
     if a.get("keywords"):
         # 키워드는 오늘 지면의 검색(#q=)으로 보낸다
         parts.append('        <div class="news-tags">'
@@ -1740,7 +1772,7 @@ def render(today, archive):
     payload, _ = split_payload(today, archive)
     # '<' 를 이스케이프해 기사 제목에 </script> 가 섞여도 스크립트 블록이 깨지지 않게 한다
     data_json = (json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-                 .replace("<", "\u003c"))
+                 .replace("<", "\\u003c"))
 
     if "data:image" in data_json:
         # externalize_thumbs() 가 먼저 돌았다면 나올 수 없다. 남아 있으면 페이지가 다시 MB 단위로 불어나므로 바로 알린다

@@ -167,6 +167,30 @@ def attach_news(data: dict, days: int = 45) -> None:
     print(f"관련 뉴스: 직무 {n}개에 최근 {days}일 기사 연결")
 
 
+def attach_terms(data: dict, gl: dict, top: int = 5) -> None:
+    """직무마다 본문에 가장 많이 나오는 용어 TOP 5 를 j["terms"] 로 붙인다 (상세 패널·직무 페이지 '필수 용어')."""
+    SKIP_KEYS = {"id", "en", "group", "sources", "webSources", "news", "terms", "og"}
+    def text_of(o):
+        if isinstance(o, dict): return " ".join(text_of(v) for k, v in o.items() if k not in SKIP_KEYS)
+        if isinstance(o, list): return " ".join(text_of(v) for v in o)
+        return o if isinstance(o, str) else ""
+    def count(txt, w):
+        if re.fullmatch(r"[A-Za-z0-9&/+. -]+", w):
+            return len(re.findall(r"(?<![A-Za-z0-9])" + re.escape(w) + r"(?![A-Za-z0-9])", txt))
+        return txt.count(w)
+    n = 0
+    for j in data["jobs"]:
+        txt = text_of(j); scored = []
+        for t in gl.get("terms", []):
+            c = sum(count(txt, w) for w in [t["term"]] + t.get("aliases", []))
+            if c:
+                scored.append((c + (2 if j["id"] in t.get("jobs", []) else 0), t))
+        scored.sort(key=lambda x: -x[0])
+        j["terms"] = [{"t": t["term"], "e": t.get("en", ""), "s": t["short"]} for _, t in scored[:top]]
+        n += bool(j["terms"])
+    print(f"필수 용어: 직무 {n}개에 TOP {top} 연결")
+
+
 def _og_path(jid: str) -> str:
     import hashlib
     p = BASE / "assets" / "share" / "jobs" / f"{jid}.png"
@@ -176,6 +200,8 @@ def _og_path(jid: str) -> str:
 
 
 # 모든 페이지가 공유하는 CSS: 색 토큰, 기본 글꼴, 상단 탭(zn-), 푸터(zf-), 하단 상담 버튼(zfab), 배지·버튼
+GLOSS = {"terms": []}
+
 SHARED_CSS = """
 /* 취업뉴스(커리어브리핑)와 같은 편집 디자인 톤: 먹색 글자, 종이색 바탕, 황동색 포인트, 라벨·숫자는 모노 글꼴, 다크모드 지원 */
 :root { --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#7a7a7a; --faint:#a3a3a3; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d;
@@ -433,6 +459,9 @@ def check_jobs(data: dict) -> None:
 def build(out_dir: Path, with_news: bool) -> None:
     data = json.loads((BASE / "data" / "jobs.json").read_text(encoding="utf-8"))
     check_jobs(data)
+    global GLOSS
+    GLOSS = json.loads((BASE / "data" / "glossary.json").read_text(encoding="utf-8")) if (BASE / "data" / "glossary.json").exists() else {"terms": []}
+    attach_terms(data, GLOSS)
     attach_news(data)
     # 로고는 data URI 로 페이지마다 박지 않고 site/assets/ 의 파일을 참조한다 (nav_html/footer_html 이 root 를 붙여 깊이별 상대경로로 만든다)
     logo = "assets/jobzorro_logo.png"            # 푸터: 취업조로
@@ -470,7 +499,8 @@ def build(out_dir: Path, with_news: bool) -> None:
                 .replace("/*__NAV__*/", nav_html("index.html", "", logo_nav))
                 .replace("/*__FOOTER__*/", footer_html("", logo, disclaimer))
                 .replace("/*__FAB__*/", fab_html(""))
-                .replace("/*__JOBS_JSON__*/", payload))
+                .replace("/*__JOBS_JSON__*/", payload)
+)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(html, encoding="utf-8")
     print(f"직무사전: 직무 {n_jobs}개 · 직군 {len(data['meta']['groups'])}개 · 근거 {n_evidence}건 -> {out_dir / 'index.html'} "
@@ -609,12 +639,41 @@ def build(out_dir: Path, with_news: bool) -> None:
                 + head + "\n" + fonts + "<style>" + css + "</style>\n</head>\n<body>\n"
                 + nav_html("index.html", "../../", logo_nav)
                 + "<main class=\"jobpage\"><div class=\"d-body\">" + body + "</div></main>\n"
-                + footer_html("../../", logo, disclaimer) + fab_html("../../") + "\n</body>\n</html>\n")
+                + footer_html("../../", logo, disclaimer) + fab_html("../../")
+                + "\n</body>\n</html>\n")
         d = out_dir / "jobs" / jid
         d.mkdir(parents=True, exist_ok=True)
         (d / "index.html").write_text(page, encoding="utf-8")
         entries.append((f"jobs/{jid}/", updated, "weekly", "0.8"))
     # sitemap.xml 은 뉴스 블록이 날짜별 지면 URL 을 entries 에 더한 뒤, 맨 끝에서 쓴다
+    ic = json.loads((BASE / "data" / "interview_common.json").read_text(encoding="utf-8"))
+    iqp = BASE / "data" / "interview_jobs.json"
+    iqj = json.loads(iqp.read_text(encoding="utf-8")) if iqp.exists() else {}
+    ix = seo.seo_head(base_url, "면접 질문 모음 — 공통 빈출 TOP 20 + 79개 직무 단골 질문 | 취업조로 직무사전",
+                      "자기소개·지원동기부터 직무별 단골 질문까지. 질문마다 면접관이 확인하려는 의도를 함께 정리했습니다. 직무를 고르면 그 직무 질문으로 바로 이동합니다.",
+                      "interview/", og_main, [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("면접 질문", "interview/")]),
+                      {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": t["q"], "acceptedAnswer": {"@type": "Answer", "text": "면접관이 확인하려는 것: " + ", ".join(t["i"])}} for t in ic["top"]]}])
+    (out_dir / "interview").mkdir(exist_ok=True)
+    import shutil as _sh2
+    for d in (out_dir / "interview").iterdir():
+        if d.is_dir(): _sh2.rmtree(d)
+    (out_dir / "interview" / "index.html").write_text(
+        "<!doctype html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n"
+        + ix + "\n" + fonts + "<style>" + css + seo.INTERVIEW_ALL_CSS + "</style>\n</head>\n<body>\n" + nav_html("index.html", "../", logo_nav)
+        + "<main class=\"iqpage jobpage\">" + seo.render_interview_all(ic, iqj, data["jobs"], data["meta"]["groups"]) + "</main>\n"
+        + footer_html("../", logo, "") + seo.INTERVIEW_ALL_JS + "\n</body>\n</html>\n", encoding="utf-8")
+    print(f"면접 질문 페이지: 공통 {len(ic['top'])}개 + 직무 {len(iqj)}개 -> {out_dir / 'interview' / 'index.html'}")
+    entries.append(("interview/", updated, "weekly", "0.8"))
+    # 관리 화면 (검색 제외)
+    ap = BASE / "template_admin.html"
+    if ap.exists():
+        adm = (ap.read_text(encoding="utf-8")
+               .replace("/*__SEO__*/", seo.seo_head(base_url, "직무사전 관리 — 취업조로", "운영자 전용", "admin/", og_main, [], noindex=True))
+               .replace("/*__SHARED_CSS__*/", SHARED_CSS)
+               .replace("/*__NAV__*/", nav_html("index.html", "../", logo_nav))
+               .replace("/*__FOOTER__*/", footer_html("../", logo, "")))
+        (out_dir / "admin").mkdir(exist_ok=True)
+        (out_dir / "admin" / "index.html").write_text(adm, encoding="utf-8")
     seo.write_robots(out_dir, base_url)
     seo.write_llms(out_dir, base_url, data["jobs"], data["meta"]["groups"], updated)
     print(f"직무 페이지 {len(data['jobs'])}개 + robots.txt · llms.txt -> {out_dir / 'jobs'}")
