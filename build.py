@@ -76,7 +76,7 @@ GROUP_COLORS = {
     "construction":     ((210, 180, 140), (18, 15, 11)),   # 샌드
 }
 
-TABS = [("index.html", "직무사전"), ("news/index.html", "취업뉴스"), ("zorro/index.html", "취업조로와 함께하기")]
+TABS = [("index.html", "직무사전"), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
 APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 신청하기" 버튼이 여기로 간다)
 
 
@@ -107,7 +107,7 @@ def slim_job(j: dict) -> dict:
         "ai": {"level": j["ai"]["level"]},                                       # 카드 AI 배지 · 'AI 영향 낮은 직무만' 필터
         "nonmajorOk": j["nonmajorOk"], "draftOnly": j["draftOnly"],
         "sources": {"count": s.get("count", 0), "public": s.get("public", 0), "industries": s.get("industries", [])},  # 근거 배지·필터·업종 검색
-        "og": _og_path(j["id"]),                                                 # v2 카드 썸네일(공유 이미지, 해시 파일명)
+        "gc": _gc(j["group"]),                                                   # 웹 카드 그림 색 [액센트, 배경] (공유 이미지는 카톡 전용)
     }
 
 
@@ -191,6 +191,12 @@ def attach_terms(data: dict, gl: dict, top: int = 5) -> None:
     print(f"필수 용어: 직무 {n}개에 TOP {top} 연결")
 
 
+def _gc(group: str) -> list:
+    """직군 색을 CSS hex 두 개로. 웹 카드는 글자 없는 색 그림을 쓰고, 글자 들어간 1200x630 이미지는 공유 미리보기에만 쓴다."""
+    ac, bg = GROUP_COLORS.get(group, ((198, 255, 61), (11, 11, 11)))
+    return ["#%02x%02x%02x" % ac, "#%02x%02x%02x" % bg]
+
+
 def _og_path(jid: str) -> str:
     import hashlib
     p = BASE / "assets" / "share" / "jobs" / f"{jid}.png"
@@ -250,6 +256,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zn-tabs a { display:flex; align-items:center; padding:0 12px; font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); text-decoration:none; white-space:nowrap; border-bottom:2px solid transparent; }
 .zn-tabs a:hover { color:var(--ink); }
 .zn-tabs a.on { color:var(--ink); border-bottom-color:var(--ink); }
+@media (max-width:480px) { .zn-tabs .lg { display:none; } }
 .zn-cta { margin-left:auto; flex:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--paper); background:var(--ink); border-radius:999px; padding:9px 15px; text-decoration:none; white-space:nowrap; }
 .zn-cta:hover { background:var(--acc); color:var(--acc-ink); }
 @media (max-width:640px) { .zn-cta { display:none; } .zn-in { gap:10px; padding:0 14px; } .zn-logo img { height:19px; } .zn-tabs a { padding:0 9px; font-size:13px; } }

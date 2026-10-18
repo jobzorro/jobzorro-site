@@ -196,7 +196,9 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     ev = src_n + pub_n
     h = []
     h.append(f'<nav class="crumbs" aria-label="경로"><a href="../../">직무사전</a> › <a href="../../?group={e(j["group"])}">{e(group_name)}</a> › <span>{e(j["name"])}</span></nav>')
-    h.append(f'<h1 class="name">{e(j["name"])}</h1><p class="en">{e(j.get("en", ""))}</p>')
+    _m = re.match(r"^(.*?)\s*\(([^()]+)\)\s*$", j["name"])
+    _nm = f'{e(_m.group(1))}<span class="paren">{e(_m.group(2))}</span>' if _m else e(j["name"])
+    h.append(f'<h1 class="name">{_nm}</h1><p class="en">{e(j.get("en", ""))}</p>')
     h.append(f'<p class="tagline">{e(j["tagline"])}</p>')
     # GEO: 첫 문단은 "정의" 문장으로 시작해 AI 요약이 바로 집어가게
     h.append(f'<p class="summary"><b>{e(j["name"])}</b>는 {e(j["tagline"])}입니다. {e(j["summary"])}</p>')
@@ -641,7 +643,7 @@ def render_interview_all(common: dict, iq: dict, jobs, groups) -> str:
     gchips = "".join(f'<a href="#g-{e(g["id"])}">{e(g["name"])}</a>' for g in groups if by_g.get(g["id"]))
     h.append('<nav class="iq-bar" aria-label="질문 이동"><div class="iq-bar-in">'
              '<a class="top" href="#common">공통 TOP 20</a>'
-             f'<select id="iqJob" aria-label="직무 선택"><option value="">직무를 고르면 바로 이동 ▾</option>{opts}</select>'
+             f'<select id="iqJob" aria-label="직무 선택"><option value="">직무를 고르면 바로 이동</option>{opts}</select>'
              f'<div class="iq-g">{gchips}</div></div></nav>')
     # 공통 TOP 10
     h.append('<section class="iq-sec" id="common"><div class="iq-head"><span class="num">01</span><h2>공통 빈출 <b>TOP 10</b></h2><p>직무와 상관없이 거의 모든 면접에서 나옵니다. 빈출도는 취업조로 면접 질문 모음집 기준입니다.</p></div><ol class="iq-top">')
@@ -724,9 +726,11 @@ INTERVIEW_ALL_CSS = """
   .iq-top .no { font-size: 34px; }
   .iq-list > li { grid-template-columns: 30px minmax(0,1fr); }
   .iq-list .tp { display: none; }
-  .iq-bar-in { flex-wrap: wrap; }
-  .iq-bar select { max-width: 100%; flex: 1 1 auto; }
-  .iq-g { flex-basis: 100%; }
+  .iq-bar-in { gap: 8px; padding: 8px 0; }
+  .iq-bar .top { font-size: 12px; padding: 9px 12px; }
+  .iq-bar select { max-width: none; flex: 1 1 auto; min-width: 0; font-size: 13.5px; padding: 9px 12px; }
+  .iq-g { display: none; }   /* 폰은 직군 칩 없이 한 줄: 직무 선택만으로 이동 */
+  .iq-sec, .iq-group, .iq-job { scroll-margin-top: 120px; }
 }
 """
 

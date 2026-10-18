@@ -299,7 +299,8 @@ body.v2 .card .en { font-family:var(--v-display); font-size:11.5px; letter-spaci
 body.v2 .card .tagline { margin-top:10px; font-size:14.5px; color:var(--v-ink-2); }
 body.v2 .card .tags { margin-top:10px; }
 body.v2 .card .tags li { font-size:12px; padding:3px 9px; border-radius:999px; background:transparent; border:1px solid var(--v-line-2); color:var(--v-ink-2); }
-body.v2 .card .card-foot { margin-top:14px; padding-top:12px; border-top:1px solid var(--v-line); font-family:var(--v-display); font-size:12px; letter-spacing:.04em; }
+body.v2 .card .tags { margin-bottom:14px; }
+body.v2 .card .card-foot { margin-top:auto; padding-top:12px; border-top:1px solid var(--v-line); font-family:var(--v-display); font-size:12px; letter-spacing:.04em; }
 body.v2 .card .card-foot .pay b { font-size:14px; }
 body.v2 .badge { font-family:var(--v-display); font-size:11px; letter-spacing:.06em; text-transform:uppercase; border-radius:999px; background:var(--v-ink); color:var(--v-bg); padding:4px 9px; }
 body.v2 .badge.gray { background:transparent; color:var(--v-muted); border:1px solid var(--v-line-2); }
@@ -349,6 +350,42 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
   body.v2 .card h3 { font-size:22px; }
   .v2-sec { flex-direction:column; align-items:start; }
 }
+
+/* ── 2026-10-18 사용자 관점 개선 ── */
+/* #1 웹 카드 그림 (글자 없는 직군 색 + 영문 키워드) */
+body.v2 .card .art { position:relative; aspect-ratio:1200/470; overflow:hidden; border-radius:10px; background:var(--gb); color:var(--ga); }
+body.v2 .card .art .mask { position:absolute; right:-6%; top:50%; width:52%; transform:translateY(-50%) rotate(-8deg); fill:var(--ga); opacity:.16; transition:transform .5s cubic-bezier(.2,.7,.2,1), opacity .3s; }
+body.v2 .card:hover .art .mask, body.v2 .card:focus-visible .art .mask { transform:translateY(-50%) rotate(-2deg) scale(1.06); opacity:.26; }
+body.v2 .card .art .gn { position:absolute; left:18px; top:14px; font-size:11.5px; font-weight:700; letter-spacing:.06em; opacity:.75; }
+body.v2 .card .art .kw { position:absolute; left:18px; right:18px; bottom:14px; font-family:var(--v-display); font-weight:900; font-size:clamp(22px, 2.3vw, 34px); line-height:.95; letter-spacing:-.035em; text-transform:uppercase; word-break:keep-all; }
+/* #3 제목 괄호는 작은 줄로 */
+.paren { display:block; margin-top:4px; font-size:.56em; font-weight:700; letter-spacing:-.02em; line-height:1.25; color:var(--v-muted, var(--muted)); }
+.d-body h2.name, body.v2 .card h3 { word-break:keep-all; }
+/* #4 상세 설명 접기 (폰) */
+.sum-wrap { margin-top:18px; }
+.sum-wrap .summary { margin-top:0; }
+.sum-wrap .more { display:none; }
+@media (max-width:720px) {
+  .sum-wrap.clamp .summary { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .sum-wrap.clamp .more { display:inline-flex; margin-top:8px; font-size:13.5px; font-weight:700; color:var(--v-ink, var(--black)); border-bottom:2px solid var(--v-acc, #c6ff3d); padding:2px 0; background:none; }
+  .d-body .quick { margin-top:16px; }
+}
+/* #8 필터 바 접기 */
+body.v2 .toggles { max-height:60px; overflow:hidden; transition:max-height .25s ease, opacity .2s; }
+.v2-bar.compact .toggles { max-height:0; opacity:0; pointer-events:none; }
+.v2-bar.compact .v2-bar-in { gap:0; }
+/* #9 AI 영향 색 */
+body.v2 .card .ai { font-weight:700; }
+body.v2 .card .ai.l1 { color:var(--lvl1); } body.v2 .card .ai.l2 { color:var(--lvl2); } body.v2 .card .ai.l3 { color:var(--lvl3); }
+/* #10 빈 화면 */
+.e-act { margin-top:18px; }
+.e-reset { font-family:var(--v-display); font-weight:700; font-size:13px; letter-spacing:.04em; padding:11px 20px; border-radius:999px; background:var(--v-ink); color:var(--v-bg); }
+.e-sub { margin-top:34px; font-family:var(--v-display); font-size:11.5px; font-weight:700; letter-spacing:.12em; color:var(--v-muted); }
+.e-pick { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; margin-top:12px; text-align:left; }
+.e-pick button { display:flex; flex-direction:column; gap:6px; padding:18px; border:1px solid var(--v-line-2); border-radius:12px; background:transparent; color:var(--v-ink-2); font-size:13.5px; line-height:1.5; }
+.e-pick button b { font-family:var(--v-display); font-size:18px; font-weight:900; letter-spacing:-.03em; color:var(--v-ink); }
+.e-pick button:hover { border-color:var(--v-ink); }
+@media (max-width:720px) { .e-pick { grid-template-columns:1fr; } }
 
 /* 히어로 보조 버튼 */
 .v2-cta { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
@@ -579,6 +616,7 @@ body.v2 .card { position:relative; }
   var state = { q: '', track: '전체', group: '전체', nonmajor: false, aiLow: false, sourced: false, fav: false };
   // 저장한 직무(북마크): 이 브라우저에만
   function favGet() { try { return JSON.parse(localStorage.getItem('jz_fav') || '[]'); } catch (e) { return []; } }
+  function favList() { return favGet().filter(function (x) { return byId[x]; }); }
   function favHas(id) { return favGet().indexOf(id) >= 0; }
   function favToggle(id) { var v = favGet(), i = v.indexOf(id); if (i >= 0) v.splice(i, 1); else v.push(id); try { localStorage.setItem('jz_fav', JSON.stringify(v)); } catch (e) {} favSync(); return i < 0; }
   function favSync() { var n = favGet().filter(function (x) { return byId[x]; }).length, el = document.getElementById('favN'); if (el) el.textContent = n; document.querySelectorAll('[data-fav]').forEach(function (b) { var on = favHas(b.getAttribute('data-fav')); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }); }
@@ -618,6 +656,12 @@ body.v2 .card { position:relative; }
     $(id).addEventListener('click', function () { state[key] = !state[key]; this.setAttribute('aria-pressed', String(state[key])); renderGrid(); });
   }
   bindToggle('tNonmajor', 'nonmajor'); bindToggle('tAiLow', 'aiLow'); bindToggle('tSourced', 'sourced'); bindToggle('tFav', 'fav');
+  function resetFilters() {   // 빈 화면의 "필터 모두 풀기"
+    state.track = '전체'; state.group = '전체'; state.nonmajor = state.aiLow = state.sourced = state.fav = false;
+    state.q = ''; $('q').value = ''; $('clearQ').hidden = true;
+    ['tNonmajor', 'tAiLow', 'tSourced', 'tFav'].forEach(function (id) { $(id).setAttribute('aria-pressed', 'false'); });
+    renderTracks(); renderGroupControls(); renderGrid();
+  }
 
   // 직군 칩 가로 스크롤 표시: 더 있으면 오른쪽 페이드 + 화살표
   (function () {
@@ -654,28 +698,71 @@ body.v2 .card { position:relative; }
     if (!n) return '<span class="badge gray">초안</span>';
     return '<span class="badge ' + (cls || '') + '">현직자 자료 ' + n + '건</span>';
   }
+  // 웹 카드 그림: 공유용 이미지(글자 많음)를 줄여 쓰지 않고, 직군 색 + 영문 키워드 + 조로 마스크만 그린다
+  var MASK = '<svg class="mask" viewBox="0 0 120 48" aria-hidden="true"><path d="M60 14c-8-9-26-12-42-8C6 9 0 18 2 28s14 18 28 16c12-2 20-10 30-10s18 8 30 10c14 2 26-6 28-16S114 9 102 6C86 2 68 5 60 14Zm-30 6c7 0 13 4 13 8s-6 6-13 6-12-3-12-7 5-7 12-7Zm60 0c7 0 12 3 12 7s-5 7-12 7-13-2-13-6 6-8 13-8Z"/></svg>';
+  function art(j) {
+    var c = j.gc || ['#c6ff3d', '#0b0b0b'], kw = (j.en || '').split('/')[0].trim();
+    return '<div class="art" style="--ga:' + c[0] + ';--gb:' + c[1] + '" aria-hidden="true">' + MASK +
+      '<span class="kw">' + esc(kw) + '</span></div>';
+  }
+  // 제목의 괄호 부분은 작은 줄로 내린다: "B2B 영업 (산업재·기술영업)" → 큰 "B2B 영업" + 작은 "산업재·기술영업"
+  function nameHtml(n) {
+    var m = /^(.*?)\s*\(([^()]+)\)\s*$/.exec(n || '');
+    return m ? esc(m[1]) + '<span class="paren">' + esc(m[2]) + '</span>' : esc(n);
+  }
   function card(j) {
     var V2 = document.body.classList.contains('v2');
     return '<article class="card" data-id="' + j.id + '" tabindex="0" role="button" aria-label="' + esc(j.name) + ' 자세히 보기">' +
-      (V2 && j.og ? '<div class="thumb"><img src="' + j.og + '" alt="" loading="lazy" decoding="async"></div>' : '') +
+      (V2 ? art(j) : '') +
       '<button class="fav' + (favHas(j.id) ? ' on' : '') + '" type="button" data-fav="' + j.id + '" aria-pressed="' + (favHas(j.id) ? 'true' : 'false') + '" aria-label="' + esc(j.name) + ' 저장">★</button>' +
       '<div class="card-top"><span class="group">' + esc(gname(j.group)) + '</span>' +
       '<span class="ai l' + j.ai.level + '" title="AI ' + AI_LABEL[j.ai.level] + '"><i><b></b><b></b><b></b></i>AI ' + AI_LABEL[j.ai.level] + '</span></div>' +
-      '<h3><a href="jobs/' + j.id + '/">' + esc(j.name) + '</a></h3><p class="en">' + esc(j.en) + '</p>' +
+      '<h3><a href="jobs/' + j.id + '/">' + nameHtml(j.name) + '</a></h3><p class="en">' + esc(j.en) + '</p>' +
       '<p class="tagline">' + esc(j.tagline) + '</p>' +
       '<ul class="tags">' + j.skills.hard.slice(0, 3).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
       '<div class="card-foot">' + evBadge(j) + '<span class="pay">신입 <b>' + range(j.salary.junior) + '</b>만원</span></div>' +
       '</article>';
   }
+  function emptyHtml() {
+    var head = state.fav && !favList().length
+      ? '<b>아직 저장한 직무가 없어요</b>카드 오른쪽 위 ★을 누르면 여기에 모입니다.'
+      : '<b>맞는 직무가 없습니다</b>조건을 하나씩 풀어 보거나 아래 직무부터 둘러보세요.';
+    var pick = JOBS.slice().sort(function (a, b) { return evidence(b) - evidence(a); }).slice(0, 3);
+    return head + '<div class="e-act"><button type="button" class="e-reset" data-reset>필터 모두 풀기</button></div>' +
+      '<p class="e-sub">현직자 자료가 가장 많은 직무</p><div class="e-pick">' +
+      pick.map(function (j) { return '<button type="button" data-pick="' + j.id + '"><b>' + esc(j.name) + '</b><span>' + esc(j.tagline) + '</span></button>'; }).join('') + '</div>';
+  }
   function renderGrid() {
     var list = filtered();
     $('grid').innerHTML = list.map(card).join('');
     $('empty').hidden = list.length > 0;
+    if (!list.length) $('empty').innerHTML = emptyHtml();
     var label = state.group === '전체' ? (state.track === '전체' ? '전체' : (TRACKS.filter(function (t) { return t.id === state.track; })[0] || {}).name) : gname(state.group);
     $('count').innerHTML = '<b>' + esc(label) + '</b> ' + list.length + '개 직무' + (state.q ? ' · "' + esc(state.q) + '" 검색' : '');
     favSync();
   }
   $('grid').addEventListener('click', function (e) { var f = e.target.closest('[data-fav]'); if (f) { e.preventDefault(); e.stopPropagation(); favToggle(f.getAttribute('data-fav')); if (state.fav) renderGrid(); return; } var c = e.target.closest('.card'); if (c) { e.preventDefault(); openJob(c.getAttribute('data-id')); } });
+  $('empty').addEventListener('click', function (e) {
+    var p = e.target.closest('[data-pick]'); if (p) { openJob(p.getAttribute('data-pick')); return; }
+    if (e.target.closest('[data-reset]')) resetFilters();
+  });
+  (function () {   // 필터 바 접기
+    var bar = document.querySelector('.v2-bar'); if (!bar) return;
+    var last = window.pageYOffset, tick = false, lockUntil = 0;
+    window.addEventListener('scroll', function () {
+      if (tick) return; tick = true;
+      requestAnimationFrame(function () {
+        var y = window.pageYOffset, top = bar.getBoundingClientRect().top, now = Date.now();
+        // 바 높이가 바뀌면 브라우저가 스크롤 위치를 보정한다. 그 보정을 '위로 스크롤'로 오인해 깜빡이지 않게 잠깐 무시
+        if (now < lockUntil) { last = y; tick = false; return; }
+        var stuck = top <= 60 + 1 && y > 200, was = bar.classList.contains('compact');
+        if (!stuck || y < last - 4) bar.classList.remove('compact');
+        else if (y > last + 4) bar.classList.add('compact');
+        if (was !== bar.classList.contains('compact')) lockUntil = now + 400;
+        last = y; tick = false;
+      });
+    }, { passive: true });
+  })();
   $('grid').addEventListener('keydown', function (e) { var c = e.target.closest('.card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openJob(c.getAttribute('data-id')); } });
 
   var SAL_MIN = 2500, SAL_MAX = 18000;
@@ -688,12 +775,13 @@ body.v2 .card { position:relative; }
   var lastFocus = null, current = null;
   function detail(j) {
     var h = '';
-    h += '<h2 class="name" id="dName">' + esc(j.name) + '</h2><p class="en">' + esc(j.en) + '</p>';
-    h += '<p class="tagline">' + esc(j.tagline) + '</p><p class="summary">' + esc(j.summary) + '</p>';
+    h += '<h2 class="name" id="dName">' + nameHtml(j.name) + '</h2><p class="en">' + esc(j.en) + '</p>';
+    h += '<p class="tagline">' + esc(j.tagline) + '</p>';
     h += '<dl class="quick"><div><dt>신입 연봉대</dt><dd class="num">' + range(j.salary.junior) + '만원</dd></div>' +
       '<div><dt>비전공 입문</dt><dd>' + (j.nonmajorOk ? '가능' : '어려운 편') + '</dd></div>' +
       '<div><dt>AI 영향</dt><dd>' + AI_LABEL[j.ai.level] + '</dd></div>' +
       '<div><dt>근거 자료</dt><dd>' + (evidence(j) ? evidence(j) + '건' : '초안') + '</dd></div></dl>';
+    h += '<div class="sum-wrap clamp"><p class="summary">' + esc(j.summary) + '</p><button type="button" class="more" data-more>더 읽기 ↓</button></div>';
     if (j.dayInLife) h += '<div class="day"><b>하루는 이렇게 흘러갑니다</b>' + esc(j.dayInLife) + '</div>';
     h += sec('tasks', '하는 일', li(j.tasks));
     if (j.realities && j.realities.length) h += sec('interview', '현직자가 말하는 현실', li(j.realities, 'mark'));
@@ -769,6 +857,7 @@ body.v2 .card { position:relative; }
 
   function openJob(id, fromHash) {
     var s = byId[id]; if (!s) return;   // 슬림 목록에 없는 id 는 무시 (해시가 잘못됐을 때 등)
+    var wasOpen = !!current;
     current = id;
     if (!fromHash) lastFocus = document.activeElement;
     $('dGroup').textContent = gname(s.group);
@@ -789,13 +878,20 @@ body.v2 .card { position:relative; }
     $('scrim').hidden = false;
     var d = $('drawer'); d.hidden = false; d.classList.remove('anim'); void d.offsetWidth; d.classList.add('anim');
     document.body.style.overflow = 'hidden';
-    if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+    if (location.hash !== '#' + id) {
+      if (wasOpen) history.replaceState({ jz: 1 }, '', '#' + id);   // 상세 안에서 다른 직무로 옮길 때는 기록을 늘리지 않는다
+      else history.pushState({ jz: 1 }, '', '#' + id);              // 폰 뒤로 가기 = 창 닫기 (사이트를 나가지 않게)
+    }
     $('closeDrawer').focus();
   }
-  function closeDrawer() {
+  function closeDrawer(fromNav) {
+    if (!current && $('drawer').hidden) return;
     $('drawer').hidden = true; $('scrim').hidden = true; current = null;
     document.body.style.overflow = '';
-    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    if (fromNav !== true && location.hash) {
+      if (history.state && history.state.jz) history.back();   // 열 때 쌓은 기록을 되돌린다
+      else history.replaceState(null, '', location.pathname + location.search);
+    }
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
   $('closeDrawer').addEventListener('click', closeDrawer);
@@ -804,6 +900,7 @@ body.v2 .card { position:relative; }
   $('dBody').addEventListener('click', function (e) {
     var o = e.target.closest('[data-open]'); if (o) { openJob(o.getAttribute('data-open')); return; }   // 옮겨갈 수 있는 직무 · 다시 시도
     if (e.target.closest('[data-reload]')) { location.reload(); return; }
+    var mo = e.target.closest('[data-more]'); if (mo) { mo.parentNode.classList.remove('clamp'); mo.remove(); return; }
     if (e.target.closest('[data-cmp]')) { cmpAdd(current); return; }
     var fb = e.target.closest('[data-fav]'); if (fb) { var on = favToggle(fb.getAttribute('data-fav')); fb.textContent = on ? '★ 저장됨' : '☆ 저장'; toast(on ? '저장했습니다. 필터의 "저장한 직무"에서 모아 볼 수 있어요.' : '저장을 해제했습니다.'); return; }
     if (e.target.closest('[data-copy]')) copyLink();
@@ -822,7 +919,7 @@ body.v2 .card { position:relative; }
       navigator.clipboard.writeText(url).then(function () { toast('링크를 복사했습니다'); }, function () { toast('복사가 막혀 있습니다. 주소창의 주소를 복사해 주세요'); });
     } else { toast('복사가 막혀 있습니다. 주소창의 주소를 복사해 주세요'); }
   }
-  window.addEventListener('hashchange', function () { var id = location.hash.slice(1); if (id && byId[id]) openJob(id, true); else if (!id && current) closeDrawer(); });
+  window.addEventListener('hashchange', function () { var id = location.hash.slice(1); if (id && byId[id]) openJob(id, true); else if (!id && current) closeDrawer(true); });
 
   renderTracks(); renderGroupControls(); renderGrid();
   var initial = location.hash.slice(1);
