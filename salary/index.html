@@ -5,173 +5,278 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>연봉 연구소</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
-/* 취업조로 v2 톤 시안(아직 사이트와 분리). 세 기능: 회사 연봉(국민연금 기반 추정) · 실수령액 계산기 · 내 연봉 위치 */
-:root { --bg:#ffffff; --ink:#0b0b0b; --soft:#45483f; --muted:#7a7d73; --line:#e4e6df; --line2:#cfd2c8; --fill:#f4f5f1; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d; --warn:#b4453a;
+/* 연봉 연구소 Ver 0.5 — 직무사전 v2와 같은 체계: 넓은 폭(1320) · 히어로(얇은 윗줄+굵은 제목+형광 밑줄) · 오른쪽 숫자판 · 검은 띠 · 알약 탭 · 번호 섹션
+   보는 순서: ① 회사 검색(첫 화면) ② 회사 상세(PC 오른쪽 고정, 폰 아래에서 올라오는 창) ③ 순위 두 개 ④ 계산기 세 개(탭) */
+:root { --bg:#ffffff; --ink:#0b0b0b; --soft:#45483f; --muted:#7a7d73; --line:#e4e6df; --line2:#cfd2c8; --fill:#f4f5f1; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d; --warn:#b4453a; --up:#b4453a;
   --display:"Archivo","Noto Sans KR",system-ui,sans-serif; --font:"Noto Sans KR",system-ui,sans-serif; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#8d9085; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; color-scheme:dark; } }
-:root[data-theme="dark"] { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#8d9085; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; color-scheme:dark; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#8d9085; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; --up:#ff8f7d; color-scheme:dark } }
+:root[data-theme="dark"] { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#8d9085; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; --up:#ff8f7d; color-scheme:dark }
 * { box-sizing:border-box; }
-body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); line-height:1.6; }
-.w { max-width:1080px; margin:0 auto; padding-block:28px 80px; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
-.kick { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; gap:10px; align-items:center; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); font-size:15px; line-height:1.6; }
+.in { max-width:1320px; margin:0 auto; padding-left:max(20px, env(safe-area-inset-left,0px)); padding-right:max(20px, env(safe-area-inset-right,0px)); }
+
+/* 히어로 */
+.hero { padding-block:clamp(22px, 2.6vw, 40px) 30px; }
+.hero-grid { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:48px; align-items:end; }
+.kick { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; gap:12px; align-items:center; }
 .kick i { width:8px; height:8px; border-radius:50%; background:var(--acc); display:inline-block; }
-h1 { font-family:var(--display); font-weight:900; font-size:clamp(34px,6vw,72px); letter-spacing:-.05em; line-height:1; margin:12px 0 12px; text-wrap:balance; }
-h1 b { background:linear-gradient(transparent 66%, var(--mark) 66%); }
-.lead { color:var(--soft); max-width:62ch; margin:0; }
-.tabs { display:flex; gap:6px; margin-top:26px; border-bottom:1px solid var(--ink); overflow-x:auto; scrollbar-width:none; }
-.tabs button { font:inherit; font-family:var(--display); font-weight:700; font-size:14px; padding:12px 16px; background:none; border:0; border-bottom:3px solid transparent; color:var(--muted); cursor:pointer; white-space:nowrap; }
-.tabs button[aria-selected="true"] { color:var(--ink); border-bottom-color:var(--ink); }
-.panel { padding-top:24px; }
-.search { position:relative; }
-.search input { width:100%; font:inherit; font-size:17px; padding:15px 18px; border-radius:999px; border:1.5px solid var(--ink); background:var(--bg); color:var(--ink); }
-.search input:focus { outline:3px solid var(--acc); outline-offset:1px; }
-.hint { font-size:13px; color:var(--muted); margin-top:8px; }
-.results { margin-top:14px; border-top:1px solid var(--line); }
-.res { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 16px; padding:13px 4px; border-bottom:1px solid var(--line); cursor:pointer; background:none; border-left:0; border-right:0; border-top:0; width:100%; text-align:left; font:inherit; color:inherit; }
+h1 { margin:12px 0 0; font-family:var(--display); font-weight:900; font-size:clamp(38px, 6vw, 88px); line-height:.98; letter-spacing:-.05em; text-wrap:balance; }
+h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--soft); margin-bottom:12px; line-height:1.15; }
+h1 b { font-weight:900; background:linear-gradient(transparent 62%, var(--mark) 62%); }
+.lead { margin:22px 0 0; max-width:58ch; font-size:16px; line-height:1.7; color:var(--soft); }
+.lead b { color:var(--ink); }
+.stats { margin:0; display:grid; border-top:1px solid var(--ink); }
+.stats div { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:13px 0; border-bottom:1px solid var(--line); }
+.stats dt { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--muted); }
+.stats dd { margin:0; font-family:var(--display); font-size:30px; font-weight:900; letter-spacing:-.04em; font-variant-numeric:tabular-nums; line-height:1; white-space:nowrap; }
+.stats dd small { font-size:13px; font-weight:700; margin-left:3px; color:var(--muted); letter-spacing:0; }
+
+/* 검은 띠 */
+.ticker { overflow:hidden; background:var(--ink); color:var(--bg); }
+.ticker .tr { display:flex; width:max-content; animation:tick 46s linear infinite; }
+.ticker span { font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.1em; padding:13px 26px; white-space:nowrap; }
+.ticker span::after { content:"✦"; margin-left:26px; color:var(--acc); }
+@keyframes tick { to { transform:translateX(-50%); } }
+
+/* 알약 탭 (스크롤해도 위에 붙어 있음) */
+.tabbar { position:sticky; top:calc(54px + env(safe-area-inset-top,0px)); z-index:15; background:var(--bg); border-bottom:1px solid var(--line); }
+.tabbar .in { display:flex; align-items:center; gap:12px; padding-block:12px; }
+.tabs { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; }
+.tabs::-webkit-scrollbar { display:none; }
+.tabs button { font:inherit; font-family:var(--display); font-weight:700; font-size:14px; padding:10px 18px; border-radius:999px; border:1px solid var(--line2); background:transparent; color:var(--soft); cursor:pointer; white-space:nowrap; }
+.tabs button:hover { color:var(--ink); border-color:var(--ink); }
+.tabs button[aria-selected="true"] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+.tabs button:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+.panel { padding-block:28px 0; scroll-margin-top:calc(54px + 72px + env(safe-area-inset-top,0px)); }
+
+/* 검색 */
+.search { display:flex; align-items:center; gap:12px; border-bottom:2px solid var(--ink); padding:4px 0 10px; }
+.search svg { width:26px; height:26px; flex:none; }
+.search input { flex:1; min-width:0; border:0; background:transparent; color:var(--ink); font:inherit; font-family:var(--display); font-weight:700; font-size:clamp(20px, 2.2vw, 28px); letter-spacing:-.03em; outline:none; padding:4px 0; }
+.search input::placeholder { color:var(--muted); font-weight:500; }
+.search input::-webkit-search-cancel-button { cursor:pointer; }
+.hint { font-size:13px; color:var(--muted); margin:10px 0 0; }
+.results { margin-top:10px; border-top:1px solid var(--line); }
+.res { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 16px; padding:14px 6px; border:0; border-bottom:1px solid var(--line); cursor:pointer; background:none; width:100%; text-align:left; font:inherit; color:inherit; }
 .res:hover, .res:focus-visible { background:var(--fill); outline:none; }
+.res.on { background:var(--fill); box-shadow:inset 3px 0 0 var(--ink); }
 .res .nm { font-weight:900; font-size:16px; letter-spacing:-.02em; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .res .sub { grid-column:1; font-size:12.5px; color:var(--muted); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.res .pay { grid-row:1 / span 2; grid-column:2; align-self:center; font-family:var(--display); font-weight:900; font-size:18px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.res .pay { grid-row:1 / span 2; grid-column:2; align-self:center; font-family:var(--display); font-weight:900; font-size:19px; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .res .pay small { font-family:var(--font); font-weight:500; font-size:12px; color:var(--muted); margin-left:2px; }
+
 /* 회사 상세 */
-.detail { margin-top:22px; border:1.5px solid var(--ink); border-radius:16px; padding:22px; }
-.detail .top { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px 24px; align-items:flex-end; }
-.detail h2 { font-family:var(--display); font-weight:900; font-size:clamp(26px,4vw,40px); letter-spacing:-.045em; line-height:1.05; margin:0; }
-.detail .meta { font-size:13px; color:var(--muted); margin-top:6px; }
+.detail { border:1px solid var(--ink); border-radius:18px; padding:20px 22px; background:var(--bg); }   /* 한 화면에 들어오게 촘촘히 */
+.detail .top { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 20px; align-items:end; }
+.detail h2 { font-family:var(--display); font-weight:900; font-size:clamp(22px,2.4vw,30px); letter-spacing:-.045em; line-height:1.1; margin:0; }
+.detail .meta { font-size:12px; color:var(--muted); margin-top:4px; }
 .detail .avg { text-align:right; }
-.detail .avg .v { font-family:var(--display); font-weight:900; font-size:clamp(30px,4.6vw,48px); letter-spacing:-.04em; line-height:1; font-variant-numeric:tabular-nums; }
-.detail .avg .v small { font-size:.45em; font-weight:700; margin-left:4px; }
-.detail .avg .l { font-size:12.5px; color:var(--muted); margin-top:4px; }
+.detail .avg .v { font-family:var(--display); font-weight:900; font-size:clamp(30px,3.2vw,42px); letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
+.detail .avg .v small { font-size:.36em; font-weight:700; margin-left:4px; letter-spacing:0; }
+.detail .avg .l { font-size:12px; color:var(--muted); margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:flex-end; }
+.detail .hint { font-size:12px; margin-top:8px; line-height:1.55; }
+.vbadge { display:inline-flex; margin:12px 0 0; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:999px; background:var(--acc); color:var(--acc-ink); line-height:1.4; }
 .warnbox { margin-top:14px; font-size:13.5px; color:var(--warn); border-left:3px solid var(--warn); padding:2px 0 2px 10px; }
-.ranks { margin-top:20px; display:grid; gap:10px; }
-.rk { display:grid; grid-template-columns:52px minmax(0,1fr) 122px; gap:12px; align-items:center; }   /* 오른쪽 칸: "국민연금 7,908 (상한)"이 폰에서 잘리지 않는 폭 */
-.rk .n { font-weight:900; }
-.rk .bar { height:14px; border-radius:999px; background:var(--fill); overflow:hidden; }
+.ranks { margin-top:14px; display:grid; gap:8px; padding-top:12px; border-top:1px solid var(--line); }
+.rk { display:grid; grid-template-columns:52px minmax(0,1fr) 124px; gap:12px; align-items:center; }
+.rk .n { font-weight:900; font-size:15px; line-height:1.2; }
+.rk .n .yr { display:block; font-size:10.5px; font-weight:700; color:var(--muted); letter-spacing:0; }
+.rk .bar { height:10px; border-radius:999px; background:var(--fill); overflow:hidden; }
 .rk .bar i { display:block; height:100%; border-radius:999px; background:var(--ink); }
-.rk:first-child .bar i { background:var(--acc); }
-.rk .v { font-family:var(--display); font-weight:700; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
-.facts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:20px; }
-.facts div { background:var(--fill); border-radius:12px; padding:12px 14px; min-width:0; }
-.facts dt { font-size:12px; color:var(--muted); }
-.facts dd { margin:2px 0 0; font-family:var(--display); font-weight:900; font-size:19px; font-variant-numeric:tabular-nums; }
-details.how { margin-top:18px; font-size:13.5px; color:var(--soft); }
+.rk:first-child .bar i { background:var(--acc); box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
+.rk .v { font-family:var(--display); font-weight:900; font-size:15.5px; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.rk .v small.rb { display:block; font-family:var(--font); font-size:11.5px; font-weight:500; color:var(--muted); }
+.facts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; margin:14px 0 0; border-top:1px solid var(--ink); }
+.facts div { padding:8px 12px 8px 0; border-bottom:1px solid var(--line); min-width:0; }
+.facts dt { font-family:var(--display); font-size:11.5px; font-weight:700; letter-spacing:.04em; color:var(--muted); }
+.facts dd { margin:2px 0 0; font-family:var(--display); font-weight:900; font-size:17px; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+details.how { margin-top:12px; font-size:13.5px; color:var(--soft); }
 details.how summary { cursor:pointer; font-weight:700; color:var(--ink); }
 details.how ol { padding-left:20px; margin:8px 0 0; } details.how li { margin-top:4px; }
-/* 두 칸 화면: PC 는 왼쪽 목록 + 오른쪽 고정 상세, 폰은 상세가 아래에서 올라오는 전체 화면 창 */
-.co-right .empty { border:1.5px dashed var(--line2); border-radius:16px; padding:28px 22px; color:var(--soft); }
-.co-right .empty h3 { margin:0 0 6px; font-family:var(--display); font-weight:900; font-size:22px; letter-spacing:-.03em; color:var(--ink); }
-.co-right .empty .picks { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
-.co-right .empty .picks button { font:inherit; font-size:14px; font-weight:700; padding:8px 14px; border-radius:999px; border:1px solid var(--line2); background:var(--bg); color:var(--ink); cursor:pointer; }
-.co-right .empty .picks button:hover { border-color:var(--ink); }
-.sheet-bar { display:none; }
-.res.on { background:var(--fill); box-shadow:inset 3px 0 0 var(--ink); }
-@media (min-width:960px) {
-  .co-split { display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:28px; align-items:start; }
-  .co-right { position:sticky; top:16px; max-height:calc(100vh - 32px); overflow:auto; overscroll-behavior:contain; border-radius:16px; }
-  .co-right .detail { margin-top:0; }
-  .results { max-height:62vh; overflow:auto; }
-}
-@media (max-width:959px) {
-  .co-right .empty { display:none; }
-  .co-right { position:fixed; inset:0; z-index:50; background:var(--bg); overflow:auto; overscroll-behavior:contain; transform:translateY(100%); visibility:hidden; transition:transform .28s cubic-bezier(.2,.7,.2,1), visibility 0s .28s;
-    padding:0 max(12px, env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(12px, env(safe-area-inset-left,0px)); }
-  .co-right.open { transform:none; visibility:visible; transition:transform .28s cubic-bezier(.2,.7,.2,1); }
-  .sheet-bar { display:block; position:sticky; top:0; z-index:2; background:var(--bg); padding:calc(10px + env(safe-area-inset-top,0px)) 0 10px; border-bottom:1px solid var(--line); }
-  .sheet-bar button { font:inherit; font-weight:700; font-size:15px; padding:8px 14px; border-radius:999px; border:1px solid var(--ink); background:var(--bg); color:var(--ink); cursor:pointer; }
-  .co-right .detail { border:0; padding:16px 2px; margin-top:0; }
-  body.sheet-open { overflow:hidden; }
-}
-@media (prefers-reduced-motion: reduce) { .co-right { transition:none !important; } }
-.gchip { display:inline-block; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; vertical-align:1px; white-space:nowrap; }
+.gchip { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; vertical-align:1px; white-space:nowrap; line-height:1.6; }
 .gchip.g-hi { background:var(--acc); color:var(--acc-ink); }
 .gchip.g-mid { background:var(--fill); color:var(--ink); }
 .gchip.g-est { background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
 .gchip.g-low { background:transparent; color:var(--muted); box-shadow:inset 0 0 0 1px var(--muted); }
-.vbadge { display:inline-block; margin:12px 0 0; font-size:12.5px; font-weight:700; padding:4px 11px; border-radius:999px; background:var(--acc); color:var(--acc-ink); }
-.rk .v small.rb { display:block; font-family:var(--font); font-size:11.5px; font-weight:500; color:var(--muted); }
-.rank-list .why { color:var(--warn); font-weight:700; }
-.rank-list .v.up { color:var(--warn); }
-.negbox { margin-top:16px; padding:14px 16px; border-radius:12px; background:var(--fill); font-size:14px; line-height:1.7; }
+.legend { display:grid; grid-template-columns:repeat(4,auto); justify-content:start; gap:8px 10px; margin-top:12px; font-size:11.5px; color:var(--muted); }   /* 네 칩을 한 줄에 (폰은 두 줄 두 칸) */
+.legend > span { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+
+/* 회사를 고르기 전 오른쪽 칸 */
+.co-right .empty { border:1px solid var(--line2); border-radius:18px; padding:28px 26px; color:var(--soft); background:var(--fill); }
+.co-right .empty h3 { margin:0 0 6px; font-family:var(--display); font-weight:900; font-size:24px; letter-spacing:-.035em; color:var(--ink); }
+.co-right .empty .picks { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+.co-right .empty .picks button { font:inherit; font-size:14px; font-weight:700; padding:9px 15px; border-radius:999px; border:1px solid var(--line2); background:var(--bg); color:var(--ink); cursor:pointer; }
+.co-right .empty .picks button:hover { border-color:var(--ink); }
+.sheet-bar { display:none; }
+@media (min-width:960px) {
+  .co-split { display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); gap:36px; align-items:start; }
+  .co-right { position:sticky; top:calc(54px + 64px + 16px); max-height:calc(100vh - 150px); overflow:auto; overscroll-behavior:contain; border-radius:18px; }
+  .results { max-height:58vh; overflow:auto; }
+}
+@media (max-width:959px) {
+  .co-right .empty { display:none; }
+  .co-right { position:fixed; inset:0; z-index:50; background:var(--bg); overflow:auto; overscroll-behavior:contain; transform:translateY(100%); visibility:hidden; transition:transform .28s cubic-bezier(.2,.7,.2,1), visibility 0s .28s;
+    padding:0 max(14px, env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(14px, env(safe-area-inset-left,0px)); }
+  .co-right.open { transform:none; visibility:visible; transition:transform .28s cubic-bezier(.2,.7,.2,1); }
+  .sheet-bar { display:block; position:sticky; top:0; z-index:2; background:var(--bg); padding:calc(10px + env(safe-area-inset-top,0px)) 0 10px; border-bottom:1px solid var(--line); }
+  .sheet-bar button { font:inherit; font-weight:700; font-size:15px; padding:8px 16px; border-radius:999px; border:1px solid var(--ink); background:var(--bg); color:var(--ink); cursor:pointer; }
+  .co-right .detail { border:0; padding:18px 2px; border-radius:0; }
+  body.sheet-open { overflow:hidden; }
+}
+
+/* 번호 섹션 (함께하기 페이지와 같은 머리) */
+.sec { margin-top:72px; }
+.sec-head { display:grid; grid-template-columns:auto minmax(0,1fr); gap:6px 22px; align-items:end; padding-bottom:18px; border-bottom:1px solid var(--ink); }
+.sec-head .num { font-family:var(--display); font-weight:900; font-size:clamp(44px,5vw,76px); line-height:.86; letter-spacing:-.05em; color:transparent; -webkit-text-stroke:1.5px var(--ink); }
+.sec-head h2 { margin:0; font-family:var(--display); font-weight:900; font-size:clamp(24px,2.8vw,38px); letter-spacing:-.045em; line-height:1.1; text-wrap:balance; }
+.sec-head h2 b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
+.sec-head p { grid-column:2; margin:0; font-size:13.5px; color:var(--muted); max-width:70ch; }
+.ranks2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:48px; }
+.rank-list { list-style:none; padding:0; margin:0; }
+.rank-list li { display:grid; grid-template-columns:36px minmax(0,1fr) auto; gap:12px; padding:13px 2px; border-bottom:1px solid var(--line); align-items:center; }
+.rank-list li:nth-child(-n+3) .no { color:var(--ink); }
+.rank-list .no { font-family:var(--display); font-weight:900; font-size:18px; color:var(--muted); }
+.rank-list .t { min-width:0; font-weight:700; }
+.rank-list .t a { text-decoration:none; border-bottom:1px solid var(--line2); }
+.rank-list .t a:hover { border-bottom-color:var(--ink); }
+.rank-list .t small { display:block; font-weight:500; font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rank-list .v { font-family:var(--display); font-weight:900; font-size:17px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.rank-list .why { color:var(--soft); font-weight:700; }
+.rank-list .v.up { color:var(--up); }
+
+/* 계산기 */
+.calc { display:grid; grid-template-columns:minmax(0,360px) minmax(0,1fr); gap:40px; align-items:start; }
+.calc-in { background:var(--fill); border-radius:18px; padding:22px; }
+.field { display:grid; gap:6px; margin-bottom:16px; }
+.field:last-child { margin-bottom:0; }
+.field label { font-size:13px; font-weight:700; }
+.field input, .field select { font:inherit; font-family:var(--display); font-weight:700; font-size:18px; padding:12px 14px; border-radius:12px; border:1px solid var(--line2); background:var(--bg); color:var(--ink); width:100%; }
+.field input:focus, .field select:focus { border-color:var(--ink); outline:3px solid var(--acc); outline-offset:0; }
+.field small { font-size:12px; color:var(--muted); }
+.big { font-family:var(--display); font-weight:900; font-size:clamp(44px,6vw,80px); letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
+.big small { font-size:.34em; margin-left:6px; letter-spacing:0; }
+.bigl { font-size:14px; color:var(--muted); margin-top:10px; }
+table.ded { width:100%; border-collapse:collapse; margin-top:22px; font-size:14px; border-top:1px solid var(--ink); }
+table.ded td { padding:10px 4px; border-bottom:1px solid var(--line); }
+table.ded td:last-child { text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
+table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
+.gauge { margin-top:26px; height:16px; border-radius:999px; background:var(--fill); position:relative; }
+.gauge i { position:absolute; inset:0 auto 0 0; border-radius:999px; background:var(--acc); }
+.gauge b { position:absolute; top:-6px; width:3px; height:28px; background:var(--ink); }
+.negbox { margin-top:18px; padding:16px 18px; border-radius:14px; background:var(--fill); font-size:14px; line-height:1.7; }
 .negbox b { font-size:15px; }
-.negbox .gauge { margin-top:14px; }
+.negbox .gauge { margin-top:14px; background:var(--bg); }
+
 /* 연봉 제보 */
-.rep { margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
+.rep { margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
 .rep-h { display:flex; flex-wrap:wrap; gap:6px 12px; align-items:baseline; }
-.rep-h h3 { margin:0; font-family:var(--display); font-weight:900; font-size:18px; letter-spacing:-.02em; }
+.rep-h h3 { margin:0; font-family:var(--display); font-weight:900; font-size:19px; letter-spacing:-.02em; }
 .rep .tag { font-size:12px; font-weight:700; color:var(--warn); }
 .rep-list { list-style:none; padding:0; margin:10px 0 0; display:grid; gap:6px; }
 .rep-list li { display:grid; grid-template-columns:52px minmax(0,1fr); gap:10px; font-size:14px; }
 .rep-list span { font-variant-numeric:tabular-nums; } .rep-list small { color:var(--muted); margin-left:6px; } .rep-list .muted { color:var(--muted); }
 .rep .more { font-size:13px; color:var(--muted); margin:10px 0 0; } .rep .more a { color:var(--ink); }
-.rep-open { margin-top:12px; font:inherit; font-weight:700; font-size:14px; padding:11px 18px; border-radius:999px; border:1.5px solid var(--ink); background:var(--acc); color:var(--acc-ink); cursor:pointer; }
-.rep-form { margin-top:14px; padding:16px; border-radius:14px; background:var(--fill); }
+.rep-open { margin-top:12px; font:inherit; font-weight:700; font-size:14px; padding:11px 18px; border-radius:999px; border:1px solid var(--ink); background:var(--acc); color:var(--acc-ink); cursor:pointer; }
+.rep-form { margin-top:14px; padding:18px; border-radius:14px; background:var(--fill); }
 .rep-form .grid2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; margin-top:10px; }
 .rep-form label { display:grid; gap:4px; font-size:13px; font-weight:700; }
-.rep-form input, .rep-form select { font:inherit; font-size:15px; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line2); background:var(--bg); color:var(--ink); width:100%; }
+.rep-form input, .rep-form select { font:inherit; font-size:15px; padding:10px 12px; border-radius:10px; border:1px solid var(--line2); background:var(--bg); color:var(--ink); width:100%; }
 .rep-form .agree { display:flex; gap:8px; align-items:center; margin-top:12px; font-weight:500; }
 .rep-form .agree input { width:auto; }
 .rep-form .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:12px; }
 .rep-form button { font:inherit; font-weight:700; padding:11px 20px; border-radius:999px; border:0; background:var(--ink); color:var(--bg); cursor:pointer; }
 .rep-form .st { font-size:13px; } .rep-form .st.bad { color:var(--warn); } .rep-form .st.ok { font-weight:700; }
 .hp { position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
-@media (max-width:560px) { .rep-form .grid2 { grid-template-columns:minmax(0,1fr); } }
-/* 업종 랭킹 */
-.sec-h { font-family:var(--display); font-weight:900; font-size:22px; letter-spacing:-.03em; margin:34px 0 4px; }
-.sec-p { font-size:13.5px; color:var(--muted); margin:0 0 10px; }
-.rank-list { list-style:none; padding:0; margin:0; border-top:1px solid var(--line); }
-.rank-list li { display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px; padding:10px 2px; border-bottom:1px solid var(--line); align-items:center; }
-.rank-list .no { font-family:var(--display); font-weight:900; color:var(--muted); }
-.rank-list .t { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
-.rank-list .t small { display:block; font-weight:500; font-size:12px; color:var(--muted); }
-.rank-list .v { font-family:var(--display); font-weight:900; font-variant-numeric:tabular-nums; white-space:nowrap; }
-/* 계산기 */
-.calc { display:grid; grid-template-columns:minmax(0,340px) minmax(0,1fr); gap:24px; align-items:start; }
-.field { display:grid; gap:6px; margin-bottom:14px; }
-.field label { font-size:13px; font-weight:700; }
-.field input, .field select { font:inherit; font-size:16px; padding:12px 14px; border-radius:12px; border:1.5px solid var(--line2); background:var(--bg); color:var(--ink); width:100%; }
-.field input:focus, .field select:focus { border-color:var(--ink); outline:none; }
-.field small { font-size:12px; color:var(--muted); }
-.big { font-family:var(--display); font-weight:900; font-size:clamp(36px,6vw,60px); letter-spacing:-.045em; line-height:1; font-variant-numeric:tabular-nums; }
-.big small { font-size:.4em; margin-left:6px; }
-.bigl { font-size:13px; color:var(--muted); margin-top:6px; }
-table.ded { width:100%; border-collapse:collapse; margin-top:18px; font-size:14px; }
-table.ded td { padding:9px 4px; border-bottom:1px solid var(--line); }
-table.ded td:last-child { text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
-table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
-.gauge { margin-top:22px; height:18px; border-radius:999px; background:var(--fill); position:relative; }
-.gauge i { position:absolute; inset:0 auto 0 0; border-radius:999px; background:var(--acc); }
-.gauge b { position:absolute; top:-6px; width:3px; height:30px; background:var(--ink); }
-.foot { margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font-size:12.5px; color:var(--muted); }
+
+.foot { margin-top:80px; padding-block:18px 64px; border-top:1px solid var(--line); font-size:12.5px; color:var(--muted); max-width:110ch; }
 .loading { padding:30px 0; color:var(--muted); }
-@media (max-width:760px) {
-  .facts { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .calc { grid-template-columns:minmax(0,1fr); }
-  .detail .avg { text-align:left; }
-  .rk { grid-template-columns:44px minmax(0,1fr) 92px; }
+
+@media (max-width:1099px) { .ranks2 { grid-template-columns:minmax(0,1fr); gap:56px; } }
+@media (max-width:900px) {
+  .hero-grid { grid-template-columns:minmax(0,1fr); gap:24px; }
+  .stats { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:20px; }
+  .stats dd { font-size:24px; }
+  .calc { grid-template-columns:minmax(0,1fr); gap:24px; }
 }
-@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+@media (max-width:640px) {
+  h1 { font-size:40px; }
+  .stats div { padding:8px 0; }
+  .in { padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+  .hero { padding-block:18px 22px; }
+  .lead { font-size:14px; margin-top:12px; }
+  .lead .opt { display:none; }   /* 폰에서는 설명 뒷문장을 줄여 검색창을 첫 화면에 */
+  .stats div { padding:10px 0; }
+  .stats dt { font-size:11px; }
+  .stats dd { font-size:21px; }
+  .tabs button { padding:9px 14px; font-size:13.5px; }
+  .panel { padding-top:20px; }
+  .sec { margin-top:56px; }
+  .sec-head { grid-template-columns:minmax(0,1fr); }
+  .sec-head p { grid-column:1; }
+  .sec-head .num { font-size:44px; }
+  .facts { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .legend { grid-template-columns:repeat(2,auto); }
+  .rk { grid-template-columns:44px minmax(0,1fr) 112px; gap:10px; }
+  .rep-form .grid2 { grid-template-columns:minmax(0,1fr); }
+  .detail .top { grid-template-columns:minmax(0,1fr); }
+  .detail .avg { text-align:left; }
+  .detail .avg .l { justify-content:flex-start; }
+  .detail .avg .v { font-size:34px; }
+  .detail .vbadge { display:none; }   /* 폰: 검증 규모는 첫 화면 숫자판에 있으니 상세에서는 빼서 한 화면에 */
+  .detail h2 { font-size:24px; }
+  .ranks { gap:6px; }
+  .rk .v { font-size:15px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } .ticker .tr { animation:none; } }
 </style>
 </head>
 <body>
-<div class="w">
-  <div class="kick"><i></i>Salary Lab · 시안 v0.5</div>
-  <h1>회사 이름만 넣으면,<br><b>직급별 연봉</b>까지.</h1>
-  <p class="lead">국민연금 가입 사업장 공개 자료로 회사별 평균 연봉을 계산하고, 사원부터 부장까지 직급별 연봉을 추정합니다. 실수령액 계산기와 내 연봉 위치도 함께 볼 수 있습니다.</p>
-
-  <div class="tabs" role="tablist">
-    <button role="tab" aria-selected="true" data-tab="co" id="tab-co">회사 연봉</button>
-    <button role="tab" aria-selected="false" data-tab="net" id="tab-net">실수령액 계산기</button>
-    <button role="tab" aria-selected="false" data-tab="pos" id="tab-pos">내 연봉 위치</button>
-    <button role="tab" aria-selected="false" data-tab="neg" id="tab-neg">연봉 협상</button>
+<header class="hero">
+  <div class="in hero-grid">
+    <div>
+      <div class="kick"><i></i>Salary Lab · Ver 0.5</div>
+      <h1><span class="thin">회사 이름만 넣으면</span><b>직급별 연봉</b>까지.</h1>
+      <p class="lead">국민연금 신고 소득과 사업보고서·공공기관 공시로 회사 평균 연봉을 잡고, <b>사원부터 부장까지 직급별 연봉</b>을 추정합니다. <span class="opt">취업조로 이직자의 실제 연봉으로 검증했습니다.</span></p>
+    </div>
+    <dl class="stats" aria-label="연봉 연구소 자료 규모">
+      <div><dt>회사</dt><dd id="stCo">-<small>곳</small></dd></div>
+      <div><dt>공시값 반영</dt><dd id="stOff">-<small>곳</small></dd></div>
+      <div><dt>실제 연봉 검증</dt><dd id="stVal">-<small>건</small></dd></div>
+      <div><dt>기준</dt><dd id="stYm">-</dd></div>
+    </dl>
   </div>
+</header>
 
+<div class="ticker" aria-hidden="true"><div class="tr" id="tick"></div></div>
+
+<nav class="tabbar" aria-label="연봉 연구소 메뉴">
+  <div class="in">
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="co" id="tab-co">직급별 연봉추정기</button>
+      <button role="tab" aria-selected="false" data-tab="net" id="tab-net">실수령액 계산기</button>
+      <button role="tab" aria-selected="false" data-tab="pos" id="tab-pos">내 연봉의 위치는?</button>
+      <button role="tab" aria-selected="false" data-tab="neg" id="tab-neg">연봉협상 잘했나?</button>
+    </div>
+  </div>
+</nav>
+
+<main class="in">
   <section class="panel" id="p-co" role="tabpanel" aria-labelledby="tab-co">
     <div class="co-split">
       <div class="co-left">
-        <div class="search"><input id="q" type="search" placeholder="회사 이름을 입력하세요 (예: 포스코, 카카오, 농심)" autocomplete="off" aria-label="회사 검색"></div>
+        <label class="search" for="q">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="회사 이름으로 검색 (포스코, 카카오…)" autocomplete="off" aria-label="회사 검색">
+        </label>
         <p class="hint" id="qHint">불러오는 중…</p>
+        <div class="legend" aria-label="신뢰도 표시">
+          <span><span class="gchip g-hi">공시값</span>회사·기관 공시</span>
+          <span><span class="gchip g-mid">국민연금 기준</span>신고 소득</span>
+          <span><span class="gchip g-est">총보상 추정</span>상한 위 몫</span>
+          <span><span class="gchip g-low">최소치</span>최소치로 추정</span>
+        </div>
         <div class="results" id="results"></div>
       </div>
       <div class="co-right" id="sheet">
@@ -179,17 +284,25 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
         <div id="detail"></div>
       </div>
     </div>
-    <h3 class="sec-h">평균 연봉 TOP 10</h3>
-    <p class="sec-p">국민연금 가입자 300명 이상 회사 기준입니다. 사업보고서가 있는 회사는 성과급이 들어간 1인 평균 급여라, 성과급이 큰 해에는 높게 나옵니다.</p>
-    <ol class="rank-list" id="topAvg"></ol>
-    <h3 class="sec-h">전년 대비 연봉이 가장 많이 오른 회사</h3>
-    <p class="sec-p">가입자 300명 이상. 사업보고서가 두 해 모두 있는 회사의 1인 평균 급여(성과급 포함) 비교입니다. 국민연금 평균과 맞지 않는 공시값은 뺐고, 오른 이유는 인원·근속 변화로 가볍게 추정한 것입니다.</p>
-    <ol class="rank-list" id="topRise"></ol>
+
+    <div class="ranks2">
+      <section class="sec">
+        <div class="sec-head"><span class="num">01</span><h2>평균 연봉 <b>TOP 10</b></h2>
+          <p>가입자 300명 이상 회사. 공시값은 성과급이 들어간 1인 평균이라 성과급이 큰 해에는 높게 나옵니다.</p></div>
+        <ol class="rank-list" id="topAvg"></ol>
+      </section>
+      <section class="sec">
+        <div class="sec-head"><span class="num">02</span><h2>작년보다 <b>많이 오른</b> 회사</h2>
+          <p>사업보고서가 두 해 모두 있는 회사의 1인 평균 비교. 오른 이유는 인원·근속 변화로 가볍게 추정했습니다.</p></div>
+        <ol class="rank-list" id="topRise"></ol>
+      </section>
+    </div>
   </section>
 
   <section class="panel" id="p-net" role="tabpanel" aria-labelledby="tab-net" hidden>
-    <div class="calc">
-      <div>
+    <div class="sec-head"><span class="num">03</span><h2>연봉이 이만큼이면 <b>매달 얼마</b> 받나</h2><p>2026년 4대보험 요율과 간이세액표 방식으로 계산한 근사치입니다.</p></div>
+    <div class="calc" style="margin-top:26px">
+      <div class="calc-in">
         <div class="field"><label for="sal">연봉 (만원)</label><input id="sal" type="number" inputmode="numeric" min="1000" max="100000" step="100" value="4000"></div>
         <div class="field"><label for="nt">비과세 금액 (월, 만원)</label><input id="nt" type="number" inputmode="numeric" min="0" max="100" step="5" value="20"><small>식대 등. 보통 월 20만원입니다.</small></div>
         <div class="field"><label for="fam">공제대상 가족 수 (본인 포함)</label><select id="fam"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
@@ -198,26 +311,28 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
         <div class="big" id="netV">-</div>
         <div class="bigl">월 예상 실수령액 · 연 <span id="netY">-</span></div>
         <table class="ded" id="dedT"></table>
-        <p class="hint">2026년 요율 기준 근사치입니다. 국민연금 4.75%(상한 659만원), 건강보험 3.595%, 장기요양 건강보험료의 13.14%, 고용보험 0.9%를 적용했고, 소득세는 간이세액표 산출 방식을 따라 계산했습니다. 실제 원천징수액과 조금 다를 수 있습니다.</p>
+        <p class="hint">국민연금 4.75%(상한 월 659만원), 건강보험 3.595%, 장기요양 건강보험료의 13.14%, 고용보험 0.9%를 적용했습니다. 실제 원천징수액과 조금 다를 수 있습니다.</p>
       </div>
     </div>
   </section>
 
   <section class="panel" id="p-pos" role="tabpanel" aria-labelledby="tab-pos" hidden>
-    <div class="calc">
-      <div><div class="field"><label for="my">내 연봉 (만원)</label><input id="my" type="number" inputmode="numeric" min="1000" max="100000" step="100" value="4500"></div></div>
+    <div class="sec-head"><span class="num">04</span><h2>내 연봉의 <b>위치는?</b></h2><p>가입자 30명 이상 회사 근로자 기준, 평균 연봉이 내 연봉보다 낮은 회사에 다니는 사람의 비율입니다.</p></div>
+    <div class="calc" style="margin-top:26px">
+      <div class="calc-in"><div class="field"><label for="my">내 연봉 (만원)</label><input id="my" type="number" inputmode="numeric" min="1000" max="100000" step="100" value="4500"></div></div>
       <div>
         <div class="big" id="posV">-</div>
         <div class="bigl" id="posL">-</div>
         <div class="gauge" aria-hidden="true"><i id="posBar"></i><b id="posMark"></b></div>
-        <p class="hint">이 비교는 개인 연봉 분포가 아닙니다. 국민연금 사업장 가입자 30명 이상 회사에 다니는 근로자를 기준으로, "평균 연봉이 내 연봉보다 낮은 회사에 다니는 사람이 몇 %인가"를 보여 줍니다. 재미로 보는 참고 지표입니다.</p>
+        <p class="hint">개인 연봉 분포가 아니라 회사 평균 기준이라 참고용으로 보세요.</p>
       </div>
     </div>
   </section>
 
   <section class="panel" id="p-neg" role="tabpanel" aria-labelledby="tab-neg" hidden>
-    <div class="calc">
-      <div>
+    <div class="sec-head"><span class="num">05</span><h2>연봉협상, <b>잘했나?</b></h2><p>취업조로 경력이직 고객들이 실제로 요구한 인상 폭과 비교합니다.</p></div>
+    <div class="calc" style="margin-top:26px">
+      <div class="calc-in">
         <div class="field"><label for="ncur">현재 연봉 (만원, 성과급 포함 총액)</label><input id="ncur" type="number" inputmode="numeric" min="1000" max="100000" step="100" value="4500"></div>
         <div class="field"><label for="noff">제안받은 연봉 (만원)</label><input id="noff" type="number" inputmode="numeric" min="1000" max="100000" step="100" value="5000"><small>아직 제안 전이면 희망연봉을 정할 때 써 보세요.</small></div>
       </div>
@@ -232,7 +347,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   </section>
 
   <p class="foot" id="foot">출처: 국민연금공단 국민연금 가입 사업장 내역(공공데이터포털). 연봉은 고지금액에서 거꾸로 계산한 추정치이며 성과급·임원 보수 일부가 빠지거나 상한에 걸려 실제와 다를 수 있습니다. 가입자 30명 미만 사업장은 싣지 않습니다.</p>
-</div>
+</main>
 
 <script>
 (function () {
@@ -247,12 +362,14 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var b = e.target.closest('button'); if (!b) return;
     document.querySelectorAll('.tabs button').forEach(function (x) { x.setAttribute('aria-selected', String(x === b)); });
     ['co', 'net', 'pos', 'neg'].forEach(function (k) { $('p-' + k).hidden = k !== b.getAttribute('data-tab'); });
+    var pn = $('p-' + b.getAttribute('data-tab'));   // 탭을 바꾸면 그 섹션 첫머리로 (위에 붙은 탭 바에 제목이 가리지 않게)
+    if (pn.getBoundingClientRect().top < 0) pn.scrollIntoView({ block: 'start' });
   });
 
   // ── 데이터: 첫 화면은 meta.json(수십 KB)만 받는다. 검색 목록(index.json)은 검색창을 쓸 때, 회사 상세는 누를 때 그 조각(co/NN.json)만 받는다.
   //    직급별 금액·기본연봉·출처는 빌드(build_site.py)가 미리 계산해 조각에 넣는다 → 화면과 회사별 페이지 숫자가 같다.
   var D = { meta: null }, IDX = null, idxP = null, SH = {}, CUR = null;
-  var RANK_NAMES = ['사원', '대리', '과장', '차장', '부장'];
+  var RANK_NAMES = ['사원<small class="yr">1~3년차</small>', '대리', '과장', '차장', '부장'];   // 사원 값은 고객 자료의 사원·주임(1~3년차) 평균에 맞춰져 있어 연차를 함께 적는다
   var norm = function (s) { return s.replace(/\s+/g, '').toLowerCase(); };
   function loadIndex() {
     if (IDX) return Promise.resolve(IDX);
@@ -276,14 +393,24 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       return o;
     });
   }
+  // 히어로 숫자판·검은 띠: meta 에서 채운다 (데이터가 매달 바뀌어도 문구를 손대지 않게)
+  function heroFill(m) {
+    var V = m.validation || {}, nf = function (v) { return (v || 0).toLocaleString('ko-KR'); };
+    $('stCo').innerHTML = nf(m.count) + '<small>곳</small>';
+    $('stOff').innerHTML = nf(m.dartCount) + '<small>곳</small>';   // 공시값이 붙은 회사 수 (검증 배지의 개사 수와 다를 수 있음)
+    $('stVal').innerHTML = nf(V.total) + '<small>건</small>';
+    $('stYm').textContent = m.ym.replace('-', '.');
+    var items = ['국민연금 가입 회사 ' + nf(m.count) + '곳', '사업보고서·공공기관 공시 ' + nf(m.dartCount) + '곳', '이직자 실제 연봉 ' + nf(V.nMatched) + '명으로 검증',
+      '사원 · 대리 · 과장 · 차장 · 부장 직급별 추정', '매달 자동 갱신', '실수령액 계산기 · 내 연봉의 위치는? · 연봉협상 잘했나?'];
+    var row = items.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('');
+    $('tick').innerHTML = row + row;   // 두 번 이어 붙여 끊김 없이 흐르게
+  }
   function hint() {
     var m = D.meta, ym = m.ym.replace('-', '년 ') + '월';
-    $('qHint').textContent = ym + ' 기준' + (m.months ? ' · 최근 ' + m.months + '개월 분석' : '') + ' · 회사 ' + m.count.toLocaleString('ko-KR') + '곳' +
-      (m.dartCount ? ' · 사업보고서 ' + m.dartCount.toLocaleString('ko-KR') + '곳 반영' : '') +
-      (m.validation ? ' · 실제 연봉 ' + m.validation.total.toLocaleString('ko-KR') + '건으로 검증' : '');
+    $('qHint').textContent = ym + ' 기준 · 법인명으로 찾습니다(브랜드명과 다를 수 있음) · 가입자 30명 이상 회사';
   }
   fetch('data/meta.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (m) {
-    D.meta = m; hint();
+    D.meta = m; hint(); heroFill(m);
     var ym = m.ym.replace('-', '년 ') + '월';
     $('foot').textContent = '출처: ' + m.source + ', ' + ym + ' 기준' + (m.dartCount ? ' · 금융감독원 전자공시(DART) 사업보고서 직원 현황' : '') +
       (m.validation ? ' · 직급별 추정은 취업조로 경력이직 고객 ' + m.validation.nMatched + '명의 실제 연봉(이직 직전)으로 검증·보정했습니다(집계값만 사용)' : '') +
@@ -378,7 +505,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       '<li>계열사·지점이 다른 법인으로 등록돼 있으면 따로 나옵니다.</li>';
     $('detail').innerHTML = '<article class="detail" aria-live="polite">' +
       '<div class="top"><div><h2>' + esc(r.name) + '</h2><div class="meta">' + esc([r.industry, r.sido, '사업자번호 앞자리 ' + r.biz6].filter(Boolean).join(' · ')) + '</div></div>' +
-      '<div class="avg"><div class="v">' + man(r.bAvg) + plus + '<small>만원</small></div><div class="l">평균 연봉 · ' + esc(r.bSrc) + ' ' + gradeChip(r.dart ? 2 : r.calAvg ? 4 : r.capped ? 1 : 0) + '</div></div></div>' +
+      '<div class="avg"><div class="v">' + man(r.bAvg) + plus + '<small>만원</small></div><div class="l">평균 연봉' + (/^(국민연금 기준|총보상 추정)$/.test(r.bSrc) ? '' : ' · ' + esc(r.bSrc)) + ' ' + gradeChip(r.dart ? 2 : r.calAvg ? 4 : r.capped ? 1 : 0) + '</div></div></div>' +
       (V ? '<p class="vbadge">실제 연봉 ' + V.total.toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명 + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
       (capped ? '<p class="warnbox">이 회사는 1인 평균이 국민연금 소득 상한(월 ' + D.meta.cap + '만원)에 가까워 실제 연봉은 이보다 높을 가능성이 큽니다. 아래 직급별 금액도 "최소 이 정도"로 보세요.</p>' : '') +
       (r.dart && r.avgAnnual ? '<p class="hint">참고: 국민연금 기준 추정 평균은 ' + man(r.avgAnnual) + '만원입니다. 공시 평균에는 상한 위 몫과 올해 성과급까지 들어갑니다.</p>' : '') +
