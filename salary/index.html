@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>연봉 연구소</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 취업조로 v2 톤 시안(아직 사이트와 분리). 세 기능: 회사 연봉(국민연금 기반 추정) · 실수령액 계산기 · 내 연봉 위치 */
+:root { --bg:#ffffff; --ink:#0b0b0b; --soft:#45483f; --muted:#7a7d73; --line:#e4e6df; --line2:#cfd2c8; --fill:#f4f5f1; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d; --warn:#b4453a;
+  --display:"Archivo","Noto Sans KR",system-ui,sans-serif; --font:"Noto Sans KR",system-ui,sans-serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#8d9085; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; color-scheme:dark; } }
+:root[data-theme="dark"] { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#8d9085; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); line-height:1.6; }
+.w { max-width:1080px; margin:0 auto; padding-block:28px 80px; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.kick { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; gap:10px; align-items:center; }
+.kick i { width:8px; height:8px; border-radius:50%; background:var(--acc); display:inline-block; }
+h1 { font-family:var(--display); font-weight:900; font-size:clamp(34px,6vw,72px); letter-spacing:-.05em; line-height:1; margin:12px 0 12px; text-wrap:balance; }
+h1 b { background:linear-gradient(transparent 66%, var(--mark) 66%); }
+.lead { color:var(--soft); max-width:62ch; margin:0; }
+.tabs { display:flex; gap:6px; margin-top:26px; border-bottom:1px solid var(--ink); overflow-x:auto; scrollbar-width:none; }
+.tabs button { font:inherit; font-family:var(--display); font-weight:700; font-size:14px; padding:12px 16px; background:none; border:0; border-bottom:3px solid transparent; color:var(--muted); cursor:pointer; white-space:nowrap; }
+.tabs button[aria-selected="true"] { color:var(--ink); border-bottom-color:var(--ink); }
+.panel { padding-top:24px; }
+.search { position:relative; }
+.search input { width:100%; font:inherit; font-size:17px; padding:15px 18px; border-radius:999px; border:1.5px solid var(--ink); background:var(--bg); color:var(--ink); }
+.search input:focus { outline:3px solid var(--acc); outline-offset:1px; }
+.hint { font-size:13px; color:var(--muted); margin-top:8px; }
+.results { margin-top:14px; border-top:1px solid var(--line); }
+.res { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 16px; padding:13px 4px; border-bottom:1px solid var(--line); cursor:pointer; background:none; border-left:0; border-right:0; border-top:0; width:100%; text-align:left; font:inherit; color:inherit; }
+.res:hover, .res:focus-visible { background:var(--fill); outline:none; }
+.res .nm { font-weight:900; font-size:16px; letter-spacing:-.02em; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.res .sub { grid-column:1; font-size:12.5px; color:var(--muted); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.res .pay { grid-row:1 / span 2; grid-column:2; align-self:center; font-family:var(--display); font-weight:900; font-size:18px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.res .pay small { font-family:var(--font); font-weight:500; font-size:12px; color:var(--muted); margin-left:2px; }
+/* 회사 상세 */
+.detail { margin-top:22px; border:1.5px solid var(--ink); border-radius:16px; padding:22px; }
+.detail .top { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px 24px; align-items:flex-end; }
+.detail h2 { font-family:var(--display); font-weight:900; font-size:clamp(26px,4vw,40px); letter-spacing:-.045em; line-height:1.05; margin:0; }
+.detail .meta { font-size:13px; color:var(--muted); margin-top:6px; }
+.detail .avg { text-align:right; }
+.detail .avg .v { font-family:var(--display); font-weight:900; font-size:clamp(30px,4.6vw,48px); letter-spacing:-.04em; line-height:1; font-variant-numeric:tabular-nums; }
+.detail .avg .v small { font-size:.45em; font-weight:700; margin-left:4px; }
+.detail .avg .l { font-size:12.5px; color:var(--muted); margin-top:4px; }
+.warnbox { margin-top:14px; font-size:13.5px; color:var(--warn); border-left:3px solid var(--warn); padding:2px 0 2px 10px; }
+.ranks { margin-top:20px; display:grid; gap:10px; }
+.rk { display:grid; grid-template-columns:52px minmax(0,1fr) 112px; gap:12px; align-items:center; }
+.rk .n { font-weight:900; }
+.rk .bar { height:14px; border-radius:999px; background:var(--fill); overflow:hidden; }
+.rk .bar i { display:block; height:100%; border-radius:999px; background:var(--ink); }
+.rk:first-child .bar i { background:var(--acc); }
+.rk .v { font-family:var(--display); font-weight:700; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.facts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:20px; }
+.facts div { background:var(--fill); border-radius:12px; padding:12px 14px; min-width:0; }
+.facts dt { font-size:12px; color:var(--muted); }
+.facts dd { margin:2px 0 0; font-family:var(--display); font-weight:900; font-size:19px; font-variant-numeric:tabular-nums; }
+details.how { margin-top:18px; font-size:13.5px; color:var(--soft); }
+details.how summary { cursor:pointer; font-weight:700; color:var(--ink); }
+details.how ol { padding-left:20px; margin:8px 0 0; } details.how li { margin-top:4px; }
+/* 두 칸 화면: PC 는 왼쪽 목록 + 오른쪽 고정 상세, 폰은 상세가 아래에서 올라오는 전체 화면 창 */
+.co-right .empty { border:1.5px dashed var(--line2); border-radius:16px; padding:28px 22px; color:var(--soft); }
+.co-right .empty h3 { margin:0 0 6px; font-family:var(--display); font-weight:900; font-size:22px; letter-spacing:-.03em; color:var(--ink); }
+.co-right .empty .picks { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.co-right .empty .picks button { font:inherit; font-size:14px; font-weight:700; padding:8px 14px; border-radius:999px; border:1px solid var(--line2); background:var(--bg); color:var(--ink); cursor:pointer; }
+.co-right .empty .picks button:hover { border-color:var(--ink); }
+.sheet-bar { display:none; }
+.res.on { background:var(--fill); box-shadow:inset 3px 0 0 var(--ink); }
+@media (min-width:960px) {
+  .co-split { display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:28px; align-items:start; }
+  .co-right { position:sticky; top:16px; max-height:calc(100vh - 32px); overflow:auto; overscroll-behavior:contain; border-radius:16px; }
+  .co-right .detail { margin-top:0; }
+  .results { max-height:62vh; overflow:auto; }
+}
+@media (max-width:959px) {
+  .co-right .empty { display:none; }
+  .co-right { position:fixed; inset:0; z-index:50; background:var(--bg); overflow:auto; overscroll-behavior:contain; transform:translateY(100%); visibility:hidden; transition:transform .28s cubic-bezier(.2,.7,.2,1), visibility 0s .28s;
+    padding:0 max(12px, env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(12px, env(safe-area-inset-left,0px)); }
+  .co-right.open { transform:none; visibility:visible; transition:transform .28s cubic-bezier(.2,.7,.2,1); }
+  .sheet-bar { display:block; position:sticky; top:0; z-index:2; background:var(--bg); padding:calc(10px + env(safe-area-inset-top,0px)) 0 10px; border-bottom:1px solid var(--line); }
+  .sheet-bar button { font:inherit; font-weight:700; font-size:15px; padding:8px 14px; border-radius:999px; border:1px solid var(--ink); background:var(--bg); color:var(--ink); cursor:pointer; }
+  .co-right .detail { border:0; padding:16px 2px; margin-top:0; }
+  body.sheet-open { overflow:hidden; }
+}
+@media (prefers-reduced-motion: reduce) { .co-right { transition:none !important; } }
+.vbadge { display:inline-block; margin:12px 0 0; font-size:12.5px; font-weight:700; padding:4px 11px; border-radius:999px; background:var(--acc); color:var(--acc-ink); }
+.rk .v small.rb { display:block; font-family:var(--font); font-size:11.5px; font-weight:500; color:var(--muted); }
+.rank-list .why { color:var(--warn); font-weight:700; }
+.rank-list .v.up { color:var(--warn); }
+.negbox { margin-top:16px; padding:14px 16px; border-radius:12px; background:var(--fill); font-size:14px; line-height:1.7; }
+.negbox b { font-size:15px; }
+.negbox .gauge { margin-top:14px; }
+/* 연봉 제보 */
+.rep { margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
+.rep-h { display:flex; flex-wrap:wrap; gap:6px 12px; align-items:baseline; }
+.rep-h h3 { margin:0; font-family:var(--display); font-weight:900; font-size:18px; letter-spacing:-.02em; }
+.rep .tag { font-size:12px; font-weight:700; color:var(--warn); }
+.rep-list { list-style:none; padding:0; margin:10px 0 0; display:grid; gap:6px; }
+.rep-list li { display:grid; grid-template-columns:52px minmax(0,1fr); gap:10px; font-size:14px; }
+.rep-list span { font-variant-numeric:tabular-nums; } .rep-list small { color:var(--muted); margin-left:6px; } .rep-list .muted { color:var(--muted); }
+.rep .more { font-size:13px; color:var(--muted); margin:10px 0 0; } .rep .more a { color:var(--ink); }
+.rep-open { margin-top:12px; font:inherit; font-weight:700; font-size:14px; padding:11px 18px; border-radius:999px; border:1.5px solid var(--ink); background:var(--acc); color:var(--acc-ink); cursor:pointer; }
+.rep-form { margin-top:14px; padding:16px; border-radius:14px; background:var(--fill); }
+.rep-form .grid2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; margin-top:10px; }
+.rep-form label { display:grid; gap:4px; font-size:13px; font-weight:700; }
+.rep-form input, .rep-form select { font:inherit; font-size:15px; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line2); background:var(--bg); color:var(--ink); width:100%; }
+.rep-form .agree { display:flex; gap:8px; align-items:center; margin-top:12px; font-weight:500; }
+.rep-form .agree input { width:auto; }
+.rep-form .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:12px; }
+.rep-form button { font:inherit; font-weight:700; padding:11px 20px; border-radius:999px; border:0; background:var(--ink); color:var(--bg); cursor:pointer; }
+.rep-form .st { font-size:13px; } .rep-form .st.bad { color:var(--warn); } .rep-form .st.ok { font-weight:700; }
+.hp { position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
+@media (max-width:560px) { .rep-form .grid2 { grid-template-columns:minmax(0,1fr); } }
+/* 업종 랭킹 */
+.sec-h { font-family:var(--display); font-weight:900; font-size:22px; letter-spacing:-.03em; margin:34px 0 4px; }
+.sec-p { font-size:13.5px; color:var(--muted); margin:0 0 10px; }
+.rank-list { list-style:none; padding:0; margin:0; border-top:1px solid var(--line); }
+.rank-list li { display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px; padding:10px 2px; border-bottom:1px solid var(--line); align-items:center; }
+.rank-list .no { font-family:var(--display); font-weight:900; color:var(--muted); }
+.rank-list .t { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+.rank-list .t small { display:block; font-weight:500; font-size:12px; color:var(--muted); }
+.rank-list .v { font-family:var(--display); font-weight:900; font-variant-numeric:tabular-nums; white-space:nowrap; }
+/* 계산기 */
+.calc { display:grid; grid-template-columns:minmax(0,340px) minmax(0,1fr); gap:24px; align-items:start; }
+.field { display:grid; gap:6px; margin-bottom:14px; }
+.field label { font-size:13px; font-weight:700; }
+.field input, .field select { font:inherit; font-size:16px; padding:12px 14px; border-radius:12px; border:1.5px solid var(--line2); background:var(--bg); color:var(--ink); width:100%; }
+.field input:focus, .field select:focus { border-color:var(--ink); outline:none; }
+.field small { font-size:12px; color:var(--muted); }
+.big { font-family:var(--display); font-weight:900; font-size:clamp(36px,6vw,60px); letter-spacing:-.045em; line-height:1; font-variant-numeric:tabular-nums; }
+.big small { font-size:.4em; margin-left:6px; }
+.bigl { font-size:13px; color:var(--muted); margin-top:6px; }
+table.ded { width:100%; border-collapse:collapse; margin-top:18px; font-size:14px; }
+table.ded td { padding:9px 4px; border-bottom:1px solid var(--line); }
+table.ded td:last-child { text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
+table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
+.gauge { margin-top:22px; height:18px; border-radius:999px; background:var(--fill); position:relative; }
+.gauge i { position:absolute; inset:0 auto 0 0; border-radius:999px; background:var(--acc); }
+.gauge b { position:absolute; top:-6px; width:3px; height:30px; background:var(--ink); }
+.foot { margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font-size:12.5px; color:var(--muted); }
+.loading { padding:30px 0; color:var(--muted); }
+@media (max-width:760px) {
+  .facts { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .calc { grid-template-columns:minmax(0,1fr); }
+  .detail .avg { text-align:left; }
+  .rk { grid-template-columns:44px minmax(0,1fr) 92px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="kick"><i></i>Salary Lab · 시안 v0.5</div>
+  <h1>회사 이름만 넣으면,<br><b>직급별 연봉</b>까지.</h1>
+  <p class="lead">국민연금 가입 사업장 공개 자료로 회사별 평균 연봉을 계산하고, 사원부터 부장까지 직급별 연봉을 추정합니다. 실수령액 계산기와 내 연봉 위치도 함께 볼 수 있습니다.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="co" id="tab-co">회사 연봉</button>
+    <button role="tab" aria-selected="false" data-tab="net" id="tab-net">실수령액 계산기</button>
+    <button role="tab" aria-selected="false" data-tab="pos" id="tab-pos">내 연봉 위치</button>
+    <button role="tab" aria-selected="false" data-tab="neg" id="tab-neg">연봉 협상</button>
+  </div>
+
+  <section class="panel" id="p-co" role="tabpanel" aria-labelledby="tab-co">
+    <div class="co-split">
+      <div class="co-left">
+        <div class="search"><input id="q" type="search" placeholder="회사 이름을 입력하세요 (예: 포스코, 카카오, 농심)" autocomplete="off" aria-label="회사 검색"></div>
+        <p class="hint" id="qHint">불러오는 중…</p>
+        <div class="results" id="results"></div>
+      </div>
+      <div class="co-right" id="sheet">
+        <div class="sheet-bar"><button type="button" id="sheetClose" aria-label="목록으로 돌아가기">← 목록으로</button></div>
+        <div id="detail"></div>
+      </div>
+    </div>
+    <h3 class="sec-h">평균 연봉 TOP 10</h3>
+    <p class="sec-p">국민연금 가입자 300명 이상 회사 기준입니다. 사업보고서가 있는 회사는 성과급이 들어간 1인 평균 급여라, 성과급이 큰 해에는 높게 나옵니다.</p>
+    <ol class="rank-list" id="topAvg"></ol>
+    <h3 class="sec-h">전년 대비 연봉이 가장 많이 오른 회사</h3>
+    <p class="sec-p">가입자 300명 이상. 사업보고서가 두 해 모두 있는 회사의 1인 평균 급여(성과급 포함) 비교입니다. 국민연금 평균과 맞지 않는 공시값은 뺐고, 오른 이유는 인원·근속 변화로 가볍게 추정한 것입니다.</p>
+    <ol class="rank-list" id="topRise"></ol>
+  </section>
+
+  <section class="panel" id="p-net" role="tabpanel" aria-labelledby="tab-net" hidden>
+    <div class="calc">
+      <div>
+        <div class="field"><label for="sal">연봉 (만원)</label><input id="sal" type="number" inputmode="numeric" min="1000" max="100000" step="100" value="4000"></div>
+        <div class="field"><label for="nt">비과세 금액 (월, 만원)</label><input id="nt" type="number" inputmode="numeric" min="0" max="100" step="5" value="20"><small>식대 등. 보통 월 20만원입니다.</small></div>
+        <div class="field"><label for="fam">공제대상 가족 수 (본인 포함)</label><select id="fam"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+      </div>
+      <div>
+        <div class="big" id="netV">-</div>
+        <div class="bigl">월 예상 실수령액 · 연 <span id="netY">-</span></div>
+        <table class="ded" id="dedT"></table>
+        <p class="hint">2026년 요율 기준 근사치입니다. 국민연금 4.75%(상한 659만원), 건강보험 3.595%, 장기요양 건강보험료의 13.14%, 고용보험 0.9%를 적용했고, 소득세는 간이세액표 산출 방식을 따라 계산했습니다. 실제 원천징수액과 조금 다를 수 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-pos" role="tabpanel" aria-labelledby="tab-pos" hidden>
+    <div class="calc">
+      <div><div class="field"><label for="my">내 연봉 (만원)</label><input id="my" type="number" inputmode="numeric" min="1000" max="100000" step="100" value="4500"></div></div>
+      <div>
+        <div class="big" id="posV">-</div>
+        <div class="bigl" id="posL">-</div>
+        <div class="gauge" aria-hidden="true"><i id="posBar"></i><b id="posMark"></b></div>
+        <p class="hint">이 비교는 개인 연봉 분포가 아닙니다. 국민연금 사업장 가입자 30명 이상 회사에 다니는 근로자를 기준으로, "평균 연봉이 내 연봉보다 낮은 회사에 다니는 사람이 몇 %인가"를 보여 줍니다. 재미로 보는 참고 지표입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-neg" role="tabpanel" aria-labelledby="tab-neg" hidden>
+    <div class="calc">
+      <div>
+        <div class="field"><label for="ncur">현재 연봉 (만원, 성과급 포함 총액)</label><input id="ncur" type="number" inputmode="numeric" min="1000" max="100000" step="100" value="4500"></div>
+        <div class="field"><label for="noff">제안받은 연봉 (만원)</label><input id="noff" type="number" inputmode="numeric" min="1000" max="100000" step="100" value="5000"><small>아직 제안 전이면 희망연봉을 정할 때 써 보세요.</small></div>
+      </div>
+      <div>
+        <div class="big" id="negV">-</div>
+        <div class="bigl" id="negL">-</div>
+        <table class="ded" id="negT"></table>
+        <div class="negbox" id="negBox"></div>
+        <p class="hint" id="negSrc"></p>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot" id="foot">출처: 국민연금공단 국민연금 가입 사업장 내역(공공데이터포털). 연봉은 고지금액에서 거꾸로 계산한 추정치이며 성과급·임원 보수 일부가 빠지거나 상한에 걸려 실제와 다를 수 있습니다. 가입자 30명 미만 사업장은 싣지 않습니다.</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function man(v) { return Math.round(v).toLocaleString('ko-KR'); }   // 만원 단위 숫자
+  function won(v) { return Math.round(v).toLocaleString('ko-KR') + '원'; }
+
+  // ── 탭
+  document.querySelector('.tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    document.querySelectorAll('.tabs button').forEach(function (x) { x.setAttribute('aria-selected', String(x === b)); });
+    ['co', 'net', 'pos', 'neg'].forEach(function (k) { $('p-' + k).hidden = k !== b.getAttribute('data-tab'); });
+  });
+
+  // ── 데이터: 첫 화면은 meta.json(수십 KB)만 받는다. 검색 목록(index.json)은 검색창을 쓸 때, 회사 상세는 누를 때 그 조각(co/NN.json)만 받는다.
+  //    직급별 금액·기본연봉·출처는 빌드(build_site.py)가 미리 계산해 조각에 넣는다 → 화면과 회사별 페이지 숫자가 같다.
+  var D = { meta: null }, IDX = null, idxP = null, SH = {}, CUR = null;
+  var RANK_NAMES = ['사원', '대리', '과장', '차장', '부장'];
+  var norm = function (s) { return s.replace(/\s+/g, '').toLowerCase(); };
+  function loadIndex() {
+    if (IDX) return Promise.resolve(IDX);
+    if (!idxP) {
+      $('qHint').textContent = '회사 목록을 불러오는 중…';
+      idxP = fetch('data/index.json').then(function (r) { return r.json(); }).then(function (a) {
+        IDX = a.map(function (x, i) { return { i: i, n: x[0], al: x[5] || '', k: norm(x[0]) + (x[5] ? '|' + norm(x[5]) : ''), m: x[1], avg: x[2], cap: !!(x[3] & 1), dart: !!(x[3] & 2), ind: D.meta.inds[x[4]] || '' }; });   // x[5]: SK텔레콤 같은 흔한 이름
+        hint(); return IDX;
+      });
+    }
+    return idxP;
+  }
+  function loadRow(i) {
+    var s = i % D.meta.shards;
+    if (!SH[s]) SH[s] = fetch('data/co/' + ('0' + s).slice(-2) + '.json').then(function (r) { return r.json(); });
+    return SH[s].then(function (rows) {
+      var row = rows.find(function (x) { return x[0] === i; }), o = {};
+      D.meta.cols.forEach(function (c, j) { o[c] = row[j]; });
+      o.n = o.name; o.biz = o.biz6; o.rep = o.reports;   // 제보 영역(repHtml)이 쓰는 이름
+      return o;
+    });
+  }
+  function hint() {
+    var m = D.meta, ym = m.ym.replace('-', '년 ') + '월';
+    $('qHint').textContent = ym + ' 기준' + (m.months ? ' · 최근 ' + m.months + '개월 분석' : '') + ' · 회사 ' + m.count.toLocaleString('ko-KR') + '곳' +
+      (m.dartCount ? ' · 사업보고서 ' + m.dartCount.toLocaleString('ko-KR') + '곳 반영' : '') +
+      (m.validation ? ' · 실제 연봉 ' + m.validation.total.toLocaleString('ko-KR') + '건으로 검증' : '');
+  }
+  fetch('data/meta.json').then(function (r) { return r.json(); }).then(function (m) {
+    D.meta = m; hint();
+    var ym = m.ym.replace('-', '년 ') + '월';
+    $('foot').textContent = '출처: ' + m.source + ', ' + ym + ' 기준' + (m.dartCount ? ' · 금융감독원 전자공시(DART) 사업보고서 직원 현황' : '') +
+      (m.validation ? ' · 직급별 추정은 취업조로 경력이직 고객 ' + m.validation.nMatched + '명의 실제 연봉(이직 직전)으로 검증·보정했습니다(집계값만 사용)' : '') +
+      '. 평균 연봉 = 당월 고지금액 ÷ 가입자 수 ÷ 보험료율 ' + (m.rate * 100).toFixed(1) + '% × 12. 가입자 ' + m.minMembers + '명 미만 사업장은 싣지 않습니다. 모든 수치는 추정치입니다.';
+    rankings(); netCalc(); posCalc(); negCalc(); emptyDetail();
+    var q = decodeURIComponent((location.hash || '').slice(1));
+    if (q) { $('q').value = q; loadIndex().then(function () { search(); var hit = IDX.find(function (x) { return x.n === q; }); if (hit) openCo(hit.i); }); }
+  }).catch(function () { $('qHint').textContent = '데이터를 불러오지 못했습니다. 새로고침해 주세요.'; });
+  $('q').addEventListener('focus', function () { if (D.meta) loadIndex(); });
+
+  // ── 검색
+  function search() {
+    var q = norm($('q').value);
+    if (!q || !D.meta) { $('results').innerHTML = ''; return; }
+    if (!IDX) { loadIndex().then(search); return; }
+    var hit = [], pre = [];
+    for (var i = 0; i < IDX.length && hit.length + pre.length < 400; i++) {
+      var r = IDX[i], p = r.k.indexOf(q);
+      if (p === 0 || (r.al && r.k.indexOf('|' + q) >= 0)) pre.push(r); else if (p > 0) hit.push(r);
+    }
+    var list = pre.concat(hit).slice(0, 20);   // 목록은 가입자 많은 순 → 큰 회사가 먼저
+    $('results').innerHTML = list.length ? list.map(function (r) {
+      return '<button class="res' + (CUR === r.i ? ' on' : '') + '" type="button" data-i="' + r.i + '"><span class="nm">' + esc(r.al || r.n) + '</span>' +
+        '<span class="sub">' + esc([r.al ? r.n : '', r.ind, r.m.toLocaleString('ko-KR') + '명', r.dart ? '상장·공시' : ''].filter(Boolean).join(' · ')) + '</span>' +
+        '<span class="pay">' + man(r.avg) + (r.cap ? '<small>만원+</small>' : '<small>만원</small>') + '</span></button>';
+    }).join('') : '<p class="hint">찾는 회사가 없습니다. 가입자 30명 이상 회사만 있고, 법인명 기준이라 브랜드명과 다를 수 있습니다.</p>';
+  }
+  var tm; $('q').addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(search, 120); });
+  $('results').addEventListener('click', function (e) { var b = e.target.closest('.res'); if (b) openCo(+b.getAttribute('data-i')); });
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-co]'); if (!a) return; e.preventDefault();
+    var i = +a.getAttribute('data-co'), nm = a.getAttribute('data-name');
+    if (nm) { $('q').value = nm; search(); }
+    openCo(i);
+    if (!isPhone() && !a.closest('.co-right')) document.querySelector('.co-split').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  function isPhone() { return window.matchMedia('(max-width:959px)').matches; }
+  function closeSheet(fromNav) {
+    var sh = $('sheet'); if (!sh.classList.contains('open')) return;
+    sh.classList.remove('open'); document.body.classList.remove('sheet-open');
+    if (fromNav !== true && history.state && history.state.sheet) history.back();
+  }
+  $('sheetClose').addEventListener('click', closeSheet);
+  window.addEventListener('popstate', function () { closeSheet(true); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
+  // 아직 아무 회사도 안 골랐을 때 오른쪽 칸: 안내 + 많이 찾는 회사 바로가기
+  function emptyDetail() {
+    $('detail').innerHTML = '<div class="empty"><h3>회사를 고르면 여기에 나옵니다</h3><p>평균 연봉, 사원부터 부장까지 직급별 추정, 입사·퇴사 흐름, 현직자 제보를 한 화면에서 봅니다.</p>' +
+      '<div class="picks">' + (D.meta.picks || []).map(function (x) { return '<button type="button" data-co="' + x[1] + '" data-name="' + esc(x[0]) + '">' + esc(x[0]) + '</button>'; }).join('') + '</div></div>';
+  }
+  function openCo(i) {
+    CUR = i;
+    document.querySelectorAll('.res').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-i') === i); });
+    loadRow(i).then(show);
+  }
+  function show(r) {
+    var capped = r.capped && !r.dart && !r.calAvg, plus = capped ? '+' : '';
+    var main = r.rk, base = r.rkBase, max = Math.max.apply(null, main), V = D.meta.validation;
+    var hasYoy = r.yoyPct !== null && r.yoyPct !== undefined && !r.capped;   // 상한에 걸린 회사의 추이는 상한 인상분이라 숨긴다
+    var facts = [['국민연금 가입자', r.members.toLocaleString('ko-KR') + '명'],
+      r.newHireAnnual ? ['입사자 평균 연봉', man(r.newHireAnnual) + '만원'] : ['이번 달 입사', r.newHires.toLocaleString('ko-KR') + '명'],
+      hasYoy ? ['1년 연봉 인상률', (r.yoyPct > 0 ? '+' : '') + r.yoyPct + '%'] : ['이번 달 퇴사', r.leavers.toLocaleString('ko-KR') + '명'],
+      ['평균 근속', r.tT.toFixed(1) + '년']];
+    var trend = (!r.capped && r.trend && r.trend.length > 1 && D.meta.trendYears) ? '<p class="hint">연도별 평균 연봉(국민연금, 매년 같은 달): ' +
+      r.trend.map(function (v, k) { return D.meta.trendYears[k] + '년 ' + man(v) + '만원'; }).join(' → ') + '</p>' : '';
+    var howRank = r.how === 'split' ? '<li>직급별: 성과급·주식보상 비중이 큰 회사라 두 가지로 보여 줍니다. 기본연봉은 국민연금으로 추정한 입사자 연봉에서 직급 배수로 올렸고, 총보상은 여기에 이 회사의 성과급 배율(' + r.factor + '배)을 곱했습니다.</li>'
+      : r.how === 'fit' ? '<li>직급별: 사원은 국민연금 월별 변화로 추정한 입사자 평균 연봉이고, 평균 근속 연차에서 회사 평균이 되도록 연차별 곡선을 맞췄습니다. 입사자에는 경력직도 섞여 있습니다.</li>'
+      : '<li>직급별: 평균 연봉을 평균 근속 연차의 연봉으로 보고, 직급별 연봉 조사의 사원 대비 배수(대리 1.25, 과장 1.54, 차장 1.82, 부장 2.04)로 나눴습니다.</li>';
+    var how = '<li>평균 연봉: ' + (r.dart ? r.dart[2] + '년 사업보고서의 직원 1인 평균 급여입니다(성과급 포함).' : r.calAvg ? '국민연금 추정치(' + man(r.avgAnnual) + '만원)를 상한 보정한 값입니다.' : '국민연금 고지금액 ÷ 가입자 수 ÷ 보험료율 ' + (D.meta.rate * 100).toFixed(1) + '% × 12개월로 계산했습니다.') + '</li>' +
+      '<li>평균 근속 ' + r.tT.toFixed(1) + '년: ' + r.tSrc + ' 기준입니다.</li>' + howRank +
+      (V ? '<li>검증: 취업조로 경력이직 고객 ' + V.nMatched + '명의 실제 연봉(이직 직전)과 비교해 직급별 치우침을 보정했습니다(개인별 오차 중앙값 약 ' + Math.round(V.errAfter) + '%, 같은 회사·직급 안에서도 사람마다 차이가 큽니다). 평균 연봉 보정은 사업보고서 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사의 실제 평균 급여로 검증했습니다(오차 중앙값 약 ' + (V.dartErr || '') + '%).</li>' : '') +
+      '<li>계열사·지점이 다른 법인으로 등록돼 있으면 따로 나옵니다.</li>';
+    $('detail').innerHTML = '<article class="detail" aria-live="polite">' +
+      '<div class="top"><div><h2>' + esc(r.name) + '</h2><div class="meta">' + esc([r.industry, r.sido, '사업자번호 앞자리 ' + r.biz6].filter(Boolean).join(' · ')) + '</div></div>' +
+      '<div class="avg"><div class="v">' + man(r.bAvg) + plus + '<small>만원</small></div><div class="l">평균 연봉 · ' + esc(r.bSrc) + '</div></div></div>' +
+      (V ? '<p class="vbadge">실제 연봉 ' + V.total.toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명 + 사업보고서 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
+      (capped ? '<p class="warnbox">이 회사는 1인 평균이 국민연금 소득 상한(월 ' + D.meta.cap + '만원)에 가까워 실제 연봉은 이보다 높을 가능성이 큽니다. 아래 직급별 금액도 "최소 이 정도"로 보세요.</p>' : '') +
+      (r.dart && r.avgAnnual ? '<p class="hint">참고: 국민연금 기준 추정 평균은 ' + man(r.avgAnnual) + '만원입니다. 사업보고서 평균에는 성과급이 들어갑니다.</p>' : '') +
+      (!r.dart && r.calAvg ? '<p class="hint">국민연금 기준으로는 ' + man(r.avgAnnual) + '만원이지만, 직원 상당수가 국민연금 소득 상한(월 ' + D.meta.cap + '만원)을 넘는 회사입니다. 사업보고서가 있는 회사 ' + (D.meta.calib ? D.meta.calib.n.toLocaleString('ko-KR') : '') + '곳의 실제 평균과 비교해 업종·수준별 비율로 보정했습니다.</p>' : '') +
+      (base ? '<p class="hint"><b>성과급 포함 총보상</b> 기준입니다. 작은 숫자는 기본연봉 추정이고, 성과급은 해마다 크게 달라집니다.</p>' : '') +
+      '<div class="ranks">' + main.map(function (v, k) {
+        return '<div class="rk"><span class="n">' + RANK_NAMES[k] + '</span><span class="bar"><i style="width:' + (v / max * 100).toFixed(1) + '%"></i></span><span class="v">' + man(v) + plus + '만원' +
+          (base ? '<small class="rb">기본 약 ' + man(base[k]) + '만원</small>' : '') + '</span></div>';
+      }).join('') + '</div>' + trend +
+      '<dl class="facts">' + facts.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('') + '</dl>' +
+      '<details class="how"><summary>이 숫자는 어떻게 계산했나요?</summary><ol>' + how + '</ol></details>' + repHtml(r) +
+      '</article>';
+    var sh = $('sheet'); sh.scrollTop = 0;
+    if (isPhone()) {
+      if (!sh.classList.contains('open')) {
+        sh.classList.add('open'); document.body.classList.add('sheet-open');
+        try { history.pushState({ sheet: 1 }, '', '#' + encodeURIComponent(r.name)); } catch (e) {}
+      } else { try { history.replaceState({ sheet: 1 }, '', '#' + encodeURIComponent(r.name)); } catch (e) {} }
+      $('sheetClose').focus();
+    } else { try { history.replaceState(null, '', '#' + encodeURIComponent(r.name)); } catch (e) {} }
+  }
+
+  // ── 연봉 제보: 같은 회사·직급 제보가 5건 이상이면 범위 공개, 아니면 건수만
+  var REP_RANKS = ['사원', '주임', '대리', '과장', '차장', '부장'];
+  function repHtml(r) {
+    var rep = r.rep, h = '<section class="rep"><div class="rep-h"><h3>현직자 제보</h3><span class="tag">검증되지 않은 제보 · 기본급+성과급</span></div>';
+    if (!rep || !rep.n) {
+      h += '<p class="hint">아직 이 회사 제보가 없습니다. 첫 제보를 남겨 주세요. 같은 직급 제보가 5건 모이면 범위로 공개됩니다.</p>';
+    } else {
+      h += '<ul class="rep-list">' + REP_RANKS.filter(function (k) { return rep.ranks[k]; }).map(function (k) {
+        var v = rep.ranks[k];
+        return '<li><b>' + k + '</b>' + (v.length > 1 ? '<span>' + man(v[1]) + '~' + man(v[3]) + '만원 <small>중앙 ' + man(v[2]) + '만원 · ' + v[0] + '건</small></span>'
+          : '<span class="muted">제보 ' + v[0] + '건 · 5건부터 공개</span>') + '</li>';
+      }).join('') + '</ul><p class="hint">전체 제보 ' + rep.n + '건. 회사 평균과 동떨어진 값은 자동으로 뺐습니다.</p>';
+    }
+    var q = encodeURIComponent(r.n + ' 연봉');
+    h += '<p class="more">다른 곳에서 더 보기: <a href="https://search.naver.com/search.naver?query=' + q + '+블라인드" target="_blank" rel="noopener">블라인드 글 검색</a> · ' +
+      '<a href="https://www.jobplanet.co.kr/search?query=' + encodeURIComponent(r.n) + '" target="_blank" rel="noopener">잡플래닛</a></p>';
+    return h + '<button type="button" class="rep-open" data-rep-open>내 연봉 제보하기</button>' + formHtml(r) + '</section>';
+  }
+  function formHtml(r) {
+    var y = new Date().getFullYear(), years = '';
+    for (var i = y; i >= y - 40; i--) years += '<option>' + i + '</option>';
+    var jobs = (D.meta.jobs || []).map(function (j) { return '<option>' + esc(j) + '</option>'; }).join('');
+    return '<form class="rep-form" hidden novalidate>' +
+      '<p class="hint">이름·연락처는 받지 않습니다. 제보 원본은 공개하지 않고, 같은 회사·직급 제보가 5건 이상일 때 범위로만 보여 줍니다.</p>' +
+      '<div class="grid2">' +
+      '<label>직급<select name="rank" required><option value="">선택</option>' + ['사원', '주임', '대리', '과장', '차장', '부장', '임원', '기타'].map(function (k) { return '<option>' + k + '</option>'; }).join('') + '</select></label>' +
+      '<label>연차(년)<input name="years" type="number" inputmode="numeric" min="0" max="45" required></label>' +
+      '<label>기본 연봉(만원)<input name="base" type="number" inputmode="numeric" min="1500" max="50000" step="50" required placeholder="예: 4800"></label>' +
+      '<label>성과급·인센티브(만원/연)<input name="bonus" type="number" inputmode="numeric" min="0" max="50000" step="50" value="0"></label>' +
+      '<label>직무<select name="job"><option value="">선택 안 함</option>' + jobs + '<option>기타</option></select></label>' +
+      '<label>입사 연도<select name="joined">' + years + '</select></label>' +
+      '<label>고용 형태<select name="employ"><option>정규직</option><option>계약직</option><option>기타</option></select></label>' +
+      '</div>' +
+      '<input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">' +
+      '<label class="agree"><input type="checkbox" name="consent" value="yes"> 익명 통계로 쓰이는 것에 동의합니다.</label>' +
+      '<div class="row"><button type="submit">제보 보내기</button><span class="st" aria-live="polite"></span></div>' +
+      '<input type="hidden" name="company" value="' + esc(r.n) + '"><input type="hidden" name="biz6" value="' + esc(r.biz || '') + '">' +
+      '</form>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-rep-open]'); if (!b) return;
+    var f = b.parentNode.querySelector('.rep-form'); f.hidden = !f.hidden; b.textContent = f.hidden ? '내 연봉 제보하기' : '제보 접기';
+  });
+  document.addEventListener('submit', function (e) {
+    var f = e.target.closest('.rep-form'); if (!f) return; e.preventDefault();
+    var st = f.querySelector('.st'), d = {};
+    new FormData(f).forEach(function (v, k) { d[k] = String(v).trim(); });
+    var err = !d.rank ? '직급을 골라 주세요.' : !(+d.years >= 0 && d.years !== '') ? '연차를 적어 주세요.' : !(+d.base >= 1500 && +d.base <= 50000) ? '기본 연봉은 1,500~50,000만원 사이로 적어 주세요.' : d.consent !== 'yes' ? '동의에 체크해 주세요.' : '';
+    if (err) { st.textContent = err; st.className = 'st bad'; return; }
+    if (!D.meta.reportEndpoint) { st.textContent = '시안이라 아직 저장되지 않습니다. 접수 시트를 연결하면 실제로 전송됩니다.'; st.className = 'st'; return; }
+    st.textContent = '보내는 중…'; st.className = 'st';
+    fetch(D.meta.reportEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(d) })
+      .then(function () { f.reset(); st.textContent = '고맙습니다. 같은 회사·직급 제보가 5건 이상 모이면 범위로 공개됩니다.'; st.className = 'st ok'; })
+      .catch(function () { st.textContent = '보내지 못했습니다. 잠시 뒤 다시 시도해 주세요.'; st.className = 'st bad'; });
+  });
+
+  // ── 첫 화면 순위 (빌드가 미리 계산): 평균 연봉 TOP 10 · 입사자 연봉 TOP 10
+  function rankings() {
+    var li = function (x, k, v, sub) { return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[4] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(x[0]) + '</a><small>' + esc(sub) + '</small></span><span class="v">' + man(v) + '만원</span></li>'; };
+    $('topAvg').innerHTML = (D.meta.topAvg || []).map(function (x, k) { return li(x, k, x[3], (x[1] || '') + ' · ' + x[5]); }).join('');
+    $('topRise').innerHTML = (D.meta.topRise || []).map(function (x, k) {   // [이름, 업종, 인원, 전년, 올해, 상승%, 인원증감%, 사유, 출처, i]
+      var mc = x[6] === null || x[6] === undefined ? '' : '인원 ' + (x[6] > 0 ? '+' : '') + x[6] + '% · ';   // 인원 증감은 사유 줄로 (폰에서 잘리지 않게)
+      return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[9] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(x[0]) + '</a>' +
+        '<small>' + man(x[3]) + ' → ' + man(x[4]) + '만원</small><small class="why">' + mc + esc(x[7]) + '</small></span><span class="v up">+' + x[5] + '%</span></li>';
+    }).join('');
+  }
+
+  // ── 실수령액 (2026년 요율 근사)
+  function incomeTaxMonthly(annualTaxable, fam, pensionY) {
+    var S = annualTaxable;
+    var ded = S <= 500e4 ? S * 0.7 : S <= 1500e4 ? 350e4 + (S - 500e4) * 0.4 : S <= 4500e4 ? 750e4 + (S - 1500e4) * 0.15 : S <= 1e8 ? 1200e4 + (S - 4500e4) * 0.05 : 1475e4 + (S - 1e8) * 0.02;
+    ded = Math.min(ded, 2000e4);
+    var earned = S - ded;
+    // 간이세액표 산출 기준의 특별소득공제 등(공제대상가족 1~2인 기준식)
+    var sp = S <= 3000e4 ? 310e4 + S * 0.04 : S <= 4500e4 ? 310e4 + S * 0.04 - (S - 3000e4) * 0.05 : S <= 7000e4 ? 310e4 + S * 0.015 : S <= 12000e4 ? 310e4 + S * 0.005 : 310e4 + S * 0.005;
+    // 가족 3인 이상은 간이세액표에 추가 공제식이 있으나 v0.1에서는 인적공제만 반영
+    var base = Math.max(0, earned - 150e4 * fam - pensionY - sp);
+    var B = [[1400e4, 0.06, 0], [5000e4, 0.15, 84e4], [8800e4, 0.24, 624e4], [15000e4, 0.35, 1536e4], [30000e4, 0.38, 3706e4], [50000e4, 0.40, 9406e4], [100000e4, 0.42, 17406e4], [Infinity, 0.45, 38406e4]];
+    var prev = 0, tax = 0;
+    for (var i = 0; i < B.length; i++) { if (base <= B[i][0]) { tax = B[i][2] + (base - prev) * B[i][1]; break; } prev = B[i][0]; }
+    var credit = tax <= 130e4 ? tax * 0.55 : 71.5e4 + (tax - 130e4) * 0.3;
+    var lim = S <= 3300e4 ? 74e4 : S <= 7000e4 ? Math.max(74e4 - (S - 3300e4) * 0.008, 66e4) : S <= 12000e4 ? Math.max(66e4 - (S - 7000e4) * 0.5, 50e4) : Math.max(50e4 - (S - 12000e4) * 0.5, 20e4);
+    credit = Math.min(credit, lim);
+    var y = Math.max(0, tax - credit);
+    return Math.floor(y / 12 / 10) * 10;
+  }
+  // 연봉(원) → 월 실수령(원). 실수령액 계산기와 협상 계산기가 함께 쓴다
+  function netMonthly(sal, nt, fam) {
+    var monthly = sal / 12, taxableM = Math.max(0, monthly - nt);
+    var pension = Math.floor(Math.min(Math.max(taxableM, 41e4), 659e4) * 0.0475 / 10) * 10;
+    var health = Math.floor(taxableM * 0.03595 / 10) * 10, ltc = Math.floor(health * 0.1314 / 10) * 10, emp = Math.floor(taxableM * 0.009 / 10) * 10;
+    var itax = incomeTaxMonthly(taxableM * 12, fam, pension * 12), ltax = Math.floor(itax * 0.1 / 10) * 10;
+    return monthly - pension - health - ltc - emp - itax - ltax;
+  }
+  function netCalc() {
+    var sal = (+$('sal').value || 0) * 1e4, nt = (+$('nt').value || 0) * 1e4, fam = +$('fam').value || 1;
+    var monthly = sal / 12, taxableM = Math.max(0, monthly - nt);
+    var pBase = Math.min(Math.max(taxableM, 41e4), 659e4);
+    var pension = Math.floor(pBase * 0.0475 / 10) * 10;
+    var health = Math.floor(taxableM * 0.03595 / 10) * 10;
+    var ltc = Math.floor(health * 0.1314 / 10) * 10;
+    var emp = Math.floor(taxableM * 0.009 / 10) * 10;
+    var itax = incomeTaxMonthly(taxableM * 12, fam, pension * 12);
+    var ltax = Math.floor(itax * 0.1 / 10) * 10;
+    var total = pension + health + ltc + emp + itax + ltax, net = monthly - total;
+    $('netV').innerHTML = Math.round(net).toLocaleString('ko-KR') + '<small>원</small>';
+    $('netY').textContent = man(net * 12 / 1e4) + '만원';
+    $('dedT').innerHTML = [['월 급여(세전)', monthly], ['국민연금', -pension], ['건강보험', -health], ['장기요양보험', -ltc], ['고용보험', -emp], ['소득세', -itax], ['지방소득세', -ltax]]
+      .map(function (x) { return '<tr><td>' + x[0] + '</td><td>' + (x[1] < 0 ? '-' : '') + won(Math.abs(x[1])) + '</td></tr>'; }).join('') +
+      '<tr class="sum"><td>공제 합계</td><td>-' + won(total) + '</td></tr>';
+  }
+  ['sal', 'nt', 'fam'].forEach(function (id) { $(id).addEventListener('input', netCalc); });
+
+  // ── 연봉 협상: 상승률·월 실수령 차이 + 취업조로 이직자들이 쓴 희망연봉 배율(집계)과 비교
+  function negCalc() {
+    var cur = +$('ncur').value || 0, off = +$('noff').value || 0, N = D.meta && D.meta.nego;
+    if (!cur || !off) return;
+    var rise = (off / cur - 1) * 100, dn = netMonthly(off * 1e4, 20e4, 1) - netMonthly(cur * 1e4, 20e4, 1);
+    $('negV').textContent = (rise >= 0 ? '+' : '') + rise.toFixed(1) + '%';
+    $('negL').textContent = '제안 ' + man(off) + '만원 · 현재 ' + man(cur) + '만원';
+    $('negT').innerHTML = '<tr><td>연봉 차이</td><td>' + (off - cur >= 0 ? '+' : '') + man(off - cur) + '만원</td></tr>' +
+      '<tr><td>월 실수령 차이 (식대 20만원 비과세·1인 기준)</td><td>' + (dn >= 0 ? '+' : '') + won(dn) + '</td></tr>';
+    if (!N || !N.all) { $('negBox').innerHTML = ''; return; }
+    var band = cur < 4000 ? '4천만원 미만' : cur < 6000 ? '4천~6천만원' : '6천만원 이상', S = (N.bySalary && N.bySalary[band]) || N.all;
+    var lo = cur * S.p25, mid = cur * S.p50, hi = cur * S.p75;
+    var verdict = off < lo ? '<b>협상 여지가 큽니다.</b> 비슷한 연봉대 이직자들이 쓴 희망연봉 범위보다 낮은 제안입니다.'
+      : off > hi ? '<b>좋은 제안입니다.</b> 비슷한 연봉대 이직자들이 쓴 희망연봉 상단보다 높습니다.'
+      : '<b>평균적인 제안입니다.</b> 비슷한 연봉대 이직자들이 쓴 희망연봉 범위 안에 있습니다.';
+    var pct = Math.max(0, Math.min(100, (off - cur * 0.95) / (cur * (S.p75 + 0.1) - cur * 0.95) * 100));
+    $('negBox').innerHTML = verdict + '<br>현재 ' + band + ' 구간 이직자 ' + S.n + '명은 희망연봉을 보통 <b>' + man(lo) + '~' + man(hi) + '만원</b>(중앙 ' + man(mid) + '만원, 현재 대비 +' +
+      Math.round((S.p25 - 1) * 100) + '~' + Math.round((S.p75 - 1) * 100) + '%)으로 적었습니다.<div class="gauge" aria-hidden="true"><i style="width:' + pct.toFixed(0) + '%"></i></div>' +
+      '<p class="hint">지원서 희망연봉 칸은 숫자 하나보다 "최소 희망금액 이상", "회사 내규에 따름", "협의 후 결정" 중 하나로 쓰는 편이 안전합니다. 숫자는 면접 뒤 처우 협상에서 꺼내세요.</p>';
+    $('negSrc').textContent = '기준: ' + N.source + '. 희망연봉은 실제 최종 처우와 다를 수 있습니다.';
+  }
+  ['ncur', 'noff'].forEach(function (id) { $(id).addEventListener('input', negCalc); });
+
+  // ── 내 연봉 위치
+  function posCalc() {
+    if (!D) return;
+    var v = +$('my').value || 0, pct = D.meta.pct, p = 0;
+    while (p < pct.length && pct[p] <= v) p++;
+    $('posV').textContent = '상위 ' + Math.max(1, 100 - p) + '%';
+    $('posL').textContent = '근로자 ' + p + '%가 평균 연봉 ' + man(v) + '만원 미만인 회사에 다닙니다';
+    $('posBar').style.width = p + '%'; $('posMark').style.left = 'calc(' + p + '% - 1px)';
+  }
+  $('my').addEventListener('input', posCalc);
+})();
+</script>
+</body>
+</html>

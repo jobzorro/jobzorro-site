@@ -20,7 +20,9 @@ import seo
 import json
 import os
 import re
+import shutil
 import sys
+import urllib.parse
 from html import unescape as html_unescape   # 아래에서 `html` 이름은 페이지 문자열로 쓴다
 from pathlib import Path
 
@@ -76,7 +78,7 @@ GROUP_COLORS = {
     "construction":     ((210, 180, 140), (18, 15, 11)),   # 샌드
 }
 
-TABS = [("index.html", "직무사전"), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
+TABS = [("index.html", "직무사전"), ("salary/index.html", '연봉<span class="lg"> 연구소</span>'), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
 APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 신청하기" 버튼이 여기로 간다)
 
 
@@ -179,6 +181,19 @@ def attach_news(data: dict, days: int = 45) -> None:
         if out:
             j["news"] = out; n += 1
     print(f"관련 뉴스: 직무 {n}개에 최근 {days}일 기사 연결")
+
+
+def attach_client_salary(data: dict) -> None:
+    p = BASE / "data" / "client_salary.json"
+    if not p.exists():
+        return
+    cs = json.loads(p.read_text(encoding="utf-8")); gname = {g["id"]: g["name"] for g in data["meta"]["groups"]}
+    n = 0
+    for j in data["jobs"]:
+        g = cs["groups"].get(j["group"])
+        if g:
+            j["clientSal"] = dict(g, groupName=gname.get(j["group"], "")); n += 1
+    print(f"취업조로 이직자 연봉: 직무 {n}개에 직군 집계 연결")
 
 
 def attach_terms(data: dict, gl: dict, top: int = 5) -> None:
@@ -443,7 +458,7 @@ def footer_html(root: str, logo: str, note: str) -> str:
     c = COMPANY
     return (
         f'<footer class="zf"><div class="zf-in"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"></a>'
-        f'<div class="zf-links"><a href="{root}index.html">직무사전</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
+        f'<div class="zf-links"><a href="{root}index.html">직무사전</a><a href="{root}salary/index.html">연봉 연구소</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
         f'<a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a>'
         f'<a href="{root}privacy/index.html">개인정보처리방침</a></div>'
         f'<div class="zf-box"><b>법인명(상호)</b> {c["name"]} &nbsp;·&nbsp; <b>대표자</b> {c["ceo"]} &nbsp;·&nbsp; <b>개인정보보호책임자</b> {c["privacy"]}<br>'
@@ -553,6 +568,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     global GLOSS
     GLOSS = json.loads((BASE / "data" / "glossary.json").read_text(encoding="utf-8")) if (BASE / "data" / "glossary.json").exists() else {"terms": []}
     attach_terms(data, GLOSS)
+    attach_client_salary(data)   # 취업조로 이직자 연봉(직군별 집계, 5명 이상만) — salary-lab/job_link_stats.py 가 만든다
     attach_news(data)
     # 로고는 data URI 로 페이지마다 박지 않고 site/assets/ 의 파일을 참조한다 (nav_html/footer_html 이 root 를 붙여 깊이별 상대경로로 만든다)
     logo = "assets/jobzorro_logo.png"            # 푸터: 취업조로
@@ -861,6 +877,26 @@ def build(out_dir: Path, with_news: bool) -> None:
         if NEWS_URL:
             shutil.rmtree(news_src.parent, ignore_errors=True)
 
+    # ---- 연봉 연구소 (/salary/): salary-lab/publish_to_site.py 가 만든 salary/ 를 복사하고 상단 메뉴를 붙인다
+    sal = BASE / "salary"
+    if sal.exists():
+        dst = out_dir / "salary"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(sal, dst)
+        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
+        zn_css = ".zn{--paper:var(--bg);--hairline:var(--line);--acc-ink:#0b0b0b}\n" + zn_css
+        def add_nav(path, root):
+            h = path.read_text(encoding="utf-8")
+            if 'class="zn"' in h:
+                return
+            h = h.replace("</style>", zn_css + "\n</style>", 1)
+            h = h.replace("<body>", "<body>\n" + nav_html("salary/index.html", root, logo_nav), 1) if "<body>" in h else nav_html("salary/index.html", root, logo_nav) + h
+            path.write_text(h, encoding="utf-8")
+        add_nav(dst / "index.html", "../")
+        cos = sorted((dst / "co").iterdir())
+        for d in cos:
+            add_nav(d / "index.html", "../../../")
+        entries.append(("salary/", updated, "monthly", "0.8"))
+        entries += [(f"salary/co/{urllib.parse.quote(d.name)}/", updated, "monthly", "0.5") for d in cos]
+        print(f"연봉 연구소: /salary/ + 회사 페이지 {len(cos):,}개")
     seo.write_sitemap(out_dir, base_url, entries)
     audit_links(data, BASE / "assets" / "share")
     print(f"sitemap.xml: URL {len(entries)}개 -> {out_dir / 'sitemap.xml'}")

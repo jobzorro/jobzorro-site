@@ -52,7 +52,8 @@ var COLUMNS = [
   ["개인정보동의",    "consent"],
   ["직무사전 직무ID", "jobId"],
   ["신청페이지",      "page"],
-  ["처리상태",        "_status"]    // 담당자가 시트에서 직접 적는 칸 (예: 연락완료 / 상담예약 / 종료)
+  ["처리상태",        "_status"],   // 담당자가 시트에서 직접 적는 칸 (예: 연락완료 / 상담예약 / 종료)
+  ["통계활용동의(선택)", "statConsent"]   // 2026-10 추가: 이력서·연봉 정보를 익명 통계에 쓰는 데 대한 선택 동의
 ];
 
 function doPost(e) {
@@ -113,6 +114,9 @@ function getSheet_() {
     sh.appendRow(COLUMNS.map(function (c) { return c[0]; }));
     sh.getRange(1, 1, 1, COLUMNS.length).setFontWeight("bold").setBackground("#000000").setFontColor("#ffffff");
     sh.setFrozenRows(1);
+  }
+  if (sh.getLastColumn() < COLUMNS.length) {   // 열이 늘어난 경우(예: 통계활용동의) 머리글만 이어 붙인다
+    for (var i = sh.getLastColumn(); i < COLUMNS.length; i++) sh.getRange(1, i + 1).setValue(COLUMNS[i][0]);
   }
   return sh;
 }

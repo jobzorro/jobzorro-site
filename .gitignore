@@ -9,3 +9,8 @@ __pycache__/
 *.pyc
 # 로컬 백업 트리거 로그
 trigger_briefing.log
+
+# 새 인터뷰 원문·추출 로그 (개인정보 포함, 올리지 않음)
+corpus_new/
+corpus_new_*
+corpus_scan*.txt

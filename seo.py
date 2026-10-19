@@ -172,6 +172,17 @@ def job_ld(base: str, j: dict, by_id: dict, meta: dict, group_name: str, updated
     return [occupation, article, faq, crumbs]
 
 
+def client_sal_html(j: dict) -> str:
+    """취업조로 이직자 연봉 (template.html 의 clientSal() 와 같은 모양)"""
+    c = j.get("clientSal")
+    if not c:
+        return ""
+    rows = "".join(f'<li><span>{e(b)}</span><b>{x["p50"]:,}만원</b><small>{x["n"]}명</small></li>' for b, x in (c.get("byYears") or {}).items())
+    return (f'<div class="csal"><div class="csal-h">취업조로 이직자 연봉 <small>{e(c["groupName"])} 직군 {c["n"]}명 · 이직 직전</small></div>'
+            f'<p>중앙 <b>{c["p50"]:,}만원</b> · 보통 {c["p25"]:,}~{c["p75"]:,}만원</p>' + (f'<ul>{rows}</ul>' if rows else '') +
+            '<p class="note">취업조로 경력이직 컨설팅 고객의 실제 연봉 집계(성과급 포함 총액, 올해 기준 환산). 같은 직군 묶음이라 직무마다 차이가 있습니다.</p></div>')
+
+
 def major_dd(j: dict) -> str:
     """숫자 박스 '전공' 칸: 무관 / 우대 / 필수 + 관련 전공 + 석사 표시 (template.html 의 majorDd() 와 같은 모양)"""
     m = j.get("mj") or {}
@@ -246,7 +257,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
                  f'<div class="sal-row"><span class="k">미들</span>{bar(s["mid"])}<span class="v">{rng(s["mid"])}</span></div>'
                  f'<div class="sal-row"><span class="k">시니어</span>{bar(s["senior"])}<span class="v">{rng(s["senior"])}</span></div>'
                  f'<div class="sal-axis"><span></span><div><span style="left:{pct(5000)}%">5,000</span><span style="left:{pct(10000)}%">10,000</span><span style="left:{pct(15000)}%">15,000</span></div><span></span></div>'
-                 '</div><p class="note">단위 만원, 세전 기본급 기준 추정치. 산업·기업 규모·인센티브에 따라 범위를 벗어나는 경우가 흔합니다.</p>', "만원 · 추정"))
+                 '</div><p class="note">단위 만원, 세전 기본급 기준 추정치. 산업·기업 규모·인센티브에 따라 범위를 벗어나는 경우가 흔합니다.</p>' + client_sal_html(j), "만원 · 추정"))
     trans = [t for t in j.get("transitions", []) if t in by_id]
     if trans:
         h.append(sec("옮겨갈 수 있는 직무", '<div class="trans">' + "".join(f'<a class="btn-link" href="../{t}/">{e(by_id[t]["name"])} →</a>' for t in trans) + "</div>"))
