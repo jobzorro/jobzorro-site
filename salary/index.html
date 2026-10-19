@@ -380,7 +380,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       $('qHint').textContent = '회사 목록을 불러오는 중…';
       idxP = fetch('data/index.json?v=' + VER(), REFRESH ? { cache: 'reload' } : {}).then(function (r) { return r.json(); }).then(function (a) {
         // 현장 사업장(flag 8)은 '회사명 (현장 사업장)'으로 보이고 회사명으로만 검색된다
-        IDX = a.map(function (x, i) { return { i: i, n: x[0], al: x[5] || '', k: (x[3] & 8 ? norm(x[0].replace(/ \(현장 사업장\)$/, '')) : norm(x[0])) + (x[5] ? '|' + norm(x[5]) : ''), m: x[1], avg: x[2], cap: !!(x[3] & 1), dart: !!(x[3] & 2), cal: !!(x[3] & 4), hide: !!(x[3] & 8), ind: D.meta.inds[x[4]] || '' }; });   // x[5]: SK텔레콤 같은 흔한 이름
+        IDX = a.map(function (x, i) { return { i: i, n: x[0], al: x[5] || '', k: (x[3] & 8 ? norm(x[0].replace(/ \(현장 사업장\)$/, '')) : norm(x[0])) + (x[5] ? '|' + norm(x[5]) : ''), m: x[1], avg: x[2], cap: !!(x[3] & 1), dart: !!(x[3] & 2), cal: !!(x[3] & 4), hide: !!(x[3] & 8), att: !!(x[3] & 16), ind: D.meta.inds[x[4]] || '' }; });   // x[5]: SK텔레콤 같은 흔한 이름
         hint(); return IDX;
       });
     }
@@ -432,7 +432,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     if (!IDX) { loadIndex().then(search); return; }
     var hit = [], pre = [], exact = [];
     for (var i = 0; i < IDX.length; i++) {
-      var r = IDX[i], p = r.k.indexOf(q);
+      var r = IDX[i], p = (r.att && !/어린이집|금고|협동조합|노동조합|복지/.test(q)) ? -1 : r.k.indexOf(q);   // 부속 기관은 기관 단어로 검색할 때만
       if (p < 0 && !(r.al && r.k.indexOf('|' + q) >= 0)) continue;
       if (norm(r.n) === q || (r.al && norm(r.al) === q)) exact.push(r);   // 이름이 정확히 같은 회사(지주사 '엘지' 등)는 가입자가 적어도 맨 위에
       else if (p === 0 || (r.al && r.k.indexOf('|' + q) >= 0)) { if (pre.length < 400) pre.push(r); }
@@ -526,7 +526,8 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       '<div class="ranks">' + main.map(function (v, k) {
         return '<div class="rk"><span class="n">' + RANK_NAMES[k] + '</span><span class="bar"><i style="width:' + (v / max * 100).toFixed(1) + '%"></i></span><span class="v">' + man(v) + plus + '만원' +
           (base && base[k] < v - 1 ? '<small class="rb">' + (capcal ? '국민연금 ' + man(base[k]) + (base[k] >= D.meta.cap * 12 ? ' (상한)' : '') : '기본 약 ' + man(base[k]) + '만원') + '</small>' : '') + '</span></div>';
-      }).join('') + (ex ? '<div class="rk exrow"><span class="n">임원<small class="yr">' + (ex[2] === '추정' ? '추정' : '공시') + '</small></span><span class="exd">' + (ex[0] ? (ex[2] === '추정' ? '약 ' : '') + ex[0] + '명 · ' : '') + esc(ex[2]) + (ex[3] ? ' <span class="gchip g-est">임원 비중 높음</span>' : '') + '</span><span class="v">' + man(ex[1]) + '만원</span></div>' : '') + '</div>' + trend +
+      }).join('') + (ex ? '<div class="rk exrow"><span class="n">임원<small class="yr">' + (ex[2] === '추정' ? '추정' : '공시') + '</small></span><span class="exd">' + (ex[0] ? (ex[2] === '추정' ? '약 ' : '') + ex[0] + '명 · ' : '') + esc(ex[2]) + (ex[3] ? ' <span class="gchip g-est">임원 비중 높음</span>' : '') + '</span><span class="v">' + man(ex[1]) + '만원</span></div>' : '') +
+        (r.fld ? '<div class="rk exrow"><span class="n">현장<small class="yr">' + (r.fld[2] === '공시' ? '공시' : '추정') + '</small></span><span class="exd">직원의 약 ' + r.fld[0] + '% · 직급별 금액은 사무직 평균 ' + man(r.fld[3]) + '만원 기준</span><span class="v">' + man(r.fld[1]) + '만원</span></div>' : '') + '</div>' + trend +
       '<dl class="facts">' + facts.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('') + '</dl>' +
       '<details class="how"><summary>이 숫자는 어떻게 계산했나요?</summary><ol>' + how + '</ol></details>' + repHtml(r) +
       '</article>';
