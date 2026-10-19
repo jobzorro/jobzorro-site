@@ -415,12 +415,13 @@ def write_robots(out_dir: Path, base: str) -> None:
     (out_dir / "robots.txt").write_text(txt, encoding="utf-8")
 
 
-def write_llms(out_dir: Path, base: str, jobs, groups, updated: str) -> None:
+def write_llms(out_dir: Path, base: str, jobs, groups, updated: str, n_docs: int = 0) -> None:
     gname = {g["id"]: g["name"] for g in groups}
+    n_pub = sum((j.get("sources") or {}).get("public", 0) for j in jobs)
     lines = [
         "# 취업조로 직무사전 (jobzorro)",
         "",
-        "> 취업·이직 컨설턴트 취업조로(조현빈, 커리어프로젝트 주식회사 대표, 컨설팅 15년 차, 합격자 1,100명 이상)가 현직자 직무 인터뷰 529건과 공개 현직자 자료 293건을 바탕으로 정리한 한국 직무 설명 사이트. "
+        "> 취업·이직 컨설턴트 취업조로(조현빈, 커리어프로젝트 주식회사 대표, 컨설팅 15년 차, 합격자 1,100명 이상)가 현직자 직무 인터뷰 " + f"{n_docs:,}건과 공개 현직자 자료 {n_pub:,}건을" + " 바탕으로 정리한 한국 직무 설명 사이트. "
         "직무마다 하는 일·하루 일과·필요 역량·들어가는 길(전공/비전공/경력 전환)·커리어 패스·연봉대(추정)·옮겨갈 수 있는 직무·면접 질문·현직자의 말·AI 영향을 다룬다. 회사명과 개인은 특정하지 않는다.",
         "",
         f"최종 수정: {updated}. 언어: 한국어. 연봉은 만원 단위 세전 기본급 추정치.",

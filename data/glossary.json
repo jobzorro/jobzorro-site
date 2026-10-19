@@ -784,7 +784,8 @@
         "finance",
         "scm",
         "equipment-pm",
-        "b2b-sales"
+        "b2b-sales",
+        "erp-sap"
       ]
     },
     {
@@ -1500,7 +1501,8 @@
         "consulting",
         "backend",
         "frontend",
-        "service-planning"
+        "service-planning",
+        "erp-sap"
       ]
     },
     {
@@ -1512,7 +1514,8 @@
         "it-data"
       ],
       "jobs": [
-        "sw-dev"
+        "sw-dev",
+        "erp-sap"
       ]
     },
     {
@@ -2333,6 +2336,82 @@
         "gmp-qa",
         "clinical",
         "quality"
+      ]
+    },
+    {
+      "term": "ABAP",
+      "aliases": [
+        "아밥"
+      ],
+      "en": "Advanced Business Application Programming",
+      "short": "SAP ERP 안에서 프로그램을 만들 때 쓰는 SAP 전용 프로그래밍 언어",
+      "groups": [
+        "it-data"
+      ],
+      "jobs": [
+        "erp-sap"
+      ]
+    },
+    {
+      "term": "SAP 모듈",
+      "aliases": [
+        "모듈",
+        "FI/CO",
+        "MM",
+        "PP",
+        "SD"
+      ],
+      "en": "SAP Module",
+      "short": "회계(FI/CO)·구매(MM)·생산(PP)·영업(SD)처럼 업무 영역별로 나뉜 SAP 기능 묶음",
+      "groups": [
+        "it-data"
+      ],
+      "jobs": [
+        "erp-sap"
+      ]
+    },
+    {
+      "term": "모듈 컨설턴트",
+      "aliases": [
+        "기능 컨설턴트",
+        "펑셔널 컨설턴트"
+      ],
+      "en": "Functional Consultant",
+      "short": "현업 요구를 듣고 SAP 업무 프로세스와 설정을 설계하며 개발자에게 사양서를 주는 역할",
+      "groups": [
+        "it-data"
+      ],
+      "jobs": [
+        "erp-sap"
+      ]
+    },
+    {
+      "term": "S/4HANA",
+      "aliases": [
+        "S4",
+        "에스포하나"
+      ],
+      "en": "SAP S/4HANA",
+      "short": "SAP의 최신 ERP. 구 버전(ECC) 지원 종료로 기업들이 전환 프로젝트를 진행 중",
+      "groups": [
+        "it-data"
+      ],
+      "jobs": [
+        "erp-sap"
+      ]
+    },
+    {
+      "term": "Fiori",
+      "aliases": [
+        "피오리"
+      ],
+      "en": "SAP Fiori",
+      "short": "SAP 화면을 웹·모바일 방식으로 만드는 SAP의 UI 프레임워크",
+      "groups": [
+        "it-data"
+      ],
+      "jobs": [
+        "erp-sap"
       ]
     }
   ]

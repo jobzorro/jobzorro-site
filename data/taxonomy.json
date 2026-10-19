@@ -258,6 +258,11 @@
           "en": "IT Planning / System PM"
         },
         {
+          "id": "erp-sap",
+          "name": "ERP·SAP 개발 (ABAP)",
+          "en": "SAP ABAP Developer"
+        },
+        {
           "id": "service-planning",
           "name": "서비스 기획 (PM/PO)",
           "en": "Product Manager / Service Planner"

@@ -122,7 +122,7 @@ NEWS_TAG_MAP = {
     "MD": ["md", "online-md"],
     "구매": ["purchasing", "scm", "forwarding"],
     "마케팅": ["brand-marketer", "performance-marketer", "content-marketer", "pr", "ad-planner"],
-    "개발": ["sw-dev", "backend", "frontend", "embedded-sw", "ai-engineer", "data-engineer", "data-analyst", "qa"],
+    "개발": ["sw-dev", "backend", "frontend", "embedded-sw", "ai-engineer", "data-engineer", "data-analyst", "qa", "erp-sap"],
     "디자인": ["ux-designer"],
     "생산": ["production-mgmt", "production-tech", "process-tech", "equipment-eng", "semiconductor-pkg"],
     "연구": ["rnd-chem", "battery-dev", "device-rnd", "product-dev", "rnd-food", "rnd-bio", "bio-process", "circuit-design"],
@@ -493,7 +493,7 @@ def audit_links(data: dict, share_dir: Path) -> None:
     iqp = BASE / "data" / "interview_jobs.json"
     iq = json.loads(iqp.read_text(encoding="utf-8")) if iqp.exists() else {}
     iq = iq.get("jobs", iq) if isinstance(iq, dict) else {}
-    auto_news = []
+    auto_news, many = [], []
     for j in data["jobs"]:
         jid, m = j["id"], j.get("major")
         if not m:
@@ -508,12 +508,18 @@ def audit_links(data: dict, share_dir: Path) -> None:
                 warn.append(f"{jid}: 준비 필요 직무인데 '준비할 것' 문구 없음")
         if jid not in listed:
             auto_news.append(jid)
+        if any(not isinstance(v, dict) or "quote" not in v for v in j.get("voices", [])):
+            warn.append(f"{jid}: voices 형식 오류 (quote·who·source 객체여야 함)")
+        if len(j.get("voices", [])) > 8:
+            many.append(f"{jid} {len(j['voices'])}")
         if iq and jid not in iq:
             warn.append(f"{jid}: 면접 질문(data/interview_jobs.json) 없음")
         if not j.get("terms"):
             warn.append(f"{jid}: 필수 용어 TOP5 없음 (data/glossary.json)")
         if not (share_dir / "jobs" / f"{jid}.png").exists():
             warn.append(f"{jid}: 카톡 공유 이미지 없음 → 한글 글꼴이 있는 PC에서 python build.py 한 번 실행")
+    if many:
+        print(f"참고: 현직자의 말이 8개를 넘는 직무(정리 후보): {', '.join(many)}")
     if auto_news:
         print(f"뉴스 자동 연결(직군 기본 태그): {', '.join(auto_news)} — 더 맞는 태그가 있으면 build.py NEWS_TAG_MAP 에 추가")
     print(f"직무 연결 점검: 경고 {len(warn)}건" + ("" if not warn else "\n  - " + "\n  - ".join(warn)))
@@ -585,6 +591,11 @@ def build(out_dir: Path, with_news: bool) -> None:
                 .replace("/*__FOOTER__*/", footer_html("", logo, disclaimer))
                 .replace("/*__FAB__*/", fab_html(""))
                 .replace("/*__JOBS_JSON__*/", payload)
+                # 상단 띠 숫자: 직무·인터뷰가 늘면 자동으로 바뀐다
+                .replace("/*__N_DOCS__*/", f'{data["meta"].get("sourceDocs", 0):,}')
+                .replace("/*__N_PUBLIC__*/", f'{sum(j["sources"].get("public", 0) for j in data["jobs"]):,}')
+                .replace("/*__N_JOBS__*/", str(len(data["jobs"])))
+                .replace("/*__N_GROUPS__*/", str(len(data["meta"]["groups"])))
 )
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(html, encoding="utf-8")
@@ -688,7 +699,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     # 직무 비교 / 직무 진단
     for tpl_name, sub, title, desc in (
         ("template_compare.html", "compare", "직무 비교 — 두 직무를 나란히 | 취업조로 직무사전", "연봉대·필요 역량·들어가는 길·커리어 패스를 한 화면에서 비교합니다."),
-        ("template_fit.html", "fit", "1분 직무 진단 — 내 전공·학력으로 갈 수 있는 직무 | 취업조로 직무사전", "학력·전공 계열·성향·원하는 것으로 직무 79개 중 바로 지원할 직무와 준비하면 열리는 직무를 골라 드립니다."),
+        ("template_fit.html", "fit", "1분 직무 진단 — 내 전공·학력으로 갈 수 있는 직무 | 취업조로 직무사전", f"학력·전공 계열·성향·원하는 것으로 직무 {len(data['jobs'])}개 중 바로 지원할 직무와 준비하면 열리는 직무를 골라 드립니다."),
     ):
         tp = BASE / tpl_name
         if not tp.exists():
@@ -734,7 +745,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     ic = json.loads((BASE / "data" / "interview_common.json").read_text(encoding="utf-8"))
     iqp = BASE / "data" / "interview_jobs.json"
     iqj = json.loads(iqp.read_text(encoding="utf-8")) if iqp.exists() else {}
-    ix = seo.seo_head(base_url, "면접 질문 모음 — 공통 빈출 TOP 20 + 79개 직무 단골 질문 | 취업조로 직무사전",
+    ix = seo.seo_head(base_url, f"면접 질문 모음 — 공통 빈출 TOP 20 + {len(data['jobs'])}개 직무 단골 질문 | 취업조로 직무사전",
                       "자기소개·지원동기부터 직무별 단골 질문까지. 질문마다 면접관이 확인하려는 의도를 함께 정리했습니다. 직무를 고르면 그 직무 질문으로 바로 이동합니다.",
                       "interview/", og_main, [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("면접 질문", "interview/")]),
                       {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": t["q"], "acceptedAnswer": {"@type": "Answer", "text": "면접관이 확인하려는 것: " + ", ".join(t["i"])}} for t in ic["top"]]}])
@@ -760,7 +771,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         (out_dir / "admin").mkdir(exist_ok=True)
         (out_dir / "admin" / "index.html").write_text(adm, encoding="utf-8")
     seo.write_robots(out_dir, base_url)
-    seo.write_llms(out_dir, base_url, data["jobs"], data["meta"]["groups"], updated)
+    seo.write_llms(out_dir, base_url, data["jobs"], data["meta"]["groups"], updated, data["meta"].get("sourceDocs", 0))
     print(f"직무 페이지 {len(data['jobs'])}개 + robots.txt · llms.txt -> {out_dir / 'jobs'}")
     print(f"무료 상담 신청 폼 -> {out_dir / 'apply' / 'index.html'} (전송: {cfg_public['formEndpoint'] or '미연결'})")
 
