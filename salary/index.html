@@ -46,7 +46,7 @@ h1 b { background:linear-gradient(transparent 66%, var(--mark) 66%); }
 .detail .avg .l { font-size:12.5px; color:var(--muted); margin-top:4px; }
 .warnbox { margin-top:14px; font-size:13.5px; color:var(--warn); border-left:3px solid var(--warn); padding:2px 0 2px 10px; }
 .ranks { margin-top:20px; display:grid; gap:10px; }
-.rk { display:grid; grid-template-columns:52px minmax(0,1fr) 112px; gap:12px; align-items:center; }
+.rk { display:grid; grid-template-columns:52px minmax(0,1fr) 122px; gap:12px; align-items:center; }   /* 오른쪽 칸: "국민연금 7,908 (상한)"이 폰에서 잘리지 않는 폭 */
 .rk .n { font-weight:900; }
 .rk .bar { height:14px; border-radius:999px; background:var(--fill); overflow:hidden; }
 .rk .bar i { display:block; height:100%; border-radius:999px; background:var(--ink); }
@@ -84,6 +84,11 @@ details.how ol { padding-left:20px; margin:8px 0 0; } details.how li { margin-to
   body.sheet-open { overflow:hidden; }
 }
 @media (prefers-reduced-motion: reduce) { .co-right { transition:none !important; } }
+.gchip { display:inline-block; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; vertical-align:1px; white-space:nowrap; }
+.gchip.g-hi { background:var(--acc); color:var(--acc-ink); }
+.gchip.g-mid { background:var(--fill); color:var(--ink); }
+.gchip.g-est { background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
+.gchip.g-low { background:transparent; color:var(--muted); box-shadow:inset 0 0 0 1px var(--muted); }
 .vbadge { display:inline-block; margin:12px 0 0; font-size:12.5px; font-weight:700; padding:4px 11px; border-radius:999px; background:var(--acc); color:var(--acc-ink); }
 .rk .v small.rb { display:block; font-family:var(--font); font-size:11.5px; font-weight:500; color:var(--muted); }
 .rank-list .why { color:var(--warn); font-weight:700; }
@@ -254,7 +259,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     if (!idxP) {
       $('qHint').textContent = '회사 목록을 불러오는 중…';
       idxP = fetch('data/index.json').then(function (r) { return r.json(); }).then(function (a) {
-        IDX = a.map(function (x, i) { return { i: i, n: x[0], al: x[5] || '', k: norm(x[0]) + (x[5] ? '|' + norm(x[5]) : ''), m: x[1], avg: x[2], cap: !!(x[3] & 1), dart: !!(x[3] & 2), ind: D.meta.inds[x[4]] || '' }; });   // x[5]: SK텔레콤 같은 흔한 이름
+        IDX = a.map(function (x, i) { return { i: i, n: x[0], al: x[5] || '', k: norm(x[0]) + (x[5] ? '|' + norm(x[5]) : ''), m: x[1], avg: x[2], cap: !!(x[3] & 1), dart: !!(x[3] & 2), cal: !!(x[3] & 4), ind: D.meta.inds[x[4]] || '' }; });   // x[5]: SK텔레콤 같은 흔한 이름
         hint(); return IDX;
       });
     }
@@ -301,7 +306,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var list = pre.concat(hit).slice(0, 20);   // 목록은 가입자 많은 순 → 큰 회사가 먼저
     $('results').innerHTML = list.length ? list.map(function (r) {
       return '<button class="res' + (CUR === r.i ? ' on' : '') + '" type="button" data-i="' + r.i + '"><span class="nm">' + esc(r.al || r.n) + '</span>' +
-        '<span class="sub">' + esc([r.al ? r.n : '', r.ind, r.m.toLocaleString('ko-KR') + '명', r.dart ? '상장·공시' : ''].filter(Boolean).join(' · ')) + '</span>' +
+        '<span class="sub">' + gradeChip(r.dart ? 2 : r.cal ? 4 : r.cap ? 1 : 0) + ' ' + esc([r.al ? r.n : '', r.ind, r.m.toLocaleString('ko-KR') + '명'].filter(Boolean).join(' · ')) + '</span>' +   // 칩을 앞에 둬야 긴 업종명에 잘리지 않는다
         '<span class="pay">' + man(r.avg) + (r.cap ? '<small>만원+</small>' : '<small>만원</small>') + '</span></button>';
     }).join('') : '<p class="hint">찾는 회사가 없습니다. 가입자 30명 이상 회사만 있고, 법인명 기준이라 브랜드명과 다를 수 있습니다.</p>';
   }
@@ -325,6 +330,9 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   window.addEventListener('popstate', function () { closeSheet(true); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
   // 아직 아무 회사도 안 골랐을 때 오른쪽 칸: 안내 + 많이 찾는 회사 바로가기
+  // 신뢰도 칩: 공시값(사업보고서·알리오·기관 공시) > 국민연금 기준 > 총보상 추정(상한 보정) > 최소치(상한에 걸림)
+  var GRADES = { 2: ['공시값', 'g-hi'], 0: ['국민연금 기준', 'g-mid'], 4: ['총보상 추정', 'g-est'], 1: ['최소치', 'g-low'] };
+  function gradeChip(f) { var g = GRADES[f]; return '<span class="gchip ' + g[1] + '">' + g[0] + '</span>'; }
   function emptyDetail() {
     $('detail').innerHTML = '<div class="empty"><h3>회사를 고르면 여기에 나옵니다</h3><p>평균 연봉, 사원부터 부장까지 직급별 추정, 입사·퇴사 흐름, 현직자 제보를 한 화면에서 봅니다.</p>' +
       '<div class="picks">' + (D.meta.picks || []).map(function (x) { return '<button type="button" data-co="' + x[1] + '" data-name="' + esc(x[0]) + '">' + esc(x[0]) + '</button>'; }).join('') + '</div></div>';
@@ -344,24 +352,26 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       ['평균 근속', r.tT.toFixed(1) + '년']];
     var trend = (!r.capped && r.trend && r.trend.length > 1 && D.meta.trendYears) ? '<p class="hint">연도별 평균 연봉(국민연금, 매년 같은 달): ' +
       r.trend.map(function (v, k) { return D.meta.trendYears[k] + '년 ' + man(v) + '만원'; }).join(' → ') + '</p>' : '';
-    var howRank = r.how === 'split' ? '<li>직급별: 성과급·주식보상 비중이 큰 회사라 두 가지로 보여 줍니다. 기본연봉은 국민연금으로 추정한 입사자 연봉에서 직급 배수로 올렸고, 총보상은 여기에 이 회사의 성과급 배율(' + r.factor + '배)을 곱했습니다.</li>'
+    var capcal = r.how === 'capcal';   // 상한 보정 회사: 상한에 걸리는 직급만 총보상 추정
+    var howRank = capcal ? '<li>직급별: 총보상 추정 평균을 평균 근속 연차의 연봉으로 보고 직급별로 나눴습니다. 국민연금에는 한 사람당 연 ' + man(D.meta.cap * 12) + '만원(월 ' + D.meta.cap + '만원 상한)까지만 보이므로, 그보다 높은 직급에만 국민연금 기준(작은 숫자)과 총보상 추정이 따로 나옵니다. 그 차이가 상한 초과분·최근 성과급입니다.</li>'
+      : r.how === 'split' ? '<li>직급별: 성과급·주식보상 비중이 큰 회사라 두 가지로 보여 줍니다. 기본연봉은 국민연금으로 추정한 입사자 연봉에서 직급 배수로 올렸고, 총보상은 여기에 이 회사의 성과급 배율(' + r.factor + '배)을 곱했습니다.</li>'
       : r.how === 'fit' ? '<li>직급별: 사원은 국민연금 월별 변화로 추정한 입사자 평균 연봉이고, 평균 근속 연차에서 회사 평균이 되도록 연차별 곡선을 맞췄습니다. 입사자에는 경력직도 섞여 있습니다.</li>'
       : '<li>직급별: 평균 연봉을 평균 근속 연차의 연봉으로 보고, 직급별 연봉 조사의 사원 대비 배수(대리 1.25, 과장 1.54, 차장 1.82, 부장 2.04)로 나눴습니다.</li>';
-    var how = '<li>평균 연봉: ' + (r.dart ? r.dart[2] + '년 사업보고서의 직원 1인 평균 급여입니다(성과급 포함).' : r.calAvg ? '국민연금 추정치(' + man(r.avgAnnual) + '만원)를 상한 보정한 값입니다.' : '국민연금 고지금액 ÷ 가입자 수 ÷ 보험료율 ' + (D.meta.rate * 100).toFixed(1) + '% × 12개월로 계산했습니다.') + '</li>' +
+    var how = '<li>평균 연봉: ' + (r.dart ? r.bSrc + '의 직원 1인 평균 ' + (String(r.dart[4]).indexOf('OFF:') === 0 ? '보수입니다(정규직, 성과상여금 포함).' : '급여입니다(성과급 포함).') : r.calAvg ? '총보상 추정입니다. 국민연금 기준 평균(' + man(r.avgAnnual) + '만원)에 상한 초과분·최근 성과급처럼 국민연금에 안 잡히는 몫을 업종·수준별 비율로 더했습니다.' : '국민연금 고지금액 ÷ 가입자 수 ÷ 보험료율 ' + (D.meta.rate * 100).toFixed(1) + '% × 12개월로 계산했습니다.') + '</li>' +
       '<li>평균 근속 ' + r.tT.toFixed(1) + '년: ' + r.tSrc + ' 기준입니다.</li>' + howRank +
       (V ? '<li>검증: 취업조로 경력이직 고객 ' + V.nMatched + '명의 실제 연봉(이직 직전)과 비교해 직급별 치우침을 보정했습니다(개인별 오차 중앙값 약 ' + Math.round(V.errAfter) + '%, 같은 회사·직급 안에서도 사람마다 차이가 큽니다). 평균 연봉 보정은 사업보고서 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사의 실제 평균 급여로 검증했습니다(오차 중앙값 약 ' + (V.dartErr || '') + '%).</li>' : '') +
       '<li>계열사·지점이 다른 법인으로 등록돼 있으면 따로 나옵니다.</li>';
     $('detail').innerHTML = '<article class="detail" aria-live="polite">' +
       '<div class="top"><div><h2>' + esc(r.name) + '</h2><div class="meta">' + esc([r.industry, r.sido, '사업자번호 앞자리 ' + r.biz6].filter(Boolean).join(' · ')) + '</div></div>' +
-      '<div class="avg"><div class="v">' + man(r.bAvg) + plus + '<small>만원</small></div><div class="l">평균 연봉 · ' + esc(r.bSrc) + '</div></div></div>' +
-      (V ? '<p class="vbadge">실제 연봉 ' + V.total.toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명 + 사업보고서 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
+      '<div class="avg"><div class="v">' + man(r.bAvg) + plus + '<small>만원</small></div><div class="l">평균 연봉 · ' + esc(r.bSrc) + ' ' + gradeChip(r.dart ? 2 : r.calAvg ? 4 : r.capped ? 1 : 0) + '</div></div></div>' +
+      (V ? '<p class="vbadge">실제 연봉 ' + V.total.toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명 + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
       (capped ? '<p class="warnbox">이 회사는 1인 평균이 국민연금 소득 상한(월 ' + D.meta.cap + '만원)에 가까워 실제 연봉은 이보다 높을 가능성이 큽니다. 아래 직급별 금액도 "최소 이 정도"로 보세요.</p>' : '') +
-      (r.dart && r.avgAnnual ? '<p class="hint">참고: 국민연금 기준 추정 평균은 ' + man(r.avgAnnual) + '만원입니다. 사업보고서 평균에는 성과급이 들어갑니다.</p>' : '') +
-      (!r.dart && r.calAvg ? '<p class="hint">국민연금 기준으로는 ' + man(r.avgAnnual) + '만원이지만, 직원 상당수가 국민연금 소득 상한(월 ' + D.meta.cap + '만원)을 넘는 회사입니다. 사업보고서가 있는 회사 ' + (D.meta.calib ? D.meta.calib.n.toLocaleString('ko-KR') : '') + '곳의 실제 평균과 비교해 업종·수준별 비율로 보정했습니다.</p>' : '') +
-      (base ? '<p class="hint"><b>성과급 포함 총보상</b> 기준입니다. 작은 숫자는 기본연봉 추정이고, 성과급은 해마다 크게 달라집니다.</p>' : '') +
+      (r.dart && r.avgAnnual ? '<p class="hint">참고: 국민연금 기준 추정 평균은 ' + man(r.avgAnnual) + '만원입니다. 공시 평균에는 상한 위 몫과 올해 성과급까지 들어갑니다.</p>' : '') +
+      (!r.dart && r.calAvg ? '<p class="hint"><b>국민연금 기준 ' + man(r.avgAnnual) + '만원</b> · 국민연금에는 작년 성과급까지 들어가지만 한 사람당 연 ' + man(D.meta.cap * 12) + '만원(상한)까지만 보입니다. 큰 숫자는 그 위 몫(상한 초과분·최근 성과급)을 사업보고서 ' + (D.meta.calib ? D.meta.calib.n.toLocaleString('ko-KR') : '') + '개사 비율로 더한 총보상 추정이고, 작은 숫자가 국민연금 기준입니다.</p>' : '') +
+      (base && capcal ? '' : base ? '<p class="hint"><b>성과급 포함 총보상</b> 기준입니다. 작은 숫자는 기본연봉 추정이고, 성과급은 해마다 크게 달라집니다.</p>' : '') +
       '<div class="ranks">' + main.map(function (v, k) {
         return '<div class="rk"><span class="n">' + RANK_NAMES[k] + '</span><span class="bar"><i style="width:' + (v / max * 100).toFixed(1) + '%"></i></span><span class="v">' + man(v) + plus + '만원' +
-          (base ? '<small class="rb">기본 약 ' + man(base[k]) + '만원</small>' : '') + '</span></div>';
+          (base && base[k] < v - 1 ? '<small class="rb">' + (capcal ? '국민연금 ' + man(base[k]) + (base[k] >= D.meta.cap * 12 ? ' (상한)' : '') : '기본 약 ' + man(base[k]) + '만원') + '</small>' : '') + '</span></div>';
       }).join('') + '</div>' + trend +
       '<dl class="facts">' + facts.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('') + '</dl>' +
       '<details class="how"><summary>이 숫자는 어떻게 계산했나요?</summary><ol>' + how + '</ol></details>' + repHtml(r) +
