@@ -83,8 +83,8 @@
 <section class="f-hero">
   <div class="f-in">
     <div class="kicker"><i></i>Job Fit · 1분 직무 진단</div>
-    <h1><span class="thin">학력과 전공부터 고르면</span>내가 갈 수 있는 <span class="mark">직무 5개.</span></h1>
-    <p>학력, 전공 계열, 일할 때의 성향, 첫 직장에서 원하는 것. 네 가지 답으로 직무사전 79개 중 바로 지원할 직무와 준비하면 열리는 직무를 나눠 드립니다. 전공 때문에 어려운 직무는 이유와 함께 따로 보여 드립니다. 정답이 아니라 출발점입니다.</p>
+    <h1><span class="thin">학력과 전공부터 고르면</span>지금 갈 수 있는 <span class="mark">직무 3개.</span></h1>
+    <p>학력, 전공 계열, 일할 때의 성향, 첫 직장에서 원하는 것. 네 가지 답으로 직무사전에서 바로 지원할 직무 3개와 준비하면 열리는 직무 2개만 골라 드립니다. 많이 보여 주기보다 확실한 것만 보여 드립니다. 전공 때문에 어려운 직무는 이유와 함께 따로 보여 드립니다. 정답이 아니라 출발점입니다.</p>
   </div>
 </section>
 
@@ -132,10 +132,10 @@
   <div class="go"><button class="z-btn solid" id="goBtn" type="button" disabled>결과 보기 →</button><span class="hint" id="goHint">Q3을 뺀 네 문항을 골라 주세요.</span></div>
 
   <section class="res" id="res" hidden>
-    <div class="res-head"><h2>지금 바로 지원할 <span class="mark">직무 5개</span></h2><p id="resSub"></p></div>
+    <div class="res-head"><h2>지금 바로 지원할 <span class="mark">직무 3개</span></h2><p id="resSub"></p></div>
     <div class="rank" id="rank"></div>
     <div id="prepWrap" hidden>
-      <div class="res-head sub"><h2>준비하면 열리는 <span class="mark">직무 3개</span></h2><p>전공은 맞지 않지만 자격증·교육·포트폴리오로 넘을 수 있는 직무입니다.</p></div>
+      <div class="res-head sub"><h2>준비하면 열리는 <span class="mark">직무 2개</span></h2><p>전공을 크게 보지 않거나 전공이 달라도, 지원 전에 공부·자격증·포트폴리오가 먼저 필요한 직무입니다.</p></div>
       <div class="rank" id="prepRank"></div>
     </div>
     <div class="ex" id="ex"></div>
@@ -155,22 +155,10 @@
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function fmt(n) { return Number(n).toLocaleString('ko-KR'); }
-  // 직군별 성향 가중치 (사람 / 숫자 / 물건 / 콘텐츠) 와 원하는 것 (안정 / 성장 / 연봉 / 균형)
-  var G = {
-    'sales':            { o: { people: 3, number: 1, thing: 0, content: 0 }, w: { stable: 1, growth: 2, pay: 3, balance: 0 } },
-    'marketing':        { o: { people: 2, number: 1, thing: 0, content: 3 }, w: { stable: 0, growth: 3, pay: 1, balance: 1 } },
-    'planning':         { o: { people: 1, number: 3, thing: 0, content: 1 }, w: { stable: 1, growth: 3, pay: 2, balance: 0 } },
-    'support':          { o: { people: 2, number: 2, thing: 0, content: 0 }, w: { stable: 3, growth: 1, pay: 1, balance: 2 } },
-    'finance-industry': { o: { people: 1, number: 3, thing: 0, content: 0 }, w: { stable: 2, growth: 1, pay: 3, balance: 1 } },
-    'logistics':        { o: { people: 2, number: 2, thing: 1, content: 0 }, w: { stable: 1, growth: 2, pay: 1, balance: 1 } },
-    'it-data':          { o: { people: 0, number: 2, thing: 2, content: 1 }, w: { stable: 0, growth: 3, pay: 3, balance: 1 } },
-    'rnd':              { o: { people: 0, number: 2, thing: 3, content: 0 }, w: { stable: 2, growth: 2, pay: 2, balance: 1 } },
-    'design-eng':       { o: { people: 0, number: 1, thing: 3, content: 0 }, w: { stable: 2, growth: 1, pay: 2, balance: 1 } },
-    'manufacturing':    { o: { people: 1, number: 1, thing: 3, content: 0 }, w: { stable: 2, growth: 1, pay: 1, balance: 0 } },
-    'quality-safety':   { o: { people: 1, number: 2, thing: 2, content: 0 }, w: { stable: 3, growth: 0, pay: 1, balance: 2 } },
-    'bio-pharma':       { o: { people: 0, number: 2, thing: 3, content: 0 }, w: { stable: 2, growth: 2, pay: 2, balance: 1 } },
-    'construction':     { o: { people: 1, number: 1, thing: 3, content: 0 }, w: { stable: 1, growth: 1, pay: 2, balance: 0 } }
-  };
+  // 직군별 성향 가중치(사람/숫자/물건/콘텐츠)와 원하는 것(안정/성장/연봉/균형)은 jobs.json meta.groups[].fit 에서 읽는다.
+  // 새 직군이 생겨도 데이터만 넣으면 진단에 반영된다 (빠지면 build.py 가 경고).
+  var G = {}, NEUTRAL = { o: { people: 1, number: 1, thing: 1, content: 1 }, w: { stable: 1, growth: 1, pay: 1, balance: 1 } };
+  D.meta.groups.forEach(function (g) { G[g.id] = g.fit || NEUTRAL; });
   var LABEL = { bs: '학사', ms: '석사', phd: '박사', people: '사람', number: '숫자·데이터', thing: '물건·기술', content: '글·콘텐츠', stable: '안정', growth: '성장', pay: '연봉', balance: '균형' };
   // 전공 계열 선택지 (jobs.json meta.majorFields)
   var tiles = Object.keys(MF).map(function (k) { return '<button class="opt" type="button" data-v="' + k + '" aria-pressed="false"><b>' + esc(MF[k].name) + '</b></button>'; }).join('');
@@ -188,14 +176,14 @@
   });
   function mname(k) { return k === 'etc' ? '기타 전공' : (MF[k] ? MF[k].name : ''); }
   function score(j) {
-    var g = G[j.group] || { o: {}, w: {} }, s = 0, why = [], warn = [];
+    var g = G[j.group] || NEUTRAL, s = 0, why = [], warn = [];
     var lv = (j.mj && j.mj.lv) || (j.nonmajorOk ? 'open' : 'req'), fields = j.mf || [];
     var mine = [ans.major, ans.major2].filter(function (x) { return x && x !== 'none' && x !== 'etc'; });
     var hit = fields.filter(function (f) { return mine.indexOf(f) >= 0; });
     var bucket = 'main';
     if (lv === 'open') { s += 2; why.push('전공 무관'); }
     else if (hit.length) { s += 4; why.push((MF[hit[0]] ? MF[hit[0]].short : '') + ' 전공 일치'); }
-    else if (lv === 'prep') bucket = 'prep';
+    else if (lv === 'prep') { bucket = 'prep'; s += fields.length ? -2 : 2; }   // 다른 전공을 우대하는 직무보다 '전공은 안 보고 공부만 필요한' 직무를 먼저
     else bucket = 'out';
     // 학력: 석·박사는 연구 직무 가산, 학사가 '석사 기본' 직무를 받으면 경고
     if (j.deg && hit.length) {
@@ -204,6 +192,7 @@
     }
     if (ans.deg === 'phd' && !j.deg) s -= 1;
     var o = g.o[ans.orient] || 0; s += o * 2; if (o >= 3) why.push(LABEL[ans.orient] + ' 성향');
+    if (o === 0 && bucket !== 'out') bucket = 'skip';   // 고른 성향과 전혀 맞지 않는 직군은 추천하지 않는다
     var w = g.w[ans.want] || 0; s += w * 1.5; if (w >= 3) why.push(LABEL[ans.want] + ' 쪽 강점');
     if (ans.want === 'stable' && j.ai.level === 1) { s += 1.5; why.push('AI 영향 낮음'); }
     if (ans.want === 'pay' && j.salary.junior[1] >= 5200) { s += 1.5; why.push('신입 상단 ' + fmt(j.salary.junior[1]) + '만원'); }
@@ -211,8 +200,8 @@
     var ev = (j.sources.count || 0) + (j.sources.public || 0); s += Math.min(ev, 40) / 40;   // 자료가 많은 직무를 살짝 우대
     return { j: j, s: s, why: why.slice(0, 3), warn: warn, bucket: bucket };
   }
-  // 같은 직군이 다 채우지 않게 직군당 최대 2개
-  function pick(list, n) { var out = [], cnt = {}; for (var i = 0; i < list.length && out.length < n; i++) { var g = list[i].j.group; cnt[g] = (cnt[g] || 0) + 1; if (cnt[g] <= 2) out.push(list[i]); } return out; }
+  // 같은 직군이 몰리지 않게 직군당 1개
+  function pick(list, n) { var out = [], cnt = {}; for (var i = 0; i < list.length && out.length < n; i++) { var g = list[i].j.group; cnt[g] = (cnt[g] || 0) + 1; if (cnt[g] <= 1) out.push(list[i]); } return out; }
   function art(j) {
     var c = j.gc || ['#c6ff3d', '#0b0b0b'], kw = (j.en || '').split('/')[0].trim();
     return '<div class="art" style="--ga:' + c[0] + ';--gb:' + c[1] + '" aria-hidden="true"><span>' + esc(kw) + '</span></div>';
@@ -227,13 +216,13 @@
   }
   $('goBtn').addEventListener('click', function () {
     var ranked = JOBS.map(score).sort(function (a, b) { return b.s - a.s; });
-    var main = pick(ranked.filter(function (r) { return r.bucket === 'main'; }), 5);
-    var prep = pick(ranked.filter(function (r) { return r.bucket === 'prep'; }), 3);
+    var main = pick(ranked.filter(function (r) { return r.bucket === 'main'; }), 3);
+    var prep = pick(ranked.filter(function (r) { return r.bucket === 'prep'; }), 2);
     var out = ranked.filter(function (r) { return r.bucket === 'out'; });
     $('rank').innerHTML = main.map(function (r, i) { return row(r, i); }).join('');
     $('prepRank').innerHTML = prep.map(function (r, i) { return row(r, i, true); }).join('');
     $('prepWrap').hidden = !prep.length;
-    $('ex').innerHTML = out.length ? '전공 때문에 이번 결과에서 뺀 직무 <b>' + out.length + '개</b><button type="button" id="exBtn">목록 보기</button><ul id="exList" hidden>' +
+    $('ex').innerHTML = out.length ? '전공 때문에 뺀 직무 <b>' + out.length + '개</b><button type="button" id="exBtn">목록 보기</button><ul id="exList" hidden>' +
       out.map(function (r) { return '<li><a href="../jobs/' + r.j.id + '/">' + esc(r.j.name) + '</a> · ' + esc((r.j.mj && r.j.mj.names) || '') + ' 전공 필요</li>'; }).join('') + '</ul>' : '';
     var eb = $('exBtn'); if (eb) eb.addEventListener('click', function () { var l = $('exList'); l.hidden = !l.hidden; this.textContent = l.hidden ? '목록 보기' : '접기'; });
     var mj = mname(ans.major) + (ans.major2 && ans.major2 !== 'none' ? ' + ' + mname(ans.major2) : '');

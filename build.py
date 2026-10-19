@@ -117,23 +117,36 @@ NEWS_TAG_MAP = {
     "인사": ["hr", "recruiter", "general-affairs"],
     "영업": ["b2b-sales", "overseas-sales", "sales-management", "ecommerce-sales", "pharma-sales", "saas-sales", "technical-sales", "trading"],
     "재무": ["finance", "accounting", "corporate-finance", "bank", "risk-management", "policy-finance", "fund-ops"],
-    "기획": ["strategy", "biz-planning", "sales-planning", "consulting", "bd"],
-    "PM": ["service-planning", "it-planning"],
+    "기획": ["strategy", "biz-planning", "sales-planning", "consulting", "bd", "esg"],
+    "PM": ["service-planning", "it-planning", "cx"],
     "MD": ["md", "online-md"],
     "구매": ["purchasing", "scm", "forwarding"],
     "마케팅": ["brand-marketer", "performance-marketer", "content-marketer", "pr", "ad-planner"],
     "개발": ["sw-dev", "backend", "frontend", "embedded-sw", "ai-engineer", "data-engineer", "data-analyst", "qa"],
     "디자인": ["ux-designer"],
     "생산": ["production-mgmt", "production-tech", "process-tech", "equipment-eng", "semiconductor-pkg"],
-    "연구": ["rnd-chem", "battery-dev", "device-rnd", "product-dev", "rnd-food", "rnd-bio", "bio-process"],
+    "연구": ["rnd-chem", "battery-dev", "device-rnd", "product-dev", "rnd-food", "rnd-bio", "bio-process", "circuit-design"],
     "품질": ["quality", "reliability", "safety", "environment-eng", "gmp-qa"],
     "건설": ["construction-mgmt", "civil-eng", "plant-epc", "equipment-pm", "plant-design"],
     "공공": ["public-admin"],
 }
 
 
+def news_tag_map(data: dict) -> dict:
+    """NEWS_TAG_MAP + 자동 보충: 어느 태그에도 없는 직무(새로 추가된 직무)는 자기 직군의 newsTag 로 붙인다."""
+    m = {t: list(ids) for t, ids in NEWS_TAG_MAP.items()}
+    listed = {jid for ids in m.values() for jid in ids}
+    gtag = {g["id"]: g.get("newsTag") for g in data["meta"]["groups"]}
+    for j in data["jobs"]:
+        t = gtag.get(j["group"])
+        if j["id"] not in listed and t:
+            m.setdefault(t, []).append(j["id"])
+    return m
+
+
 def attach_news(data: dict, days: int = 45) -> None:
     import glob
+    tag_map = news_tag_map(data)
     arch = sorted(glob.glob(str(BASE / "news-collector" / "archive" / "*.json")))[-days:]
     by_job = {}
     for p in arch:
@@ -145,7 +158,7 @@ def attach_news(data: dict, days: int = 45) -> None:
         for sec in d.get("sections", []):
             for a in sec.get("articles", []):
                 tags = a.get("ai_tags") or []
-                ids = {jid for t in tags for jid in NEWS_TAG_MAP.get(t, [])}
+                ids = {jid for t in tags for jid in tag_map.get(t, [])}
                 if not ids:
                     continue
                 item = {"date": date, "title": a.get("title", ""), "url": a.get("url", ""), "source": a.get("source", ""),
@@ -457,11 +470,53 @@ def attach_major(data: dict) -> None:
             raise SystemExit(f"[{j['id']}] major.level 은 open / prep / req 중 하나여야 합니다: {lv!r}")
         short = "·".join(mf[f]["short"] for f in fl[:2] if f in mf) + (" 등" if len(fl) > 2 else "")
         names = ", ".join(mf[f]["name"] for f in fl if f in mf)
-        card = {"open": "전공 무관", "prep": f"{short} 우대", "req": f"{short} 전공"}[lv]
-        box = {"open": "무관", "prep": "우대", "req": "필수"}[lv]
+        card = {"open": "전공 무관", "prep": f"{short} 우대" if short else "선행 공부 필요", "req": f"{short} 전공"}[lv]
+        box = {"open": "무관", "prep": "우대" if short else "준비 필요", "req": "필수"}[lv]
         deg = DEG_LABEL.get(m.get("degree", ""), "")
         j["mj"] = {"lv": lv, "card": card, "box": box, "names": names, "deg": deg, "prep": m.get("prep", "")}
         j["nonmajorOk"] = lv == "open"
+
+
+def audit_links(data: dict, share_dir: Path) -> None:
+    """직무가 늘어날 때 빠지기 쉬운 연결을 빌드마다 점검해 경고로 보여 준다 (빌드는 멈추지 않음).
+    - 직무 진단: major(level·fields·prep), 직군의 fit 가중치
+    - 뉴스: 명시 태그 목록(NEWS_TAG_MAP) 또는 직군 newsTag
+    - 면접 질문(data/interview_jobs.json) · 필수 용어 · 카톡 공유 이미지(assets/share/jobs)"""
+    warn = []
+    mf = set(data["meta"].get("majorFields", {}))
+    for g in data["meta"]["groups"]:
+        if not (g.get("fit") or {}).get("o") or not (g.get("fit") or {}).get("w"):
+            warn.append(f"직군 {g['id']}: 진단 가중치(meta.groups[].fit) 없음 → 진단에서 성향 점수 0")
+        if not g.get("newsTag"):
+            warn.append(f"직군 {g['id']}: 기본 뉴스 태그(newsTag) 없음")
+    listed = {jid for ids in NEWS_TAG_MAP.values() for jid in ids}
+    iqp = BASE / "data" / "interview_jobs.json"
+    iq = json.loads(iqp.read_text(encoding="utf-8")) if iqp.exists() else {}
+    iq = iq.get("jobs", iq) if isinstance(iq, dict) else {}
+    auto_news = []
+    for j in data["jobs"]:
+        jid, m = j["id"], j.get("major")
+        if not m:
+            warn.append(f"{jid}: major 없음 → 진단에서 전공 판정 불가 (관리자 페이지 '전공 단계')")
+        else:
+            bad = [f for f in m.get("fields", []) if f not in mf]
+            if bad:
+                warn.append(f"{jid}: 모르는 전공 계열 코드 {bad}")
+            if m["level"] == "req" and not m.get("fields"):
+                warn.append(f"{jid}: 전공 필수인데 관련 전공 계열이 비어 있음")
+            if m["level"] == "prep" and not m.get("prep"):
+                warn.append(f"{jid}: 준비 필요 직무인데 '준비할 것' 문구 없음")
+        if jid not in listed:
+            auto_news.append(jid)
+        if iq and jid not in iq:
+            warn.append(f"{jid}: 면접 질문(data/interview_jobs.json) 없음")
+        if not j.get("terms"):
+            warn.append(f"{jid}: 필수 용어 TOP5 없음 (data/glossary.json)")
+        if not (share_dir / "jobs" / f"{jid}.png").exists():
+            warn.append(f"{jid}: 카톡 공유 이미지 없음 → 한글 글꼴이 있는 PC에서 python build.py 한 번 실행")
+    if auto_news:
+        print(f"뉴스 자동 연결(직군 기본 태그): {', '.join(auto_news)} — 더 맞는 태그가 있으면 build.py NEWS_TAG_MAP 에 추가")
+    print(f"직무 연결 점검: 경고 {len(warn)}건" + ("" if not warn else "\n  - " + "\n  - ".join(warn)))
 
 
 def check_jobs(data: dict) -> None:
@@ -796,6 +851,7 @@ def build(out_dir: Path, with_news: bool) -> None:
             shutil.rmtree(news_src.parent, ignore_errors=True)
 
     seo.write_sitemap(out_dir, base_url, entries)
+    audit_links(data, BASE / "assets" / "share")
     print(f"sitemap.xml: URL {len(entries)}개 -> {out_dir / 'sitemap.xml'}")
 
 
