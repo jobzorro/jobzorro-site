@@ -87,6 +87,10 @@ h1 b { font-weight:900; background:linear-gradient(transparent 62%, var(--mark) 
 .rk .bar i { display:block; height:100%; border-radius:999px; background:var(--ink); }
 .rk:first-child .bar i { background:var(--acc); box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
 .rk .v { font-family:var(--display); font-weight:900; font-size:15.5px; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.myyr { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; padding:10px 12px; border-radius:12px; background:var(--fill); font-size:13px; }
+.myyr label { font-weight:700; }
+.myyr input { width:72px; font:inherit; font-family:var(--display); font-weight:700; font-size:16px; padding:6px 8px; border-radius:8px; border:1px solid var(--line2); background:var(--bg); color:var(--ink); }
+.myyr output { margin-left:auto; font-family:var(--display); font-weight:900; font-size:18px; font-variant-numeric:tabular-nums; }
 .exrow { border-top:1px dashed var(--line2); padding-top:10px; margin-top:2px; }
 .exrow .exd { font-size:12px; color:var(--muted); min-width:0; }
 .rk .v small.rb { display:block; font-family:var(--font); font-size:11.5px; font-weight:500; color:var(--muted); }
@@ -468,6 +472,19 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   // 신뢰도 칩: 공시값(사업보고서·알리오·기관 공시) > 국민연금 기준 > 총보상 추정(상한 보정) > 최소치(상한에 걸림)
   var GRADES = { 2: ['공시값', 'g-hi'], 0: ['국민연금 기준', 'g-mid'], 4: ['총보상 추정', 'g-est'], 1: ['최소치', 'g-low'] };
   function gradeChip(f) { var g = GRADES[f]; return '<span class="gchip ' + g[1] + '">' + g[0] + '</span>'; }
+  // 내 연차로 보기: 직급 금액 사이를 연차로 읽는다 (고객 실제 연봉 검증: 직급으로만 볼 때보다 개인 오차가 작다)
+  var YR_PTS = [0.5, 4, 8, 12, 17];
+  function atYears(R, y) {
+    y = Math.max(YR_PTS[0], Math.min(YR_PTS[4], y));
+    for (var i = 0; i < 4; i++) if (y <= YR_PTS[i + 1]) { var t = (y - YR_PTS[i]) / (YR_PTS[i + 1] - YR_PTS[i]); return Math.exp(Math.log(R[i]) * (1 - t) + Math.log(R[i + 1]) * t); }
+    return R[4];
+  }
+  document.addEventListener('input', function (e) {
+    if (e.target.id !== 'myYr' || !CURROW) return;
+    var y = parseFloat(e.target.value), o = $('myYrV');
+    o.textContent = isNaN(y) ? '' : '약 ' + man(atYears(CURROW.rk, y)) + '만원';
+  });
+  var CURROW = null;
   function emptyDetail() {
     $('detail').innerHTML = '<div class="empty"><h3>회사를 고르면 여기에 나옵니다</h3><p>평균 연봉, 사원부터 부장까지 직급별 추정, 입사·퇴사 흐름, 현직자 제보를 한 화면에서 봅니다.</p>' +
       '<div class="picks">' + (D.meta.picks || []).map(function (x) { return '<button type="button" data-co="' + x[1] + '" data-name="' + esc(x[0]) + '">' + esc(x[0]) + '</button>'; }).join('') + '</div></div>';
@@ -492,6 +509,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     });
   }
   function show(r) {
+    CURROW = r;
     var capped = r.capped && !r.dart && !r.calAvg, plus = capped ? '+' : '';
     var main = r.rk, base = r.rkBase, max = Math.max.apply(null, main), V = D.meta.validation;
     var hasYoy = r.yoyPct !== null && r.yoyPct !== undefined && !r.capped;   // 상한에 걸린 회사의 추이는 상한 인상분이라 숨긴다
@@ -529,6 +547,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       }).join('') + (ex ? '<div class="rk exrow"><span class="n">임원<small class="yr">' + (ex[2] === '추정' ? '추정' : '공시') + '</small></span><span class="exd">' + (ex[0] ? (ex[2] === '추정' ? '약 ' : '') + ex[0] + '명 · ' : '') + esc(ex[2]) + (ex[3] ? ' <span class="gchip g-est">임원 비중 높음</span>' : '') + '</span><span class="v">' + man(ex[1]) + '만원</span></div>' : '') +
         (r.fld ? '<div class="rk exrow"><span class="n">현장<small class="yr">' + (r.fld[2] === '공시' ? '공시' : '추정') + '</small></span><span class="exd">직원의 약 ' + r.fld[0] + '% · 직급별 금액은 사무직 평균 ' + man(r.fld[3]) + '만원 기준</span><span class="v">' + man(r.fld[1]) + '만원</span></div>' : '') + '</div>' + trend +
       '<dl class="facts">' + facts.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('') + '</dl>' +
+      '<div class="myyr"><label for="myYr">내 총 경력</label><input id="myYr" type="number" inputmode="decimal" min="0" max="35" step="0.5" placeholder="예: 4"><span>년차</span><output id="myYrV" for="myYr"></output></div>' +
       '<details class="how"><summary>이 숫자는 어떻게 계산했나요?</summary><ol>' + how + '</ol></details>' + repHtml(r) +
       '</article>';
     var sh = $('sheet'); sh.scrollTop = 0;
