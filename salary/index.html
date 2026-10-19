@@ -258,7 +258,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     if (IDX) return Promise.resolve(IDX);
     if (!idxP) {
       $('qHint').textContent = '회사 목록을 불러오는 중…';
-      idxP = fetch('data/index.json').then(function (r) { return r.json(); }).then(function (a) {
+      idxP = fetch('data/index.json?v=' + VER(), REFRESH ? { cache: 'reload' } : {}).then(function (r) { return r.json(); }).then(function (a) {
         IDX = a.map(function (x, i) { return { i: i, n: x[0], al: x[5] || '', k: norm(x[0]) + (x[5] ? '|' + norm(x[5]) : ''), m: x[1], avg: x[2], cap: !!(x[3] & 1), dart: !!(x[3] & 2), cal: !!(x[3] & 4), ind: D.meta.inds[x[4]] || '' }; });   // x[5]: SK텔레콤 같은 흔한 이름
         hint(); return IDX;
       });
@@ -267,9 +267,10 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   }
   function loadRow(i) {
     var s = i % D.meta.shards;
-    if (!SH[s]) SH[s] = fetch('data/co/' + ('0' + s).slice(-2) + '.json').then(function (r) { return r.json(); });
+    if (!SH[s]) SH[s] = fetch('data/co/' + ('0' + s).slice(-2) + '.json?v=' + VER(), REFRESH ? { cache: 'reload' } : {}).then(function (r) { return r.json(); });
     return SH[s].then(function (rows) {
       var row = rows.find(function (x) { return x[0] === i; }), o = {};
+      if (!row) return null;
       D.meta.cols.forEach(function (c, j) { o[c] = row[j]; });
       o.n = o.name; o.biz = o.biz6; o.rep = o.reports;   // 제보 영역(repHtml)이 쓰는 이름
       return o;
@@ -281,7 +282,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       (m.dartCount ? ' · 사업보고서 ' + m.dartCount.toLocaleString('ko-KR') + '곳 반영' : '') +
       (m.validation ? ' · 실제 연봉 ' + m.validation.total.toLocaleString('ko-KR') + '건으로 검증' : '');
   }
-  fetch('data/meta.json').then(function (r) { return r.json(); }).then(function (m) {
+  fetch('data/meta.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (m) {
     D.meta = m; hint();
     var ym = m.ym.replace('-', '년 ') + '월';
     $('foot').textContent = '출처: ' + m.source + ', ' + ym + ' 기준' + (m.dartCount ? ' · 금융감독원 전자공시(DART) 사업보고서 직원 현황' : '') +
@@ -311,12 +312,12 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     }).join('') : '<p class="hint">찾는 회사가 없습니다. 가입자 30명 이상 회사만 있고, 법인명 기준이라 브랜드명과 다를 수 있습니다.</p>';
   }
   var tm; $('q').addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(search, 120); });
-  $('results').addEventListener('click', function (e) { var b = e.target.closest('.res'); if (b) openCo(+b.getAttribute('data-i')); });
+  $('results').addEventListener('click', function (e) { var b = e.target.closest('.res'); if (b) openCo(+b.getAttribute('data-i'), b.querySelector('.nm') && IDX && IDX[+b.getAttribute('data-i')] ? IDX[+b.getAttribute('data-i')].n : ''); });
   document.addEventListener('click', function (e) {
     var a = e.target.closest('[data-co]'); if (!a) return; e.preventDefault();
     var i = +a.getAttribute('data-co'), nm = a.getAttribute('data-name');
     if (nm) { $('q').value = nm; search(); }
-    openCo(i);
+    openCo(i, nm);
     if (!isPhone() && !a.closest('.co-right')) document.querySelector('.co-split').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
@@ -337,10 +338,24 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     $('detail').innerHTML = '<div class="empty"><h3>회사를 고르면 여기에 나옵니다</h3><p>평균 연봉, 사원부터 부장까지 직급별 추정, 입사·퇴사 흐름, 현직자 제보를 한 화면에서 봅니다.</p>' +
       '<div class="picks">' + (D.meta.picks || []).map(function (x) { return '<button type="button" data-co="' + x[1] + '" data-name="' + esc(x[0]) + '">' + esc(x[0]) + '</button>'; }).join('') + '</div></div>';
   }
-  function openCo(i) {
+  // 데이터가 바뀐 뒤 브라우저에 예전 목록이 남아 있으면 번호가 어긋나 다른 회사가 열린다.
+  // 열린 회사 이름이 누른 이름과 다르면 캐시를 무시하고 목록·조각을 다시 받아 이름으로 다시 찾는다.
+  var REFRESH = false;
+  function VER() { return (D.meta && (D.meta.ver || D.meta.ym)) || ''; }
+  function openCo(i, name) {
+    name = name || (IDX && IDX[i] ? IDX[i].n : '');
     CUR = i;
     document.querySelectorAll('.res').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-i') === i); });
-    loadRow(i).then(show);
+    loadRow(i).then(function (r) {
+      if (r && (!name || r.name === name)) return show(r);
+      if (REFRESH) { if (r) show(r); return; }
+      REFRESH = true; IDX = null; idxP = null; SH = {};
+      loadIndex().then(function (idx) {
+        var hit = idx.filter(function (x) { return x.n === name; }).sort(function (a, b) { return b.m - a.m; })[0];
+        if (hit) { CUR = hit.i; loadRow(hit.i).then(function (r2) { if (r2) show(r2); }); }
+        if ($('q').value) search();
+      });
+    });
   }
   function show(r) {
     var capped = r.capped && !r.dart && !r.calAvg, plus = capped ? '+' : '';
