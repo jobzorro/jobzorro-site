@@ -825,16 +825,14 @@ def build(out_dir: Path, with_news: bool) -> None:
         + footer_html("../", logo, "") + seo.INTERVIEW_ALL_JS + "\n</body>\n</html>\n", encoding="utf-8")
     print(f"면접 질문 페이지: 공통 {len(ic['top'])}개 + 직무 {len(iqj)}개 -> {out_dir / 'interview' / 'index.html'}")
     entries.append(("interview/", updated, "weekly", "0.8"))
-    # 관리 화면 (검색 제외)
-    ap = BASE / "template_admin.html"
-    if ap.exists():
-        adm = (ap.read_text(encoding="utf-8")
-               .replace("/*__SEO__*/", seo.seo_head(base_url, "직무사전 관리 — 취업조로", "운영자 전용", "admin/", og_main, [], noindex=True))
-               .replace("/*__SHARED_CSS__*/", SHARED_CSS)
-               .replace("/*__NAV__*/", nav_html("index.html", "../", logo_nav))
-               .replace("/*__FOOTER__*/", footer_html("../", logo, "")))
-        (out_dir / "admin").mkdir(exist_ok=True)
-        (out_dir / "admin" / "index.html").write_text(adm, encoding="utf-8")
+    # 관리 화면은 이메일 로그인 어드민으로 옮김 (2026-10-21). 원본 template_admin.html 은
+    # company-check/admin/build_jobs_page.py 가 읽어 어드민 안 /jobs 로 만든다. 여기엔 옮긴 곳 안내만.
+    (out_dir / "admin").mkdir(exist_ok=True)
+    (out_dir / "admin" / "index.html").write_text(
+        '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow">'
+        '<meta http-equiv="refresh" content="0;url=https://company-admin.jobzorro.workers.dev/jobs"><title>관리 화면</title></head>'
+        '<body><p>관리 화면이 옮겨졌어요. <a href="https://company-admin.jobzorro.workers.dev/jobs">여기로 이동</a></p></body></html>\n',
+        encoding="utf-8")
     seo.write_robots(out_dir, base_url)
     seo.write_llms(out_dir, base_url, data["jobs"], data["meta"]["groups"], updated, data["meta"].get("sourceDocs", 0))
     print(f"직무 페이지 {len(data['jobs'])}개 + robots.txt · llms.txt -> {out_dir / 'jobs'}")
