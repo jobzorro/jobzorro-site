@@ -408,7 +408,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     $('stOff').innerHTML = nf(m.dartCount) + '<small>곳</small>';   // 공시값이 붙은 회사 수 (검증 배지의 개사 수와 다를 수 있음)
     $('stVal').innerHTML = nf(V.total) + '<small>건</small>';
     $('stYm').textContent = m.ym.replace('-', '.');
-    var items = ['국민연금 가입 회사 ' + nf(m.count) + '곳', '사업보고서·공공기관 공시 ' + nf(m.dartCount) + '곳', '이직자 실제 연봉 ' + nf(V.nMatched) + '명으로 검증',
+    var items = ['국민연금 가입 회사 ' + nf(m.count) + '곳', '사업보고서·공공기관 공시 ' + nf(m.dartCount) + '곳', '이직자·현직자 실제 연봉 ' + nf(V.nPeople || V.nMatched) + '명으로 검증',
       '사원 · 대리 · 과장 · 차장 · 부장 직급별 추정', '매달 자동 갱신', '실수령액 계산기 · 내 연봉의 위치는? · 연봉협상 잘했나?'];
     var row = items.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('');
     $('tick').innerHTML = row + row;   // 두 번 이어 붙여 끊김 없이 흐르게
@@ -537,7 +537,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     $('detail').innerHTML = '<article class="detail" aria-live="polite">' +
       '<div class="top"><div><h2>' + esc(r.name) + '</h2><div class="meta">' + esc([r.industry, r.sido, '사업자번호 앞자리 ' + r.biz6].filter(Boolean).join(' · ')) + '</div></div>' +
       '<div class="avg"><div class="v">' + man(r.bAvg) + plus + '<small>만원</small></div><div class="l">평균 연봉' + (/^(국민연금 기준|총보상 추정)$/.test(r.bSrc) ? '' : ' · ' + esc(r.bSrc)) + ' ' + gradeChip(r.dart ? 2 : r.calAvg ? 4 : r.capped ? 1 : 0) + '</div></div></div>' +
-      (V ? '<p class="vbadge">실제 연봉 ' + V.total.toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명 + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
+      (V ? '<p class="vbadge">실제 연봉 ' + V.total.toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명' + (V.nReports ? ' + 현직자 제보 ' + V.nReports + '건' : '') + ' + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
       (r.cfN ? '<p class="hint">취업조로 경력이직 고객 <b>' + r.cfN + '명</b>의 실제 연봉으로 이 회사 직급별 금액을 보정했습니다(개인 값은 공개하지 않습니다).</p>' : '') +
       (skew ? '<p class="hint">평균 연봉에는 성과급·주식보상이 크게 들어 있어, 직급별 금액은 <b>통상 연봉(기본 + 일반 성과급)</b> 기준입니다.</p>' : '') +
       (firm ? '<p class="hint">전문직 펌이라 직급별 금액은 변호사·회계사·컨설턴트 기준에 가깝고, 지원 인력은 이보다 낮습니다.</p>' : '') +
