@@ -247,10 +247,10 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 /* 출처 */
 .note { margin:56px 0 0; padding:22px 0 60px; border-top:1px solid var(--ink); font-size:12.5px; color:var(--muted); display:grid; gap:6px; }
 .note b { color:var(--ink-soft); }
-.zf { background:var(--inkbg); color:var(--inkfg-soft); font-size:12px; padding:30px 0 40px; }
-.zf img { height:18px; filter:invert(1); display:block; margin-bottom:12px; }
-:root[data-theme="dark"] .zf img { filter:none; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .zf img { filter:none; } }
+.pf { background:var(--inkbg); color:var(--inkfg-soft); font-size:12px; padding:30px 0 40px; }
+.pf img { height:18px; filter:invert(1); display:block; margin-bottom:12px; }
+:root[data-theme="dark"] .pf img { filter:none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pf img { filter:none; } }
 </style>
 </head>
 <body>
@@ -277,10 +277,10 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   <p><b>평판</b> 잡플래닛·블라인드·캐치에 공개된 종합 점수와 평가 인원만 옮깁니다. 리뷰 내용은 각 사이트 원문 링크에서 확인하세요.</p>
   <p><b>연봉</b> 취업조로 연봉 연구소 추정치(국민연금·사업보고서 기반)입니다. 실제 처우와 다를 수 있어요.</p>
   <p><b>뉴스</b> Google 뉴스 검색 결과 중 제목에 회사 이름이 들어간 기사만 모아 제목과 링크만 보여 줍니다.</p>
-  <p><b>재무</b> 금융감독원 DART 사업보고서·감사보고서(연결 우선) 기준, 단위 억원.</p>
+  <p><b>재무</b> 금융감독원 DART 사업보고서·감사보고서 기준. 입사하는 법인 자체를 보도록 별도재무제표를 우선해요 (단위 억원).</p>
   <p><b>판정</b> 15개 재무 지표와 평판·연봉을 합친 참고용 결과입니다. 최종 결정은 본인의 커리어 방향과 함께 판단하세요.</p>
 </div></div>
-<footer class="zf"><div class="wrap"><img src="assets/jobzorro_logo.png" alt="TEAM ZORRO">커리어프로젝트 주식회사 · 취업조로 · 시안 v0.1</div></footer>
+<!--FOOT--><footer class="pf"><div class="wrap"><img src="assets/jobzorro_logo.png" alt="TEAM ZORRO">커리어프로젝트 주식회사 · 취업조로 · 시안 v0.1</div></footer><!--/FOOT-->
 
 <script>
 // 회사 데이터는 data/index.json(검색용 이름 목록) + data/co/NNN.json(회사 상세 128조각)으로 나눠 필요할 때만 읽는다

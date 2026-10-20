@@ -912,12 +912,14 @@ def build(out_dir: Path, with_news: bool) -> None:
     comp = BASE / "company"
     if comp.exists():
         dst = out_dir / "company"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(comp, dst)
-        # 이 페이지는 자체 토큰(--paper·--hairline·--logo-filter)을 이미 갖고 있어 .zn 규칙만 더한다
-        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
+        # 이 페이지는 자체 토큰(--paper·--hairline·--logo-filter)을 이미 갖고 있어 공용 .zn(메뉴)·.zf(푸터) 규칙만 더한다
+        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", ".zf", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
         h = (dst / "index.html").read_text(encoding="utf-8")
         if 'class="zn"' not in h:
             h = h.replace("</style>", zn_css + "\n</style>", 1)
             h = h.replace("<body>", "<body>\n" + nav_html("company/index.html", "../", logo_nav), 1)
+            # 시안용 푸터 → 사이트 공용 푸터 (다크모드 로고 흰색 등 다른 페이지와 같게)
+            h = re.sub(r"<!--FOOT-->.*?<!--/FOOT-->", lambda m: footer_html("../", logo, ""), h, count=1, flags=re.S)
             (dst / "index.html").write_text(h, encoding="utf-8")
         entries.append(("company/", updated, "daily", "0.8"))
         with open(out_dir / "llms.txt", "a", encoding="utf-8") as f:
