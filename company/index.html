@@ -417,9 +417,10 @@ function shardOf(name) { let h = 0; for (let i = 0; i < name.length; i++) h = (h
 async function getCo(name) {
   if (API) {
     if (!cache[name]) cache[name] = fetch(`${API}/co?n=${encodeURIComponent(name)}`)
-      .then(r => r.ok ? r.json() : r.status === 429 ? { __limit: true } : r.status === 410 ? { __hidden: true } : null).catch(() => null);
+      .then(r => r.ok ? r.json() : r.status === 429 ? { __limit: true } : r.status === 410 ? { __hidden: true } : r.status >= 500 ? { __err: true } : null)
+      .catch(() => ({ __err: true }));   // 서버 오류·연결 끊김은 '자료 없음'과 구분
     const c = await cache[name];
-    if (c && c.__limit) delete cache[name];  // 제한 풀리면 다시 받을 수 있게
+    if (c && (c.__limit || c.__err)) delete cache[name];  // 제한 풀리거나 서버가 돌아오면 다시 받을 수 있게
     return c;
   }
   const k = shardOf(name);
@@ -636,6 +637,7 @@ async function render(name) {
   const c = await getCo(name);
   if (c && c.__hidden) { $("#out").innerHTML = `<div class="sec">${empty("정정 요청을 검토하느라 이 회사는 잠시 내렸어요.")}</div>`; return; }
   if (c && c.__limit) { $("#out").innerHTML = `<div class="sec">${empty("조회가 너무 많아요. 잠시 후 다시 시도해 주세요.")}</div>`; return; }
+  if (c && c.__err) { $("#out").innerHTML = `<div class="sec">${empty("잠시 연결이 불안정해요. 잠시 후 다시 시도해 주세요.")}</div>`; return; }
   if (c) c.name = name;  // 조각 파일에는 이름 칸을 빼고 저장(용량) → 여기서 채움
   if (!c) { $("#hint").textContent = ""; document.querySelectorAll(".pill").forEach(p => p.classList.remove("on"));
     $("#out").innerHTML = `<div class="sec">${empty("'" + name + "'은(는) 아직 모은 자료가 없어요. 직원 30명 이상 회사만 들어 있어요.")}</div>`; return; }
@@ -802,8 +804,8 @@ let VS = null;   // {A, B, now, prio}
 async function renderVS(a, b, now) {
   $("#out").innerHTML = `<p class="loading">두 회사를 불러오는 중…</p>`;
   const [A, B] = await Promise.all([getCo(a), getCo(b)]);
-  const bad = [[a, A], [b, B]].find(([, c]) => !c || c.__hidden || c.__limit);
-  if (bad) { $("#out").innerHTML = `<div class="sec">${empty(bad[1]?.__limit ? "조회가 너무 많아요. 잠시 후 다시 시도해 주세요." : "'" + bad[0] + "'은(는) 아직 모은 자료가 없어요.")}</div>`; return; }
+  const bad = [[a, A], [b, B]].find(([, c]) => !c || c.__hidden || c.__limit || c.__err);
+  if (bad) { $("#out").innerHTML = `<div class="sec">${empty(bad[1]?.__limit ? "조회가 너무 많아요. 잠시 후 다시 시도해 주세요." : bad[1]?.__err ? "잠시 연결이 불안정해요. 잠시 후 다시 시도해 주세요." : "'" + bad[0] + "'은(는) 아직 모은 자료가 없어요.")}</div>`; return; }
   A.name = a; B.name = b; CUR = null;
   VS = { A, B, now: !!now, prio: (VS && VS.A.name === a && VS.B.name === b && VS.prio) || "base" };
   history.replaceState(null, "", "#" + encodeURIComponent(a) + "~" + encodeURIComponent(b) + (now ? "~now" : ""));
