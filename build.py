@@ -78,7 +78,7 @@ GROUP_COLORS = {
     "construction":     ((210, 180, 140), (18, 15, 11)),   # 샌드
 }
 
-TABS = [("index.html", "직무사전"), ("salary/index.html", '연봉<span class="lg"> 연구소</span>'), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
+TABS = [("index.html", "직무사전"), ("salary/index.html", '연봉<span class="lg"> 연구소</span>'), ("company/index.html", '회사<span class="lg">&nbsp;판단</span><span class="new">NEW</span>'), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
 APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 신청하기" 버튼이 여기로 간다)
 
 
@@ -286,6 +286,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zn-tabs a:hover { color:var(--ink); }
 .zn-tabs a.on { color:var(--ink); border-bottom-color:var(--ink); }
 @media (max-width:480px) { .zn-tabs .lg { display:none; } }
+.zn-tabs .new { margin-left:5px; font-size:9.5px; font-weight:800; letter-spacing:.04em; background:#c6ff3d; color:#0b0b0b; border-radius:99px; padding:1px 6px; line-height:1.5; }
+@media (max-width:480px) { .zn-tabs .new { font-size:0; width:7px; height:7px; padding:0; margin:0 0 10px 2px; display:inline-block; } }   /* 폰: NEW 글자 대신 라임 점 */
 .zn-cta { margin-left:auto; flex:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--paper); background:var(--ink); border-radius:999px; padding:9px 15px; text-decoration:none; white-space:nowrap; }
 .zn-cta:hover { background:var(--acc); color:var(--acc-ink); }
 @media (max-width:640px) { .zn-cta { display:none; } .zn-in { gap:10px; padding:0 14px; } .zn-logo img { height:19px; } .zn-tabs a { padding:0 9px; font-size:13px; } }
@@ -465,7 +467,7 @@ def footer_html(root: str, logo: str, note: str) -> str:
     c = COMPANY
     return (
         f'<footer class="zf"><div class="zf-in"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"></a>'
-        f'<div class="zf-links"><a href="{root}index.html">직무사전</a><a href="{root}salary/index.html">연봉 연구소</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
+        f'<div class="zf-links"><a href="{root}index.html">직무사전</a><a href="{root}salary/index.html">연봉 연구소</a><a href="{root}company/index.html">회사 판단 연구소</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
         f'<a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a>'
         f'<a href="{root}privacy/index.html">개인정보처리방침</a></div>'
         f'<div class="zf-box"><b>법인명(상호)</b> {c["name"]} &nbsp;·&nbsp; <b>대표자</b> {c["ceo"]} &nbsp;·&nbsp; <b>개인정보보호책임자</b> {c["privacy"]}<br>'
@@ -827,7 +829,7 @@ def build(out_dir: Path, with_news: bool) -> None:
                       + "".join(seo.jsonld(o) for o in news_ld) + "</head>", 1)
         (out_dir / "news").mkdir(exist_ok=True)
         (out_dir / "news" / "index.html").write_text(n, encoding="utf-8")
-        import shutil  # 뉴스 페이지가 참조하는 로고·파비콘·기사 썸네일(assets/thumbs)도 함께 복사
+        # (shutil 은 맨 위에서 import — 여기서 다시 import 하면 --no-news 빌드가 깨짐) 뉴스 페이지가 참조하는 로고·파비콘·기사 썸네일(assets/thumbs)도 함께 복사
         src_assets = news_src.parent / "assets"
         if src_assets.exists():
             # 썸네일은 날마다 바뀌므로 지난 파일이 쌓이지 않게 비우고 다시 복사한다
@@ -906,6 +908,21 @@ def build(out_dir: Path, with_news: bool) -> None:
         entries.append(("salary/", updated, "monthly", "0.8"))
         entries += [(f"salary/co/{urllib.parse.quote(d.name)}/", updated, "monthly", "0.5") for d in cos]
         print(f"연봉 연구소: /salary/ + 회사 페이지 {len(cos):,}개")
+    # ---- 회사 판단 연구소 (/company/): company-check/publish_to_site.py 가 만든 company/ 를 복사하고 상단 메뉴를 붙인다
+    comp = BASE / "company"
+    if comp.exists():
+        dst = out_dir / "company"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(comp, dst)
+        # 이 페이지는 자체 토큰(--paper·--hairline·--logo-filter)을 이미 갖고 있어 .zn 규칙만 더한다
+        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
+        h = (dst / "index.html").read_text(encoding="utf-8")
+        if 'class="zn"' not in h:
+            h = h.replace("</style>", zn_css + "\n</style>", 1)
+            h = h.replace("<body>", "<body>\n" + nav_html("company/index.html", "../", logo_nav), 1)
+            (dst / "index.html").write_text(h, encoding="utf-8")
+        entries.append(("company/", updated, "daily", "0.8"))
+        with open(out_dir / "llms.txt", "a", encoding="utf-8") as f:
+            f.write(f"\n## 회사 판단 연구소\n- [회사 판단 연구소]({base_url}company/): 합격한 회사가 갈 만한지 잡플래닛·블라인드·캐치 평점, 직급별 연봉, DART 5개년 재무(별도), 최근 뉴스, AI 영향을 보고 상·중·하와 'Zorro의 한마디'로 판단\n")
+        print(f"회사 판단 연구소: /company/ (데이터 조각 {len(list((dst / 'data' / 'co').iterdir()))}개)")
     seo.write_sitemap(out_dir, base_url, entries)
     audit_links(data, BASE / "assets" / "share")
     print(f"sitemap.xml: URL {len(entries)}개 -> {out_dir / 'sitemap.xml'}")
