@@ -426,6 +426,7 @@ const WHY = {
 async function render(name) {
   $("#out").innerHTML = `<p class="loading">불러오는 중…</p>`;
   const c = await getCo(name);
+  if (c) c.name = name;  // 조각 파일에는 이름 칸을 빼고 저장(용량) → 여기서 채움
   if (!c) { $("#hint").textContent = ""; document.querySelectorAll(".pill").forEach(p => p.classList.remove("on"));
     $("#out").innerHTML = `<div class="sec">${empty("'" + name + "'은(는) 아직 모은 자료가 없어요. 직원 30명 이상 회사만 들어 있어요.")}</div>`; return; }
   $("#hint").textContent = "";
