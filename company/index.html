@@ -209,6 +209,7 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
 .pos { border:1px solid var(--hairline-2); border-radius:18px; padding:22px; }
 .pos .big { font-size:clamp(30px,4vw,44px); font-weight:900; line-height:1.1; letter-spacing:-.04em; }
+.pos .big2 { margin-top:6px; font-size:15px; color:var(--ink-soft); } .pos .big2 b { color:var(--ink); }
 .pos .big mark { background:linear-gradient(transparent 60%, var(--mark) 60%); color:inherit; }
 .pos .of { font-size:13.5px; color:var(--ink-soft); margin-top:6px; }
 .meter { position:relative; height:10px; border-radius:9px; background:linear-gradient(90deg,var(--mist),var(--hairline-2)); margin:26px 0 8px; }
@@ -529,7 +530,7 @@ const plain = s => s.replace(/\(주\)|㈜|（주）|주식회사|[\s\-]/g, ""); 
 function oneLine(c, k) {
   const m = c.metrics || {}, it = (g, l) => (m[g]?.items || []).find(i => i.label.startsWith(l))?.value;
   if (k === "평판") { const r = c.rep || {}; const n = ["jobplanet","blind","catch"].filter(s => r[s]).length; return n ? `평점 ${n}곳 종합` : "평점 자료 없음"; }
-  if (k === "연봉") { const s = c.salary; return s ? `업계 상위 ${s.industryTop ?? s.allTop}%` : "연봉 자료 없음"; }
+  if (k === "연봉") { const s = c.salary; return !s ? "연봉 자료 없음" : s.industryTop ? `업계 상위 ${s.industryTop}% · 전체 ${s.allTop}%` : `전체 회사 상위 ${s.allTop}%`; }
   if (!c.fin) return "재무 공시 없음";
   if (k === "성장성") return `매출 연평균 ${it("성장성","매출 연평균")?.toFixed(1)}%`;
   if (k === "수익성") return `5년 평균 영업이익률 ${it("수익성","5년 평균")?.toFixed(1)}%`;
@@ -570,7 +571,8 @@ function salarySec(c) {
   return `<div class="sal"><div><div class="ranks">${rows}</div>
       <p class="legend"><span><i style="background:var(--ink)"></i>직급별 연봉 추정(만원)</span>${s.ranksBase ? `<span><i style="background:var(--acc)"></i>성과급 뺀 기본연봉</span>` : ""}</p></div>
     <div class="pos"><p class="big">${esc(s.group)}<br><mark>상위 ${top}%</mark></p>
-      <p class="of">${s.peerN ? `비슷한 업종 ${won(s.peerN)}곳(직원 50명 이상) 중 평균 연봉 순위 · ` : "업종 정보가 없어 전체 회사와 비교했어요 · "}전체 회사 기준 상위 ${s.allTop}%</p>
+      ${s.industryTop ? `<p class="big2">전체 회사 기준 <b>상위 ${s.allTop}%</b></p>` : ""}
+      <p class="of">${s.peerN ? `비슷한 업종 ${won(s.peerN)}곳(직원 50명 이상) 중 평균 연봉 순위예요. 등급은 업계 순위 70%·전체 순위 30%를 섞어 매겨요.` : "업종 정보가 없어 전체 회사와 비교했어요."}</p>
       <div class="meter"><b style="left:${100 - top}%"></b></div><div class="meter-l"><span>업계 하위</span><span>업계 상위</span></div>
       <div class="facts"><div>평균 연봉<b>${won(s.avg)}만</b></div><div>입사자 평균 연봉<b>${won(s.newHire)}만</b></div>
         <div>평균 근속<b>${s.tenure}년</b></div><div>연간 퇴사율<b>${Math.round(s.turnover*100)}%</b></div></div>
