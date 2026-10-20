@@ -1727,12 +1727,11 @@ def render_brief(today):
 
 
 def render_health(stats):
-    """기사를 못 가져온 피드가 있으면 푸터에 적어 둔다 (조용히 죽는 피드를 눈에 띄게)"""
+    """기사를 못 가져온 피드는 빌드 로그에만 남긴다 (2026-10-20 사용자 요청: 화면에 '수집 점검 필요'가 튀어서 안 보이게)"""
     dead = stats.get("dead_feeds") or []
-    if not dead:
-        return ""
-    return (f'    <div class="health"><b>수집 점검 필요</b> &middot; 오늘 기사를 하나도 못 가져온 피드 '
-            f'{len(dead)}개: {e(" / ".join(dead))}</div>')
+    if dead:
+        print(f"[수집 점검] 오늘 기사를 하나도 못 가져온 피드 {len(dead)}개: {' / '.join(dead)}")
+    return ""
 
 
 ARCHIVE_JSON = "assets/archive.json"   # index.html 기준 상대 경로 (JS 의 fetch 경로와 같아야 한다)

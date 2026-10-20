@@ -17,6 +17,7 @@ import argparse
 import base64
 import hashlib
 import seo
+import html as _html
 import json
 import os
 import re
@@ -311,7 +312,41 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 
 # 취업뉴스 페이지에 끼울 때 덮어쓰는 스타일 (보조 글자 선명하게). 제호는 build_site.py 의 .hero-top 이 그린다
 FIT_JS = "<script>(function(){function fit(el){el.style.fontSize='';var s=parseFloat(getComputedStyle(el).fontSize),m=22,g=40;var av=Math.min(el.clientWidth,el.parentElement?el.parentElement.clientWidth:el.clientWidth,document.documentElement.clientWidth-32);while(el.scrollWidth>av+1&&s>m&&g-->0){s-=2;el.style.fontSize=s+'px';}}function all(){document.querySelectorAll('.hero h1').forEach(fit);}all();window.addEventListener('resize',all);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(all);})();</script>"
-TICKER_HTML = '<div class="v2-ticker" aria-hidden="true"><div class="v2-ticker-track"><span>Career Briefing</span><span>매일 아침 고른 채용 · 이직 · 기업 · 고용 뉴스</span><span>Zorro의 한마디</span><span>주간 · 월간 랭킹</span><span>지난 지면 아카이브</span><span>Team Zorro</span><span>Career Briefing</span><span>매일 아침 고른 채용 · 이직 · 기업 · 고용 뉴스</span><span>Zorro의 한마디</span><span>주간 · 월간 랭킹</span><span>지난 지면 아카이브</span><span>Team Zorro</span></div></div>'
+def ticker_items(data: dict) -> dict:
+    """검은 띠 문구를 사이트 각 탭의 지금 숫자로 만든다 — 빌드할 때마다 새로 계산하므로 직무·연봉·회사 판단·뉴스가 바뀌면 띠도 같이 바뀐다
+    (2026-10-20 사용자 요청). 페이지마다 자기 탭 내용을 앞에 두고 나머지 탭을 이어 붙인다."""
+    nf = lambda v: f"{v:,}"
+    jobs = [f"직무 {len(data['jobs'])}개 · 직군 {len(data['meta']['groups'])}개",
+            f"현직자 인터뷰 {nf(data['meta'].get('sourceDocs', 0))}건 · 공개 현직자 자료 {nf(sum(j['sources'].get('public', 0) for j in data['jobs']))}건"]
+    sal, comp, news = [], [], []
+    p = BASE / "salary" / "data" / "meta.json"
+    if p.exists():
+        m = json.loads(p.read_text(encoding="utf-8"))
+        sal = [f"연봉 연구소 · 회사 {nf(m.get('count', 0))}곳 직급별 연봉", f"사업보고서·공공기관 공시 {nf(m.get('dartCount', 0))}곳"]
+        if (m.get("validation") or {}).get("nMatched"):
+            sal.append(f"이직자 실제 연봉 {nf(m['validation']['nMatched'])}명으로 검증")
+    p = BASE / "company" / "data" / "index.json"
+    if p.exists():
+        n = sum(1 for r in json.loads(p.read_text(encoding="utf-8"))["r"] if r[1])
+        comp = [f"회사 판단 · {nf(n)}곳 S~F 판정", "두 회사 VS 비교 · 지금 회사 vs 옮길 회사"]
+    days = len([d for d in (BASE / "news-collector" / "site").glob("20*") if d.is_dir()]) if (BASE / "news-collector" / "site").exists() else 0
+    news = ["취업뉴스 · 매일 아침 커리어브리핑", "오늘의 브리핑 3줄 · Zorro의 한마디"] + ([f"지난 지면 {nf(days)}일치"] if days else [])
+    tail = ["신입 · 중고신입 · 경력 이직 · 선퇴사자", "Team Zorro"]
+    return {
+        "home": jobs + ["회사명·실명 없이 업종과 연차로만"] + sal[:1] + comp + news[:1] + tail,
+        "news": news + ["주간 · 월간 랭킹"] + jobs[:1] + sal[:1] + comp[:1] + tail,
+        "zorro": ["함께한 합격자 1,100+", "재무제표로 뜯어보는 기업분석", "생생 면접 스크립트", "1:1 첨삭 · 질의응답 · 관리", "상담은 무료"]
+                 + jobs[:1] + sal[:1] + comp[:1] + news[:1] + tail[:1],
+    }
+
+
+html_escape = _html.escape
+
+
+def ticker_spans(items: list) -> str:
+    row = "".join(f"<span>{html_escape(t)}</span>" for t in items)
+    return row + row   # 두 번 이어 붙여 끊김 없이 흐르게
+
 OUTRO_HTML = '<section class="v2-outro"><svg class="big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg><div class="row"><p>TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.</p></div></section>'
 
 NEWS_MASTHEAD_CSS = """
@@ -572,6 +607,8 @@ def check_jobs(data: dict) -> None:
 
 def build(out_dir: Path, with_news: bool) -> None:
     data = json.loads((BASE / "data" / "jobs.json").read_text(encoding="utf-8"))
+    global TICK
+    TICK = ticker_items(data)   # 검은 띠 (홈·뉴스·함께하기 공용, 매 빌드 새로 계산)
     check_jobs(data)
     attach_major(data)
     global GLOSS
@@ -621,6 +658,7 @@ def build(out_dir: Path, with_news: bool) -> None:
                 .replace("/*__N_PUBLIC__*/", f'{sum(j["sources"].get("public", 0) for j in data["jobs"]):,}')
                 .replace("/*__N_JOBS__*/", str(len(data["jobs"])))
                 .replace("/*__N_GROUPS__*/", str(len(data["meta"]["groups"])))
+                .replace("/*__TICKER__*/", ticker_spans(TICK["home"]))
 )
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(html, encoding="utf-8")
@@ -663,6 +701,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         src = BASE / "news-collector" / "assets" / name
         if src.exists(): (out_dir / "assets" / name).write_bytes(src.read_bytes())
     z = (BASE / "template_zorro.html").read_text(encoding="utf-8")
+    z = z.replace("/*__TICKER__*/", ticker_spans(TICK["zorro"]))
     z = z.replace("/*__SEO__*/", seo.seo_head(base_url, "취업조로와 함께하기 — 신입·중고신입·경력이직·선퇴사자 취업 컨설팅",
         "누가 봐도 뽑고 싶은 인재의 비밀, 취업조로. 컨설팅 15년 차·합격자 1,100명 이상. 신입·중고신입·경력 이직·선퇴사자 맞춤 컨설팅과 무료 상담 신청 방법.",
         "zorro/", og_zorro, [seo.person_ld(base_url), seo.org_ld(base_url, COMPANY), seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업조로와 함께하기", "zorro/")])]))
@@ -817,7 +856,7 @@ def build(out_dir: Path, with_news: bool) -> None:
                                   "body { padding-bottom: 24px; }\n</style>")
         inject = nav_css + nav_html("news/index.html", "../", logo_nav)
         n = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + inject, n, count=1)
-        n = n.replace('<div class="controls">', TICKER_HTML + '<div class="controls">', 1)   # 히어로 → 검은 띠 → 탭 (연봉 연구소와 같은 순서)
+        n = n.replace('<div class="controls">', '<div class="v2-ticker" aria-hidden="true"><div class="v2-ticker-track">' + ticker_spans(TICK["news"]) + '</div></div><div class="controls">', 1)   # 히어로 → 검은 띠 → 탭 (연봉 연구소와 같은 순서)
         foot = FIT_JS + OUTRO_HTML + footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
         n = n.replace("</body>", foot + "</body>", 1)
         news_ld = [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/")]),
