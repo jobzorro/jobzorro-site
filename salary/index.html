@@ -593,13 +593,14 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       '<p class="hint">이름·연락처는 받지 않습니다. 제보 원본은 공개하지 않고, 같은 회사·직급 제보가 5건 이상일 때 범위로만 보여 줍니다.</p>' +
       '<div class="grid2">' +
       '<label>직급<select name="rank" required><option value="">선택</option>' + ['사원', '주임', '대리', '과장', '차장', '부장', '임원', '기타'].map(function (k) { return '<option>' + k + '</option>'; }).join('') + '</select></label>' +
-      '<label>연차(년)<input name="years" type="number" inputmode="numeric" min="0" max="45" required></label>' +
+      '<label>총 경력(년)<input name="years" type="number" inputmode="numeric" min="0" max="45" required placeholder="이전 회사 포함"></label>' +
       '<label>기본 연봉(만원)<input name="base" type="number" inputmode="numeric" min="1500" max="50000" step="50" required placeholder="예: 4800"></label>' +
       '<label>성과급·인센티브(만원/연)<input name="bonus" type="number" inputmode="numeric" min="0" max="50000" step="50" value="0"></label>' +
       '<label>직무<select name="job"><option value="">선택 안 함</option>' + jobs + '<option>기타</option></select></label>' +
       '<label>입사 연도<select name="joined">' + years + '</select></label>' +
       '<label>고용 형태<select name="employ"><option>정규직</option><option>계약직</option><option>기타</option></select></label>' +
       '</div>' +
+      '<p class="hint">총 경력은 이전 회사를 포함한 전체 연차입니다. 성과급이 기본 연봉보다 큰 성과 보수형(커미션 등)은 건수로만 집계합니다.</p>' +
       '<input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">' +
       '<label class="agree"><input type="checkbox" name="consent" value="yes"> 익명 통계로 쓰이는 것에 동의합니다.</label>' +
       '<div class="row"><button type="submit">제보 보내기</button><span class="st" aria-live="polite"></span></div>' +
@@ -616,6 +617,11 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     new FormData(f).forEach(function (v, k) { d[k] = String(v).trim(); });
     var err = !d.rank ? '직급을 골라 주세요.' : !(+d.years >= 0 && d.years !== '') ? '연차를 적어 주세요.' : !(+d.base >= 1500 && +d.base <= 50000) ? '기본 연봉은 1,500~50,000만원 사이로 적어 주세요.' : d.consent !== 'yes' ? '동의에 체크해 주세요.' : '';
     if (err) { st.textContent = err; st.className = 'st bad'; return; }
+    // 직급·경력 불일치 확인: 과장 이상인데 총 경력 2년 이하면 한 번 더 확인 (현 직급 연차를 적는 경우가 많다)
+    var chk = d.rank + '|' + d.years;
+    if (['과장', '차장', '부장'].indexOf(d.rank) >= 0 && +d.years <= 2 && f.dataset.ok !== chk) {
+      f.dataset.ok = chk; st.textContent = d.rank + '인데 총 경력이 ' + d.years + '년입니다. 이전 회사를 포함한 전체 경력이 맞으면 한 번 더 눌러 주세요.'; st.className = 'st bad'; return;
+    }
     if (!D.meta.reportEndpoint) { st.textContent = '시안이라 아직 저장되지 않습니다. 접수 시트를 연결하면 실제로 전송됩니다.'; st.className = 'st'; return; }
     st.textContent = '보내는 중…'; st.className = 'st';
     fetch(D.meta.reportEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(d) })
