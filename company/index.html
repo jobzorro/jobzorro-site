@@ -318,7 +318,7 @@ const gtxt = g => g == null ? "–" : GR[g];
 // 7단계 등급(S·A+·A·B·C·D·F)이 있으면 그걸, 없으면 상중하
 const lcls = x => x?.letter ? "l" + x.letter.replace("+", "p") : gcls(x?.grade);
 const ltxt = x => x?.letter || gtxt(x?.grade);
-const plain = s => s.replace(/\(주\)|㈜|주식회사|\s/g, "");
+const plain = s => s.replace(/\(주\)|㈜|（주）|주식회사|[\s\-]/g, "");  // 띄어쓰기·하이픈 무시 (에쓰오일 → 에쓰-오일)
 
 // 다섯 칸 한 줄 설명 (근거는 접어 두고 핵심 하나만)
 function oneLine(c, k) {
