@@ -34,7 +34,7 @@ ASSETS = BASE / "assets"
 NEWS_SRC = BASE / "news-collector" / "site" / "index.html"
 # 뉴스 수집기 결과물이 없을 때 배포된 뉴스 페이지를 내려받아 쓰는 비상용 (Actions 워크플로가 첫 실행 때만 사용)
 NEWS_URL = os.environ.get("NEWS_URL", "")  # 예: https://jobzorro.github.io/career-briefing/
-NEWS_ASSET_NAMES = ["logo.png", "logo-dark.png", "teamzorro.png", "mark.png", "favicon-32.png", "favicon-180.png", "archive.json"]
+NEWS_ASSET_NAMES = ["logo.png", "logo-dark.png", "teamzorro.png", "mark.png", "mark-dark.png", "favicon-32.png", "favicon-180.png", "archive.json"]
 
 
 def fetch_news(tmp: Path) -> Path:
@@ -353,18 +353,20 @@ NEWS_MASTHEAD_CSS = """
 .hero-sub { font-size:16px; color:var(--ink-soft); max-width:58ch; }
 .brief-box { border:0; border-top:1px solid var(--ink); border-radius:0; background:transparent; padding:18px 0 0; margin-top:0; }
 .brief-label { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
-.funnel { border-top:1px solid var(--ink); margin-top:26px; padding-top:0; gap:0; }
-.funnel-step { padding:14px 28px 14px 0; margin-right:28px; border-right:1px solid var(--hairline); border-bottom:1px solid var(--hairline); }
-.funnel-num { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:34px; font-weight:900; letter-spacing:-.04em; }
-.funnel-label { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
-.hero-picks { flex:0 0 380px; max-width:380px; gap:0; border-top:1px solid var(--ink); }
-.picks-head { padding:12px 0; border-bottom:1px solid var(--hairline); }
-.picks-title { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
-.picks-note { font-family:"Archivo",sans-serif; }
-.pick { border:0; border-bottom:1px solid var(--hairline); border-radius:0; padding:12px 0; background:transparent; box-shadow:none; }
-.pick:hover { background:transparent; }
-.pick-sector { font-family:"Archivo","Noto Sans KR",sans-serif; color:var(--muted); }
-.pick-title { font-weight:800; letter-spacing:-.02em; }
+.hero-sub { margin:0; }
+/* 숫자판: 연봉 연구소처럼 오른쪽 세로 목록 */
+.hero-stats { flex:0 0 300px; max-width:300px; }
+.funnel { flex-direction:column; flex-wrap:nowrap; border-top:1px solid var(--ink); margin:0; padding:0; gap:0; }
+.funnel-step { display:flex; justify-content:space-between; align-items:baseline; flex-direction:row-reverse; padding:12px 0; margin:0; border-right:0; border-bottom:1px solid var(--hairline); }
+.funnel-num { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:28px; font-weight:900; letter-spacing:-.04em; }
+.funnel-label { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0; }
+/* 오늘의 브리핑: 섹션 번호 자리에 취업조로 마크 */
+.brief-sec .sector-head-left { align-items:center; }
+.sector-mark img { width:clamp(44px, 4.6vw, 60px); height:clamp(44px, 4.6vw, 60px); border-radius:12px; }
+.brief-sec .brief-list { max-width:88ch; }
+.brief-sec .brief-list li { font-size:clamp(16px, 1.5vw, 18px); line-height:1.7; font-weight:500; color:var(--ink); padding:12px 0 12px 44px; margin:0; border-bottom:1px solid var(--hairline); }
+.brief-sec .brief-list li:last-child { border-bottom:0; }
+.brief-sec .brief-list li::before { top:15px; font-family:"Archivo",sans-serif; font-size:14px; font-weight:900; color:var(--ink); background:linear-gradient(transparent 55%, var(--mark, #c6ff3d) 55%); padding:0 2px; }
 /* 마키 */
 .v2-ticker { overflow:hidden; background:var(--ink); color:var(--paper); }
 .v2-ticker-track { display:flex; width:max-content; animation:v2marquee 40s linear infinite; }
@@ -393,7 +395,11 @@ NEWS_MASTHEAD_CSS = """
 .sector-count { font-family:"Archivo",sans-serif; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
 .news-card { border:0; border-top:1px solid var(--hairline); border-radius:0; padding:18px 0; box-shadow:none; background:transparent; }
 .news-card:hover { box-shadow:none; transform:none; background:transparent; }
-.news-thumb { border-radius:10px; overflow:hidden; }
+.news-card { margin:0; }
+/* 썸네일: 있으면 오른쪽 작은 그림, 없으면 글만 (회색 빈 상자 없음) */
+.news-thumb { order:2; width:120px; height:84px; border:0; border-radius:10px; overflow:hidden; }
+.news-thumb:has(.thumb-blank) { display:none; }
+@media (max-width:520px) { .news-card { flex-direction:row; gap:14px; } .news-thumb { width:88px; height:66px; } }
 .news-thumb img { transition:transform .5s cubic-bezier(.2,.7,.2,1); }
 .news-card:hover .news-thumb img { transform:scale(1.04); }
 .news-num { font-family:"Archivo",sans-serif; font-weight:900; color:var(--ink); }
@@ -431,11 +437,12 @@ NEWS_MASTHEAD_CSS = """
 .zf { margin-top:0 !important; }
 @media (max-width: 900px) {
   .hero-inner { align-items:stretch; }
-  .hero-text, .hero-picks { min-width:0; width:100%; max-width:none; flex:1 1 auto; }
+  .hero-text, .hero-stats { min-width:0; width:100%; max-width:none; flex:1 1 auto; }
   .hero h1 { white-space:normal; font-size:clamp(30px, 8.6vw, 44px); line-height:1.08; }
-  .funnel { flex-wrap:wrap; }
-  .funnel-step { flex:1 1 45%; padding:12px 12px 12px 0; margin-right:0; border-right:0; }
-  .funnel-num { font-size:28px; }
+  .funnel { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); column-gap:20px; }
+  .funnel-step { padding:10px 0; }
+  .funnel-num { font-size:24px; }
+  .brief-sec .brief-list li { padding-left:36px; font-size:15.5px; }
   .masthead-inner { flex-wrap:wrap; gap:8px; }
   .v2-outro { padding:40px 16px 16px; }
 }
@@ -808,7 +815,7 @@ def build(out_dir: Path, with_news: bool) -> None:
                                   "body { padding-bottom: 24px; }\n</style>")
         inject = nav_css + nav_html("news/index.html", "../", logo_nav)
         n = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + inject, n, count=1)
-        n = n.replace('<section class="hero">', TICKER_HTML + '<section class="hero">', 1)
+        n = n.replace('<div class="controls">', TICKER_HTML + '<div class="controls">', 1)   # 히어로 → 검은 띠 → 탭 (연봉 연구소와 같은 순서)
         foot = FIT_JS + OUTRO_HTML + footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
         n = n.replace("</body>", foot + "</body>", 1)
         news_ld = [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/")]),
@@ -883,6 +890,8 @@ def build(out_dir: Path, with_news: bool) -> None:
         dst = out_dir / "salary"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(sal, dst)
         zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
         zn_css = ".zn{--paper:var(--bg);--hairline:var(--line);--acc-ink:#0b0b0b}\n" + zn_css
+        # 다크모드에서 검은 TEAM ZORRO 로고가 안 보이지 않게 흰색으로 (뉴스 페이지와 같은 규칙)
+        zn_css += "\n@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) { --logo-filter: invert(1); } } :root[data-theme=\"dark\"] { --logo-filter: invert(1); }"
         def add_nav(path, root):
             h = path.read_text(encoding="utf-8")
             if 'class="zn"' in h:

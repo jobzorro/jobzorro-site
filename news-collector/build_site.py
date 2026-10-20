@@ -276,6 +276,21 @@ a { color: inherit; text-decoration: none; }
 
 /* ---------------- 일간: 섹션 ---------------- */
 
+.hero-stats { flex: 0 0 300px; max-width: 300px; }
+.hero-stats .funnel { flex-direction: column; }
+.sector-mark { flex: none; align-self: center; line-height: 0; }
+.sector-mark img { width: 56px; height: 56px; border-radius: 12px; }
+.sector-mark .mark-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .sector-mark .mark-light { display: none; }
+  :root:not([data-theme="light"]) .sector-mark .mark-dark { display: block; }
+}
+:root[data-theme="dark"] .sector-mark .mark-light { display: none; }
+:root[data-theme="dark"] .sector-mark .mark-dark { display: block; }
+.brief-sec .brief-list { max-width: 80ch; }
+.brief-sec .brief-list li { font-size: 17px; line-height: 1.65; color: var(--ink); padding-left: 34px; margin: 0 0 12px; }
+.brief-sec .brief-list li::before { content: counter(b, decimal-leading-zero); font-size: 13px; top: 4px; }
+
 .sector { padding: 60px 0 8px; }
 .sector-head {
   display: flex; align-items: flex-end; justify-content: space-between;
@@ -873,16 +888,26 @@ SCRIPT = r"""
     return card;
   }
 
-  function briefBox(lines, label) {
-    var box = el('div', 'brief-box');
-    var head = el('div', 'brief-label');
-    head.appendChild(el('span', 'ai-tag', 'AI'));
-    head.appendChild(document.createTextNode(label));
-    box.appendChild(head);
+  function briefSection(lines, title) {
+    var section = el('section', 'sector brief-sec');
+    var head = el('div', 'sector-head');
+    var left = el('div', 'sector-head-left');
+    var mark = el('span', 'sector-mark');
+    [['mark-light', 'assets/mark.png'], ['mark-dark', 'assets/mark-dark.png']].forEach(function (m) {
+      var img = document.createElement('img');
+      img.className = m[0]; img.src = m[1]; img.alt = ''; img.width = 56; img.height = 56;
+      mark.appendChild(img);
+    });
+    left.appendChild(mark);
+    var titles = document.createElement('div');
+    titles.appendChild(el('h2', 'sector-title', title));
+    left.appendChild(titles);
+    head.appendChild(left);
+    section.appendChild(head);
     var ol = el('ol', 'brief-list');
     lines.forEach(function (t) { ol.appendChild(el('li', null, t)); });
-    box.appendChild(ol);
-    return box;
+    section.appendChild(ol);
+    return section;
   }
 
   function renderDaily(date) {
@@ -893,12 +918,9 @@ SCRIPT = r"""
       return;
     }
 
-    // 오늘 브리핑은 상단 히어로에 있으니, 지난 날짜를 볼 때만 본문 위에 붙인다
-    if (day.briefing && day.briefing.length && date !== today) {
-      var wrap = el('div', null);
-      wrap.style.paddingTop = '40px';
-      wrap.appendChild(briefBox(day.briefing, date + ' 브리핑'));
-      view.appendChild(wrap);
+    // 브리핑 3줄: 섹션 번호 자리에 취업조로 마크를 달고 본문 맨 위에 둔다
+    if (day.briefing && day.briefing.length) {
+      view.appendChild(briefSection(day.briefing, date === today ? '오늘의 브리핑' : date + ' 브리핑'));
     }
 
     day.sections.forEach(function (sec, i) {
@@ -906,7 +928,7 @@ SCRIPT = r"""
 
       var head = el('div', 'sector-head');
       var left = el('div', 'sector-head-left');
-      left.appendChild(el('span', 'sector-numeral', String(i + 1)));
+      left.appendChild(el('span', 'sector-numeral', (i + 1 < 10 ? '0' : '') + (i + 1)));
       var titles = document.createElement('div');
       titles.appendChild(el('h2', 'sector-title', sec.name));
       titles.appendChild(el('p', 'sector-desc', sec.desc));
@@ -1608,13 +1630,12 @@ def render_day_page(day, prev_date, next_date):
     lines = [t for t in (day.get("briefing") or []) if t]
     if lines:
         items = "".join(f"<li>{e(t)}</li>" for t in lines)
-        out.append(f'  <div class="day-brief"><div class="brief-box"><div class="brief-label"><span class="ai-tag">AI</span>'
-                   f'{e(kdate)} 브리핑</div><ol class="brief-list">{items}</ol></div></div>')
+        out.append(brief_section(lines, f"{kdate} 브리핑", "../"))
 
     for i, sec in enumerate(day.get("sections", []), 1):
         arts = sec.get("articles", [])
         out.append(f'  <section class="sector">\n    <div class="sector-head"><div class="sector-head-left">'
-                   f'<span class="sector-numeral">{i}</span><div><h2 class="sector-title">{e(sec.get("name"))}</h2>'
+                   f'<span class="sector-numeral">{i:02d}</span><div><h2 class="sector-title">{e(sec.get("name"))}</h2>'
                    f'<p class="sector-desc">{e(sec.get("desc"))}</p></div></div>'
                    f'<span class="sector-count">{e(sec.get("en"))}  /  {len(arts)} 건</span></div>')
         if arts:
@@ -1678,20 +1699,16 @@ def strip_images(day):
     }
 
 
-def render_picks(sections):
-    """섹션마다 1위 기사만 뽑아 히어로 우측 카드로"""
-    rows = []
-    for sec in sections:
-        arts = sec.get("articles", [])
-        if not arts:
-            continue
-        a = arts[0]
-        rows.append(f"""      <a class="pick" href="{e(a['url'])}" target="_blank" rel="noopener noreferrer">
-        <span class="pick-sector">{e(sec['en'])}</span>
-        <span class="pick-title">{e(a['title'])}</span>
-        <span class="pick-sum">{e(a.get('lead') or a.get('summary') or a['source'])}</span>
-      </a>""")
-    return "\n".join(rows)
+def brief_section(lines, title, root=""):
+    """섹션 번호 자리에 취업조로 마크를 단 '오늘의 브리핑' 섹션 (날짜별 정적 지면용, JS briefSection 과 같은 마크업).
+    히어로에는 브리핑 대신 설명문(render_brief 의 빈 브리핑 경로)을 둔다."""
+    items = "".join(f"<li>{e(t)}</li>" for t in lines)
+    return (f'  <section class="sector brief-sec"><div class="sector-head"><div class="sector-head-left">'
+            f'<span class="sector-mark"><img class="mark-light" src="{root}assets/mark.png" alt="" width="56" height="56">'
+            f'<img class="mark-dark" src="{root}assets/mark-dark.png" alt="" width="56" height="56"></span>'
+            f'<div><h2 class="sector-title">{e(title)}</h2></div></div>'
+            f'</div>'
+            f'<ol class="brief-list">{items}</ol></section>')
 
 
 def render_brief(today):
@@ -1823,17 +1840,9 @@ def render(today, archive):
     <div class="hero-text">
       <div class="eyebrow"><span class="pulse"></span>커리어를 읽는 남자, 취업조로가 매일 아침 고른 뉴스 &middot; {e(today.get('date', ''))}</div>
       <h1>오늘 커리어에 영향을 주는 뉴스,<br><em>{published}건</em>으로 압축했습니다</h1>
-{render_brief(today)}
-      <div class="funnel">{funnel_html}</div>
+{render_brief(dict(today, briefing=[]))}
     </div>
-
-    <div class="hero-picks">
-      <div class="picks-head">
-        <span class="picks-title">오늘의 헤드라인</span>
-        <span class="picks-note">Top of each section</span>
-      </div>
-{render_picks(sections)}
-    </div>
+    <div class="hero-stats"><div class="funnel">{funnel_html}</div></div>
   </div>
 </section>
 

@@ -520,9 +520,12 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var trend = (!r.capped && r.trend && r.trend.length > 1 && D.meta.trendYears) ? '<p class="hint">연도별 평균 연봉(국민연금, 매년 같은 달): ' +
       r.trend.map(function (v, k) { return D.meta.trendYears[k] + '년 ' + man(v) + '만원'; }).join(' → ') + '</p>' : '';
     var capcal = r.how === 'capcal';   // 상한 보정 회사: 상한에 걸리는 직급만 총보상 추정
-    var v2 = String(r.how).indexOf('v2') === 0, holding = String(r.how).indexOf('v2-holding') === 0, skew = /-skew$/.test(r.how), ex = r.ex;
+    var v2 = String(r.how).indexOf('v2') === 0, holding = String(r.how).indexOf('v2-holding') === 0, ptime = String(r.how).indexOf('v2-parttime') === 0, firm = String(r.how).indexOf('v2-firm') === 0,
+      fk = r.fld ? (r.fld[4] || '현장') : '', fpro = fk === '조종사' || fk === '의사', skew = /-skew$/.test(r.how), ex = r.ex;
     var howRank = v2 ? '<li>직급별: 신입 기준 연봉 ' + (r.s0 ? man(r.s0) + '만원(' + esc(r.s0src || '') + ')' : '') + '에서 표준 직급 배수(대리 1.25 · 과장 1.54 · 차장 1.82 · 부장 2.04)로 올렸습니다. 직원 평균 경력은 약 ' + (r.cC || '-') + '년(회사 근속 + 회사 나이로 가늠한 입사 전 경력)으로 보고, 직급 연봉의 가중 평균이 회사 평균과 같아지도록 맞췄습니다. 평균이 기본 연봉보다 높은 차액(성과급·고연봉 인력 몫)은 직급이 높을수록 더 붙였습니다.</li>' +
-      (String(r.how).indexOf('v2-flat') === 0 ? '<li>현장형 회사라 직급 간 연봉 차이를 표준의 절반으로 잡았습니다.</li>' : '') :
+      (String(r.how).indexOf('v2-flat') === 0 ? '<li>현장형 회사라 직급 간 연봉 차이를 표준의 절반으로 잡았습니다.</li>' : '') +
+      (firm ? '<li>전문직 펌(로펌·회계법인·전략 컨설팅)이라 파트너급이 평균을 끌어올리는 구조로 보고 직급 폭을 넓혔습니다(부장 배수 2.6). 변호사·회계사·컨설턴트와 지원 인력이 함께 들어 있습니다.</li>' : '') +
+      (fpro ? '<li>' + fk + ' 연봉은 회사 평균에 크게 들어가므로, ' + fk + ' 비중 약 ' + r.fld[0] + '%·1인 ' + man(r.fld[1]) + '만원(업계 일반값, 공시 아님)을 빼고 일반직 평균으로 직급을 계산했습니다.</li>' : '') :
       capcal ? '<li>직급별: 총보상 추정 평균을 평균 근속 연차의 연봉으로 보고 직급별로 나눴습니다. 국민연금에는 한 사람당 연 ' + man(D.meta.cap * 12) + '만원(월 ' + D.meta.cap + '만원 상한)까지만 보이므로, 그보다 높은 직급에만 국민연금 기준(작은 숫자)과 총보상 추정이 따로 나옵니다. 그 차이가 상한 초과분·최근 성과급입니다.</li>'
       : r.how === 'split' ? '<li>직급별: 성과급·주식보상 비중이 큰 회사라 두 가지로 보여 줍니다. 기본연봉은 국민연금으로 추정한 입사자 연봉에서 직급 배수로 올렸고, 총보상은 여기에 이 회사의 성과급 배율(' + r.factor + '배)을 곱했습니다.</li>'
       : r.how === 'fit' ? '<li>직급별: 사원은 국민연금 월별 변화로 추정한 입사자 평균 연봉이고, 평균 근속 연차에서 회사 평균이 되도록 연차별 곡선을 맞췄습니다. 입사자에는 경력직도 섞여 있습니다.</li>'
@@ -537,18 +540,20 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       (V ? '<p class="vbadge">실제 연봉 ' + V.total.toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명 + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
       (r.cfN ? '<p class="hint">취업조로 경력이직 고객 <b>' + r.cfN + '명</b>의 실제 연봉으로 이 회사 직급별 금액을 보정했습니다(개인 값은 공개하지 않습니다).</p>' : '') +
       (skew ? '<p class="hint">평균 연봉에는 성과급·주식보상이 크게 들어 있어, 직급별 금액은 <b>통상 연봉(기본 + 일반 성과급)</b> 기준입니다.</p>' : '') +
+      (firm ? '<p class="hint">전문직 펌이라 직급별 금액은 변호사·회계사·컨설턴트 기준에 가깝고, 지원 인력은 이보다 낮습니다.</p>' : '') +
       (holding ? '<p class="warnbox">지주회사라 직원이 적고 임원·고참 비중이 높습니다. 직급별 금액은 참고용이며 실제와 차이가 클 수 있습니다.</p>' : '') +
       (capped ? '<p class="warnbox">이 회사는 1인 평균이 국민연금 소득 상한(월 ' + D.meta.cap + '만원)에 가까워 실제 연봉은 이보다 높을 가능성이 큽니다. 아래 직급별 금액도 "최소 이 정도"로 보세요.</p>' : '') +
       (r.dart && r.avgAnnual ? '<p class="hint">참고: 국민연금 기준 추정 평균은 ' + man(r.avgAnnual) + '만원입니다. 공시 평균에는 상한 위 몫과 올해 성과급까지 들어갑니다.</p>' : '') +
       (!r.dart && r.calAvg ? '<p class="hint"><b>국민연금 기준 ' + man(r.avgAnnual) + '만원</b> · 국민연금에는 작년 성과급까지 들어가지만 한 사람당 연 ' + man(D.meta.cap * 12) + '만원(상한)까지만 보입니다. 큰 숫자는 그 위 몫(상한 초과분·최근 성과급)을 사업보고서 ' + (D.meta.calib ? D.meta.calib.n.toLocaleString('ko-KR') : '') + '개사 비율로 더한 총보상 추정이고, 작은 숫자가 국민연금 기준입니다.</p>' : '') +
       (base && capcal ? '' : base ? '<p class="hint"><b>성과급 포함 총보상</b> 기준입니다. 작은 숫자는 기본연봉 추정이고, 성과급은 해마다 크게 달라집니다.</p>' : '') +
-      '<div class="ranks">' + main.map(function (v, k) {
+      (ptime ? '<p class="warnbox">단시간·시간제 근로자 비중이 높은 사업장이라 평균 연봉이 최저임금 수준으로 잡힙니다. 직급별 금액은 추정하지 않습니다.</p>' : '') +
+      '<div class="ranks">' + (ptime ? [] : main).map(function (v, k) {
         return '<div class="rk"><span class="n">' + RANK_NAMES[k] + '</span><span class="bar"><i style="width:' + (v / max * 100).toFixed(1) + '%"></i></span><span class="v">' + man(v) + plus + '만원' +
           (base && base[k] < v - 1 ? '<small class="rb">' + (capcal ? '국민연금 ' + man(base[k]) + (base[k] >= D.meta.cap * 12 ? ' (상한)' : '') : '기본 약 ' + man(base[k]) + '만원') + '</small>' : '') + '</span></div>';
       }).join('') + (ex ? '<div class="rk exrow"><span class="n">임원<small class="yr">' + (ex[2] === '추정' ? '추정' : '공시') + '</small></span><span class="exd">' + (ex[0] ? (ex[2] === '추정' ? '약 ' : '') + ex[0] + '명 · ' : '') + esc(ex[2]) + (ex[3] ? ' <span class="gchip g-est">임원 비중 높음</span>' : '') + '</span><span class="v">' + man(ex[1]) + '만원</span></div>' : '') +
-        (r.fld ? '<div class="rk exrow"><span class="n">현장<small class="yr">' + (r.fld[2] === '공시' ? '공시' : '추정') + '</small></span><span class="exd">직원의 약 ' + r.fld[0] + '% · 직급별 금액은 사무직 평균 ' + man(r.fld[3]) + '만원 기준</span><span class="v">' + man(r.fld[1]) + '만원</span></div>' : '') + '</div>' + trend +
+        (r.fld && !ptime ? '<div class="rk exrow"><span class="n">' + fk + '<small class="yr">' + (r.fld[2] === '공시' ? '공시' : '추정') + '</small></span><span class="exd">직원의 약 ' + r.fld[0] + '% · 직급별 금액은 ' + (fpro ? '일반직' : '사무직') + ' 평균 ' + man(r.fld[3]) + '만원 기준</span><span class="v">' + man(r.fld[1]) + '만원</span></div>' : '') + '</div>' + trend +
       '<dl class="facts">' + facts.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('') + '</dl>' +
-      '<div class="myyr"><label for="myYr">내 총 경력</label><input id="myYr" type="number" inputmode="decimal" min="0" max="35" step="0.5" placeholder="예: 4"><span>년차</span><output id="myYrV" for="myYr"></output></div>' +
+      (ptime ? '' : '<div class="myyr"><label for="myYr">내 총 경력</label><input id="myYr" type="number" inputmode="decimal" min="0" max="35" step="0.5" placeholder="예: 4"><span>년차</span><output id="myYrV" for="myYr"></output></div>') +
       '<details class="how"><summary>이 숫자는 어떻게 계산했나요?</summary><ol>' + how + '</ol></details>' + repHtml(r) +
       '</article>';
     var sh = $('sheet'); sh.scrollTop = 0;
