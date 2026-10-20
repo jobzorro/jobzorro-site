@@ -406,7 +406,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     <div><dt>검색 가능 회사</dt><dd id="stCo">-</dd></div>
     <div><dt>판정 나온 회사<small>자료는 계속 모으는 중</small></dt><dd id="stJudged">-</dd></div>
     <div class="hot"><dt>현재까지 검색한 사람</dt><dd id="stPeople">-</dd></div>
-    <div><dt>기준일</dt><dd id="stDate">2026.10.20</dd></div>
+    <div><dt>기준일</dt><dd id="stDate">2026.10.21</dd></div>
   </dl>
 </div></section>
 
@@ -917,9 +917,11 @@ function find(q, n = 8) {
   q = plain(q); if (!q) return [];
   const exact = [], head = [], part = [];
   q = q.toLowerCase();
-  for (const row of IDX) { const p = plain(row[0]).toLowerCase(), a = row[3] ? plain(row[3]).toLowerCase() : "";
-    if (a && (a === q || a.startsWith(q))) { (a === q ? exact : head).push(row); continue; }
-    if (p === q) exact.push(row); else if (p.startsWith(q)) head.push(row); else if (p.includes(q)) part.push(row);
+  for (const row of IDX) { const p = plain(row[0]).toLowerCase(), al = row[3] ? row[3].split(" · ").map(x => plain(x).toLowerCase()) : [];
+    // 별칭(SK하이닉스·버거킹 같은 브랜드·영문 이름)도 이름과 똑같이 찾는다
+    if (p === q || al.includes(q)) exact.push(row);
+    else if (p.startsWith(q) || al.some(x => x.startsWith(q))) head.push(row);
+    else if (p.includes(q) || (q.length >= 2 && al.some(x => x.includes(q)))) part.push(row);
     if (exact.length + head.length >= n * 4) break; }
   const by = (a, b) => (b[1] > 0) - (a[1] > 0);
   return [...exact, ...head.sort(by), ...part.sort(by)].slice(0, n);
