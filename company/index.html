@@ -383,7 +383,8 @@ async function saveCard() {
   const c = CUR; if (!c) return;
   const blob = await makeCard(c), file = new File([blob], `${c.name}_조로판정.png`, { type: "image/png" });
   ev("card", c.name);
-  if (/Android|iPhone|iPad/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files: [file] })) {  // 휴대폰은 공유창(카톡·갤러리), PC는 바로 저장 try { await navigator.share({ files: [file], title: c.name + " · Zorro의 판정" }); return; } catch (e) { if (e.name === "AbortError") return; } }
+  // 휴대폰은 공유창(카톡·갤러리), PC는 바로 저장
+  if (/Android|iPhone|iPad/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: c.name + " · Zorro의 판정" }); return; } catch (e) { if (e.name === "AbortError") return; } }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000); toast("결과 카드를 저장했어요");
 }
