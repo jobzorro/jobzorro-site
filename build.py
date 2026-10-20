@@ -323,8 +323,9 @@ def ticker_items(data: dict) -> dict:
     if p.exists():
         m = json.loads(p.read_text(encoding="utf-8"))
         sal = [f"연봉 연구소 · 회사 {nf(m.get('count', 0))}곳 직급별 연봉", f"사업보고서·공공기관 공시 {nf(m.get('dartCount', 0))}곳"]
-        if (m.get("validation") or {}).get("nMatched"):
-            sal.append(f"이직자 실제 연봉 {nf(m['validation']['nMatched'])}명으로 검증")
+        v = m.get("validation") or {}
+        if v.get("nPeople") or v.get("nMatched"):
+            sal.append(f"이직자·현직자 실제 연봉 {nf(v.get('nPeople') or v['nMatched'])}명으로 검증")   # 매주 보정(제보 반영) 때 늘어난다
     p = BASE / "company" / "data" / "index.json"
     if p.exists():
         n = sum(1 for r in json.loads(p.read_text(encoding="utf-8"))["r"] if r[1])
