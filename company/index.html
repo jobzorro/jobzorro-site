@@ -239,7 +239,6 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 .warn { border:1.5px solid var(--bad); border-radius:14px; padding:14px 18px; margin:0 0 18px; font-size:13.5px; color:var(--ink-soft); }
 .warn b { color:var(--bad); display:block; margin-bottom:4px; }
 .warn ul { margin:6px 0 0; padding-left:18px; } .warn li { margin:2px 0; }
-.warn.shadow { margin:0 0 18px; }   /* R27 모회사 그림자 계열사: 한마디 바로 위 */
 
 /* 판정 4단계 */
 .v-spec strong { background:var(--mist); border-style:dashed; }
@@ -665,7 +664,6 @@ async function render(name) {
       <button class="act" type="button" id="b-card">결과 카드 저장</button><button class="act" type="button" id="b-share">링크 공유</button>
       ${(c._s?.views7 || 0) >= 10 ? `<span class="seen">최근 7일 ${c._s.views7.toLocaleString("ko-KR")}명이 확인했어요</span>` : ""}</div>` : ""}
     ${vsEntry(c)}
-    ${c.shadow ? `<div class="warn shadow"><b>모회사의 그림자 주의 · ${esc(c.shadow.parent)} 계열사</b>${esc(c.shadow.parent)}의 ${esc(c.shadow.role)}을(를) 맡는 계열사예요. 평점·재무 숫자가 좋아도 처우·승진·의사결정은 모회사 다음 순서라, 스펙이 좋은 분일수록 만족도가 떨어지기 쉬워요.${c.shadow.pct ? `<ul><li>평균 연봉 ${won(c.shadow.avg)}만원 · ${esc(c.shadow.parent)} ${won(c.shadow.parentAvg)}만원의 <b style="display:inline;color:inherit">${c.shadow.pct}%</b> (${esc(c.shadow.parentSrc || "")})</li></ul>` : ""}</div>` : ""}
     <div class="zorro"><div class="who">Z</div><div><p class="lbl">Zorro의 한마디</p><p class="first">${esc(z[0])}</p>
       <ul>${z.slice(1).map((t, i, a) => `<li class="${i === a.length - 1 ? "last" : ""}">${esc(t)}</li>`).join("")}</ul></div></div>
     ${c.divisions ? `<div class="divs">${c.divisions.map(d => `<div class="div"><h4>${esc(d.name)}<span class="${/가세요$/.test(d.verdict) && d.verdict !== "조건 보고 가세요" ? "go" : ""}">${esc(d.verdict)}</span></h4>${d.lines.map(l => `<p>${esc(l)}</p>`).join("")}</div>`).join("")}</div>` : ""}
