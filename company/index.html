@@ -69,6 +69,24 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .sug li .vd { color:var(--good); } .sug li .vn { color:var(--faint); }
 .count { margin-top:10px; font-size:12.5px; color:var(--muted); }
 .loading { padding:60px 0; text-align:center; color:var(--muted); }
+/* 2단계: 하트·카드 저장·공유 버튼, 첫 화면 공개 지표 */
+.acts { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:18px 0 0; }
+.act { display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 15px; border-radius:999px; border:1.5px solid var(--ink); background:var(--paper); color:var(--ink); font:inherit; font-size:13.5px; font-weight:800; cursor:pointer; }
+.act:hover { background:var(--mist); }
+.act:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+.act.heart b { font-family:var(--display); font-variant-numeric:tabular-nums; }
+.act.heart.on { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
+.acts .seen { font-size:12.5px; color:var(--muted); margin-left:4px; }
+.toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:999px; font-size:13.5px; font-weight:700; z-index:50; }
+.pulse { display:grid; gap:14px; justify-items:center; margin:6px 0 0; }
+.pulse .today { font-size:13.5px; color:var(--ink-soft); }
+.pulse .today b { font-family:var(--display); font-size:18px; color:var(--ink); }
+.pulse .top { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; max-width:640px; }
+.pulse .top button { font:inherit; font-size:13px; font-weight:700; padding:5px 12px; border-radius:999px; border:1px solid var(--hairline-2); background:var(--paper); color:var(--ink); cursor:pointer; }
+.pulse .top button i { font-style:normal; font-family:var(--display); color:var(--muted); margin-right:5px; }
+.pulse .top button:hover { border-color:var(--ink); }
+.pulse small { font-size:11.5px; color:var(--faint); letter-spacing:.04em; }
+
 /* 첫 화면: 결과 대신 검색 안내 */
 .intro { display:grid; justify-items:center; gap:6px; text-align:center; padding:56px 16px 40px; color:var(--muted); }
 .intro .arrow { font-family:var(--display); font-size:22px; font-weight:900; color:var(--ink); line-height:1; }
@@ -316,6 +334,74 @@ async function getCo(name) {
   if (!cache[k]) cache[k] = fetch(`data/co/${String(k).padStart(3, "0")}.json`).then(r => r.json()).catch(() => ({}));
   return (await cache[k])[name];
 }
+// ---- 2단계: 지표 보내기 (API 모드에서만). 개인정보는 보내지 않음, 기기 id는 하트 중복 막기용 무작위 값
+const DEV = (() => { try { let d = localStorage.getItem("cc-dev"); if (!d) { d = crypto.getRandomValues(new Uint32Array(3)).join("").slice(0, 20); localStorage.setItem("cc-dev", d); } return d; } catch (e) { return "s" + Math.random().toString(36).slice(2, 14); } })();
+const send = (path, body) => API ? fetch(API + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), keepalive: true }).then(r => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null);
+const ev = (k, n = "") => send("/ev", { k, n });
+const hearted = { get: n => { try { return JSON.parse(localStorage.getItem("cc-hearts") || "[]").includes(n); } catch (e) { return false; } },
+  add: n => { try { const a = JSON.parse(localStorage.getItem("cc-hearts") || "[]"); a.push(n); localStorage.setItem("cc-hearts", JSON.stringify(a.slice(-500))); } catch (e) {} } };
+function toast(msg) { const el = document.createElement("div"); el.className = "toast"; el.textContent = msg; el.setAttribute("role", "status"); document.body.append(el); setTimeout(() => el.remove(), 2200); }
+let CUR = null;  // 지금 보고 있는 회사
+
+// 결과 카드: 판정·등급·한마디 첫 줄을 1080×1350 이미지로 (카톡·인스타 공유용, 사이트 주소 박힘)
+async function makeCard(c) {
+  const W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const x = cv.getContext("2d"), F = '"Noto Sans KR","Malgun Gothic",sans-serif', D = '"Archivo","Noto Sans KR",sans-serif';
+  try { await document.fonts.ready; } catch (e) {}
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
+  x.fillStyle = "#0b0b0b"; x.fillRect(0, 0, W, 14);
+  x.font = `700 30px ${F}`; x.fillStyle = "#3a3a3a"; x.fillText("회사 판단 연구소 · " + (c.salary?.group || ""), 80, 120);
+  let fs = 92; x.font = `900 ${fs}px ${F}`; while (x.measureText(c.name).width > W - 160 && fs > 48) { fs -= 4; x.font = `900 ${fs}px ${F}`; }
+  x.fillStyle = "#0b0b0b"; x.fillText(c.name, 80, 230);
+  // 판정 알약
+  const go = /가세요$/.test(c.verdict) && c.verdict !== "조건 보고 가세요", bad = c.verdict === "비추예요";
+  x.font = `900 52px ${F}`; const vw = x.measureText(c.verdict).width + 80;
+  x.fillStyle = bad ? "#d92d20" : go ? "#c6ff3d" : "#ffffff"; x.strokeStyle = bad ? "#d92d20" : go ? "#c6ff3d" : "#0b0b0b"; x.lineWidth = 4;
+  x.beginPath(); x.roundRect(80, 290, vw, 96, 48); x.fill(); x.stroke();
+  x.fillStyle = bad ? "#ffffff" : "#0b0b0b"; x.fillText(c.verdict, 120, 357);
+  x.font = `800 28px ${F}`; x.fillStyle = "#3a3a3a"; x.fillText((c.tags || []).join("  ·  "), 80, 440);
+  // 다섯 칸 등급
+  const ks = ["평판", "연봉", "성장성", "수익성", "안정성"], cw = (W - 160) / 5;
+  x.strokeStyle = "#0b0b0b"; x.lineWidth = 3; x.beginPath(); x.moveTo(80, 500); x.lineTo(W - 80, 500); x.moveTo(80, 720); x.lineTo(W - 80, 720); x.stroke();
+  ks.forEach((k, i) => { const g = c.grades[k], L = g?.letter || (g?.grade == null ? "?" : ["하", "중", "상"][g.grade]), cx = 80 + i * cw;
+    x.font = `700 28px ${F}`; x.fillStyle = "#3a3a3a"; x.fillText(k, cx + 18, 560);
+    x.font = `900 104px ${D}`; x.fillStyle = L === "F" ? "#d92d20" : /^(S|A\+|A)$/.test(L) ? "#1b8f63" : /^(C|D)$/.test(L) ? "#c2410c" : L === "?" ? "#a3a3a3" : "#3a3a3a";
+    x.fillText(L, cx + 14, 680); });
+  // Zorro의 한마디 첫 줄 (줄바꿈)
+  x.font = `800 30px ${F}`; x.fillStyle = "#7a7a7a"; x.fillText("Zorro의 한마디", 80, 800);
+  x.font = `700 44px ${F}`; x.fillStyle = "#0b0b0b";
+  let line = "", y = 870; for (const ch of (c.zorro?.[0] || "")) { if (x.measureText(line + ch).width > W - 160) { x.fillText(line, 80, y); line = ch.trim(); y += 62; if (y > 1120) break; } else line += ch; }
+  if (y <= 1120) x.fillText(line, 80, y);
+  // 아래: 주소 + 로고
+  x.fillStyle = "#c6ff3d"; x.fillRect(0, H - 150, W, 150);
+  x.font = `900 38px ${F}`; x.fillStyle = "#0b0b0b"; x.fillText("job.jobzorro.kr/company", 80, H - 62);
+  try { const img = new Image(); img.src = "assets/jobzorro_logo.png"; await img.decode(); const h = 56, w = img.width * h / img.height; x.drawImage(img, W - 80 - w, H - 103, w, h); } catch (e) {}
+  x.font = `500 22px ${F}`; x.fillStyle = "#7a7a7a"; x.fillText("회사에 대한 일반적인 평가예요. 본인 스펙과 상황에 따라 판단하세요.", 80, H - 180);
+  return new Promise(r => cv.toBlob(r, "image/png"));
+}
+async function saveCard() {
+  const c = CUR; if (!c) return;
+  const blob = await makeCard(c), file = new File([blob], `${c.name}_조로판정.png`, { type: "image/png" });
+  ev("card", c.name);
+  if (/Android|iPhone|iPad/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files: [file] })) {  // 휴대폰은 공유창(카톡·갤러리), PC는 바로 저장 try { await navigator.share({ files: [file], title: c.name + " · Zorro의 판정" }); return; } catch (e) { if (e.name === "AbortError") return; } }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000); toast("결과 카드를 저장했어요");
+}
+async function shareLink() {
+  const c = CUR; if (!c) return; const url = location.origin + location.pathname + "#" + encodeURIComponent(c.name);
+  ev("share", c.name);
+  if (navigator.share) { try { await navigator.share({ title: c.name + " · 회사 판단 연구소", url }); return; } catch (e) { if (e.name === "AbortError") return; } }
+  try { await navigator.clipboard.writeText(url); toast("링크를 복사했어요"); } catch (e) { toast(url); }
+}
+async function heart(btn) {
+  const c = CUR; if (!c || hearted.get(c.name)) return;
+  btn.classList.add("on"); hearted.add(c.name);
+  const r = await send("/heart", { n: c.name, d: DEV });
+  btn.querySelector("b").textContent = (r?.hearts ?? (c._s?.hearts || 0) + 1).toLocaleString("ko-KR");
+}
+// PC에서 화면 캡처 키를 누르면 기록 (휴대폰 캡처는 브라우저가 알 수 없음)
+addEventListener("keyup", e => { if (e.key === "PrintScreen" && CUR) ev("shot", CUR.name); });
+
 const GR = {2:"상",1:"중",0:"하"};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -480,6 +566,9 @@ async function render(name) {
       <div class="chips"><span class="chip">${esc(c.type)} 회사${c.age != null ? " · 업력 " + c.age + "년" : ""}</span>${c.ai ? `<span class="chip ai-${c.ai.level}">AI 영향 ${c.ai.level}</span>` : ""}</div>
       <div class="meta">${s ? `<span>직원 <b>${won(s.members)}명</b></span>` : ""}${f ? `<span>재무 <b>${f.years[0]}~${f.years.at(-1)}</b> ${esc(f.source)}</span>` : ""}<span>기준일 <b>${esc(date)}</b></span></div></div>
       <div class="verdict ${vcls}"><small>Zorro's Verdict</small><strong>${c.verdict}</strong>${(c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
+    ${API ? `<div class="acts"><button class="act heart${hearted.get(c.name) ? " on" : ""}" type="button" id="b-heart" aria-label="이 회사 하트">♥ <b>${(c._s?.hearts || 0).toLocaleString("ko-KR")}</b></button>
+      <button class="act" type="button" id="b-card">결과 카드 저장</button><button class="act" type="button" id="b-share">링크 공유</button>
+      ${(c._s?.views7 || 0) >= 10 ? `<span class="seen">최근 7일 ${c._s.views7.toLocaleString("ko-KR")}명이 확인했어요</span>` : ""}</div>` : ""}
     <div class="zorro"><div class="who">Z</div><div><p class="lbl">Zorro의 한마디</p><p class="first">${esc(z[0])}</p>
       <ul>${z.slice(1).map((t, i, a) => `<li class="${i === a.length - 1 ? "last" : ""}">${esc(t)}</li>`).join("")}</ul></div></div>
     ${c.divisions ? `<div class="divs">${c.divisions.map(d => `<div class="div"><h4>${esc(d.name)}<span class="${/가세요$/.test(d.verdict) && d.verdict !== "조건 보고 가세요" ? "go" : ""}">${esc(d.verdict)}</span></h4>${d.lines.map(l => `<p>${esc(l)}</p>`).join("")}</div>`).join("")}</div>` : ""}
@@ -493,6 +582,8 @@ async function render(name) {
     <section class="sec" id="s6">${secH(6,"주요 뉴스")}${newsSec(c)}</section>
     <section class="sec" id="s7">${secH(7,"AI 영향")}${aiSec(c)}</section>`;
   history.replaceState(null, "", "#" + encodeURIComponent(name));
+  CUR = c;
+  if (API) { $("#b-heart").onclick = e => heart(e.currentTarget); $("#b-card").onclick = saveCard; $("#b-share").onclick = shareLink; }
 }
 
 // 검색: 정확히 같은 이름 → 앞부분 일치 → 포함 순, 판정이 있는 회사 먼저
@@ -531,7 +622,14 @@ fetch("data/index.json").then(r => r.json()).then(d => { IDX = d.r.map(([n, v, g
   $("#count").textContent = `회사 ${IDX.length.toLocaleString("ko-KR")}곳 검색 가능 · 그중 판정까지 나온 회사 ${n.toLocaleString("ko-KR")}곳 (자료는 계속 모으는 중)`; });
 // 첫 화면은 비워 두고 검색을 유도한다 (주소에 #회사명 이 있을 때만 바로 보여 줌)
 const intro = () => { $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b>
-  <p>평점·직급별 연봉·5개년 재무·최근 뉴스를 한 번에 보고, Zorro가 갈 만한지 정리해 드려요.</p></div>`; };
+  <p>평점·직급별 연봉·5개년 재무·최근 뉴스를 한 번에 보고, Zorro가 갈 만한지 정리해 드려요.</p><div class="pulse" id="pulse"></div></div>`;
+  if (!API) return;
+  fetch(API + "/top").then(r => r.ok ? r.json() : null).then(d => { const el = $("#pulse"); if (!d || !el) return;
+    el.innerHTML = `${d.today >= 5 ? `<p class="today">오늘 <b>${d.today.toLocaleString("ko-KR")}</b>명이 회사를 확인했어요</p>` : ""}
+      ${d.top.length >= 3 ? `<small>이번 주 많이 본 회사</small><div class="top">${d.top.map(([n], i) => `<button type="button" data-n="${esc(n)}"><i>${i + 1}</i>${esc(n)}</button>`).join("")}</div>` : ""}`;
+    el.querySelectorAll("button").forEach(b => b.onclick = () => pick(b.dataset.n)); }).catch(() => {}); };
+// 오늘 처음 들어온 방문만 한 번 기록
+try { if (API && !sessionStorage.getItem("cc-visit")) { sessionStorage.setItem("cc-visit", "1"); ev("visit"); } } catch (e) {}
 const first = decodeURIComponent(location.hash.slice(1));
 if (first) render(first); else intro();
 </script>
