@@ -1,0 +1,564 @@
+{
+  "title": "CAREER BRIEFING",
+  "date": "2026-10-21",
+  "generated_at": "2026-10-21 07:57",
+  "stats": {
+    "collected": 2041,
+    "deduped": 1934,
+    "recent": 715,
+    "fresh": 688,
+    "relevant": 102,
+    "published": 21,
+    "feeds": 30,
+    "dead_feeds": [
+      "머니투데이 https://rss.mt.co.kr/mt_news.xml"
+    ]
+  },
+  "sections": [
+    {
+      "key": "hiring",
+      "name": "채용 시즌·공고",
+      "en": "HIRING NOW",
+      "desc": "대기업·계열사·중견·외국계·공기업이 지금 사람을 뽑는 공고와 일정",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "“조단위씩 버는 은행들, 직원은 안 뽑나요?”…신입 채용 인원 급감 이유는",
+          "lead": "지점 감소·IT 경력직 집중에 올해 채용 1150명 수준 그쳐시중은행권의 하반기 공개채용이 진행 중인 가운데, 신입 행원 채용 인원이 크게 줄어드는 추세인 것으로 나타났다.",
+          "summary": "3년 ..",
+          "url": "https://www.mk.co.kr/news/economy/12181253",
+          "source": "매일경제",
+          "published": "2026-10-21 05:58",
+          "score": 36,
+          "keywords": [
+            "신입 채용",
+            "채용",
+            "신입",
+            "은행"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "시중은행 신입 채용이 지점 감소와 IT 경력직 집중으로 올해 1150명 수준에 그친다.",
+          "ai_why": "문과 신입분들, 은행 하나만 보고 기다리지 마세요. 자리가 IT 경력직으로 가고 있거든요? 2금융권과 공기업까지 지원 범위를 넓히세요.",
+          "ai_tags": [
+            "영업",
+            "재무"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "신입 3년새 40% 줄어 … 좁아진 은행 취업문",
+          "lead": "시중은행권의 하반기 공개채용이 진행되고 있는 가운데, 신입 행원 채용 인원이 크게 줄어드는 추세인 것으로 나타났다.",
+          "summary": "3년 전과 비교하면 연간 채용 규모가 약 40% 줄었다. 20일..",
+          "url": "https://www.mk.co.kr/news/economy/12180818",
+          "source": "매일경제",
+          "published": "2026-10-20 17:28",
+          "score": 34,
+          "keywords": [
+            "신입",
+            "은행"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "시중은행 연간 신입 채용 규모가 3년 전보다 약 40% 줄었다.",
+          "ai_why": "하반기 은행 공채가 진행 중이니 쓰실 분은 지금 쓰세요. 다만 자리가 줄어든 판이라 플랜B를 동시에 준비하는 건 필수입니다.",
+          "ai_tags": [
+            "영업",
+            "공통"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "[기획]\"팀원 절반이 부장급\"…대기업서 줄어드는 신입사원",
+          "lead": "매일일보 = 김채은 기자 | 국내 주요 기업들이 하반기 채용에 나선 가운데 신입사원 채용이 눈에 띄게 줄었다.",
+          "summary": "일부 부서에서는 수년간 신입 충원 없이 장기 근속자",
+          "url": "https://www.m-i.kr/news/articleView.html?idxno=2008134",
+          "source": "매일일보",
+          "published": "2026-10-20 14:33",
+          "score": 24,
+          "keywords": [
+            "신입사원",
+            "신입",
+            "대기업"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "주요 기업의 하반기 신입 채용이 줄었고, 일부 부서는 수년간 신입을 충원하지 않았다.",
+          "ai_why": "신입분들, 대기업 공채만 바라보면 시간을 버립니다. 중견기업에서 1~2년 경력을 쌓은 뒤 중고신입으로 환승할 준비를 하세요.",
+          "ai_tags": [
+            "공통",
+            "인사"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "수협중앙회 신입 공채 32명, 학력·연령 제한 없다…접수 기간·전형 일정은?",
+          "lead": "수협중앙회가 학력·연령 제한을 전면 없앤 신입직원 공개채용에 착수한다.",
+          "summary": "선발 규모는 32명, 원서 접수는 22일부터 11월 6일까지다. 서류·필기·두 차례 면접을 통과한 최종 합격자 명단은 2027년 1월 6일 나온다.수협중앙회(회장 노동진)는 내년 1월 입사할 신입직원 32명을 공개 채용한다고 20일 밝혔다. 모집은 일반 채용 31명, 권역별 채용 1명의 두 갈래로 진행된다. 학력·연령 장벽을 걷어낸 채용은 구직자의 기회 균등과 직결되는 사안인 만큼, 지원 요건과 일정을 정확히 알리는 일 자체가 공익적 의미를 갖는다.수협중앙회 신",
+          "url": "https://www.news33.net/news/articleView.html?idxno=118755",
+          "source": "창업일보",
+          "published": "2026-10-20 11:01",
+          "score": 20,
+          "keywords": [
+            "공채",
+            "신입",
+            "접수"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "수협중앙회가 학력·연령 제한 없이 신입 32명을 뽑으며, 접수는 22일부터 11월 6일까지다.",
+          "ai_why": "금융권을 노리는 신입·중고신입은 지금 지원하세요. 제한이 없다는 건 경쟁자도 많다는 뜻이니 필기 준비를 서두르셔야 합니다.",
+          "ai_tags": [
+            "공통",
+            "영업"
+          ]
+        },
+        {
+          "rank": 5,
+          "title": "美 IT업계, 올해 직원 16만명 감원…국내는 신입 채용 줄었다",
+          "lead": "美 IT업계, 올해 직원 16만명 감원…국내는 신입 채용 줄었다",
+          "summary": "경제 | 2026-10-20 09:54:00 메타·아마존·우버·넷플릭스 등 잇따른 임직원 감축 국내 청년 취업자 47개월째 감소, AI 역략 중요도↑ 지난 4월 27일 서울 강남구 삼성동 코엑스에서 열린 2026 1차 KB굿잡 우수기업 취업박람회에서 구직자들이 기업별 부스를 둘러보고 있다. /서예원 기자 [더팩트｜우지수 기자] 미국 IT업계가 AI 데이터센터 투자에 여력을 집중하는 가운데 올해 들어 16만명이 넘는 감원 계획을 발표했다.",
+          "url": "https://m.tf.co.kr/amp/economy/2378220.htm",
+          "source": "더팩트",
+          "published": "2026-10-20 09:54",
+          "score": 20,
+          "keywords": [
+            "신입 채용",
+            "채용",
+            "신입"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "미국 IT업계가 올해 16만명 넘는 감원을 발표했고, 국내 청년 취업자는 47개월째 줄고 있다.",
+          "ai_why": "개발 신입분들, 감원은 돈이 AI 투자로 몰린다는 신호입니다. AI 활용 경험을 포트폴리오에 녹여 준비하세요.",
+          "ai_tags": [
+            "개발",
+            "공통"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "moves",
+      "name": "이직·연봉·HR",
+      "en": "MOVES & PAY",
+      "desc": "경력직 수요, 연봉·성과급, 희망퇴직, 평가·승진, 면접과 채용 프로세스의 변화",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "'희망퇴직·순환근무' 홈플러스…'해법' M&A도 안갯속",
+          "lead": "[서울=뉴시스]오제일 기자 = 벼랑 끝에서 긴급운영자금을 수혈해 기사회생한 홈플러스가 여전히 안개 속을 걷고 있다.",
+          "summary": "청산 위기를 넘긴 뒤 본격적인 생존 시험대에 섰지만, 매출과 매각 추진 양쪽 모두에서 기대한 소식이 들려오지 않고 있다.19일 업계에 따르면 홈플러스는 유동성 위기 속에 영업 정상화에 어려움을 겪고 있다. 2000억원 규모의 긴급운영자금(DI..",
+          "url": "https://www.newsis.com/view/NISX20261019_0003831821",
+          "source": "뉴시스",
+          "published": "2026-10-19 15:04",
+          "score": 17,
+          "keywords": [
+            "희망퇴직"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "홈플러스가 긴급운영자금으로 고비를 넘겼지만, 매출과 매각 모두 여전히 불투명하다.",
+          "ai_why": "유통 MD·영업 지원자라면 지금은 피하세요. 재직자는 선퇴사하지 말고 이력서를 정비해 환승이직을 준비하시는 게 맞습니다.",
+          "ai_tags": [
+            "MD",
+            "영업"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "플러터 엔터테인먼트, 영국·아일랜드 사업 구조조정…최대 1400명 감원",
+          "lead": "글로벌 온라인 스포츠 베팅 및 아이게이밍 기업 플러터 엔터테인먼트(FLUTTER ENTERTAINMENT PLC, NYSE:FLUT)가 영국 및 아일랜드(UK&I) 사업부에 대한 구조조정 계획을 확정했다고 20일(현지시간) 공시했다.이번 구조조정은 영국 게임 관련 세금 인상의 영향을 완",
+          "summary": "",
+          "url": "https://www.datatooza.com/article/202610202012408505cd1e76e99e_80",
+          "source": "데이터투자",
+          "published": "2026-10-20 20:12",
+          "score": 16,
+          "keywords": [
+            "구조조정",
+            "감원"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "플러터 엔터테인먼트가 영국 세금 인상 여파로 UK&I 사업부에서 최대 1400명 감원을 확정했다.",
+          "ai_why": "세금과 규제 한 방에 사업부가 흔들리는 업종입니다. 게임·플랫폼 경력직은 지원 전에 규제 리스크부터 따져 보세요.",
+          "ai_tags": [
+            "기획",
+            "인사"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "금감원 “단일종목 레버리지, 정책 일정 맞추려 빨리 심사”…독립성 논란",
+          "lead": "이찬진 금융감독원장이 정부가 발표한 상장 일정에 맞추려 단일종목 레버리지 상품 관련 심사를 서두른 측면이 있다고 인정했다.",
+          "summary": "투자자 보호라는 감독기관의 핵심 역할을 소홀히 했다는 취지로 읽힐 수 있어 논란이 일 전망이다. 이찬진 금감원장은 19일 국",
+          "url": "https://www.hani.co.kr/arti/economy/finance/1283092.html",
+          "source": "한겨레",
+          "published": "2026-10-21 07:55",
+          "score": 14,
+          "keywords": [
+            "감원"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "금감원장이 정부 상장 일정에 맞추려 단일종목 레버리지 심사를 서둘렀다고 인정했다.",
+          "ai_why": "금융공기업 준비생이라면 이 논란이 면접 주제로 나올 수 있습니다. 감독기관 독립성에 대한 본인 입장을 미리 정리해 두세요.",
+          "ai_tags": [
+            "재무",
+            "기획"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "“불법 투자로 돈 벌다가, 퇴사하면 그만?”…증권가 주식투자의 민낯",
+          "lead": "5년여간 10대 증권사 주식매매규정 위반제재 97명 거래금액 88억원, 과태료는 법정상한 못 미쳐",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/economy/12180261",
+          "source": "매일경제",
+          "published": "2026-10-20 09:07",
+          "score": 14,
+          "keywords": [
+            "퇴사"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "10대 증권사에서 5년여간 97명이 매매규정 위반으로 제재받았고, 거래금액은 88억원이다.",
+          "ai_why": "증권사 지원자는 내부통제 이슈를 꼭 알고 가세요. 컴플라이언스 강화는 리스크관리 직무의 기회가 될 수 있거든요? 지금 준비하세요.",
+          "ai_tags": [
+            "재무"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "company",
+      "name": "기업·산업 레이더",
+      "en": "COMPANY WATCH",
+      "desc": "실적·적자·사업재편·증설·폐점 — 지원해도 되는 회사인지 가르는 신호",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "일본 조조타운까지 품은 무신사…'10조 IPO' 청신호 켜졌다",
+          "lead": "국내 최대 패션 플랫폼 무신사가 일본 시장에서 입지를 넓히며 기업공개(IPO)를 위한 성장 기반을 강화하고 있다.",
+          "summary": "일본 대형 패션 플랫폼 조조타운과의 협력이 한국 브랜드의 해외 진출을 넘어 일본 브랜드의 국내 유통으로 확대된 데다 해외 매출도 가파르게 증가하고 있다. 지난해 사상 최대 실적에 이어 올해도 외형 성장을 이어가면서 시장에서 거론되는 최대 10조원 기업가치에 대한 기대감도 커지는 모습이다.20일 유통 및 투자은행(IB)업계에 따르면 무신사는 지난 16일 서울 성수동에서 일본 패션 플랫폼 조조타운의 국내 첫 팝업스토어를 열",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156274",
+          "source": "테크M",
+          "published": "2026-10-20 18:56",
+          "score": 33,
+          "keywords": [
+            "IPO"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "무신사가 일본 조조타운과 협력을 넓히고 해외 매출을 키우며 IPO 기대를 높이고 있다.",
+          "ai_why": "패션 MD·마케팅 경력직은 상장 전후로 채용이 열리는지 지켜보며 준비하세요. 글로벌 사업 경험이 있다면 강점이 됩니다.",
+          "ai_tags": [
+            "MD",
+            "마케팅"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "하락장에 ‘1조 대어’도 별 수 없나…AI 엘리스그룹, 상장 첫날 30% 뚝",
+          "lead": "인공지능(AI) 교육·클라우드 기업 엘리스그룹(상장명 엘리스)이 코스닥 상장 첫날 공모가 대비 20% 넘게 하락하고 있다.",
+          "summary": "기업공개(IPO) 과정에서 10조원 넘는 청약증거금을 끌어모았지만, 상장 후 주가는 공모가를 크게 밑돌고 있다. 20일 오전 10시45분 기준 엘리스는 코스닥 시장에서 공모가(9만500원) 대비 2만2700원(25.08%) 내린 6만7",
+          "url": "https://www.mk.co.kr/news/stock/12180400",
+          "source": "매일경제",
+          "published": "2026-10-20 11:06",
+          "score": 30,
+          "keywords": [
+            "상장",
+            "그룹"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "엘리스그룹이 청약증거금 10조원 넘게 모았지만, 상장 첫날 공모가보다 20% 넘게 빠졌다.",
+          "ai_why": "주가와 회사 체력은 별개입니다. 이직을 고민하는 개발·기획 경력자는 주가 말고 매출과 이익 추이를 보고 판단하세요.",
+          "ai_tags": [
+            "개발",
+            "기획"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "엘리스, 코스닥 상장 첫날 30% 급락...시총 7000억으로↓",
+          "lead": "코스닥 상장 첫날 AI 인프라 기업 엘리스가 장 초반 30% 이상 급락했다.20일 오전 엘리스는 공모가 9만500원 대비 30.72% 하락한 주당 6만2700원에 거래되고 있다.",
+          "summary": "이날 주가는 7만5700원으로 거래를 시작해 장중 한때 6만1000원까지 떨어졌다. 공모가 기준 1조원 수준이던 시가총액도 7000억원 안팎으로 줄었다.2015년 설립된 엘리스는 AI 전환(AX) 및 AI 클라우드를 주력 사업으로 하는 소프트웨어 기업이다. 지난해 매출 395억원, 영업이익 52억원을 기록했다. 올해 상반기에는 매출 344억원, 영업이익 1",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156277",
+          "source": "테크M",
+          "published": "2026-10-20 19:11",
+          "score": 27,
+          "keywords": [
+            "상장"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "엘리스, 상장 첫날 26% 폭락…코어위브 사태 악재 됐나",
+              "source": "매일경제",
+              "url": "https://www.mk.co.kr/news/stock/12180402"
+            }
+          ],
+          "ai_line": "엘리스가 상장 첫날 장 초반 30% 넘게 떨어져 시총이 7000억원 안팎으로 줄었다.",
+          "ai_why": "지난해 영업이익 52억원으로 흑자를 낸 회사입니다. AI 경력 이직자는 스톡옵션 기대보다 직무 성장성을 기준으로 지원을 결정하세요.",
+          "ai_tags": [
+            "개발",
+            "기획"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "현대차·기아 3분기 실적 '디커플링' 전망…생산 리스크·RV 믹스가 희비 갈라",
+          "lead": "현대자동차와 기아가 3분기 실적의 '탈동조화(디커플링)' 양상을 보일 전망이다.",
+          "summary": "노사 갈등과 파업 등에 따른 생산 차질로 현대차의 매출과 영업이익이 역성장하는 반면, 기아는 안정적 라인 가동과 레저용 차량(RV) 중심의 신차 효과를 앞세워 호조를 기록할 것으로 예상된다. 현대차의 3분기 연결 기준 실적 컨센서스는 매출 45조3510억원, 영업이익 2조5266억원으로 집계됐다. 전년 동기 대비 매출은 2.93%, 영업이익은 0.42% 각각 줄어든",
+          "url": "https://www.etnews.com/20261020000274",
+          "source": "전자신문",
+          "published": "2026-10-20 16:00",
+          "score": 27,
+          "keywords": [
+            "실적",
+            "현대차"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "3분기에 현대차는 생산 차질로 역성장, 기아는 RV 신차 효과로 호조가 예상된다.",
+          "ai_why": "같은 그룹이라도 실적은 갈립니다. 자동차 지원자는 노사 이슈와 RV 믹스 차이를 면접 답변으로 정리해 준비하세요.",
+          "ai_tags": [
+            "기획",
+            "구매"
+          ]
+        },
+        {
+          "rank": 5,
+          "title": "“실적개선 속도, 주가가 못따라갑니다”…삼성전기 목표가 175만원 [오늘 나온 보고서]",
+          "lead": "IBK證 “현재 대비 50% 상승여력” 3분기 영업이익 156% 급증할듯 실적개선에 내년 4.4조 이익 전망",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/stock/12180245",
+          "source": "매일경제",
+          "published": "2026-10-20 08:52",
+          "score": 26,
+          "keywords": [
+            "실적",
+            "삼성"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "IBK증권은 삼성전기의 3분기 영업이익이 156% 급증할 것으로 내다봤다.",
+          "ai_why": "실적이 오르는 회사가 채용도 여는 법입니다. 전자부품 쪽 신입과 경력직은 지금 공고를 확인하고 지원하세요.",
+          "ai_tags": [
+            "구매",
+            "기획"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "macro",
+      "name": "고용지표·정책",
+      "en": "MACRO",
+      "desc": "통계청 고용동향, 청년고용, 최저임금·실업급여, 노동법 — 시장 전체의 온도",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "추경호 시장 \"대구 청년 고용률 낮은 구조적 원인 살펴야\"",
+          "lead": "[대구=뉴시스] 정창오 기자 = 추경호 대구시장은 20일 시청 산격청사에서 열린 간부회의에서 \"청년들이 일자리를 찾지 못하고 헤매는 것보다",
+          "summary": "더 심각한 문제가 어디 있겠는가\"라며 대구의 낮은 청년 고용률과 높은 실업률에 대한 원인 분석과 실질적인 대책의 필요성을 강조했다.대구지방고용노동청(대구·경북 관할)이 밝힌 국감 자료에 따르면 올해 3분기 대구의 청년 ..",
+          "url": "https://www.newsis.com/view/NISX20261020_0003833564",
+          "source": "뉴시스",
+          "published": "2026-10-20 15:17",
+          "score": 35,
+          "keywords": [
+            "고용률",
+            "청년 고용",
+            "고용",
+            "청년"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "추경호 “대구 청년고용 부진, 구조적 원인 분석…내년 예산 반영”",
+              "source": "이데일리",
+              "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNQnJ4U05HZ19CNzRnX3dKVnpJSnFsQ2hQM3BjM3pUenJzTWhVUndnS3ozaE03VEx5Mnd5dThINVlLLWNaN0h1NzdZTFZhV3hXVS1ZcmpieXZ5WlJPRkZOaHhSTHBwQ201UEhIM2Z1eFMtSnBXZG15QUl4dTdJTGlsdQ?oc=5"
+            },
+            {
+              "title": "추경호 시장 “대구 청년 고용률 낮은 원인 살펴야”",
+              "source": "경북도민일보",
+              "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE92OFRZV2FPbWw0VzZzY1ltZkQ4ZVE3ZGNoc0t1OVR2dnAwajNZR2tvX1AwcmxacHh5bEI3SUxRY081Umc5c0VvVjhGRU9DRmVMbVNKd1RjMy00YndOd21YemJyM3RnWHkyQnc?oc=5"
+            },
+            {
+              "title": "대구 청년 고용 부진에 추경호 \"원인 정밀 분석하라\"",
+              "source": "연합뉴스",
+              "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE45N2pkUUNWcWhfU2Z0VFNFMEhCM0RldlFHdS1qZ2ZJZzdhTjhfcDlRaU5EMUZhX1RsS3lYT2VtM2JxV05MemhUTnlOVXJlTDRvR1NiUF9HSWhzOTjSAWBBVV95cUxOYmRKbU5lNUtVZ1ZJbUM2cERjZXFLX0h5cHFtR00tOHAzS0xacVU5ZVR4ZktxcURIZldubXZ3NE52WWFzYTlFcVN5Tk0yTzdPUkVjSy1HdkFUSEZYV05nZzY?oc=5"
+            }
+          ],
+          "ai_line": "대구시장이 대구 청년 고용률이 낮고 실업률이 높은 구조적 원인을 살피라고 주문했다.",
+          "ai_why": "지방 취준생분들, 지역 대책만 기다리기엔 시간이 아깝습니다. 수도권과 지역 공공기관을 함께 넣어 지원 범위를 넓히세요.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "추경호 대구시장 “청년 고용 부진 원인 정밀 분석…실효성 있는 대책 마련 요구”",
+          "lead": "[헤럴드경제(대구)=김병진 기자] 추경호 대구시장이 대구지역 청년 고용 부진의 구조적 원인을 정밀하게 분석하고 실효성 있는 대책을 마련할 것을 주문했다.",
+          "summary": "추 시장은 지",
+          "url": "https://biz.heraldcorp.com/article/10909203",
+          "source": "헤럴드경제",
+          "published": "2026-10-21 05:20",
+          "score": 29,
+          "keywords": [
+            "청년 고용",
+            "고용",
+            "대책",
+            "청년"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "추경호 대구시장, 청년 고용 부진 원인 진단과 실효성 있는 대책 마련 주문",
+              "source": "뉴데일리 대구경북",
+              "url": "https://news.google.com/rss/articles/CBMiekFVX3lxTE04anJEb1pHempCaWE3UEw1WEtJbm8yQ0JuZ2NHU3pnN1Z3dGxSUmtjUkpObmdZTmVYaUhHVWFiQTZNMV9pd0I2Ul94Rk5UWmNXdWYxZjk0SXdDcnhsbmlvLTZkcmN4YjhGNEdmSG01ZkFJakl4YjVxTW5R0gF_QVVfeXFMUFJrbUFtVURTQzN6M0lPZ001VW85bUMxMGZPTXh6YVgwSWhFYUN6VjVnZ2hGQ3VmUTBMQkgtR3lVNUVsdEFfU1QyMlFTTW0xeUFfZGN5cU5rTW5oNkhGUzdGenNBVmdRODZldWlDM2Zqa3g3cFBuUjV6c3NpN3NDUQ?oc=5"
+            },
+            {
+              "title": "추경호 대구시장, “청년 고용 부진 원인 정밀 분석…실효성 있는 대책 마련”",
+              "source": "NSP통신",
+              "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE1lbFR6NnZPaFpvVGZHUHdnb05oRnh5RC03QjZCNVVHUU5aeTFwdVlhWnEtdk5oTlAtcmc3M2F0X3J3Vmt4aVdEcGRSeDlZUHl2a3pCbG96c0RzWG1wZGFrOQ?oc=5"
+            },
+            {
+              "title": "추경호 대구시장, 기업 애로·청년 고용·시민 안전 대책 추진",
+              "source": "폴리뉴스 Polinews",
+              "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTE5Qal81ZHNENXpzY3UtU3dZVkNLbjFRZkRKRGhWUkJrN3laZXNnYzFFd2VVa3h1X3daaEtkVWdueW1TZkVkbWdqLWdENmVGS2c2aGl1eE90NFhUR2NVdFIzWVRsWnBQVzdyNzN6eWpB?oc=5"
+            }
+          ],
+          "ai_line": "대구시장이 청년 고용 부진의 원인을 정밀 분석하고 실효성 있는 대책을 마련하라고 요구했다.",
+          "ai_why": "대책이 나오면 지역 청년 지원사업이 생길 수 있습니다. 대구권 취준생은 시 공고를 챙기되 지원은 멈추지 마세요.",
+          "ai_tags": [
+            "공통"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "future",
+      "name": "커리어의 변화",
+      "en": "CAREER SHIFT",
+      "desc": "AI가 바꾸는 직무, 40대 이후의 생존, 중장년 재이직, N잡과 멀티커리어",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "[기획]AI 시대 달라지는 청년 일자리…1인 창업 확산",
+          "lead": "매일일보 = 김현우 기자 | 인공지능(AI) 확산으로 청년 채용문이 좁아지는 가운데 해외에서는 AI를 활용한 창업이 새로운 일자리 확보 경로로 주목받고 있다.",
+          "summary": "A",
+          "url": "https://www.m-i.kr/news/articleView.html?idxno=2008121",
+          "source": "매일일보",
+          "published": "2026-10-20 14:33",
+          "score": 20,
+          "keywords": [
+            "AI 시대",
+            "AI",
+            "창업",
+            "일자리"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "AI 확산으로 청년 채용문이 좁아지면서 해외에서는 AI 활용 1인 창업이 주목받고 있다.",
+          "ai_why": "창업은 선택지일 뿐 정답은 아닙니다. 신입분들은 AI로 작은 프로젝트를 해 보고 포트폴리오로 준비하세요. 결국 직무 경험이 무기입니다.",
+          "ai_tags": [
+            "기획",
+            "공통"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "넷플릭스 영화 부문 수장 댄 린(Dan Lin), 대규모 임원진 구조조정 속 해고",
+          "lead": "넷플릭스가 크리에이티브 리더십을 대대적으로 개편하면서, 약 3년 동안 넷플릭스의 영화 부문을 이끌었던 베테랑 프로듀서가 회사를 떠난다.",
+          "summary": "",
+          "url": "https://hypebeast.kr/2026/10/dan-lin-dismissed-netflix-film-chief-amid-major-executive-restructuring-news",
+          "source": "Hypebeast.KR",
+          "published": "2026-10-20 17:29",
+          "score": 19,
+          "keywords": [
+            "구조조정",
+            "해고"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "넷플릭스가 크리에이티브 리더십을 개편하면서 약 3년간 영화 부문을 이끈 댄 린이 떠난다.",
+          "ai_why": "임원도 조직 개편 한 번에 자리를 잃습니다. 40대 재직자는 사내 직함보다 밖에서도 통하는 성과를 정리해 두세요.",
+          "ai_tags": [
+            "기획",
+            "인사"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "[단독] \"AI가 대체 못할 헬스케어 분야에 기회\"",
+          "lead": "韓 고령화로 의료·돌봄 수요관광·고부가 제조업도 유망AI기업 이윤, 구성원과 나눠야",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/economy/12180856",
+          "source": "매일경제",
+          "published": "2026-10-20 17:34",
+          "score": 18,
+          "keywords": [
+            "AI가 대체",
+            "AI"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "고령화로 의료·돌봄 수요가 커지며 헬스케어, 관광, 고부가 제조업이 유망하다는 분석이다.",
+          "ai_why": "재이직을 고민하는 40대분들, AI가 대체하기 어려운 산업으로 옮길 준비를 하세요. 기존 재무·영업 경험은 헬스케어에서도 쓸모가 있습니다.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "프론트엔드 개발자가 가장 많이 줄었다?.. 스타트업 채용이 달라지고 있습니다",
+          "lead": "\"프론트엔드와 백엔드 직군의 통합 운영을 시작한 곳도 있어요.",
+          "summary": "그래서 채용할 때 풀스택 개발자를 더 선호한다고 하더라고요\" (스타트업 관계자 A씨) \"프론트엔드 개발자 채용이 과거보다 줄긴 줄었습니다. 백엔드 개발자 채용을 위한 커피챗은 아직 많이 하는데 말이에요\" (D 스타트업 종사자",
+          "url": "https://outstanding.kr/aierarecruiting202061020/",
+          "source": "아웃스탠딩",
+          "published": "2026-10-20 18:05",
+          "score": 17,
+          "keywords": [
+            "개발자",
+            "스타트업"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "스타트업들이 프론트·백엔드를 통합 운영하면서 프론트엔드 채용은 줄고 풀스택 선호는 커졌다.",
+          "ai_why": "프론트엔드 경력자라면 지금 백엔드 역량을 준비하세요. 직무가 합쳐지는 시장에서는 스택이 하나뿐인 사람이 먼저 밀립니다.",
+          "ai_tags": [
+            "개발"
+          ]
+        },
+        {
+          "rank": 5,
+          "title": "야놀자, 아시아 호텔 디지털 전환 시장 공략…AI·글로벌 유통망 앞세운다",
+          "lead": "야놀자그룹이 인공지능(AI) 기반 호텔 운영 기술과 글로벌 숙박 유통망을 앞세워 아시아태평양(APAC) 시장 공략에 속도를 낸다.",
+          "summary": "호텔의 예약·운영 업무를 자동화하는 소프트웨어와 전 세계 숙박 상품을 연결하는 유통 인프라를 동시에 공급해 글로벌 여행 기술 기업으로서 입지를 강화한다는 전략이다.20일 여행업계에 따르면 야놀자는 오는 21일부터 23일까지 싱가포르 샌즈 엑스포 앤드 컨벤션 센터에서 열리는 'ITB 아시아 2026'에 참가한다. 이번 행사에는 호텔 운영 솔루션 기업 야놀자클라우드솔루션(YCS)과 글로벌 숙박 유통 기업 야",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156275",
+          "source": "테크M",
+          "published": "2026-10-20 19:00",
+          "score": 15,
+          "keywords": [
+            "AI"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "야놀자가 AI 호텔 운영 기술과 글로벌 숙박 유통망을 앞세워 아태 시장 공략에 나선다.",
+          "ai_why": "해외 사업 확장은 영업·PM 경력직 수요로 이어지곤 합니다. 여행·호텔 업계 경력자는 공고를 지켜보며 해외 실무 경험을 정리해 두세요.",
+          "ai_tags": [
+            "영업",
+            "PM"
+          ]
+        }
+      ]
+    }
+  ],
+  "briefing": [
+    "은행 신입이 3년 새 약 40% 줄고 대기업도 신입 충원을 미루는 등, 신입 문이 좁아졌다는 게 이제 숫자로 확인되고 있습니다.",
+    "홈플러스, 엘리스, 현대차와 기아처럼 이름값과 실제 체력이 따로 노는 회사가 많으니, 지원 전에 실적부터 보는 습관을 들이셔야 합니다.",
+    "오늘은 수협중앙회처럼 마감이 정해진 공고 하나를 골라 이번 주 안에 지원서를 제출하세요."
+  ]
+}
