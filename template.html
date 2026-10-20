@@ -692,7 +692,39 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
     var inds = (j.sources && j.sources.industries || []).join(' ');
     return [j.name, j.en, gname(j.group), j.tagline, j.summary, j.skills.hard.join(' '), j.skills.soft.join(' '), j.tools.join(' '), j.certs.join(' '), inds].join(' ').toLowerCase();
   }
+  // 검색 순위 (2026-10-20 사용자: '재무'를 치면 재무 직무가 맨 위, 비슷한 직무가 그 아래)
+  // 직무 이름 일치 > 이름 앞부분 > 이름 포함 > 영문 이름 > 이름이 맞은 직무의 '옮겨갈 수 있는 직무' > 직군·한 줄 소개 > 나머지 본문
+  var squash = function (s) { return String(s || '').toLowerCase().replace(/[\s·・\/()-]/g, ''); };
+  function searchScore(j, q, near) {
+    var n = squash(j.name), qq = squash(q);
+    if (n === qq) return 100;
+    if (n.indexOf(qq) === 0) return 90;
+    if (n.indexOf(qq) >= 0) return 80;
+    if (squash(j.en).indexOf(qq) >= 0) return 70;
+    if (near[j.id]) return 60;
+    if ((gname(j.group) + ' ' + j.tagline).toLowerCase().indexOf(q) >= 0) return 40;
+    return haystack(j).indexOf(q) >= 0 ? 10 : 0;
+  }
   function filtered() {
+    var q = state.q.toLowerCase().trim();
+    var base = JOBS.filter(function (j) {
+      if (state.track !== '전체' && GTRACK[j.group] !== state.track) return false;
+      if (state.group !== '전체' && j.group !== state.group) return false;
+      if (state.nonmajor && !j.nonmajorOk) return false;
+      if (state.aiLow && j.ai.level > 1) return false;
+      if (state.sourced && srcCount(j) === 0) return false;
+      if (state.fav && !favHas(j.id)) return false;
+      return true;
+    });
+    if (!q) return base;
+    var near = {};   // 이름이 맞은 직무와 가까운 직무(옮겨갈 수 있는 직무)
+    base.forEach(function (j) { if (squash(j.name).indexOf(squash(q)) >= 0) (j.transitions || []).forEach(function (id) { near[id] = 1; }); });
+    return base.map(function (j, i) { return { j: j, s: searchScore(j, q, near), i: i }; })
+      .filter(function (x) { return x.s > 0; })
+      .sort(function (a, b) { return b.s - a.s || a.i - b.i; })
+      .map(function (x) { return x.j; });
+  }
+  function filteredOld() {
     var q = state.q.toLowerCase();
     return JOBS.filter(function (j) {
       if (state.track !== '전체' && GTRACK[j.group] !== state.track) return false;
