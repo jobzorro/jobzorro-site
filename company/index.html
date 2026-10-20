@@ -69,6 +69,11 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .sug li .vd { color:var(--good); } .sug li .vn { color:var(--faint); }
 .count { margin-top:10px; font-size:12.5px; color:var(--muted); }
 .loading { padding:60px 0; text-align:center; color:var(--muted); }
+/* 첫 화면: 결과 대신 검색 안내 */
+.intro { display:grid; justify-items:center; gap:6px; text-align:center; padding:56px 16px 40px; color:var(--muted); }
+.intro .arrow { font-family:var(--display); font-size:22px; font-weight:900; color:var(--ink); line-height:1; }
+.intro b { font-size:17px; font-weight:900; color:var(--ink); letter-spacing:-.02em; }
+.intro p { font-size:13.5px; max-width:440px; }
 .hint { margin-top:12px; font-size:13px; color:var(--bad); min-height:20px; }
 
 /* 결과 머리 */
@@ -498,7 +503,11 @@ addEventListener("hashchange", () => { const h = decodeURIComponent(location.has
 fetch("data/index.json").then(r => r.json()).then(d => { IDX = d.r.map(([n, v, g, a]) => [n, v, d.g[g], a]);
   const n = IDX.filter(r => r[1]).length;
   $("#count").textContent = `회사 ${IDX.length.toLocaleString("ko-KR")}곳 검색 가능 · 그중 판정까지 나온 회사 ${n.toLocaleString("ko-KR")}곳 (자료는 계속 모으는 중)`; });
-render(decodeURIComponent(location.hash.slice(1)) || PICKS[0]);
+// 첫 화면은 비워 두고 검색을 유도한다 (주소에 #회사명 이 있을 때만 바로 보여 줌)
+const intro = () => { $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b>
+  <p>평점·직급별 연봉·5개년 재무·최근 뉴스를 한 번에 보고, Zorro가 갈 만한지 정리해 드려요.</p></div>`; };
+const first = decodeURIComponent(location.hash.slice(1));
+if (first) render(first); else intro();
 </script>
 </body>
 </html>
