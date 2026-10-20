@@ -927,7 +927,28 @@ def build(out_dir: Path, with_news: bool) -> None:
         print(f"회사 판단 연구소: /company/ (데이터 조각 {len(list((dst / 'data' / 'co').iterdir()))}개)")
     seo.write_sitemap(out_dir, base_url, entries)
     audit_links(data, BASE / "assets" / "share")
+    print(f"인앱 브라우저 → 기본 브라우저 전환: {add_inapp(out_dir)}개 페이지")
     print(f"sitemap.xml: URL {len(entries)}개 -> {out_dir / 'sitemap.xml'}")
+
+
+# 카카오톡·라인 인앱 브라우저로 열리면 휴대폰 기본 브라우저로 다시 연다 (모든 페이지 <head> 맨 앞)
+# 카카오톡: kakaotalk://web/openExternal (안드로이드·iOS 모두), 라인: ?openExternalBrowser=1
+# 인스타그램·네이버 앱 등은 iOS에서 강제로 바꿀 방법이 없어 건드리지 않는다
+INAPP_JS = ("<script data-inapp>(function(){try{var a=navigator.userAgent||'',u=location.href;"
+            "if(/KAKAOTALK/i.test(a)){location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(u);}"
+            "else if(/ Line\\//i.test(a)&&u.indexOf('openExternalBrowser=1')<0){var h=location.hash;"
+            "location.replace(u.split('#')[0]+(location.search?'&':'?')+'openExternalBrowser=1'+h);}}catch(e){}})();</script>")
+
+
+def add_inapp(out_dir: Path) -> int:
+    n = 0
+    for f in out_dir.rglob("*.html"):
+        h = f.read_text(encoding="utf-8")
+        if "data-inapp" in h or "<head>" not in h:
+            continue
+        f.write_text(h.replace("<head>", "<head>\n" + INAPP_JS, 1), encoding="utf-8")
+        n += 1
+    return n
 
 
 if __name__ == "__main__":
