@@ -87,6 +87,17 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .pulse .top button:hover { border-color:var(--ink); }
 .pulse small { font-size:11.5px; color:var(--faint); letter-spacing:.04em; }
 
+.sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+/* 정보 정정 요청 */
+.fixbox { margin:44px 0 0; border:1.5px dashed var(--hairline-2); border-radius:18px; padding:16px 20px; }
+.fixbox summary { cursor:pointer; font-size:14px; font-weight:800; color:var(--ink-soft); }
+.fixbox summary:focus-visible { outline:2px solid var(--ink); outline-offset:3px; }
+.fixbox form { display:grid; gap:10px; margin-top:14px; }
+.fixbox p { font-size:13px; color:var(--muted); margin:0; }
+.fixbox textarea, .fixbox input { font:inherit; font-size:14px; padding:10px 14px; border:1.5px solid var(--hairline-2); border-radius:12px; background:var(--paper); color:var(--ink); }
+.fixbox textarea { min-height:96px; resize:vertical; }
+.fixbox button { justify-self:start; height:40px; padding:0 18px; border-radius:999px; border:0; background:var(--ink); color:var(--paper); font:inherit; font-size:13.5px; font-weight:800; cursor:pointer; }
+
 /* 첫 화면: 결과 대신 검색 안내 */
 .intro { display:grid; justify-items:center; gap:6px; text-align:center; padding:56px 16px 40px; color:var(--muted); }
 .intro .arrow { font-family:var(--display); font-size:22px; font-weight:900; color:var(--ink); line-height:1; }
@@ -325,7 +336,7 @@ function shardOf(name) { let h = 0; for (let i = 0; i < name.length; i++) h = (h
 async function getCo(name) {
   if (API) {
     if (!cache[name]) cache[name] = fetch(`${API}/co?n=${encodeURIComponent(name)}`)
-      .then(r => r.ok ? r.json() : r.status === 429 ? { __limit: true } : null).catch(() => null);
+      .then(r => r.ok ? r.json() : r.status === 429 ? { __limit: true } : r.status === 410 ? { __hidden: true } : null).catch(() => null);
     const c = await cache[name];
     if (c && c.__limit) delete cache[name];  // 제한 풀리면 다시 받을 수 있게
     return c;
@@ -542,6 +553,7 @@ const WHY = {
 async function render(name) {
   $("#out").innerHTML = `<p class="loading">불러오는 중…</p>`;
   const c = await getCo(name);
+  if (c && c.__hidden) { $("#out").innerHTML = `<div class="sec">${empty("정정 요청을 검토하느라 이 회사는 잠시 내렸어요.")}</div>`; return; }
   if (c && c.__limit) { $("#out").innerHTML = `<div class="sec">${empty("조회가 너무 많아요. 잠시 후 다시 시도해 주세요.")}</div>`; return; }
   if (c) c.name = name;  // 조각 파일에는 이름 칸을 빼고 저장(용량) → 여기서 채움
   if (!c) { $("#hint").textContent = ""; document.querySelectorAll(".pill").forEach(p => p.classList.remove("on"));
@@ -581,9 +593,17 @@ async function render(name) {
     <section class="sec" id="s4">${secH(4,"수익성")}${finSec(c,"수익성")}</section>
     <section class="sec" id="s5">${secH(5,"안정성")}${finSec(c,"안정성")}</section>
     <section class="sec" id="s6">${secH(6,"주요 뉴스")}${newsSec(c)}</section>
-    <section class="sec" id="s7">${secH(7,"AI 영향")}${aiSec(c)}</section>`;
+    <section class="sec" id="s7">${secH(7,"AI 영향")}${aiSec(c)}</section>
+    ${API ? `<details class="fixbox"><summary>정보가 틀렸거나 문제가 있나요? 정정 요청하기</summary>
+      <form id="fixform"><p>회사 관계자·현직자 누구나 보낼 수 있어요. 확인 후 고치거나 내립니다.</p>
+        <label class="sr" for="fixmsg">요청 내용</label><textarea id="fixmsg" maxlength="1000" placeholder="어떤 내용이 왜 틀렸는지 적어 주세요" required></textarea>
+        <label class="sr" for="fixcontact">답변 받을 연락처</label><input id="fixcontact" maxlength="100" placeholder="답변 받을 이메일 (선택)">
+        <button type="submit">요청 보내기</button></form></details>` : ""}`;
   history.replaceState(null, "", "#" + encodeURIComponent(name));
   CUR = c;
+  if (API) $("#fixform").onsubmit = async e => { e.preventDefault();
+    const r = await send("/fix", { n: c.name, msg: $("#fixmsg").value, contact: $("#fixcontact").value });
+    if (r?.ok) { e.target.closest("details").innerHTML = `<p style="margin:0;font-size:14px;font-weight:700">요청을 받았어요. 확인 후 반영할게요.</p>`; } else toast("보내지 못했어요. 내용을 5자 이상 적었는지 확인해 주세요."); };
   if (API) { $("#b-heart").onclick = e => heart(e.currentTarget); $("#b-card").onclick = saveCard; $("#b-share").onclick = shareLink; }
 }
 
