@@ -924,7 +924,8 @@ def build(out_dir: Path, with_news: bool) -> None:
         entries.append(("company/", updated, "daily", "0.8"))
         with open(out_dir / "llms.txt", "a", encoding="utf-8") as f:
             f.write(f"\n## 회사 판단 연구소\n- [회사 판단 연구소]({base_url}company/): 합격한 회사가 갈 만한지 잡플래닛·블라인드·캐치 평점, 직급별 연봉, DART 5개년 재무(별도), 최근 뉴스, AI 영향을 보고 상·중·하와 'Zorro의 한마디'로 판단\n")
-        print(f"회사 판단 연구소: /company/ (데이터 조각 {len(list((dst / 'data' / 'co').iterdir()))}개)")
+        co_dir = dst / "data" / "co"  # API 모드면 조각 파일이 없음 (회사 상세는 Cloudflare Worker가 줌)
+        print(f"회사 판단 연구소: /company/ (" + (f"데이터 조각 {len(list(co_dir.iterdir()))}개" if co_dir.exists() else "회사 상세는 API") + ")")
     seo.write_sitemap(out_dir, base_url, entries)
     audit_links(data, BASE / "assets" / "share")
     print(f"인앱 브라우저 → 기본 브라우저 전환: {add_inapp(out_dir)}개 페이지")
