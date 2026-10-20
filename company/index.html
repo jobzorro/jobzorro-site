@@ -207,6 +207,13 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 
 /* 판정 4단계 */
 .v-spec strong { background:var(--mist); border-style:dashed; }
+/* 새 판정: 무조건(라임+그림자) · 중립기어(이중 테두리) · 비추(경고색) */
+.v-must strong { box-shadow:4px 4px 0 var(--ink); border-color:var(--ink); }
+.v-neu strong { background:var(--paper); border:4px double var(--ink); }
+.v-no strong { background:var(--bad); color:#fff; border-color:var(--bad); }
+.vtags { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; margin-top:10px; }
+.vtags span { font-size:12.5px; font-weight:800; padding:4px 11px; border-radius:999px; border:1.5px solid var(--ink); background:var(--mist); white-space:nowrap; }
+@media (max-width:720px) { .vtags { justify-content:flex-start; } }
 .v-none strong { background:var(--mist); color:var(--muted); border-color:var(--hairline-2); }
 .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
 .chip { font-size:12px; font-weight:700; border:1px solid var(--hairline-2); border-radius:999px; padding:3px 11px; color:var(--ink-soft); }
@@ -288,7 +295,7 @@ const SHARDS = 128;
 const PICKS = ["펄어비스", "유풍", "오뚜기", "삼성전자", "현대자동차"];
 let IDX = [];            // [이름, 판정 코드, 업계] — 판정 코드 0=판단자료 부족
 const cache = {};        // 조각 번호 → 회사 상세
-const VCODE = ["판단자료 부족","가세요","조건 보고 가세요","스펙 보고 결정하세요","다시 생각해요"];
+const VCODE = ["판단자료 부족","가세요","조건 보고 가세요","스펙 보고 결정하세요","다시 생각해요","무조건 가세요","중립기어","비추예요"];
 function shardOf(name) { let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return h % SHARDS; }
 async function getCo(name) {
   const k = shardOf(name);
@@ -436,7 +443,7 @@ async function render(name) {
     $("#out").innerHTML = `<div class="sec">${empty("'" + name + "'은(는) 아직 모은 자료가 없어요. 직원 30명 이상 회사만 들어 있어요.")}</div>`; return; }
   $("#hint").textContent = "";
   document.querySelectorAll(".pill").forEach(p => p.classList.toggle("on", p.dataset.n === name));
-  const vcls = {"가세요":"v-go","조건 보고 가세요":"v-cond","스펙 보고 결정하세요":"v-spec","다시 생각해요":"v-stop","판단자료 부족":"v-none"}[c.verdict];
+  const vcls = {"무조건 가세요":"v-go v-must","가세요":"v-go","조건 보고 가세요":"v-cond","중립기어":"v-neu","스펙 보고 결정하세요":"v-spec","다시 생각해요":"v-stop","비추예요":"v-no","판단자료 부족":"v-none"}[c.verdict];
   const s = c.salary, f = c.fin, date = c.rep?.date || "";
   const z = c.zorro;
   const order = ["평판","연봉","성장성","수익성","안정성"];
@@ -454,10 +461,10 @@ async function render(name) {
     <div class="head"><div><p class="kicker"><i></i>${esc(s?.group || "")}</p><h2>${esc(c.name)}</h2>
       <div class="chips"><span class="chip">${esc(c.type)} 회사${c.age != null ? " · 업력 " + c.age + "년" : ""}</span>${c.ai ? `<span class="chip ai-${c.ai.level}">AI 영향 ${c.ai.level}</span>` : ""}</div>
       <div class="meta">${s ? `<span>직원 <b>${won(s.members)}명</b></span>` : ""}${f ? `<span>재무 <b>${f.years[0]}~${f.years.at(-1)}</b> ${esc(f.source)}</span>` : ""}<span>기준일 <b>${esc(date)}</b></span></div></div>
-      <div class="verdict ${vcls}"><small>Zorro's Verdict</small><strong>${c.verdict}</strong></div></div>
+      <div class="verdict ${vcls}"><small>Zorro's Verdict</small><strong>${c.verdict}</strong>${(c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
     <div class="zorro"><div class="who">Z</div><div><p class="lbl">Zorro의 한마디</p><p class="first">${esc(z[0])}</p>
       <ul>${z.slice(1).map((t, i, a) => `<li class="${i === a.length - 1 ? "last" : ""}">${esc(t)}</li>`).join("")}</ul></div></div>
-    ${c.divisions ? `<div class="divs">${c.divisions.map(d => `<div class="div"><h4>${esc(d.name)}<span class="${d.verdict === "가세요" ? "go" : ""}">${esc(d.verdict)}</span></h4>${d.lines.map(l => `<p>${esc(l)}</p>`).join("")}</div>`).join("")}</div>` : ""}
+    ${c.divisions ? `<div class="divs">${c.divisions.map(d => `<div class="div"><h4>${esc(d.name)}<span class="${/가세요$/.test(d.verdict) && d.verdict !== "조건 보고 가세요" ? "go" : ""}">${esc(d.verdict)}</span></h4>${d.lines.map(l => `<p>${esc(l)}</p>`).join("")}</div>`).join("")}</div>` : ""}
     <div class="board">${board}</div>
     <section class="sec" id="s1">${secH(1,"평판")}${repsum}${warn}${c.rep && (c.rep.jobplanet || c.rep.blind || c.rep.catch) ? `<div class="reps">${repCard("jobplanet","잡플래닛",c.rep.jobplanet,date)}${repCard("blind","블라인드",c.rep.blind,date)}${repCard("catch","캐치",c.rep.catch,date)}</div>` : empty(c.rep ? "세 사이트 모두 공개 평점을 찾지 못했어요" : "평점은 아직 모으는 중이에요")}</section>
     <section class="sec" id="s2">${secH(2,"연봉")}${salarySec(c)}</section>
