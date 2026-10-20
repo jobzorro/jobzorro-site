@@ -668,7 +668,7 @@ async function render(name) {
     return `<a class="cell" href="#s${i+1}"><p class="t">${k}<em>0${i+1}</em></p><p class="g ${g == null ? "gq" : lcls(x)}">${g == null ? "?" : ltxt(x)}</p><p class="s">${g == null ? "판단자료 부족" : esc(oneLine(c, k) || "")}</p></a>`; }).join("");
   const rg = c.grades["평판"] || {}, fl = rg.flags || {};
   const abuse = c.abuse || [];
-  const warn = (c.type === "스타트업" || abuse.length) ? `<div class="warn"><b>${abuse.length ? "평점 관리(어뷰징) 흔적이 보여요" : "스타트업 평점은 한 번 더 의심하고 보세요"}</b>
+  const warn = (c.type === "스타트업" || abuse.length) ? `<div class="warn"><b>${abuse.length ? "평점에 눈여겨볼 신호가 있어요 · 실제로 좋아졌거나, 평점 관리를 했거나" : "스타트업 평점은 한 번 더 의심하고 보세요"}</b>
       ${abuse.length ? `<ul>${abuse.map(a => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
       <p style="margin-top:6px">스타트업은 인사팀이 리뷰 작성을 독려하거나 관리하는 경우가 있어요. 원문 링크에서 ① 최근 몇 달 사이 5점 리뷰가 몰렸는지 ② 장점만 길고 단점이 '없음'·'딱히'로 끝나는 리뷰가 많은지 ③ 인사·채용 직군 리뷰가 유독 후한지 ④ 블라인드와 잡플래닛·캐치 점수 차이가 큰지 직접 확인해 보세요.</p></div>` : "";
   const repsum = rg.score == null ? "" : `<div class="repsum"><span>종합 <b>${rg.score.toFixed(2)}</b> / 5</span><span>${esc(c.type)} 회사 기준 · A ${rg.good} 이상 · B ${rg.ok} 이상 · F 2.0 미만</span>${fl.inflation ? `<span class="flag">점수 뻥튀기 의심 (블라인드보다 ${fl.inflation}점 높음)</span>` : ""}${fl.few ? `<span class="flag">평가 ${fl.few}명뿐 · 참고만</span>` : ""}</div>`;
@@ -716,7 +716,7 @@ const GRADE_PTS = { 2: 5, 1: 4, 0: 2 };
 const VLEVEL = { "무조건 가세요": 7, "가세요": 6, "조건 보고 가세요": 5, "중립기어": 4, "스펙 보고 결정하세요": 3, "다시 생각해요": 2, "비추예요": 1, "판단자료 부족": 0 };
 const VS_MAIN = ["평판", "연봉", "성장성", "수익성", "안정성"];
 const VS_PRIO = {
-  base: { label: "균형있게", w: { 평판: 1.5, 연봉: 1.5, 성장성: 1, 수익성: 1, 안정성: 1 } },
+  base: { label: "균형있게", w: { 평판: 2, 연봉: 1.5, 성장성: 1, 수익성: 1, 안정성: 1 } },   // 평판에 힘을 더 (2026-10-20 사용자)
   pay: { label: "연봉", w: { 평판: 1, 연봉: 3, 성장성: 1, 수익성: .5, 안정성: .5 } },
   wlb: { label: "워라밸", w: { 평판: 1, 연봉: .5, 성장성: .5, 수익성: .5, 안정성: 1, 워라밸: 3 } },
   stab: { label: "안정성", w: { 평판: 1, 연봉: .5, 성장성: .5, 수익성: 1, 안정성: 3 } },
