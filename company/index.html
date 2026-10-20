@@ -299,11 +299,19 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 // 회사 데이터는 data/index.json(검색용 이름 목록) + data/co/NNN.json(회사 상세 128조각)으로 나눠 필요할 때만 읽는다
 const SHARDS = 128;
 const PICKS = ["펄어비스", "유풍", "오뚜기", "삼성전자", "현대자동차"];
+const API = "https://company-api.jobzorro.workers.dev";  // 비어 있지 않으면 회사 상세는 API에서 한 곳씩 (조각 파일은 사이트에 안 올림)
 let IDX = [];            // [이름, 판정 코드, 업계] — 판정 코드 0=판단자료 부족
 const cache = {};        // 조각 번호 → 회사 상세
 const VCODE = ["판단자료 부족","가세요","조건 보고 가세요","스펙 보고 결정하세요","다시 생각해요","무조건 가세요","중립기어","비추예요"];
 function shardOf(name) { let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return h % SHARDS; }
 async function getCo(name) {
+  if (API) {
+    if (!cache[name]) cache[name] = fetch(`${API}/co?n=${encodeURIComponent(name)}`)
+      .then(r => r.ok ? r.json() : r.status === 429 ? { __limit: true } : null).catch(() => null);
+    const c = await cache[name];
+    if (c && c.__limit) delete cache[name];  // 제한 풀리면 다시 받을 수 있게
+    return c;
+  }
   const k = shardOf(name);
   if (!cache[k]) cache[k] = fetch(`data/co/${String(k).padStart(3, "0")}.json`).then(r => r.json()).catch(() => ({}));
   return (await cache[k])[name];
@@ -447,6 +455,7 @@ const WHY = {
 async function render(name) {
   $("#out").innerHTML = `<p class="loading">불러오는 중…</p>`;
   const c = await getCo(name);
+  if (c && c.__limit) { $("#out").innerHTML = `<div class="sec">${empty("조회가 너무 많아요. 잠시 후 다시 시도해 주세요.")}</div>`; return; }
   if (c) c.name = name;  // 조각 파일에는 이름 칸을 빼고 저장(용량) → 여기서 채움
   if (!c) { $("#hint").textContent = ""; document.querySelectorAll(".pill").forEach(p => p.classList.remove("on"));
     $("#out").innerHTML = `<div class="sec">${empty("'" + name + "'은(는) 아직 모은 자료가 없어요. 직원 30명 이상 회사만 들어 있어요.")}</div>`; return; }
@@ -501,7 +510,7 @@ function find(q, n = 8) {
 let sel = -1;
 function showSug() {
   const rows = find($("#q").value), ul = $("#sug"); sel = -1;
-  ul.innerHTML = rows.map(r => `<li role="option" data-n="${esc(r[0])}"><span>${esc(r[0])}${r[3] ? ` <small>${esc(r[3])}</small>` : ""}</span><small class="${r[1] ? "vd" : "vn"}">${r[1] ? esc(VCODE[r[1]]) : "자료 부족"} · ${esc(r[2] || "")}</small></li>`).join("");
+  ul.innerHTML = rows.map(r => `<li role="option" data-n="${esc(r[0])}"><span>${esc(r[0])}${r[3] ? ` <small>${esc(r[3])}</small>` : ""}</span><small class="${r[1] ? "vd" : "vn"}">${r[1] ? (API ? "판정 있음" : esc(VCODE[r[1]])) : "자료 부족"} · ${esc(r[2] || "")}</small></li>`).join("");
   ul.hidden = !rows.length; $("#q").setAttribute("aria-expanded", String(!ul.hidden));
 }
 function pick(name) { $("#q").value = name; $("#sug").hidden = true; render(name); }
