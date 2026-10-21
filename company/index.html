@@ -340,6 +340,19 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 .my .res .up b { color:var(--good); } .my .res .dn b { color:var(--bad); }
 .my .say { margin:0; font-size:14px; font-weight:700; }
 .my .priv { margin:0; font-size:12px; color:var(--muted); }
+
+/* 2026-10-22 F 면접 때 이렇게 물어보세요 (톤 다운: 숫자를 들이밀지 않고 돌려 묻기) */
+.qs { display:grid; gap:12px; counter-reset:q; }
+.q { border:1px solid var(--hairline); border-radius:14px; padding:16px 18px; display:grid; gap:10px; }
+.q .tag { font-size:12px; font-weight:700; color:var(--muted); }
+.q .tag span { background:var(--mist); border-radius:6px; padding:2px 8px; }
+.q .ask { margin:0; font-size:16.5px; font-weight:800; letter-spacing:-.01em; text-wrap:pretty; }
+.q .ask::before { counter-increment:q; content:"Q" counter(q) "  "; color:var(--muted); font-size:13px; }
+.q .hear { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:8px; font-size:13px; }
+.q .hear div { border-left:3px solid var(--hairline-2); padding:2px 0 2px 10px; color:var(--ink-soft); }
+.q .hear .g { border-color:var(--good); } .q .hear .b { border-color:var(--bad); }
+.q .hear small { display:block; font-weight:700; font-size:11.5px; color:var(--muted); }
+.qtip { margin:14px 0 0; background:var(--mist); border-radius:12px; padding:12px 16px; font-size:13px; }
 .alts { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; }
 .alt { border:1px solid var(--hairline); border-radius:14px; padding:16px; display:grid; gap:8px; align-content:start; text-decoration:none; color:inherit; }
 .alt:hover { border-color:var(--ink); }
@@ -746,13 +759,73 @@ function myPayWire(c) {
   const calc = () => { const v = Number(i.value.replace(/[^0-9]/g, "")), t = c.salary.ranks[r.value];
     if (!v) { $("#myres").innerHTML = ""; $("#mysay").textContent = "지금 연봉을 만원 단위로 넣어 주세요."; return; }
     if (v < 1000 || v > 100000) { $("#myres").innerHTML = ""; $("#mysay").textContent = "만원 단위로 넣어 주세요 (예: 4,000)."; return; }
-    const dd = (t - v) / v * 100;
+    const dd = Math.round((t - v) / v * 100);   // 보여 주는 % 와 문구 기준을 같은 반올림 값으로
     $("#myres").innerHTML = `<div>${esc(c.name)} ${r.value} 추정<b>${won(t)}만</b></div><div class="${dd >= 0 ? "up" : "dn"}">지금보다<b>${dd >= 0 ? "+" : ""}${dd.toFixed(0)}%</b></div><div>협상 기준선 (지금 +10%)<b>${won(Math.round(v * 1.1))}만</b></div>`;
     $("#mysay").textContent = dd >= 20 ? "연봉으로는 확실히 오르는 자리예요. 나머지(평판·안정성)만 따져 보세요."
       : dd >= 10 ? "오르긴 해요. 오퍼가 추정치보다 낮게 오면 협상 여지가 있어요."
       : dd >= 0 ? "연봉만 보고 옮길 이유는 약해요. 지금 회사가 나쁘지 않다면 STAY도 좋은 선택이에요."
       : "추정치가 지금보다 낮아요. 오퍼가 지금 연봉 이상인지 꼭 확인하고, 아니면 STAY 쪽이에요."; };
   r.onchange = calc; i.oninput = calc;
+}
+
+
+// ── F 면접 때 이렇게 물어보세요 (2026-10-22 사용자 OK, 톤 다운 버전): 걸리는 숫자를 직접 묻지 않고 돌려 묻는다. 걱정 큰 순서로 최대 4개
+// ask 는 2가지 표현 중 회사 이름으로 하나를 골라 회사마다 같은 문장이 반복되지 않게
+const ASK = {
+  news: { tag: "최근 기사 확인용", ask: ["최근에 조직문화나 일하는 방식을 바꾸려고 시도하신 게 있다면 들어 보고 싶어요.", "요즘 팀 안에서 일하는 방식이 달라진 부분이 있을까요? 입사하면 빨리 맞추고 싶어서요."],
+    g: "구체적인 제도·프로세스 변화가 바로 나와요.", b: "\"특별히 바뀐 건 없어요\"로 끝나요." },
+  people: { tag: "퇴사율·근속 확인용", ask: ["이 자리는 새로 생긴 자리인가요, 아니면 기존에 계시던 분의 업무를 이어받는 자리인가요? 함께 일하게 될 팀 분들 이야기도 조금 듣고 싶어요.", "제가 합류하면 함께 일하게 될 분들은 어떤 분들인지 궁금해요. 이 자리는 새로 생긴 자리인가요?"],
+    g: "사업이 커져서 생긴 자리, 팀원 연차가 고르게 섞여 있다는 설명.", b: "\"전임자가 갑자기 그만둬서\", 팀원 대부분이 입사 1년 안쪽." },
+  money: { tag: "재무 부담 확인용", ask: ["회사가 앞으로 1~2년 동안 가장 힘을 싣는 방향이 궁금해요. 그 안에서 이 팀은 어떤 역할을 맡게 되나요?", "앞으로 1~2년 회사의 우선순위가 궁금해요. 이 팀이 거기서 맡는 일은 어떤 건가요?"],
+    g: "우리 팀이 그 방향의 중심에 있고, 앞으로 할 일이 구체적으로 나와요.", b: "\"효율화\", \"비용 관리\" 이야기만 반복돼요." },
+  loss: { tag: "적자 확인용", ask: ["올해 회사가 가장 기대하는 성과는 무엇인가요? 이 팀이 거기에 어떻게 기여하는지도 궁금해요.", "올해 회사 전체가 꼭 이루고 싶은 목표가 있다면 듣고 싶어요. 이 팀은 그 안에서 어떤 역할인가요?"],
+    g: "흑자 전환 계획이나 수익을 내는 구체적인 방법이 나와요.", b: "목표가 \"성장\", \"확장\"처럼 막연해요." },
+  shadow: { tag: "모회사와의 관계 확인용", ask: ["모회사와 함께 진행하는 프로젝트가 많은지, 교류하거나 옮겨 갈 기회도 있는지 궁금해요.", "그룹 안에서 이 회사가 맡는 역할이 궁금해요. 모회사와 함께 일할 기회도 있나요?"],
+    g: "모회사와 같이 하는 일·이동 사례가 구체적으로 나와요.", b: "\"하는 일이 달라서\"로 선을 긋거나 사례가 없어요." },
+  boss: { tag: "의사결정 방식 확인용", ask: ["최근 이 팀에서 진행한 일 중에, 실무자 아이디어에서 시작된 사례가 있으면 들어 보고 싶어요.", "팀에서 새로운 제안이 나오면 보통 어떤 과정을 거쳐 실행되나요? 최근 사례가 있으면 듣고 싶어요."],
+    g: "구체적인 사례가 바로 나와요.", b: "한참 생각하다가 \"위에서 방향이 정해지면…\"으로 넘어가요." },
+  wlb: { tag: "업무 강도 확인용", ask: ["팀이 가장 바쁜 시기는 언제인가요? 그때는 보통 어떻게 일을 나눠서 하시는지 궁금해요.", "일 년 중 이 팀이 특히 바쁜 때가 있나요? 그 시기를 어떻게 넘기시는지 듣고 싶어요."],
+    g: "바쁜 시기가 정해져 있고, 그 외엔 여유 있다는 설명.", b: "\"늘 바빠요\" 또는 시기를 딱 못 집어요." },
+  decline: { tag: "성장 동력 확인용", ask: ["요즘 회사에서 가장 기대를 받는 새 사업이나 프로젝트는 무엇인가요?", "앞으로 회사를 이끌 새 사업이나 프로젝트가 있다면 듣고 싶어요."],
+    g: "새 먹거리가 구체적이고, 이미 사람·돈이 들어가고 있어요.", b: "\"검토 중\"이거나 예전 사업 이야기만 나와요." },
+  fast: { tag: "급성장 적응 확인용", ask: ["입사하면 첫 3개월 동안 어떤 걸 기대하시나요? 적응을 돕는 과정이 따로 있는지도 궁금해요.", "새로 오신 분들은 보통 어떤 과정을 거쳐 적응하나요? 첫 3개월에 기대하시는 것도 듣고 싶어요."],
+    g: "온보딩 과정과 첫 과제가 구체적이에요.", b: "\"오자마자 바로 투입\", 업무 범위가 흐릿해요." },
+  turn: { tag: "처우 반영 확인용", ask: ["요즘 회사 분위기가 좋아졌다는 기사를 봤어요. 안에 계신 분들은 그 변화를 어떤 식으로 느끼고 계신가요?", "최근 실적이 좋아졌다는 소식을 봤어요. 팀 안에서는 어떤 변화가 느껴지시나요?"],
+    g: "보상·채용·복지처럼 손에 잡히는 변화 이야기가 먼저 나와요.", b: "\"아직은 투자 단계라서\"만 나와요." },
+  startup: { tag: "스타트업 확인용", ask: ["다음 1년 동안 회사가 꼭 달성하고 싶은 목표는 무엇이고, 이 팀은 거기서 어떤 역할을 하나요?", "회사의 다음 1년 목표가 궁금해요. 그 목표에서 이 팀이 맡는 부분은 무엇인가요?"],
+    g: "목표가 숫자로 나오고, 자금·다음 단계 계획까지 이어져요.", b: "목표가 계속 바뀌었거나 \"일단 버티는 중\"이란 느낌." },
+  base: { tag: "기대치 확인용 (공통)", ask: ["이 자리에서 1년 뒤 \"잘 뽑았다\"는 말을 들으려면 어떤 성과를 내야 할까요?", "1년 뒤 이 자리에서 잘하고 있다고 평가받는 분은 어떤 모습인가요?"],
+    g: "기대 성과가 구체적이고 현실적이에요.", b: "기대치가 너무 막연하거나, 혼자 감당하기 어려운 수준이에요." },
+};
+function askSec(c) {
+  const f = c.fin, s = c.salary, d = (f?.years || []).map(y => f.data[y]).filter(Boolean), L = d.at(-1);
+  if (!f && !s) return "";
+  const it = (g, k) => (c.metrics?.[g]?.items || []).find(i => i.label.startsWith(k))?.value;
+  const avg = a => { const v = a.filter(x => x != null); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; };
+  const r = c.rep || {}, ib = it("안정성", "이자보상");
+  const ops = d.slice(-3).map(x => x.op), revs = d.slice(-3).map(x => x.rev);
+  const wlb = avg([r.jobplanet?.subs?.["워라밸"], r.blind?.subs?.["업무와 삶의 균형"]]), boss = avg([r.jobplanet?.subs?.["경영진"], r.blind?.subs?.["경영진"]]);
+  const on = {
+    news: c.news_ai?.risk === "높음",
+    people: (s?.turnover ?? 0) > .3 || (s?.tenure != null && s.tenure < 3),
+    money: (L && L.equity > 0 && L.liab / L.equity > 3) || (ib != null && ib !== 99 && ib < 1) || (L && L.cl > 0 && L.ca / L.cl < 1),
+    loss: ops.length === 3 && ops.every(v => v != null && v < 0),
+    shadow: !!c.shadow,
+    boss: boss != null && boss <= 2.6,
+    wlb: wlb != null && wlb <= 2.8,
+    decline: (revs.length === 3 && revs.every(v => v != null) && revs[2] < revs[1] && revs[1] < revs[0]) || ["C", "D", "F"].includes(c.grades?.["성장성"]?.letter),
+    fast: (it("성장성", "매출 연평균") ?? 0) >= 25,
+    turn: ops.length >= 2 && ops.at(-1) > 0 && ops.at(-2) < 0,
+    startup: c.type === "스타트업",
+  };
+  const keys = Object.keys(on).filter(k => on[k]).slice(0, 4);
+  if (keys.length < 2) keys.push("base");
+  let h = 0; for (const ch of c.name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return `<section class="sec" id="s8"><div class="sec-h"><span class="no">08</span><h3>면접 때 이렇게 물어보세요</h3><p class="why">이 회사에서 확인해 두면 좋은 부분을, 면접 마지막 "질문 있으세요?"에서 자연스럽게 꺼낼 수 있는 질문으로 골랐어요. 답 속에서 들어 볼 포인트도 같이 적었어요.</p></div>
+    <div class="qs">${keys.map((k, i) => { const q = ASK[k];
+      return `<div class="q"><p class="tag"><span>${q.tag}</span></p><p class="ask">${esc(q.ask[(h + i) % q.ask.length])}</p>
+        <div class="hear"><div class="g"><small>이러면 안심</small>${esc(q.g)}</div><div class="b"><small>이러면 한 번 더 확인</small>${esc(q.b)}</div></div></div>`; }).join("")}</div>
+    <p class="qtip"><b>Zorro 팁</b> · 1~2개만 고르세요. 질문 앞에 "입사하면 빨리 적응하고 싶어서요"를 붙이면 어떤 질문이든 의욕으로 들려요. 숫자나 평점 이야기는 꺼내지 않는 게 좋아요.</p></section>`;
 }
 
 // ── I 고민 중이면 여기도 보세요 (build.py add_alts 가 고른 3곳)
@@ -822,6 +895,7 @@ async function render(name) {
     <section class="sec" id="s5">${secH(5,"안정성")}${finSec(c,"안정성")}</section>
     <section class="sec" id="s6">${secH(6,"주요 뉴스")}${newsSec(c)}</section>
     <section class="sec" id="s7">${secH(7,"AI 영향")}${aiSec(c)}</section>
+    ${askSec(c)}
     ${altSec(c)}
     <p class="disc">판정과 Zorro의 한마디는 전자공시·국민연금·공개 평점·언론 보도 같은 공개 자료를 모아 취업조로 기준으로 정리한 <b>참고용 의견</b>이에요. 회사의 공식 입장이나 사실 확정이 아니며, 평점은 기준일 ${esc(date)}에 각 사이트에 공개된 값이에요.</p>
     ${API ? `<details class="fixbox"><summary>정보가 틀렸거나 문제가 있나요? 정정 요청하기</summary>
