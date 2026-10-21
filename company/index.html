@@ -600,7 +600,7 @@ function bars(years, vals, opts = {}) {
 
 function finSec(c, key) {
   const f = c.fin, m = c.metrics?.[key];
-  if (!f) return empty("DART에 재무제표가 없는 회사예요 (외부감사 대상이 아닌 소규모 법인 등)");
+  if (!f) return empty((c.pending || []).includes("fin") ? "재무 자료는 아직 모으는 중이에요" + (c.eta ? " · " + c.eta + "까지 올라올 예정이에요" : "") : "DART에 재무제표가 없는 회사예요 (외부감사 대상이 아닌 소규모 법인 등)");
   const ys = f.years, d = ys.map(y => f.data[y]), col = k => d.map(x => x[k] ?? null);
   const it = l => m.items.find(i => i.label.startsWith(l));
   const fmtv = i => i.value == null ? "-" : (i.unit === "%" ? i.value.toFixed(1) : i.value === 99 ? "무차입" : i.value) ;
@@ -691,7 +691,7 @@ async function render(name) {
     ${c.divisions ? `<p class="divh">부문마다 달라요${c.divSrc ? ` <small>${esc(c.divSrc)}</small>` : ""}</p><div class="divs">${c.divisions.map(d => `<div class="div"><h4>${esc(d.name)}<span class="${(/가세요$/.test(d.verdict) && d.verdict !== "조건 보고 가세요") || d.verdict === "처우 위쪽" ? "go" : ""}">${esc(d.verdict)}</span></h4>${d.lines.map(l => `<p>${esc(l)}</p>`).join("")}</div>`).join("")}</div>` : ""}
     <div class="board">${board}</div>
     <p class="legend"><span><b class="lS">S</b><b class="lAp">A+</b><b class="lA">A</b>좋음</span><span><b class="lB">B</b>보통</span><span><b class="lC">C</b><b class="lD">D</b>아쉬움</span><span><b class="lF">F</b>심각</span></p>
-    <section class="sec" id="s1">${secH(1,"평판")}${repsum}${warn}${c.rep && (c.rep.jobplanet || c.rep.blind || c.rep.catch) ? `<div class="reps">${repCard("jobplanet","잡플래닛",c.rep.jobplanet,date)}${repCard("blind","블라인드",c.rep.blind,date)}${repCard("catch","캐치",c.rep.catch,date)}</div>` : empty(c.rep ? "세 사이트 모두 공개 평점을 찾지 못했어요" : "평점은 아직 모으는 중이에요")}</section>
+    <section class="sec" id="s1">${secH(1,"평판")}${repsum}${warn}${c.rep && (c.rep.jobplanet || c.rep.blind || c.rep.catch) ? `<div class="reps">${repCard("jobplanet","잡플래닛",c.rep.jobplanet,date)}${repCard("blind","블라인드",c.rep.blind,date)}${repCard("catch","캐치",c.rep.catch,date)}</div>` : empty((c.pending || []).includes("rep") ? "평점은 아직 모으는 중이에요" + (c.eta ? " · " + c.eta + "까지 올라올 예정이에요" : "") : c.rep ? "세 사이트 모두 공개 평점을 찾지 못했어요" : "평점 수집 대상이 아닌 회사예요 (직원 300명 이상·공시 회사부터 모아요)")}</section>
     <section class="sec" id="s2">${secH(2,"연봉")}${salarySec(c)}</section>
     <section class="sec" id="s3">${secH(3,"성장성")}${finSec(c,"성장성")}</section>
     <section class="sec" id="s4">${secH(4,"수익성")}${finSec(c,"수익성")}</section>
