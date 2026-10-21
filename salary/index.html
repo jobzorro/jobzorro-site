@@ -716,6 +716,16 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var b = e.target.closest('[data-rep-open]'); if (!b) return;
     var f = b.parentNode.querySelector('.rep-form'); f.hidden = !f.hidden; b.textContent = f.hidden ? '내 연봉 제보하기' : '제보 접기';
   });
+  // 제보 제한용 기기 번호(무작위)와 연속 제보 기록. 저장소가 막힌 브라우저에서는 이 화면 동안만 기억한다.
+  var repMem = {};
+  function repStore(k, v) { try { if (v === undefined) return localStorage.getItem(k) || repMem[k]; localStorage.setItem(k, v); } catch (x) {} repMem[k] = v; return v; }
+  function repDev() { return repStore('repDev') || repStore('repDev', Math.random().toString(36).slice(2) + Date.now().toString(36)); }
+  function repLimit(add) {
+    var o = {}; try { o = JSON.parse(repStore('repLim') || '{}'); } catch (x) {}
+    var now = Date.now(); if (!o.last || now - o.last > 36e5) o = { n: 0, last: 0 };
+    if (add) { o.n++; o.last = now; repStore('repLim', JSON.stringify(o)); }
+    return o;
+  }
   document.addEventListener('submit', function (e) {
     var f = e.target.closest('.rep-form'); if (!f) return; e.preventDefault();
     var st = f.querySelector('.st'), d = {};
@@ -727,10 +737,14 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     if (['과장', '차장', '부장'].indexOf(d.rank) >= 0 && +d.years <= 2 && f.dataset.ok !== chk) {
       f.dataset.ok = chk; st.textContent = d.rank + '인데 총 경력이 ' + d.years + '년입니다. 이전 회사를 포함한 전체 경력이 맞으면 한 번 더 눌러 주세요.'; st.className = 'st bad'; return;
     }
+    // 2026-10-21 사용자: 한 기기에서 연속 3건까지, 마지막 제보 1시간 뒤 풀림 (접수 서버도 기기 번호로 같은 규칙을 한 번 더 건다)
+    var lim = repLimit();
+    if (lim.n >= 3) { var t = new Date(lim.last + 36e5); st.textContent = '제보는 한 기기에서 연속 3건까지 받아요. ' + t.getHours() + '시 ' + ('0' + t.getMinutes()).slice(-2) + '분 이후에 다시 보내 주세요.'; st.className = 'st bad'; return; }
+    d.dev = repDev();
     if (!D.meta.reportEndpoint) { st.textContent = '시안이라 아직 저장되지 않습니다. 접수 시트를 연결하면 실제로 전송됩니다.'; st.className = 'st'; return; }
     st.textContent = '보내는 중…'; st.className = 'st';
     fetch(D.meta.reportEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(d) })
-      .then(function () { f.reset(); st.textContent = '고맙습니다. 같은 회사·직급 제보가 5건 이상 모이면 범위로 공개됩니다.'; st.className = 'st ok'; })
+      .then(function () { repLimit(true); f.reset(); st.textContent = '고맙습니다. 같은 회사·직급 제보가 5건 이상 모이면 범위로 공개됩니다.'; st.className = 'st ok'; })
       .catch(function () { st.textContent = '보내지 못했습니다. 잠시 뒤 다시 시도해 주세요.'; st.className = 'st bad'; });
   });
 

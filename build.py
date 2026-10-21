@@ -946,6 +946,10 @@ def build(out_dir: Path, with_news: bool) -> None:
         entries.append(("salary/", updated, "monthly", "0.8"))
         entries += [(f"salary/co/{urllib.parse.quote(d.name)}/", updated, "monthly", "0.5") for d in cos]
         print(f"연봉 연구소: /salary/ + 회사 페이지 {len(cos):,}개")
+    # 2026-10-21 사용자: 법적·평판 리스크 대비 안내 (판정은 공개 자료 기반 참고용 의견, 출처·기준일 표기, 정정 창구)
+    COMPANY_NOTE = ("회사 판단 연구소의 판정과 'Zorro의 한마디'는 금융감독원 전자공시(DART), 국민연금 가입 사업장 내역, 잡플래닛·블라인드·캐치 공개 평점, 언론 보도 등 "
+                    "공개된 자료를 모아 취업조로 기준으로 정리한 참고용 의견입니다. 회사의 공식 입장이나 사실 확정이 아니며, 항목마다 출처와 기준일을 함께 표기합니다. "
+                    "평점·후기 원문은 각 사이트에서 확인할 수 있습니다. 사실과 다른 내용은 회사 화면 아래 '정정 요청하기'로 알려 주시면 확인 후 고치거나 내립니다.")
     # ---- 회사 판단 연구소 (/company/): company-check/publish_to_site.py 가 만든 company/ 를 복사하고 상단 메뉴를 붙인다
     comp = BASE / "company"
     if comp.exists():
@@ -957,7 +961,7 @@ def build(out_dir: Path, with_news: bool) -> None:
             h = h.replace("</style>", zn_css + "\n</style>", 1)
             h = h.replace("<body>", "<body>\n" + nav_html("company/index.html", "../", logo_nav), 1)
             # 시안용 푸터 → 사이트 공용 푸터 (다크모드 로고 흰색 등 다른 페이지와 같게)
-            h = re.sub(r"<!--FOOT-->.*?<!--/FOOT-->", lambda m: footer_html("../", logo, ""), h, count=1, flags=re.S)
+            h = re.sub(r"<!--FOOT-->.*?<!--/FOOT-->", lambda m: footer_html("../", logo, COMPANY_NOTE), h, count=1, flags=re.S)
             (dst / "index.html").write_text(h, encoding="utf-8")
         entries.append(("company/", updated, "daily", "0.8"))
         with open(out_dir / "llms.txt", "a", encoding="utf-8") as f:
