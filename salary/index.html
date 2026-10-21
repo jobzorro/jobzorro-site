@@ -598,6 +598,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       (base && capcal ? '' : base ? '<p class="hint"><b>성과급 포함 총보상</b> 기준입니다. 작은 숫자는 기본연봉 추정이고, 성과급은 해마다 크게 달라집니다.</p>' : '') +
       (r.fld && r.fld[5] ? '<p class="hint">' + esc(r.fld[5]) + '</p>' : '') +
       (r.members < 100 && !ptime ? '<p class="hint">직원 100명 미만 회사라 몇 사람의 입·퇴사에도 평균이 크게 흔들립니다. 직급별 금액은 <b>개인차가 큰 참고값</b>으로 보세요.</p>' : '') +
+      (r.divs ? '<p class="hint"><b>부문마다 달라요</b> (국민연금 사업장별 평균, 상한 때문에 위쪽은 실제로 더 큼): ' + r.divs.map(function (d) { return esc(d[0]) + ' ' + man(d[2]) + '만원'; }).join(' · ') + '</p>' : '') +
       (r.jump ? '<p class="hint">사업보고서 평균 연봉이 전년보다 <b>' + r.jump + '%</b> 올랐습니다. 성과급이 특히 컸던 해일 수 있어 다음 해에는 다시 내려갈 수 있습니다.</p>' : '') +
       (ptime ? '<p class="warnbox">단시간·시간제 근로자 비중이 높은 사업장이라 평균 연봉이 최저임금 수준으로 잡힙니다. 직급별 금액은 추정하지 않습니다.</p>' : '') +
       '<div class="ranks">' + (ptime ? [] : main).map(function (v, k) {
