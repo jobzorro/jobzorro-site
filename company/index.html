@@ -32,7 +32,7 @@
 body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--font); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word; }
 h1,h2,h3 { margin:0; font-weight:900; letter-spacing:-.04em; }
 p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit; }
-.wrap { max-width:1120px; margin:0 auto; padding-inline:20px; }
+.wrap { max-width:1320px; margin:0 auto; padding-inline:20px; }   /* 직무사전·연봉 연구소와 같은 폭 */
 .num { font-family:var(--display); font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
 
 /* 상단 탭 (직무사전과 동일) */
@@ -46,10 +46,10 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 @media (max-width:640px) { .zn-in { gap:10px; padding:0 14px; } .zn-logo img { height:19px; } .zn-tabs a { padding:0 8px; } .zn-tabs .lg { display:none; } }
 
 /* 히어로 */
-.hero { padding:64px 0 34px; border-bottom:1px solid var(--ink); }
-.kicker { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); display:flex; gap:10px; align-items:center; }
-.kicker i { width:8px; height:8px; border-radius:50%; background:var(--acc); box-shadow:0 0 0 1px var(--ink); display:inline-block; }
-.hero-grid { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:44px; align-items:end; }
+.hero { padding-block:clamp(22px, 2.6vw, 40px) 30px; }
+.kicker { margin:0; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; gap:12px; align-items:center; }
+.kicker i { width:8px; height:8px; border-radius:50%; background:var(--acc); display:inline-block; }
+.hero-grid { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:48px; align-items:start; }
 .stats { margin:0; display:grid; border-top:1px solid var(--ink); }
 .stats div { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:13px 0; border-bottom:1px solid var(--hairline); }
 .stats dt { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--muted); }
@@ -59,13 +59,22 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .stats .hot dd { background:linear-gradient(transparent 60%, var(--mark) 60%); }
 @media (max-width:900px) { .hero-grid { grid-template-columns:minmax(0,1fr); gap:24px; } .stats { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:18px; } }
 @media (max-width:520px) { .stats div { flex-direction:column; align-items:flex-start; gap:6px; padding:10px 0; } .stats dd { font-size:23px; } }
-.hero h1 { font-size:clamp(40px,6.6vw,88px); line-height:.98; margin:18px 0 22px; letter-spacing:-.055em; }
+.hero h1 { margin:12px 0 0; font-family:var(--display); font-size:clamp(38px,6vw,88px); line-height:.98; letter-spacing:-.05em; text-wrap:balance; }
+.hero h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--ink-soft); margin-bottom:12px; line-height:1.15; }
 .hero h1 mark { background:linear-gradient(transparent 62%, var(--mark) 62%); color:inherit; padding:0 .04em; }
-.hero .lead { max-width:640px; color:var(--ink-soft); font-size:16px; }
-.search { margin-top:30px; display:flex; gap:8px; max-width:640px; }
-.search input { flex:1; min-width:0; height:54px; border:1.5px solid var(--ink); border-radius:999px; padding:0 22px; background:var(--paper); font-size:16px; font-weight:500; }
-.search button { height:54px; padding:0 24px; border-radius:999px; border:0; background:var(--ink); color:var(--paper); font-weight:800; cursor:pointer; white-space:nowrap; }
+.hero .lead { margin:22px 0 0; max-width:58ch; color:var(--ink-soft); font-size:16px; line-height:1.7; }
+.search { margin-top:30px; display:flex; align-items:center; gap:12px; border-bottom:2px solid var(--ink); padding:4px 0 10px; }
+.search svg { width:26px; height:26px; flex:none; }
+.search input { flex:1; min-width:0; border:0; background:transparent; color:var(--ink); font-family:var(--display); font-weight:700; font-size:clamp(20px,2.2vw,28px); letter-spacing:-.03em; outline:none; padding:4px 0; }
+.search input::placeholder { color:var(--muted); font-weight:500; }
+.search button { height:44px; padding:0 20px; border-radius:999px; border:0; background:var(--ink); color:var(--paper); font-weight:800; cursor:pointer; white-space:nowrap; }
 .search button:hover { background:var(--acc); color:var(--acc-ink); }
+.ticker { overflow:hidden; background:var(--ink); color:var(--paper); }
+.ticker .tr { display:flex; width:max-content; animation:tick 46s linear infinite; }
+.ticker span { font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.1em; padding:13px 26px; white-space:nowrap; }
+.ticker span::after { content:"✦"; margin-left:26px; color:var(--acc); }
+@keyframes tick { to { transform:translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .ticker .tr { animation:none; } }
 .picks { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; align-items:center; }
 .picks span { font-size:12.5px; color:var(--muted); margin-right:4px; }
 .pill { border:1px solid var(--hairline-2); background:var(--paper); border-radius:999px; padding:7px 14px; font-size:13.5px; font-weight:700; cursor:pointer; }
@@ -394,10 +403,11 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 
 
 <section class="hero"><div class="wrap hero-grid"><div>
-  <p class="kicker"><i></i>Company Check · 회사 판단 연구소</p>
-  <h1>합격한 그 회사,<br><mark>가도 될까요?</mark></h1>
+  <p class="kicker"><i></i>Company Check · 컨설턴트 관점에서 바라본 회사판단연구소</p>
+  <h1><span class="thin">합격한 그 회사,</span><mark id="h1m">가도 될까요?</mark></h1>
   <p class="lead">현직자 평점 세 곳, 직급별 연봉, DART 5개년 재무를 한 화면에 모았어요. 판단은 S부터 F까지 7단계로 짧게, 마지막 정리는 Zorro가 해 드립니다.</p>
   <form class="search" id="f" autocomplete="off">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
     <div class="qbox"><input id="q" placeholder="회사 이름을 입력하세요 (예: 펄어비스)" aria-label="회사 이름" role="combobox" aria-expanded="false" aria-controls="sug">
     <ul id="sug" class="sug" role="listbox" hidden></ul></div>
     <button>판단해 보기</button>
@@ -413,6 +423,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     <div><dt>기준일</dt><dd id="stDate">2026.10.21</dd></div>
   </dl>
 </div></section>
+
+<div class="ticker" aria-hidden="true"><div class="tr" id="tick"></div></div>
 
 <div class="wrap"><p class="disc"><i>!</i><span><b>회사에 대한 일반적인 평가예요.</b> 좋은 회사의 기준은 내 스펙·연차·상황·가치관에 따라 달라요. 누군가에겐 천국 같은 회사가 누군가에겐 지옥일 수도 있으니, 아래 판정은 참고로만 보시고 최종 선택은 내 상황과 함께 판단하세요.</span></p></div>
 <main class="wrap" id="out"></main>
@@ -954,11 +966,24 @@ addEventListener("hashchange", () => { const h = decodeURIComponent(location.has
 fetch("data/index.json").then(r => r.json()).then(d => { IDX = d.r.map(([n, v, g, a]) => [n, v, d.g[g], a]);
   const n = IDX.filter(r => r[1]).length;
   $("#stCo").innerHTML = IDX.length.toLocaleString("ko-KR") + "<small>곳</small>";
-  $("#stJudged").innerHTML = n.toLocaleString("ko-KR") + "<small>곳</small>"; });
+  $("#stJudged").innerHTML = n.toLocaleString("ko-KR") + "<small>곳</small>"; TK.co = IDX.length; TK.judged = n; tick(); });
+// 검은 띠: 숫자판과 같은 숫자로 자동 갱신 (직무사전·연봉 연구소와 같은 모양)
+const TK = {};
+function tick() { const f = v => v.toLocaleString("ko-KR");
+  const row = [TK.co && `검색 가능 회사 ${f(TK.co)}곳`, TK.judged && `S~F 판정 ${f(TK.judged)}곳`, TK.people && `현재까지 ${f(TK.people)}명이 검색`,
+    "잡플래닛·블라인드·캐치 평점", "직급별 연봉 추정", "DART 5개년 재무", "최근 뉴스·AI 영향", "컨설턴트 관점의 Zorro 한마디", "매일 자동 갱신"]
+    .filter(Boolean).map(t => `<span>${t}</span>`).join("");
+  $("#tick").innerHTML = row + row; }   // 두 번 이어 붙여 끊김 없이 흐르게
+tick();
+// 숫자판 윗선을 제목 둘째 줄('가도 될까요?') 윗선에 맞춘다. 한 단으로 쌓이는 폭(900px 이하)에서는 맞추지 않는다.
+function alignStats() { const st = $(".hero .stats"), m = $("#h1m"); if (!st || !m) return;
+  st.style.marginTop = "0px"; if (innerWidth <= 900) return;
+  st.style.marginTop = Math.max(0, m.getBoundingClientRect().top - st.getBoundingClientRect().top) + "px"; }
+alignStats(); addEventListener("resize", alignStats); document.fonts?.ready.then(alignStats);
 // 숫자판 '현재까지 검색한 사람' = 누적 (2026-10-20 사용자: 5명 미만이어도 숨기지 않음)
 // /top 은 한 번만 부르고 숫자판·많이 본 회사가 같이 쓴다 (2026-10-21)
 const topP = API ? fetch(API + "/top").then(r => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null);
-topP.then(d => { if (d) $("#stPeople").innerHTML = (d.total ?? d.today).toLocaleString("ko-KR") + "<small>명</small>"; }).catch(() => {});
+topP.then(d => { if (d) { $("#stPeople").innerHTML = (d.total ?? d.today).toLocaleString("ko-KR") + "<small>명</small>"; TK.people = d.total ?? d.today; tick(); } }).catch(() => {});
 // 첫 화면은 비워 두고 검색을 유도한다 (주소에 #회사명 이 있을 때만 바로 보여 줌)
 const intro = () => { $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b>
   <p>평점·직급별 연봉·5개년 재무·최근 뉴스를 한 번에 보고, Zorro가 갈 만한지 정리해 드려요.</p><div class="pulse" id="pulse"></div></div>`;
