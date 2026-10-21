@@ -312,6 +312,55 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 .note b { color:var(--ink-soft); }
 /* 참고 안내 (2026-10-21 사용자: 법적·평판 리스크 대비 — 판정은 공개 자료 기반 의견, 출처·기준일 표기) */
 .disc { margin:34px 0 0; font-size:12.5px; line-height:1.65; color:var(--muted); }
+/* 2026-10-22 새 기능: J 레드플래그 · G 내 연봉 비교 · I 여기도 보세요 · E 최근 7일 VS 매치업 */
+.rf { border:1.5px solid var(--hairline-2); border-radius:16px; padding:16px 20px; margin:14px 0 6px; display:grid; grid-template-columns:auto minmax(0,1fr); gap:4px 20px; align-items:center; }
+.rf .cnt { margin:0; font-family:var(--display); font-size:40px; font-weight:900; line-height:1; letter-spacing:-.03em; }
+.rf .cnt small { font-size:15px; color:var(--muted); font-weight:700; }
+.rf .sum b { font-size:15.5px; display:block; }
+.rf .sum span { font-size:13px; color:var(--muted); }
+.rf.ok { grid-template-columns:minmax(0,1fr); padding:12px 18px; }
+.rf details { grid-column:1 / -1; margin-top:8px; }
+.rf summary { cursor:pointer; font-size:13px; font-weight:700; }
+.rf ul { list-style:none; margin:10px 0 0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:0 26px; }
+.rf li { display:grid; grid-template-columns:18px minmax(0,1fr) auto; gap:8px; padding:8px 0; border-bottom:1px solid var(--hairline); font-size:13.5px; align-items:baseline; }
+.rf li .x { font-weight:900; color:var(--faint); }
+.rf li.hit { font-weight:700; } .rf li.hit .x, .rf li.hit em { color:var(--bad); }
+.rf li.na { color:var(--faint); }
+.rf li em { font-style:normal; font-size:12.5px; color:var(--muted); font-weight:500; white-space:nowrap; }
+.rf li.hit em { font-weight:700; }
+@media (max-width:640px) { .rf { grid-template-columns:minmax(0,1fr); } }
+.my { margin-top:22px; border:1.5px solid var(--ink); border-radius:16px; padding:18px 20px; display:grid; gap:12px; }
+.my h4 { margin:0; font-size:15px; }
+.my .in { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; font-size:14px; }
+.my select, .my input { font:inherit; font-size:15px; font-weight:700; padding:7px 12px; border:1.5px solid var(--hairline-2); border-radius:10px; background:var(--paper); color:var(--ink); }
+.my input { width:110px; text-align:right; }
+.my .res { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
+.my .res div { background:var(--mist); border-radius:12px; padding:11px 14px; font-size:12.5px; color:var(--muted); }
+.my .res b { display:block; font-family:var(--display); font-size:21px; color:var(--ink); letter-spacing:-.02em; }
+.my .res .up b { color:var(--good); } .my .res .dn b { color:var(--bad); }
+.my .say { margin:0; font-size:14px; font-weight:700; }
+.my .priv { margin:0; font-size:12px; color:var(--muted); }
+.alts { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; }
+.alt { border:1px solid var(--hairline); border-radius:14px; padding:16px; display:grid; gap:8px; align-content:start; text-decoration:none; color:inherit; }
+.alt:hover { border-color:var(--ink); }
+.alt h4 { margin:0; font-size:17px; display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+.alt h4 span { font-size:12px; background:var(--acc); color:var(--acc-ink); border-radius:999px; padding:2px 9px; white-space:nowrap; }
+.alt .gr { display:flex; gap:5px; flex-wrap:wrap; font-size:12px; }
+.alt .gr span { border:1px solid var(--hairline-2); border-radius:6px; padding:1px 7px; }
+.alt .gr span.up { border-color:var(--good); color:var(--good); font-weight:700; }
+.alt p { margin:0; font-size:13.5px; color:var(--ink-soft); }
+.alt small { font-size:12px; color:var(--muted); }
+.mu { width:min(640px,100%); border:1.5px solid var(--ink); border-radius:16px; padding:16px 20px; display:grid; gap:8px; text-align:left; margin-bottom:10px; }
+.mu > small { font-size:11px; letter-spacing:.14em; color:var(--muted); font-weight:700; }
+.mu .vs1 { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font:inherit; font-size:clamp(19px,3vw,24px); font-weight:900; letter-spacing:-.02em; color:var(--ink); background:none; border:0; padding:0; cursor:pointer; text-align:left; }
+.mu .vs1 i { font-style:normal; font-size:12px; background:var(--acc); color:var(--acc-ink); border-radius:999px; padding:3px 10px; }
+.mu .vs1:hover span { text-decoration:underline; }
+.mu p { margin:0; font-size:13px; }
+.mu ol { list-style:none; margin:4px 0 0; padding:0; }
+.mu ol button { width:100%; display:flex; justify-content:space-between; gap:10px; font:inherit; font-size:13.5px; font-weight:700; color:var(--ink); background:none; border:0; border-top:1px solid var(--hairline); padding:9px 0; cursor:pointer; text-align:left; }
+.mu ol button b { color:var(--muted); margin-right:8px; font-family:var(--display); }
+.mu ol button span:last-child { color:var(--muted); font-weight:500; white-space:nowrap; }
+
 .pf { background:var(--inkbg); color:var(--inkfg-soft); font-size:12px; padding:30px 0 40px; }
 .pf img { height:18px; filter:invert(1); display:block; margin-bottom:12px; }
 :root[data-theme="dark"] .pf img { filter:none; }
@@ -420,7 +469,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     <div><dt>검색 가능 회사</dt><dd id="stCo">-</dd></div>
     <div><dt>판정 나온 회사<small>자료는 계속 모으는 중</small></dt><dd id="stJudged">-</dd></div>
     <div class="hot"><dt>현재까지 검색한 사람</dt><dd id="stPeople">-</dd></div>
-    <div><dt>기준일</dt><dd id="stDate">2026.10.21</dd></div>
+    <div><dt>기준일</dt><dd id="stDate">2026.10.22</dd></div>
   </dl>
 </div></section>
 
@@ -656,6 +705,66 @@ function aiSec(c) {
     <p><b>${esc(c.salary?.industry || "")}</b><br>${esc(a.why)}.</p></div>`;
 }
 
+
+// ── J 레드플래그 체크 (2026-10-22 사용자 OK): 이미 모은 자료만, 판정 점수와 무관한 보여주기용. 자료 없는 항목은 개수에서 뺀다
+function redFlags(c) {
+  const f = c.fin, s = c.salary, ys = f?.years || [], d = ys.map(y => f.data[y]).filter(Boolean), L = d.at(-1);
+  const st = k => (c.metrics?.["안정성"]?.items || []).find(i => i.label.startsWith(k))?.value;
+  const R = [
+    ["자본잠식 (자본총계 마이너스)", L && L.equity != null ? [L.equity < 0, "자본 " + eok(L.equity)] : null],
+    ["3년 연속 영업적자", d.length >= 3 ? (x => { const n = x.filter(v => v < 0).length; return [n === 3, n === 3 ? "3년 모두 적자" : n ? `최근 3년 중 ${n}년 적자` : "적자 없음"]; })(d.slice(-3).map(x => x.op ?? 0)) : null],
+    ["매출 2년 연속 감소", d.length >= 3 && d.slice(-3).every(x => x.rev != null) ? (x => [x[2] < x[1] && x[1] < x[0], x[2] < x[1] && x[1] < x[0] ? "2년째 감소" : x[2] >= x[1] ? "최근 증가" : "1년 감소"])(d.slice(-3).map(x => x.rev)) : null],
+    ["부채비율 400% 넘음", L && L.liab != null && L.equity > 0 ? (v => [v > 400, Math.round(v) + "%"])(L.liab / L.equity * 100) : null],
+    ["유동비율 100% 밑 (1년 안에 갚을 빚이 더 많음)", L && L.ca != null && L.cl > 0 ? (v => [v < 100, Math.round(v) + "%"])(L.ca / L.cl * 100) : null],
+    ["이자보상배율 1배 밑 (번 돈으로 이자를 못 냄)", st("이자보상") != null ? (v => [v !== 99 && v < 1, v === 99 ? "무차입" : v + "배"])(st("이자보상")) : null],
+    ["연간 퇴사율 35% 넘음", s?.turnover != null ? [s.turnover > .35, Math.round(s.turnover * 100) + "%"] : null],
+    ["평균 근속 2년 미만", s?.tenure != null ? [s.tenure < 2, s.tenure + "년"] : null],
+    ["최근 90일 큰 악재 뉴스", c.news_ai ? [c.news_ai.risk === "높음", c.news_ai.risk === "높음" ? "있음" : "없음"] : null],
+    ["평점 관리·뻥튀기 신호", c.rep ? (x => [x, x ? "있음" : "없음"])(!!((c.abuse || []).length || c.grades?.["평판"]?.flags?.inflation)) : null],
+  ];
+  const known = R.filter(r => r[1]), hit = known.filter(r => r[1][0]);
+  if (known.length < 4) return "";   // 자료가 너무 적으면 칸을 안 띄운다
+  const list = `<ul>${R.map(([l, r]) => `<li class="${!r ? "na" : r[0] ? "hit" : ""}"><span class="x">${!r ? "–" : r[0] ? "✕" : "·"}</span><span>${l}</span><em>${r ? r[1] : "확인 못 함"}</em></li>`).join("")}</ul>`;
+  if (!hit.length) return `<div class="rf ok"><div class="sum"><b>걸린 레드플래그 없음 <small style="font-weight:500;color:var(--muted)">· ${known.length}개 항목 확인</small></b></div><details><summary>항목 전부 보기</summary>${list}</details></div>`;
+  const money = hit.filter(r => R.indexOf(r) < 6).length, people = hit.length - money;
+  const sum = money && people ? `돈 쪽 ${money}개, 사람·평판 쪽 ${people}개예요.` : money ? "모두 '빚과 실적' 쪽이에요." : "모두 '사람·평판' 쪽이에요.";
+  return `<div class="rf"><p class="cnt">${hit.length}<small> / ${known.length}</small></p><div class="sum"><b>레드플래그 ${hit.length}개가 걸렸어요</b><span>${sum} 판정 점수와는 별개로, 입사 전에 알고 가면 좋은 신호예요.</span></div>
+    <details${hit.length >= 3 ? " open" : ""}><summary>항목 전부 보기</summary>${list}</details></div>`;
+}
+
+// ── G 내 연봉 넣어보기: 입력값은 화면에서만 계산 (어디에도 안 보냄)
+function myPay(c) {
+  const s = c.salary; if (!s?.ranks) return "";
+  return `<div class="my"><h4>내 연봉이랑 비교해 볼까요?</h4>
+    <div class="in"><label>지금 직급 <select id="myr">${["사원","대리","과장","차장","부장"].map(k => `<option${k === "대리" ? " selected" : ""}>${k}</option>`).join("")}</select></label>
+      <label>지금 연봉 <input id="mys" inputmode="numeric" placeholder="4,000" aria-label="지금 연봉(만원)"> 만원</label></div>
+    <div class="res" id="myres"></div><p class="say" id="mysay">지금 연봉을 만원 단위로 넣어 주세요.</p>
+    <p class="priv">입력한 연봉은 이 화면에서만 계산하고 어디에도 보내거나 저장하지 않아요.</p></div>`;
+}
+function myPayWire(c) {
+  const r = $("#myr"), i = $("#mys"); if (!r || !i) return;
+  const calc = () => { const v = Number(i.value.replace(/[^0-9]/g, "")), t = c.salary.ranks[r.value];
+    if (!v) { $("#myres").innerHTML = ""; $("#mysay").textContent = "지금 연봉을 만원 단위로 넣어 주세요."; return; }
+    if (v < 1000 || v > 100000) { $("#myres").innerHTML = ""; $("#mysay").textContent = "만원 단위로 넣어 주세요 (예: 4,000)."; return; }
+    const dd = (t - v) / v * 100;
+    $("#myres").innerHTML = `<div>${esc(c.name)} ${r.value} 추정<b>${won(t)}만</b></div><div class="${dd >= 0 ? "up" : "dn"}">지금보다<b>${dd >= 0 ? "+" : ""}${dd.toFixed(0)}%</b></div><div>협상 기준선 (지금 +10%)<b>${won(Math.round(v * 1.1))}만</b></div>`;
+    $("#mysay").textContent = dd >= 20 ? "연봉으로는 확실히 오르는 자리예요. 나머지(평판·안정성)만 따져 보세요."
+      : dd >= 10 ? "오르긴 해요. 오퍼가 추정치보다 낮게 오면 협상 여지가 있어요."
+      : dd >= 0 ? "연봉만 보고 옮길 이유는 약해요. 지금 회사가 나쁘지 않다면 STAY도 좋은 선택이에요."
+      : "추정치가 지금보다 낮아요. 오퍼가 지금 연봉 이상인지 꼭 확인하고, 아니면 STAY 쪽이에요."; };
+  r.onchange = calc; i.oninput = calc;
+}
+
+// ── I 고민 중이면 여기도 보세요 (build.py add_alts 가 고른 3곳)
+function altSec(c) {
+  const a = c.alts; if (!a?.length) return "";
+  const me = c.grades || {}, P = LETTER_PTS;
+  return `<section class="sec" id="s9"><div class="sec-h"><span class="no">+</span><h3>${esc(c.name)} 고민 중이면, 여기도 보세요</h3><p class="why">같은 일을 하는 회사(업종 코드가 같은 곳) 중 규모가 너무 차이 나지 않으면서 판정이 더 좋은 곳이에요. 초록 테두리는 ${esc(c.name)}보다 좋은 항목이에요.</p></div>
+    <div class="alts">${a.map(x => `<a class="alt" href="#${encodeURIComponent(x.n)}"><h4>${esc(x.n)}<span>${esc(x.v)}</span></h4>
+      <div class="gr">${["평판","연봉","성장성","수익성","안정성"].filter(k => x.g?.[k]).map(k => `<span class="${me[k]?.letter && P[x.g[k]] > P[me[k].letter] ? "up" : ""}">${k.replace("성장성","성장").replace("수익성","수익").replace("안정성","안정")} ${x.g[k]}</span>`).join("")}</div>
+      <p>${esc(x.why)}</p><small>직원 ${won(x.m)}명</small></a>`).join("")}</div></section>`;
+}
+
 const WHY = {
   "평판": "잡플래닛·블라인드 85%, 캐치 15%로 합쳤어요. 평가 인원이 많을수록 더 믿고, 회사 성격(보수적·일반·스타트업)마다 기준을 달리 봅니다.",
   "주요 뉴스": "최근 90일 기사 중 같은 사건을 묶어 중요한 것만 골랐어요. 초록 점은 호재, 빨간 점은 악재예요.",
@@ -705,13 +814,15 @@ async function render(name) {
     ${c.divisions ? `<p class="divh">부문마다 달라요${c.divSrc ? ` <small>${esc(c.divSrc)}</small>` : ""}</p><div class="divs">${c.divisions.map(d => `<div class="div"><h4>${esc(d.name)}<span class="${(/가세요$/.test(d.verdict) && d.verdict !== "조건 보고 가세요") || d.verdict === "처우 위쪽" ? "go" : ""}">${esc(d.verdict)}</span></h4>${d.lines.map(l => `<p>${esc(l)}</p>`).join("")}</div>`).join("")}</div>` : ""}
     <div class="board">${board}</div>
     <p class="legend"><span><b class="lS">S</b><b class="lAp">A+</b><b class="lA">A</b>좋음</span><span><b class="lB">B</b>보통</span><span><b class="lC">C</b><b class="lD">D</b>아쉬움</span><span><b class="lF">F</b>심각</span></p>
+    ${redFlags(c)}
     <section class="sec" id="s1">${secH(1,"평판")}${repsum}${warn}${c.rep && (c.rep.jobplanet || c.rep.blind || c.rep.catch) ? `<div class="reps">${repCard("jobplanet","잡플래닛",c.rep.jobplanet,date)}${repCard("blind","블라인드",c.rep.blind,date)}${repCard("catch","캐치",c.rep.catch,date)}</div>` : empty((c.pending || []).includes("rep") ? "평점은 아직 모으는 중이에요" + (c.eta ? " · " + c.eta + "까지 올라올 예정이에요" : "") : c.rep ? "세 사이트 모두 공개 평점을 찾지 못했어요" : "평점을 모으지 않는 곳이에요 (공사 현장·관공서·학교 등)")}</section>
-    <section class="sec" id="s2">${secH(2,"연봉")}${salarySec(c)}</section>
+    <section class="sec" id="s2">${secH(2,"연봉")}${salarySec(c)}${myPay(c)}</section>
     <section class="sec" id="s3">${secH(3,"성장성")}${finSec(c,"성장성")}</section>
     <section class="sec" id="s4">${secH(4,"수익성")}${finSec(c,"수익성")}</section>
     <section class="sec" id="s5">${secH(5,"안정성")}${finSec(c,"안정성")}</section>
     <section class="sec" id="s6">${secH(6,"주요 뉴스")}${newsSec(c)}</section>
     <section class="sec" id="s7">${secH(7,"AI 영향")}${aiSec(c)}</section>
+    ${altSec(c)}
     <p class="disc">판정과 Zorro의 한마디는 전자공시·국민연금·공개 평점·언론 보도 같은 공개 자료를 모아 취업조로 기준으로 정리한 <b>참고용 의견</b>이에요. 회사의 공식 입장이나 사실 확정이 아니며, 평점은 기준일 ${esc(date)}에 각 사이트에 공개된 값이에요.</p>
     ${API ? `<details class="fixbox"><summary>정보가 틀렸거나 문제가 있나요? 정정 요청하기</summary>
       <form id="fixform"><p>회사 관계자·현직자 누구나 보낼 수 있어요. 확인 후 고치거나 내립니다.</p>
@@ -721,6 +832,7 @@ async function render(name) {
   history.replaceState(null, "", "#" + encodeURIComponent(name));
   CUR = c; VS = null;
   vsEntryWire(c);
+  myPayWire(c);
   if (API) $("#fixform").onsubmit = async e => { e.preventDefault();
     const r = await send("/fix", { n: c.name, msg: $("#fixmsg").value, contact: $("#fixcontact").value });
     if (r?.ok) { e.target.closest("details").innerHTML = `<p style="margin:0;font-size:14px;font-weight:700">요청을 받았어요. 확인 후 반영할게요.</p>`; } else toast("보내지 못했어요. 내용을 5자 이상 적었는지 확인해 주세요."); };
@@ -844,6 +956,7 @@ async function renderVS(a, b, now) {
   A.name = a; B.name = b; CUR = null;
   VS = { A, B, now: !!now, prio: (VS && VS.A.name === a && VS.B.name === b && VS.prio) || "base" };
   history.replaceState(null, "", "#" + encodeURIComponent(a) + "~" + encodeURIComponent(b) + (now ? "~now" : ""));
+  try { const k = "cc-vs:" + [a, b].sort().join("~"); if (API && !sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); send("/vs", { a, b }); } } catch (e) {}   // 최근 7일 매치업 집계 (같은 탭에서 같은 대결은 한 번)
   drawVS();
 }
 function drawVS() {
@@ -970,7 +1083,7 @@ fetch("data/index.json").then(r => r.json()).then(d => { IDX = d.r.map(([n, v, g
 // 검은 띠: 숫자판과 같은 숫자로 자동 갱신 (직무사전·연봉 연구소와 같은 모양)
 const TK = {};
 function tick() { const f = v => v.toLocaleString("ko-KR");
-  const row = [TK.co && `검색 가능 회사 ${f(TK.co)}곳`, TK.judged && `S~F 판정 ${f(TK.judged)}곳`, TK.people && `현재까지 ${f(TK.people)}명이 검색`,
+  const row = [TK.co && `검색 가능 회사 ${f(TK.co)}곳`, TK.judged && `S~F 판정 ${f(TK.judged)}곳`, TK.people && `현재까지 ${f(TK.people)}명이 검색`, TK.vs && `최근 7일 매치업 ${TK.vs[0]} vs ${TK.vs[1]} (${f(TK.vs[2])}명)`,
     "잡플래닛·블라인드·캐치 평점", "직급별 연봉 추정", "DART 5개년 재무", "최근 뉴스·AI 영향", "컨설턴트 관점의 Zorro 한마디", "매일 자동 갱신"]
     .filter(Boolean).map(t => `<span>${t}</span>`).join("");
   $("#tick").innerHTML = row + row; }   // 두 번 이어 붙여 끊김 없이 흐르게
@@ -983,14 +1096,20 @@ alignStats(); addEventListener("resize", alignStats); document.fonts?.ready.then
 // 숫자판 '현재까지 검색한 사람' = 누적 (2026-10-20 사용자: 5명 미만이어도 숨기지 않음)
 // /top 은 한 번만 부르고 숫자판·많이 본 회사가 같이 쓴다 (2026-10-21)
 const topP = API ? fetch(API + "/top").then(r => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null);
-topP.then(d => { if (d) { $("#stPeople").innerHTML = (d.total ?? d.today).toLocaleString("ko-KR") + "<small>명</small>"; TK.people = d.total ?? d.today; tick(); } }).catch(() => {});
+topP.then(d => { if (d) { $("#stPeople").innerHTML = (d.total ?? d.today).toLocaleString("ko-KR") + "<small>명</small>"; TK.people = d.total ?? d.today; TK.vs = d.vs?.[0]; tick(); } }).catch(() => {});
 // 첫 화면은 비워 두고 검색을 유도한다 (주소에 #회사명 이 있을 때만 바로 보여 줌)
 const intro = () => { $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b>
   <p>평점·직급별 연봉·5개년 재무·최근 뉴스를 한 번에 보고, Zorro가 갈 만한지 정리해 드려요.</p><div class="pulse" id="pulse"></div></div>`;
   if (!API) return;
   topP.then(d => { const el = $("#pulse"); if (!d || !el) return;
-    el.innerHTML = `${d.top.length >= 3 ? `<small>이번 주 많이 본 회사</small><div class="top">${d.top.map(([n], i) => `<button type="button" data-n="${esc(n)}"><i>${i + 1}</i>${esc(n)}</button>`).join("")}</div>` : ""}`;
-    el.querySelectorAll("button").forEach(b => b.onclick = () => pick(b.dataset.n)); }).catch(() => {}); };
+    const vs = d.vs || [], go = (a, b) => { location.hash = encodeURIComponent(a) + "~" + encodeURIComponent(b); };
+    const mu = vs.length ? `<div class="mu"><small>최근 7일 가장 많이 붙은 대결</small>
+      <button class="vs1" type="button" data-a="${esc(vs[0][0])}" data-b="${esc(vs[0][1])}"><span>${esc(vs[0][0])}</span><i>VS</i><span>${esc(vs[0][1])}</span></button>
+      <p>최근 7일 동안 <b>${vs[0][2].toLocaleString("ko-KR")}명</b>이 이 두 회사를 놓고 고민했어요. 눌러서 바로 비교해 보세요.</p>
+      ${vs.length > 1 ? `<ol>${vs.slice(1).map((x, i) => `<li><button type="button" data-a="${esc(x[0])}" data-b="${esc(x[1])}"><span><b>${i + 2}</b>${esc(x[0])} vs ${esc(x[1])}</span><span>${x[2].toLocaleString("ko-KR")}명</span></button></li>`).join("")}</ol>` : ""}</div>` : "";
+    el.innerHTML = mu + `${d.top.length >= 3 ? `<small>이번 주 많이 본 회사</small><div class="top">${d.top.map(([n], i) => `<button type="button" data-n="${esc(n)}"><i>${i + 1}</i>${esc(n)}</button>`).join("")}</div>` : ""}`;
+    el.querySelectorAll("button[data-n]").forEach(b => b.onclick = () => pick(b.dataset.n));
+    el.querySelectorAll("button[data-a]").forEach(b => b.onclick = () => go(b.dataset.a, b.dataset.b)); }).catch(() => {}); };
 // 오늘 처음 들어온 방문만 한 번 기록
 try { if (API && !sessionStorage.getItem("cc-visit")) { sessionStorage.setItem("cc-visit", "1"); ev("visit"); } } catch (e) {}
 const first = decodeURIComponent(location.hash.slice(1));
