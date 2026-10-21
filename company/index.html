@@ -301,6 +301,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 /* 출처 */
 .note { margin:56px 0 0; padding:22px 0 60px; border-top:1px solid var(--ink); font-size:12.5px; color:var(--muted); display:grid; gap:6px; }
 .note b { color:var(--ink-soft); }
+/* 참고 안내 (2026-10-21 사용자: 법적·평판 리스크 대비 — 판정은 공개 자료 기반 의견, 출처·기준일 표기) */
+.disc { margin:34px 0 0; font-size:12.5px; line-height:1.65; color:var(--muted); }
 .pf { background:var(--inkbg); color:var(--inkfg-soft); font-size:12px; padding:30px 0 40px; }
 .pf img { height:18px; filter:invert(1); display:block; margin-bottom:12px; }
 :root[data-theme="dark"] .pf img { filter:none; }
@@ -691,13 +693,14 @@ async function render(name) {
     ${c.divisions ? `<p class="divh">부문마다 달라요${c.divSrc ? ` <small>${esc(c.divSrc)}</small>` : ""}</p><div class="divs">${c.divisions.map(d => `<div class="div"><h4>${esc(d.name)}<span class="${(/가세요$/.test(d.verdict) && d.verdict !== "조건 보고 가세요") || d.verdict === "처우 위쪽" ? "go" : ""}">${esc(d.verdict)}</span></h4>${d.lines.map(l => `<p>${esc(l)}</p>`).join("")}</div>`).join("")}</div>` : ""}
     <div class="board">${board}</div>
     <p class="legend"><span><b class="lS">S</b><b class="lAp">A+</b><b class="lA">A</b>좋음</span><span><b class="lB">B</b>보통</span><span><b class="lC">C</b><b class="lD">D</b>아쉬움</span><span><b class="lF">F</b>심각</span></p>
-    <section class="sec" id="s1">${secH(1,"평판")}${repsum}${warn}${c.rep && (c.rep.jobplanet || c.rep.blind || c.rep.catch) ? `<div class="reps">${repCard("jobplanet","잡플래닛",c.rep.jobplanet,date)}${repCard("blind","블라인드",c.rep.blind,date)}${repCard("catch","캐치",c.rep.catch,date)}</div>` : empty((c.pending || []).includes("rep") ? "평점은 아직 모으는 중이에요" + (c.eta ? " · " + c.eta + "까지 올라올 예정이에요" : "") : c.rep ? "세 사이트 모두 공개 평점을 찾지 못했어요" : "평점 수집 대상이 아닌 회사예요 (직원 300명 이상·공시 회사부터 모아요)")}</section>
+    <section class="sec" id="s1">${secH(1,"평판")}${repsum}${warn}${c.rep && (c.rep.jobplanet || c.rep.blind || c.rep.catch) ? `<div class="reps">${repCard("jobplanet","잡플래닛",c.rep.jobplanet,date)}${repCard("blind","블라인드",c.rep.blind,date)}${repCard("catch","캐치",c.rep.catch,date)}</div>` : empty((c.pending || []).includes("rep") ? "평점은 아직 모으는 중이에요" + (c.eta ? " · " + c.eta + "까지 올라올 예정이에요" : "") : c.rep ? "세 사이트 모두 공개 평점을 찾지 못했어요" : "평점을 모으지 않는 곳이에요 (공사 현장·관공서·학교 등)")}</section>
     <section class="sec" id="s2">${secH(2,"연봉")}${salarySec(c)}</section>
     <section class="sec" id="s3">${secH(3,"성장성")}${finSec(c,"성장성")}</section>
     <section class="sec" id="s4">${secH(4,"수익성")}${finSec(c,"수익성")}</section>
     <section class="sec" id="s5">${secH(5,"안정성")}${finSec(c,"안정성")}</section>
     <section class="sec" id="s6">${secH(6,"주요 뉴스")}${newsSec(c)}</section>
     <section class="sec" id="s7">${secH(7,"AI 영향")}${aiSec(c)}</section>
+    <p class="disc">판정과 Zorro의 한마디는 전자공시·국민연금·공개 평점·언론 보도 같은 공개 자료를 모아 취업조로 기준으로 정리한 <b>참고용 의견</b>이에요. 회사의 공식 입장이나 사실 확정이 아니며, 평점은 기준일 ${esc(date)}에 각 사이트에 공개된 값이에요.</p>
     ${API ? `<details class="fixbox"><summary>정보가 틀렸거나 문제가 있나요? 정정 요청하기</summary>
       <form id="fixform"><p>회사 관계자·현직자 누구나 보낼 수 있어요. 확인 후 고치거나 내립니다.</p>
         <label class="sr" for="fixmsg">요청 내용</label><textarea id="fixmsg" maxlength="1000" placeholder="어떤 내용이 왜 틀렸는지 적어 주세요" required></textarea>
@@ -953,12 +956,14 @@ fetch("data/index.json").then(r => r.json()).then(d => { IDX = d.r.map(([n, v, g
   $("#stCo").innerHTML = IDX.length.toLocaleString("ko-KR") + "<small>곳</small>";
   $("#stJudged").innerHTML = n.toLocaleString("ko-KR") + "<small>곳</small>"; });
 // 숫자판 '현재까지 검색한 사람' = 누적 (2026-10-20 사용자: 5명 미만이어도 숨기지 않음)
-if (API) fetch(API + "/top").then(r => r.ok ? r.json() : null).then(d => { if (d) $("#stPeople").innerHTML = (d.total ?? d.today).toLocaleString("ko-KR") + "<small>명</small>"; }).catch(() => {});
+// /top 은 한 번만 부르고 숫자판·많이 본 회사가 같이 쓴다 (2026-10-21)
+const topP = API ? fetch(API + "/top").then(r => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null);
+topP.then(d => { if (d) $("#stPeople").innerHTML = (d.total ?? d.today).toLocaleString("ko-KR") + "<small>명</small>"; }).catch(() => {});
 // 첫 화면은 비워 두고 검색을 유도한다 (주소에 #회사명 이 있을 때만 바로 보여 줌)
 const intro = () => { $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b>
   <p>평점·직급별 연봉·5개년 재무·최근 뉴스를 한 번에 보고, Zorro가 갈 만한지 정리해 드려요.</p><div class="pulse" id="pulse"></div></div>`;
   if (!API) return;
-  fetch(API + "/top").then(r => r.ok ? r.json() : null).then(d => { const el = $("#pulse"); if (!d || !el) return;
+  topP.then(d => { const el = $("#pulse"); if (!d || !el) return;
     el.innerHTML = `${d.top.length >= 3 ? `<small>이번 주 많이 본 회사</small><div class="top">${d.top.map(([n], i) => `<button type="button" data-n="${esc(n)}"><i>${i + 1}</i>${esc(n)}</button>`).join("")}</div>` : ""}`;
     el.querySelectorAll("button").forEach(b => b.onclick = () => pick(b.dataset.n)); }).catch(() => {}); };
 // 오늘 처음 들어온 방문만 한 번 기록
