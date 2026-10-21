@@ -971,6 +971,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     seo.write_sitemap(out_dir, base_url, entries)
     audit_links(data, BASE / "assets" / "share")
     print(f"인앱 브라우저 → 기본 브라우저 전환: {add_inapp(out_dir)}개 페이지")
+    print(f"다크모드 지원 표시(color-scheme): {add_color_scheme(out_dir)}개 페이지")
     print(f"sitemap.xml: URL {len(entries)}개 -> {out_dir / 'sitemap.xml'}")
 
 
@@ -990,6 +991,19 @@ def add_inapp(out_dir: Path) -> int:
         if "data-inapp" in h or "<head>" not in h:
             continue
         f.write_text(h.replace("<head>", "<head>\n" + INAPP_JS, 1), encoding="utf-8")
+        n += 1
+    return n
+
+
+def add_color_scheme(out_dir: Path) -> int:
+    """모든 페이지에 '다크모드 직접 지원' 표시 — 없으면 삼성 인터넷·크롬 '자동 어둡게'가 화면을 강제로 뒤집어
+    검은 TEAM ZORRO 로고·테두리 숫자(연봉 연구소 01·02)가 어두운 바탕에 묻힌다 (2026-10-22 사용자 폰 제보)"""
+    n = 0
+    for f in out_dir.rglob("*.html"):
+        h = f.read_text(encoding="utf-8")
+        if 'name="color-scheme"' in h or "<head>" not in h:
+            continue
+        f.write_text(h.replace("<head>", '<head><meta name="color-scheme" content="light dark">', 1), encoding="utf-8")
         n += 1
     return n
 
