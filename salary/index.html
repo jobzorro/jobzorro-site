@@ -195,6 +195,7 @@ details.how ol { padding-left:20px; margin:8px 0 0; } details.how li { margin-to
 .hduo { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
 .hduo h4 { margin:0 0 6px; font-family:var(--display); font-size:12px; letter-spacing:.08em; color:var(--muted); }
 .slide figure { margin:0; } .slide svg { display:block; width:100%; height:auto; }
+.hwhy { margin:-3px 0 7px; font-size:12px; color:var(--muted); }
 .hme { display:grid; gap:8px; }
 .hme label { font-size:13px; color:var(--muted); display:flex; justify-content:space-between; align-items:baseline; }
 .hme label b { font-family:var(--display); font-size:18px; color:var(--ink); }
@@ -740,12 +741,14 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var bars = function (rows, max, fmt, hl, base) { base = base || 0; return '<div class="hb">' + rows.map(function (r) {
       return '<div class="bar' + (hl && hl(r) ? ' hl' : '') + '">' + (r[3] != null ? co(r[0], r[3]) : '<span class="n">' + esc(r[0]) + '</span>') + '<span class="b"><i style="width:' + Math.max(2, (r[1] - base) / (max - base) * 100).toFixed(1) + '%"></i></span><span class="v">' + fmt(r[1]) + '</span></div>'; }).join('') + '</div>'; };
     var won = function (v) { return man(v) + '만'; }, dy = (H && H.dartYears) || ['', ''];
+    if (H) {   // 2026-10-21 사용자: '내 연봉이면 어디쯤?'을 첫 장으로
+        S.push({ t: '내 연봉이면 <b>직장인 중 어디쯤?</b>', per: ym(H.ym) + ' (국민연금 가입자)', hook: '막대를 움직여 보세요. 국민연금 가입자 <b>' + Math.round(H.distN / 1e4).toLocaleString('ko-KR') + '만 명</b>이 다니는 회사의 평균 연봉 분포예요.',
+          body: '<div class="hme"><figure id="hHist"></figure><label for="hMe">내 연봉 <b id="hMeV"></b></label><input id="hMe" type="range" min="1500" max="9000" step="100" value="5000"><p id="hMeT"></p></div>',
+          src: '회사 평균 기준이라 개인 순위와는 달라요 · 7천만 이상은 국민연금 상한이라 한 칸으로 묶여요' });
+    }
     S.push({ t: '평균 연봉 <b>TOP 10</b>', per: dy[1] + '년 1년치 (' + dy[1] + ' 사업보고서)', hook: '가입자 300명 이상 회사. 성과급이 들어간 1인 평균이라 성과급이 큰 해에는 높게 나옵니다.', body: '<ol class="rank-list" id="topAvg"></ol>', src: '사업보고서가 없는 회사는 국민연금 기준' });
     S.push({ t: '작년보다 <b>많이 오른</b> 회사', per: dy[0] + '년 → ' + dy[1] + '년 (사업보고서)', hook: '두 해 사업보고서가 모두 있는 회사의 1인 평균 비교. 오른 이유는 인원·근속 변화로 가볍게 추정했습니다.', body: '<ol class="rank-list" id="topRise"></ol>', src: '120% 넘게 오른 값은 자료 오류일 수 있어 뺐어요' });
     if (H) {
-      S.push({ t: '내 연봉이면 <b>직장인 중 어디쯤?</b>', per: ym(H.ym) + ' (국민연금 가입자)', hook: '막대를 움직여 보세요. 국민연금 가입자 <b>' + Math.round(H.distN / 1e4).toLocaleString('ko-KR') + '만 명</b>이 다니는 회사의 평균 연봉 분포예요.',
-        body: '<div class="hme"><figure id="hHist"></figure><label for="hMe">내 연봉 <b id="hMeV"></b></label><input id="hMe" type="range" min="1500" max="9000" step="100" value="5000"><p id="hMeT"></p></div>',
-        src: '회사 평균 기준이라 개인 순위와는 달라요 · 7천만 이상은 국민연금 상한이라 한 칸으로 묶여요' });
       var st = H.stay;
       S.push({ t: '사람이 <b>안 나가는</b> 회사 TOP 10', per: ym(H.ym0) + ' ~ ' + ym(H.ym) + ' (최근 12개월)', hook: '<b>' + esc(st[0][0]) + '</b>는 1년 동안 100명 중 ' + Math.round(st[0][1]) + '명만 나갔어요.',
         body: '<ol class="rank-list">' + st.map(function (x, k) { return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[3] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(x[0]) + '</a><small>가입자 ' + man(x[2]) + '명</small></span><span class="v">' + x[1] + '%</span></li>'; }).join('') + '</ol>',
@@ -757,9 +760,10 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       var hr = H.hires;
       S.push({ t: '이번 달 <b>가장 많이 뽑은</b> 회사', per: ym(H.ym) + ' 한 달 (신규 가입자)', hook: '<b>' + esc(hr[0][0]) + '</b>는 한 달에 ' + man(hr[0][1]) + '명, 하루 ' + Math.round(hr[0][1] / 30) + '명꼴로 들어왔어요.',
         body: '<div class="hbig">' + man(hr[0][1]) + '<small>명 / 한 달</small></div>' + bars(hr, hr[0][1], function (v) { return man(v) + '명'; }), src: '국민연금 신규 가입자 · 가입자 1,000명 이상' });
+      var top1 = function (rows, mx, fmt) { return bars(rows.slice(0, 1), mx, fmt) + (rows[0][4] ? '<p class="hwhy">↳ ' + esc(rows[0][4]) + '</p>' : '') + bars(rows.slice(1), mx, fmt); };   // 1위 밑에 가볍게 추정 사유
       var pc = function (v) { return (v > 0 ? '+' : '−') + Math.abs(v) + '%'; }, gm = Math.max(H.grow[0][1], -H.shrink[0][1]);
       S.push({ t: '요즘 <b>커지는 회사, 줄어드는 회사</b>', per: (+H.ym.slice(0, 4) - 1) + '년 ' + (+H.ym.slice(5)) + '월 → ' + ym(H.ym), hook: '1년 새 사람이 가장 많이 는 곳과 준 곳이에요.',
-        body: '<div class="hduo"><div><h4>사람이 늘었어요</h4>' + bars(H.grow, gm, pc) + '</div><div><h4>사람이 줄었어요</h4>' + bars(H.shrink.map(function (x) { return [x[0], -x[1], x[2], x[3]]; }), gm, function (v) { return pc(-v); }) + '</div></div>',
+        body: '<div class="hduo"><div><h4>사람이 늘었어요</h4>' + top1(H.grow, gm, pc) + '</div><div><h4>사람이 줄었어요</h4>' + top1(H.shrink.map(function (x) { return [x[0], -x[1], x[2], x[3], x[4]]; }), gm, function (v) { return pc(-v); }) + '</div></div>',
         src: '가입자 1,000명 이상 · 법인 분할·합병·이관도 그대로 잡혀요' });
       var yrs = D.meta.trendYears || [];
       var spark = function (t) { var mn = Math.min.apply(null, t), mx = Math.max.apply(null, t); return '<svg viewBox="0 0 92 28" aria-hidden="true"><polyline points="' + t.map(function (v, i) { return (4 + i * 84 / (t.length - 1)).toFixed(1) + ',' + (24 - (v - mn) / (mx - mn || 1) * 20).toFixed(1); }).join(' ') + '" fill="none" stroke="var(--ink)" stroke-width="2"/><circle cx="88" cy="4" r="3.5" fill="var(--acc)" stroke="var(--ink)"/></svg>'; };
@@ -797,22 +801,39 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       [5000, 10000, 15000, 20000].forEach(function (a) { g += '<line x1="' + L + '" x2="' + W + '" y1="' + ty(a) + '" y2="' + ty(a) + '" stroke="var(--line)"/><text x="' + (L - 6) + '" y="' + (ty(a) + 4) + '" text-anchor="end" font-size="10" fill="var(--muted)">' + (a / 10000) + '억</text>'; });
       [0, 5, 10, 15, 20, 25].forEach(function (t) { g += '<text x="' + tx(t) + '" y="' + (Hh - 8) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + t + '년</text>'; });
       P.forEach(function (p) { if (!lab[p[0]]) g += '<circle cx="' + tx(p[1]).toFixed(1) + '" cy="' + ty(p[2]).toFixed(1) + '" r="3" fill="var(--muted)" fill-opacity=".45"><title>' + esc(p[0]) + ' · 근속 ' + p[1] + '년 · ' + man(p[2]) + '만원</title></circle>'; });
-      var used = [];
-      P.forEach(function (p) { if (!lab[p[0]]) return; var x = tx(p[1]), y = ty(p[2]), r = x > W - 140, nm = p[0].replace('（주）비바리퍼블리카', '토스').replace(/^에스케이/, 'SK').replace(/^에이치디/, 'HD').replace(/^케이지/, 'KG').replace(/^케이티$/, 'KT');
-        var ly = y + 4; used.forEach(function (u) { if (Math.abs(u[0] - x) < 110 && Math.abs(u[1] - ly) < 16) ly = u[1] + 17; }); used.push([x, ly]);
-        g += '<a href="#" data-co="' + p[3] + '" data-name="' + esc(p[0]) + '"><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="5" fill="var(--acc)" stroke="var(--ink)"/><text x="' + (x + (r ? -8 : 8)).toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="' + (r ? 'end' : 'start') + '" font-size="14" font-weight="700" fill="var(--ink)">' + esc(nm) + '</text></a>'; });
+      // 이름은 늘 자기 점 바로 옆(오른쪽·왼쪽·위·아래 중 다른 이름·점과 안 겹치는 첫 자리)에 둔다
+      var used = [], dotsL = P.filter(function (p) { return lab[p[0]]; }).map(function (p) { return [tx(p[1]), ty(p[2])]; });
+      var hit = function (b) { return b[0] < L || b[1] < 0 || b[0] + b[2] > W || b[1] + b[3] > Hh - Bt || used.some(function (u) { return b[0] < u[0] + u[2] && u[0] < b[0] + b[2] && b[1] < u[1] + u[3] && u[1] < b[1] + b[3]; }) ||
+        dotsL.some(function (d) { return d[0] > b[0] - 5 && d[0] < b[0] + b[2] + 5 && d[1] > b[1] - 5 && d[1] < b[1] + b[3] + 5; }); };
+      P.forEach(function (p) { if (!lab[p[0]]) return; var x = tx(p[1]), y = ty(p[2]), nm = p[0].replace('（주）비바리퍼블리카', '토스').replace(/^에스케이/, 'SK').replace(/^에이치디/, 'HD').replace(/^케이지/, 'KG').replace(/^케이티$/, 'KT');
+        var w = nm.length * 13 + 4, opt = [[x + 9, y + 5, 'start', [x + 8, y - 9, w, 17]], [x - 9, y + 5, 'end', [x - 8 - w, y - 9, w, 17]], [x, y - 10, 'middle', [x - w / 2, y - 24, w, 17]], [x, y + 21, 'middle', [x - w / 2, y + 8, w, 17]]];
+        var o = opt.filter(function (c) { return !hit(c[3]); })[0] || opt[x > W - 140 ? 1 : 0]; used.push(o[3]);
+        g += '<a href="#" data-co="' + p[3] + '" data-name="' + esc(p[0]) + '"><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="5" fill="var(--acc)" stroke="var(--ink)"/><text x="' + o[0].toFixed(1) + '" y="' + o[1].toFixed(1) + '" text-anchor="' + o[2] + '" font-size="14" font-weight="700" fill="var(--ink)">' + esc(nm) + '</text></a>'; });
       return '<svg viewBox="0 0 ' + W + ' ' + Hh + '" role="img" aria-label="평균 근속연수와 평균 연봉">' + g + '</svg>';
     }
     // 넘기기: 8초 자동 · 화살표·막대 · 손으로 밀기 · 보는 동안(마우스 올림·만짐·초점) 멈춤
-    var slides = track.children, cur = 0, hold = false, stop = false, t0 = performance.now(), DUR = 8000, car = $('car');
+    var slides = track.children;
+    function clones() {   // 9번 다음에 1번이 오른쪽에서 이어져 들어오게 (PC는 두 장이 보이니 두 장 복제)
+      [].slice.call(track.querySelectorAll('.clone')).forEach(function (c) { c.remove(); });
+      for (var k = 0; k < Math.min(2, N); k++) { var c = slides[k].cloneNode(true); c.classList.add('clone'); c.setAttribute('aria-hidden', 'true');
+        [].forEach.call(c.querySelectorAll('[id]'), function (e) { e.removeAttribute('id'); }); [].forEach.call(c.querySelectorAll('a,input,button'), function (e) { e.tabIndex = -1; }); track.appendChild(c); }
+    }
+    clones();
+    var cur = 0, hold = false, stop = false, t0 = performance.now(), DUR = 8000, car = $('car');
     var per = function () { return innerWidth >= 900 ? 2 : 1; };
-    function mark() { $('carCnt').innerHTML = String(cur + 1).padStart(2, '0') + ' <span>/ ' + String(N).padStart(2, '0') + '</span>'; [].forEach.call(dots.children, function (b, i) { b.classList.toggle('on', i === cur); if (i !== cur) b.style.removeProperty('--p'); }); }
-    function go(i) { var last = Math.max(0, N - per()); cur = i > last ? (cur >= last ? 0 : last) : i < 0 ? (cur <= 0 ? last : 0) : i; /* 끝에서 한 번 더 가면 처음으로 */ t0 = performance.now(); track.scrollTo({ left: slides[cur].offsetLeft - slides[0].offsetLeft, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); mark(); }
+    function mark() { var ix = cur % N; $('carCnt').innerHTML = String(ix + 1).padStart(2, '0') + ' <span>/ ' + String(N).padStart(2, '0') + '</span>'; [].forEach.call(dots.children, function (b, i) { b.classList.toggle('on', i === ix); if (i !== ix) b.style.removeProperty('--p'); }); }
+    var pos = function (i) { return slides[i].offsetLeft - slides[0].offsetLeft; };
+    function go(i) {
+      if (i < 0) { track.scrollTo({ left: pos(N), behavior: 'auto' }); i = N - 1; }   // 1번에서 뒤로: 같은 모양인 복제본 자리로 옮긴 뒤 한 칸 뒤로
+      if (i >= N) { clones(); i = N; }                                                 // 9번 다음: 복제된 1번으로 계속 앞으로 (끝나면 진짜 1번으로)
+      cur = i; t0 = performance.now(); track.scrollTo({ left: pos(i), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); mark();
+    }
     $('carPrev').onclick = function () { go(cur - 1); }; $('carNext').onclick = function () { go(cur + 1); };
     [].forEach.call(dots.children, function (b, i) { b.onclick = function () { go(i); }; });
     $('carPP').onclick = function () { stop = !stop; this.textContent = stop ? '재생' : '멈춤'; this.setAttribute('aria-label', stop ? '자동 넘김 재생' : '자동 넘김 멈춤'); t0 = performance.now(); };
     var tm; track.addEventListener('scroll', function () { clearTimeout(tm); tm = setTimeout(function () {
       var x = track.scrollLeft, b = 0; [].forEach.call(slides, function (sl, i) { if (Math.abs(sl.offsetLeft - slides[0].offsetLeft - x) < Math.abs(slides[b].offsetLeft - slides[0].offsetLeft - x)) b = i; });
+      if (b >= N) { track.scrollTo({ left: pos(b - N), behavior: 'auto' }); b -= N; }   // 복제본에 멈추면 같은 진짜 장으로
       if (b !== cur) { cur = b; t0 = performance.now(); mark(); } }, 120); }, { passive: true });
     car.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') hold = true; });
     car.addEventListener('pointerleave', function () { hold = false; t0 = performance.now(); });
@@ -822,7 +843,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     track.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight') go(cur + 1); if (e.key === 'ArrowLeft') go(cur - 1); });
     var vis = true; if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }).observe(car);   // 화면 밖이면 넘기지 않는다
     (function tick(now) {
-      var d = dots.children[cur];
+      var d = dots.children[cur % N];
       if (hold || stop || !vis || document.hidden || car.closest('[hidden]')) t0 = now - (parseFloat(d.style.getPropertyValue('--p')) || 0) / 100 * DUR;
       var p = Math.min(1, (now - t0) / DUR); d.style.setProperty('--p', (p * 100).toFixed(1) + '%');
       if (p >= 1) go(cur + 1);
