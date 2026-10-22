@@ -474,11 +474,18 @@ NEWS_MASTHEAD_CSS = """
 .v2-outro a.go { display:inline-flex; align-items:center; gap:10px; font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:16px 26px; border-radius:999px; background:var(--ink); color:var(--paper); text-decoration:none; }
 .v2-outro a.go:hover { background:#c6ff3d; color:#0b0b0b; }
 .zf { margin-top:0 !important; }
-@media (max-width: 900px) {
+/* 창이 좁아지면(1080px 이하) 원래 뉴스 CSS가 히어로를 세로로 쌓는다 → 왼쪽 정렬 + 숫자판은 연봉 연구소처럼 가로로 펼침 */
+@media (max-width: 1080px) {
   .hero-inner { align-items:stretch; }
   .hero-text, .hero-stats { min-width:0; width:100%; max-width:none; flex:1 1 auto; }
-  .hero h1 { white-space:normal; font-size:clamp(30px, 8.6vw, 44px); line-height:1.08; }
   .funnel { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); column-gap:20px; }
+}
+/* 860px 이하: 섹션 머리(01·02·오늘의 브리핑)도 세로로 쌓이므로 왼쪽 정렬 */
+@media (max-width: 860px) {
+  .sector-head { align-items:flex-start; }
+}
+@media (max-width: 900px) {
+  .hero h1 { white-space:normal; font-size:clamp(30px, 8.6vw, 44px); line-height:1.08; }
   .funnel-step { padding:10px 0; }
   .funnel-num { font-size:24px; }
   .brief-sec .brief-list li { padding-left:36px; font-size:15.5px; }
