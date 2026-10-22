@@ -87,7 +87,7 @@ def data_uri(path: Path, mime="image/png") -> str:
     return f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode()
 
 
-LOGO_FILES = ("jobzorro_logo.png", "teamzorro_logo.png")   # assets/ → site/assets/ 로 복사해 모든 페이지가 파일 경로로 참조한다
+LOGO_FILES = ("jobzorro_logo.png", "teamzorro_logo.png", "teamzorro_logo_halo.png")   # assets/ → site/assets/ 로 복사해 모든 페이지가 파일 경로로 참조한다
 
 
 def logo_src(logo: str, root: str) -> str:
@@ -281,6 +281,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zn-in { max-width:1120px; margin:0 auto; padding:0 20px; display:flex; align-items:center; gap:16px; height:54px; }
 .zn-logo { display:flex; align-items:center; flex:none; }
 .zn-logo img { height:22px; width:auto; filter:var(--logo-filter,none); display:block; }
+.zn-logo img[src$="_halo.png"] { height:25.3px; margin:-1.65px; }   /* 테두리 여백(위아래 6px/80px)만큼 키우고 당겨 글자 크기는 그대로 */
 .zn-tabs { display:flex; gap:2px; height:100%; margin-left:6px; min-width:0; overflow-x:auto; scrollbar-width:none; }
 .zn-tabs::-webkit-scrollbar { display:none; }
 .zn-tabs a { display:flex; align-items:center; padding:0 12px; font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); text-decoration:none; white-space:nowrap; border-bottom:2px solid transparent; }
@@ -291,7 +292,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 @media (max-width:480px) { .zn-tabs .new { font-size:0; width:7px; height:7px; padding:0; margin:0 0 10px 2px; display:inline-block; } }   /* 폰: NEW 글자 대신 라임 점 */
 .zn-cta { margin-left:auto; flex:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--paper); background:var(--ink); border-radius:999px; padding:9px 15px; text-decoration:none; white-space:nowrap; }
 .zn-cta:hover { background:var(--acc); color:var(--acc-ink); }
-@media (max-width:640px) { .zn-cta { display:none; } .zn-in { gap:10px; padding:0 14px; } .zn-logo img { height:19px; } .zn-tabs a { padding:0 9px; font-size:13px; } }
+@media (max-width:640px) { .zn-cta { display:none; } .zn-in { gap:10px; padding:0 14px; } .zn-logo img { height:19px; } .zn-logo img[src$="_halo.png"] { height:21.85px; margin:-1.43px; } .zn-tabs a { padding:0 9px; font-size:13px; } }
 /* 공용 푸터 (뉴스 푸터처럼 먹색 윗선 + 종이색) */
 .zf { margin-top:72px; background:var(--paper); color:var(--ink); border-top:1px solid var(--ink); font-family:var(--font); }
 .zf-in { max-width:1120px; margin:0 auto; padding:36px 20px 44px; }
@@ -619,7 +620,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     attach_news(data)
     # 로고는 data URI 로 페이지마다 박지 않고 site/assets/ 의 파일을 참조한다 (nav_html/footer_html 이 root 를 붙여 깊이별 상대경로로 만든다)
     logo = "assets/jobzorro_logo.png"            # 푸터: 취업조로
-    logo_nav = "assets/teamzorro_logo.png"       # 맨 위 탭바만 TEAM ZORRO CI
+    logo_nav = "assets/teamzorro_logo_halo.png"  # 맨 위 탭바만 TEAM ZORRO CI — 흰 테두리를 그림에 넣은 판 (폰 '웹사이트 어둡게'는 그림만 안 바꿔 검은 로고가 묻힘, 2026-10-22)
     (out_dir / "assets").mkdir(parents=True, exist_ok=True)
     for name in LOGO_FILES:
         (out_dir / "assets" / name).write_bytes((ASSETS / name).read_bytes())
@@ -932,6 +933,8 @@ def build(out_dir: Path, with_news: bool) -> None:
         zn_css = ".zn{--paper:var(--bg);--hairline:var(--line);--acc-ink:#0b0b0b}\n" + zn_css
         # 다크모드에서 검은 TEAM ZORRO 로고가 안 보이지 않게 흰색으로 (뉴스 페이지와 같은 규칙)
         zn_css += "\n@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) { --logo-filter: invert(1); } } :root[data-theme=\"dark\"] { --logo-filter: invert(1); }"
+        # '숫자로 보는 회사들' 01·02 같은 테두리 숫자: 폰에서 1.5px 선이 다크·'웹사이트 어둡게'에서 흐려 보여 굵게 (2026-10-22 사용자)
+        zn_css += "\n.sec-head .num:not(.sym) { -webkit-text-stroke-width:2px; }"
         def add_nav(path, root):
             h = path.read_text(encoding="utf-8")
             if 'class="zn"' in h:
@@ -1003,6 +1006,7 @@ def add_color_scheme(out_dir: Path) -> int:
         h = f.read_text(encoding="utf-8")
         if 'name="color-scheme"' in h or "<head>" not in h:
             continue
+        h = re.sub(r'(class="zn-logo"[^>]*><img src="[^"]*)teamzorro_logo\.png"', r'\1teamzorro_logo_halo.png"', h)   # 회사 판단처럼 자체 탭바를 가진 페이지도 같은 로고로
         f.write_text(h.replace("<head>", '<head><meta name="color-scheme" content="light dark">', 1), encoding="utf-8")
         n += 1
     return n
