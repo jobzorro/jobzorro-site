@@ -4,6 +4,7 @@
   site/manifest.webmanifest   앱 이름·아이콘·색·바로가기
   site/sw.js                  서비스워커 (오프라인일 때 최근에 본 화면을 보여줌)
   site/offline.html           한 번도 안 본 화면을 오프라인에서 열었을 때
+  site/.well-known/assetlinks.json  플레이스토어 앱(TWA)과 사이트 연결 (없으면 앱 위에 주소창이 뜸)
   site/assets/app/*.png       아이콘 (원본 assets/app/, make_app_icons.py 로 만든다)
   모든 페이지 <head>          manifest 연결 + 서비스워커 등록 (관리자 페이지는 제외)
 
@@ -19,6 +20,13 @@ from pathlib import Path
 BASE = Path(__file__).parent
 THEME = "#0b0b0b"
 SKIP = ("admin",)   # 앱에 넣지 않을 최상위 폴더
+
+# 플레이스토어 앱(jobzorro-app 폴더, 패키지 kr.jobzorro.app)이 이 사이트의 '공식 앱'임을 증명하는 서명 지문.
+# 맞지 않으면 앱 위에 주소창이 뜬다. 업로드 키 + (플레이 콘솔 '앱 서명' 화면의) 구글 앱 서명 키 둘 다 넣는다.
+ANDROID_PACKAGE = "kr.jobzorro.app"
+ANDROID_FINGERPRINTS = [
+    "B7:0B:0C:00:84:4E:55:48:4B:7C:57:56:EE:71:5C:2E:49:70:27:05:4B:21:DF:CB:86:A3:AF:18:FF:20:E4:5E",  # 업로드 키 (2026-10-23)
+]
 
 
 def manifest(root: str) -> dict:
@@ -128,6 +136,11 @@ def add_pwa(out_dir: Path, base_url: str) -> int:
     # 빌드마다 버전이 바뀌어 옛 저장본은 다음 실행 때 지워진다
     sw = SW_JS.replace("__VERSION__", "jz-" + time.strftime("%Y%m%d%H%M%S")).replace("__ROOT__", root).replace("__SKIP__", json.dumps(list(SKIP)))
     (out_dir / "sw.js").write_text(sw, encoding="utf-8")
+    wk = out_dir / ".well-known"; wk.mkdir(exist_ok=True)
+    (wk / "assetlinks.json").write_text(json.dumps([{
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {"namespace": "android_app", "package_name": ANDROID_PACKAGE, "sha256_cert_fingerprints": ANDROID_FINGERPRINTS},
+    }], indent=1), encoding="utf-8")
     (out_dir / "offline.html").write_text(OFFLINE_HTML.format(theme=THEME, root=root), encoding="utf-8")
 
     tags, n = head_tags(root), 0
