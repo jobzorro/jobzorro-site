@@ -16,6 +16,7 @@
 import argparse
 import base64
 import hashlib
+import pwa
 import seo
 import html as _html
 import json
@@ -982,6 +983,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     audit_links(data, BASE / "assets" / "share")
     print(f"인앱 브라우저 → 기본 브라우저 전환: {add_inapp(out_dir)}개 페이지")
     print(f"다크모드 지원 표시(color-scheme): {add_color_scheme(out_dir)}개 페이지")
+    print(f"앱(PWA) 설치 연결: {pwa.add_pwa(out_dir, base_url)}개 페이지 (manifest·sw.js)")
     print(f"sitemap.xml: URL {len(entries)}개 -> {out_dir / 'sitemap.xml'}")
 
 
