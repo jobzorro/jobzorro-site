@@ -618,7 +618,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       r.trend.map(function (v, k) { return D.meta.trendYears[k] + '년 ' + man(v) + '만원'; }).join(' → ') + '</p>' : '';
     var capcal = r.how === 'capcal';   // 상한 보정 회사: 상한에 걸리는 직급만 총보상 추정
     var v2 = String(r.how).indexOf('v2') === 0, holding = String(r.how).indexOf('v2-holding') === 0, ptime = String(r.how).indexOf('v2-parttime') === 0, firm = String(r.how).indexOf('v2-firm') === 0,
-      fk = r.fld ? (r.fld[4] || '현장') : '', hq = /^(매장직|급식 현장|극장 단기 근로|호텔 현장)$/.test(fk), fpro = fk === '조종사' || fk === '의사' || hq, skew = /-skew$/.test(r.how), ex = r.ex;
+      fk = r.fld ? (r.fld[4] || '현장') : '', hq = /^(매장직|급식 현장|극장 단기 근로|호텔 현장|물류 현장)$/.test(fk), fpro = fk === '조종사' || fk === '의사' || hq, skew = /-skew$/.test(r.how), ex = r.ex;
     var howRank = v2 ? '<li>직급별: 신입 기준 연봉 ' + (r.s0 ? man(r.s0) + '만원(' + esc(r.s0src || '') + ')' : '') + '에서 표준 직급 배수(대리 1.25 · 과장 1.54 · 차장 1.82 · 부장 2.04)로 올렸습니다. 직원 평균 경력은 약 ' + (r.cC || '-') + '년(회사 근속 + 회사 나이로 가늠한 입사 전 경력)으로 보고, 직급 연봉의 가중 평균이 회사 평균과 같아지도록 맞췄습니다. 평균이 기본 연봉보다 높은 차액(성과급·고연봉 인력 몫)은 직급이 높을수록 더 붙였습니다.</li>' +
       (String(r.how).indexOf('v2-flat') === 0 ? '<li>현장형 회사라 직급 간 연봉 차이를 표준의 절반으로 잡았습니다.</li>' : '') +
       (firm ? '<li>전문직 펌(로펌·회계법인·전략 컨설팅)이라 파트너급이 평균을 끌어올리는 구조로 보고 직급 폭을 넓혔습니다(부장 배수 2.6). 변호사·회계사·컨설턴트와 지원 인력이 함께 들어 있습니다.</li>' : '') +
