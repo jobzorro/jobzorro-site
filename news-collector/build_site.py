@@ -1542,7 +1542,7 @@ def static_head(title, desc, root="../"):
       <img class="brand-logo brand-logo-light" src="{root}assets/logo.png" alt="취업조로" width="150" height="40" loading="lazy" decoding="async">
       <img class="brand-logo brand-logo-dark" src="{root}assets/logo-dark.png" alt="" aria-hidden="true" width="150" height="40" loading="lazy" decoding="async">
       <div class="brand-text">
-        <div class="brand-name"><em class="brand-en">Career Briefing</em><span class="brand-ko">커리어를 읽는 남자의 NEWS PICK</span></div>
+        <div class="brand-name"><em class="brand-en">Career Briefing</em><span class="brand-ko">조로의 News Pick</span></div>
       </div>
     </a>
     <div class="mast-right">
@@ -1827,7 +1827,7 @@ def render(today, archive):
       <img class="brand-logo brand-logo-light" src="assets/logo.png" alt="취업조로" width="150" height="40" loading="lazy" decoding="async">
       <img class="brand-logo brand-logo-dark" src="assets/logo-dark.png" alt="" aria-hidden="true" width="150" height="40" loading="lazy" decoding="async">
       <div class="brand-text">
-        <div class="brand-name"><em class="brand-en">Career Briefing</em><span class="brand-ko">커리어를 읽는 남자의 NEWS PICK</span></div>
+        <div class="brand-name"><em class="brand-en">Career Briefing</em><span class="brand-ko">조로의 News Pick</span></div>
       </div>
     </a>
     <div class="mast-right">
