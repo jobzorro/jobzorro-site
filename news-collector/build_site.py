@@ -163,8 +163,11 @@ a { color: inherit; text-decoration: none; }
 .brand-name { font-size: 18px; font-weight: 800; letter-spacing: -.4px; line-height: 1.2; display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 0; }
 .brand-en {
   font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 13.5px;
-  letter-spacing: .06em; color: var(--brass); text-transform: uppercase; margin-left: 6px; vertical-align: 1px;
+  letter-spacing: .06em; color: var(--brass); text-transform: uppercase; vertical-align: 1px;
 }
+/* 영어 이름 뒤에 붙는 한글 한 줄 설명 (다른 페이지 "Company Check · …"와 같은 순서) */
+.brand-ko { margin-left: 6px; }
+.brand-ko::before { content: "· "; }
 .stamp {
   font-family: var(--mono); font-size: 12.5px; color: var(--muted);
   font-variant-numeric: tabular-nums; white-space: nowrap;
@@ -1539,7 +1542,7 @@ def static_head(title, desc, root="../"):
       <img class="brand-logo brand-logo-light" src="{root}assets/logo.png" alt="취업조로" width="150" height="40" loading="lazy" decoding="async">
       <img class="brand-logo brand-logo-dark" src="{root}assets/logo-dark.png" alt="" aria-hidden="true" width="150" height="40" loading="lazy" decoding="async">
       <div class="brand-text">
-        <div class="brand-name">커리어브리핑 <em class="brand-en">Career Briefing</em></div>
+        <div class="brand-name"><em class="brand-en">Career Briefing</em><span class="brand-ko">커리어를 읽는 남자의 NEWS PICK</span></div>
       </div>
     </a>
     <div class="mast-right">
@@ -1824,7 +1827,7 @@ def render(today, archive):
       <img class="brand-logo brand-logo-light" src="assets/logo.png" alt="취업조로" width="150" height="40" loading="lazy" decoding="async">
       <img class="brand-logo brand-logo-dark" src="assets/logo-dark.png" alt="" aria-hidden="true" width="150" height="40" loading="lazy" decoding="async">
       <div class="brand-text">
-        <div class="brand-name">커리어브리핑 <em class="brand-en">Career Briefing</em></div>
+        <div class="brand-name"><em class="brand-en">Career Briefing</em><span class="brand-ko">커리어를 읽는 남자의 NEWS PICK</span></div>
       </div>
     </a>
     <div class="mast-right">

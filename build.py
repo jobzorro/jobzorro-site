@@ -379,10 +379,14 @@ NEWS_MASTHEAD_CSS = """
 .masthead-inner { padding:28px 20px 0; max-width:1320px; }
 .masthead .brand-logo { display:none !important; }
 .masthead .brand { gap:0; } .masthead .brand-text { border-left:0; padding-left:0; }
-.masthead .brand-name { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:12px; }
+.masthead .brand-name { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; flex-wrap:wrap; gap:4px 12px; }
 .masthead .brand-name::before { content:""; width:8px; height:8px; border-radius:50%; background:#c6ff3d; display:inline-block; }
 .masthead .brand-en { font-family:"Archivo",sans-serif; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; background:none; color:var(--muted); padding:0; margin-left:0; }
-.masthead .brand-en::before { content:"· "; }
+/* 영어 → 한글 순서: "Career Briefing · 한 줄 설명" */
+.masthead .brand-ko { margin-left:-6px; }
+.masthead .brand-ko::before { content:"· "; }
+/* 좁은 화면: 한글 설명을 다음 줄로 내리고 점 대신 글자 시작선에 맞춤 */
+@media (max-width:560px) { .masthead .brand-ko { flex-basis:100%; margin-left:20px; } .masthead .brand-ko::before { content:none; } }
 .stamp { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
 .theme-btn { font-family:"Archivo",sans-serif; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; border-radius:999px; }
 .hero { background:var(--paper); border-bottom:1px solid var(--hairline); }
