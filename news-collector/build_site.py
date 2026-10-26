@@ -46,6 +46,16 @@ JOB_TAG_LINKS = {
     "건설": "jobs/construction-mgmt/", "공공": "jobs/public-admin/", "공통": "",
 }
 
+# 섹션 제목 윗줄 (함께하기 페이지처럼 "윗줄,<br><b>섹션 이름</b>" 두 줄 제목). 없는 섹션은 이름 한 줄만
+SECTION_LEADS = {
+    "채용 시즌·공고": "지금 문이 열린 곳,",
+    "이직·연봉·HR": "옮길까, 남을까,",
+    "기업·산업 레이더": "지원 전에 볼 신호,",
+    "고용지표·정책": "시장 전체의 온도,",
+    "커리어의 변화": "일의 판이 바뀐다,",
+}
+BRIEF_LEAD = "조로가 먼저 읽은"
+
 
 def e(text):
     """HTML 이스케이프 (None 안전)"""
@@ -244,6 +254,8 @@ a { color: inherit; text-decoration: none; }
   font-weight: 800; letter-spacing: -.045em; line-height: 1.14; text-wrap: balance;
 }
 .hero h1 em { font-style: normal; color: var(--brass); }
+.hero h1 .thin { display: block; font-size: .5em; font-weight: 500; color: var(--ink-soft); margin-bottom: 10px; }
+.hero h1 .line { display: block; }
 .hero-sub { margin: 0 0 34px; max-width: 46ch; font-size: 16.5px; line-height: 1.65; color: var(--ink-soft); }
 
 .funnel { display: flex; align-items: stretch; flex-wrap: wrap; }
@@ -303,6 +315,8 @@ a { color: inherit; text-decoration: none; }
 .sector-numeral { font-family: var(--serif); font-size: 34px; font-weight: 700; color: var(--brass); line-height: 1; flex: none; }
 .sector-title { margin: 0; font-size: clamp(22px, 3vw, 33px); font-weight: 700; letter-spacing: -.035em; line-height: 1.15; }
 .sector-desc { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.sector-title b { font-weight: inherit; }
+.sector-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
 .sector-count {
   flex: none; font-family: var(--mono); font-size: 12.5px; letter-spacing: .1em;
   color: var(--muted); text-transform: uppercase; padding-bottom: 3px;
@@ -675,6 +689,7 @@ SCRIPT = r"""
 (function () {
   var D = window.__BRIEF__;
   var JOB_TAG_LINKS = __JOB_TAG_LINKS__;  // build_site.py 의 JOB_TAG_LINKS (직무 태그 → 직무사전)
+  var SECTION_LEADS = __SECTION_LEADS__, BRIEF_LEAD = __BRIEF_LEAD__;  // build_site.py 의 섹션 제목 윗줄
   var view = document.getElementById('view');
   var segs = Array.prototype.slice.call(document.querySelectorAll('.seg'));
   var nav = document.getElementById('datenav');
@@ -891,6 +906,14 @@ SCRIPT = r"""
     return card;
   }
 
+  // 두 줄 섹션 제목: 윗줄(있을 때만) + 형광 밑줄 이름
+  function sectorTitle(lead, name) {
+    var h = el('h2', 'sector-title');
+    if (lead) { h.appendChild(document.createTextNode(lead)); h.appendChild(document.createElement('br')); }
+    h.appendChild(el('b', null, name));
+    return h;
+  }
+
   function briefSection(lines, title) {
     var section = el('section', 'sector brief-sec');
     var head = el('div', 'sector-head');
@@ -902,9 +925,7 @@ SCRIPT = r"""
       mark.appendChild(img);
     });
     left.appendChild(mark);
-    var titles = document.createElement('div');
-    titles.appendChild(el('h2', 'sector-title', title));
-    left.appendChild(titles);
+    left.appendChild(sectorTitle(BRIEF_LEAD, title));
     head.appendChild(left);
     section.appendChild(head);
     var ol = el('ol', 'brief-list');
@@ -932,13 +953,13 @@ SCRIPT = r"""
       var head = el('div', 'sector-head');
       var left = el('div', 'sector-head-left');
       left.appendChild(el('span', 'sector-numeral', (i + 1 < 10 ? '0' : '') + (i + 1)));
-      var titles = document.createElement('div');
-      titles.appendChild(el('h2', 'sector-title', sec.name));
-      titles.appendChild(el('p', 'sector-desc', sec.desc));
-      left.appendChild(titles);
+      left.appendChild(sectorTitle(SECTION_LEADS[sec.name], sec.name));
       head.appendChild(left);
-      head.appendChild(el('span', 'sector-count',
-        sec.en + '  /  ' + sec.articles.length + ' 건'));
+      // 오른쪽: 설명 + 영문 라벨·건수 (함께하기 섹션 머리와 같은 배치)
+      var side = el('div', 'sector-side');
+      side.appendChild(el('p', 'sector-desc', sec.desc));
+      side.appendChild(el('span', 'sector-count', sec.en + '  /  ' + sec.articles.length + ' 건'));
+      head.appendChild(side);
       section.appendChild(head);
 
       if (sec.articles.length) {
@@ -1417,6 +1438,14 @@ SCRIPT = r"""
 """
 # 직무 태그 링크 표를 JS 상수로 박는다 (한글은 그대로, </script> 깨짐 방지로 < 는 이스케이프)
 SCRIPT = SCRIPT.replace("__JOB_TAG_LINKS__", json.dumps(JOB_TAG_LINKS, ensure_ascii=False).replace("<", "\\u003c"))
+SCRIPT = SCRIPT.replace("__SECTION_LEADS__", json.dumps(SECTION_LEADS, ensure_ascii=False).replace("<", "\\u003c"))
+SCRIPT = SCRIPT.replace("__BRIEF_LEAD__", json.dumps(BRIEF_LEAD, ensure_ascii=False))
+
+
+def sector_title(lead, name):
+    """두 줄 섹션 제목 (JS sectorTitle 과 같은 마크업)"""
+    top = f"{e(lead)}<br>" if lead else ""
+    return f'<h2 class="sector-title">{top}<b>{e(name)}</b></h2>'
 
 
 # ============================================================
@@ -1638,9 +1667,9 @@ def render_day_page(day, prev_date, next_date):
     for i, sec in enumerate(day.get("sections", []), 1):
         arts = sec.get("articles", [])
         out.append(f'  <section class="sector">\n    <div class="sector-head"><div class="sector-head-left">'
-                   f'<span class="sector-numeral">{i:02d}</span><div><h2 class="sector-title">{e(sec.get("name"))}</h2>'
-                   f'<p class="sector-desc">{e(sec.get("desc"))}</p></div></div>'
-                   f'<span class="sector-count">{e(sec.get("en"))}  /  {len(arts)} 건</span></div>')
+                   f'<span class="sector-numeral">{i:02d}</span>{sector_title(SECTION_LEADS.get(sec.get("name")), sec.get("name"))}</div>'
+                   f'<div class="sector-side"><p class="sector-desc">{e(sec.get("desc"))}</p>'
+                   f'<span class="sector-count">{e(sec.get("en"))}  /  {len(arts)} 건</span></div></div>')
         if arts:
             out.append('    <div class="news-grid">')
             out.extend(render_static_article(a, numerals[j % len(numerals)]) for j, a in enumerate(arts))
@@ -1709,7 +1738,7 @@ def brief_section(lines, title, root=""):
     return (f'  <section class="sector brief-sec"><div class="sector-head"><div class="sector-head-left">'
             f'<span class="sector-mark"><img class="mark-light" src="{root}assets/mark.png" alt="" width="56" height="56">'
             f'<img class="mark-dark" src="{root}assets/mark-dark.png" alt="" width="56" height="56"></span>'
-            f'<div><h2 class="sector-title">{e(title)}</h2></div></div>'
+            f'{sector_title(BRIEF_LEAD, title)}</div>'
             f'</div>'
             f'<ol class="brief-list">{items}</ol></section>')
 
@@ -1841,7 +1870,7 @@ def render(today, archive):
   <div class="hero-inner">
     <div class="hero-text">
       <div class="eyebrow"><span class="pulse"></span>커리어를 읽는 남자, 취업조로가 매일 아침 고른 뉴스 &middot; {e(today.get('date', ''))}</div>
-      <h1>오늘 커리어에 영향을 주는 뉴스,<br><em>{published}건</em>으로 압축했습니다</h1>
+      <h1><span class="thin">오늘 커리어에 영향을 주는</span><span class="line"><em>뉴스 {published}건.</em></span></h1>
 {render_brief(dict(today, briefing=[]))}
     </div>
     <div class="hero-stats"><div class="funnel">{funnel_html}</div></div>

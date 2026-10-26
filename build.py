@@ -392,8 +392,11 @@ NEWS_MASTHEAD_CSS = """
 .hero { background:var(--paper); border-bottom:1px solid var(--hairline); }
 .hero-inner { max-width:1320px; padding:18px 20px 40px; gap:48px; align-items:end; }
 .eyebrow { display:none; }
-.hero h1 { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; font-size:clamp(34px, 5.4vw, 76px); line-height:1.02; letter-spacing:-.05em; margin:0 0 22px; white-space:nowrap; }
+.hero h1 { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; font-size:clamp(38px, 6vw, 88px); line-height:.98; letter-spacing:-.05em; margin:12px 0 26px; white-space:nowrap; }
 .hero h1 em { color:inherit; background:linear-gradient(transparent 68%, var(--mark, #c6ff3d) 68%); }
+/* 다른 탭과 같은 2단 제목: 작은 회색 윗줄 + 거대한 핵심어 */
+.hero h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--ink-soft); margin-bottom:12px; line-height:1.15; }
+.hero h1 .line { display:block; }
 .hero-sub { font-size:16px; color:var(--ink-soft); max-width:58ch; }
 .brief-box { border:0; border-top:1px solid var(--ink); border-radius:0; background:transparent; padding:18px 0 0; margin-top:0; }
 .brief-label { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
@@ -429,14 +432,17 @@ NEWS_MASTHEAD_CSS = """
 .datenav { gap:6px; }
 .datebtn, .dateselect { border-radius:999px; border:1px solid var(--hairline-2); font-family:"Archivo","Noto Sans KR",sans-serif; font-size:13px; font-weight:700; padding:8px 12px; background:transparent; color:var(--ink); }
 .datebtn:hover { background:var(--ink); color:var(--paper); border-color:var(--ink); }
-/* 섹션: 번호 아웃라인 + 큰 제목 */
+/* 섹션: 함께하기(.z-sec-head)와 같은 문법 — 큰 아웃라인 번호 + 두 줄 제목(형광 밑줄) + 오른쪽 설명 */
 .container { max-width:1320px; padding:0 20px; }
-.sector { padding-top:64px; }
-.sector-head { align-items:end; border-bottom:1px solid var(--ink); padding-bottom:18px; margin-bottom:24px; }
-.sector-numeral { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(36px, 4.6vw, 64px); font-weight:900; line-height:.9; letter-spacing:-.05em; color:transparent; -webkit-text-stroke:1.5px var(--ink); }
-.sector-title { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(22px, 2.8vw, 36px); font-weight:900; letter-spacing:-.05em; line-height:1; }
-.sector-desc { font-size:14px; color:var(--muted); }
-.sector-count { font-family:"Archivo",sans-serif; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.sector { padding-top:88px; }
+.sector-head { align-items:end; gap:20px 28px; border-bottom:1px solid var(--ink); padding-bottom:22px; margin-bottom:24px; }
+.sector-head-left { align-items:end; gap:28px; }
+.sector-numeral { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(40px, 6vw, 88px); font-weight:900; line-height:.9; letter-spacing:-.05em; color:transparent; -webkit-text-stroke:1.5px var(--ink); }
+.sector-title { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(28px, 4.2vw, 58px); font-weight:900; letter-spacing:-.05em; line-height:1.04; }
+.sector-title b { font-weight:900; background:linear-gradient(transparent 68%, var(--mark, #c6ff3d) 68%); }
+.sector-side { max-width:42ch; gap:10px; padding-bottom:4px; }
+.sector-desc { margin:0; font-size:14px; line-height:1.6; color:var(--muted); }
+.sector-count { font-family:"Archivo",sans-serif; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink); }
 .news-card { border:0; border-top:1px solid var(--hairline); border-radius:0; padding:18px 0; box-shadow:none; background:transparent; }
 .news-card:hover { box-shadow:none; transform:none; background:transparent; }
 .news-card { margin:0; }
@@ -488,9 +494,12 @@ NEWS_MASTHEAD_CSS = """
 /* 860px 이하: 섹션 머리(01·02·오늘의 브리핑)도 세로로 쌓이므로 왼쪽 정렬 */
 @media (max-width: 860px) {
   .sector-head { align-items:flex-start; }
+  .sector-head-left { gap:16px; }
+  .sector-side { align-items:flex-start; text-align:left; }
 }
 @media (max-width: 900px) {
-  .hero h1 { white-space:normal; font-size:clamp(30px, 8.6vw, 44px); line-height:1.08; }
+  .hero h1 { white-space:normal; font-size:clamp(36px, 10vw, 52px); line-height:1.02; }
+  .hero h1 .thin { font-size:.5em; }
   .funnel-step { padding:10px 0; }
   .funnel-num { font-size:24px; }
   .brief-sec .brief-list li { padding-left:36px; font-size:15.5px; }
