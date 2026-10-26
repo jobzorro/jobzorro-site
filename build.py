@@ -111,6 +111,7 @@ def slim_job(j: dict) -> dict:
         "ai": {"level": j["ai"]["level"]},                                       # 카드 AI 배지 · 'AI 영향 낮은 직무만' 필터
         "nonmajorOk": j["nonmajorOk"], "draftOnly": j["draftOnly"],
         "mj": j["mj"], "mf": (j.get("major") or {}).get("fields", []), "deg": (j.get("major") or {}).get("degree", ""),   # 전공 단계 표시 · 진단 매칭
+        "mm": (j.get("major") or {}).get("majors", []),                         # 진단: 꼭 맞는 학과 키 (data/majors.json)
         "sources": {"count": s.get("count", 0), "public": s.get("public", 0), "industries": s.get("industries", [])},  # 근거 배지·필터·업종 검색
         "gc": _gc(j["group"]),                                                   # 웹 카드 그림 색 [액센트, 배경] (공유 이미지는 카톡 전용)
     }
@@ -198,8 +199,11 @@ def attach_client_salary(data: dict) -> None:
     print(f"취업조로 이직자 연봉: 직무 {n}개에 직군 집계 연결")
 
 
-def attach_terms(data: dict, gl: dict, top: int = 5) -> None:
-    """직무마다 본문에 가장 많이 나오는 용어 TOP 5 를 j["terms"] 로 붙인다 (상세 패널·직무 페이지 '필수 용어')."""
+def attach_terms(data: dict, gl: dict, top: int = 5, picked: dict | None = None) -> None:
+    """직무마다 필수 용어 TOP 5 를 j["terms"] 로 붙인다 (상세 패널·직무 페이지 '필수 용어').
+    data/job_terms.json(picked)에 직무가 있으면 그 5개(그 직무 5년 차가 실무에서 쓰는 업계 용어)를 그대로 쓰고,
+    없는 직무만 용어집(glossary.json)에서 본문 빈도순으로 고른다."""
+    picked = picked or {}
     SKIP_KEYS = {"id", "en", "group", "sources", "webSources", "news", "terms", "og"}
     def text_of(o):
         if isinstance(o, dict): return " ".join(text_of(v) for k, v in o.items() if k not in SKIP_KEYS)
@@ -211,6 +215,10 @@ def attach_terms(data: dict, gl: dict, top: int = 5) -> None:
         return txt.count(w)
     n = 0
     for j in data["jobs"]:
+        if picked.get(j["id"]):
+            j["terms"] = [{"t": t["t"], "e": t.get("e", ""), "s": t["s"]} for t in picked[j["id"]][:top]]
+            n += 1
+            continue
         txt = text_of(j); scored = []
         for t in gl.get("terms", []):
             c = sum(count(txt, w) for w in [t["term"]] + t.get("aliases", []))
@@ -540,6 +548,9 @@ def attach_major(data: dict) -> None:
     """jobs.json 의 major(level·fields·degree·prep)를 화면용 문구 mj 로 만든다. nonmajorOk 는 level 에서 파생(전공 무관 = True).
     level: open 전공 무관 / prep 관련 전공 우대(비전공은 준비 필요) / req 관련 전공 필수"""
     mf = data["meta"].get("majorFields", {})
+    # 진단 페이지의 학과 목록 (학과 → 계열). 화면은 meta.majors 로 읽는다
+    mp = BASE / "data" / "majors.json"
+    data["meta"]["majors"] = json.loads(mp.read_text(encoding="utf-8"))["majors"] if mp.exists() else {}
     for j in data["jobs"]:
         m = j.get("major") or {"level": "open" if j.get("nonmajorOk") else "req", "fields": []}
         lv, fl = m["level"], m.get("fields", [])
@@ -579,6 +590,11 @@ def audit_links(data: dict, share_dir: Path) -> None:
             bad = [f for f in m.get("fields", []) if f not in mf]
             if bad:
                 warn.append(f"{jid}: 모르는 전공 계열 코드 {bad}")
+            unknown = [k for k in m.get("majors", []) if k not in data["meta"].get("majors", {})]
+            if unknown:
+                warn.append(f"{jid}: 모르는 학과 코드 {unknown} (data/majors.json)")
+            if m["level"] != "open" and m.get("fields") and not m.get("majors"):
+                warn.append(f"{jid}: 관련 계열은 있는데 꼭 맞는 학과(major.majors)가 없음 → 진단에서 계열 단위로만 판정")
             if m["level"] == "req" and not m.get("fields"):
                 warn.append(f"{jid}: 전공 필수인데 관련 전공 계열이 비어 있음")
             if m["level"] == "prep" and not m.get("prep"):
@@ -592,7 +608,7 @@ def audit_links(data: dict, share_dir: Path) -> None:
         if iq and jid not in iq:
             warn.append(f"{jid}: 면접 질문(data/interview_jobs.json) 없음")
         if not j.get("terms"):
-            warn.append(f"{jid}: 필수 용어 TOP5 없음 (data/glossary.json)")
+            warn.append(f"{jid}: 필수 용어 TOP5 없음 (data/job_terms.json)")
         if not (share_dir / "jobs" / f"{jid}.png").exists():
             warn.append(f"{jid}: 카톡 공유 이미지 없음 → 한글 글꼴이 있는 PC에서 python build.py 한 번 실행")
     if many:
@@ -631,7 +647,8 @@ def build(out_dir: Path, with_news: bool) -> None:
     attach_major(data)
     global GLOSS
     GLOSS = json.loads((BASE / "data" / "glossary.json").read_text(encoding="utf-8")) if (BASE / "data" / "glossary.json").exists() else {"terms": []}
-    attach_terms(data, GLOSS)
+    jt = BASE / "data" / "job_terms.json"
+    attach_terms(data, GLOSS, picked=json.loads(jt.read_text(encoding="utf-8")) if jt.exists() else None)
     attach_client_salary(data)   # 취업조로 이직자 연봉(직군별 집계, 5명 이상만) — salary-lab/job_link_stats.py 가 만든다
     attach_news(data)
     # 로고는 data URI 로 페이지마다 박지 않고 site/assets/ 의 파일을 참조한다 (nav_html/footer_html 이 root 를 붙여 깊이별 상대경로로 만든다)
@@ -781,7 +798,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     # 직무 비교 / 직무 진단
     for tpl_name, sub, title, desc in (
         ("template_compare.html", "compare", "직무 비교 — 두 직무를 나란히 | 취업조로 직무사전", "연봉대·필요 역량·들어가는 길·커리어 패스를 한 화면에서 비교합니다."),
-        ("template_fit.html", "fit", "1분 직무 진단 — 내 전공·학력으로 갈 수 있는 직무 | 취업조로 직무사전", f"학력·전공 계열·성향·원하는 것으로 직무 {len(data['jobs'])}개 중 바로 지원할 직무와 준비하면 열리는 직무를 골라 드립니다."),
+        ("template_fit.html", "fit", "1분 직무 진단 — 내 전공·학력으로 갈 수 있는 직무 | 취업조로 직무사전", f"학력·전공 학과(복수전공·부전공)·성향·원하는 것으로 직무 {len(data['jobs'])}개 중 바로 지원할 직무와 준비하면 열리는 직무를 골라 드립니다."),
     ):
         tp = BASE / tpl_name
         if not tp.exists():

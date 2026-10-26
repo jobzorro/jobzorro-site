@@ -245,7 +245,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
                  f'<div class="skill-row"><span class="k">자주 쓰는 도구</span>{tags(j["tools"], "big")}</div>'))
     if j.get("terms"):
         h.append(sec(f"필수 용어 TOP {len(j['terms'])}", '<ol class="terms">' + "".join(
-            f'<li><div class="tt"><b>{e(t["t"])}</b>' + (f'<span class="te">{e(t["e"])}</span>' if t.get("e") else "") + f'</div><p>{e(t["s"])}</p></li>' for t in j["terms"]) + '</ol>', "현직자 말에 자주 나오는 단어"))
+            f'<li><div class="tt"><b>{e(t["t"])}</b>' + (f'<span class="te">{e(t["e"])}</span>' if t.get("e") else "") + f'</div><p>{e(t["s"])}</p></li>' for t in j["terms"]) + '</ol>', "5년 차 현직자가 실무에서 쓰는 말"))
     h.append(sec("들어가는 길", '<div class="entry">'
                  f'<div><span class="k">관련 전공·신입</span><span class="v">{e(j["entry"]["major"])}</span></div>'
                  f'<div><span class="k">비전공{"<span class=\"ok\">전공 무관</span>" if j.get("nonmajorOk") else ""}</span><span class="v">{e(j["entry"]["nonmajor"])}' + (f'<br><b>준비할 것</b> {e(j["mj"]["prep"])}' if (j.get("mj") or {}).get("prep") else "") + '</span></div>'

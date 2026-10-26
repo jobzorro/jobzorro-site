@@ -852,7 +852,7 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
       '<div class="skill-row"><span class="k">자주 쓰는 도구</span>' + tags(j.tools, 'big') + '</div>');
     if (j.terms && j.terms.length) h += sec('certs', '필수 용어 TOP ' + j.terms.length, '<ol class="terms">' + j.terms.map(function (t) {
       return '<li><div class="tt"><b>' + esc(t.t) + '</b>' + (t.e ? '<span class="te">' + esc(t.e) + '</span>' : '') + '</div><p>' + esc(t.s) + '</p></li>';
-    }).join('') + '</ol>', '현직자 말에 자주 나오는 단어');
+    }).join('') + '</ol>', '5년 차 현직자가 실무에서 쓰는 말');
     h += sec('entry', '들어가는 길', '<div class="entry">' +
       '<div><span class="k">관련 전공·신입</span><span class="v">' + esc(j.entry.major) + '</span></div>' +
       '<div><span class="k">비전공' + (j.nonmajorOk ? '<span class="ok">전공 무관</span>' : '') + '</span><span class="v">' + esc(j.entry.nonmajor) + (j.mj && j.mj.prep ? '<br><b>준비할 것</b> ' + esc(j.mj.prep) : '') + '</span></div>' +
