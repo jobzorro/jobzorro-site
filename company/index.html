@@ -97,6 +97,70 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .act.heart.on { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
 .acts .seen { font-size:12.5px; color:var(--muted); margin-left:4px; }
 .toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:999px; font-size:13.5px; font-weight:700; z-index:50; }
+/* ---- 내 상황 (2026-10-27): 왼쪽에서 나오는 입력 창 + 회사 화면의 '내 상황이라면' 카드. 판정은 fit_engine.js (F 규칙) ---- */
+.mebar { margin-top:18px; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; max-width:640px; }
+.mebar .way { border:1.5px solid var(--hairline-2); border-radius:14px; padding:12px 14px; display:grid; gap:2px; align-content:start; }
+.mebar .way small { font-family:var(--display); font-size:11px; font-weight:800; letter-spacing:.1em; color:var(--muted); }
+.mebar .way b { font-size:14.5px; }
+.mebar .way span { font-size:12.5px; color:var(--muted); }
+.mebar button.way { font:inherit; text-align:left; color:var(--acc-ink); background:var(--acc); border-color:var(--acc); cursor:pointer; }
+.mebar button.way small, .mebar button.way span { color:var(--acc-ink); opacity:.72; }
+.mebar button.way:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+.mebar button.way.set { background:var(--paper); color:var(--ink); border-color:var(--ink); }
+.mebar button.way.set small, .mebar button.way.set span { color:var(--muted); opacity:1; }
+.mebar button.way.set small::before { content:"✓ "; color:var(--good); }
+@media (max-width:520px) { .mebar { grid-template-columns:minmax(0,1fr); } }
+
+.medim { position:fixed; inset:0; background:rgba(0,0,0,.42); z-index:60; opacity:0; transition:opacity .25s; }
+.medim.open { opacity:1; }
+.medrawer { position:fixed; top:0; bottom:0; left:0; width:min(460px, 94vw); background:var(--paper); color:var(--ink); z-index:61; display:grid; grid-template-rows:auto minmax(0,1fr) auto;
+  transform:translateX(-102%); transition:transform .3s cubic-bezier(.2,.8,.2,1); box-shadow:12px 0 40px rgba(0,0,0,.18); visibility:hidden;
+  padding-top:env(safe-area-inset-top, 0px); padding-bottom:env(safe-area-inset-bottom, 0px); padding-left:env(safe-area-inset-left, 0px); }
+.medrawer.open { transform:none; visibility:visible; }
+@media (prefers-reduced-motion: reduce) { .medrawer, .medim { transition:none; } }
+.medrawer .dh { padding:20px 22px 14px; border-bottom:1px solid var(--hairline); display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; align-items:start; }
+.medrawer .dh small { font-family:var(--display); font-size:11px; font-weight:800; letter-spacing:.12em; color:var(--muted); }
+.medrawer .dh h3 { margin:0; font-family:var(--display); font-size:24px; font-weight:900; letter-spacing:-.04em; grid-column:1; }
+.medrawer .dh p { margin:2px 0 0; font-size:13px; color:var(--muted); grid-column:1 / -1; }
+.medrawer .x { grid-row:1 / 3; grid-column:2; width:36px; height:36px; border-radius:50%; border:1.5px solid var(--ink); background:var(--paper); color:var(--ink); font-size:18px; line-height:1; cursor:pointer; }
+.medrawer form { overflow-y:auto; padding:16px 22px 22px; display:grid; gap:18px; align-content:start; }
+.medrawer fieldset { border:0; padding:0; margin:0; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px 12px; min-width:0; }
+.medrawer legend { font-family:var(--display); font-size:12px; font-weight:800; letter-spacing:.1em; color:var(--ink); padding:0 0 8px; display:flex; gap:8px; align-items:center; width:100%; }
+.medrawer legend::after { content:""; flex:1; height:1px; background:var(--hairline); }
+.mf { display:grid; gap:4px; min-width:0; }
+.mf.wide { grid-column:1 / -1; }
+.mf label { font-size:12px; color:var(--muted); font-weight:500; }
+.mf input, .mf select, .mecard input, .mecard select { font:inherit; font-size:15px; color:var(--ink); background:var(--mist); border:1.5px solid transparent; border-radius:10px; padding:8px 10px; width:100%; min-width:0; }
+.mf input:focus, .mf select:focus, .mecard input:focus, .mecard select:focus { outline:none; border-color:var(--ink); background:var(--paper); }
+.mf input[type=number], .mecard input[type=number] { font-family:var(--display); font-variant-numeric:tabular-nums; font-weight:700; }
+.mf .u { position:relative; } .mf .u input { padding-right:46px; }
+.mf .u span { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--muted); pointer-events:none; }
+.mchk { grid-column:1 / -1; display:flex; gap:10px; align-items:flex-start; font-size:13.5px; cursor:pointer; }
+.mchk input { width:18px; height:18px; margin-top:2px; accent-color:var(--ink); flex:none; }
+.mchk small { display:block; color:var(--muted); font-size:12px; margin-top:2px; }
+.mshare { background:var(--mist); border-radius:12px; padding:12px 14px; }
+.medrawer .df { padding:14px 22px 18px; border-top:1px solid var(--hairline); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.medrawer .df button { font:inherit; font-weight:800; font-size:14px; border-radius:999px; padding:11px 20px; cursor:pointer; border:1.5px solid var(--ink); background:var(--paper); color:var(--ink); }
+.medrawer .df .go { background:var(--ink); color:var(--paper); flex:1; }
+.medrawer .df .clr { border-color:transparent; color:var(--muted); font-weight:500; padding:11px 6px; }
+.medrawer .err { color:var(--bad); font-size:12.5px; width:100%; margin:0; }
+
+.mestrip { margin:-6px 0 22px; display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:12px 16px; border-radius:16px; background:var(--mist); font-size:13.5px; }
+.mestrip.need { background:color-mix(in srgb, var(--mid) 14%, var(--paper)); }
+.mestrip .tag { font-family:var(--display); font-size:11px; font-weight:800; letter-spacing:.08em; background:var(--acc); color:var(--acc-ink); border-radius:999px; padding:3px 10px; }
+.mestrip b { font-family:var(--display); }
+.mestrip label { display:flex; gap:6px; align-items:center; font-size:12px; color:var(--muted); }
+.mestrip input, .mestrip select { font:inherit; font-size:14px; color:var(--ink); background:var(--paper); border:1.5px solid var(--hairline-2); border-radius:10px; padding:6px 9px; width:112px; }
+.mestrip input { font-family:var(--display); font-variant-numeric:tabular-nums; font-weight:700; }
+.mestrip select { width:auto; }
+.mestrip input:focus, .mestrip select:focus { outline:none; border-color:var(--ink); }
+.mestrip .lnks { display:flex; gap:12px; margin-left:auto; }
+.lnk { font:inherit; font-size:12.5px; font-weight:700; background:none; border:0; padding:0; color:var(--ink); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+@media (max-width:640px) { .mestrip .lnks { margin-left:0; } }
+.mecta { margin:-6px 0 22px; border:1.5px dashed var(--hairline-2); border-radius:18px; padding:16px 20px; display:flex; gap:12px 18px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+.mecta p { margin:0; font-size:14px; } .mecta p b { font-family:var(--display); }
+.mecta button { font:inherit; font-size:13.5px; font-weight:800; border-radius:999px; padding:9px 16px; border:0; background:var(--acc); color:var(--acc-ink); cursor:pointer; }
+@media (max-width:760px) { .mecard { grid-template-columns:minmax(0,1fr); } .mecard .l { border-right:0; border-bottom:2px solid var(--ink); } }
 .pulse { display:grid; gap:14px; justify-items:center; margin:6px 0 0; }
 .pulse .today { font-size:13.5px; color:var(--ink-soft); }
 .pulse .today b { font-family:var(--display); font-size:18px; color:var(--ink); }
@@ -474,6 +538,9 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     <ul id="sug" class="sug" role="listbox" hidden></ul></div>
     <button>판단해 보기</button>
   </form>
+  <!-- 두 가지 보는 법: 그냥 검색 / 내 상황 넣고 검색 (2026-10-27) -->
+  <div class="mebar"><div class="way"><small>그냥 궁금하면</small><b>회사 이름만 검색</b><span>평점·연봉·재무로 본 일반 판정이에요</span></div>
+    <button class="way" type="button" id="meOpenBtn"></button></div>
   <div class="picks" id="picks"><span>이런 회사부터</span></div>
   <p class="hint" id="hint"></p>
   </div>
@@ -500,6 +567,334 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 </div></div>
 <!--FOOT--><footer class="pf"><div class="wrap"><img src="assets/jobzorro_logo.png" alt="TEAM ZORRO">커리어프로젝트 주식회사 · 취업조로 · 시안 v0.1</div></footer><!--/FOOT-->
 
+<!-- 내 상황 입력 창 (왼쪽에서 나옴). 입력값은 이 기기(localStorage)에만 저장, '연봉 보태기'에 체크했을 때만 익명으로 /sal 에 보냄 -->
+<div class="medim" id="medim" hidden></div>
+<aside class="medrawer" id="medrawer" role="dialog" aria-modal="true" aria-labelledby="meTitle" aria-hidden="true">
+  <div class="dh"><small>MY SITUATION</small><h3 id="meTitle">내 상황 넣기</h3><button class="x" type="button" id="meX" aria-label="닫기">×</button>
+    <p>한 번 넣어 두면 어떤 회사를 검색하든 내 기준 판정이 같이 나와요. 이 기기에만 저장돼요.</p></div>
+  <form id="meForm" novalidate>
+    <fieldset><legend>나</legend>
+      <div class="mf"><label for="me_sex">성별</label><select id="me_sex" data-k="sex"><option>남</option><option>여</option></select></div>
+      <div class="mf"><label for="me_age">만 나이</label><div class="u"><input id="me_age" type="number" inputmode="numeric" data-k="age" placeholder="31"><span>세</span></div></div>
+      <div class="mf"><label for="me_years">총 경력</label><div class="u"><input id="me_years" type="number" inputmode="decimal" step="0.5" data-k="years" placeholder="5"><span>년</span></div></div>
+      <div class="mf"><label for="me_tenure">지금 회사 근속</label><div class="u"><input id="me_tenure" type="number" inputmode="decimal" step="0.5" data-k="tenure" placeholder="5"><span>년</span></div></div>
+      <div class="mf"><label for="me_moves">이직 횟수</label><div class="u"><input id="me_moves" type="number" inputmode="numeric" data-k="moves" placeholder="0"><span>번</span></div></div>
+      <div class="mf"><label for="me_left">지금</label><select id="me_left" data-k="left"><option value="">재직 중</option><option value="1">이미 퇴사</option></select></div>
+      <div class="mf" id="me_gapf" hidden><label for="me_gap">쉰 기간</label><div class="u"><input id="me_gap" type="number" inputmode="decimal" step="0.5" data-k="gap" placeholder="0.5"><span>년</span></div></div>
+    </fieldset>
+    <fieldset><legend>지금 회사</legend>
+      <div class="mf wide"><label for="me_co">회사 이름 <small>(선택 · 연봉 보태기에만 씀)</small></label><input id="me_co" data-k="co" placeholder="예: 펄어비스" autocomplete="off"></div>
+      <div class="mf"><label for="me_size">규모</label><select id="me_size" data-k="size"></select></div>
+      <div class="mf"><label for="me_ind">업종</label><select id="me_ind" data-k="industry"></select></div>
+      <div class="mf"><label for="me_job">직무</label><input id="me_job" data-k="job" placeholder="예: 재무, 공정"></div>
+      <div class="mf"><label for="me_sal">연봉(총액)</label><div class="u"><input id="me_sal" type="number" inputmode="numeric" step="100" data-k="salary" placeholder="5800"><span>만 원</span></div></div>
+      <div class="mf"><label for="me_wlb">워라밸</label><select id="me_wlb" data-k="wlb"></select></div>
+      <div class="mf"><label for="me_place">근무지</label><select id="me_place" data-k="place"></select></div>
+    </fieldset>
+    <fieldset><legend>옮긴다면</legend>
+      <div class="mf"><label for="me_want">갈 직무</label><input id="me_want" data-k="want" placeholder="비우면 지금 직무"></div>
+      <div class="mf"><label for="me_twlb">예상 워라밸</label><select id="me_twlb" data-k="twlb"></select></div>
+    </fieldset>
+    <label class="mchk mshare"><input type="checkbox" id="me_share" data-k="share"><span><b>내 연봉을 익명으로 보태기</b>
+      <small>규모·업종·직무·연차·연봉(회사 이름은 적었을 때만)만 연봉 연구소 자료로 씁니다. 이름·연락처·나이는 보내지 않아요.</small></span></label>
+  </form>
+  <div class="df"><p class="err" id="meErr" hidden></p><button class="clr" type="button" id="meClr">지우기</button><button class="go" type="button" id="meSave">입력 완료</button></div>
+</aside>
+<script>// 내 상황 판단 엔진 (F 규칙) — v0.4 (2026-10-27, 4회차 문답지 반영)
+// 규칙 설명은 rules/fit_rules.md 6장. 숫자는 아래 FIT 한곳에만 둔다.
+// 브라우저(사이트)와 node(fit_test.js) 둘 다에서 돈다. 입력은 서버로 보내지 않는다.
+(function (root) {
+  "use strict";
+
+  // ── 기준값 (1회차 문답지 답) ─────────────────────────
+  const FIT = {
+    same_min_won: 500,          // F1 같은 급: 총액 +500만 이상
+    prime_min_won: 700,         //    30대 초중반(만 30~35세, 황금기)은 +700만
+    prime_age: [30, 35],
+    down_min_won: 500,          // F3 아래 급: +500만 초과
+    down_min_pct: 15,           //    그리고 15% 이상
+    tenure_min: 2,              // F4 지금 회사 최소 근속(년)
+    tenure_min_new: 3,          //    신입(첫 회사)
+    moves_warn_10y: 4,          // F5 경력 10년 안 이직 횟수 경고
+    job_change_max_years: 5,    // F6 직무 전환 가능 연차
+    public_to_private_max: 7,   // F18 공공→민간 연차
+    wlb_pct_per_step: 7.5,      // F8 야근 10시간 = 15% → 워라밸 한 단계(약 5시간) = 7.5%. 나빠지는 쪽도 같은 비율
+    big_gain_pct: 20,           // F4 예외: 체감(연봉+워라밸) 20% 이상이면 신입 3년 기준 무시 (단, 2년은 채움)
+    factory_won: 1000,          // F9 지방 공장·산단 근무 = 연봉 1천만 원 손해로 본다
+    base_cut_max_pct: 10,       // F2 성과급 큰 회사: 계약연봉은 10%까지만 깎여도 되고, 총액은 올라야 함
+    // F11 선퇴사 [경력 4년 이상?][공백 1년 넘음?] → 연봉 기준을 몇 배로 (1 그대로, 0.5 조금 낮춤, 0 깎이지만 않으면)
+    left_factor: { "long,short": 1, "long,gap": 0.5, "short,short": 1, "short,gap": 0 },
+    avg_tenure_apply_min: 2,    // F23 평균 근속이 이보다 짧고
+    last_tenure_apply: 3,       //     마지막 회사 3년 전이면 지원 보류
+    newbie_age: { "남": 31, "여": 29 }, // F21 중고신입 → 경력 전략 전환 나이
+    left_gap_cut_pct: 5,        // F11 3회차 C3: 선퇴사 + 공백 1년 넘은 4년 차 이상은 5%까지 삭감도 '조건 보고'
+    down_cond_pct: 10,          // F3 4회차 C2: 아래 급 +500만 넘고 10~15%면 '조건 보고'(지금 회사 평점이 더 낮을 때)
+    rating_min: 3.0,            // 조로 규칙 3.0 기준 — 갈 회사 평점이 이보다 낮으면 확인
+    job_hop_avg: 2,             // 4회차 A4: 한 곳 평균 근속 2년 미만이면 '잦은 이직'
+  };
+
+  // 받침 따라 조사 고르기: j("건설", "은", "는") → "건설은"
+  function j(w = "", a, b) { const c = w.charCodeAt(w.length - 1); const has = c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 > 0; return w + (has ? a : b); }
+
+  // 회사 급: 숫자가 클수록 위. 스타트업·외국계·공공은 따로 표시해 조건을 붙인다.
+  function tier(size = "") {
+    if (/스타트업/.test(size)) return { n: 1, kind: "startup" };
+    if (/외국계/.test(size)) return { n: 3, kind: "foreign" };
+    if (/공기업|공공/.test(size)) return { n: 3, kind: "public" };
+    if (/대기업/.test(size)) return { n: 3, kind: "" };
+    if (/중견/.test(size)) return { n: 2, kind: "" };
+    return { n: 1, kind: "" }; // 중소·모르면
+  }
+
+  // 워라밸 단계: 1 칼퇴 ~ 4 매일 야근
+  function wlb(w = "") {
+    if (/칼퇴/.test(w)) return 1;
+    if (/매일/.test(w)) return 4;
+    if (/야근/.test(w)) return 3;
+    return 2; // 보통·모름
+  }
+
+  // 직무 묶음: 같은 묶음 안 이동은 '직무 전환'으로 안 본다
+  const JOB_FAMILY = [
+    // B5(2회차): 행정·인사·총무·노무는 다 따로 본다
+    ["인사", /인사|HR/], ["행정", /행정/], ["총무", /총무/], ["노무", /노무/],
+    ["재무", /재무|회계|세무|자금/],
+    ["기획", /기획|전략/],
+    ["영업", /영업/],
+    ["구매", /구매|조달/],
+    ["SCM", /SCM|물류|생산관리/],
+    ["금융영업", /기업금융|리테일|WM/],
+    ["금융미들", /리스크|심사/],
+    ["마케팅", /마케팅|MD/],
+    ["PM", /PM|PO|서비스기획/],
+  ];
+  function family(job = "") {
+    const f = JOB_FAMILY.find(([, re]) => re.test(job));
+    return f ? f[0] : job;
+  }
+  // 직무가 바뀌어도 쉬운 '가까운 직무' 짝 (3회차 A1·B2). [지금, 갈 곳] 한 방향만
+  const CLOSE_JOBS = [[/행정/, /인사|HR/], [/재무|회계/, /기획/], [/영업관리/, /영업기획/]];
+  function closeJob(a = "", b = "") { return CLOSE_JOBS.some(([x, y]) => x.test(a) && y.test(b)); }
+
+  // F27 직무 가치 — 2회차 C3 '이직' 서열: 인사·기획·전략·연구개발 > 재무·마케팅·품질·생산관리 > 나머지
+  // (신입 합격 난이도 서열은 따로 받았지만 방향이 헷갈려 아직 안 씀 → 3회차 확인)
+  function jobValue(job = "") {
+    if (/인사|기획|전략|연구개발|R&D/.test(job)) return 3;
+    if (/재무|회계|마케팅|품질|QA|생산관리/.test(job)) return 2;
+    return 1;
+  }
+
+  // F26 전망 나쁜 산업·직무 — 2회차 C1. 직무사전 'AI 영향 높음' 직무와 config.json industry_view는 나중에 합친다
+  // 4회차: 은행 영업점(C5), 데이터 분석(C9 'AI에 가장 심하게 맞는 직무')
+  const BAD_FIELD = [/오프라인 유통/, /유통.*MD|MD.*유통/, /의류.*OEM/, /게임/, /SaaS/, /IT.*운영|운영.*IT/, /은행.*영업점/, /데이터 ?분석/];
+  function badField(o = {}) {
+    const s = [o.industry, o.job].filter(Boolean).join(" ");
+    return BAD_FIELD.some(re => re.test(s));
+  }
+  // 지금 업황이 꺾인 산업 (오르내림이 있어 자주 바꾼다) — 3회차 C1·B1
+  const DOWN_INDUSTRY = [/화학/, /건설/];
+  function downInd(o = {}) { return DOWN_INDUSTRY.some(re => re.test(o.industry || "")); }
+  // 꺾였다가 올라가는 / 호황인 산업 — 많이 뽑아 옮기기 쉽고, 있는 사람은 옮길 이유가 적다 (4회차 B2·B3·C1)
+  // 4회차 A5: 나중엔 뉴스·채용 수로 자동 판단 후 조로가 확인
+  const UP_INDUSTRY = [/2차전지|배터리/];
+  function upInd(o = {}) { return UP_INDUSTRY.some(re => re.test(o.industry || "")); }
+  const FACTORY = /공장|산단|현장/;   // 4회차 C3: 지방 현장 순환에서 빠져나오는 것도 공장과 같이 본다
+  const PLANT_JOB = /생산|공정|품질|설비|R&D|연구/;  // 공장에 있는 게 자연스러운 직무
+  const lowRating = o => o.rating != null && o.rating < FIT.rating_min;
+
+  // ── A. 이직 결정 ───────────────────────────────────
+  // 돌려주는 값: { verdict, reasons:[{rule, text}] }
+  function judgeMove(c) {
+    const now = c.now || {}, to = c.target || {};
+    const R = [], cond = [];      // R: 이유, cond: '조건 보고'로 만드는 것
+    let fail = false;             // 마요 사유
+    const add = (rule, text, kind) => { R.push({ rule, text }); if (kind === "cond") cond.push(rule); if (kind === "fail") fail = true; };
+
+    const tn = tier(now.size), tt = tier(to.size);
+    const step = tt.n - tn.n;                       // +1 위 급, -1 아래 급
+    let won = (to.salary || 0) - (now.salary || 0);
+    const rawWon = won;
+    const upIn = upInd(to) && tt.n >= 3;                   // 4회차 C1: 호황 산업 대기업이면 공장 근무 손해를 따지지 않는다
+    if (/공장|산단/.test(to.place || "") && !FACTORY.test(now.place || "") && !upIn) won -= FIT.factory_won; // F9 (현장은 빠져나올 때만 본다)
+    const outFactory = FACTORY.test(now.place || "") && !FACTORY.test(to.place || "");
+    if (outFactory) won += FIT.factory_won;                // F9 반대: 지방 공장 → 본사는 +1천만 원으로 본다 (3회차 A5)
+    const pct = now.salary ? won / now.salary * 100 : 0;
+    const wlbGain = (wlb(now.wlb) - wlb(to.wlb)) * FIT.wlb_pct_per_step; // +면 좋아짐
+    const eff = pct + wlbGain;                      // 워라밸까지 친 체감 인상률
+
+    // F11 선퇴사면 연봉 기준을 낮춘다
+    let k = 1;
+    if (now.left) k = FIT.left_factor[[(now.years || 0) >= 4 ? "long" : "short", (now.gap || 0) > 1 ? "gap" : "short"].join(",")];
+    const outDown = downInd(now) && !downInd(to);          // 업황 꺾인 산업에서 나오기
+    const escape = (badField(now) && !badField(to)) || outDown || (outFactory && /현장/.test(now.place || "")); // 빠져나오는 이동
+    const prime = now.age >= FIT.prime_age[0] && now.age <= FIT.prime_age[1] && !outDown; // 3회차 C1: 빠져나오는 거면 황금기 기준 안 씀
+    const sameMin = (prime ? FIT.prime_min_won : FIT.same_min_won) * k;
+
+    // F2 성과급 큰 회사: 계약연봉 삭감 폭 + 총액 인상 둘 다 본다
+    if (to.base && to.base < now.salary) {
+      const cut = (now.salary - to.base) / now.salary * 100;
+      if (cut > FIT.base_cut_max_pct) add("F2", `계약연봉이 ${cut.toFixed(0)}% 깎여요. 성과급이 커도 ${FIT.base_cut_max_pct}%까지만 괜찮아요.`, "fail");
+    }
+
+    // 1) 돈 + 워라밸
+    if (won < 0 && now.left && (now.years || 0) >= 4 && (now.gap || 0) > 1 && -pct <= FIT.left_gap_cut_pct) {
+      add("F11", `이미 퇴사하고 공백이 ${now.gap}년 넘었으니 ${-won}만 원(${(-pct).toFixed(0)}%) 삭감은 받아들일 만해요. 갈 회사 평판이 나쁘지 않을 때만요.`, "cond"); // 3회차 C3
+    } else if (won < 0) {
+      add("F2", `연봉이 ${-won}만 원 깎여요. 이직은 연봉이 깎이면 안 됩니다.`, "fail");
+    } else if (step > 0) {
+      if (eff >= 0) add("F2", `한 단계 위 회사에 연봉 +${won}만 원, 깎이지 않아요.`);
+      else add("F8", `연봉은 +${won}만 원인데 워라밸이 나빠져 체감으로는 손해예요.`, "fail");
+    } else if (step < 0) {
+      // D2: 연봉만으론 14%여도 워라밸까지 치면 기준을 넘을 수 있다
+      // 4회차 C3: 업황 꺾인 산업·현장에서 빠져나오면 % 기준은 안 본다
+      const pctOk = eff >= FIT.down_min_pct * k || (escape && !badField(now));
+      if (won > FIT.down_min_won * k && pctOk) {
+        add("F3", `아래 급으로 가지만 +${won}만 원${wlbGain > 0 ? ", 워라밸까지 치면 " + eff.toFixed(0) + "%" : "(" + pct.toFixed(0) + "%)"}이면 생각해 볼 만해요.`);
+        // D5 중견 안정성: 빠져나오는 거면 평점·재무가 나쁠 때만 '조건 보고' (4회차 A1)
+        if (tt.n === 2) add("F3", "중견도 중견 나름이에요. 갈 회사가 안정적인지 확인하세요.", !escape || lowRating(to) ? "cond" : "");
+      }
+      else if (won > FIT.down_min_won * k && eff >= FIT.down_cond_pct * k)
+        add("F3", `아래 급에 +${won}만 원(${eff.toFixed(0)}%)은 애매해요. 지금 회사 평점이 갈 회사보다 낮다면 가도 돼요.`, "cond"); // 4회차 C2
+      else if (won >= 0 && badField(now) && !badField(to))
+        add("F3", "아래 급에 연봉도 그대로예요. 지금 자리에서 더 클 수 없거나, 새 직무 의지·조직문화가 확실할 때만 가세요.", "cond"); // 4회차 C5
+      else add("F3", `아래 급으로 가려면 +${FIT.down_min_won}만 원 넘게, ${FIT.down_min_pct}% 이상은 올라야 해요.`, "fail");
+    } else {
+      if (won >= sameMin || eff >= 15) add("F1", `같은 급에서 +${won}만 원${wlbGain > 0 ? ", 워라밸도 좋아져요" : ""}.`);
+      else add("F1", `같은 급 이동인데 +${won}만 원은 ${sameMin}만 원 기준에 못 미쳐요${prime ? "(30대 초중반 기준)" : ""}.`, "fail");
+    }
+    if (wlbGain > 0 && step >= 0 && won >= 0) add("F8", `워라밸이 좋아지는 건 연봉 약 ${wlbGain.toFixed(0)}% 오른 셈이에요.`);
+    if (outFactory) {
+      add("F9", `지방 ${/현장/.test(now.place) ? "현장" : "공장"}에서 본사로 오는 건 연봉 1천만 원 오른 것과 같아요.`);
+      if (rawWon < 0) add("F9", `다만 실제 연봉은 ${-rawWon}만 원 깎여요. 서울 근무를 정말 원할 때만 가세요.`, "cond"); // 3회차 C4
+    }
+    if (upIn) add("F26", `${j(to.industry, "은", "는")} 업황이 올라오는 중이고 대기업은 좋은 곳뿐이에요. 공장 근무여도 갈 만해요.`);
+    else if (upInd(now) && !upInd(to)) add("F26", `${j(now.industry, "은", "는")} 지금 호황이라 옮길 이유가 적어요.`, "cond"); // 4회차 B3
+    if (lowRating(to)) add("F12", `갈 회사 평점 ${to.rating}은 ${FIT.rating_min} 아래예요. 지금 회사보다 나은지 확인하세요.`, "cond"); // 4회차 C2
+    if (outDown) add("F26", `${j(now.industry, "은", "는")} 지금 업황이 꺾여 있어요. 다른 조건이 더 좋다면 옮길 때예요.`);
+    else if (downInd(to) && !downInd(now)) add("F26", `${j(to.industry, "은", "는")} 지금 업황이 안 좋아요. 회사 사정을 확인하세요.`, "cond");
+
+    // 2) 사람마다 갈리는 조건 → 조건 보고
+    const close = closeJob(now.job, to.job);
+    const jobChange = family(now.job) !== family(to.job) && !close;
+    if (close) add("F28", `${now.job}→${to.job}는 가까운 직무라 직무 전환으로 보지 않아요.`);
+    // 3회차 C2: 회사 안에서만 쓰는 운영 직무 등 전망 어두운 직무에서 나오는 전환은 '될 때 가요'
+    // 4회차 C3: 업황 꺾인 산업의 현장에서 빠져나오는 전환은 연차를 안 본다
+    const hardEscape = outDown || (outFactory && /현장/.test(now.place || ""));
+    const jobEscape = jobChange && escape && ((now.years || 0) <= FIT.job_change_max_years || hardEscape) && won >= 0 && !(step < 0 && rawWon <= 0 && !hardEscape);
+    if (jobEscape) add("F28", hardEscape ? "업황 꺾인 산업·현장에서 빠져나오는 전환이라 연차가 있어도 갈 만해요." : "전망 어두운 직무에서 빠져나오는 전환이에요. 될 때 가세요.");
+    else if (jobChange) {
+      if ((now.years || 0) > FIT.job_change_max_years) add("F6", `총 ${now.years}년 차 직무 전환은 늦은 편이에요.`, "cond");
+      add("F28", "직무가 바뀌어요. 지금 직무가 안 맞고 새 직무에 관심·스펙이 충분할 때만 가세요.", "cond");
+      if (won < 0) fail = false; // F2 예외 ③: 직무 전환이면 삭감이 바로 '마요'는 아니다
+    }
+    // 4회차 C4: 중소에서 투자 많이 받은(시리즈B 이상·흑자) 스타트업으로 가면 회사 상황이 더 나은 것
+    const goodStartup = tt.kind === "startup" && tn.n === 1 && /시리즈 ?[B-Z]|흑자|상장/.test(to.extra || "") && !lowRating(to);
+    if (goodStartup) add("F15", "투자를 충분히 받은 스타트업이라 지금보다 회사 상황이 나아요. 야근은 각오하세요.");
+    else if (tt.kind === "startup") add("F15", "스타트업은 투자 규모·버틸 재무 여력·산업 가능성을 확인하세요. 야근은 각오하고요.", "cond");
+    if (tt.kind === "foreign") add("F16", "외국계는 레이오프·한국 철수 가능성과 영어 업무량을 확인하세요.", "cond");
+    if (tn.kind === "public" && tt.kind !== "public") {
+      if ((now.years || 0) <= FIT.public_to_private_max) add("F18", `공공에서 민간으로는 ${FIT.public_to_private_max}년 차 전이 기회예요.`);
+      else add("F18", `공공 ${now.years}년 차면 민간 적응이 어려워요.`, "cond");
+    }
+    const firstJob = (now.moves || 0) === 0;
+    const tmin = firstJob ? FIT.tenure_min_new : FIT.tenure_min;
+    const tenure = now.tenure != null ? now.tenure : now.years;
+    const bigGain = step >= 0 && won >= 0 && eff >= FIT.big_gain_pct && tenure >= FIT.tenure_min;
+    if (firstJob && bigGain && tenure < tmin) add("F4", `근속 ${tenure}년이지만 체감 ${eff.toFixed(0)}% 좋아지면 3년 기준은 넘겨도 돼요.`);
+    else if (tenure != null && tenure < tmin) {
+      add(tenure < 1 ? "F19" : "F4", `지금 회사 근속 ${tenure}년은 짧아요(권장 ${tmin}년). 갈 회사를 최소 4년은 다닐 수 있을 때만 가세요.`, "cond");
+    }
+    if (badField(to)) add("F26", "가려는 산업·직무의 전망이 어두워요.", "fail");
+    else if (badField(now)) add("F26", "전망 어두운 산업에서 빠져나오는 기회예요. 다만 AI 시대 대비는 계속하세요."); // D2
+    else if (now.industry && to.industry && now.industry !== to.industry && !jobChange && !bigGain && !outDown && !upIn)
+      add("F30", `같은 ${j(to.job || "직무", "이라도", "라도")} ${j(now.industry, "과", "와")} ${j(to.industry, "은", "는")} 일하는 방식이 달라요. 어느 쪽이 맞는지 보고 정하세요.`, "cond"); // D1
+
+    // 4회차 A4: 한 곳 평균 2년 미만으로 옮겨 다녔으면 다음 회사에서 오래 버텨야 한다
+    const tl = (now.prev_tenures || []).concat(now.tenure != null ? [now.tenure] : []);
+    if (tl.length >= 2 && tl.reduce((a, b) => a + b, 0) / tl.length < FIT.job_hop_avg) add("F5", "이직이 잦은 편이에요. 다음 회사에선 끝장을 본다는 생각으로 가세요.");
+
+    let verdict = fail ? "마요" : cond.length ? "조건 보고" : "가요";
+    return { verdict, reasons: R };
+  }
+
+  // ── B. 지원 결정 ───────────────────────────────────
+  function judgeApply(c) {
+    const me = c.me || {}, to = c.target || {};
+    const R = [];
+    // F23 잦은 이직자는 연차부터 쌓는다
+    if ((me.companies || 0) >= 3 && (me.avg_tenure || 99) < FIT.avg_tenure_apply_min) {
+      R.push({ rule: "F23", text: `평균 근속 ${me.avg_tenure}년이면 써도 어려워요. 지금 회사 ${FIT.last_tenure_apply}년을 채우고 지원하세요.` });
+      return { verdict: "마요", reasons: R };
+    }
+    // F25 무경력 → 공기업은 긴 싸움
+    if (!me.years && tier(to.size).kind === "public") {
+      R.push({ rule: "F25", text: "공기업은 NCS·전공 준비에 반년~1년 걸려요. 지금 꺾기보다 사기업을 같이 보세요." });
+      return { verdict: "조건 보고", reasons: R };
+    }
+    // 3회차 C9: 컨설팅·회계법인 쪽은 야근이 크게 늘어나는 걸 각오할 때만
+    if (/컨설팅|펌|FAS|회계법인/.test([to.size, to.job].join(" "))) {
+      R.push({ rule: "F31", text: "컨설팅펌·FAS는 야근이 크게 늘어요. 각오하고 간다면 써 보세요." });
+      return { verdict: "조건 보고", reasons: R };
+    }
+    // 4회차 C9: 전망 어두운 직무로 새로 지원하는 건 말린다
+    if (badField(to)) {
+      R.push({ rule: "F26", text: `${j(to.job, "은", "는")} AI에 가장 크게 흔들리는 직무예요. 다른 직무를 보세요.` });
+      return { verdict: "마요", reasons: R };
+    }
+    if (to.prefer) R.push({ rule: "F22", text: `'${to.prefer}'는 우대사항일 뿐이에요. 써 보세요.` });
+    if (me.years) R.push({ rule: "F24", text: `${me.years}년 차면 경력 지원을 미룰 이유가 없어요.` });
+    return { verdict: "가요", reasons: R };
+  }
+
+  // ── C. 신입·여러 합격 ─────────────────────────────
+  function offerScore(o) {
+    let s = tier(o.size).n * 3 + jobValue(o.job) * 2;          // 회사 급·직무 가치 (D9: 같은 조건이면 대기업)
+    if (/지방 공장|산단/.test(o.place || "")) s -= 4;          // F27 지방 공장 재무 < 본사
+    else if (/지방/.test(o.place || "")) s -= 1.5;
+    if (/서울/.test(o.place || "")) s += 1;
+    s += (o.salary || 0) / 1000;                               // 연봉 1천만 원 = 1점
+    if (o.salary_diff) s += o.salary_diff * 10;                // -10% = -1점
+    if (badField(o)) s -= 3;                                   // F26
+    return s;
+  }
+  function judgeOffers(c) {
+    const me = c.me || {};
+    if (c.a && c.b) {
+      const sa = offerScore(c.a), sb = offerScore(c.b);
+      let pick = Math.abs(sa - sb) < 1 ? "상황 따라" : sa > sb ? "앞 회사" : "뒤 회사";
+      const R = [{ rule: "F27", text: `점수 앞 ${sa.toFixed(1)} / 뒤 ${sb.toFixed(1)} (회사 급·직무 가치·근무지·연봉)` }];
+      // 4회차 C10: 큰 회사가 지방 공장, 작은 회사가 서울이면 지방이 얼마나 먼지·직무 적합도로 갈린다
+      const [hi, lo] = tier(c.a.size).n >= tier(c.b.size).n ? [c.a, c.b] : [c.b, c.a];
+      if (tier(hi.size).n > tier(lo.size).n && FACTORY.test(hi.place || "") && PLANT_JOB.test(hi.job || "") && /서울/.test(lo.place || "") && !PLANT_JOB.test(lo.job || "")) {
+        pick = "상황 따라";
+        R.push({ rule: "F27", text: "회사 급과 근무지가 엇갈리고 직무도 완전히 달라요. 지방이 얼마나 먼지, 어느 직무에 스펙이 맞는지로 정하세요." });
+      }
+      return { verdict: pick, reasons: R };
+    }
+    // 합격 한 곳: 계속 준비할지
+    const o = c.a || {}, R = [];
+    const sex = /여/.test(me.sex || "") ? "여" : "남";
+    const young = (me.age || 0) <= FIT.newbie_age[sex];
+    const weak = /하/.test(o.rep || "") || badField(o);
+    if (young && weak && /가능성/.test(me.spec || "")) {
+      R.push({ rule: "F21", text: `${me.age}세면 아직 신입 지원이 가능한 나이예요.` });
+      if (badField(o)) R.push({ rule: "F26", text: "이 직무는 전망이 어두워요. 직무를 바꿔 지원하는 것도 고려하세요." });
+      return { verdict: "계속 준비", reasons: R };
+    }
+    return { verdict: "가요", reasons: [{ rule: "-", text: "붙은 곳에 약점이 크지 않아요." }] };
+  }
+
+  function judge(c) {
+    if (c.type === "A") return judgeMove(c);
+    if (c.type === "B") return judgeApply(c);
+    return judgeOffers(c);
+  }
+
+  const api = { FIT, judge, tier, family };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.FitEngine = api;
+})(this);
+</script>
 <script>
 // 회사 데이터는 data/index.json(검색용 이름 목록) + data/co/NNN.json(회사 상세 128조각)으로 나눠 필요할 때만 읽는다
 const SHARDS = 128;
@@ -859,9 +1254,11 @@ async function render(name) {
     $("#out").innerHTML = `<div class="sec">${empty("'" + name + "'은(는) 아직 모은 자료가 없어요. 직원 30명 이상 회사만 들어 있어요.")}</div>`; return; }
   $("#hint").textContent = "";
   document.querySelectorAll(".pill").forEach(p => p.classList.toggle("on", p.dataset.n === name));
-  const vcls = {"무조건 가세요":"v-go v-must","가세요":"v-go","조건 보고 가세요":"v-cond","중립기어":"v-neu","스펙 보고 결정하세요":"v-spec","다시 생각해요":"v-stop","비추예요":"v-no","판단자료 부족":"v-none"}[c.verdict];
+  const my = meJudge(c);   // 내 상황을 넣었으면 판정·한마디 전체를 내 기준으로 (2026-10-27 사용자 결정: 일반 판정은 숨김)
+  const V = my ? my.v : c.verdict;
+  const vcls = {"무조건 가세요":"v-go v-must","가세요":"v-go","조건 보고 가세요":"v-cond","중립기어":"v-neu","스펙 보고 결정하세요":"v-spec","다시 생각해요":"v-stop","비추예요":"v-no","판단자료 부족":"v-none"}[V];
   const s = c.salary, f = c.fin, date = c.rep?.date || "";
-  const z = c.zorro;
+  const z = my ? my.z : c.zorro;
   const order = ["평판","연봉","성장성","수익성","안정성"];
   const board = order.map((k, i) => { const x = c.grades[k], g = x?.grade;
     return `<a class="cell" href="#s${i+1}"><p class="t">${k}<em>0${i+1}</em></p><p class="g ${g == null ? "gq" : lcls(x)}">${g == null ? "?" : ltxt(x)}</p><p class="s">${g == null ? "판단자료 부족" : esc(oneLine(c, k) || "")}</p></a>`; }).join("");
@@ -877,12 +1274,13 @@ async function render(name) {
     <div class="head"><div><p class="kicker"><i></i>${esc(s?.group || "")}</p><h2>${esc(c.name)}</h2>
       <div class="chips"><span class="chip">${esc(c.type)} 회사${c.age != null ? " · 업력 " + c.age + "년" : ""}</span>${c.ai ? `<span class="chip ai-${c.ai.level}">AI 영향 ${c.ai.level}</span>` : ""}</div>
       <div class="meta">${s ? `<span>직원 <b>${won(s.members)}명</b></span>` : ""}${f ? `<span>재무 <b>${f.years[0]}~${f.years.at(-1)}</b> ${esc(f.source)}</span>` : ""}<span>기준일 <b>${esc(date)}</b></span></div></div>
-      <div class="verdict ${vcls}"><small>Zorro's Verdict</small><strong>${c.verdict}</strong>${(c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
+      <div class="verdict ${vcls}"><small>${my ? "내 상황 기준 · " : ""}Zorro's Verdict</small><strong>${V}</strong>${!my && (c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
     ${API ? `<div class="acts"><button class="act heart${hearted.get(c.name) ? " on" : ""}" type="button" id="b-heart" aria-label="이 회사 하트">♥ <b>${(c._s?.hearts || 0).toLocaleString("ko-KR")}</b></button>
       <button class="act" type="button" id="b-card">결과 카드 저장</button><button class="act" type="button" id="b-share">링크 공유</button>
       ${(c._s?.views7 || 0) >= 10 ? `<span class="seen">최근 7일 ${c._s.views7.toLocaleString("ko-KR")}명이 확인했어요</span>` : ""}</div>` : ""}
+    ${meStrip(c, my)}
     ${vsEntry(c)}
-    <div class="zorro"><div class="who">Z</div><div><p class="lbl">Zorro의 한마디</p><p class="first">${esc(z[0])}</p>
+    <div class="zorro"><div class="who">Z</div><div><p class="lbl">${my ? "내 상황에 맞춘 " : ""}Zorro의 한마디</p><p class="first">${esc(z[0])}</p>
       <ul>${z.slice(1).map((t, i, a) => `<li class="${i === a.length - 1 ? "last" : ""}">${esc(t)}</li>`).join("")}</ul></div></div>
     ${c.divisions ? `<p class="divh">부문마다 달라요${c.divSrc ? ` <small>${esc(c.divSrc)}</small>` : ""}</p><div class="divs">${c.divisions.map(d => `<div class="div"><h4>${esc(d.name)}<span class="${(/가세요$/.test(d.verdict) && d.verdict !== "조건 보고 가세요") || d.verdict === "처우 위쪽" ? "go" : ""}">${esc(d.verdict)}</span></h4>${d.lines.map(l => `<p>${esc(l)}</p>`).join("")}</div>`).join("")}</div>` : ""}
     <div class="board">${board}</div>
@@ -1186,6 +1584,234 @@ const intro = () => { $("#out").innerHTML = `<div class="intro"><span class="arr
     el.querySelectorAll("button[data-a]").forEach(b => b.onclick = () => go(b.dataset.a, b.dataset.b)); }).catch(() => {}); };
 // 오늘 처음 들어온 방문만 한 번 기록
 try { if (API && !sessionStorage.getItem("cc-visit")) { sessionStorage.setItem("cc-visit", "1"); ev("visit"); } } catch (e) {}
+// ---- 내 상황 (2026-10-27) ------------------------------------------------
+// 왼쪽 창에 한 번 넣어 두면(이 기기 localStorage 'cc-me') 회사 화면마다 '내 상황이라면' 카드가 붙는다.
+// 판정은 fit_engine.js(F 규칙, 조로 상담 사례 45개로 맞춤). 갈 회사 쪽 값은 이 회사 자료에서 채운다:
+//   규모 = 직원 수(1천 명 이상 대기업·300명 이상 중견), 업종 = 업계 묶음, 연봉 = 내 연차에 맞는 직급 추정 연봉, 평점 = 평판 종합 점수
+const ME_SIZES = ["대기업", "중견", "중소", "외국계", "공기업·공공", "스타트업"];
+const ME_INDS = ["반도체·전자", "자동차·부품", "조선·기계·장비", "화학·소재·에너지", "2차전지", "제약·바이오·의료기기", "식품 제조", "화장품·생활용품", "섬유·의복·패션",
+  "건설·부동산", "유통·커머스", "물류·운송·항공", "은행·증권·보험", "게임·소프트웨어", "통신·미디어·광고", "컨설팅·전문서비스", "인력·사업지원 서비스",
+  "호텔·외식·레저", "병원·의료", "교육", "공공기관·공단", "기타"];
+const ME_WLB = ["칼퇴", "보통", "야근 잦음", "매일 야근"];
+const ME_PLACES = ["서울 본사", "수도권", "지방", "지방 공장·산단", "지방 현장 순환"];
+let ME = (() => { try { return JSON.parse(localStorage.getItem("cc-me") || "null"); } catch (e) { return null; } })();
+let meCo = null;           // 지금 화면의 회사
+const meOver = {};         // 회사별로 카드에서 고친 값 {salary, place, size}
+
+// 엔진에 넘길 업종 말: 업계 묶음 이름을 F 규칙이 알아듣는 말로 (예: 게임·소프트웨어 → 게임만 전망 나쁨이라 '소프트웨어'로)
+function engInd(g, detail) {
+  if (/전지|축전/.test(detail || "") || g === "2차전지") return "2차전지";
+  if (g === "게임·소프트웨어") return /게임/.test(detail || "") ? "게임" : "소프트웨어";
+  if (g === "화학·소재·에너지") return "화학·소재";
+  if (g === "건설·부동산") return "건설";
+  return g || "";
+}
+function coSize(c) {
+  if (c.type === "스타트업") return "스타트업";
+  if (/공공|공단/.test(c.salary?.group || "")) return "공기업·공공";
+  const n = c.salary?.members || 0;
+  return n >= 1000 ? "대기업" : n >= 300 ? "중견" : "중소";
+}
+function coPlace(c) {
+  const a = c.fin?.addr || "";
+  return /^서울/.test(a) ? "서울 본사" : /^(경기|인천)/.test(a) ? "수도권" : a ? "지방" : "수도권";
+}
+const RANK_BY_YEARS = [[4, "사원"], [8, "대리"], [12, "과장"], [16, "차장"], [99, "부장"]];
+function coSalary(c, years) {
+  const s = c.salary; if (!s) return null;
+  const rank = RANK_BY_YEARS.find(([y]) => (years || 0) < y)[1];
+  const v = s.ranks?.[rank];
+  return v ? { v, how: `이 회사 ${rank}급 추정 연봉` } : s.avg ? { v: s.avg, how: "이 회사 평균 연봉" } : null;
+}
+function meCase(c) {
+  const o = meOver[c.name] || {}, est = coSalary(c, ME.years);
+  const now = { sex: ME.sex, age: ME.age, years: ME.years, tenure: ME.tenure, moves: ME.moves, left: !!ME.left, gap: ME.left ? ME.gap : undefined,
+    size: ME.size, industry: engInd(ME.industry), job: ME.job, salary: ME.salary, wlb: ME.wlb, place: ME.place };
+  const target = { size: o.size || coSize(c), industry: engInd(c.salary?.group, c.salary?.industry), job: ME.want || ME.job,
+    salary: o.salary || est?.v, wlb: ME.twlb || "보통", place: o.place || coPlace(c), rating: c.grades?.["평판"]?.score ?? undefined };
+  return { c: { type: "A", now, target }, est };
+}
+// 이유 문장을 + ? ! 로 나눠 보이게
+function meTone(t) {
+  if (/깎이면 안|못 미쳐|손해예요|올라야 해요|어두워요\.$|다른 직무를 보세요|어려워요/.test(t)) return "fail";
+  if (/확인하세요|때만|각오|애매|따라|정하세요|달라요|늦은 편|짧아요/.test(t)) return "cond";
+  if (/좋아|기회|갈 만|올라|오른|않아요|돼요|없어요/.test(t)) return "plus";
+  return "";
+}
+let meGeneral = false;     // '일반 판정 보기'를 누르면 이번 접속 동안만 내 상황을 빼고 본다
+// 판정 단계는 일반 판정과 같은 7단계로. 회사 자체 판정 × 내 상황(F 규칙) × 얼마나 좋아지는지로 사람마다 다르게 (2026-10-27)
+const ME_STEPS = ["비추예요", "다시 생각해요", "스펙 보고 결정하세요", "중립기어", "조건 보고 가세요", "가세요", "무조건 가세요"];
+function meLevel(v, gen, gain) {
+  const base = { "무조건 가세요": 6, "가세요": 5, "조건 보고 가세요": 4, "중립기어": 3, "스펙 보고 결정하세요": 2, "다시 생각해요": 1, "비추예요": 0 }[gen] ?? 4;   // 판단자료 부족은 중간
+  let n;
+  if (v === "가요") n = Math.max(base, 4) + (gain >= 30 ? 1 : 0) - (base <= 1 ? 1 : 0);   // 내 조건이 좋으면 회사 판정보다 올라가거나 그대로, 크게 오르면 한 단계 더
+  else if (v === "조건 보고") n = Math.min(base, gain >= 20 ? 4 : 3);                   // 사람마다 갈림: 많이 오르면 '조건 보고', 아니면 '중립기어'까지
+  else n = Math.min(base, base >= 2 ? 1 : 0);                                            // 마요: 다시 생각해요, 회사도 나쁘면 비추
+  return ME_STEPS[Math.max(0, Math.min(6, n))];
+}
+const ME_FIRST = { "무조건 가세요": "고민할 이유가 없어요. 무조건 가세요.", "가세요": "갈 만한 자리예요.", "조건 보고 가세요": "아래 조건이 맞을 때 가세요.",
+  "중립기어": "가도 되고 안 가도 되는 자리예요. 뭘 더 원하는지에 따라 갈려요.", "스펙 보고 결정하세요": "내 다른 카드와 꼭 비교해 보고 정하세요.",
+  "다시 생각해요": "지금 조건으로는 말리고 싶어요.", "비추예요": "내 상황에서도, 회사로 봐도 비추예요." };
+const meWho = () => [ME.years != null && `${ME.years}년 차`, ME.job, ME.salary && `${won(ME.salary)}만 원`].filter(Boolean).join(" · ");
+// 회사 일반 한마디를 내 연차·나이·상황에 맞게 고친다 (2026-10-27 사용자: "그대로 붙이지 말고 15년 차면 '인생 마지막 회사'처럼")
+// 각 규칙: 문장이 re 에 걸리면 fn(문장) 결과로 바꾼다. null 은 빼기, undefined 는 그대로
+function meAdapt(lines, x) {
+  const { y, age, v, est } = x;
+  const late = y >= 15 || age >= 45, senior = y >= 10, exp = y >= 3;
+  const RULES = [
+    [/정년까지 여기라고 생각하기보단/, () => late ? (v === "가요" ? `${y}년 차에 이 정도 처우·분위기면 여기가 인생 마지막 회사예요. 정년까지 다닐 생각으로 가세요.` : `조건만 맞으면 ${y}년 차에 정년까지 그림을 그려도 되는 회사예요.`)
+      : senior ? `${y}년 차면 다음 이직이 점점 어려워져요. 여기서 오래 다닐 수 있을지를 기준으로 보세요.`
+      : y <= 5 ? `${y}년 차면 여기서 3~4년 몸값을 키워 다음 점프를 준비하기 딱 좋아요.` : undefined],
+    [/이 회사 밖에서도 통하는 경력을/, () => late ? `${y}년 차면 밖으로 다시 나가기보다 이 회사 안에서 입지를 다지는 게 중요해요.` : undefined],
+    [/2~3년.*(이직|환승|발판)|발판으로 쓰는|다음 이직의 무기|다음 이직 카드|다음 이직 때 든든/, () => late ? "이 연차엔 발판이 아니라 종착지로 볼 회사인지가 핵심이에요. 오래 다닐 팀인지 꼭 확인하세요."
+      : senior ? `${y}년 차 이직은 기회가 점점 줄어요. 다음 이직보다 여기서 직급을 올리는 쪽으로 보세요.` : undefined],
+    [/첫 1년|첫해|첫 평가/, () => exp ? "경력직은 첫 6개월이 평판을 정해요. 전 회사 방식은 내려놓고 빨리 녹아드세요." : undefined],
+    [/먼저 그만두지 마|선퇴사는 절대 금지/, () => x.left ? "이미 퇴사하셨으니 공백이 길어지기 전에 정하는 게 좋아요. 그래도 이 카드 하나만 보고 서두르진 마세요." : undefined],
+    [/징검다리|경력 한 줄 만들|오래 다닐 곳은 아니에요|오래 밟고/, () => late ? `${y}년 차엔 징검다리로 쓸 시간이 없어요. 오래 다닐 곳이 아니면 다른 카드를 보세요.` : undefined],
+    [/승진(은| 자리| 속도)/, t => senior ? `${t} ${y}년 차 경력직은 입사 직급부터 확실히 정하고 가세요.` : undefined],
+    [/지금 칼퇴하는 회사 다니시면[^.]*\.|워라밸 (있던|있는) 회사 다니던 분[^.]*\./, t => x.wlb === "칼퇴" ? t.replace(/지금 칼퇴하는 회사 다니시면[^.]*\.|워라밸 (있던|있는) 회사 다니던 분[^.]*\./, "지금 칼퇴하는 회사에서 오시는 거라 차이가 크게 느껴질 거예요. 저녁을 내줄 만큼 얻는 게 있는지 따져 보세요.")
+      : /야근/.test(x.wlb || "") ? t.replace(/지금 칼퇴하는 회사 다니시면[^.]*\.|워라밸 (있던|있는) 회사 다니던 분[^.]*\./, "지금도 야근이 잦은 곳에서 오시니 적응은 되겠지만, 나아지진 않아요.") : undefined],
+    [/경력직이면 평균 말고 직급별 금액을 보세요|내 연차 기준 오퍼를 보세요/, t => est && y >= 1 ? t.replace(/(경력직이면 평균 말고 직급별 금액을 보세요|숫자보다 내 연차 기준 오퍼를 보세요)/, `${y}년 차시니 ${est.how} ${won(est.v)}만 원을 기준으로 보세요`) : undefined],
+    [/다른 업계에서 넘어오는 거라면/, t => x.sameInd ? t.replace(/\s*다른 업계에서 넘어오는 거라면[^.]*\./, "") : t.replace(/다른 업계에서 넘어오는 거라면/, "다른 업계에서 넘어오시는 거라")],
+  ];
+  const out = [], mine = [];   // mine: 내 상황에 맞게 바꾼 말 → 앞쪽(회사 첫 줄 바로 뒤)에 둔다
+  lines.forEach((line, i) => {
+    let t = line;
+    for (const [re, fn] of RULES) if (re.test(t)) { const r = fn(t); if (r !== undefined) t = r; if (t === null) break; }
+    if (!t || out.includes(t) || mine.includes(t)) return;
+    (i > 0 && t !== line ? mine : out).push(t);
+  });
+  out.splice(1, 0, ...mine);
+  // 상황에 따라 덧붙이는 말 (회사 앞날이 흔들리면 '마지막 회사'는 말하지 않는다)
+  const shaky = lines.some(t => /앞날|미래|5년 뒤|흐릿|적자|걱정돼요/.test(t));
+  if (late && v === "가요" && !shaky && !out.some(t => /마지막 회사|정년/.test(t))) out.splice(1, 0, `${y}년 차에 이런 조건이면 오래 다닐 마지막 회사로 생각하고 가도 돼요.`);
+  if (age >= 40 && x.tenure != null && x.tenure < 5) out.push(`평균 근속 ${x.tenure}년의 젊은 조직이에요. ${age}세면 팀장·동료가 나보다 어릴 수 있어요. 그 분위기가 괜찮은지 생각해 보세요.`);
+  return out;
+}
+// 내 상황 판정: F 규칙 엔진 + 회사 자체 판정(재무·평판)을 합친다. 계산할 수 없으면 null
+function meJudge(c) {
+  meCo = c;
+  if (!ME || meGeneral) return null;
+  const { c: kase, est } = meCase(c);
+  if (!kase.now.salary || !kase.target.salary) return null;
+  const r = FitEngine.judge(kase);
+  let v = r.verdict;
+  const why = r.reasons.map(x => x.text);
+  // 회사 자체가 나쁘면 내 조건이 좋아도 한 단계 낮춘다 (엔진은 재무를 안 봄)
+  if (/비추예요|다시 생각해요/.test(c.verdict)) {
+    why.push(`회사 자체 판정은 '${c.verdict}'예요. 재무·평판을 꼭 확인하고 가세요.`);
+  } else if (c.verdict === "판단자료 부족") why.push("이 회사는 재무·평판 자료가 부족해요. 회사 자체는 따로 확인하세요.");
+  // 내 연봉과 비교한 숫자 한 줄
+  const gap = kase.target.salary - kase.now.salary, pct = Math.round(gap / kase.now.salary * 100);
+  const pay = `${meOver[c.name]?.salary ? "제시 연봉" : est.how} ${won(kase.target.salary)}만 원 — 지금보다 ${gap >= 0 ? "+" : ""}${won(gap)}만 원(${pct >= 0 ? "+" : ""}${pct}%)이에요.`;
+  // 회사 일반 판정의 한마디를 이어 붙여 최소 5줄 (2026-10-27 사용자 요청)
+  const sl = c.salary || {}, rg = c.grades?.["평판"]?.score;
+  const gen = meAdapt(c.zorro || [], { y: ME.years || 0, age: ME.age || 0, v, est, left: !!ME.left, wlb: ME.wlb, tenure: sl.tenure,
+    sameInd: !!ME.industry && ME.industry === c.salary?.group }).map((t, i) => i === 0 ? `회사만 놓고 보면, ${t}` : t);
+  const facts = [];
+  if (rg != null) facts.push(`현직자 평점은 종합 ${rg.toFixed(2)}점이에요${rg < 3 ? ". 3.0 아래라 분위기를 꼭 확인하세요" : ""}.`);
+  if (sl.tenure != null) facts.push(`직원 ${won(sl.members)}명, 평균 근속 ${sl.tenure}년인 회사예요.`);
+  if (sl.newHire && (ME.years || 0) <= 1) facts.push(`신입 추정 연봉은 ${won(sl.newHire)}만 원이에요.`);
+  const V = meLevel(v, c.verdict, pct);
+  const z = [`지금 ${meWho()} 기준이면, ${ME_FIRST[V]}`, ...why, pay, ...gen];
+  for (const f of facts) { if (z.length >= 6) break; z.push(f); }
+  return { v: V, z, kase, est };
+}
+function meStrip(c, my) {
+  if (!ME) return `<div class="mecta" id="meSlot"><p><b>내 상황에 맞춰 볼까요?</b> 연차·연봉을 넣으면 위 판정과 한마디가 전부 내 기준으로 바뀌어요.</p><button type="button" data-me-open>내 상황 넣기</button></div>`;
+  if (meGeneral) return `<div class="mestrip" id="meSlot"><span>지금은 <b>일반 판정</b>을 보고 있어요.</span><button class="lnk" type="button" data-me-mine>내 상황으로 보기</button></div>`;
+  const { c: kase, est } = meCase(c), o = meOver[c.name] || {};
+  const opt = (list, v) => list.map(x => `<option${x === v ? " selected" : ""}>${esc(x)}</option>`).join("");
+  const offer = `<label>제시 연봉<input id="meOff" type="number" inputmode="numeric" step="100" value="${o.salary || ""}" placeholder="${est ? won(est.v) : "만 원"}"></label>`;
+  if (!kase.target.salary) return `<div class="mestrip need" id="meSlot"><span>이 회사는 연봉 자료가 없어요. <b>제시받은 연봉</b>을 넣으면 내 기준으로 판정해요.</span>${offer}</div>`;
+  return `<div class="mestrip" id="meSlot"><span class="tag">내 상황 기준</span>
+    <span>지금 <b>${esc(meWho())}</b> → ${o.salary ? "제시 연봉" : esc(est.how)} <b>${won(kase.target.salary)}만 원</b> · ${esc(kase.target.size)}${kase.target.rating != null ? " · 평점 " + kase.target.rating.toFixed(2) : ""}</span>
+    ${offer}<label>근무지<select id="mePlace">${opt(ME_PLACES, kase.target.place)}</select></label>
+    <span class="lnks"><button class="lnk" type="button" data-me-open>내 상황 고치기</button><button class="lnk" type="button" data-me-general>일반 판정 보기</button></span></div>`;
+}
+// 내 상황이 바뀌면 지금 회사 화면을 통째로 다시 그린다 (회사 자료는 이미 받아 둔 것을 씀)
+function meRefresh() {
+  meBar();
+  const d = document.querySelector(".disc span");
+  if (d) d.innerHTML = ME && !meGeneral ? "<b>내 상황 기준 판정이에요.</b> 넣어 주신 연차·연봉·근무지와 이 회사 자료를 함께 보고 취업조로 상담 기준으로 정리했어요. 실제 제시 조건을 넣을수록 정확해져요."
+    : "<b>회사에 대한 일반적인 평가예요.</b> 좋은 회사의 기준은 내 스펙·연차·상황·가치관에 따라 달라요. 누군가에겐 천국 같은 회사가 누군가에겐 지옥일 수도 있으니, 아래 판정은 참고로만 보시고 최종 선택은 내 상황과 함께 판단하세요. 내 상황에 맞춘 판정은 위 <b>내 상황 넣기</b>로 볼 수 있어요.";
+  if (meCo && document.getElementById("meSlot")) { const y = scrollY; render(meCo.name).then(() => scrollTo(0, y)); }
+}
+// 카드 안 입력 (제시 연봉·근무지)
+document.addEventListener("change", e => {
+  if (!meCo) return;
+  if (e.target.id === "meOff") { (meOver[meCo.name] ||= {}).salary = Number(e.target.value) || undefined; meRefresh(); }
+  if (e.target.id === "mePlace") { (meOver[meCo.name] ||= {}).place = e.target.value; meRefresh(); }
+});
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-me-open]")) meOpen();
+  if (e.target.closest("[data-me-general]")) { meGeneral = true; meRefresh(); }
+  if (e.target.closest("[data-me-mine]")) { meGeneral = false; meRefresh(); }
+});
+
+// ---- 왼쪽 창 ----
+const meEl = id => document.getElementById(id);
+function meFill(sel, list, v) { sel.innerHTML = list.map(x => `<option>${esc(x)}</option>`).join(""); if (v) sel.value = v; }
+meFill(meEl("me_size"), ME_SIZES, "중견"); meFill(meEl("me_ind"), ME_INDS, "기타"); meFill(meEl("me_wlb"), ME_WLB, "보통");
+meFill(meEl("me_twlb"), ME_WLB, "보통"); meFill(meEl("me_place"), ME_PLACES, "수도권");
+let meLast = null;
+function meOpen() {
+  meLast = document.activeElement;
+  meEl("meForm").querySelectorAll("[data-k]").forEach(el => {
+    const v = ME?.[el.dataset.k];
+    if (el.type === "checkbox") el.checked = !!v; else if (v != null) el.value = el.dataset.k === "left" ? (v ? "1" : "") : v;
+  });
+  meEl("me_gapf").hidden = !meEl("me_left").value;
+  meEl("meErr").hidden = true;
+  meEl("medim").hidden = false;
+  requestAnimationFrame(() => { meEl("medim").classList.add("open"); meEl("medrawer").classList.add("open"); });
+  meEl("medrawer").setAttribute("aria-hidden", "false");
+  setTimeout(() => (ME ? meEl("me_sal") : meEl("me_age")).focus(), 60);
+}
+function meClose() {
+  meEl("medim").classList.remove("open"); meEl("medrawer").classList.remove("open"); meEl("medrawer").setAttribute("aria-hidden", "true");
+  setTimeout(() => { meEl("medim").hidden = true; }, 260);
+  meLast?.focus?.();
+}
+meEl("meX").onclick = meClose; meEl("medim").onclick = meClose;
+document.addEventListener("keydown", e => { if (e.key === "Escape" && meEl("medrawer").classList.contains("open")) meClose(); });
+meEl("me_left").onchange = () => { meEl("me_gapf").hidden = !meEl("me_left").value; };
+meEl("meClr").onclick = () => {
+  ME = null; try { localStorage.removeItem("cc-me"); } catch (e) {}
+  meEl("meForm").reset(); meClose(); meRefresh(); toast("내 상황을 지웠어요");
+};
+meEl("meSave").onclick = () => {
+  const m = {};
+  meEl("meForm").querySelectorAll("[data-k]").forEach(el => {
+    const k = el.dataset.k;
+    if (el.type === "checkbox") m[k] = el.checked;
+    else if (el.type === "number") { if (el.value !== "") m[k] = Number(el.value); }
+    else if (k === "left") m[k] = !!el.value;
+    else if (el.value.trim()) m[k] = el.value.trim();
+  });
+  const err = !m.salary ? "지금 연봉을 넣어 주세요." : m.years == null ? "총 경력을 넣어 주세요." : !m.job ? "직무를 넣어 주세요." : "";
+  if (err) { meEl("meErr").textContent = err; meEl("meErr").hidden = false; return; }
+  ME = m; try { localStorage.setItem("cc-me", JSON.stringify(m)); } catch (e) {}
+  // 연봉 보태기: 체크한 사람만, 같은 내용은 한 번만 보낸다
+  if (m.share) {
+    const body = { co: m.co || "", size: m.size, industry: m.industry, job: m.job, years: m.years, salary: m.salary };   // 기기 번호는 보내지 않음 (개인정보처리방침 제2조)
+    const key = JSON.stringify(body);
+    try { if (localStorage.getItem("cc-sal-sent") !== key) { send("/sal", body); localStorage.setItem("cc-sal-sent", key); } } catch (e) {}
+  }
+  meGeneral = false; meClose(); meRefresh();
+  toast(meCo ? "내 상황이 입력됐어요 · 판정을 내 기준으로 바꿨어요" : "내 상황이 입력됐어요 · 이제 회사를 검색해 보세요");
+  if (!meCo) setTimeout(() => $("#q").focus(), 300);
+};
+// 검색창 아래: 두 가지 보는 법
+function meBar() {
+  const b = meEl("meOpenBtn"); if (!b) return;
+  b.classList.toggle("set", !!ME);
+  b.innerHTML = ME
+    ? `<small>내 상황 입력됨</small><b>${esc([ME.years != null && ME.years + "년 차", ME.job, won(ME.salary) + "만 원"].filter(Boolean).join(" · "))}</b><span>검색하면 판정·한마디가 내 기준으로 나와요 · 눌러서 고치기</span>`
+    : `<small>내 상황에 맞춰 보려면</small><b>내 상황 넣기 →</b><span>연차·연봉을 넣으면 판정을 내 기준으로 바꿔 드려요</span>`;
+}
+meEl("meOpenBtn").onclick = meOpen;
+meRefresh();
 const first = decodeURIComponent(location.hash.slice(1));
 if (first) route(first); else intro();
 </script>
