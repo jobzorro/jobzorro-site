@@ -91,6 +91,7 @@ h1 b { font-weight:900; background:linear-gradient(transparent 62%, var(--mark) 
 .myyr label { font-weight:700; }
 .myyr select { font:inherit; font-size:14px; font-weight:700; padding:6px 8px; border-radius:8px; border:1px solid var(--line2); background:var(--bg); color:var(--ink); }
 .myyr small { color:var(--muted); }
+.joblk { flex-basis:100%; margin:4px 0 0; font-size:12.5px; color:var(--muted); line-height:1.7; } .joblk a { color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
 /* 개선 5 (2026-10-21): 다른 회사와 직급별 연봉 비교 */
 .cmpco { margin-top:16px; padding:14px 16px; border:1px solid var(--line); border-radius:14px; display:grid; gap:10px; }
 .cmpco .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; }
@@ -550,7 +551,12 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     o.textContent = isNaN(y) ? '' : '약 ' + man(atYears(CURROW.rk, y) * (jx ? jx[2] : 1)) + '만원';
   });
   var CURROW = null, JOBK = '', CMP = null;   // 지금 보는 회사, 내 직무(직군 id), 비교 회사 행
+  try { var _jq = new URLSearchParams(location.search).get('job'); if (_jq) JOBK = _jq; } catch (e) {}   // 직무사전에서 넘어올 때 ?job=직군 id
   document.addEventListener('change', function (e) { if (e.target.id === 'myJob' && CURROW) { JOBK = e.target.value; show(CURROW); } });
+  function jobLinks(g) {   // 직무사전 연결: 고른 직군의 직무 페이지
+    var L = (D.meta.jobLinks || {})[g]; if (!L || !L.length) return '';
+    return '<p class="joblk">이 직군이 하는 일 · ' + L.map(function (x) { return '<a href="/jobs/' + encodeURIComponent(x[0]) + '/">' + esc(x[1]) + '</a>'; }).join(' · ') + '</p>';
+  }
   // ── 개선 5: 다른 회사와 비교 (직급별 연봉 나란히) + 회사 판단 연구소 링크
   function cmpHtml(r) {
     var R = (CMP && CMP.i !== r.i) ? CMP : null, h = '<section class="cmpco"><div class="row"><b>다른 회사와 비교</b>' + (R ? '<button type="button" class="x" data-cmp-x>비교 닫기</button>' : '') + '</div>';
@@ -658,7 +664,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       (ptime ? '' : '<div class="myyr"><label for="myYr">내 총 경력</label><input id="myYr" type="number" inputmode="decimal" min="0" max="35" step="0.5" placeholder="예: 4"><span>년차</span><output id="myYrV" for="myYr"></output></div>') +
       (ptime || !(D.meta.jobMult || []).length ? '' : '<div class="myyr"><label for="myJob">내 직무</label><select id="myJob"><option value="">전체 평균</option>' + D.meta.jobMult.map(function (x) {
         return '<option value="' + esc(x[0]) + '"' + (x[0] === JOBK ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</select>' +
-        '<small>' + (jx ? '이 직무는 같은 직급 평균의 약 ' + Math.round(jf * 100) + '% (이직자 ' + jx[3] + '명 기준, 직무 간 차이는 크지 않은 편)' : '취업조로 이직자 연봉으로 본 직무별 차이를 반영합니다') + '</small></div>') +
+        '<small>' + (jx ? '이 직무는 같은 직급 평균의 약 ' + Math.round(jf * 100) + '% (이직자 ' + jx[3] + '명 기준, 직무 간 차이는 크지 않은 편)' : '취업조로 이직자 연봉으로 본 직무별 차이를 반영합니다') + '</small>' + jobLinks(JOBK) + '</div>') +
       cmpHtml(r) +
       '<details class="how"><summary>이 숫자는 어떻게 계산했나요?</summary><ol>' + how + '</ol></details>' + repHtml(r) +
       '</article>';

@@ -330,6 +330,7 @@ body.v2 .d-body .quick dd { font-family:var(--v-display); }
 .csal { margin-top:14px; padding:14px 16px; border-radius:12px; background:var(--surface-2, #f4f5f1); }
 .csal-h { font-weight:800; } .csal-h small { font-weight:500; color:var(--muted); margin-left:6px; }
 .csal p { margin-top:4px; } .csal ul { list-style:none; padding:0; margin:8px 0 0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+.csal-go { display:inline-block; margin-top:10px; font-size:13px; font-weight:700; color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
 .csal li { background:var(--surface, #fff); border-radius:8px; padding:6px 8px; font-size:12.5px; display:grid; } .csal li b { font-size:14px; } .csal li small { color:var(--muted); }
 @media (max-width:560px) { .csal ul { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
@@ -824,7 +825,8 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
     var rows = Object.keys(c.byYears || {}).map(function (b) { var x = c.byYears[b]; return '<li><span>' + esc(b) + '</span><b>' + x.p50.toLocaleString('ko-KR') + '만원</b><small>' + x.n + '명</small></li>'; }).join('');
     return '<div class="csal"><div class="csal-h">취업조로 이직자 연봉 <small>' + esc(c.groupName) + ' 직군 ' + c.n + '명 · 이직 직전</small></div>' +
       '<p>중앙 <b>' + c.p50.toLocaleString('ko-KR') + '만원</b> · 보통 ' + c.p25.toLocaleString('ko-KR') + '~' + c.p75.toLocaleString('ko-KR') + '만원</p>' +
-      (rows ? '<ul>' + rows + '</ul>' : '') + '<p class="note">취업조로 경력이직 컨설팅 고객의 실제 연봉 집계(성과급 포함 총액, 올해 기준 환산). 같은 직군 묶음이라 직무마다 차이가 있습니다.</p></div>';
+      (rows ? '<ul>' + rows + '</ul>' : '') + '<p class="note">취업조로 경력이직 컨설팅 고객의 실제 연봉 집계(성과급 포함 총액, 올해 기준 환산). 같은 직군 묶음이라 직무마다 차이가 있습니다.</p>' +
+      '<a class="csal-go" href="/salary/?job=' + encodeURIComponent(j.group) + '">이 직군으로 회사별 연봉 보기 · 연봉 연구소 →</a></div>';
   }
   function sec(icon, title, body, hint) { return '<section class="sec"><div class="sec-h"><span class="ic">' + I[icon] + '</span><h3>' + title + '</h3>' + (hint ? '<span class="hint">' + hint + '</span>' : '') + '</div>' + body + '</section>'; }
   function li(arr, cls) { return '<ul class="list ' + (cls || '') + '">' + arr.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>'; }
