@@ -3,7 +3,7 @@
 // 점수는 (문제, 답) → 점수 함수로만 계산하고, 서버는 브라우저가 보낸 답으로 다시 계산한다.
 // 주의: 'export { ... };' 줄은 파일 맨 끝 한 줄로만 둔다 (make.py 가 미리보기에서 이 줄을 전역 변수로 바꿈).
 
-const RULES = 1;                 // 규칙 판: 점수 규칙을 바꾸면 올린다
+const RULES = 2;                 // 규칙 판: 점수 규칙을 바꾸면 올린다 (2 = 2026-10-28 오늘의 회사 8지선다)
 const EPOCH = '2026-10-01';      // 오늘의 회사 #1 날짜 (바꾸면 모든 날의 문제가 바뀜)
 const RK = ['사원', '대리', '과장', '차장', '부장'];
 const DAILY = ['higher', 'today', 'sniper', 'road'];        // 순위표가 있는 오늘의 도전
@@ -44,7 +44,7 @@ function msToMidnight(ms) { const k = (ms == null ? Date.now() : ms) + 9 * 3600e
 // ── 회사 자료: make.py 의 행 → 객체. 게임용(P)만 문제에 쓴다. 순서는 make.py 가 고정(직원 많은 순)
 function load(D) {
   const all = D.co.map(r => ({ n: r[0], o: r[1], slug: r[2], ind: r[3], m: r[4], rk: r[5], g: r[6], ex: r[7], to: r[8], tt: r[9], s0: r[10],
-    sido: r[11], exR: r[12], lg: r[13] || '', lt: r[14] || 0, hl: r[15], grp: r[16], jump: r[17] || 0, rt: r[18] || 0, my: r[19] || 0, pub: r[20] }));
+    sido: r[11], exR: r[12], lg: r[13] || '', lt: r[14] || 0, hl: r[15], grp: r[16], jump: r[17] || 0, rt: r[18] || 0, my: r[19] || 0, pub: r[20], ag: r[21] || 0 }));
   const by = {}; all.forEach(c => { by[c.n] = c; });
   const P = all.filter(c => c.g), H = P.filter(c => c.hl);   // H: 로고 있는 게임용 회사 (오늘의 회사·스나이퍼)
   H.forEach((c, i) => { c.tier = i < 120 ? 0 : i < 400 ? 1 : 2; });   // 직원 수 순서로 쉬움·보통·어려움
@@ -53,7 +53,7 @@ function load(D) {
   P.forEach(c => { (gs[c.grp] = gs[c.grp] || []).push(c.rk[2]); });
   Object.keys(gs).forEach(g => { const a = gs[g].sort((x, y) => x - y); med[g] = a[Math.floor(a.length / 2)]; });
   P.forEach(c => { c.twist = c.rk[2] / med[c.grp]; });     // 업종 중간값 대비 과장 연봉 (반전 회사 판정)
-  const ver = hash32(P.map(c => [c.n, c.rk.join(','), c.m, c.ex, c.exR, c.to, c.tt, c.s0, c.sido, c.hl, c.grp, c.jump, c.rt, c.my, c.pub].join(':')).join('|')).toString(36) + '-' + P.length;
+  const ver = hash32(P.map(c => [c.n, c.rk.join(','), c.m, c.ex, c.exR, c.to, c.tt, c.s0, c.sido, c.hl, c.grp, c.jump, c.rt, c.my, c.pub, c.ag].join(':')).join('|')).toString(36) + '-' + P.length;
   return { all, by, P, H, med, nego: D.nego, ver };
 }
 
@@ -113,10 +113,12 @@ function scoreHigher(pz, ans, ctx) {
   return { score, aux: ok, perfect: ok === HIGHER_N, per, ms };
 }
 
-// ── 2 오늘의 회사 (6번 안에 맞히기)
-// 30일 묶음마다 회사 절반(이름 해시 짝·홀)을 번갈아 써서, 이웃한 두 묶음이 겹치지 않음 → 30일 안에 같은 회사 없음
-const TODAY_MAX = 6;
-function genToday(day, ctx) {
+// ── 2 오늘의 회사 (후보 8곳 중 숨은 회사 하나 고르기 · 단서는 하나씩 · 기회 3번) — 2026-10-28 규칙 2
+// 정답 고르기는 규칙 1 그대로: 30일 묶음마다 회사 절반(이름 해시 짝·홀)을 번갈아 써서, 이웃한 두 묶음이 겹치지 않음 → 30일 안에 같은 회사 없음
+const TODAY_N = 8, TODAY_PICKS = 3, TODAY_CLUES = 5;              // 후보 8곳 · 고르기 3번 · 단서 5개(처음엔 1개 열림)
+const TODAY_BASE = 500, TODAY_CLUE = 80, TODAY_MISS = 60, TODAY_FLOOR = 50;   // 500점 − 단서 더 볼 때마다 80 − 틀릴 때마다 60, 맞히면 최소 50
+const TODAY_SAME = [3, 5, 7];    // 난이도(쉬움·보통·어려움)별 정답과 같은 업종 묶음 후보 수 (나머지는 다른 업종)
+function todayAns(day, ctx) {
   const k = dayIndex(day), blk = Math.floor(k / 30), pos = k - blk * 30, half = ((blk % 2) + 2) % 2;
   const cand = ctx.H.filter(c => (hash32('half|' + c.n) & 1) === half);
   const r = rng('today|' + blk), T = [0, 1, 2].map(t => shuffleR(r, cand.filter(c => c.tier === t))), ptr = [0, 0, 0];
@@ -128,46 +130,73 @@ function genToday(day, ctx) {
     if (ptr[t] >= T[t].length) t = [0, 1, 2].find(x => ptr[x] < T[x].length);
     ans = T[t][ptr[t]++];
   }
-  return { game: 'today', day, no: k + 1, ans: ans.n };
+  return ans;
 }
-function cmpNum(g, a) {
-  if (!(g > 0) || !(a > 0)) return { s: 'na' };
-  const d = Math.abs(a - g) / a;
-  return { s: d < .01 ? 'eq' : d <= .1 ? 'near' : 'far', dir: a > g ? 'up' : a < g ? 'down' : '', pct: Math.round((a / g - 1) * 100) };
+// 헷갈리는 후보 7곳: 날짜 씨앗으로 고정(누구에게나 같은 8곳). 같은 업종 묶음에서 직원 수가 비슷한 회사 위주,
+// 어려운 날일수록 같은 업종을 많이·직원 수가 더 가까운 회사로. 후보는 정답과 같은 급 이하에서(쉬운 날은 이름난 120곳끼리)
+function todayCands(A, day, ctx) {
+  const r = rng('today8|' + day), t = A.tier, used = { [A.n]: 1 }, out = [];
+  const L = ctx.H.filter(c => c.n !== A.n && c.tier <= t);
+  const far = c => Math.abs(Math.log(c.m / A.m));
+  const take = (list, k) => { shuffleR(r, list).forEach(c => { if (out.length < k && !used[c.n]) { used[c.n] = 1; out.push(c); } }); };
+  const near = L.filter(c => c.grp === A.grp).sort((x, y) => far(x) - far(y) || (x.n < y.n ? -1 : 1));
+  const want = TODAY_SAME[t] || 5;
+  take(t === 0 ? near : near.slice(0, want + (t === 1 ? 6 : 3)), want);   // 보통: 가까운 11곳 중 5곳 · 어려움: 가까운 10곳 중 7곳
+  take(near, want);                                                         // 모자라면 같은 업종 아무 곳
+  const rest = L.filter(c => c.grp !== A.grp);
+  take(t === 0 ? rest : rest.filter(c => far(c) < Math.log(3)), TODAY_N - 1);   // 다른 업종: 보통·어려움은 직원 수 3배 안
+  take(rest, TODAY_N - 1);
+  return shuffleR(r, out.concat([A])).map(c => c.n);
 }
-// 힌트 칸: 과장 연봉 · 업종 · 지역 · 직원 수 · 근속 (dir 'up' = 정답이 더 높음)
-function hintRow(ctx, guessName, ansName) {
-  const g = ctx.by[guessName], a = ctx.by[ansName];
-  if (!g || !a) return null;
-  const win = g === a, num = (k, gv, av) => Object.assign({ k, v: gv }, win ? { s: 'eq' } : cmpNum(gv, av));
-  return { n: g.n, win, cells: [
-    num('pay', g.rk[2], a.rk[2]),
-    { k: 'grp', v: g.grp, s: g.grp === a.grp ? 'eq' : 'diff' },
-    { k: 'sido', v: g.sido || '-', s: g.sido && g.sido === a.sido ? 'eq' : 'diff' },
-    num('m', g.m, a.m),
-    num('tt', g.tt, a.tt)] };
+function genToday(day, ctx) {
+  const A = todayAns(day, ctx);
+  return { game: 'today', day, no: dayIndex(day) + 1, ans: A.n, tier: A.tier, cands: todayCands(A, day, ctx) };
 }
-const EMO = { eq: '🟩', near: '🟨', far: '🟥', diff: '⬜', na: '⬜' };
-function todayGuesses(pz, ctx, g) {   // 게임용 회사 이름만, 겹치면 한 번, 6개까지, 정답에서 멈춤
-  const out = [];
-  (Array.isArray(g) ? g : []).forEach(n => {
-    n = String(n || '');
-    const c = ctx.by[n];
-    if (out.length >= TODAY_MAX || !c || !c.g || out.indexOf(n) >= 0 || out.indexOf(pz.ans) >= 0) return;
-    out.push(n);
-  });
-  return out;
+// 단서 5개 (이 순서로 하나씩): 업종 → 직원 수(구간) → 사원 연봉 → 평균 근속 → 평점. 자료가 없으면 다른 칸으로 바꾼다
+function sizeBand(m) { return m < 1000 ? '1,000명 미만' : m < 3000 ? '1,000~3,000명' : m < 5000 ? '3,000~5,000명' : m < 10000 ? '5,000명~1만 명' : m < 30000 ? '1만~3만 명' : '3만 명 이상'; }
+function ageBand(a) { return a >= 38 ? '38년 이상' : a >= 30 ? '30~37년' : a >= 20 ? '20~29년' : a >= 10 ? '10~19년' : '10년 안'; }
+function fmtMan(v) { return Math.round(v).toLocaleString('ko-KR'); }
+function todayClues(pz, ctx) {
+  const A = ctx.by[pz.ans];
+  // 회사 나이(국민연금 첫 가입)는 분사·재등록 회사를 너무 젊게 보여 줘서(삼성전자 30년대) 평균 근속으로 바꿈 (2026-10-28)
+  const age = A.tt > 0 ? { k: 'tt', lb: '평균 근속', v: A.tt.toFixed(1) + '년', sub: '' }
+    : { k: 'pay', lb: '과장 연봉', v: '약 ' + fmtMan(Math.round(A.rk[2] / 100) * 100) + '만원', sub: '근속 자료가 없어 대신' };
+  const last = A.rt > 0 ? { k: 'rt', lb: '평점', v: '★ ' + A.rt.toFixed(1) + ' / 5', sub: '잡플래닛·블라인드 평균' }
+    : A.my ? { k: 'my', lb: '직원 증감', v: (A.my > 0 ? '+' : '') + A.my.toFixed(1) + '%', sub: '1년 사이 · 평점 자료가 없어 대신' }
+    : { k: 'top', lb: '부장 연봉', v: '약 ' + fmtMan(Math.round(A.rk[4] / 100) * 100) + '만원', sub: '평점 자료가 없어 대신' };
+  return [
+    { k: 'grp', lb: '업종', v: A.grp, sub: '' },
+    { k: 'm', lb: '직원 수', v: sizeBand(A.m), sub: '' },
+    { k: 's', lb: '사원 연봉', v: '약 ' + fmtMan(Math.round(A.rk[0] / 100) * 100) + '만원', sub: '연봉 연구소 추정' },
+    age, last];
 }
-function firstChar(n) { const m = String(n).replace(/^\s*(\(주\)|㈜|주식회사)\s*/, '').match(/[가-힣A-Za-z0-9]/); return m ? m[0].toUpperCase() : '?'; }
-// ans: {g:[이름...], hint:0|1, sec} → 성공이면 (7 − 시도) × 100 + 빠르기 보너스(0~99, 6초마다 1점↓) − 첫 글자 힌트 50
+// 행동 기록 log: '?' = 다음 단서 보기, 그 밖엔 고른 회사 이름. 말이 안 되는 기록(후보 밖 이름, 두 번 고르기,
+// 단서 다 열린 뒤 '?', 끝난 뒤 행동)이면 null. done = 맞혔거나 3번 다 틀림
+function simToday(pz, log) {
+  if (!Array.isArray(log) || log.length > TODAY_CLUES - 1 + TODAY_PICKS) return null;
+  let open = 1, solved = false, done = false; const wrong = [], seq = [];
+  for (const a of log) {
+    if (done || typeof a !== 'string') return null;
+    if (a === '?') { if (open >= TODAY_CLUES) return null; open++; seq.push('c'); continue; }
+    if (pz.cands.indexOf(a) < 0 || wrong.indexOf(a) >= 0) return null;
+    if (a === pz.ans) { solved = done = true; seq.push('o'); continue; }
+    wrong.push(a); seq.push('x'); open = Math.min(TODAY_CLUES, open + 1);   // 틀리면 그 회사는 빠지고 단서가 하나 더 열림
+    if (wrong.length >= TODAY_PICKS) done = true;
+  }
+  return { open, wrong, solved, done, seq: seq.join('') };
+}
+function todayPts(open, miss) { return Math.max(TODAY_FLOOR, TODAY_BASE - TODAY_CLUE * (open - 1) - TODAY_MISS * miss); }
+// ans: {log:[...]} → 맞히면 500 − 80 × (처음 뒤로 더 연 단서) − 60 × (틀린 수), 최소 50 · 실패 0. aux = 맞혔을 때 본 단서 수(1~5), 실패 0
+// bad = 말이 안 되거나 덜 끝난 기록 (서버는 받지 않음)
 function scoreToday(pz, ans, ctx) {
-  ans = ans || {};
-  const g = todayGuesses(pz, ctx, ans.g), i = g.indexOf(pz.ans), sec = Math.max(0, Number(ans.sec) || 0);
-  if (i < 0) return { score: 0, aux: 0, solved: false, tries: g.length, g, perfect: false };
-  const tries = i + 1, hint = ans.hint && tries >= 4 ? 1 : 0;
-  const score = Math.max(0, (7 - tries) * 100 + Math.max(0, 99 - Math.floor(sec / 6)) - hint * 50);
-  return { score, aux: tries, solved: true, tries, g, hint, perfect: tries <= 3 };
+  const R = simToday(pz, ans && ans.log);
+  if (!R || !R.done) return { score: 0, aux: 0, solved: false, bad: true, perfect: false, open: 1, wrong: [], seq: '' };
+  const score = R.solved ? todayPts(R.open, R.wrong.length) : 0;
+  return { score, aux: R.solved ? R.open : 0, solved: R.solved, open: R.open, wrong: R.wrong, seq: R.seq, perfect: R.solved && R.open <= 2 };
 }
+// 결과 이모지: 첫 줄 열린 단서 🔎(안 연 칸 ⬜), 둘째 줄 고른 순서 ❌·✅
+function todayEmoji(R) { return ['🔎'.repeat(R.open) + '⬜'.repeat(TODAY_CLUES - R.open), R.seq.replace(/c/g, '').replace(/x/g, '❌').replace(/o/g, '✅')]; }
+function firstChar(n) { const m = String(n).replace(/^\s*(\(주\)|㈜|주식회사)\s*/, '').match(/[가-힣A-Za-z0-9]/); return m ? m[0].toUpperCase() : '?'; }
 
 // ── 3 연봉 스나이퍼 (5문제, 막대로 연봉 찍기)
 const SNIPER_N = 5, SN_LO = 2000, SN_HI = 22000, SN_STEP = 50;
@@ -311,4 +340,4 @@ function nickCheck(s) {   // '' = 괜찮음, 아니면 고칠 점
 function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : game === 'today' ? genToday(day, ctx) : game === 'sniper' ? genSniper(day, ctx) : game === 'road' ? genRoad(day, ctx) : null; }
 function score(game, pz, ans, ctx) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : null; }
 
-export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_MAX, genToday, hintRow, EMO, todayGuesses, firstChar, scoreToday, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, genRoad, roadOffer, roadRisk, simRoad, scoreRoad, THEMES, cupPool, cupSize, cupCheck, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
+export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, genRoad, roadOffer, roadRisk, simRoad, scoreRoad, THEMES, cupPool, cupSize, cupCheck, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
