@@ -145,6 +145,15 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .mchk small { display:block; color:var(--muted); font-size:12px; margin-top:2px; }
 .mhelp { display:block; font-size:12px; color:var(--muted); line-height:1.5; margin-top:2px; }
 .mestrip .nowco { font-size:12.5px; color:var(--muted); }
+.mgrade { grid-column:1 / -1; margin:0; font-size:13px; color:var(--muted); }
+.mgrade b { font-family:var(--display); font-size:15px; color:var(--acc-ink); background:var(--acc); border-radius:6px; padding:1px 8px; margin-right:6px; }
+.mkind { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.mkind button { font:inherit; text-align:left; display:grid; gap:2px; padding:10px 12px; border-radius:12px; border:1.5px solid var(--hairline-2); background:var(--paper); color:var(--ink); cursor:pointer; }
+.mkind button b { font-size:14.5px; } .mkind button span { font-size:12px; color:var(--muted); }
+.mkind button[aria-checked="true"] { background:var(--acc); border-color:var(--acc); color:var(--acc-ink); }
+.mkind button[aria-checked="true"] span { color:var(--acc-ink); opacity:.75; }
+.mkind button:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+.mnote { margin:0; font-size:12px; color:var(--muted); line-height:1.55; background:var(--mist); border-radius:12px; padding:10px 12px; }
 .mshare { background:var(--mist); border-radius:12px; padding:12px 14px; }
 .medrawer .df { padding:14px 22px 18px; border-top:1px solid var(--hairline); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 .medrawer .df button { font:inherit; font-weight:800; font-size:14px; border-radius:999px; padding:11px 20px; cursor:pointer; border:1.5px solid var(--ink); background:var(--paper); color:var(--ink); }
@@ -331,6 +340,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 .warn { border:1.5px solid var(--bad); border-radius:14px; padding:14px 18px; margin:0 0 18px; font-size:13.5px; color:var(--ink-soft); }
 .warn b { color:var(--bad); display:block; margin-bottom:4px; }
 .warn ul { margin:6px 0 0; padding-left:18px; } .warn li { margin:2px 0; }
+.via { border:1.5px dashed var(--ink-soft); border-radius:14px; padding:12px 18px; margin:0 0 18px; font-size:13.5px; color:var(--ink-soft); }
+.via b { color:var(--ink); }
 
 /* 판정 4단계 */
 .v-spec strong { background:var(--mist); border-style:dashed; }
@@ -580,31 +591,58 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   <div class="dh"><small>MY SITUATION</small><h3 id="meTitle">내 상황 넣기</h3><button class="x" type="button" id="meX" aria-label="닫기">×</button>
     <p>한 번 넣어 두면 어떤 회사를 검색하든 내 기준 판정이 같이 나와요. 이 기기에만 저장돼요.</p></div>
   <form id="meForm" novalidate>
+    <div class="mkind" role="radiogroup" aria-label="나는">
+      <button type="button" role="radio" data-kind="career" aria-checked="true"><b>경력 이직</b><span>회사 다니다 옮길 때</span></button>
+      <button type="button" role="radio" data-kind="new" aria-checked="false"><b>신입·중고신입</b><span>첫 취업 · 경력 3년 이하</span></button>
+    </div>
     <fieldset><legend>나</legend>
       <div class="mf"><label for="me_sex">성별</label><select id="me_sex" data-k="sex"><option>남</option><option>여</option></select></div>
-      <div class="mf"><label for="me_age">만 나이</label><div class="u"><input id="me_age" type="number" inputmode="numeric" data-k="age" placeholder="31"><span>세</span></div></div>
-      <div class="mf"><label for="me_years">총 경력</label><div class="u"><input id="me_years" type="number" inputmode="decimal" step="0.5" data-k="years" placeholder="5"><span>년</span></div></div>
-      <div class="mf"><label for="me_tenure">지금 회사 근속</label><div class="u"><input id="me_tenure" type="number" inputmode="decimal" step="0.5" data-k="tenure" placeholder="5"><span>년</span></div></div>
-      <div class="mf"><label for="me_moves">이직 횟수</label><div class="u"><input id="me_moves" type="number" inputmode="numeric" data-k="moves" placeholder="0"><span>번</span></div></div>
-      <div class="mf"><label for="me_left">지금</label><select id="me_left" data-k="left"><option value="">재직 중</option><option value="1">이미 퇴사</option></select></div>
-      <div class="mf" id="me_gapf" hidden><label for="me_gap">쉰 기간</label><div class="u"><input id="me_gap" type="number" inputmode="decimal" step="0.5" data-k="gap" placeholder="0.5"><span>년</span></div></div>
+      <div class="mf"><label for="me_age">만 나이</label><div class="u"><input id="me_age" type="number" min="0" inputmode="numeric" data-k="age" placeholder="31"><span>세</span></div></div>
     </fieldset>
-    <fieldset><legend>지금 회사</legend>
+    <!-- 신입·중고신입 -->
+    <fieldset data-kind="new" hidden><legend>신입·중고신입</legend>
+      <div class="mf"><label for="me_nyears">경력 <small>(인턴 빼고)</small></label><div class="u"><input id="me_nyears" type="number" min="0" inputmode="decimal" step="0.5" data-k="years" placeholder="0"><span>년</span></div></div>
+      <div class="mf"><label for="me_nstat">지금</label><select id="me_nstat" data-k="nstat"><option>취업 준비 중</option><option>재직 중</option></select></div>
+      <div class="mf"><label for="me_njob">지원 직무</label><input id="me_njob" data-k="job" placeholder="예: 마케팅, 품질"></div>
+      <div class="mf" id="me_nsalf" hidden><label for="me_nsal">지금 연봉</label><div class="u"><input id="me_nsal" type="number" min="0" inputmode="numeric" step="100" data-k="salary" placeholder="3600"><span>만 원</span></div></div>
+      <div class="mf wide"><label for="me_school">학교</label><select id="me_school" data-k="school" data-spec><option value="">선택 안 함</option>
+        <option value="4">SKY·KAIST·POSTECH</option><option value="3">서성한·중경외시·이화 등 인서울 상위</option><option value="2">그 밖의 인서울 · 지방 거점 국립대</option><option value="1">수도권·지방 4년제</option><option value="0">전문대·고졸·기타</option></select></div>
+      <div class="mf wide"><label for="me_major">학과</label><select id="me_major" data-k="major" data-spec><option value="">선택 안 함</option>
+        <optgroup label="문과"><option value="lib:4">경영·경제·회계</option><option value="lib:3">법·행정·정치외교·사회과학</option><option value="lib:3">영어·중국어·일본어 등 어문</option><option value="lib:2">미디어·광고·심리·교육</option><option value="lib:2">인문 (국문·사학·철학 등)</option></optgroup>
+        <optgroup label="이공계"><option value="sci:4">전자·전기·컴퓨터·반도체</option><option value="sci:4">기계·화학공학·신소재·산업공학</option><option value="sci:3">자연과학 (수학·물리·화학·생명·통계)</option><option value="sci:3">건축·토목·환경·그 밖의 공학</option></optgroup>
+        <optgroup label="그 밖"><option value="etc:1">예체능</option><option value="etc:1">그 밖의 전공</option></optgroup></select></div>
+      <div class="mf wide"><label for="me_lang">어학</label><select id="me_lang" data-k="lang" data-spec><option value="">선택 안 함</option>
+        <option value="4">토익 930 이상 · 오픽 AL / 회화 능통</option><option value="3">토익 850~929 · 오픽 IH</option><option value="2">토익 750~849 · 오픽 IM</option><option value="1">토익 750 미만</option><option value="0">어학 점수 없음</option></select></div>
+      <div class="mf wide"><label for="me_exp">인턴·직무 경험</label><select id="me_exp" data-k="exp" data-spec><option value="">선택 안 함</option>
+        <option value="4">직무 관련 경력 · 인턴 2회 이상</option><option value="3">직무 관련 인턴 1회</option><option value="2">다른 분야 인턴 · 직무 관련 프로젝트</option><option value="1">대외활동·공모전·아르바이트 정도</option><option value="0">경험 없음</option></select></div>
+      <div class="mf wide"><label for="me_fit">직무 적합도 <small>(전공·자격증)</small></label><select id="me_fit" data-k="fit" data-spec><option value="">선택 안 함</option>
+        <option value="4">전공 일치 + 직무 자격증·포트폴리오</option><option value="3">전공 일치</option><option value="2">관련 전공·복수전공 또는 자격증</option><option value="1">비전공, 직무 공부는 해 둠</option><option value="0">비전공, 준비 없음</option></select></div>
+      <p class="mgrade wide" id="me_grade" aria-live="polite"></p>
+      <div class="mf wide"><label for="me_cards">다른 합격 카드</label><select id="me_cards" data-k="cards"><option value="">없어요</option><option value="1">있어요 (결과 기다리는 곳 포함)</option></select></div>
+    </fieldset>
+    <!-- 경력 이직 -->
+    <fieldset data-kind="career"><legend>경력</legend>
+      <div class="mf"><label for="me_years">총 경력</label><div class="u"><input id="me_years" type="number" min="0" inputmode="decimal" step="0.5" data-k="years" placeholder="5"><span>년</span></div></div>
+      <div class="mf"><label for="me_tenure">지금 회사 근속</label><div class="u"><input id="me_tenure" type="number" min="0" inputmode="decimal" step="0.5" data-k="tenure" placeholder="5"><span>년</span></div></div>
+      <div class="mf"><label for="me_moves">이직 횟수</label><div class="u"><input id="me_moves" type="number" min="0" inputmode="numeric" data-k="moves" placeholder="0"><span>번</span></div></div>
+      <div class="mf"><label for="me_left">지금</label><select id="me_left" data-k="left"><option value="">재직 중</option><option value="1">이미 퇴사</option></select></div>
+      <div class="mf" id="me_gapf" hidden><label for="me_gap">쉰 기간</label><div class="u"><input id="me_gap" type="number" min="0" inputmode="decimal" step="0.5" data-k="gap" placeholder="0.5"><span>년</span></div></div>
+    </fieldset>
+    <fieldset data-kind="career"><legend>지금 회사</legend>
       <div class="mf wide"><label for="me_co">회사 이름 <small>(선택)</small></label><input id="me_co" data-k="co" placeholder="예: 펄어비스" autocomplete="off">
         <small class="mhelp">적어 주시면 지금 회사의 평점·연봉·재무를 불러와 갈 회사와 비교해서 더 정확하게 추천해요. 아래 칸 중 모르는 건 <b>모름</b>으로 두면 회사 정보로 채워요.</small></div>
       <div class="mf"><label for="me_size">규모</label><select id="me_size" data-k="size"></select></div>
       <div class="mf"><label for="me_ind">업종</label><select id="me_ind" data-k="industry"></select></div>
       <div class="mf"><label for="me_job">직무</label><input id="me_job" data-k="job" placeholder="예: 재무, 공정"></div>
-      <div class="mf"><label for="me_sal">연봉(총액)</label><div class="u"><input id="me_sal" type="number" inputmode="numeric" step="100" data-k="salary" placeholder="5800"><span>만 원</span></div></div>
+      <div class="mf"><label for="me_sal">연봉(총액)</label><div class="u"><input id="me_sal" type="number" min="0" inputmode="numeric" step="100" data-k="salary" placeholder="5800"><span>만 원</span></div></div>
       <div class="mf"><label for="me_wlb">워라밸</label><select id="me_wlb" data-k="wlb"></select></div>
       <div class="mf"><label for="me_place">근무지</label><select id="me_place" data-k="place"></select></div>
     </fieldset>
-    <fieldset><legend>옮긴다면</legend>
+    <fieldset data-kind="career"><legend>옮긴다면</legend>
       <div class="mf"><label for="me_want">갈 직무</label><input id="me_want" data-k="want" placeholder="비우면 지금 직무"></div>
       <div class="mf"><label for="me_twlb">예상 워라밸</label><select id="me_twlb" data-k="twlb"></select></div>
     </fieldset>
-    <label class="mchk mshare"><input type="checkbox" id="me_share" data-k="share"><span><b>내 연봉을 익명으로 보태기</b>
-      <small>규모·업종·직무·연차·연봉(회사 이름은 적었을 때만)만 연봉 연구소 자료로 씁니다. 이름·연락처·나이는 보내지 않아요.</small></span></label>
+    <p class="mnote">입력한 내용과 검색한 회사·판정은 이름·연락처 없이 <b>익명 통계</b>(연봉 연구소·판정 기준 다듬기)로 쓰여요. 나이는 2살 단위로만 남겨요.</p>
   </form>
   <div class="df"><p class="err" id="meErr" hidden></p><button class="clr" type="button" id="meClr">지우기</button><button class="go" type="button" id="meSave">입력 완료</button></div>
 </aside>
@@ -1311,7 +1349,7 @@ async function render(name) {
     <div class="board">${board}</div>
     <p class="legend"><span><b class="lS">S</b><b class="lAp">A+</b><b class="lA">A</b>좋음</span><span><b class="lB">B</b>보통</span><span><b class="lC">C</b><b class="lD">D</b>아쉬움</span><span><b class="lF">F</b>심각</span></p>
     ${redFlags(c)}
-    <section class="sec" id="s1">${secH(1,"평판")}${repsum}${warn}${c.rep && (c.rep.jobplanet || c.rep.blind || c.rep.catch) ? `<div class="reps">${repCard("jobplanet","잡플래닛",c.rep.jobplanet,date)}${repCard("blind","블라인드",c.rep.blind,date)}${repCard("catch","캐치",c.rep.catch,date)}</div>` : empty((c.pending || []).includes("rep") ? "평점은 아직 모으는 중이에요" + (c.eta ? " · " + c.eta + "까지 올라올 예정이에요" : "") : c.rep ? "세 사이트 모두 공개 평점을 찾지 못했어요" : "평점을 모으지 않는 곳이에요 (공사 현장·관공서·학교 등)")}</section>
+    <section class="sec" id="s1">${secH(1,"평판")}${repsum}${warn}${c.rep?.via ? `<div class="via"><b>공장·지점 단위 이름이라 ${esc(c.rep.via.name)} 평점을 보여 드려요.</b> ${esc(c.rep.via.note)}</div>` : ""}${c.rep && (c.rep.jobplanet || c.rep.blind || c.rep.catch) ? `<div class="reps">${repCard("jobplanet","잡플래닛",c.rep.jobplanet,date)}${repCard("blind","블라인드",c.rep.blind,date)}${repCard("catch","캐치",c.rep.catch,date)}</div>` : empty((c.pending || []).includes("rep") ? "평점은 아직 모으는 중이에요" + (c.eta ? " · " + c.eta + "까지 올라올 예정이에요" : "") : c.rep ? "세 사이트 모두 공개 평점을 찾지 못했어요" : "평점을 모으지 않는 곳이에요 (공사 현장·관공서·학교 등)")}</section>
     <section class="sec" id="s2">${secH(2,"연봉")}${salarySec(c)}${myPay(c)}</section>
     <section class="sec" id="s3">${secH(3,"성장성")}${finSec(c,"성장성")}</section>
     <section class="sec" id="s4">${secH(4,"수익성")}${finSec(c,"수익성")}</section>
@@ -1700,7 +1738,69 @@ function meLevel(v, gen, gain) {
 const ME_FIRST = { "무조건 가세요": "고민할 이유가 없어요. 무조건 가세요.", "가세요": "갈 만한 자리예요.", "조건 보고 가세요": "아래 조건이 맞을 때 가세요.",
   "중립기어": "가도 되고 안 가도 되는 자리예요. 뭘 더 원하는지에 따라 갈려요.", "스펙 보고 결정하세요": "내 다른 카드와 꼭 비교해 보고 정하세요.",
   "다시 생각해요": "지금 조건으로는 말리고 싶어요.", "비추예요": "내 상황에서도, 회사로 봐도 비추예요." };
-const meWho = () => [ME.years != null && `${ME.years}년 차`, ME.job, ME.salary && `${won(ME.salary)}만 원`].filter(Boolean).join(" · ");
+const meNew = () => ME?.kind === "new";
+const meWho = () => meNew()
+  ? [ME.age && `${ME.age}세`, (ME.years || 0) > 0 ? `중고신입(경력 ${ME.years}년)` : "신입", ME.job, meSpec(ME) && `스펙 ${meSpec(ME).g}`].filter(Boolean).join(" · ")
+  : [ME.years != null && `${ME.years}년 차`, ME.job, ME.salary && `${won(ME.salary)}만 원`].filter(Boolean).join(" · ");
+// 신입·중고신입 판정: 회사 일반 판정(합격자 기준)에서 출발해, 내 나이·스펙·직무·다른 카드로 올리고 내린다 (2026-10-27)
+//   F21 신입 나이(남 31·여 29) 넘으면 '잡을 만하면 잡기', 어리고 스펙 좋은데 회사가 약하면 '계속 준비', 전망 어두운 직무(F26)는 낮춤
+// 익명 자료 보내기 (/me): 나이는 2살 나이대로만, 같은 내용은 이 탭에서 하루 한 번, 기기 번호는 안 보냄
+function meSend(x) {
+  if (!ME) return;
+  const a = ME.age || 0, sp = meSpec(ME), nw = ME.kind === "new";
+  const body = { ...x, mode: nw ? "new" : "career", sex: ME.sex || "", ageband: a ? `${a - a % 2}~${a - a % 2 + 1}` : "", years: ME.years || 0, job: ME.job || "",
+    nstat: nw ? ME.nstat || "" : (ME.left ? "퇴사" : "재직"), school: ME.school ?? "", major: ME.major ?? "", lang: ME.lang ?? "", exp: ME.exp ?? "", fit: ME.fit ?? "", grade: sp ? sp.g : "",
+    size: nw ? "" : ME.size || "", industry: nw ? "" : ME.industry || "", salary: ME.salary || "", wlb: nw ? "" : ME.wlb || "" };
+  const key = "cc-me-" + new Date().toISOString().slice(0, 10) + JSON.stringify(body);
+  try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch (e) {}
+  send("/me", body);
+}
+function meJudgeNew(c) {
+  const o = meOver[c.name] || {}, sl = c.salary || {}, rg = c.grades?.["평판"]?.score;
+  const est = o.salary ? { v: o.salary, how: "제시 연봉" } : sl.newHire ? { v: sl.newHire, how: "이 회사 신입 추정 연봉" } : coSalary(c, 0);
+  const base = ME_GRADE[c.verdict] ?? 4;
+  let n = base;
+  const why = [];
+  const sex = ME.sex === "여" ? "여" : "남", lim = FitEngine.FIT.newbie_age[sex], age = ME.age || 0;
+  const sp = meSpec(ME);
+  const offer = FitEngine.judge({ type: "C", me: { sex, age, spec: sp && sp.lv >= 3 ? "가능성" : "" },
+    a: { size: coSize(c), industry: engInd(sl.group, sl.industry), job: ME.job, rep: rg != null && rg < 2.8 ? "하" : "" } });
+  const apply = FitEngine.judge({ type: "B", me: { years: ME.years || 0 }, target: { size: coSize(c), job: ME.job } });
+  let cap = 6;   // 올리는 규칙(나이·스펙)보다 낮추는 규칙(전망 어두운 직무·계속 준비)이 늘 이긴다
+  if (apply.verdict === "마요") { cap = 2; why.push(...apply.reasons.map(x => x.text)); }
+  if (offer.verdict === "계속 준비") { cap = 2; why.push(...offer.reasons.map(x => x.text).filter(t => !why.includes(t)), "급하지 않다면 더 좋은 카드를 노려 보세요."); }
+  // 스펙 등급 vs 회사 급: 대기업·공기업은 A, 중견은 B, 중소·스타트업은 C 정도가 보통 붙는 스펙
+  if (sp) {
+    const need = { "대기업": 3, "공기업·공공": 3, "외국계": 3, "중견": 2 }[coSize(c)] ?? 1;
+    const gap = sp.lv - need;
+    const tail = sp.weak.length ? ` ${meJ(sp.weak.join("·"), "을", "를")} 채우면 한 단계 위도 노려볼 수 있어요.` : "";
+    if (gap >= 2 && base <= 5) { n = Math.min(n, base - 1); why.push(`스펙 ${sp.g}(${sp.word})면 이 회사보다 한두 단계 위도 충분히 노려볼 만해요.${sp.strong.length ? ` 특히 ${meJ(sp.strong.join("·"), "이", "가")} 강점이에요.` : ""}`); }
+    else if (gap >= 1 && base <= 4) { n = Math.min(n, base - 1); why.push(`스펙 ${sp.g}(${sp.word})에 비해 걸리는 게 있는 카드예요. 급하지 않다면 다른 결과도 기다려 보세요.`); }
+    else if (gap <= -1 && base >= 2 && base <= 5) { n = Math.max(n, base + 1); why.push(`스펙 ${sp.g}(${sp.word}) 기준으로는 좋은 카드예요. 잡고 들어가서 경력을 쌓으세요.${tail}`); }
+    else why.push(`스펙 ${sp.g}(${sp.word})에 맞는 회사예요.${tail}`);
+    why.push(`스펙은 ${sp.how}로 봤어요.`);
+  }
+  if (age > lim) {
+    if (base >= 3 && base <= 4) n = Math.max(n, base + 1);   // 조건 보고·중립기어만 한 단계 올린다
+    why.push((ME.years || 0) > 0 ? `${age}세면 신입 공채보다 경력 지원이 맞는 나이예요. 이 카드가 괜찮다면 잡고 경력을 이어 가세요.` : `${age}세면 신입 지원이 점점 어려워져요. 갈 만한 곳이면 잡으세요.`);
+  } else if (age && age <= lim - 3 && base <= 3) why.push(`${age}세면 아직 시간이 있어요. 서두르지 말고 더 맞는 곳을 찾아도 돼요.`);
+  if (ME.cards) why.push("다른 합격 카드와 꼭 나란히 놓고 비교하세요. 위 VS 비교로 두 회사를 붙여 볼 수 있어요.");
+  if (/비추예요|다시 생각해요/.test(c.verdict)) why.push(`회사 자체 판정은 '${c.verdict}'예요. 재무·평판을 꼭 확인하세요.`);
+  else if (c.verdict === "판단자료 부족") why.push("이 회사는 재무·평판 자료가 부족해요. 회사 자체는 따로 확인하세요.");
+  let pay = est ? `${est.how} ${won(est.v)}만 원이에요.` : "이 회사는 연봉 자료가 없어요. 제시 연봉을 넣어 보세요.";
+  if (est && ME.salary) {
+    const g = est.v - ME.salary;
+    pay = `${est.how} ${won(est.v)}만 원 — 지금보다 ${g >= 0 ? "+" : ""}${won(g)}만 원이에요.` + (g < 0 ? " 중고신입은 연봉보다 회사 급·직무를 먼저 보세요." : "");
+  }
+  n = Math.min(n, cap);
+  const V = ME_STEPS[Math.max(0, Math.min(6, n))];
+  meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
+  const gen = meAdapt(c.zorro || [], { y: ME.years || 0, age, v: n >= 5 ? "가요" : n >= 3 ? "조건 보고" : "마요", est, left: false, newbie: true,
+    working: ME.nstat === "재직 중", wlb: "", tenure: sl.tenure, sameInd: false }).map((t, i) => i === 0 ? `회사만 놓고 보면, ${t}` : t);
+  const z = [`지금 ${meWho()} 기준이면, ${ME_FIRST[V]}`, ...why, pay, ...gen];
+  if (rg != null && z.length < 6) z.push(`현직자 평점은 종합 ${rg.toFixed(2)}점이에요.`);
+  return { v: V, z, est };
+}
 // 회사 일반 한마디를 내 연차·나이·상황에 맞게 고친다 (2026-10-27 사용자: "그대로 붙이지 말고 15년 차면 '인생 마지막 회사'처럼")
 // 각 규칙: 문장이 re 에 걸리면 fn(문장) 결과로 바꾼다. null 은 빼기, undefined 는 그대로
 function meAdapt(lines, x) {
@@ -1713,13 +1813,13 @@ function meAdapt(lines, x) {
     [/이 회사 밖에서도 통하는 경력을/, () => late ? `${y}년 차면 밖으로 다시 나가기보다 이 회사 안에서 입지를 다지는 게 중요해요.` : undefined],
     [/2~3년.*(이직|환승|발판)|발판으로 쓰는|다음 이직의 무기|다음 이직 카드|다음 이직 때 든든/, () => late ? "이 연차엔 발판이 아니라 종착지로 볼 회사인지가 핵심이에요. 오래 다닐 팀인지 꼭 확인하세요."
       : senior ? `${y}년 차 이직은 기회가 점점 줄어요. 다음 이직보다 여기서 직급을 올리는 쪽으로 보세요.` : undefined],
-    [/첫 1년|첫해|첫 평가/, () => exp ? "경력직은 첫 6개월이 평판을 정해요. 전 회사 방식은 내려놓고 빨리 녹아드세요." : undefined],
-    [/먼저 그만두지 마|선퇴사는 절대 금지/, () => x.left ? "이미 퇴사하셨으니 공백이 길어지기 전에 정하는 게 좋아요. 그래도 이 카드 하나만 보고 서두르진 마세요." : undefined],
+    [/첫 1년|첫해|첫 평가/, () => exp && !x.newbie ? "경력직은 첫 6개월이 평판을 정해요. 전 회사 방식은 내려놓고 빨리 녹아드세요." : undefined],
+    [/먼저 그만두지 마|선퇴사는 절대 금지/, () => x.newbie && !x.working ? "취업 준비 중이시니 이 합격 카드는 일단 쥐고, 남은 결과까지 보고 정하세요." : x.left ? "이미 퇴사하셨으니 공백이 길어지기 전에 정하는 게 좋아요. 그래도 이 카드 하나만 보고 서두르진 마세요." : undefined],
     [/징검다리|경력 한 줄 만들|오래 다닐 곳은 아니에요|오래 밟고/, () => late ? `${y}년 차엔 징검다리로 쓸 시간이 없어요. 오래 다닐 곳이 아니면 다른 카드를 보세요.` : undefined],
     [/승진(은| 자리| 속도)/, t => senior ? `${t} ${y}년 차 경력직은 입사 직급부터 확실히 정하고 가세요.` : undefined],
     [/지금 칼퇴하는 회사 다니시면[^.]*\.|워라밸 (있던|있는) 회사 다니던 분[^.]*\./, t => x.wlb === "칼퇴" ? t.replace(/지금 칼퇴하는 회사 다니시면[^.]*\.|워라밸 (있던|있는) 회사 다니던 분[^.]*\./, "지금 칼퇴하는 회사에서 오시는 거라 차이가 크게 느껴질 거예요. 저녁을 내줄 만큼 얻는 게 있는지 따져 보세요.")
       : /야근/.test(x.wlb || "") ? t.replace(/지금 칼퇴하는 회사 다니시면[^.]*\.|워라밸 (있던|있는) 회사 다니던 분[^.]*\./, "지금도 야근이 잦은 곳에서 오시니 적응은 되겠지만, 나아지진 않아요.") : undefined],
-    [/경력직이면 평균 말고 직급별 금액을 보세요|내 연차 기준 오퍼를 보세요/, t => est && y >= 1 ? t.replace(/(경력직이면 평균 말고 직급별 금액을 보세요|숫자보다 내 연차 기준 오퍼를 보세요)/, `${y}년 차시니 ${est.how} ${won(est.v)}만 원을 기준으로 보세요`) : undefined],
+    [/경력직이면 평균 말고 직급별 금액을 보세요|내 연차 기준 오퍼를 보세요/, t => x.newbie && est ? t.replace(/(경력직이면 평균 말고 직급별 금액을 보세요|숫자보다 내 연차 기준 오퍼를 보세요)/, `신입은 평균 말고 ${est.how} ${won(est.v)}만 원을 보세요`) : est && y >= 1 ? t.replace(/(경력직이면 평균 말고 직급별 금액을 보세요|숫자보다 내 연차 기준 오퍼를 보세요)/, `${y}년 차시니 ${est.how} ${won(est.v)}만 원을 기준으로 보세요`) : undefined],
     [/다른 업계에서 넘어오는 거라면/, t => x.sameInd ? t.replace(/\s*다른 업계에서 넘어오는 거라면[^.]*\./, "") : t.replace(/다른 업계에서 넘어오는 거라면/, "다른 업계에서 넘어오시는 거라")],
   ];
   const out = [], mine = [];   // mine: 내 상황에 맞게 바꾼 말 → 앞쪽(회사 첫 줄 바로 뒤)에 둔다
@@ -1740,6 +1840,7 @@ function meAdapt(lines, x) {
 function meJudge(c) {
   meCo = c;
   if (!ME || meGeneral) return null;
+  if (meNew()) return meJudgeNew(c);
   const { c: kase, est } = meCase(c);
   if (!kase.now.salary || !kase.target.salary) return null;
   const r = FitEngine.judge(kase);
@@ -1761,6 +1862,7 @@ function meJudge(c) {
   if (sl.tenure != null) facts.push(`직원 ${won(sl.members)}명, 평균 근속 ${sl.tenure}년인 회사예요.`);
   if (sl.newHire && (ME.years || 0) <= 1) facts.push(`신입 추정 연봉은 ${won(sl.newHire)}만 원이에요.`);
   const V = meLevel(v, c.verdict, pct);
+  meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
   const z = [`지금 ${meWho()} 기준이면, ${ME_FIRST[V]}`, ...why, pay, ...gen];
   for (const f of facts) { if (z.length >= 6) break; z.push(f); }
   return { v: V, z, kase, est };
@@ -1768,6 +1870,12 @@ function meJudge(c) {
 function meStrip(c, my) {
   if (!ME) return `<div class="mecta" id="meSlot"><p><b>내 상황에 맞춰 볼까요?</b> 연차·연봉을 넣으면 위 판정과 한마디가 전부 내 기준으로 바뀌어요.</p><button type="button" data-me-open>내 상황 넣기</button></div>`;
   if (meGeneral) return `<div class="mestrip" id="meSlot"><span>지금은 <b>일반 판정</b>을 보고 있어요.</span><button class="lnk" type="button" data-me-mine>내 상황으로 보기</button></div>`;
+  if (meNew()) {
+    const o = meOver[c.name] || {}, sl = c.salary || {}, nh = sl.newHire || coSalary(c, 0)?.v;
+    return `<div class="mestrip" id="meSlot"><span class="tag">신입 기준</span><span>지금 <b>${esc(meWho())}</b>${nh ? ` → 신입 추정 연봉 <b>${won(o.salary || nh)}만 원</b>` : ""}</span>
+      <label>제시 연봉<input id="meOff" type="number" inputmode="numeric" step="100" value="${o.salary || ""}" placeholder="${nh ? won(nh) : "만 원"}"></label>
+      <span class="lnks"><button class="lnk" type="button" data-me-open>내 상황 고치기</button><button class="lnk" type="button" data-me-general>일반 판정 보기</button></span></div>`;
+  }
   const { c: kase, est } = meCase(c), o = meOver[c.name] || {};
   const opt = (list, v) => list.map(x => `<option${x === v ? " selected" : ""}>${esc(x)}</option>`).join("");
   const offer = `<label>제시 연봉<input id="meOff" type="number" inputmode="numeric" step="100" value="${o.salary || ""}" placeholder="${est ? won(est.v) : "만 원"}"></label>`;
@@ -1814,6 +1922,7 @@ function meOpen() {
     else if (el.tagName === "SELECT" && el.options[0]?.value === ME_UNK) el.value = ME_UNK;
   });
   meEl("me_gapf").hidden = !meEl("me_left").value;
+  meSetKind(ME?.kind || "career"); meGradeShow();
   meEl("meErr").hidden = true;
   meEl("medim").hidden = false;
   requestAnimationFrame(() => { meEl("medim").classList.add("open"); meEl("medrawer").classList.add("open"); });
@@ -1828,28 +1937,95 @@ function meClose() {
 meEl("meX").onclick = meClose; meEl("medim").onclick = meClose;
 document.addEventListener("keydown", e => { if (e.key === "Escape" && meEl("medrawer").classList.contains("open")) meClose(); });
 meEl("me_left").onchange = () => { meEl("me_gapf").hidden = !meEl("me_left").value; };
+// 경력 이직 / 신입·중고신입: 고른 쪽 칸만 보이고, 저장도 보이는 칸만 (2026-10-27 사용자)
+let meKind = "career";
+function meSetKind(k) {
+  meKind = k;
+  document.querySelectorAll(".mkind button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.kind === k)));
+  meEl("meForm").querySelectorAll("[data-kind]:not(button)").forEach(el => { el.hidden = el.dataset.kind !== k; });
+  meEl("me_nsalf").hidden = meEl("me_nstat").value !== "재직 중";
+}
+document.querySelectorAll(".mkind button").forEach(b => b.onclick = () => meSetKind(b.dataset.kind));
+meEl("me_nstat").onchange = () => { meEl("me_nsalf").hidden = meEl("me_nstat").value !== "재직 중"; };
+const meVisible = el => !el.closest("[data-kind]:not(button)")?.hidden;
+// 숫자 칸은 0 아래로 못 내려가게 (화살표·직접 입력 모두)
+meEl("meForm").querySelectorAll('input[type=number]').forEach(el => el.addEventListener("input", () => { if (el.value !== "" && Number(el.value) < 0) el.value = "0"; }));
+// 경력 이직에서 총경력 0 → 신입·중고신입으로 바로 넘긴다 (직무는 지원 직무로 옮겨 적음)
+meEl("me_years").addEventListener("change", () => {
+  if (meKind === "career" && meEl("me_years").value !== "" && Number(meEl("me_years").value) <= 0) {
+    if (!meEl("me_njob").value) meEl("me_njob").value = meEl("me_job").value;
+    meEl("me_nyears").value = "0";
+    meSetKind("new"); meGradeShow();
+    toast("경력이 0년이라 신입·중고신입으로 바꿨어요");
+  }
+});
+// 신입 스펙 등급: 고른 항목(0~4)의 평균으로 S·A·B·C·D (안 고른 항목은 빼고 계산, 하나도 없으면 null)
+const ME_SPEC_F = [["school", "학교"], ["major", "학과"], ["lang", "어학"], ["exp", "인턴·직무 경험"], ["fit", "직무 적합도"]];
+// 문과/이공계 판단은 지원 직무가 먼저 (이공계 전공이 문과 직무를 쓰면 문과 기준으로 꺾는다), 직무가 없으면 학과로
+const ME_SCI_JOB = /공정|설비|품질|생산|R&D|연구|개발|엔지니어|설계|반도체|회로|전기|전자|기계|화학|소재|IT|소프트웨어|SW|데이터|AI|기술영업|안전|환경|건축|토목|플랜트|QA/i;
+const ME_LIB_JOB = /마케팅|기획|인사|HR|재무|회계|세무|총무|영업관리|사업개발|상품개발|MD|홍보|구매|법무|사무/i;
+const ME_LANG_JOB = /해외|글로벌|무역|수출|통번역|외국어|외국계/;
+function meTrack(m) {
+  const j = m?.job || "";
+  if (j) return ME_SCI_JOB.test(j) && !ME_LIB_JOB.test(j) ? "sci" : "lib";
+  return String(m?.major || "").startsWith("sci") ? "sci" : "lib";
+}
+function meWeights(m) {
+  const tr = meTrack(m), lang = ME_LANG_JOB.test(m?.job || "");
+  return { tr, lang, w: tr === "sci" ? { school: 3, major: 3, lang: lang ? 2 : 0.5, exp: 2, fit: 3 } : { school: 3, major: 3, lang: lang ? 3 : 1, exp: 2, fit: 1.5 } };
+}
+const ME_SPEC_G = [["D", "낮은 편"], ["C", "보통 아래"], ["B", "보통"], ["A", "상위"], ["S", "최상위"]];
+// 받침 따라 조사: meJ("어학", "이", "가") → "어학이"
+const meJ = (w, a, b) => { const c = w.charCodeAt(w.length - 1); return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? a : b); };
+function meSpec(m) {
+  const { tr, lang, w } = meWeights(m);
+  const val = k => {
+    if (k !== "major") return Number(m[k]);
+    const [kind, v] = String(m.major).split(":"), n = Number(v);
+    // 학과가 직무와 안 맞으면 덜 쳐 준다: 문과 전공 → 이공계 직무는 1까지, 이공계 전공 → 문과 직무는 3까지
+    return tr === "sci" && kind !== "sci" ? Math.min(n, 1) : tr === "lib" && kind === "sci" ? Math.min(n, 3) : n;
+  };
+  const got = ME_SPEC_F.filter(([k]) => m?.[k] !== undefined && m[k] !== "").map(([k, name]) => [name, val(k), w[k]]);
+  if (!got.length) return null;
+  const avg = got.reduce((a, [, v, wt]) => a + v * wt, 0) / got.reduce((a, [, , wt]) => a + wt, 0);
+  const lv = Math.max(0, Math.min(4, Math.round(avg)));
+  const big = got.filter(([, , wt]) => wt >= 3).map(([n]) => n);   // 이 직무에서 크게 보는 항목
+  return { lv, g: ME_SPEC_G[lv][0], word: ME_SPEC_G[lv][1], strong: got.filter(([, v]) => v >= 3).map(([n]) => n), weak: got.filter(([, v]) => v <= 1).map(([n]) => n), n: got.length,
+    tr, lang, big, how: `${tr === "sci" ? "이공계" : "문과"} 직무 기준 · ${big.join("·")} 크게` };
+}
+function meGradeShow() {
+  const m = { job: meEl("me_njob").value.trim() }; document.querySelectorAll("[data-spec]").forEach(el => { m[el.dataset.k] = el.value; });
+  const sp = meSpec(m), el = meEl("me_grade");
+  el.innerHTML = sp ? `<b>${sp.g}</b>내 스펙 ${sp.word} · ${esc(sp.how)}${sp.n < 5 ? ` · ${5 - sp.n}개 항목은 빼고 계산` : ""}` : "항목을 고르면 스펙 등급(S~D)을 보여 드려요. 지원 직무에 따라 크게 보는 항목이 달라져요.";
+}
+document.querySelectorAll("[data-spec]").forEach(el => el.addEventListener("change", meGradeShow));
+meEl("me_njob").addEventListener("input", meGradeShow);   // 직무가 바뀌면 문과/이공계 기준도 바뀐다
 meEl("meClr").onclick = () => {
   ME = null; try { localStorage.removeItem("cc-me"); } catch (e) {}
   meEl("meForm").reset(); meClose(); meRefresh(); toast("내 상황을 지웠어요");
 };
 meEl("meSave").onclick = () => {
-  const m = {};
+  const m = { kind: meKind };
   meEl("meForm").querySelectorAll("[data-k]").forEach(el => {
+    if (!meVisible(el)) return;
     const k = el.dataset.k;
     if (el.type === "checkbox") m[k] = el.checked;
-    else if (el.type === "number") { if (el.value !== "") m[k] = Number(el.value); }
+    else if (el.type === "number") { if (el.value !== "") m[k] = Math.max(0, Number(el.value)); }
     else if (k === "left") m[k] = !!el.value;
     else if (el.value.trim() && el.value !== ME_UNK) m[k] = el.value.trim();
   });
-  const err = !m.salary ? "지금 연봉을 넣어 주세요." : m.years == null ? "총 경력을 넣어 주세요." : !m.job ? "직무를 넣어 주세요." : "";
+  if (m.kind === "new" && m.nstat !== "재직 중") delete m.salary;
+  const err = m.kind === "new" ? (!m.age ? "나이를 넣어 주세요." : !m.job ? "지원 직무를 넣어 주세요." : "")
+    : !m.salary ? "지금 연봉을 넣어 주세요." : m.years == null ? "총 경력을 넣어 주세요." : !m.job ? "직무를 넣어 주세요." : "";
   if (err) { meEl("meErr").textContent = err; meEl("meErr").hidden = false; return; }
   ME = m; try { localStorage.setItem("cc-me", JSON.stringify(m)); } catch (e) {}
   // 연봉 보태기: 체크한 사람만, 같은 내용은 한 번만 보낸다
-  if (m.share) {
+  if (m.kind !== "new" && m.salary) {
     const body = { co: m.co || "", size: m.size, industry: m.industry, job: m.job, years: m.years, salary: m.salary };   // 기기 번호는 보내지 않음 (개인정보처리방침 제2조)
     const key = JSON.stringify(body);
     try { if (localStorage.getItem("cc-sal-sent") !== key) { send("/sal", body); localStorage.setItem("cc-sal-sent", key); } } catch (e) {}
   }
+  meSend({ t: "p", co: m.kind === "new" ? "" : (m.co || "") });
   meGeneral = false; meClose(); meRefresh();
   toast(meCo ? "내 상황이 입력됐어요 · 판정을 내 기준으로 바꿨어요" : "내 상황이 입력됐어요 · 이제 회사를 검색해 보세요");
   if (!meCo) setTimeout(() => $("#q").focus(), 300);
@@ -1863,7 +2039,7 @@ function meBar() {
   b.setAttribute("aria-pressed", String(mine)); g.setAttribute("aria-pressed", String(!!ME && !mine));
   g.querySelector("span").textContent = !ME ? "평점·연봉·재무로 본 일반 판정이에요" : mine ? "누르면 일반 판정으로 바꿔요" : "지금 일반 판정을 보고 있어요";
   b.innerHTML = ME
-    ? `<small>${mine ? "내 상황 기준으로 보는 중" : "내 상황 입력됨"}</small><b>${esc([ME.years != null && ME.years + "년 차", ME.job, won(ME.salary) + "만 원"].filter(Boolean).join(" · "))}</b><span>${mine ? "판정·한마디가 내 기준으로 나와요 · 한 번 더 누르면 고치기" : "누르면 다시 내 기준으로 봐요"}</span>`
+    ? `<small>${mine ? "내 상황 기준으로 보는 중" : "내 상황 입력됨"}</small><b>${esc(meWho())}</b><span>${mine ? "판정·한마디가 내 기준으로 나와요 · 한 번 더 누르면 고치기" : "누르면 다시 내 기준으로 봐요"}</span>`
     : `<small>내 상황에 맞춰 보려면</small><b>내 상황 넣기 →</b><span>연차·연봉을 넣으면 판정을 내 기준으로 바꿔 드려요</span>`;
 }
 meEl("meOpenBtn").onclick = () => {
