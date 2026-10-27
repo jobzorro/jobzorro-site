@@ -1019,6 +1019,15 @@ const hearted = { get: n => { try { return JSON.parse(localStorage.getItem("cc-h
 function toast(msg) { const el = document.createElement("div"); el.className = "toast"; el.textContent = msg; el.setAttribute("role", "status"); document.body.append(el); setTimeout(() => el.remove(), 2200); }
 let CUR = null;  // 지금 보고 있는 회사
 
+// 카드 PICK: 7단계 판정을 한 단어로. 가운데(중립기어·스펙 보고 결정하세요)는 억지로 가르지 않고 '고민해 보세요'
+function cardPick(c) {
+  const g = { "무조건 가세요": 6, "가세요": 5, "조건 보고 가세요": 4, "중립기어": 3, "스펙 보고 결정하세요": 2, "다시 생각해요": 1, "비추예요": 0 }[c.verdict];
+  const word = g >= 4 ? "가세요" : g <= 1 ? "가지 마세요" : "고민해 보세요";
+  const L = k => c.grades?.[k]?.letter, ks = ["평판", "연봉", "성장성", "수익성", "안정성"];
+  const good = ks.filter(k => /^(S|A\+|A)$/.test(L(k) || "")), bad = ks.filter(k => /^(C|D|F)$/.test(L(k) || ""));
+  const why = [good.length ? "좋은 점 " + good.slice(0, 2).join("·") : "", bad.length ? "걸리는 점 " + bad.slice(0, 2).join("·") : ""].filter(Boolean).join("   /   ");
+  return { word, why, bg: g >= 4 ? "#f3ffd6" : g <= 1 ? "#fff1ef" : "#f5f5f5", fg: g >= 4 ? "#0b0b0b" : g <= 1 ? "#d92d20" : "#3a3a3a" };
+}
 // 결과 카드: 판정·등급·한마디 첫 줄을 1080×1350 이미지로 (카톡·인스타 공유용, 사이트 주소 박힘)
 async function makeCard(c) {
   const W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
@@ -1043,11 +1052,15 @@ async function makeCard(c) {
     x.font = `700 28px ${F}`; x.fillStyle = "#3a3a3a"; x.fillText(k, cx + 18, 560);
     x.font = `900 104px ${D}`; x.fillStyle = L === "F" ? "#d92d20" : /^(S|A\+|A)$/.test(L) ? "#1b8f63" : /^(C|D)$/.test(L) ? "#c2410c" : L === "?" ? "#a3a3a3" : "#3a3a3a";
     x.fillText(L, cx + 14, 680); });
-  // Zorro의 한마디 첫 줄 (줄바꿈)
-  x.font = `800 30px ${F}`; x.fillStyle = "#7a7a7a"; x.fillText("Zorro의 한마디", 80, 800);
-  x.font = `700 44px ${F}`; x.fillStyle = "#0b0b0b";
-  let line = "", y = 870; for (const ch of (c.zorro?.[0] || "")) { if (x.measureText(line + ch).width > W - 160) { x.fillText(line, 80, y); line = ch.trim(); y += 62; if (y > 1120) break; } else line += ch; }
-  if (y <= 1120) x.fillText(line, 80, y);
+  // 조로의 PICK 칸: 가세요 / 가지 마세요 한 단어 + 좋은 점·걸리는 점 + 한마디 첫 줄 (2026-10-27 사용자 요청)
+  const pk = cardPick(c);
+  x.fillStyle = pk.bg; x.strokeStyle = "#0b0b0b"; x.lineWidth = 4; x.beginPath(); x.roundRect(80, 760, W - 160, 380, 28); x.fill(); x.stroke();
+  x.font = `800 30px ${F}`; x.fillStyle = "#3a3a3a"; x.fillText("조로의 PICK", 124, 830);
+  x.font = `900 84px ${F}`; x.fillStyle = pk.fg; x.fillText(pk.word, 124, 935);
+  x.font = `700 32px ${F}`; x.fillStyle = "#3a3a3a"; if (pk.why) x.fillText(pk.why, 124, 1000);
+  x.font = `700 34px ${F}`; x.fillStyle = "#0b0b0b";
+  let line = "", y = pk.why ? 1062 : 1010; for (const ch of (c.zorro?.[0] || "")) { if (x.measureText(line + ch).width > W - 250) { x.fillText(line, 124, y); line = ch.trim(); y += 48; if (y > 1110) break; } else line += ch; }
+  if (y <= 1110) x.fillText(line, 124, y);
   // 아래: 주소 + 로고
   x.fillStyle = "#c6ff3d"; x.fillRect(0, H - 150, W, 150);
   x.font = `900 38px ${F}`; x.fillStyle = "#0b0b0b"; x.fillText("job.jobzorro.kr/company", 80, H - 62);
@@ -1928,6 +1941,16 @@ function meJudge(c) {
   const better = step >= 1 || (kase.now.grade != null && kase.target.grade != null && kase.target.grade - kase.now.grade >= 2);
   const up = (better ? 1 : 0) + (pct >= 25 ? 1 : 0);
   let V = meLevel(v, c.verdict, pct, up);
+  // 업계 전망만으로 말리는데 다른 조건이 압도적이면(연봉 +1,000만 원 이상·+25% 이상·위 급) 한 단계만 올린다 (2026-10-27 사용자: "연봉 1000 이상 차이나는데 가지 말라는 건 이상")
+  //   업계를 빼고 다시 본 판정이 더 좋을 때만 = 업계가 원인일 때만. 업계 뺀 판정보다 높이 올리지는 않는다
+  if (!gameSoft && (gap >= 1000 || pct >= 25 || better)) {
+    const r0 = FitEngine.judge({ ...kj, target: { ...kj.target, industry: "" } });
+    const V0 = meLevel(r0.verdict, c.verdict, pct, up), i = ME_STEPS.indexOf(V), i0 = ME_STEPS.indexOf(V0);
+    if (i0 > i) {
+      V = ME_STEPS[i + 1];
+      why.push(`${meJ(kase.target.industry || "이 업계", "은", "는")} 전망이 밝지 않지만, ${gap >= 1000 ? `연봉이 ${won(gap)}만 원 오르는` : better ? "지금보다 위 급인" : "연봉이 크게 오르는"} 조건이라 업계 걱정만으로 말리진 않고 한 단계 올렸어요.`);
+    }
+  }
   if (gameSoft) {
     V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), 4)];
     why.push("게임 업계는 전망이 밝은 편이 아니라 '조건 보고 가세요'까지만 드려요. 회사 자체가 좋아서 가도 되지만, 길게 보면 다른 업계에서도 통하는 경력으로 키워 두세요.");
