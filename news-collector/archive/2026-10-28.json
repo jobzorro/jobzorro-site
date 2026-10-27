@@ -1,0 +1,599 @@
+{
+  "title": "CAREER BRIEFING",
+  "date": "2026-10-28",
+  "generated_at": "2026-10-28 07:55",
+  "stats": {
+    "collected": 1745,
+    "deduped": 1680,
+    "recent": 882,
+    "fresh": 860,
+    "relevant": 198,
+    "published": 21,
+    "feeds": 30,
+    "dead_feeds": []
+  },
+  "sections": [
+    {
+      "key": "hiring",
+      "name": "채용 시즌·공고",
+      "en": "HIRING NOW",
+      "desc": "대기업·계열사·중견·외국계·공기업이 지금 사람을 뽑는 공고와 일정",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "내년 울산 교육공무직 197명 채용…조리실무사 체력 검정",
+          "lead": "(울산=연합뉴스) 김용태 기자 = 울산시교육청은 2027년 교육공무직 197명을 공개 채용한다고 28일 밝혔다.",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261027116100057",
+          "source": "연합뉴스",
+          "published": "2026-10-28 06:00",
+          "score": 24,
+          "keywords": [
+            "명 채용",
+            "채용"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "울산시교육청이 2027년 교육공무직 197명을 공개 채용하며 조리실무사는 체력 검정을 본다.",
+          "ai_why": "울산에서 안정적인 일자리를 찾는 신입·중고신입은 공고를 확인하세요. 조리실무사는 체력 검정이 있으니 지금부터 준비해야 합니다.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "[JOB리포트] K뷰티 수출 호황, 채용문도 열렸나…해외영업·마케팅서 신입 채용",
+          "lead": "[뉴스투데이=이은지 기자] 중소기업 화장품 수출이 역대 최대치를 기록한 가운데 K뷰티 기업들의 해외영업·마케팅 채용에서도 신입 구직자의 진입 기회가 확인됐다.",
+          "summary": "해외 거래처를 담당하는 경력직과 함께 신입 마케터, 외국어 역량을 갖춘 해외영업 인력을 모집하면서 수출 확대를",
+          "url": "https://www.news2day.co.kr/article/20261027500018",
+          "source": "뉴스투데이",
+          "published": "2026-10-27 10:34",
+          "score": 21,
+          "keywords": [
+            "신입 채용",
+            "채용",
+            "신입"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "화장품 수출 호황 속에 K뷰티 기업들이 해외영업·마케팅 신입을 뽑고 있다.",
+          "ai_why": "외국어 되는 문과 신입은 지원하세요. 수출이 늘면 사람이 필요해지거든요? 다만 중소기업이니 재무 상태는 꼭 확인하세요.",
+          "ai_tags": [
+            "영업",
+            "마케팅"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "[게시판] 케이뱅크, '제11회 금융의날' 포용금융부문 금융위원장상",
+          "lead": "▲ 케이뱅크[279570]는 '제11회 금융의 날' 기념식에서 포용금융부문 금융위원장상을 수상했다고 27일 밝혔다.",
+          "summary": "케이뱅크는 채용연계형 인턴십...",
+          "url": "https://www.yna.co.kr/view/AKR20261027118100002",
+          "source": "연합뉴스",
+          "published": "2026-10-27 14:22",
+          "score": 17,
+          "keywords": [],
+          "image": null,
+          "related": [],
+          "ai_line": "케이뱅크가 금융의 날에 포용금융부문 금융위원장상을 받았고 채용연계형 인턴십도 언급됐다.",
+          "ai_why": "금융권을 노리는 신입은 케이뱅크 채용연계형 인턴십 공고를 챙기세요. 정부 포상까지 받은 프로그램은 쉽게 접지 않거든요?",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "수료 후에도 이어지는 청년 취업 지원… 2026년도 ‘청년미래플러스’ 구직청년 채용연계 프로그램 운영",
+          "lead": "한국전파진흥협회(RAPA)는 고용노동부가 주최하고 한국산업인력공단이 주관하는 ‘2026년 청년미래플러스’ 사업의 일환으로 ‘구직청년 채용연계 프로그램’을 10월부",
+          "summary": "",
+          "url": "https://www.ceoeconomy.com/news/articleView.html?idxno=22337",
+          "source": "CEO경제신문",
+          "published": "2026-10-27 16:19",
+          "score": 14,
+          "keywords": [
+            "채용연계",
+            "채용"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "RAPA가 10월부터 청년미래플러스 구직청년 채용연계 프로그램을 운영하며 수료 후에도 취업을 지원한다.",
+          "ai_why": "공백기가 길어진 신입은 이런 채용연계 프로그램부터 준비하세요. 혼자 버티는 것보다 수료 후 연계가 있는 쪽이 정보 싸움에서 유리합니다.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 5,
+          "title": "케이뱅크, 금융의 날 금융위원장상…청년채용 확대 공로",
+          "lead": "",
+          "summary": "",
+          "url": "https://www.metroseoul.co.kr/article/20261027500355",
+          "source": "메트로신문",
+          "published": "2026-10-27 14:07",
+          "score": 14,
+          "keywords": [
+            "채용 확대",
+            "채용"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "케이뱅크가 청년채용을 늘린 공로를 인정받아 금융위원장상을 받았다.",
+          "ai_why": "핵심 키워드는 청년채용 확대입니다. 내년 3~4월 금융권 공채를 노리는 신입은 지금부터 인터넷은행 직무 분석을 준비하세요.",
+          "ai_tags": [
+            "공통"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "moves",
+      "name": "이직·연봉·HR",
+      "en": "MOVES & PAY",
+      "desc": "경력직 수요, 연봉·성과급, 희망퇴직, 평가·승진, 면접과 채용 프로세스의 변화",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "MS조차 AI發 구조조정... 6만명에 희망퇴직 실시",
+          "lead": "마이크로소프트가 AI 기술 투자를 확대하기 위해 전체 직원의 27%인 6만 명 규모의 희망퇴직을 발표함.",
+          "summary": "이번 조치는 윈도와 게임 등 제품 조직의 인건비를 절감해 AI 인프라와 운영 비용을 확보하려는 목적이며, 데이터센터와 영업 부문은 제외하고 미국·영국 등 4개국 중심으로 진행됨.",
+          "url": "https://www.chosun.com/economy/tech_it/2026/10/27/DIPVDFTWQNE6TCQ4N3OZTGKEU4/",
+          "source": "조선일보",
+          "published": "2026-10-27 13:46",
+          "score": 29,
+          "keywords": [
+            "희망퇴직",
+            "구조조정"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "MS, 직원 6만명에 희망퇴직 제안…AI 구조조정 본격화",
+              "source": "아시아경제",
+              "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE4zN3ptWkVtYVNIWTU4SGktWFByTC1ic0dYVVFXdG9ZQ3dPcG9PeFRPOFVSZUNKMGx5ZmxINHVPNU8taFE0eGhLTXd3enBwSjYtVHF4TVQ1WVJqMnZnc1BkdA?oc=5"
+            }
+          ],
+          "ai_line": "MS가 윈도·게임 등 제품 조직을 중심으로 희망퇴직을 진행하고, 데이터센터와 영업은 대상에서 뺐다.",
+          "ai_why": "40대 재직자에게도 남 얘기가 아닙니다. 영업은 남기고 제품 조직부터 줄였다는 게 포인트거든요? 매출과 가까운 역량을 준비하세요.",
+          "ai_tags": [
+            "기획",
+            "영업"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "6만명 ‘우르르’ 희망퇴직 날벼락…“유연성 더 크게” MS, 대규모 구조조정",
+          "lead": "마이크로소프트(MS)가 비용 절감과 인공지능(AI) 투자 지원을 위해 최대 6만명 규모의 대규모 감원을 단행한다.",
+          "summary": "",
+          "url": "https://mbiz.heraldcorp.com/article/10915758",
+          "source": "헤럴드경제",
+          "published": "2026-10-27 09:46",
+          "score": 29,
+          "keywords": [
+            "희망퇴직",
+            "구조조정"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "MS, 직원 6만명 희망퇴직…AI 구조조정",
+              "source": "파이낸셜뉴스",
+              "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE1vRHRoVXBRZlRld3VBQVcwb0FWekQzNUtCVGZqLXJXbEJmb0pFZmNJUzBRLWgzVWUweWRQaVNCSV9tV3RKekNCdmpFSDg3TktPWE5PNkZxTE42QQ?oc=5"
+            },
+            {
+              "title": "AI 키우는 MS, 6만명 희망퇴직",
+              "source": "IT조선",
+              "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE8wWGhmaGd3RzlLVFBTa3VKWmFDZGtveHlabW91aDRkYXJGQXlTSW9LdThvdG55UUpIYm1lTXdIS3EtSHZibjJid3NQUjZtd2xiZDFmSHluOVRid1FDT2FkT1hOd1huZ05xMGxTSlNveGV0ZERu0gF0QVVfeXFMTzBYaGZoZ3dHOUtUUFNrdUpaYUNka294eVptb3VoNGRhckZBeVNJb0t1OG90bnlRSkhibWVNd0hLcS1IdmJuMmJ3c1BSNm13bGJkMWZIeW45VGJ3UUNPYWRPWE53WG5nTnEwbFNKU294ZXRkRG4?oc=5"
+            }
+          ],
+          "ai_line": "MS가 비용 절감과 AI 투자 지원을 위해 최대 6만 명 규모의 감원을 단행한다.",
+          "ai_why": "외국계 IT 이직을 고민하는 경력직은 당분간 기다리세요. 감원이 진행 중인 조직에 들어가면 입사하자마자 다음 대상이 될 수 있거든요.",
+          "ai_tags": [
+            "개발",
+            "PM"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "AI발 구조조정 본격화?…MS, 직원 27% ‘희망퇴직’ 제안",
+          "lead": "마이크로소프트(MS)가 인공지능(AI) 분야에 막대한 투자를 이어가는 가운데 전체 직원의 약 27%에 해당하는 6만명을 대상으로 희망퇴직 프로그램을 시행한다.",
+          "summary": "AI 인프라에 막대한 자금을 투입하는 과정에서 인건비 등 비용을 절감하려는 움직임으로 풀이된다. 경제전문 매체",
+          "url": "https://www.kmib.co.kr/article/20261027500097",
+          "source": "국민일보",
+          "published": "2026-10-27 09:32",
+          "score": 29,
+          "keywords": [
+            "희망퇴직",
+            "구조조정"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "MS, 직원 6만명에게 희망퇴직 제안",
+              "source": "조선일보",
+              "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPR2RiYUNEWDdyQ2Jfbk9LUGN0SUlObXU3SndyNU84TTd4dFdvckhsTjNYcVlsbGVuRmVHLVNTcmo3MENldDVjNlhvaV93dmRlOVZIQ3Z2OFVmMU05SmRXRlE1ZllaM0lZZERkWVJ3X18yeFZ5QnZSTUNZMFJlUnpDem1SUQ?oc=5"
+            },
+            {
+              "title": "MS, 직원 4분의 1 '6만명' 자발적 퇴직 제안…“AI 구조조정 본격화”",
+              "source": "전자신문",
+              "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTFBCTlExdWZETDRxYkdMRDhuYjdBVGhlckJtUnhwQ3kyZU9pN2VxMF80blR2SUNmaUc4aTROMC03TTdRVHdWSTV6UWxYaWRrdw?oc=5"
+            },
+            {
+              "title": "MS, 직원 6만명에 희망퇴직 제안…“AI 투자 효율성 제고”",
+              "source": "전자신문",
+              "url": "https://news.google.com/rss/articles/CBMiTkFVX3lxTFBGSnYtcDB3X3dfcmg5TTQzMl9Pd25BQnVQcXlERC1EOFM1RElkU1R6RDJ4SDQxR3BiNUg4QV84Ynlna1R1cnpVVUpINXlXZw?oc=5"
+            }
+          ],
+          "ai_line": "MS가 AI 인프라 투자 부담을 덜기 위해 직원 약 27%에게 희망퇴직을 제안했다.",
+          "ai_why": "기획·재무 담당자라면 이 구조를 꼭 읽어두세요. AI 투자비를 인건비로 메우는 방식은 다른 기업도 따라 할 수 있으니 이직 포트폴리오를 준비하세요.",
+          "ai_tags": [
+            "재무",
+            "기획"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "HD현대중공업, 임단협 타결…월 기본급 12만원 인상",
+          "lead": "HD현대중공업 노사가 올해 임금 및 단체협약 교섭을 147일 만에 마무리했다.",
+          "summary": "조합원 찬반투표에서 55.06%가 찬성해 2차 잠정합의안이 가결됐고, 월 기본급 12만원 인상과 일시금 1150만원+200%, 복지포인트 30만원 지급에 합의했다.",
+          "url": "https://www.seoul.co.kr/news/newsView.php?id=20261027500305",
+          "source": "서울신문",
+          "published": "2026-10-27 18:24",
+          "score": 27,
+          "keywords": [
+            "임단협"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "한화오션 노사, '기본급 14만원 인상' 임단협 잠정 합의",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261027157300052"
+            },
+            {
+              "title": "HD현대중, 올해 임단협 마무리…월 기본급 12만원 인상(종합)",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261027171651057"
+            },
+            {
+              "title": "[2보] HD현대중, 임단협 타결…조합원 투표서 기본급 12만원 인상 가결",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261027171600057"
+            }
+          ],
+          "ai_line": "HD현대중공업 노사가 147일 만에 기본급 12만원 인상과 일시금 1150만원+200%에 합의했다.",
+          "ai_why": "조선업으로 이직을 노리는 경력직은 지원해볼 만합니다. 다만 찬성률이 55%였다는 건 노사 긴장이 아직 남아 있다는 뜻이거든요?",
+          "ai_tags": [
+            "인사"
+          ]
+        },
+        {
+          "rank": 5,
+          "title": "월급 300만원 넘는 직장인이 절반…‘무인화 직격탄’ 청년 판매직은 감소",
+          "lead": "500만원 이상 17.6% 역대 최고 “고임금 구간으로 이동 지속돼”직장인 2명 중 1명은 월급이 300만원 이상으로 나타났다.",
+          "summary": "반면 키오스크 확산 속에 청년 판매직 일자리는 전년..",
+          "url": "https://www.mk.co.kr/news/economy/12187243",
+          "source": "매일경제",
+          "published": "2026-10-27 16:50",
+          "score": 26,
+          "keywords": [
+            "직장인",
+            "직장"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "직장인 절반이 월 300만원 이상을 받는 반면, 키오스크 확산으로 청년 판매직은 줄었다.",
+          "ai_why": "판매직으로 커리어를 시작한 중고신입은 영업관리나 MD 쪽으로 전환을 준비하세요. 무인화 흐름은 쉽게 되돌아오지 않거든요.",
+          "ai_tags": [
+            "영업",
+            "MD"
+          ]
+        },
+        {
+          "rank": 6,
+          "title": "“퇴직금 챙겨줄 때 나가실 분?”…직원 무려 6만명에 ‘희망퇴직’ 권한 MS",
+          "lead": "MS, 직원 6만명에 희망퇴직 제안 전체 22만3천명의 약 27% 규모 美·英·캐나다",
+          "summary": "등 일부 조직 대상 올해 자본지출 1750억달러 전망",
+          "url": "https://www.mk.co.kr/news/business/12186959",
+          "source": "매일경제",
+          "published": "2026-10-27 14:48",
+          "score": 26,
+          "keywords": [
+            "희망퇴직",
+            "퇴직금"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "MS가 전체 22만3천 명 중 약 27%에게 희망퇴직을 제안했고, 올해 자본지출은 1750억달러로 예상된다.",
+          "ai_why": "퇴직금 준다고 덜컥 나가는 게 제일 위험합니다. 재직자는 선퇴사하지 말고, 다음 자리를 잡아둔 뒤 움직이는 환승이직을 준비하세요.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 7,
+          "title": "MS, AI 지출에 또 감원…전세계 인력 4분의1 대상으로 희망퇴직",
+          "lead": "(샌프란시스코=연합뉴스) 권영전 특파원 = 마이크로소프트(MS)가 비용 절감과 인공지능(AI) 투자 지원을 위해 최대 6만 명 규모의 대규모 감...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261027026400091",
+          "source": "연합뉴스",
+          "published": "2026-10-27 09:15",
+          "score": 26,
+          "keywords": [
+            "희망퇴직",
+            "감원"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "MS, AI 투자 확대 속 전체 직원의 27% 대상 희망퇴직 실시",
+              "source": "중앙일보",
+              "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTFBETXE0d1pLXy01Q1hvQ2ZaUE5GandFRXg1SHk1dTlUOHpadk1lejRsZFI3NVlfTlhKQzE2RUhoVkhYRndLcXExS2ZGaDdWb05RcnNRV0x3?oc=5"
+            },
+            {
+              "title": "MS, 최대 6만명 희망퇴직 추진…AI 투자 확대 속 인력 재편",
+              "source": "뉴시스",
+              "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE5sN2ZOZjVFeXpMQ3ZqS3NxRlRsTzY3UU9SZ1hhOE1LVzFuUVgwMU92U1VUMjJra1RjaXpNUWdUdWRZVTVqbHlORG1xTjZSdEg4UXJvRXRva2hYQVBNcHlMM0dON3JNZloydTNBZmpaclBGbW1TTVkwddIBeEFVX3lxTE5sN2ZOZjVFeXpMQ3ZqS3NxRlRsTzY3UU9SZ1hhOE1LVzFuUVgwMU92U1VUMjJra1RjaXpNUWdUdWRZVTVqbHlORG1xTjZSdEg4UXJvRXRva2hYQVBNcHlMM0dON3JNZloydTNBZmpaclBGbW1TTVkwdQ?oc=5"
+            }
+          ],
+          "ai_line": "MS가 AI 지출 확대 속에 다시 감원에 나서며 전 세계 인력 4분의 1을 희망퇴직 대상으로 삼았다.",
+          "ai_why": "'또' 감원이라는 점이 핵심입니다. 빅테크 이직을 노리는 경력직은 회사 이름값보다 감원이 반복되는지부터 확인하고, 지금은 기다리세요.",
+          "ai_tags": [
+            "개발"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "company",
+      "name": "기업·산업 레이더",
+      "en": "COMPANY WATCH",
+      "desc": "실적·적자·사업재편·증설·폐점 — 지원해도 되는 회사인지 가르는 신호",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "\"역시 패션 데카콘\" 해외서도 통하는 무신사…실적·글로벌 성장에 '10조 IPO' 기대감",
+          "lead": "국내 최대 패션 플랫폼 무신사가 해외 사업과 자체 브랜드(PB)를 앞세워 성장세를 이어가고 있다.",
+          "summary": "국내 온라인 패션 시장에서 확보한 경쟁력을 오프라인과 글로벌 시장으로 확장하면서 기업공개(IPO)를 앞둔 기업가치 재평가 기대감도 커지는 모습이다. 시장에서 거론되는 최대 10조원 수준의 몸값을 인정받기 위한 핵심 조건인 해외 성장성과 사업 다각화에서 성과가 나타나고 있다는 평가다.27일 유통·투자은행(IB)업계에 따르면 무신사는 지난달 7일 한국거래소에 유가증권시장 상장예비심사를 청구하고 내년 상반기 코스피 입성을 추진하고 있다. 상",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156549",
+          "source": "테크M",
+          "published": "2026-10-28 00:38",
+          "score": 38,
+          "keywords": [
+            "실적",
+            "IPO",
+            "패션"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "무신사가 해외 사업과 PB로 성장을 이어가며 내년 상반기 코스피 상장을 추진하고 있다.",
+          "ai_why": "패션 MD·마케팅 지망 신입과 경력은 지원을 고려하세요. IPO 전후로 조직이 커지거든요? 다만 상장 뒤 비용 효율화가 올 수 있다는 점도 감안하세요.",
+          "ai_tags": [
+            "MD",
+            "마케팅"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "큐리옥스바이오시스템즈 3분기 영업손실 40억원…적자 확대",
+          "lead": "(서울=연합뉴스) 코스닥 상장사 큐리옥스바이오시스템즈[445680]는 연결 기준 올해 3분기 영업손실이 40억원으로 지난해 동기(27억원)와 비...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261027171900527",
+          "source": "연합뉴스",
+          "published": "2026-10-27 17:50",
+          "score": 36,
+          "keywords": [
+            "영업손실",
+            "적자",
+            "바이오"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "큐리옥스바이오시스템즈의 3분기 영업손실이 40억원으로 지난해 27억원보다 커졌다.",
+          "ai_why": "바이오 기업 지원을 고민하는 신입·경력은 지금은 기다리세요. 적자가 커지는 회사는 채용보다 비용 절감이 먼저 오거든요?",
+          "ai_tags": [
+            "재무"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "“양질의 수주와 내실 경영”…대우건설, 3분기 영업이익 223% 급증",
+          "lead": "대우건설이 올해 3분기 외형 감소에도 수익성을 크게 개선한 것으로 나타났다.",
+          "summary": "대우건설은 27일 공시를 통해 올해 3분기 경영실적(연결기준, 잠정집계)을 발표했다. 3분기 매출은 1조 8424억원, 영업이익은 1832억원을 기록했다. 3분기 매출은 전년 동기(1조 9906억원) 대비 7.4% 감소했다. 사업부문별 매출은 △건축사업부문 1조 3001억원 △토목",
+          "url": "https://www.mk.co.kr/news/stock/12186622",
+          "source": "매일경제",
+          "published": "2026-10-27 09:25",
+          "score": 36,
+          "keywords": [
+            "영업이익",
+            "수주",
+            "건설"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "대우건설은 3분기 매출이 7.4% 줄었지만 영업이익은 1832억원으로 223% 늘었다.",
+          "ai_why": "건설사 기획·재무 지망자는 지원을 고려하세요. 매출이 줄어도 이익을 냈다는 건 수주를 골라 받고 있다는 뜻이니 면접에서 이 포인트를 쓰세요.",
+          "ai_tags": [
+            "기획",
+            "재무"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "[IPO챗] 동원파츠 \"글로벌 장비사 매출 비중 70%대로 확대 계획\"",
+          "lead": "(서울=연합뉴스) 김유향 기자 = 코스닥 상장 예정인 반도체 정밀부품 기업 동원파츠는 27일 글로벌 장비사와의 거래 확대와 공장 증설을 통해 성...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261027119800008",
+          "source": "연합뉴스",
+          "published": "2026-10-27 14:32",
+          "score": 34,
+          "keywords": [
+            "매출",
+            "IPO"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "코스닥 상장을 앞둔 동원파츠가 글로벌 장비사 매출 비중을 70%대로 높이고 공장도 늘릴 계획이다.",
+          "ai_why": "반도체 부품 영업·구매 경력직은 눈여겨보세요. 공장 증설은 채용 신호지만, 상장 직후 실적은 확인하고 지원하세요.",
+          "ai_tags": [
+            "영업",
+            "구매"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "macro",
+      "name": "고용지표·정책",
+      "en": "MACRO",
+      "desc": "통계청 고용동향, 청년고용, 최저임금·실업급여, 노동법 — 시장 전체의 온도",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "[사설]노동시장 유연화로 청년 고용 풀어야",
+          "lead": "그 결과 청년들이 실업자로 남는 대신 어쩔 수 없이 임시직을 택하면서 실업률에 잡히지 않는 고용의 질적 악화가 가속화하고 있다.",
+          "summary": "더 큰 문제는 청년층이 체감하는 고용 상황은 지표보다 훨씬 나쁘다는 점이다.",
+          "url": "https://www.mt.co.kr/opinion/2026/10/27/2026102617142573711",
+          "source": "머니투데이",
+          "published": "2026-10-27 04:00",
+          "score": 35,
+          "keywords": [
+            "청년 고용",
+            "노동시장",
+            "고용",
+            "청년"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "청년들이 실업 대신 임시직을 택하면서 지표에 잡히지 않는 고용의 질이 나빠지고 있다.",
+          "ai_why": "임시직으로 버티고 있는 중고신입은 지금 하는 일을 직무 언어로 정리하세요. 그래야 내년 3~4월 공채에서 이력서에 쓸 이야기가 됩니다.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "한국은행 \"반도체 편중·AI 확산에 청년 고용 질 악화\"",
+          "lead": "서울서부고용복지플러스센터 모습 (사진=연합뉴스) 반도체 중심의 경제 성장과 인공지능 ...",
+          "summary": "",
+          "url": "https://mbnmoney.mbn.co.kr/news/view?news_no=MM1005947106",
+          "source": "매일경제TV",
+          "published": "2026-10-26 13:32",
+          "score": 29,
+          "keywords": [
+            "청년 고용",
+            "고용",
+            "한국은행",
+            "청년"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "\"신입 대신 AI·경력직\"‥청년 고용 '질적 악화' 뚜렷",
+              "source": "MBC 뉴스",
+              "url": "https://news.google.com/rss/articles/CBMiekFVX3lxTE1iYTRzUzgyY1k2U3RCZ2tHeG1kTV96N3VQZlJaWjRORVl1Z3E1VFpScXpsLUM0UFdkejhwRG41ZDNOX3RtQk9DUExqUVh3M1UzZnpqVFdDS3k0eVBPal9VWUNieG8zeXBoeVloTzBORkdGNEdmM0pJX05n0gF6QVVfeXFMTjdWQ2NYc0ktaWJXeS1iblRQRDkxd295YUFIcE41bXNwYzlfTHR4U0ZWMjliVVJXTXBPMUg2WmMzcWh0ZFFjY0YxdWZZMWpoc2tEc3JUWUJndWptNHpRZnVnRDg2M1ZHVVVVS0Q5VmFjMzN4UGVNdFFQaGc?oc=5"
+            },
+            {
+              "title": "한은 \"반도체 중심 성장 구조, 청년 고용 악화\"",
+              "source": "연합뉴스TV",
+              "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5uVlp1dndMVTNZQ1hXemdiejdmU1BHTWQzVVduWnZMUWJBclhHeEpyY1BMUGtNMDBCU1A2emtkYjJ5Z05HWTdNVHRVWlRNM1hRVWo4a0k3azJ6NWY2aU5XYkNtTExEdnM?oc=5"
+            },
+            {
+              "title": "[청년일자리] AI 확산·반도체 성장에 청년 고용 질 악화…초급 업무 수요 감소",
+              "source": "CBC뉴스",
+              "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE92NlM0bnR4TjVCUTY3bEZzVDBFa3RNYnhTSjdpRE1MNVg1RnB4VUEtRGl6WUtHOGtlYkVPcmcxdHI3aW91eWUzMUZWNll2aFp4YnNCZkVzZDh0c01yZXg0ZEVtMlphaGNo?oc=5"
+            }
+          ],
+          "ai_line": "한국은행은 반도체 편중 성장과 AI 확산이 청년 고용의 질을 떨어뜨렸다고 진단했다.",
+          "ai_why": "문과 신입은 단순 사무보다 기획·영업처럼 사람을 상대하는 직무를 준비하세요. 성장 산업과 고용이 따로 움직이는 시기거든요.",
+          "ai_tags": [
+            "기획",
+            "영업"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "future",
+      "name": "커리어의 변화",
+      "en": "CAREER SHIFT",
+      "desc": "AI가 바꾸는 직무, 40대 이후의 생존, 중장년 재이직, N잡과 멀티커리어",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "\"\"글로벌 마케팅도 AI가 척척\" 인덴트코퍼레이션, 커머스 AI에이전트 '인덴트M' 공개...72개국 마케팅 자동화",
+          "lead": "인덴트코퍼레이션이 글로벌 인플루언서 마케팅의 기획부터 실행까지 지원하는 AI에이전트 '인덴트M'을 공개했다.",
+          "summary": "크리에이터 발굴과 섭외, 캠페인 운영, 성과 분석 등 기존에 사람이 직접 수행하던 반복 업무를 자동화해 마케팅에 필요한 시간과 비용, 인력을 줄인다는 전략이다. 인덴트코퍼레이션은 이러한 '인덴트M'으로 전문 인력이 부족한 전문 인력이 부족한 중소기업과 소규모 조직도 글로벌 시장에서 마케팅을 펼칠 수 있도록 지원, 커머스 AI전환(AX)에 앞장선다는 방침이다. 27일 인덴트코퍼레이션은 서울 서대문 골든빌딩에서 AI에이전트 인덴",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156528",
+          "source": "테크M",
+          "published": "2026-10-27 22:52",
+          "score": 27,
+          "keywords": [
+            "자동화",
+            "AI"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "인덴트코퍼레이션이 크리에이터 섭외부터 성과 분석까지 자동화하는 AI에이전트를 72개국 대상으로 공개했다.",
+          "ai_why": "마케팅에서는 반복 업무가 먼저 AI로 넘어갑니다. 40대 마케터는 툴을 부리는 쪽에 서서 전략과 예산 판단 역량을 준비하세요.",
+          "ai_tags": [
+            "마케팅"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "토스증권, 청년 대상 글로벌 산업 특강…AI 시대 일자리 변화 짚었다",
+          "lead": "토스증권이 청년들을 대상으로 인공지능(AI) 시대의 산업 변화와 미래 일자리를 조망하는 특별 강연을 열었다.",
+          "summary": "미국 실리콘밸리 등 주요 산업 현장에서 파악한 글로벌 기술 동향을 공유하고, 청년들이 진로와 취업 전략을 모색할 수 있도록 마련한 자리다. 토스증권이 중구문화재단 장충동작은도서관에서 청년들을 대상으로 글로벌 산업 트렌드 강연을 진행했다고 27일 밝혔",
+          "url": "https://www.mk.co.kr/news/stock/12187031",
+          "source": "매일경제",
+          "published": "2026-10-27 15:43",
+          "score": 24,
+          "keywords": [
+            "AI 시대",
+            "AI",
+            "일자리"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "AI 시대, 청년 일자리 더 좁아졌나…4년간 28.5만개 감소",
+              "source": "베이비뉴스",
+              "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBzcUN3Y1p0bk9mbl9QMnMtYWFidVFxWlQzOHlhN2FqUUx1M3doLVREdWl2SkE5Sjc3SXJWTlA3V3p0c0M0Vm9PRUloU0lYdHZzQUNSMDJMdktUVEpEeld6M0VadzgwaFpZRC1OWA?oc=5"
+            }
+          ],
+          "ai_line": "토스증권이 청년 대상으로 AI 시대 글로벌 산업 변화와 미래 일자리 특강을 열었다.",
+          "ai_why": "신입은 특강을 듣고 끝내면 안 됩니다. 들은 산업 흐름을 자소서 지원동기 한 줄로 바꿔야 정보가 무기가 되거든요? 지금 준비하세요.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "“AI 시대에도 금융 경쟁력은 사람”…금융의 날, 청년채용·동반성장 포상 첫 신설",
+          "lead": "인공지능(AI) 전환과 비대면 영업 확대로 금융권 채용 여건이 녹록지 않은 가운데 정부가 청년 채용을 늘린 금융회사를 처음 포상했다.",
+          "summary": "금융 지원이 고객의 성장과 일자리로 이어진 사례를 골라 금융인과 고객을 함께 시상하는 '동반성장' 포상도 신설했다. 금융위원회는 27일 서울 중구 웨스틴 조선 서울에서 제11회 '금융의 날' 기념식을 열고 혁신금융·포용금융·저축·투자 3개 부문에서 금융발전 유공 포상 194점을 수여했다. 이억원 금융위원장, 이찬",
+          "url": "https://www.etnews.com/20261027000016",
+          "source": "전자신문",
+          "published": "2026-10-27 10:30",
+          "score": 23,
+          "keywords": [
+            "AI 시대",
+            "AI"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "금융위원회가 금융의 날에 청년채용을 늘린 금융회사를 처음으로 포상했다.",
+          "ai_why": "금융권을 노리는 신입은 포상받은 회사 목록부터 확인하세요. AI 전환으로 채용이 빡빡한 시기에 청년채용을 늘린 곳이 진짜 기회거든요.",
+          "ai_tags": [
+            "공통"
+          ]
+        }
+      ]
+    }
+  ],
+  "briefing": [
+    "오늘의 큰 뉴스는 MS가 전체 직원의 약 27%인 6만 명에게 희망퇴직을 제안한 겁니다. AI 투자비를 인건비 절감으로 마련하는 구조라서, 40대 재직자라면 선퇴사보다 환승이직을 미리 준비해둬야 하거든요?",
+    "대우건설은 매출이 줄었는데도 이익이 크게 늘었고, 큐리옥스는 적자가 커졌고, 무신사는 IPO를 추진하고 있습니다. 같은 지면에서도 회사마다 상황이 이렇게 다르니 직무보다 회사를 먼저 보세요.",
+    "9~10월 채용 시즌이 끝나가는 지금, 외국어 되는 문과 신입은 오늘 안에 K뷰티 해외영업·마케팅 공고를 찾아 지원하세요."
+  ]
+}
