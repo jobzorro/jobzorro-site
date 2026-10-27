@@ -343,8 +343,75 @@ def fonts_available() -> bool:
     return all(_font(n, 10) for n in ("GmarketSansBold.otf", "GmarketSansMedium.otf", "GmarketSansLight.otf", "NanumBarunGothic.ttf"))
 
 
-def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조로 직무사전", light: str = "채용공고엔 안 나오는", accent=None, bg=None) -> bool:
+def _wrap(d, text, font, maxw, n=2):
+    """띄어쓰기 기준으로 maxw 안에 들어가게 n줄까지 나눈다 (넘치면 마지막 줄 말줄임). 줄바꿈 문자는 그 자리에서 줄을 바꾼다."""
+    lines = []
+    for para in text.split(chr(10)):
+        cur = ""
+        for w in para.split(" "):
+            t = (cur + " " + w).strip()
+            if d.textlength(t, font=font) <= maxw or not cur:
+                cur = t
+            else:
+                lines.append(cur); cur = w
+        lines.append(cur)
+    if len(lines) > n:
+        lines = lines[:n]
+        while d.textlength(lines[-1] + "…", font=font) > maxw and len(lines[-1]) > 1:
+            lines[-1] = lines[-1][:-1]
+        lines[-1] += "…"
+    return lines
+
+
+def _art(im, d, kind, ACC, INK):
+    """공유 이미지 오른쪽 그림 (페이지마다 다르게, 2026-10-27 사용자: 카톡 미리보기를 각자 다르게)."""
+    from PIL import Image, ImageDraw
+    PAPER, GRAY, DIM = (255, 255, 255), (70, 70, 70), (38, 38, 38)
+    x0, x1, y0, y1 = 730, 1130, 110, 470
+    if kind == "salary":      # 직급별 연봉 막대: 사원 → 부장, 마지막만 형광
+        labels, hs = ["사원", "대리", "과장", "차장", "부장"], [0.34, 0.5, 0.66, 0.82, 1.0]
+        bw, gap, base = 58, 22, y1 - 34
+        f = _font("GmarketSansMedium.otf", 22)
+        for i, (lb, h) in enumerate(zip(labels, hs)):
+            bx = x0 + 20 + i * (bw + gap); top = base - int(h * (base - y0 - 40))
+            d.rounded_rectangle([bx, top, bx + bw, base], radius=8, fill=ACC if i == 4 else GRAY)
+            d.text((bx + bw / 2 - d.textlength(lb, font=f) / 2, base + 10), lb, font=f, fill=(160, 160, 160))
+        fb = _font("GmarketSansBold.otf", 30)
+        d.text((x0 + 20 + 4 * (bw + gap) + bw / 2 - d.textlength("₩", font=fb) / 2, y0 + 2), "₩", font=fb, fill=ACC)
+    elif kind == "company":   # 판정 버튼 세 개: 내 상황 기준
+        f_t = _font("GmarketSansMedium.otf", 22); f_p = _font("GmarketSansBold.otf", 40)
+        d.text((x0 + 10, y0 + 6), "내 상황 기준 판정", font=f_t, fill=(160, 160, 160))
+        pills = [("가세요", ACC, INK, None), ("조건 보고 가세요", None, PAPER, GRAY), ("다시 생각해요", None, (150, 150, 150), DIM)]
+        y = y0 + 52
+        for txt, fill, fg, line in pills:
+            w = d.textlength(txt, font=f_p) + 70
+            d.rounded_rectangle([x0 + 10, y, x0 + 10 + w, y + 84], radius=42, fill=fill, outline=line, width=3 if line else 0)
+            d.text((x0 + 45, y + 20), txt, font=f_p, fill=fg)
+            y += 104
+        # 체크 표시
+        d.line([(x0 + 10 + d.textlength("가세요", font=f_p) + 90, y0 + 94), (x0 + 10 + d.textlength("가세요", font=f_p) + 108, y0 + 112), (x0 + 10 + d.textlength("가세요", font=f_p) + 140, y0 + 72)], fill=ACC, width=8, joint="curve")
+    elif kind == "news":      # 신문 한 장: 제목 줄 + 본문 줄 + TODAY
+        d.rounded_rectangle([x0 + 10, y0, x1, y1], radius=18, fill=(26, 26, 26), outline=(55, 55, 55), width=2)
+        f_t = _font("GmarketSansBold.otf", 24)
+        d.text((x0 + 40, y0 + 30), "TODAY", font=f_t, fill=ACC)
+        d.rectangle([x0 + 40, y0 + 74, x1 - 40, y0 + 104], fill=PAPER)
+        d.rectangle([x0 + 40, y0 + 116, x1 - 120, y0 + 146], fill=PAPER)
+        for i in range(4):
+            yy = y0 + 168 + i * 30
+            d.rectangle([x0 + 40, yy, (x1 - 40) if i % 3 else (x1 - 100), yy + 12], fill=GRAY)
+        d.rounded_rectangle([x0 + 40, y1 - 66, x0 + 210, y1 - 28], radius=19, fill=ACC)
+        d.text((x0 + 58, y1 - 58), "Zorro의 한마디", font=_font("GmarketSansMedium.otf", 20), fill=INK)
+    elif kind == "zorro":     # 합격자 숫자
+        f_n = _font("GmarketSansBold.otf", 112); f_l = _font("GmarketSansMedium.otf", 30)
+        d.text((x0 + 10, y0 + 40), "함께한 합격자", font=f_l, fill=(160, 160, 160))
+        d.text((x0 + 4, y0 + 90), "1,100+", font=f_n, fill=ACC)
+        d.text((x0 + 10, y0 + 250), "컨설팅 15년 차", font=f_l, fill=PAPER)
+        d.rectangle([x0 + 10, y0 + 300, x0 + 90, y0 + 306], fill=ACC)
+
+
+def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조로 직무사전", light: str = "채용공고엔 안 나오는", accent=None, bg=None, art: str = "") -> bool:
     """1200x630 공유 이미지. 먹색 바탕, 황동 라벨, 얇은 머리글 + 굵은 헤드라인, 오른쪽에 조로 마스크 워터마크.
+    art 를 주면 마스크 대신 오른쪽에 그 페이지 그림(_art)을 그리고 글은 왼쪽 절반에 두 줄까지 접는다.
     글꼴(Gmarket Sans·나눔바른고딕)이 없는 환경(GitHub Actions)에서는 만들지 않고 False 를 돌려준다."""
     from PIL import Image, ImageDraw
     if not fonts_available():
@@ -363,7 +430,10 @@ def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조
     from PIL import ImageChops
     ghost_a = ImageChops.multiply(lum, al).point(lambda v: int(v * 0.22))
     ghost = Image.merge("RGBA", tuple(Image.new("L", mark.size, c) for c in BRASS) + (ghost_a,))
-    im.paste(ghost, (W - 560, H - 540), ghost)
+    if not art:
+        im.paste(ghost, (W - 560, H - 540), ghost)
+    else:
+        _art(im, d, art, BRASS, INK)
     # 위 황동 바
     d.rectangle([0, 0, W, 10], fill=BRASS)
     # 라벨
@@ -373,19 +443,38 @@ def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조
     d.rectangle([80 + kw + 16, 85, 80 + kw + 76, 87], fill=BRASS)
     # 얇은 머리글
     y = 130
+    maxw = 600 if art else 1040
     if light:
-        f_l = _font("GmarketSansLight.otf", 48)
-        d.text((78, y), light, font=f_l, fill=SOFT)
-        y += 70
+        f_l = _font("GmarketSansLight.otf", 44 if art else 48)
+        for ln in (_wrap(d, light, f_l, maxw, 1) if art else [light]):
+            d.text((78, y), ln, font=f_l, fill=SOFT)
+        y += 66 if art else 70
     # 굵은 헤드라인 (너비에 맞춰 축소, 2줄까지)
     size = 92
-    while size > 40:
+    if art:   # 왼쪽 절반: 두 줄까지 접고, 긴 줄이 maxw 에 들어가는 크기로
+        size = 76
+        while size > 40:
+            f_b = _font("GmarketSansBold.otf", size)
+            lines = _wrap(d, title, f_b, maxw, 2)
+            if all(d.textlength(l, font=f_b) <= maxw for l in lines) and not lines[-1].endswith("…"):
+                break
+            size -= 4
+        for ln in lines:
+            d.text((78, y), ln, font=f_b, fill=PAPER)
+            y += size + 12
+        if subtitle:
+            f_s = _font("NanumBarunGothic.ttf", 26)
+            for i, ln in enumerate(_wrap(d, subtitle, f_s, maxw, 2)):
+                d.text((80, y + 14 + i * 36), ln, font=f_s, fill=MUTED)
+        subtitle = ""
+        title = ""
+    while size > 40 and title:
         f_b = _font("GmarketSansBold.otf", size)
         if d.textlength(title, font=f_b) <= 1040:
             break
         size -= 4
-    lines = [title]
-    if d.textlength(title, font=f_b) > 1040:   # 그래도 넘치면 2줄로
+    lines = [title] if title else []
+    if title and d.textlength(title, font=f_b) > 1040:   # 그래도 넘치면 2줄로
         cut = max(title.rfind(" ", 0, len(title) // 2 + 4), len(title) // 2)
         lines = [title[:cut].strip(), title[cut:].strip()]
     for ln in lines:

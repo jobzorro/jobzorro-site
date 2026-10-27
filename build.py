@@ -91,6 +91,16 @@ def data_uri(path: Path, mime="image/png") -> str:
 LOGO_FILES = ("jobzorro_logo.png", "teamzorro_logo.png", "teamzorro_logo_halo.png")   # assets/ → site/assets/ 로 복사해 모든 페이지가 파일 경로로 참조한다
 
 
+def _salary_count() -> str:
+    """연봉 연구소 회사 수를 '5만 2천여' 처럼 (공유 이미지·설명용)"""
+    try:
+        n = json.loads((BASE / "salary" / "data" / "meta.json").read_text(encoding="utf-8"))["count"]
+    except Exception:
+        return "5만여"
+    man, cheon = n // 10000, (n % 10000) // 1000
+    return f"{man}만 {cheon}천여" if cheon else f"{man}만여"
+
+
 def logo_src(logo: str, root: str) -> str:
     """로고 인자가 data URI·절대 URL 이면 그대로, 'assets/x.png' 같은 상대경로면 페이지 깊이(root)를 앞에 붙인다."""
     if logo.startswith(("data:", "http://", "https://", "/")):
@@ -711,8 +721,12 @@ def build(out_dir: Path, with_news: bool) -> None:
     (out_dir / "assets").mkdir(exist_ok=True)
     if seo.fonts_available():
         seo.og_image(share / "og.png", "그 직무의 진짜 모습", f"현직자 인터뷰·자료 {data['meta'].get('sourceDocs', 0) + sum(j['sources'].get('public', 0) for j in data['jobs']):,}건으로 정리한 직무 {len(data['jobs'])}개 · 취업뉴스 · 무료 상담", "취업조로 직무사전", "채용공고엔 안 나오는")
-        seo.og_image(share / "og-news.png", "취업조로의 커리어브리핑", "채용·이직·기업·고용 뉴스를 매일 아침 고르고, Zorro의 한마디를 붙입니다", "취업뉴스", "커리어를 읽는 남자가 매일 아침 고른")
-        seo.og_image(share / "og-zorro.png", "취업조로와 함께하기", "신입·중고신입·경력이직·선퇴사자 맞춤 컨설팅 · 함께한 합격자 1,100+", "TEAM ZORRO", "누가 봐도 뽑고 싶은 인재의 비밀")
+        # 2026-10-27 사용자: 카톡 미리보기를 섹션마다 다른 그림·이야기로 (오른쪽 그림 art)
+        n_sal = _salary_count()
+        seo.og_image(share / "og-news.png", "취업조로의\n커리어브리핑", "채용·이직·기업·고용 뉴스를 매일 아침 고르고\nZorro의 한마디를 붙입니다", "취업뉴스", "매일 아침 고른", art="news")
+        seo.og_image(share / "og-zorro.png", "취업조로와\n함께하기", "신입·중고신입·경력이직·선퇴사자\n1:1 맞춤 컨설팅 · 무료 상담", "TEAM ZORRO", "뽑고 싶은 인재의 비밀", art="zorro")
+        seo.og_image(share / "og-salary.png", "내 연차면\n얼마 받을까", f"회사 {n_sal} 곳의 사원~부장 추정 연봉\n업계 순위 · 연봉 계산기", "연봉 연구소", "그 회사,", art="salary")
+        seo.og_image(share / "og-company.png", "이직할까 말까\n내 상황으로", "연차·연봉을 넣으면 평점·연봉·재무를 보고\n갈지 말지 Zorro가 정해 드려요", "회사 판단 연구소", "합격한 그 회사, 나라면?", art="company")
         seo.og_image(share / "og-apply.png", "무료 상담 신청", "취업조로 컨설턴트가 내 상황에 맞는 길을 1:1로 정리해 드립니다", "무료 상담", "취업·이직 고민, 혼자 하지 마세요")
     else:
         print("  (한글 글꼴이 없어 공유 이미지는 다시 만들지 않고 assets/share 의 기존 파일을 씁니다)")
@@ -732,6 +746,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         return seo.abs_url(base_url, dst_rel)
     og_main = share_url("og.png")
     og_news, og_zorro, og_apply = share_url("og-news.png"), share_url("og-zorro.png"), share_url("og-apply.png")
+    og_salary, og_company = share_url("og-salary.png"), share_url("og-company.png")
     for name in ("favicon-32.png", "favicon-180.png"):
         src = BASE / "news-collector" / "assets" / name
         if src.exists(): (out_dir / "assets" / name).write_bytes(src.read_bytes())
@@ -896,8 +911,11 @@ def build(out_dir: Path, with_news: bool) -> None:
                    {"@context": "https://schema.org", "@type": "WebPage", "@id": seo.abs_url(base_url, "news/"), "name": "취업조로의 커리어브리핑", "inLanguage": "ko",
                     "description": "취업조로가 매일 아침 고르는 채용·이직·기업·고용 뉴스와 한마디", "isPartOf": {"@id": seo.abs_url(base_url, "#website")}, "author": {"@id": seo.abs_url(base_url, "zorro/#person")}}]
         n = re.sub(r'<meta property="og:image" content="assets/favicon-180.png">', '', n, count=1)
+        # 카톡 미리보기 설명 (2026-10-27 사용자: 섹션마다 각자의 이야기)
+        news_desc = "채용·이직·기업·고용 뉴스 중 내 커리어에 영향을 주는 것만 매일 아침 골라, 취업조로의 한마디와 함께 정리해 드려요. 주간·월간 랭킹도 한눈에."
+        n = re.sub(r'(<meta (?:name="description"|property="og:description") content=")[^"]*(")', lambda m: m.group(1) + news_desc + m.group(2), n)
         n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&family=Archivo:wght@700;900&display=swap">'
-                      + f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:image" content="{og_news}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">' + seo.verify_tags()
+                      + f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:type" content="website"><meta property="og:site_name" content="취업조로"><meta property="og:locale" content="ko_KR"><meta property="og:image" content="{og_news}"><meta name="twitter:image" content="{og_news}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">' + seo.verify_tags()
                       + "".join(seo.jsonld(o) for o in news_ld) + "</head>", 1)
         (out_dir / "news").mkdir(exist_ok=True)
         (out_dir / "news" / "index.html").write_text(n, encoding="utf-8")
@@ -976,9 +994,21 @@ def build(out_dir: Path, with_news: bool) -> None:
             h = h.replace("<body>", "<body>\n" + nav_html("salary/index.html", root, logo_nav), 1) if "<body>" in h else nav_html("salary/index.html", root, logo_nav) + h
             path.write_text(h, encoding="utf-8")
         add_nav(dst / "index.html", "../")
+        # 공유(카톡) 미리보기: 첫 화면은 제목·설명·이미지를 새로, 회사 페이지는 이미지만 붙인다
+        si = dst / "index.html"; h = si.read_text(encoding="utf-8")
+        h = re.sub(r'<meta (name="description"|property="og:[^"]+"|name="twitter:[^"]+")[^>]*>\s*', "", h)
+        h = h.replace("<title>연봉 연구소</title>", seo.seo_head(base_url, "연봉 연구소 — 그 회사, 내 연차면 얼마 받을까 | 취업조로",
+            f"회사 {_salary_count()} 곳의 사원·대리·과장·차장·부장 추정 연봉을 국민연금·사업보고서로 정리했어요. 업계 순위, 이직 연봉 계산기, 실제 이직자 연봉까지 한 번에 보고 협상 기준을 잡으세요.",
+            "salary/", og_salary), 1)
+        si.write_text(h, encoding="utf-8")
+        og_tags = (f'<meta property="og:type" content="website"><meta property="og:site_name" content="취업조로"><meta property="og:image" content="{og_salary}">'
+                   f'<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{og_salary}">')
         cos = sorted((dst / "co").iterdir())
         for d in cos:
             add_nav(d / "index.html", "../../../")
+            p = d / "index.html"; h = p.read_text(encoding="utf-8")
+            if 'property="og:image"' not in h:
+                p.write_text(h.replace("</head>", og_tags + "</head>", 1), encoding="utf-8")
         entries.append(("salary/", updated, "monthly", "0.8"))
         entries += [(f"salary/co/{urllib.parse.quote(d.name)}/", updated, "monthly", "0.5") for d in cos]
         print(f"연봉 연구소: /salary/ + 회사 페이지 {len(cos):,}개")
@@ -993,6 +1023,10 @@ def build(out_dir: Path, with_news: bool) -> None:
         # 이 페이지는 자체 토큰(--paper·--hairline·--logo-filter)을 이미 갖고 있어 공용 .zn(메뉴)·.zf(푸터) 규칙만 더한다
         zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", ".zf", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
         h = (dst / "index.html").read_text(encoding="utf-8")
+        h = re.sub(r'<title>[^<]*</title>|<meta (name="description"|property="og:[^"]+"|name="twitter:[^"]+")[^>]*>|<link rel="canonical"[^>]*>', "", h)
+        h = h.replace('<meta charset="utf-8">', '<meta charset="utf-8">' + seo.seo_head(base_url, "회사 판단 연구소 — 이직할까 말까, 내 상황으로 판단 | 취업조로",
+            "합격한 그 회사, 나라면 가야 할까? 내 연차·연봉·근무지를 넣으면 잡플래닛·블라인드·캐치 평점, 직급별 연봉, 5개년 재무를 보고 이직할지 말지 Zorro가 내 기준으로 판정해 드려요.",
+            "company/", og_company), 1)
         if 'class="zn"' not in h:
             h = h.replace("</style>", zn_css + "\n</style>", 1)
             h = h.replace("<body>", "<body>\n" + nav_html("company/index.html", "../", logo_nav), 1)
