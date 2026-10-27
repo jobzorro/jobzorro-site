@@ -1696,7 +1696,7 @@ let meCo = null;           // 지금 화면의 회사
 const meOver = {};         // 회사별로 카드에서 고친 값 {salary, place, size}
 
 // 엔진에 넘길 업종 말: 업계 묶음 이름을 F 규칙이 알아듣는 말로 (예: 게임·소프트웨어 → 게임만 전망 나쁨이라 '소프트웨어'로)
-const GAME_CO = new Set([]);   // 게임사 이름 (config game_companies, build.py 가 넣음)
+const GAME_CO = new Set(["111퍼센트", "게임덱스", "게임듀오", "그라비티", "그레이게임즈", "네오위즈", "네오플", "넥슨게임즈", "넥슨네트웍스", "넥슨코리아", "넵튠", "넷마블", "넷마블네오", "넷마블넥서스", "넷마블몬스터", "넷마블에프앤씨", "넷마블엔투", "니즈게임즈", "님블뉴런", "더블유게임즈", "데브시스터즈 (Devsisters Corp.)", "데브캣", "드래곤플라이", "라이엇게임즈코리아", "라이온하트스튜디오", "라이징윙스", "라인게임즈", "레드랩게임즈", "레드징코게임즈", "레포르게임즈", "렐루게임즈", "로드컴플릿", "룬샷게임즈", "링게임즈", "매드엔진", "모비릭스", "미스틸게임즈", "민트로켓", "밸로프", "붐잇게임즈", "블루포션게임즈", "블루홀스튜디오", "블리자드엔터테인먼트", "빅게임스튜디오", "빅파이어게임즈", "빌리네어게임즈", "세븐티세븐스트리트게임즈", "슈퍼캣", "스마일게이트", "시프트업", "신지게임즈", "아름게임즈", "아이덴티티게임즈", "아이엠씨게임즈", "액토즈소프트", "어썸피스", "에이블게임즈", "에이시티게임즈", "에이엔게임즈", "엑스엘게임즈", "엔드림", "엔씨", "엔씨큐에이", "엔엑스쓰리게임즈", "엔픽셀", "엠게임", "오븐게임즈", "웹젠", "웹젠레드스타", "위메이드맥스", "위메이드커넥트", "위메이드플레이", "이스트게임즈", "이안게임즈", "조이시티", "카카오게임즈", "컴투스", "컴투스플랫폼", "컴투스홀딩스", "코그노스피어코리아", "쿡앱스", "크래프톤", "파우게임즈", "퍼스트스파크게임즈", "펄어비스", "폴스타게임즈", "플라이웨이게임즈", "플레이위드게임즈", "하운드13", "한빛소프트", "（주）게임테일즈", "（주）나딕게임즈", "（주）에피드게임즈"]);   // 게임사 이름 (config game_companies, build.py 가 넣음)
 function engInd(g, detail, name) {
   if (/전지|축전/.test(detail || "") || g === "2차전지") return "2차전지";
   if (g === "게임" || GAME_CO.has(name)) return "게임";
@@ -1804,8 +1804,13 @@ function meJudgeNew(c) {
   const why = [];
   const sex = ME.sex === "여" ? "여" : "남", lim = FitEngine.FIT.newbie_age[sex], age = ME.age || 0;
   const sp = meSpec(ME);
-  const offer = FitEngine.judge({ type: "C", me: { sex, age, spec: sp && sp.lv >= 3 ? "가능성" : "" },
-    a: { size: coSize(c), industry: engInd(sl.group, sl.industry, c.name), job: ME.job, rep: rg != null && rg < 2.8 ? "하" : "" } });
+  const offerOf = ind => FitEngine.judge({ type: "C", me: { sex, age, spec: sp && sp.lv >= 3 ? "가능성" : "" },
+    a: { size: coSize(c), industry: ind, job: ME.job, rep: rg != null && rg < 2.8 ? "하" : "" } });
+  const gInd = engInd(sl.group, sl.industry, c.name);
+  let offer = offerOf(gInd);
+  // 게임사 ②안: 회사 판정 '가세요' 이상이면 업계 전망 때문에 '계속 준비'로 말리지 않고 '조건 보고 가세요'까지만
+  const gameSoft = gInd === "게임" && base >= 5 && offer.verdict === "계속 준비" && offerOf("").verdict !== "계속 준비";
+  if (gameSoft) offer = offerOf("");
   const apply = FitEngine.judge({ type: "B", me: { years: ME.years || 0 }, target: { size: coSize(c), job: ME.job } });
   let cap = 6;   // 올리는 규칙(나이·스펙)보다 낮추는 규칙(전망 어두운 직무·계속 준비)이 늘 이긴다
   if (apply.verdict === "마요") { cap = 2; why.push(...apply.reasons.map(x => x.text)); }
@@ -1833,13 +1838,14 @@ function meJudgeNew(c) {
     const g = est.v - ME.salary;
     pay = `${est.how} ${won(est.v)}만 원 — 지금보다 ${g >= 0 ? "+" : ""}${won(g)}만 원이에요.` + (g < 0 ? " 중고신입은 연봉보다 회사 급·직무를 먼저 보세요." : "");
   }
+  if (gameSoft) { cap = Math.min(cap, 4); why.push("게임 업계는 전망이 밝은 편이 아니라 '조건 보고 가세요'까지만 드려요. 회사가 좋아서 잡아도 되지만, 다른 업계에서도 통하는 경력으로 키워 두세요."); }
   n = Math.min(n, cap);
   const V = ME_STEPS[Math.max(0, Math.min(6, n))];
   meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
   const z = meCompose(c, V, why, pay, { y: ME.years || 0, age, v: n >= 5 ? "가요" : n >= 3 ? "조건 보고" : "마요", est, left: false, newbie: true,
     working: ME.nstat === "재직 중", wlb: "", tenure: sl.tenure, sameInd: false }, rg != null ? [`현직자 평점은 종합 ${rg.toFixed(2)}점이에요.`] : []);
   const chips = [sp && `스펙 ${sp.g}`, `회사 급 ${coSize(c)}`, age > lim ? "신입 나이 넘김" : age && age <= lim - 3 ? "시간 여유 있음" : "",
-    cap < 6 ? (apply.verdict === "마요" ? "직무 전망 주의" : "계속 준비 쪽") : "", est && `신입 ${won(est.v)}만`, `회사 판정 ${c.verdict}`].filter(Boolean);
+    gameSoft ? "게임 업계 전망 주의" : cap < 6 ? (apply.verdict === "마요" ? "직무 전망 주의" : "계속 준비 쪽") : "", est && `신입 ${won(est.v)}만`, `회사 판정 ${c.verdict}`].filter(Boolean);
   return { v: V, z, est, chips };
 }
 // 회사 일반 한마디를 내 연차·나이·상황에 맞게 고친다 (2026-10-27 사용자: "그대로 붙이지 말고 15년 차면 '인생 마지막 회사'처럼")
@@ -1885,11 +1891,15 @@ function meJudge(c) {
   const { c: kase, est } = meCase(c);
   if (!kase.now.salary || !kase.target.salary) return null;
   let r = FitEngine.judge(kase);
+  // 게임사 ②안 (2026-10-27 사용자 결정): 회사 자체 판정이 '가세요' 이상인 게임사는 업계 전망만으로 말리지 않고 '조건 보고 가세요'까지만 낮춘다
+  const gameSoft = kase.target.industry === "게임" && (ME_GRADE[c.verdict] ?? 0) >= 5 && r.reasons.some(x => x.rule === "F26" && /전망이 어두워요\.$/.test(x.text));
+  const kj = gameSoft ? { ...kase, target: { ...kase.target, industry: "" } } : kase;   // 엔진에만 업계를 빼고 넘긴다 (칩·문구는 그대로 게임)
+  if (gameSoft) r = FitEngine.judge(kj);
   // 직무를 바꾸는 사람은 이미 바꾸기로 하고 가는 것 → 직무 전환은 판정에서 덜 본다 (2026-10-27 사용자: "일반 판정 무조건 가세요인데 직무 바뀐다고 죽여 놓냐")
   //   같은 직무로 옮긴다고 치고 다시 봐서 그쪽이 더 좋으면 그 판정을 쓰고, 직무 전환은 '알고 가세요' 한 줄로만 남긴다
   const jobMove = FitEngine.family(kase.now.job) !== FitEngine.family(kase.target.job);
   if (jobMove) {
-    const r2 = FitEngine.judge({ ...kase, target: { ...kase.target, job: kase.now.job } }), rk = { "마요": 0, "조건 보고": 1, "가요": 2 };
+    const r2 = FitEngine.judge({ ...kj, target: { ...kj.target, job: kase.now.job } }), rk = { "마요": 0, "조건 보고": 1, "가요": 2 };
     if (rk[r2.verdict] > rk[r.verdict]) r = { ...r, verdict: r2.verdict, reasons: r.reasons.filter(x => !/^F(6|28)$/.test(x.rule) || !x.text.includes("직무")) };
   }
   let v = r.verdict;
@@ -1913,6 +1923,10 @@ function meJudge(c) {
   const better = step >= 1 || (kase.now.grade != null && kase.target.grade != null && kase.target.grade - kase.now.grade >= 2);
   const up = (better ? 1 : 0) + (pct >= 25 ? 1 : 0);
   let V = meLevel(v, c.verdict, pct, up);
+  if (gameSoft) {
+    V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), 4)];
+    why.push("게임 업계는 전망이 밝은 편이 아니라 '조건 보고 가세요'까지만 드려요. 회사 자체가 좋아서 가도 되지만, 길게 보면 다른 업계에서도 통하는 경력으로 키워 두세요.");
+  }
   if (ME_GRADE[V] > (ME_GRADE[c.verdict] ?? 4)) why.unshift(`회사 일반 판정은 '${c.verdict}'지만, ${better ? "지금 내 자리보다 위 급" : "연봉이 크게 오르는 자리"}라 내 기준에선 더 좋은 카드예요.`);
   // 옮기려는 가장 큰 이유: 그 이유를 이 회사가 풀어 주는지 회사 자료로 본다. 못 풀어 주면 '조건 보고 가세요'까지만
   const reason = meReason(c, kase, pct);
