@@ -109,6 +109,11 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .mebar button.way.set { background:var(--paper); color:var(--ink); border-color:var(--ink); }
 .mebar button.way.set small, .mebar button.way.set span { color:var(--muted); opacity:1; }
 .mebar button.way.set small::before { content:"✓ "; color:var(--good); }
+.mebar button.way.gen { background:var(--paper); color:var(--ink); border-color:var(--hairline-2); }
+.mebar button.way.gen small, .mebar button.way.gen span { color:var(--muted); opacity:1; }
+.mebar button.way.on { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }   /* 지금 보고 있는 쪽 */
+.mebar button.way.on small, .mebar button.way.on span { color:var(--acc-ink); opacity:.75; }
+.mebar button.way:not(.on):hover { border-color:var(--ink); }
 @media (max-width:520px) { .mebar { grid-template-columns:minmax(0,1fr); } }
 
 .medim { position:fixed; inset:0; background:rgba(0,0,0,.42); z-index:60; opacity:0; transition:opacity .25s; }
@@ -541,8 +546,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     <button>판단해 보기</button>
   </form>
   <!-- 두 가지 보는 법: 그냥 검색 / 내 상황 넣고 검색 (2026-10-27) -->
-  <div class="mebar"><div class="way"><small>그냥 궁금하면</small><b>회사 이름만 검색</b><span>평점·연봉·재무로 본 일반 판정이에요</span></div>
-    <button class="way" type="button" id="meOpenBtn"></button></div>
+  <div class="mebar"><button class="way gen" type="button" id="meGenBtn" aria-pressed="false"><small>그냥 궁금하면</small><b>회사 이름만 검색</b><span>평점·연봉·재무로 본 일반 판정이에요</span></button>
+    <button class="way" type="button" id="meOpenBtn" aria-pressed="false"></button></div>
   <div class="picks" id="picks"><span>이런 회사부터</span></div>
   <p class="hint" id="hint"></p>
   </div>
@@ -1850,14 +1855,25 @@ meEl("meSave").onclick = () => {
   if (!meCo) setTimeout(() => $("#q").focus(), 300);
 };
 // 검색창 아래: 두 가지 보는 법
+// 두 칸은 서로 왔다 갔다 하는 스위치: 내 상황을 넣은 뒤엔 '그냥 궁금하면'을 누르면 일반 판정, '내 상황'을 누르면 다시 내 기준 (2026-10-27)
 function meBar() {
-  const b = meEl("meOpenBtn"); if (!b) return;
-  b.classList.toggle("set", !!ME);
+  const b = meEl("meOpenBtn"), g = meEl("meGenBtn"); if (!b) return;
+  const mine = !!ME && !meGeneral;
+  b.classList.toggle("set", !!ME); b.classList.toggle("on", mine); g.classList.toggle("on", !!ME && !mine);
+  b.setAttribute("aria-pressed", String(mine)); g.setAttribute("aria-pressed", String(!!ME && !mine));
+  g.querySelector("span").textContent = ME && !mine ? "지금 일반 판정을 보고 있어요" : "평점·연봉·재무로 본 일반 판정이에요";
   b.innerHTML = ME
-    ? `<small>내 상황 입력됨</small><b>${esc([ME.years != null && ME.years + "년 차", ME.job, won(ME.salary) + "만 원"].filter(Boolean).join(" · "))}</b><span>검색하면 판정·한마디가 내 기준으로 나와요 · 눌러서 고치기</span>`
+    ? `<small>${mine ? "내 상황 기준으로 보는 중" : "내 상황 입력됨"}</small><b>${esc([ME.years != null && ME.years + "년 차", ME.job, won(ME.salary) + "만 원"].filter(Boolean).join(" · "))}</b><span>${mine ? "판정·한마디가 내 기준으로 나와요 · 한 번 더 누르면 고치기" : "누르면 다시 내 기준으로 봐요"}</span>`
     : `<small>내 상황에 맞춰 보려면</small><b>내 상황 넣기 →</b><span>연차·연봉을 넣으면 판정을 내 기준으로 바꿔 드려요</span>`;
 }
-meEl("meOpenBtn").onclick = meOpen;
+meEl("meOpenBtn").onclick = () => {
+  if (ME && meGeneral) { meGeneral = false; meRefresh(); toast("내 상황 기준으로 바꿨어요"); }
+  else meOpen();
+};
+meEl("meGenBtn").onclick = () => {
+  if (ME && !meGeneral) { meGeneral = true; meRefresh(); toast("일반 판정으로 바꿨어요"); }
+  if (!meCo) $("#q").focus();
+};
 meRefresh();
 const first = decodeURIComponent(location.hash.slice(1));
 if (first) route(first); else intro();
