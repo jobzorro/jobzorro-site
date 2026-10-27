@@ -640,7 +640,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     </fieldset>
     <fieldset data-kind="career"><legend>옮긴다면</legend>
       <div class="mf"><label for="me_want">갈 직무</label><input id="me_want" data-k="want" placeholder="비우면 지금 직무"></div>
-      <div class="mf"><label for="me_twlb">예상 워라밸</label><select id="me_twlb" data-k="twlb"></select></div>
+      <div class="mf"><label for="me_why">옮기려는 가장 큰 이유</label><select id="me_why" data-k="why"><option value="">고르지 않음</option><option>연봉</option><option>워라밸</option><option>성장·커리어</option><option>회사 안정성</option><option>직무 바꾸기</option><option>통근·지역</option><option>지금 회사 분위기</option></select></div>
     </fieldset>
     <p class="mnote">입력한 내용과 검색한 회사·판정은 이름·연락처 없이 <b>익명 통계</b>(연봉 연구소·판정 기준 다듬기)로 쓰여요. 나이는 2살 단위로만 남겨요.</p>
   </form>
@@ -685,6 +685,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   // 회사 급: 숫자가 클수록 위. 스타트업·외국계·공공은 따로 표시해 조건을 붙인다.
   function tier(size = "") {
     if (/스타트업/.test(size)) return { n: 1, kind: "startup" };
+    if (/금융|은행|증권|보험|카드|캐피탈/.test(size)) return { n: 3, kind: "finance" };   // 금융권은 대기업과 따로 (2026-10-27 사용자)
     if (/외국계/.test(size)) return { n: 3, kind: "foreign" };
     if (/공기업|공공/.test(size)) return { n: 3, kind: "public" };
     if (/대기업/.test(size)) return { n: 3, kind: "" };
@@ -837,6 +838,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
       if (won < 0) fail = false; // F2 예외 ③: 직무 전환이면 삭감이 바로 '마요'는 아니다
     }
     // 4회차 C4: 중소에서 투자 많이 받은(시리즈B 이상·흑자) 스타트업으로 가면 회사 상황이 더 나은 것
+    if ((tn.kind === "finance") !== (tt.kind === "finance"))   // 금융권 ↔ 일반 기업: 연봉 구조가 다르다
+      add("F33", "금융권과 일반 기업은 연봉 구조(성과급·현금성 복지)가 달라요. 총보상과 기본연봉을 함께 비교하세요.");
     const goodStartup = tt.kind === "startup" && tn.n === 1 && /시리즈 ?[B-Z]|흑자|상장/.test(to.extra || "") && !lowRating(to);
     if (goodStartup) add("F15", "투자를 충분히 받은 스타트업이라 지금보다 회사 상황이 나아요. 야근은 각오하세요.");
     else if (tt.kind === "startup") add("F15", "스타트업은 투자 규모·버틸 재무 여력·산업 가능성을 확인하세요. 야근은 각오하고요.", "cond");
@@ -1651,7 +1654,7 @@ try { if (API && !sessionStorage.getItem("cc-visit")) { sessionStorage.setItem("
 // 왼쪽 창에 한 번 넣어 두면(이 기기 localStorage 'cc-me') 회사 화면마다 '내 상황이라면' 카드가 붙는다.
 // 판정은 fit_engine.js(F 규칙, 조로 상담 사례 45개로 맞춤). 갈 회사 쪽 값은 이 회사 자료에서 채운다:
 //   규모 = 직원 수(1천 명 이상 대기업·300명 이상 중견), 업종 = 업계 묶음, 연봉 = 내 연차에 맞는 직급 추정 연봉, 평점 = 평판 종합 점수
-const ME_SIZES = ["대기업", "중견", "중소", "외국계", "공기업·공공", "스타트업"];
+const ME_SIZES = ["대기업", "금융", "중견", "중소", "외국계", "공기업·공공", "스타트업"];
 const ME_INDS = ["반도체·전자", "자동차·부품", "조선·기계·장비", "화학·소재·에너지", "2차전지", "제약·바이오·의료기기", "식품 제조", "화장품·생활용품", "섬유·의복·패션",
   "건설·부동산", "유통·커머스", "물류·운송·항공", "은행·증권·보험", "게임·소프트웨어", "통신·미디어·광고", "컨설팅·전문서비스", "인력·사업지원 서비스",
   "호텔·외식·레저", "병원·의료", "교육", "공공기관·공단", "기타"];
@@ -1672,6 +1675,7 @@ function engInd(g, detail) {
 function coSize(c) {
   if (c.type === "스타트업") return "스타트업";
   if (/공공|공단/.test(c.salary?.group || "")) return "공기업·공공";
+  if (c.salary?.group === "은행·증권·보험" || /은행|증권|보험|카드|캐피탈|저축은행|자산운용/.test(c.name || "")) return "금융";   // 금융권은 대기업과 따로
   const n = c.salary?.members || 0;
   return n >= 1000 ? "대기업" : n >= 300 ? "중견" : "중소";
 }
@@ -1713,7 +1717,7 @@ function meCase(c) {
     wlb: ME.wlb || coWlb(nc) || "보통", place: ME.place || (nc ? coPlace(nc) : "수도권"),
     rating: nc?.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[nc.verdict] : undefined };
   const target = { size: o.size || coSize(c), industry: engInd(c.salary?.group, c.salary?.industry), job: ME.want || ME.job,
-    salary: o.salary || est?.v, wlb: ME.twlb || coWlb(c) || "보통", place: o.place || coPlace(c),
+    salary: o.salary || est?.v, wlb: coWlb(c) || "보통",   // 옮길 회사 워라밸은 그 회사 현직자 점수로 (입력 안 받음) place: o.place || coPlace(c),
     rating: c.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[c.verdict] : undefined };
   return { c: { type: "A", now, target }, est };
 }
@@ -1771,7 +1775,7 @@ function meJudgeNew(c) {
   if (offer.verdict === "계속 준비") { cap = 2; why.push(...offer.reasons.map(x => x.text).filter(t => !why.includes(t)), "급하지 않다면 더 좋은 카드를 노려 보세요."); }
   // 스펙 등급 vs 회사 급: 대기업·공기업은 A, 중견은 B, 중소·스타트업은 C 정도가 보통 붙는 스펙
   if (sp) {
-    const need = { "대기업": 3, "공기업·공공": 3, "외국계": 3, "중견": 2 }[coSize(c)] ?? 1;
+    const need = { "대기업": 3, "금융": 3, "공기업·공공": 3, "외국계": 3, "중견": 2 }[coSize(c)] ?? 1;
     const gap = sp.lv - need;
     const tail = sp.weak.length ? ` ${meJ(sp.weak.join("·"), "을", "를")} 채우면 한 단계 위도 노려볼 수 있어요.` : "";
     if (gap >= 2 && base <= 5) { n = Math.min(n, base - 1); why.push(`스펙 ${sp.g}(${sp.word})면 이 회사보다 한두 단계 위도 충분히 노려볼 만해요.${sp.strong.length ? ` 특히 ${meJ(sp.strong.join("·"), "이", "가")} 강점이에요.` : ""}`); }
@@ -1861,11 +1865,43 @@ function meJudge(c) {
   if (rg != null) facts.push(`현직자 평점은 종합 ${rg.toFixed(2)}점이에요${rg < 3 ? ". 3.0 아래라 분위기를 꼭 확인하세요" : ""}.`);
   if (sl.tenure != null) facts.push(`직원 ${won(sl.members)}명, 평균 근속 ${sl.tenure}년인 회사예요.`);
   if (sl.newHire && (ME.years || 0) <= 1) facts.push(`신입 추정 연봉은 ${won(sl.newHire)}만 원이에요.`);
-  const V = meLevel(v, c.verdict, pct);
+  let V = meLevel(v, c.verdict, pct);
+  // 옮기려는 가장 큰 이유: 그 이유를 이 회사가 풀어 주는지 회사 자료로 본다. 못 풀어 주면 '조건 보고 가세요'까지만
+  const reason = meReason(c, kase, pct);
+  if (reason) {
+    why.unshift(reason.text);
+    if (reason.cap) V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), 4)];
+  }
   meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
   const z = [`지금 ${meWho()} 기준이면, ${ME_FIRST[V]}`, ...why, pay, ...gen];
   for (const f of facts) { if (z.length >= 6) break; z.push(f); }
   return { v: V, z, kase, est };
+}
+// 이유별 확인: { text, cap } — cap 이면 판정을 '조건 보고 가세요' 위로 못 올라가게
+const ME_GOOD = /^(S|A\+|A)$/, ME_BAD = /^(C|D|F)$/;
+function meReason(c, kase, pct) {
+  const r = ME.why, g = k => c.grades?.[k]?.letter || "";
+  if (!r) return null;
+  const W = ["칼퇴", "보통", "야근 잦음", "매일 야근"], wn = W.indexOf(kase.now.wlb), wt = W.indexOf(kase.target.wlb);
+  if (r === "연봉") return pct >= 10 ? { text: `연봉이 가장 큰 이유라면 +${pct}%는 이유를 풀어 주는 카드예요.` }
+    : { text: `연봉이 가장 큰 이유인데 인상이 ${pct}%면 아쉬워요. 최소 10%는 받아 내고 움직이세요.`, cap: true };
+  if (r === "워라밸") return wt > wn ? { text: `워라밸 때문에 옮기는 건데 이 회사 현직자 워라밸은 '${kase.target.wlb}' 쪽이라 지금('${kase.now.wlb}')보다 나빠질 수 있어요.`, cap: true }
+    : wt < wn ? { text: `워라밸이 이유라면 맞는 방향이에요. 현직자 워라밸이 '${kase.target.wlb}' 쪽이에요.` }
+    : { text: `워라밸은 지금과 비슷한 회사예요(현직자 기준 '${kase.target.wlb}'). 팀마다 다르니 면접에서 꼭 물어보세요.` };
+  if (r === "성장·커리어") return ME_BAD.test(g("성장성")) ? { text: `성장 때문에 옮기는 건데 이 회사 성장성은 ${g("성장성")}이에요. 커리어가 클 자리인지 직무 범위부터 확인하세요.`, cap: true }
+    : !g("성장성") ? { text: "성장이 이유인데 이 회사는 성장성 자료가 없어요. 최근 매출·채용 흐름을 면접에서 꼭 물어보세요." }
+    : { text: `성장이 이유라면 성장성 ${g("성장성")}로 나쁘지 않은 선택이에요. 맡을 일의 범위가 지금보다 넓은지 확인하세요.` };
+  if (r === "회사 안정성") return ME_BAD.test(g("안정성")) ? { text: `안정성 때문에 옮기는 건데 이 회사 안정성은 ${g("안정성")}이에요. 이유와 안 맞는 회사예요.`, cap: true }
+    : !g("안정성") ? { text: "안정성이 이유인데 이 회사는 재무 자료가 없어 안정성을 확인 못 했어요. 감사보고서를 꼭 따로 보세요." }
+    : { text: `안정성이 이유라면 안정성 ${g("안정성")}로 맞는 방향이에요.` };
+  if (r === "직무 바꾸기") return FitEngine.family(kase.now.job) === FitEngine.family(kase.target.job)
+    ? { text: "직무를 바꾸고 싶은 건데 '옮긴다면 갈 직무'가 지금과 같아요. 원하는 직무를 적으면 그 기준으로 다시 봐 드려요.", cap: true }
+    : { text: `원하던 직무 전환(${kase.now.job} → ${kase.target.job})이에요. 연봉보다 그 직무 경력을 쌓는 게 먼저예요.` };
+  if (r === "통근·지역") return { text: `통근이 이유라면 이 회사 근무지(${kase.target.place})가 정말 가까워지는지 지도로 확인하세요. 본사·공장이 다른 회사가 많아요.` };
+  if (r === "지금 회사 분위기") return kase.now.rating != null && kase.target.rating != null && kase.target.rating <= kase.now.rating
+    ? { text: `분위기 때문에 옮기는 건데 현직자 평점이 지금 회사(${kase.now.rating.toFixed(2)})보다 높지 않아요(${kase.target.rating.toFixed(2)}).`, cap: true }
+    : { text: `분위기가 이유라면 평점${kase.target.rating != null ? ` ${kase.target.rating.toFixed(2)}` : ""}만 보지 말고, 들어갈 팀 분위기를 현직자에게 꼭 물어보세요.` };
+  return null;
 }
 function meStrip(c, my) {
   if (!ME) return `<div class="mecta" id="meSlot"><p><b>내 상황에 맞춰 볼까요?</b> 연차·연봉을 넣으면 위 판정과 한마디가 전부 내 기준으로 바뀌어요.</p><button type="button" data-me-open>내 상황 넣기</button></div>`;
@@ -1912,7 +1948,7 @@ function meFill(sel, list, v) { sel.innerHTML = list.map(x => `<option>${esc(x)}
 // 맨 앞 '모름' = 비워 두기 → 회사 정보로 채움 (사람이 고른 값이 늘 먼저)
 const ME_UNK = "모름";
 meFill(meEl("me_size"), [ME_UNK, ...ME_SIZES]); meFill(meEl("me_ind"), [ME_UNK, ...ME_INDS]); meFill(meEl("me_wlb"), [ME_UNK, ...ME_WLB]);
-meFill(meEl("me_twlb"), [ME_UNK, ...ME_WLB]); meFill(meEl("me_place"), [ME_UNK, ...ME_PLACES]);
+meFill(meEl("me_place"), [ME_UNK, ...ME_PLACES]);
 let meLast = null;
 function meOpen() {
   meLast = document.activeElement;
