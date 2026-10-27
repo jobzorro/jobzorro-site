@@ -80,7 +80,7 @@ GROUP_COLORS = {
     "construction":     ((210, 180, 140), (18, 15, 11)),   # 샌드
 }
 
-TABS = [("index.html", "직무사전"), ("salary/index.html", '연봉<span class="lg"> 연구소</span>'), ("company/index.html", '회사<span class="lg">&nbsp;판단</span><span class="new">NEW</span>'), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
+TABS = [("index.html", "직무사전"), ("salary/index.html", '연봉<span class="lg"> 연구소</span>'), ("company/index.html", '회사<span class="lg">&nbsp;판단</span>'), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
 APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 신청하기" 버튼이 여기로 간다)
 
 
