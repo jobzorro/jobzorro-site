@@ -1026,7 +1026,7 @@ async function makeCard(c) {
   try { await document.fonts.ready; } catch (e) {}
   x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
   x.fillStyle = "#0b0b0b"; x.fillRect(0, 0, W, 14);
-  x.font = `700 30px ${F}`; x.fillStyle = "#3a3a3a"; x.fillText("회사 판단 연구소 · " + (c.salary?.group || ""), 80, 120);
+  x.font = `700 30px ${F}`; x.fillStyle = "#3a3a3a"; x.fillText("회사 판단 연구소 · " + grpName(c.salary, c.name), 80, 120);
   let fs = 92; x.font = `900 ${fs}px ${F}`; while (x.measureText(c.name).width > W - 160 && fs > 48) { fs -= 4; x.font = `900 ${fs}px ${F}`; }
   x.fillStyle = "#0b0b0b"; x.fillText(c.name, 80, 230);
   // 판정 알약
@@ -1135,7 +1135,7 @@ function salarySec(c) {
   const top = s.industryTop ?? s.allTop;
   return `<div class="sal"><div><div class="ranks">${rows}</div>
       <p class="legend"><span><i style="background:var(--ink)"></i>직급별 연봉 추정(만원)</span>${s.ranksBase ? `<span><i style="background:var(--acc)"></i>성과급 뺀 기본연봉</span>` : ""}</p></div>
-    <div class="pos"><p class="big">${esc(s.group)}<br><mark>상위 ${top}%</mark></p>
+    <div class="pos"><p class="big">${esc(grpName(s, c.name))}<br><mark>상위 ${top}%</mark></p>
       ${s.industryTop ? `<p class="big2">전체 회사 기준 <b>상위 ${s.allTop}%</b></p>` : ""}
       <p class="of">${s.peerN ? `비슷한 업종 ${won(s.peerN)}곳(직원 50명 이상) 중 평균 연봉 순위예요. 등급은 업계 순위 70%·전체 순위 30%를 섞어 매겨요.` : "업종 정보가 없어 전체 회사와 비교했어요."}</p>
       <div class="meter"><b style="left:${100 - top}%"></b></div><div class="meter-l"><span>업계 하위</span><span>업계 상위</span></div>
@@ -1365,7 +1365,7 @@ async function render(name) {
   const secH = (i, k) => { const x = c.grades[k], g = x?.grade, has = k in c.grades;
     return `<div class="sec-h"><span class="no">0${i}</span><h3>${k}</h3>${has ? `<span class="gr ${g == null ? "gq" : lcls(x)}">${g == null ? "?" : ltxt(x)}</span>` : ""}<p class="why">${WHY[k]}</p></div>`; };
   $("#out").innerHTML = `
-    <div class="head"><div><p class="kicker"><i></i>${esc(s?.group || "")}</p><h2>${esc(c.name)}</h2>
+    <div class="head"><div><p class="kicker"><i></i>${esc(grpName(s, c.name))}</p><h2>${esc(c.name)}</h2>
       <div class="chips"><span class="chip">${esc(c.type)} 회사${c.age != null ? " · 업력 " + c.age + "년" : ""}</span>${c.ai ? `<span class="chip ai-${c.ai.level}">AI 영향 ${c.ai.level}</span>` : ""}</div>
       <div class="meta">${s ? `<span>직원 <b>${won(s.members)}명</b></span>` : ""}${f ? `<span>재무 <b>${f.years[0]}~${f.years.at(-1)}</b> ${esc(f.source)}</span>` : ""}<span>기준일 <b>${esc(date)}</b></span></div></div>
       <div class="verdict ${vcls}"><small>${my ? "내 상황 기준 · " : ""}Zorro's Verdict</small><strong>${V}</strong>${!my && (c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}${my?.chips?.length ? `<div class="vtags mchips" title="이 판정이 나온 근거">${my.chips.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
@@ -1531,7 +1531,7 @@ async function renderVS(a, b, now) {
 function drawVS() {
   const { A, B, now, prio } = VS, j = vsJudge(A, B, prio, now), reasons = vsReasons(A, B, j);
   const side = (c, r) => { const won1 = (now ? (j.kind.startsWith("move") ? B : A) : j.kind === "tie" ? null : j.win) === c;
-    return `<div class="vs-side${r ? " r" : ""}"><p class="kicker"><i></i>${now ? (c === A ? "지금 회사" : "옮길 회사") + " · " : ""}${esc(c.salary?.group || c.type + " 회사")}</p>
+    return `<div class="vs-side${r ? " r" : ""}"><p class="kicker"><i></i>${now ? (c === A ? "지금 회사" : "옮길 회사") + " · " : ""}${esc(grpName(c.salary, c.name) || c.type + " 회사")}</p>
       <h2><a href="#${encodeURIComponent(c.name)}">${won1 ? `<mark>${esc(c.name)}</mark>` : esc(c.name)}</a></h2>
       <span class="vs-pill${/가세요$/.test(c.verdict) && c.verdict !== "조건 보고 가세요" ? " go" : /다시|비추/.test(c.verdict) ? " stop" : ""}">${esc(c.verdict)}</span>
       <p class="meta">${c.salary ? `<span>직원 <b>${won(c.salary.members)}명</b></span>` : ""}${c.age != null ? `<span>업력 <b>${c.age}년</b></span>` : ""}</p></div>`; };
@@ -1704,6 +1704,11 @@ function engInd(g, detail, name) {
   if (g === "화학·소재·에너지") return "화학·소재";
   if (g === "건설·부동산") return "건설";
   return g || "";
+}
+// 화면에 보이는 업계 이름: '게임·소프트웨어' 묶음을 그대로 쓰면 IT 솔루션 회사도 게임사처럼 보여서 (트러스테이 2026-10-27) 게임사만 '게임'
+function grpName(s, name) {
+  if (s?.group !== "게임·소프트웨어") return s?.group || "";
+  return engInd(s.group, s.industry, name) === "게임" ? "게임" : "IT·소프트웨어";
 }
 function coSize(c) {
   if (c.type === "스타트업") return "스타트업";
