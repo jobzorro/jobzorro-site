@@ -1,0 +1,1306 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="회사 연봉으로 하는 매일 게임. 어디가 더 많이 줄까, 오늘의 회사, 연봉 스나이퍼, 이직 로드 10년, 드림 컴퍼니 월드컵. 오늘의 도전 순위와 명예의 전당.">
+<link rel="canonical" href="https://job.jobzorro.kr/play/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="취업조로"><meta property="og:title" content="연봉 놀이터 · 오늘의 도전"><meta property="og:description" content="회사 연봉으로 하는 매일 게임. 어디가 더 많이 줄까, 오늘의 회사, 연봉 스나이퍼, 이직 로드 10년, 드림 컴퍼니 월드컵. 오늘의 도전 순위와 명예의 전당."><meta property="og:url" content="https://job.jobzorro.kr/play/">
+<title>연봉 놀이터</title>
+<style>
+:root { --bg:#ffffff; --ink:#0b0b0b; --soft:#45483f; --muted:#6f7268; --line:#e4e6df; --line2:#cfd2c8; --fill:#f4f5f1; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d; --warn:#b4453a; --good:#3f7d00; --card:#ffffff;
+  --logo-dk:#1d1f22; --on-dark:#ffffff; --t-eq:#5fae3a; --t-near:#e2b93b; --t-far:#d76a5c; --t-diff:#e4e6df; --t-ink:#ffffff; --truth:#d1392b; --best:#6a5acd; --shadow:rgba(11,11,11,.12);
+  --m1:#3d6b8f; --m2:#8f5a3d; --m3:#4f7d3a; --m4:#7a4f8f; --m5:#8f3d5a; --m6:#3d8f80;
+  --display:"Archivo","Noto Sans KR",system-ui,sans-serif; --font:"Noto Sans KR",system-ui,sans-serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#9a9d92; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; --good:#c6ff3d; --card:#111209;
+  --t-eq:#4c9a2a; --t-near:#c9a227; --t-far:#c0564a; --t-diff:#2c2e25; --truth:#ff6b5b; --best:#a79bff; --shadow:rgba(0,0,0,.5); color-scheme:dark } }
+:root[data-theme="dark"] { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#9a9d92; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; --good:#c6ff3d; --card:#111209;
+  --t-eq:#4c9a2a; --t-near:#c9a227; --t-far:#c0564a; --t-diff:#2c2e25; --truth:#ff6b5b; --best:#a79bff; --shadow:rgba(0,0,0,.5); color-scheme:dark }
+* { box-sizing:border-box; }
+[hidden] { display:none !important; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); font-size:15px; line-height:1.6; overflow-x:hidden;
+  padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); padding-block:0 40px; }
+.in { max-width:1180px; margin:0 auto; }
+button { font:inherit; color:inherit; cursor:pointer; }
+a { color:inherit; }
+:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+.note { background:var(--fill); border-bottom:1px solid var(--line); font-size:13px; color:var(--soft); margin:0 calc(-1 * max(16px, env(safe-area-inset-left,0px))); padding:10px max(16px, env(safe-area-inset-left,0px)); }
+.note b { color:var(--ink); }
+.tag { display:inline-block; font-size:11.5px; font-weight:800; border-radius:999px; padding:1px 9px; background:var(--fill); color:var(--soft); border:1px dashed var(--line2); vertical-align:middle; }
+
+/* 사이트 메뉴 모형 (실제 배포에선 build.py 가 공용 메뉴로 바꿈) */
+.mnav { border-bottom:1px solid var(--line); margin:0 calc(-1 * max(16px, env(safe-area-inset-left,0px))); padding:0 max(16px, env(safe-area-inset-left,0px)); }
+.mnav .in { display:flex; gap:14px; align-items:center; min-height:52px; }
+.mnav .mlogo { font-family:var(--display); font-weight:900; font-size:14px; letter-spacing:.04em; white-space:nowrap; }
+.mnav nav { display:flex; gap:14px; overflow-x:auto; font-size:14px; font-weight:700; scrollbar-width:none; }
+.mnav nav a { text-decoration:none; color:var(--soft); white-space:nowrap; padding:14px 0; }
+.mnav nav a.on { color:var(--ink); box-shadow:inset 0 -3px 0 var(--acc); }
+.mnav .new { font-size:10px; font-weight:900; background:var(--acc); color:var(--acc-ink); border-radius:999px; padding:0 5px; margin-left:4px; vertical-align:2px; }
+@media (max-width:480px) { .mnav .lgx { display:none; } .mnav .in { gap:10px; } .mnav nav { gap:12px; } }
+.outl { margin:14px 0 0; font-size:14px; color:var(--soft); }
+.outl a { font-weight:700; }
+/* 히어로 · 플레이 수 · 내 정보 */
+.hero { padding-block:clamp(22px,3vw,40px) 18px; }
+.kick { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; gap:12px; align-items:center; }
+.kick i { width:8px; height:8px; border-radius:50%; background:var(--acc); display:inline-block; }
+h1 { margin:12px 0 0; font-family:var(--display); font-weight:900; font-size:clamp(38px,6vw,80px); line-height:.98; letter-spacing:-.05em; text-wrap:balance; }
+h1 .thin { display:block; font-weight:500; font-size:.42em; letter-spacing:-.03em; color:var(--soft); margin-bottom:12px; line-height:1.2; }
+h1 b { background:linear-gradient(transparent 62%, var(--mark) 62%); }
+.board { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:22px; }
+.board .k { border-top:2px solid var(--ink); padding-top:8px; min-width:0; }
+.board .v { font-family:var(--display); font-weight:900; font-size:clamp(22px,3vw,34px); letter-spacing:-.04em; line-height:1.1; font-variant-numeric:tabular-nums; }
+.board .l { font-size:12.5px; color:var(--muted); font-weight:700; }
+@media (max-width:520px) { .board { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } .board .k:last-child { grid-column:1 / -1; } }
+.me { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; margin-top:16px; font-size:14px; }
+.me .nick { font-weight:900; font-family:var(--display); font-size:17px; letter-spacing:-.02em; }
+.me .badge1 { font-size:12px; font-weight:800; border-radius:999px; padding:1px 9px; background:var(--acc); color:var(--acc-ink); }
+.me .fire { font-weight:800; }
+.me .cd { color:var(--muted); font-variant-numeric:tabular-nums; }
+.me .lnk { border:0; background:none; padding:0; text-decoration:underline; font-size:13px; color:var(--soft); }
+.nickf { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+.nickf input { border:1px solid var(--line2); border-radius:10px; padding:8px 12px; font:inherit; background:var(--bg); color:var(--ink); width:11em; max-width:100%; }
+.nickf .err { color:var(--warn); font-size:13px; width:100%; }
+.tabs { display:flex; gap:8px; margin-top:22px; flex-wrap:wrap; }
+.tabs button { border:1px solid var(--ink); background:transparent; border-radius:999px; padding:8px 15px; font-weight:700; font-size:14px; }
+.tabs button[aria-selected="true"] { background:var(--ink); color:var(--bg); }
+.tabs .sep { flex-basis:100%; height:0; }
+@media (min-width:900px) { .tabs .sep { display:none; } }
+
+.sec { padding-block:26px 50px; }
+.sec-head { display:grid; grid-template-columns:auto minmax(0,1fr); gap:6px 22px; align-items:end; padding-bottom:18px; border-bottom:1px solid var(--ink); }
+.sec-head .num { font-family:var(--display); font-weight:900; font-size:clamp(44px,5vw,76px); line-height:.86; letter-spacing:-.05em; color:transparent; -webkit-text-stroke:2px var(--ink); }
+.sec-head h2 { margin:0; font-family:var(--display); font-weight:900; font-size:clamp(24px,2.8vw,38px); letter-spacing:-.045em; line-height:1.1; text-wrap:balance; }
+.sec-head h2 b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
+.sec-head p { grid-column:2; margin:0; font-size:13.5px; color:var(--muted); max-width:70ch; }
+@media (max-width:600px) { .sec-head p { grid-column:1 / -1; } }
+.src { font-size:12px; color:var(--muted); margin:14px 0 0; }
+.seg { display:inline-flex; border:1px solid var(--ink); border-radius:999px; padding:3px; gap:3px; flex-wrap:wrap; max-width:100%; }
+.seg button { border:0; background:transparent; border-radius:999px; padding:7px 13px; font-size:13px; font-weight:700; white-space:nowrap; }
+.seg button[aria-pressed="true"] { background:var(--ink); color:var(--bg); }
+.toolbar { display:flex; gap:10px 16px; align-items:center; flex-wrap:wrap; margin:20px 0 6px; }
+
+/* 카드·대결 (v1) */
+.gbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:18px 0 12px; flex-wrap:wrap; }
+.gbar .lv { font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.gbar .stat { display:flex; gap:16px; align-items:center; font-size:14px; flex-wrap:wrap; }
+.gbar .stat b { font-family:var(--display); font-size:22px; font-weight:900; letter-spacing:-.03em; }
+.hearts { letter-spacing:2px; font-size:18px; color:var(--warn); }
+.hearts .off { color:var(--line2); }
+.timer { height:6px; background:var(--fill); border-radius:3px; overflow:hidden; margin:0 0 12px; }
+.timer i { display:block; height:100%; background:var(--ink); width:100%; transform-origin:left; }
+.timer.low i { background:var(--warn); }
+.qline { font-family:var(--display); font-weight:900; font-size:clamp(22px,3vw,34px); letter-spacing:-.04em; margin:6px 0 4px; text-wrap:balance; }
+.qline b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
+.qsub { margin:0 0 16px; color:var(--muted); font-size:13.5px; }
+.duel { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:14px; align-items:stretch; }
+.vs { align-self:center; font-family:var(--display); font-weight:900; font-size:22px; color:var(--muted); }
+.pick { text-align:left; border:1.5px solid var(--ink); border-radius:18px; background:var(--card); padding:20px 20px 18px; display:grid; gap:6px; min-height:180px; align-content:start; transition:transform .12s, background .2s; min-width:0; }
+.pick:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 0 var(--ink); }
+.pick:disabled { cursor:default; }
+.lg { display:inline-flex; align-items:center; justify-content:flex-start; flex:none; }
+.lg img { display:block; max-width:100%; max-height:100%; object-fit:contain; }
+.lg.m { height:34px; max-width:150px; }
+.lg.l { height:52px; max-width:220px; margin:6px 0 2px; }
+.lg.s { width:44px; height:20px; justify-content:center; }
+.lg.dk { background:var(--logo-dk); border-radius:8px; padding:5px 9px; }
+.lg.s.dk { padding:2px 4px; border-radius:5px; }
+.lg.mono { justify-content:center; width:34px; border-radius:10px; font-family:var(--display); font-weight:900; font-size:17px; color:var(--on-dark); background:var(--m1); letter-spacing:0; }
+.lg.mono.h2 { background:var(--m2); } .lg.mono.h3 { background:var(--m3); } .lg.mono.h4 { background:var(--m4); } .lg.mono.h5 { background:var(--m5); } .lg.mono.h6 { background:var(--m6); }
+.lg.l.mono { width:52px; border-radius:14px; font-size:26px; }
+.lg.s.mono { width:20px; border-radius:6px; font-size:11px; }
+.pick .nm { font-family:var(--display); font-weight:900; font-size:clamp(19px,2.4vw,30px); letter-spacing:-.04em; line-height:1.15; word-break:keep-all; overflow-wrap:anywhere; }
+.pick .ind { font-size:12.5px; color:var(--muted); }
+.pick .amt { margin-top:auto; font-family:var(--display); font-weight:900; font-size:clamp(26px,3.4vw,42px); letter-spacing:-.04em; line-height:1; min-height:1em; }
+.pick .amt small { font-size:.42em; font-weight:700; margin-left:4px; }
+.pick .amt.q { color:var(--line2); }
+.pick.win { background:var(--acc); color:var(--acc-ink); border-color:var(--acc-ink); }
+.pick.win .ind { color:var(--acc-ink); opacity:.75; }
+.pick.lose { opacity:.72; }
+.pick .badge { justify-self:start; font-size:12px; font-weight:800; border-radius:999px; padding:2px 10px; background:var(--ink); color:var(--bg); }
+.pick.win .badge { background:var(--acc-ink); color:var(--acc); }
+.res { margin-top:14px; border-radius:16px; background:var(--fill); padding:14px 16px; display:flex; gap:12px 18px; align-items:center; justify-content:space-between; flex-wrap:wrap; min-height:64px; }
+.res .msg { font-size:15px; min-width:0; flex:1 1 260px; margin:0; }
+.res .msg b.ok { color:var(--good); } .res .msg b.no { color:var(--warn); }
+.btn { border:0; background:var(--ink); color:var(--bg); border-radius:999px; padding:11px 22px; font-weight:800; font-size:14px; text-decoration:none; display:inline-block; }
+.btn.ghost { background:transparent; color:var(--ink); border:1px solid var(--ink); }
+.btn.sm { padding:7px 14px; font-size:13px; }
+.btn:disabled { opacity:.45; cursor:default; }
+.over { text-align:center; padding:28px 16px; border:1.5px solid var(--ink); border-radius:20px; margin-top:20px; display:grid; gap:10px; justify-items:center; }
+.over .lv { font-family:var(--display); font-weight:700; letter-spacing:.1em; color:var(--muted); font-size:13px; }
+.over .big { font-family:var(--display); font-weight:900; font-size:clamp(56px,10vw,110px); letter-spacing:-.06em; line-height:.9; font-variant-numeric:tabular-nums; }
+.over .big small { font-size:.3em; letter-spacing:-.02em; }
+.over .ttl { font-family:var(--display); font-weight:900; font-size:22px; letter-spacing:-.03em; }
+.over .ttl b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
+.over p { margin:0; color:var(--soft); font-size:14px; max-width:52ch; }
+.row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; align-items:center; }
+.miss { margin:6px 0 0; font-size:13.5px; color:var(--soft); text-align:left; width:100%; max-width:560px; padding-left:20px; }
+.intro { border:1.5px solid var(--ink); border-radius:20px; padding:22px; margin-top:20px; display:grid; gap:12px; }
+.intro h3 { margin:0; font-family:var(--display); font-weight:900; font-size:22px; letter-spacing:-.03em; }
+.intro ul { margin:0; padding-left:18px; color:var(--soft); font-size:14px; }
+@media (max-width:620px) { .duel { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; } .vs { display:none; } .pick { padding:14px 12px; min-height:160px; border-radius:14px; } }
+
+/* 결과 카드 공유 */
+.share { display:grid; gap:10px; justify-items:center; width:100%; }
+.share pre { margin:0; font-family:var(--font); font-size:14px; background:var(--fill); border-radius:12px; padding:12px 14px; white-space:pre-wrap; text-align:left; max-width:100%; line-height:1.45; }
+.share textarea { width:100%; max-width:420px; font:inherit; font-size:13px; min-height:110px; background:var(--bg); color:var(--ink); border:1px solid var(--line2); border-radius:10px; }
+.share img { max-width:100%; width:480px; border-radius:12px; border:1px solid var(--line); }
+.share .msg2 { font-size:12.5px; color:var(--muted); min-height:1.2em; }
+
+/* 순위표 */
+.lb { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:20px; }
+@media (max-width:860px) { .lb { grid-template-columns:minmax(0,1fr); } }
+.lbc { border-top:2px solid var(--ink); padding-top:10px; min-width:0; }
+.lbc h4 { margin:0 0 4px; font-family:var(--display); font-weight:900; font-size:18px; letter-spacing:-.03em; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.lbc .sub { font-size:12px; color:var(--muted); margin:0 0 8px; }
+.lbc ol { list-style:none; margin:0; padding:0; display:grid; gap:2px; font-size:14px; }
+.lbc li { display:grid; grid-template-columns:2.2em minmax(0,1fr) auto; gap:8px; padding:5px 4px; border-bottom:1px solid var(--line); align-items:baseline; }
+.lbc li .r { font-family:var(--display); font-weight:900; color:var(--muted); }
+.lbc li .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+.lbc li .s { font-family:var(--display); font-weight:900; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.lbc li.mine { background:var(--fill); border-radius:8px; }
+.lbc li.mine .n::after { content:" (나)"; color:var(--muted); font-weight:500; }
+.lbc li.pin { border-top:1px dashed var(--line2); margin-top:4px; }
+.lbc .empty { color:var(--muted); font-size:13.5px; padding:6px 0; }
+
+/* 02 오늘의 회사 */
+.tinfo { display:flex; flex-wrap:wrap; gap:8px 18px; margin:16px 0 4px; font-size:14px; color:var(--soft); }
+.tinfo b { color:var(--ink); }
+.gform { display:flex; gap:8px; margin:14px 0; align-items:flex-start; flex-wrap:wrap; }
+.fld { display:grid; gap:7px; position:relative; min-width:0; }
+.gform .fld { flex:1 1 220px; max-width:420px; }
+.fld > label, .fld > .lb { font-size:12.5px; font-weight:800; color:var(--soft); }
+.fld input[type=text], .fld input[type=number] { width:100%; border:1px solid var(--line2); border-radius:10px; padding:10px 12px; font:inherit; font-size:15px; background:var(--bg); color:var(--ink); }
+.fld .hint { font-size:12px; color:var(--muted); }
+.ac { position:absolute; top:100%; left:0; right:0; z-index:5; background:var(--card); border:1px solid var(--ink); border-radius:10px; margin-top:4px; max-height:260px; overflow:auto; display:grid; box-shadow:0 8px 20px var(--shadow); }
+.ac button { text-align:left; border:0; background:transparent; padding:8px 12px; display:flex; align-items:center; gap:10px; font-size:14px; }
+.ac button .acn { flex:1; min-width:0; }
+.ac button small { color:var(--muted); white-space:nowrap; }
+.ac button:hover, .ac button.on { background:var(--fill); }
+.grid5 { display:grid; gap:6px; margin-top:8px; }
+.grow { display:grid; grid-template-columns:minmax(0,1.25fr) repeat(5,minmax(0,1fr)); gap:5px; align-items:stretch; }
+.grow.head { font-size:11.5px; color:var(--muted); font-weight:800; }
+.grow.head span { padding:0 2px; }
+.grow .gn { font-weight:800; font-size:13.5px; display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden; }
+.grow .gn span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tile { border-radius:9px; padding:6px 4px; text-align:center; font-size:12.5px; font-weight:800; line-height:1.25; background:var(--t-diff); color:var(--ink); min-height:46px; display:grid; align-content:center; word-break:keep-all; overflow-wrap:anywhere; }
+.tile small { display:block; font-weight:600; font-size:11px; opacity:.9; }
+.tile.eq { background:var(--t-eq); color:var(--t-ink); }
+.tile.near { background:var(--t-near); color:var(--acc-ink); }
+.tile.far { background:var(--t-far); color:var(--t-ink); }
+.tile.empty { background:transparent; border:1px dashed var(--line2); }
+@media (max-width:620px) { .grow { grid-template-columns:repeat(5,minmax(0,1fr)); } .grow .gn { grid-column:1 / -1; } .grow.head .hn { display:none; } .tile { font-size:11.5px; padding:5px 2px; } }
+.legend { font-size:12.5px; color:var(--muted); margin:8px 0 0; display:flex; gap:12px; flex-wrap:wrap; }
+.legend i { display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-2px; margin-right:4px; }
+
+/* 03 스나이퍼 */
+.snq { border:1.5px solid var(--ink); border-radius:20px; padding:22px; margin-top:18px; display:grid; gap:12px; }
+.snq .who { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.snq .who .nm { font-family:var(--display); font-weight:900; font-size:clamp(22px,3vw,34px); letter-spacing:-.04em; }
+.snq .who .rk { font-size:14px; font-weight:800; border-radius:999px; padding:2px 12px; background:var(--ink); color:var(--bg); }
+.snv { font-family:var(--display); font-weight:900; font-size:clamp(40px,7vw,72px); letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
+.snv small { font-size:.32em; }
+.sntrack { position:relative; height:44px; }
+.sntrack input[type=range] { width:100%; margin:0; position:absolute; inset:12px 0 auto 0; accent-color:var(--ink); height:20px; }
+.sntrack .truth { position:absolute; top:0; bottom:0; width:3px; background:var(--truth); border-radius:2px; transform:translateX(-50%); }
+.sntrack .truth span { position:absolute; top:-2px; left:6px; font-size:11px; font-weight:800; color:var(--truth); white-space:nowrap; }
+.snax { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
+.steps { display:flex; gap:8px; flex-wrap:wrap; }
+.tbl { width:100%; border-collapse:collapse; font-size:14px; }
+.tbl th, .tbl td { padding:8px 6px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+.tbl th:first-child, .tbl td:first-child { text-align:left; white-space:normal; }
+.tbl th { font-size:12px; color:var(--muted); font-weight:700; }
+.tbl .up { color:var(--good); } .tbl .dn { color:var(--warn); }
+.tw { overflow-x:auto; width:100%; }
+.crowd { background:var(--fill); border-radius:14px; padding:12px 14px; font-size:14px; margin:0; text-align:left; width:100%; }
+
+/* 04 이직 로드 */
+.rstate { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:18px 0 14px; }
+@media (max-width:620px) { .rstate { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } }
+.rstate .k { border-top:2px solid var(--ink); padding-top:8px; min-width:0; }
+.rstate .l { font-size:12.5px; color:var(--muted); font-weight:700; }
+.rstate .v { font-family:var(--display); font-weight:900; font-size:clamp(18px,2.4vw,28px); letter-spacing:-.03em; line-height:1.15; overflow-wrap:anywhere; }
+.offers { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+@media (max-width:760px) { .offers { grid-template-columns:minmax(0,1fr); } }
+.offer { text-align:left; border:1.5px solid var(--ink); border-radius:18px; background:var(--card); padding:16px; display:grid; gap:6px; align-content:start; min-width:0; transition:transform .12s; }
+.offer:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 0 var(--ink); }
+.offer .ol { font-family:var(--display); font-weight:900; font-size:13px; letter-spacing:.06em; color:var(--muted); }
+.offer .ot { font-family:var(--display); font-weight:900; font-size:19px; letter-spacing:-.03em; line-height:1.2; }
+.offer .om { font-family:var(--display); font-weight:900; font-size:24px; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+.offer .om small { font-size:.5em; }
+.offer .sig { display:flex; flex-wrap:wrap; gap:5px; }
+.offer .sig span { font-size:12px; border:1px solid var(--line2); border-radius:999px; padding:1px 8px; color:var(--soft); }
+.offer .sig span.risk { border-color:var(--warn); color:var(--warn); font-weight:800; }
+.offer .sig span.goodsig { border-color:var(--good); color:var(--good); font-weight:800; }
+.offer.stay { border-style:dashed; }
+.rlog { list-style:none; margin:16px 0 0; padding:0; display:grid; gap:8px; }
+.rlog li { background:var(--fill); border-radius:12px; padding:10px 14px; font-size:14px; }
+.rlog li b.ev { color:var(--warn); } .rlog li b.evg { color:var(--good); }
+.chart { border:1px solid var(--line); border-radius:16px; padding:12px 8px 6px; width:100%; }
+.chart svg { display:block; width:100%; height:auto; }
+.chart .ax { stroke:var(--line); stroke-width:1; }
+.chart .tx { fill:var(--muted); font-size:11px; font-family:var(--font); }
+.chart .me { stroke:var(--ink); stroke-width:3; fill:none; }
+.chart .bst { stroke:var(--best); stroke-width:2.5; fill:none; stroke-dasharray:6 5; }
+.chart .eok { stroke:var(--warn); stroke-dasharray:3 4; }
+.leg { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--muted); padding:2px 8px 4px; }
+.leg i { display:inline-block; width:18px; height:3px; vertical-align:middle; margin-right:5px; background:var(--ink); }
+.leg i.b { background:var(--best); }
+.zorro { border-radius:16px; background:var(--fill); padding:14px 16px; font-size:15px; text-align:left; width:100%; }
+.zorro .who { font-family:var(--display); font-weight:900; font-size:13px; letter-spacing:.06em; text-transform:uppercase; margin-bottom:4px; display:flex; gap:8px; align-items:center; }
+.zorro .who i { width:8px; height:8px; border-radius:50%; background:var(--acc); display:inline-block; box-shadow:0 0 0 1px var(--ink); }
+.zorro p { margin:0; }
+
+/* 05 월드컵 */
+.cupbar { display:flex; justify-content:space-between; align-items:center; margin:18px 0 12px; gap:12px; flex-wrap:wrap; }
+.cupbar .lv { font-family:var(--display); font-weight:900; font-size:26px; letter-spacing:-.03em; }
+.cupbar .pg { font-size:13px; color:var(--muted); }
+.cupbar .dots { display:flex; gap:4px; flex-wrap:wrap; }
+.cupbar .dots i { width:8px; height:8px; border-radius:50%; background:var(--line2); }
+.cupbar .dots i.on { background:var(--ink); }
+.prate { min-height:1.6em; margin:12px 0 0; font-size:14.5px; }
+.prate b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
+.rep { border:1.5px solid var(--ink); border-radius:20px; padding:22px; display:grid; gap:14px; margin-top:20px; }
+.rep .crown { font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.1em; color:var(--muted); }
+.rep .nm { font-family:var(--display); font-weight:900; font-size:clamp(30px,5vw,54px); letter-spacing:-.05em; line-height:1; overflow-wrap:anywhere; }
+.rep .nm b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+.stats div { border-top:2px solid var(--ink); padding-top:8px; min-width:0; }
+.stats small { display:block; font-size:12px; color:var(--muted); font-weight:700; }
+.stats b { font-family:var(--display); font-weight:900; font-size:21px; letter-spacing:-.03em; }
+.twist { background:var(--fill); border-radius:14px; padding:12px 14px; font-size:15px; margin:0; }
+.rep .row { justify-content:flex-start; }
+.vs2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; }
+@media (max-width:560px) { .vs2 { grid-template-columns:minmax(0,1fr); } }
+.vs2 ol { margin:0; padding-left:22px; font-size:14px; }
+.vs2 li.off { color:var(--warn); font-weight:800; }
+.brk { font-size:13px; color:var(--soft); }
+.brk summary { cursor:pointer; font-weight:700; color:var(--ink); }
+.brk ol { margin:8px 0 0; padding-left:20px; columns:2; column-gap:24px; }
+@media (max-width:620px) { .brk ol { columns:1; } }
+
+/* 칭호 */
+.badges { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; margin-top:12px; }
+.bdg { border:1px solid var(--line2); border-radius:14px; padding:12px 14px; font-size:13px; color:var(--muted); }
+.bdg b { display:block; font-family:var(--display); font-size:17px; letter-spacing:-.02em; color:var(--muted); }
+.bdg.on { border:1.5px solid var(--ink); color:var(--soft); }
+.bdg.on b { color:var(--ink); }
+.bdg.on b::after { content:" ✓"; color:var(--good); }
+.h3 { font-family:var(--display); font-weight:900; font-size:22px; letter-spacing:-.03em; margin:28px 0 6px; }
+
+/* 도구 (v1) */
+.bar1 { display:flex; gap:12px 18px; align-items:end; flex-wrap:wrap; margin:20px 0 16px; }
+.bar1 .fld { min-width:160px; flex:0 1 260px; }
+.bar1 .hint { font-size:12px; color:var(--muted); padding-bottom:10px; }
+.big1 { font-family:var(--display); font-weight:900; font-size:clamp(24px,3.4vw,40px); letter-spacing:-.04em; line-height:1.15; margin:0 0 14px; text-wrap:balance; }
+.big1 b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
+.chips { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; }
+.chip { border:1px solid var(--ink); border-radius:999px; padding:5px 13px; font-size:14px; display:flex; gap:8px; align-items:baseline; }
+.chip b { font-weight:900; }
+.chip.hi { background:var(--acc); color:var(--acc-ink); border-color:var(--acc-ink); }
+.rcols { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-top:16px; }
+@media (max-width:620px) { .rcols { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } }
+.endl { margin:0 0 6px; font-size:14px; color:var(--soft); }
+.rcol { border-top:2px solid var(--ink); padding-top:10px; min-width:0; }
+.rcol h4 { margin:0 0 6px; font-family:var(--display); font-weight:900; font-size:18px; letter-spacing:-.03em; display:flex; justify-content:space-between; gap:8px; }
+.rcol h4 small { font-family:var(--font); font-size:12px; color:var(--muted); font-weight:700; }
+.rcol ul { list-style:none; margin:0; padding:0; font-size:13.5px; display:grid; gap:3px; }
+.rcol li { display:flex; justify-content:space-between; gap:8px; }
+.rcol li span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rcol li small { color:var(--muted); white-space:nowrap; }
+.rcol .more { color:var(--muted); font-size:12.5px; }
+.ticks { display:grid; gap:12px; }
+.tick { border:1px solid var(--line2); border-radius:16px; padding:12px 16px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 16px; align-items:center; }
+.tick.me2 { border:1.5px solid var(--ink); }
+.tick .who { font-weight:800; font-size:14px; min-width:0; }
+.tick .who small { display:block; font-weight:500; color:var(--muted); font-size:12.5px; }
+.tick .won { font-family:var(--display); font-weight:900; font-size:clamp(22px,3.4vw,38px); letter-spacing:-.03em; font-variant-numeric:tabular-nums; text-align:right; }
+.tick .won small { font-size:.45em; margin-left:2px; }
+.tick .rt { grid-column:1 / -1; height:6px; background:var(--fill); border-radius:3px; overflow:hidden; }
+.tick .rt i { display:block; height:100%; background:var(--ink); }
+.tick.ex .rt i { background:var(--acc); }
+.facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:16px; }
+.fact { background:var(--fill); border-radius:14px; padding:12px 14px; font-size:14px; }
+.fact b { display:block; font-family:var(--display); font-weight:900; font-size:24px; letter-spacing:-.03em; }
+.tools2 { display:grid; gap:10px; }
+
+.toast { position:fixed; left:50%; bottom:max(18px, env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:14px; font-weight:700; z-index:50; max-width:calc(100vw - 32px); text-align:center; box-shadow:0 8px 24px var(--shadow); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; animation:none !important; } .pick:hover:not(:disabled), .offer:hover:not(:disabled) { transform:none; } }
+</style>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+
+
+<div class="note"><b>미리보기 v2</b> · 위 메뉴는 모양만 보여 주는 모형이에요(실제 메뉴는 사이트에 붙일 때 들어가요). 서버를 아직 안 만들어서 순위·플레이 수·전국 선택률은 <b>미리보기용 예시</b>이고, 내 기록은 이 기기에만 저장돼요. 실제 주소는 <b>job.jobzorro.kr/play/</b>, 숫자는 연봉 연구소 공개 추정치(<span id="ym"></span> 기준)예요.</div>
+
+<header class="hero"><div class="in">
+  <div class="kick"><i></i>JOBZORRO · PLAY</div>
+  <h1><span class="thin">회사 연봉으로 하는 매일 게임</span>연봉 <b>놀이터</b></h1>
+  <p class="outl">숫자가 궁금해지면 <a href="https://job.jobzorro.kr/salary/">연봉 연구소</a> · 그 회사 가도 될지는 <a href="https://job.jobzorro.kr/company/">회사 판단</a> · 내 이직이 고민이면 <a href="https://job.jobzorro.kr/apply/">무료 상담 신청</a></p>
+  <div class="board" id="board" aria-live="polite"></div>
+  <div class="me" id="me"></div>
+  <div class="tabs" role="tablist" aria-label="게임 고르기">
+    <button role="tab" id="t-higher" data-k="higher" aria-controls="p-higher" aria-selected="true">01 어디가 더 많이 줄까?</button>
+    <button role="tab" id="t-today" data-k="today" aria-controls="p-today" aria-selected="false">02 오늘의 회사</button>
+    <button role="tab" id="t-sniper" data-k="sniper" aria-controls="p-sniper" aria-selected="false">03 연봉 스나이퍼</button>
+    <button role="tab" id="t-road" data-k="road" aria-controls="p-road" aria-selected="false">04 이직 로드 10년</button>
+    <button role="tab" id="t-cup" data-k="cup" aria-controls="p-cup" aria-selected="false">05 드림 컴퍼니 월드컵</button>
+    <span class="sep"></span>
+    <button role="tab" id="t-hall" data-k="hall" aria-controls="p-hall" aria-selected="false">순위 · 명예의 전당</button>
+    <button role="tab" id="t-tools" data-k="tools" aria-controls="p-tools" aria-selected="false">도구</button>
+  </div>
+</div></header>
+
+<main>
+<section class="sec" id="p-higher" role="tabpanel" aria-labelledby="t-higher"><div class="in">
+  <div class="sec-head"><span class="num">01</span><h2>어디가 더 <b>많이 줄까?</b></h2><p>두 회사 중 더 높은(퇴사율은 더 낮은) 쪽을 고르세요. 문제마다 비교 기준이 바뀌어요.</p></div>
+  <div class="toolbar"><div class="seg" id="hMode"><button data-v="daily" aria-pressed="true">오늘의 도전 10문제</button><button data-v="endless" aria-pressed="false">무한 모드</button></div></div>
+  <div id="higher"></div>
+  <p class="src">로고 있는 이름난 회사(오늘의 도전)와 상장사 매출 상위 500곳·직원 1,000명 이상 회사(무한 모드)의 연봉 연구소 추정치예요. 실제와 다를 수 있어요.</p>
+</div></section>
+
+<section class="sec" id="p-today" role="tabpanel" aria-labelledby="t-today" hidden><div class="in">
+  <div class="sec-head"><span class="num">02</span><h2>오늘의 <b>회사</b></h2><p>하루 한 번, 모두에게 같은 회사가 숨겨져요. 회사 이름을 넣을 때마다 다섯 칸 힌트가 나와요. 6번 안에 맞혀 보세요.</p></div>
+  <div id="today"></div>
+</div></section>
+
+<section class="sec" id="p-sniper" role="tabpanel" aria-labelledby="t-sniper" hidden><div class="in">
+  <div class="sec-head"><span class="num">03</span><h2>연봉 <b>스나이퍼</b></h2><p>회사와 직급을 보고 막대를 밀어 연봉을 찍어요. 오차가 작을수록 점수가 커요. 모두 같은 5문제예요.</p></div>
+  <div id="sniper"></div>
+</div></section>
+
+<section class="sec" id="p-road" role="tabpanel" aria-labelledby="t-road" hidden><div class="in">
+  <div class="sec-head"><span class="num">04</span><h2>이직 로드 <b>10년</b></h2><p>신입으로 출발해 2년마다 제안 중 하나를 고르거나 남아요. 다섯 번 고르면 10년 누적 연봉과 1억 찍은 연차가 나와요. 회사 이름은 고른 뒤에 공개해요.</p></div>
+  <div id="road"></div>
+</div></section>
+
+<section class="sec" id="p-cup" role="tabpanel" aria-labelledby="t-cup" hidden><div class="in">
+  <div class="sec-head"><span class="num">05</span><h2>드림 컴퍼니 <b>월드컵</b></h2><p>연봉은 가리고 이름만 보고 더 가고 싶은 회사를 고르세요. 고를 때마다 전국 사람들의 선택률이 나오고, 우승 회사의 진짜 성적표를 공개해요.</p></div>
+  <div id="cup"></div>
+</div></section>
+
+<section class="sec" id="p-hall" role="tabpanel" aria-labelledby="t-hall" hidden><div class="in">
+  <div class="sec-head"><span class="num">★</span><h2>순위 · <b>명예의 전당</b></h2><p>순위는 모두가 같은 문제를 푸는 오늘의 도전에만 있어요. 이번 주 순위는 7일 합계(빠진 날 0점), 명예의 전당은 지난 주간 1위 기록이에요.</p></div>
+  <div id="hall"></div>
+</div></section>
+
+<section class="sec" id="p-tools" role="tabpanel" aria-labelledby="t-tools" hidden><div class="in">
+  <div class="sec-head"><span class="num">⚙</span><h2>연봉 <b>도구</b></h2><p>게임은 아니지만 자주 쓰는 계산 두 가지예요. 넣은 숫자는 이 화면에서만 쓰고 어디에도 보내지 않아요.</p></div>
+  <div class="toolbar"><div class="seg" id="toolSeg"><button data-v="rank" aria-pressed="true">직급 환산기</button><button data-v="live" aria-pressed="false">실시간 월급</button></div></div>
+  <div id="tool-rank">
+    <p class="big1" style="font-size:clamp(20px,2.6vw,28px)">내 연봉, 저 회사에선 <b>무슨 직급?</b></p>
+    <div class="bar1"><div class="fld"><label for="rkPay">내 연봉 (만원)</label><input type="number" id="rkPay" inputmode="numeric" value="5000"></div></div>
+    <div id="rkOut"></div>
+  </div>
+  <div id="tool-live" hidden>
+    <p class="big1" style="font-size:clamp(20px,2.6vw,28px)">지금 이 순간에도 <b>통장에 쌓이는 돈</b></p>
+    <div class="bar1"><div class="fld"><label for="lvPay">내 연봉 (만원)</label><input type="number" id="lvPay" inputmode="numeric" value="4000"></div>
+      <div class="fld"><label for="lvIn">비교할 회사</label><input type="text" id="lvIn" autocomplete="off" placeholder="회사 이름"><div class="ac" id="lvAc" hidden></div></div>
+      <button class="btn ghost" id="lvReset" type="button">처음부터 다시 재기</button></div>
+    <div id="lvOut"></div>
+  </div>
+</div></section>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script type="module">
+import * as PC from './play_core.js';
+const D = await (await fetch('data/play.json', { cache: 'no-cache' })).json();
+// 연봉 놀이터 v2 화면. make.py 가 page/*.js 를 이름순으로 이어 붙여 function main(D, PC) 하나로 만든다.
+// D = 회사 자료(make.py), PC = play_core.js (서버와 같은 규칙). 점수는 항상 PC.score* 로만 계산한다.
+function main(D, PC) {
+'use strict';
+// ── 서버 주소: 실서비스는 play-api Worker 주소를 넣는다 (예: 'https://play-api.<계정>.workers.dev').
+//    비워 두거나 연결이 안 되면 이 기기 안의 '모의 서버'로 돌아간다 (순위는 '미리보기용 예시').
+var API_BASE = 'https://play-api.jobzorro.workers.dev';
+var SITE = 'https://job.jobzorro.kr/play/', SITE_S = 'job.jobzorro.kr/play';
+var ctx = PC.load(D), CO = ctx.all, BYN = ctx.by, POOL = ctx.P, RK = PC.RK;
+var TODAY = PC.kstDay();
+var GNAME = { higher: '어디가 더 많이 줄까?', today: '오늘의 회사', sniper: '연봉 스나이퍼', road: '이직 로드 10년' };
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]; }); }
+function man(v) { return Math.round(v).toLocaleString('ko-KR'); }
+function eok(v) { v = Math.round(v); var e = Math.floor(Math.abs(v) / 10000), r = Math.abs(v) % 10000, s = v < 0 ? '-' : '';
+  return e ? s + e + '억' + (r ? ' ' + r.toLocaleString('ko-KR') + '만원' : '원') : s + r.toLocaleString('ko-KR') + '만원'; }
+function eokS(v) { return eok(v).replace(/원$/, ''); }
+function mmdd(day) { return +day.slice(5, 7) + '/' + +day.slice(8, 10); }
+function hueCls(s) { var h = PC.hash32(String(s)) % 6; return h ? ' h' + (h + 1) : ''; }
+// 로고 칸: 로고가 있으면 그림, 없으면 이름 첫 글자 배지
+function logo(c, sz) { sz = sz || 'm';
+  return c.lg ? '<span class="lg ' + sz + (c.lt ? ' dk' : '') + '"><img src="' + c.lg + '" alt="" loading="lazy"></span>'
+    : '<span class="lg ' + sz + ' mono' + hueCls(c.grp || c.n) + '">' + esc(PC.firstChar(c.n)) + '</span>'; }
+function link(c) { return 'https://job.jobzorro.kr/salary/co/' + encodeURIComponent(c.slug) + '/'; }
+function coLink(c) { return 'https://job.jobzorro.kr/company/#' + encodeURIComponent(c.o); }
+var store = {
+  get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del: function (k) { try { localStorage.removeItem(k); } catch (e) {} },
+  getJ: function (k, d) { try { var v = JSON.parse(store.get(k)); return v == null ? d : v; } catch (e) { return d; } },
+  setJ: function (k, v) { store.set(k, JSON.stringify(v)); }
+};
+var REDUCE = false; try { REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+function toast(msg) { var t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, 2800); }
+$('ym').textContent = D.ym.replace('-', '년 ') + '월';
+
+// ── 기기 번호(무작위)·닉네임: 로그인 없음
+var DEV = store.get('slp-dev');
+if (!DEV || !/^[a-z0-9]{8,24}$/.test(DEV)) { DEV = ''; for (var i = 0; i < 16; i++) DEV += '0123456789abcdef'[Math.floor(Math.random() * 16)]; store.set('slp-dev', DEV); }
+var NICK = store.get('slp-nick');
+if (!NICK || PC.nickCheck(NICK)) { NICK = PC.makeNick(PC.rng(DEV)); store.set('slp-nick', NICK); }
+
+// ── 내 기록 (이 기기): 오늘의 도전 결과 rec, 하던 판 prog
+function rec(day, game) { return store.getJ('slp-r-' + day + '-' + game, null); }
+function setRec(day, game, v) { store.setJ('slp-r-' + day + '-' + game, v); }
+function prog(game) { return store.getJ('slp-p-' + TODAY + '-' + game, null); }
+function setProg(game, v) { if (v) store.setJ('slp-p-' + TODAY + '-' + game, v); else store.del('slp-p-' + TODAY + '-' + game); }
+
+// ── 칭호 (이 기기에 저장, 닉네임 옆에 표시)
+var BADGES = [
+  ['eye', '연봉 감별사', '무한 모드에서 15문제 연속 정답'],
+  ['hr', '인사팀 출신?', '무한 모드에서 30문제 연속 정답'],
+  ['sniper', '스나이퍼', '연봉 스나이퍼 450점 이상'],
+  ['att7', '7일 출석', '오늘의 회사 7일 연속 풀기'],
+  ['perfect', '퍼펙트 데이', '같은 날 1번 10문제 다 맞힘 + 2번 3번 안에 성공 + 3번 450점 이상'],
+  ['road', '이직의 신', '이직 로드 10년 그날 상위 1%']];
+function badges() { return store.getJ('slp-badges', {}); }
+function award(id) {
+  var b = badges(); if (b[id]) return;
+  b[id] = TODAY; store.setJ('slp-badges', b);
+  var d = BADGES.filter(function (x) { return x[0] === id; })[0];
+  toast('칭호를 얻었어요: ' + d[1]); renderMe();
+}
+function topBadge() { var b = badges(), t = null; BADGES.forEach(function (x) { if (b[x[0]]) t = x[1]; }); return t; }
+function checkPerfect(day) {
+  var a = rec(day, 'higher'), b = rec(day, 'today'), c = rec(day, 'sniper');
+  if (a && b && c && a.aux === 10 && b.aux > 0 && b.aux <= 3 && c.score >= 450) award('perfect');
+}
+// 연속 출석 불꽃: 오늘의 회사를 이어서 푼 날 수
+function streak() { var s = store.getJ('slp-streak', { last: '', n: 0 }); return s.last === TODAY || s.last === PC.addDays(TODAY, -1) ? s.n : 0; }
+function bumpStreak(day) {
+  var s = store.getJ('slp-streak', { last: '', n: 0 });
+  if (s.last === day) return;
+  s.n = s.last === PC.addDays(day, -1) ? s.n + 1 : 1; s.last = day; store.setJ('slp-streak', s);
+  if (s.n >= 7) award('att7');
+}
+
+
+// ── 서버 부르기. API_BASE 가 비었거나 연결이 안 되면 모의 서버(mock)로 — 미리보기도 끝까지 놀 수 있게
+var MOCK = !API_BASE;
+function mockTag() { return MOCK ? ' <span class="tag">미리보기용 예시</span>' : ''; }
+function call(path, body) {
+  if (MOCK) return Promise.resolve(mock(path, body));
+  var opt = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {};
+  return fetch(API_BASE + path, opt).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { j.status = r.status; throw j; } return j; });
+  }, function () { MOCK = true; return mock(path, body); });   // 연결 실패 → 이번 방문은 모의 서버
+}
+
+// ── 모의 서버: 날짜·게임으로 씨앗을 잡은 가짜 참가자 24명 + 이 기기에서 낸 내 점수. 점수 규칙은 진짜와 같은 PC.score
+var mockCache = {};
+function mockNicks(week) { var r = PC.rng('mocknick|' + week), a = [], seen = {}; while (a.length < 24) { var n = PC.makeNick(r); if (!seen[n]) { seen[n] = 1; a.push(n); } } return a; }
+function mockDay(day, game) {
+  var key = day + '|' + game; if (mockCache[key]) return mockCache[key];
+  var rows = [], pz = game === 'road' ? PC.genRoad(day, ctx) : null;
+  mockNicks(PC.isoWeek(day)).forEach(function (n, i) {
+    var r = PC.rng('mock|' + key + '|' + n); if (r() > .72) return;
+    var row = { nick: n, dev: 'mock' + i, ts: i };
+    if (game === 'higher') { var ok = 4 + Math.floor(r() * 7); row.aux = ok; row.score = ok * 100 + Math.round(ok * (6 + r() * 12)); }
+    else if (game === 'today') { var t = r() < .14 ? 0 : 2 + Math.floor(r() * 5); row.aux = t; row.score = t ? (7 - t) * 100 + Math.floor(30 + r() * 65) : 0; }
+    else if (game === 'sniper') { var s = 0, errs = []; for (var q = 0; q < 5; q++) { var e = Math.round((r() - .42) * 40 * 10) / 10; errs.push(e); s += PC.sniperPts(e); } row.score = s; row.aux = 5; row.errs = errs; }
+    else { var picks = [0, 1, 2, 3, 4].map(function () { return Math.floor(r() * 3); }), R = PC.simRoad(pz, ctx, picks); row.score = R.total; row.aux = R.eok; row.picks = R.picks; }
+    rows.push(row);
+  });
+  return (mockCache[key] = rows);
+}
+function myRow(day, game) { var x = rec(day, game); return x && x.sent ? { nick: x.nick, dev: DEV, score: x.score, aux: x.aux, ts: 1e15, errs: x.errs, picks: x.picks, me: 1 } : null; }
+function byScore(a, b) { return b.score - a.score || a.ts - b.ts; }
+function dayRows(day, game) { var a = mockDay(day, game).slice(), m = myRow(day, game); if (m) a.push(m); return a.sort(byScore); }
+function weekSum(days, game) {
+  var m = {};
+  days.forEach(function (d) { dayRows(d, game).forEach(function (r) { var k = r.dev; m[k] = m[k] || { nick: r.nick, s: 0, me: r.me }; m[k].s += r.score; }); });
+  return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.s - a.s; });
+}
+function mockPlays() { return store.getJ('slp-mplays', {}); }
+function mock(path, b) {
+  var u = path.split('?'), q = {};
+  (u[1] || '').split('&').forEach(function (kv) { if (kv) { var p = kv.split('='); q[p[0]] = decodeURIComponent(p[1] || ''); } });
+  if (u[0] === '/play/start') {
+    var mp = mockPlays(); mp[TODAY] = (mp[TODAY] || 0) + 1; mp.total = (mp.total || 0) + 1; store.setJ('slp-mplays', mp);
+    return { tok: 'mock.' + b.game + '.' + Date.now(), t0: Date.now(), day: TODAY, ver: ctx.ver };
+  }
+  if (u[0] === '/play/score') {   // 서버와 똑같이: 날짜로 문제를 다시 만들고, 보낸 답으로 점수를 다시 계산
+    var pz = PC.gen(b.game, TODAY, ctx), S = PC.score(b.game, pz, b.ans, ctx);
+    var rows = mockDay(TODAY, b.game).concat([{ score: S.score, ts: 1e15 }]).sort(byScore);
+    return { ok: true, day: TODAY, score: S.score, aux: S.aux, rank: rows.findIndex(function (r) { return r.ts === 1e15; }) + 1, total: rows.length };
+  }
+  if (u[0] === '/play/top') {
+    var g = q.game, d = q.d || TODAY, days = PC.weekDays(d).filter(function (x) { return x <= TODAY; }), R = dayRows(d, g), hall = [];
+    for (var w = 1; w <= 8; w++) {
+      var mon = PC.addDays(PC.weekDays(d)[0], -7 * w), ws = weekSum(PC.weekDays(mon), g)[0];
+      if (ws) hall.push([PC.isoWeek(mon), ws.nick, ws.s]);
+    }
+    var T = dayRows(d, 'today'), Y = dayRows(PC.addDays(d, -1), 'today'), okT = T.filter(function (r) { return r.aux > 0; });
+    var mp = mockPlays(), di = PC.dayIndex(d), hr = new Date(Date.now() + 9 * 3600e3).getUTCHours();
+    var stat = { n: R.length, ok: R.filter(function (r) { return r.aux > 0; }).length, avg: 0 };
+    if (g === 'today') stat.avg = okT.length ? Math.round(okT.reduce(function (a, r) { return a + r.aux; }, 0) / okT.length * 10) / 10 : 0;
+    if (g === 'sniper') stat.err = [0, 1, 2, 3, 4].map(function (i) { var e = R.filter(function (r) { return r.errs && r.errs[i] != null; }); return e.length ? Math.round(e.reduce(function (a, r) { return a + r.errs[i]; }, 0) / e.length * 10) / 10 : null; });
+    if (g === 'road') stat.best = R[0] ? { nick: R[0].nick, score: R[0].score, picks: R[0].picks } : null;
+    var tday = 1800 + Math.round(hr * 130 + PC.rng('mp|' + d)() * 400) + (mp[d] || 0);
+    return { day: d, game: g, week: PC.isoWeek(d), today: R.slice(0, 10).map(function (r) { return [r.nick, r.score, r.aux]; }),
+      weekTop: weekSum(days, g).slice(0, 10).map(function (r) { return [r.nick, r.s]; }), hall: hall,
+      plays: { total: 96000 + di * 1150 + (mp.total || 0), today: tday, people: Math.round(tday * .31) },
+      todayGame: { n: T.length * 53, ok: okT.length * 53, avg: stat.avg || (okT.length ? Math.round(okT.reduce(function (a, r) { return a + r.aux; }, 0) / okT.length * 10) / 10 : 0) },
+      yday: { n: Y.length * 53, ok: Y.filter(function (r) { return r.aux > 0; }).length * 53 }, stat: stat };
+  }
+  if (u[0] === '/play/cup' && !b) {
+    var mine = store.getJ('slp-cup', {}), out = [];
+    POOL.forEach(function (c, i) {
+      var r = PC.rng('mockcup|' + c.n), shown = Math.round((c.tier < 2 ? 120 : 30) + r() * 380), pop = .28 + .4 * (1 - Math.min(1, i / 400)) + (r() - .5) * .3;
+      var picked = Math.round(shown * Math.max(.05, Math.min(.92, pop))), wins = Math.round(picked * pop * .12), m = mine[c.n] || [0, 0, 0];
+      out.push([c.n, shown + m[0], picked + m[1], wins + m[2]]);
+    });
+    return { rows: out, today: 240 + ((mockPlays()[TODAY]) || 0) };
+  }
+  if (u[0] === '/play/cup') {
+    var chk = PC.cupCheck(ctx, b.theme, b.picks); if (!chk) return { error: 'bad picks' };
+    var mc = store.getJ('slp-cup', {});
+    Object.keys(chk.agg).forEach(function (n) { var a = mc[n] || [0, 0, 0]; chk.agg[n].forEach(function (v, j) { a[j] += v; }); mc[n] = a; });
+    store.setJ('slp-cup', mc);
+    return { ok: true, counted: true, champ: chk.champ };
+  }
+  return { error: 'not found' };
+}
+
+// ── 오늘의 도전 공통: 시작(플레이 수 +1, 시작 표) → 답 모으기 → 점수 내기(서버가 다시 계산) → 기록
+function startDaily(game) {
+  return call('/play/start', { game: game, dev: DEV }).then(function (j) { return { tok: j.tok || '', t0: Date.now() }; }, function () { return { tok: '', t0: Date.now() }; });
+}
+function submitDaily(game, ans, S, extra) {
+  var p = prog(game) || {}, body = { game: game, tok: p.tok || '', dev: DEV, nick: NICK, ans: ans, ver: ctx.ver };
+  var save = function (x) { x = Object.assign({ nick: NICK, ans: ans }, extra || {}, x); setRec(TODAY, game, x); setProg(game, null); return x; };
+  return call('/play/score', body).then(function (j) {
+    return save({ score: j.score != null ? j.score : S.score, aux: j.aux != null ? j.aux : S.aux, rank: j.rank, total: j.total, sent: 1 });
+  }, function (err) { return save({ score: S.score, aux: S.aux, sent: 0, err: (err && err.error) || '점수를 보내지 못했어요' }); });
+}
+function getTop(game, d) { return call('/play/top?game=' + game + '&d=' + (d || TODAY)).catch(function () { return null; }); }
+
+
+// ── 내 정보 줄: 닉네임 · 칭호 · 불꽃 · 다음 문제까지
+var NEW_DAY = false;
+function renderMe(edit) {
+  var b = topBadge(), s = streak();
+  var h = '<span class="nick">' + esc(NICK) + '</span>' + (b ? '<span class="badge1">' + esc(b) + '</span>' : '') +
+    '<button class="lnk" id="nickEd" type="button">닉네임 바꾸기</button>' +
+    '<span class="fire" title="오늘의 회사를 이어서 푼 날">' + (s ? '🔥 ' + s + '일 연속' : '🔥 0일') + '</span>' +
+    '<span class="cd" id="cd"></span>';
+  if (edit) h += '<div class="nickf" style="width:100%"><label class="sr" for="nickIn" style="font-size:13px;font-weight:700">닉네임</label><input id="nickIn" maxlength="10" value="' + esc(NICK) + '" autocomplete="off">' +
+    '<button class="btn sm" id="nickOk" type="button">저장</button><button class="btn sm ghost" id="nickRnd" type="button">새로 지어 주기</button><button class="btn sm ghost" id="nickNo" type="button">그만두기</button>' +
+    '<span class="err" id="nickErr" aria-live="polite">2~10자 한글·영문·숫자. 순위표에 이 이름으로 나와요.</span></div>';
+  $('me').innerHTML = h;
+  tickCd();
+  $('nickEd').onclick = function () { renderMe(true); $('nickIn').focus(); };
+  if (!edit) return;
+  var ok = function () {
+    var v = $('nickIn').value.trim(), bad = PC.nickCheck(v);
+    if (bad) { $('nickErr').textContent = bad; $('nickErr').style.color = 'var(--warn)'; return; }
+    NICK = v; store.set('slp-nick', v); renderMe(); toast('닉네임을 바꿨어요. 다음에 내는 점수부터 이 이름으로 나와요.');
+  };
+  $('nickOk').onclick = ok;
+  $('nickIn').onkeydown = function (e) { if (e.key === 'Enter') ok(); };
+  $('nickRnd').onclick = function () { $('nickIn').value = PC.makeNick(PC.rng(Math.random())); };
+  $('nickNo').onclick = function () { renderMe(); };
+}
+function tickCd() {
+  var el = $('cd'); if (!el) return;
+  if (PC.kstDay() !== TODAY) { NEW_DAY = true; el.innerHTML = '새 문제가 나왔어요 · <button class="lnk" type="button" id="reload">새로 고침</button>'; $('reload').onclick = function () { location.reload(); }; return; }
+  var ms = PC.msToMidnight(), s = Math.floor(ms / 1000), p = function (n) { return String(n).padStart(2, '0'); };
+  el.textContent = '다음 문제까지 ' + p(Math.floor(s / 3600)) + ':' + p(Math.floor(s / 60) % 60) + ':' + p(s % 60);
+}
+setInterval(function () { if (!NEW_DAY) tickCd(); }, 1000);
+
+// ── 위쪽 숫자판: 지금까지 플레이 · 오늘 도전한 사람 · 오늘의 회사 정답자
+function renderBoard(t) {
+  var pz = PC.genToday(TODAY, ctx);
+  $('board').innerHTML = '<div class="k"><div class="v">' + (t ? man(t.plays.total) : '-') + '</div><div class="l">지금까지 플레이' + mockTag() + '</div></div>' +
+    '<div class="k"><div class="v">' + (t ? man(t.plays.people) : '-') + '</div><div class="l">오늘 도전한 사람</div></div>' +
+    '<div class="k"><div class="v">#' + pz.no + '</div><div class="l">오늘의 회사 · 정답자 ' + (t ? man(t.todayGame.ok) : '-') + '명</div></div>';
+}
+
+// ── 결과 카드: 이모지 글 복사 + 그림(canvas) 만들기
+function shareBox(id) {
+  return '<div class="share" id="' + id + '"><pre></pre><div class="row"><button class="btn" type="button" data-copy>결과 복사</button><button class="btn ghost" type="button" data-img>그림으로 만들기</button></div>' +
+    '<p class="msg2" aria-live="polite"></p><textarea readonly hidden aria-label="복사할 결과"></textarea><div class="imgout"></div></div>';
+}
+function wireShare(id, text, card) {
+  var box = $(id); if (!box) return;
+  box.querySelector('pre').textContent = text;
+  box.querySelector('[data-copy]').onclick = function () {
+    var m = box.querySelector('.msg2'), ta = box.querySelector('textarea');
+    var fb = function () { ta.value = text; ta.hidden = false; ta.focus(); ta.select(); m.textContent = '아래 글을 길게 눌러 복사하세요.'; };
+    try { navigator.clipboard.writeText(text).then(function () { m.textContent = '복사했어요. 단톡방에 붙여 넣어 보세요.'; }, fb); } catch (e) { fb(); }
+  };
+  box.querySelector('[data-img]').onclick = function () {
+    var go = function () { drawCard(card, box); };
+    try { document.fonts && document.fonts.ready ? document.fonts.ready.then(go, go) : go(); } catch (e) { go(); }
+  };
+}
+function drawCard(card, box) {
+  var cv = document.createElement('canvas'); cv.width = 1200; cv.height = 630;
+  var g = cv.getContext('2d'), cs = getComputedStyle(document.documentElement), tk = function (n) { return cs.getPropertyValue(n).trim(); };
+  var F = '"Noto Sans KR", sans-serif', FD = 'Archivo, "Noto Sans KR", sans-serif';
+  g.fillStyle = tk('--bg'); g.fillRect(0, 0, 1200, 630);
+  g.fillStyle = tk('--acc'); g.fillRect(0, 0, 1200, 16);
+  g.fillStyle = tk('--muted'); g.font = '700 30px ' + F; g.fillText('연봉 놀이터 · ' + card.title, 70, 96);
+  var right = card.lines && card.lines.length;
+  g.fillStyle = tk('--ink'); g.font = '900 ' + (right ? 130 : 160) + 'px ' + FD; g.fillText(card.big, 64, 270);
+  g.font = '700 38px ' + F; (card.sub || '').split('\n').forEach(function (l, i) { g.fillText(l, 70, 340 + i * 50); });
+  if (right) { g.font = '52px sans-serif'; card.lines.slice(0, 6).forEach(function (l, i) { g.fillText(l, 760, 150 + i * 66); }); }
+  g.fillStyle = tk('--ink'); g.fillRect(70, 520, 1060, 2);
+  g.fillStyle = tk('--soft'); g.font = '700 30px ' + F; g.fillText(NICK + (topBadge() ? ' · ' + topBadge() : ''), 70, 575);
+  g.textAlign = 'right'; g.fillText('나도 해 보기 → ' + SITE_S, 1130, 575);
+  var url = cv.toDataURL('image/png');
+  box.querySelector('.imgout').innerHTML = '<img src="' + url + '" alt="결과 카드 그림: ' + esc(card.title + ' ' + card.big) + '"><div class="row" style="margin-top:8px"><a class="btn sm" href="' + url + '" download="salary-play.png">그림 저장</a></div>';
+}
+
+// ── 순위표 칸
+function fmtScore(game, s) { return game === 'road' ? eokS(s) : man(s) + '점'; }
+function lbCol(title, sub, rows, game, mine) {   // rows: [[이름, 점수]], mine: {rank, score} (10위 밖이면 아래에 고정)
+  var inTop = false, li = rows.map(function (r, i) {
+    var me = mine && mine.rank === i + 1 && r[0] === NICK; if (me) inTop = true;
+    return '<li class="' + (me ? 'mine' : '') + '"><span class="r">' + (i + 1) + '</span><span class="n">' + esc(r[0]) + '</span><span class="s">' + fmtScore(game, r[1]) + '</span></li>';
+  }).join('');
+  if (mine && mine.rank && !inTop) li += '<li class="mine pin"><span class="r">' + mine.rank + '</span><span class="n">' + esc(NICK) + '</span><span class="s">' + fmtScore(game, mine.score) + '</span></li>';
+  return '<div class="lbc"><h4>' + title + mockTag() + '</h4><p class="sub">' + sub + '</p>' + (li ? '<ol>' + li + '</ol>' : '<p class="empty">아직 기록이 없어요. 첫 번째가 되어 보세요.</p>') + '</div>';
+}
+function hallCol(rows, game) {
+  return '<div class="lbc"><h4>명예의 전당' + mockTag() + '</h4><p class="sub">역대 주간 1위 · 날짜와 함께 영구 박제</p>' + (rows.length ? '<ol>' + rows.map(function (r) {
+    return '<li><span class="r">' + esc(r[0].slice(-3)) + '</span><span class="n">' + esc(r[1]) + '</span><span class="s">' + fmtScore(game, r[2]) + '</span></li>'; }).join('') + '</ol>' : '<p class="empty">첫 주가 끝나면 1위가 여기 올라요.</p>') + '</div>';
+}
+function myWeek(game, days) { var s = 0, any = false; days.forEach(function (d) { var x = rec(d, game); if (x && x.sent) { s += x.score; any = true; } }); return any ? s : null; }
+function lbAll(t, game) {
+  var x = rec(TODAY, game), mine = x && x.sent ? { rank: x.rank, score: x.score } : null, wk = myWeek(game, PC.weekDays(TODAY).filter(function (d) { return d <= TODAY; }));
+  var wkMine = null; if (wk != null) { var pos = t.weekTop.findIndex(function (r) { return r[0] === NICK && r[1] === wk; }); wkMine = pos >= 0 ? { rank: pos + 1, score: wk } : null; }
+  return '<div class="lb">' + lbCol('오늘', mmdd(TODAY) + ' · ' + GNAME[game] + ' TOP 10', t.today, game, mine) +
+    lbCol('이번 주', t.week.replace('-W', '년 ') + '주 · 7일 합계, 빠진 날 0점', t.weekTop, game, wkMine) + hallCol(t.hall, game) + '</div>';
+}
+function miniLb(elId, game) {
+  getTop(game).then(function (t) { var el = $(elId); if (!el || !t) return; el.innerHTML = lbAll(t, game) + '<p class="src"><a href="#hall">순위 · 명예의 전당 전체 보기 →</a></p>'; });
+}
+// 미리보기 전용: 오늘 기록 지우고 다시 하기 (실서비스에선 안 보임 — 서버가 기기당 하루 한 번만 받음)
+function againBtn(game, fn) {
+  if (!MOCK) return '';
+  setTimeout(function () { var b = $('again-' + game); if (b) b.onclick = function () { store.del('slp-r-' + TODAY + '-' + game); setProg(game, null); mockCache = {}; fn(); }; }, 0);
+  return '<button class="btn sm ghost" type="button" id="again-' + game + '">미리보기 전용: 오늘 기록 지우고 다시 하기</button>';
+}
+
+// ── 회사 이름 찾기 (자동 완성)
+function ac(inp, box, list, onPick) {
+  var sel = -1, L = [];
+  function show() {
+    var q = inp.value.trim().toLowerCase(); if (!q) { box.hidden = true; return; }
+    var x = [], a = [], b = [];   // 이름이 똑같은 회사 → 앞이 같은 회사 → 이름 안에 들어 있는 회사
+    list.forEach(function (c) { var n = c.n.toLowerCase(), o = c.o.toLowerCase();
+      if (n === q || o === q) x.push(c); else if (n.indexOf(q) === 0 || o.indexOf(q) === 0) a.push(c); else if (n.indexOf(q) > 0 || o.indexOf(q) > 0) b.push(c); });
+    L = x.concat(a, b).slice(0, 12); sel = -1;
+    box.innerHTML = L.length ? L.map(function (c, i) { return '<button type="button" data-i="' + i + '">' + logo(c, 's') + '<span class="acn">' + esc(c.n) + '</span><small>' + man(c.m) + '명</small></button>'; }).join('')
+      : '<button type="button" disabled>게임에 나오는 회사 중에는 없어요</button>';
+    box.hidden = false;
+    box.querySelectorAll('button[data-i]').forEach(function (bt) { bt.onmousedown = function (e) { e.preventDefault(); pick(L[+bt.dataset.i]); }; });
+  }
+  function pick(c) { box.hidden = true; onPick(c); }
+  inp.oninput = show;
+  inp.onblur = function () { setTimeout(function () { box.hidden = true; }, 120); };
+  inp.onkeydown = function (e) {
+    if (box.hidden) { if (e.key === 'Enter') { e.preventDefault(); onPick(null, inp.value.trim()); } return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); sel = (sel + (e.key === 'ArrowDown' ? 1 : -1) + L.length) % L.length;
+      box.querySelectorAll('button').forEach(function (bt, i) { bt.classList.toggle('on', i === sel); }); }
+    if (e.key === 'Escape') box.hidden = true;
+    if (e.key === 'Enter') { e.preventDefault(); if (L.length) pick(L[sel < 0 ? 0 : sel]); }
+  };
+}
+
+
+// ── 01 어디가 더 많이 줄까? — 오늘의 도전(10문제, 문제당 15초) · 무한 모드(목숨 3개, 개인 최고 기록만)
+var STAT_Q = { pay: '<b>과장 연봉</b>이 더 높은 곳은?', s0: '<b>신입 기준 연봉</b>이 더 높은 곳은?', tt: '<b>평균 근속</b>이 더 긴 곳은?', to: '<b>1년 퇴사율</b>이 더 낮은 곳은?', ex: '<b>임원 평균 연봉</b>이 더 높은 곳은?' };
+function fmtStat(k, v, plain) {
+  var t = k === 'tt' ? [v.toFixed(1), '년'] : k === 'to' ? [(v * 100).toFixed(1), '%'] : [man(v), '만원'];
+  return plain ? t[0] + t[1] : t[0] + '<small>' + t[1] + '</small>';
+}
+function duelHtml(q, R) {   // R: {done, pick, win}
+  var card = function (side) {
+    var c = BYN[q[side]], v = PC.STATS[q.k].v(c), cls = R.done ? (R.win === side ? ' win' : ' lose') : '';
+    return '<button class="pick' + cls + '" type="button" data-s="' + side + '"' + (R.done ? ' disabled' : '') + '>' +
+      (R.done && R.pick === side ? '<span class="badge">내 선택</span>' : '') + logo(c) + '<span class="nm">' + esc(c.n) + '</span>' +
+      '<span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명</span><span class="amt' + (R.done ? '' : ' q') + '">' + (R.done ? fmtStat(q.k, v) : '?') + '</span></button>';
+  };
+  return '<p class="qline">' + STAT_Q[q.k] + '</p><p class="qsub">' + (BYN[q.a].grp === BYN[q.b].grp ? '같은 업종 대결이에요.' : '업종이 다른 두 회사예요.') + '</p>' +
+    '<div class="duel">' + card('a') + '<span class="vs">VS</span>' + card('b') + '</div>';
+}
+function gapMsg(q, win) {
+  var w = BYN[q[win]], l = BYN[q[win === 'a' ? 'b' : 'a']], S = PC.STATS[q.k], vw = S.v(w), vl = S.v(l);
+  return esc(w.n) + ' ' + S.lb + ' ' + fmtStat(q.k, vw, 1) + ', ' + esc(l.n) + ' ' + fmtStat(q.k, vl, 1) + '.';
+}
+var HM = 'daily';
+document.querySelectorAll('#hMode button').forEach(function (b) { b.onclick = function () {
+  document.querySelectorAll('#hMode button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+  HM = b.dataset.v; clearTimeout(HT.to); cancelAnimationFrame(HT.raf); HR = null; renderHigher();   // 풀던 문제는 시간 초과로 처리
+}; });
+function renderHigher() { HM === 'endless' ? (E ? drawE() : introE()) : dailyHigher(); }
+
+// 오늘의 도전
+var HPZ = null, HT = { to: 0, raf: 0 }, HR = null;
+function dailyHigher() {
+  HPZ = HPZ || PC.genHigher(TODAY, ctx);
+  var x = rec(TODAY, 'higher'), p = prog('higher');
+  if (x) return resultHigher(x);
+  if (p) { if (p.cur === p.ans.length) { p.ans.push({ p: '', ms: PC.HIGHER_MS }); p.cur = -1; setProg('higher', p); } return HR ? drawH() : nextH(); }
+  $('higher').innerHTML = '<div class="intro"><h3>오늘의 도전 · ' + mmdd(TODAY) + '</h3><ul>' +
+    '<li>모두 같은 10문제예요. 문제마다 비교 기준(과장 연봉·신입 기준·근속·퇴사율·임원 평균)이 바뀌어요.</li>' +
+    '<li>맞히면 100점, 빨리 맞힐수록 문제당 최대 20점 더(15초 안에). 만점 1,200점.</li>' +
+    '<li>하루 한 번만 순위에 올라가요. 시작하면 중간에 나가도 이어서 풀게 돼요.</li></ul>' +
+    '<div class="row" style="justify-content:flex-start"><button class="btn" id="hGo" type="button">시작하기</button></div></div>';
+  $('hGo').onclick = function () { $('hGo').disabled = true; startDaily('higher').then(function (st) { setProg('higher', { tok: st.tok, t0: st.t0, ans: [], cur: -1 }); nextH(); }); };
+}
+function nextH() {
+  var p = prog('higher'), i = p.ans.length;
+  if (i >= PC.HIGHER_N) return finishH();
+  p.cur = i; setProg('higher', p);
+  HR = { i: i, done: false, t0: performance.now() };
+  drawH();
+  var tick = function () {
+    var left = Math.max(0, PC.HIGHER_MS - (performance.now() - HR.t0)), bar = document.querySelector('#higher .timer');
+    if (bar) { bar.firstChild.style.width = (left / PC.HIGHER_MS * 100) + '%'; bar.classList.toggle('low', left < 4000); }
+    if (left > 0 && !HR.done) HT.raf = REDUCE ? setTimeout(tick, 1000) : requestAnimationFrame(tick);
+  };
+  tick();
+  HT.to = setTimeout(function () { pickH(''); }, PC.HIGHER_MS + 30);
+}
+function drawH() {
+  var p = prog('higher'), q = HPZ.qs[HR.i], sc = PC.scoreHigher(HPZ, p.ans, ctx);
+  var h = '<div class="gbar"><span class="lv">오늘의 도전 · ' + (HR.i + 1) + ' / 10</span><span class="stat"><span>점수 <b>' + man(sc.score) + '</b></span><span>맞힌 개수 <b>' + sc.aux + '</b></span></span></div>' +
+    '<div class="timer" aria-hidden="true"><i' + (HR.done ? ' style="width:0"' : '') + '></i></div>' + duelHtml(q, HR);
+  if (HR.done) {
+    var pts = sc.per[HR.i];
+    h += '<div class="res"><p class="msg">' + (pts ? '<b class="ok">정답! +' + pts + '점</b> ' : HR.pick ? '<b class="no">아쉬워요.</b> ' : '<b class="no">시간이 다 됐어요.</b> ') + gapMsg(q, HR.win) + '</p>' +
+      '<button class="btn" id="hNx" type="button">' + (HR.i + 1 < PC.HIGHER_N ? '다음 문제' : '결과 보기') + '</button></div>';
+  } else h += '<div class="res"><p class="msg" style="color:var(--muted)">카드를 눌러 고르세요. 15초 안에 고르면 빠를수록 점수가 더 붙어요.</p></div>';
+  $('higher').innerHTML = h;
+  document.querySelectorAll('#higher .pick').forEach(function (b) { b.onclick = function () { pickH(b.dataset.s); }; });
+  if ($('hNx')) { $('hNx').onclick = nextH; $('hNx').focus({ preventScroll: true }); }
+}
+function pickH(side) {
+  if (!HR || HR.done) return;
+  clearTimeout(HT.to); cancelAnimationFrame(HT.raf); clearTimeout(HT.raf);
+  var p = prog('higher'); if (!p || p.ans.length !== HR.i) return;
+  var ms = side ? Math.min(PC.HIGHER_MS, Math.round(performance.now() - HR.t0)) : PC.HIGHER_MS;
+  p.ans.push({ p: side, ms: ms }); p.cur = -1; setProg('higher', p);
+  HR.done = true; HR.pick = side; HR.win = PC.higherWin(HPZ.qs[HR.i], ctx);
+  drawH();
+}
+function finishH() {
+  var p = prog('higher'), S = PC.scoreHigher(HPZ, p.ans, ctx); HR = null;
+  $('higher').innerHTML = '<p class="src">점수를 보내는 중이에요…</p>';
+  submitDaily('higher', p.ans, S, { per: S.per }).then(function (x) { checkPerfect(TODAY); resultHigher(x); });
+}
+function resultHigher(x) {
+  var per = x.per || PC.scoreHigher(HPZ, x.ans, ctx).per;
+  var text = '연봉 놀이터 · 어디가 더 많이 줄까? ' + mmdd(TODAY) + '\n' + per.map(function (v) { return v ? '🟩' : '🟥'; }).join('') + '\n' + man(x.score) + '점 (' + x.aux + '/10)\n' + SITE_S;
+  $('higher').innerHTML = '<div class="over"><span class="lv">오늘의 도전 · ' + mmdd(TODAY) + '</span><div class="big">' + man(x.score) + '<small>점</small></div>' +
+    '<div class="ttl"><b>10문제 중 ' + x.aux + '개</b> 맞혔어요</div>' +
+    '<p>' + (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>이에요.' : esc(x.err || '')) + ' 내일 0시에 새 문제가 나와요.</p>' +
+    shareBox('shH') + '<div class="row"><button class="btn ghost" type="button" id="toE">무한 모드 하러 가기</button>' + againBtn('higher', dailyHigher) + '</div></div><div id="lbH"></div>';
+  wireShare('shH', text, { title: '어디가 더 많이 줄까?', big: man(x.score) + '점', sub: '10문제 중 ' + x.aux + '개 · ' + mmdd(TODAY), lines: [per.slice(0, 5).map(function (v) { return v ? '🟩' : '🟥'; }).join(''), per.slice(5).map(function (v) { return v ? '🟩' : '🟥'; }).join('')] });
+  $('toE').onclick = function () { document.querySelector('#hMode button[data-v="endless"]').click(); };
+  miniLb('lbH', 'higher');
+}
+
+// 무한 모드 (v1 게임 + 기준 돌리기)
+var E = null, ER = PC.rng(Math.random() + '|' + Date.now());
+var ETITLES = [[0, '연봉 새내기', '아직 감이 안 왔어요. 연봉 연구소에서 한 바퀴 돌고 오면 확 늘어요.'], [3, '눈치 빠른 대리', '업계 분위기는 꽤 알고 있어요.'], [6, '연봉 협상의 달인', '이 정도면 오퍼 받을 때 손해 볼 일은 없어요.'],
+  [10, '보상팀 의심', '혹시… 보상팀에서 일하세요?'], [15, '연봉 감별사', '15연속이면 진짜 감별사예요.'], [30, '인사팀 출신?', '이건 인사팀 출신이 아니면 설명이 안 돼요.']];
+function introE() {
+  var best = +(store.get('slp-best') || 0);
+  $('higher').innerHTML = '<div class="intro"><h3>무한 모드</h3><ul><li>목숨 3개, 틀릴 때마다 하나씩 잃어요. 맞힐수록 두 회사 차이가 좁아져요.</li><li>사람마다 문제가 달라서 순위 대신 내 최고 기록만 남겨요. 15연속이면 칭호 \'연봉 감별사\', 30연속이면 \'인사팀 출신?\'.</li></ul>' +
+    '<p style="margin:0">내 최고 기록 <b>' + best + '개</b></p><div class="row" style="justify-content:flex-start"><button class="btn" id="eGo" type="button">시작하기</button></div></div>';
+  $('eGo').onclick = newE;
+}
+function newE() { E = { score: 0, run: 0, lives: 3, used: {}, miss: [], round: 0 }; call('/play/start', { game: 'endless', dev: DEV }).catch(function () {}); nextE(); }
+function nextE() {
+  E.round++;
+  var q = PC.endlessQ(ER, ctx, E.round, E.score, E.used);
+  if (Object.keys(E.used).length > POOL.length - 40) E.used = {};
+  E.used[q.a] = E.used[q.b] = 1; E.cur = { q: q, done: false };
+  drawE();
+}
+function drawE() {
+  var R = E.cur, best = Math.max(+(store.get('slp-best') || 0), E.score), hs = '';
+  for (var i = 0; i < 3; i++) hs += '<span class="' + (i < E.lives ? '' : 'off') + '">♥</span>';
+  var h = '<div class="gbar"><span class="lv">무한 모드 · ROUND ' + E.round + '</span><span class="stat"><span>맞힌 개수 <b>' + E.score + '</b></span><span>연속 <b>' + E.run + '</b></span><span>최고 <b>' + best + '</b></span><span class="hearts" aria-label="남은 목숨 ' + E.lives + '개">' + hs + '</span></span></div>' + duelHtml(R.q, R);
+  h += R.done ? '<div class="res"><p class="msg">' + (R.ok ? '<b class="ok">정답!</b> ' : '<b class="no">아쉬워요.</b> ') + gapMsg(R.q, R.win) + '</p><button class="btn" id="eNx" type="button">' + (E.lives ? '다음 문제' : '결과 보기') + '</button></div>'
+    : '<div class="res"><p class="msg" style="color:var(--muted)">카드를 눌러 고르세요.</p></div>';
+  $('higher').innerHTML = h;
+  document.querySelectorAll('#higher .pick').forEach(function (b) { b.onclick = function () { pickE(b.dataset.s); }; });
+  if ($('eNx')) { $('eNx').onclick = function () { E.lives ? nextE() : overE(); }; $('eNx').focus({ preventScroll: true }); }
+}
+function pickE(s) {
+  var R = E.cur; if (R.done) return;
+  R.done = true; R.pick = s; R.win = PC.higherWin(R.q, ctx); R.ok = s === R.win;
+  if (R.ok) { E.score++; E.run++; if (E.run >= 15) award('eye'); if (E.run >= 30) award('hr'); }
+  else { E.lives--; E.run = 0; E.miss.push(R.q); }
+  drawE();
+}
+function overE() {
+  var best = Math.max(+(store.get('slp-best') || 0), E.score); store.set('slp-best', best);
+  var t = ETITLES.filter(function (x) { return E.score >= x[0]; }).pop();
+  var text = '연봉 놀이터 · 무한 모드 ' + E.score + '개 맞힘 · ' + t[1] + '\n나보다 잘 맞힐 자신 있으면 → ' + SITE_S;
+  $('higher').innerHTML = '<div class="over"><span class="lv">GAME OVER · 내 최고 ' + best + '개</span><div class="big">' + E.score + '<small>개 맞힘</small></div><div class="ttl"><b>' + t[1] + '</b></div><p>' + t[2] + '</p>' +
+    '<ul class="miss">' + E.miss.map(function (q) { var w = BYN[q[PC.higherWin(q, ctx)]]; return '<li>' + gapMsg(q, PC.higherWin(q, ctx)) + ' <a href="' + link(w) + '" target="_blank" rel="noopener">' + esc(w.n) + ' 직급별 연봉 →</a></li>'; }).join('') + '</ul>' +
+    shareBox('shE') + '<div class="row"><button class="btn" id="eAgain" type="button">다시 하기</button></div></div>';
+  wireShare('shE', text, { title: '무한 모드', big: E.score + '개', sub: t[1] + ' · 내 최고 ' + best + '개' });
+  $('eAgain').onclick = newE;
+  E = null;
+}
+
+
+// ── 02 오늘의 회사 — 숨은 회사 하나를 6번 안에 (힌트: 과장 연봉·업종·지역·직원 수·근속)
+var TPZ = null, TTOP = null;
+var TCOLS = ['과장 연봉', '업종', '지역', '직원 수', '근속'];
+function tileHtml(c) {
+  var ar = c.dir === 'up' ? ' ▲' : c.dir === 'down' ? ' ▼' : '', st = c.s === 'na' ? 'diff' : c.s;
+  var v = c.k === 'pay' ? man(c.v) : c.k === 'm' ? man(c.v) + '명' : c.k === 'tt' ? (c.v ? c.v.toFixed(1) + '년' : '-') : esc(c.v);
+  var sub = c.s === 'eq' ? '' : (c.k === 'grp' || c.k === 'sido') ? '다름' : c.s === 'near' ? '가까움' + ar : ar ? (c.dir === 'up' ? '더 높음' : '더 낮음') + ar : '';
+  var aria = TCOLS[['pay', 'grp', 'sido', 'm', 'tt'].indexOf(c.k)] + ' ' + (c.k === 'pay' ? man(c.v) + '만원' : v) + (c.s === 'eq' ? ', 맞음' : sub ? ', ' + sub.replace(/[▲▼]/g, '') : '');
+  return '<span class="tile ' + st + '" aria-label="' + esc(aria) + '">' + v + (sub ? '<small>' + sub + '</small>' : '') + '</span>';
+}
+function todayInfo() {
+  var y = PC.genToday(PC.addDays(TODAY, -1), ctx), t = TTOP;
+  return '<div class="tinfo"><span>오늘의 회사 <b>#' + TPZ.no + '</b></span>' +
+    (t ? '<span>오늘 정답자 <b>' + man(t.todayGame.ok) + '명</b> · 평균 <b>' + (t.todayGame.avg || '-') + '번</b>' + mockTag() + '</span>' : '') +
+    '<span>어제 정답 <b>' + esc(y.ans) + '</b>' + (t && t.yday.n ? ' · 정답률 ' + Math.round(t.yday.ok / t.yday.n * 100) + '%' : '') + '</span></div>';
+}
+function renderToday() {
+  TPZ = TPZ || PC.genToday(TODAY, ctx);
+  if (!TTOP) getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); if (!$('p-today').hidden && !prog('today')) renderToday(); } });
+  var x = rec(TODAY, 'today'), p = prog('today');
+  if (x) return resultToday(x);
+  if (!p) {
+    $('today').innerHTML = todayInfo() + '<div class="intro"><h3>오늘의 회사 #' + TPZ.no + '</h3><ul>' +
+      '<li>로고 있는 회사 약 600곳 중 하나예요. 30일 안에는 같은 회사가 다시 안 나와요. 월요일은 쉬운 회사, 주말은 어려운 회사예요.</li>' +
+      '<li>회사 이름을 넣으면 다섯 칸 힌트가 나와요. ▲ = 정답이 더 높음, ▼ = 더 낮음, 차이가 10% 안이면 노란 칸(가까움).</li>' +
+      '<li>시도가 적을수록, 같은 횟수면 빨리 맞힐수록 위예요. 4번째부터 첫 글자 힌트(−50점)를 볼 수 있어요.</li></ul>' + legend() +
+      '<div class="row" style="justify-content:flex-start"><button class="btn" id="tGo" type="button">시작하기</button></div></div>';
+    $('tGo').onclick = function () { $('tGo').disabled = true; startDaily('today').then(function (st) { setProg('today', { tok: st.tok, t0: st.t0, g: [], hint: 0 }); renderToday(); }); };
+    return;
+  }
+  drawToday(p);
+}
+function legend() {
+  return '<p class="legend"><span><i style="background:var(--t-eq)"></i>맞음·같음</span><span><i style="background:var(--t-near)"></i>10% 안 (가까움)</span><span><i style="background:var(--t-far)"></i>멀어요</span><span><i style="background:var(--t-diff)"></i>다름</span></p>';
+}
+function drawToday(p) {
+  var rows = p.g.map(function (n) { return PC.hintRow(ctx, n, TPZ.ans); });
+  var h = todayInfo() + '<div class="gform"><div class="fld"><label for="tIn">회사 이름 (' + (p.g.length + 1) + '번째 / 6)</label><input type="text" id="tIn" autocomplete="off" placeholder="예: 쿠팡, 기아, 네이버"><div class="ac" id="tAc" hidden></div></div>' +
+    '<button class="btn" id="tAdd" type="button" style="align-self:end">넣기</button></div>' +
+    (p.g.length >= 3 ? (p.hint ? '<p class="qsub">첫 글자 힌트: <b style="font-size:20px">' + esc(PC.firstChar(TPZ.ans)) + '</b> (−50점)</p>' : '<p class="qsub"><button class="btn sm ghost" id="tHint" type="button">첫 글자 힌트 보기 (−50점)</button></p>') : '') +
+    '<div class="grid5" role="table" aria-label="넣은 회사와 힌트"><div class="grow head" role="row"><span class="hn">넣은 회사</span>' + TCOLS.map(function (c) { return '<span>' + c + '</span>'; }).join('') + '</div>';
+  for (var i = 0; i < PC.TODAY_MAX; i++) {
+    var r = rows[i];
+    h += r ? '<div class="grow" role="row"><span class="gn">' + logo(BYN[r.n], 's') + '<span>' + esc(r.n) + '</span></span>' + r.cells.map(tileHtml).join('') + '</div>'
+      : '<div class="grow" role="row"><span class="gn" style="color:var(--muted)">' + (i + 1) + '번째</span>' + '<span class="tile empty"></span>'.repeat(5) + '</div>';
+  }
+  h += '</div>' + legend();
+  $('today').innerHTML = h;
+  var add = function (c, typed) {
+    if (!c && typed) c = POOL.filter(function (x) { return x.n === typed || x.o === typed; })[0];
+    if (!c) { toast('목록에서 회사를 골라 주세요. 게임에 나오는 회사만 넣을 수 있어요.'); return; }
+    if (p.g.indexOf(c.n) >= 0) { toast('이미 넣은 회사예요.'); return; }
+    p.g.push(c.n); setProg('today', p);
+    if (c.n === TPZ.ans || p.g.length >= PC.TODAY_MAX) return finishToday(p);
+    drawToday(p); $('tIn').focus();
+  };
+  ac($('tIn'), $('tAc'), POOL, add);
+  $('tAdd').onclick = function () { add(null, $('tIn').value.trim()); };
+  if ($('tHint')) $('tHint').onclick = function () { p.hint = 1; setProg('today', p); drawToday(p); };
+}
+function finishToday(p) {
+  var sec = Math.round((Date.now() - (p.t0 || Date.now())) / 1000), ans = { g: p.g, hint: p.hint, sec: sec }, S = PC.scoreToday(TPZ, ans, ctx);
+  $('today').innerHTML = '<p class="src">점수를 보내는 중이에요…</p>';
+  submitDaily('today', ans, S, { tries: S.tries, solved: S.solved, sec: sec }).then(function (x) { bumpStreak(TODAY); checkPerfect(TODAY); renderMe(); TTOP = null; resultToday(x); });
+}
+function resultToday(x) {
+  var A = BYN[TPZ.ans], g = (x.ans && x.ans.g) || [], rows = g.map(function (n) { return PC.hintRow(ctx, n, TPZ.ans); }).filter(Boolean);
+  var lines = rows.map(function (r) { return r.cells.map(function (c) { return PC.EMO[c.s]; }).join(''); });
+  var tries = x.solved ? x.tries + '/6' : 'X/6';
+  var text = '연봉 놀이터 · 오늘의 회사 #' + TPZ.no + ' ' + tries + '\n' + lines.join('\n') + '\n' + SITE_S;
+  $('today').innerHTML = todayInfo() + '<div class="over"><span class="lv">오늘의 회사 #' + TPZ.no + ' · ' + (x.solved ? '성공' : '다음 기회에') + '</span>' + logo(A, 'l') +
+    '<div class="ttl"><b>' + esc(A.n) + '</b></div><div class="big">' + tries + '</div>' +
+    '<p>' + (x.solved ? man(x.score) + '점 · ' : '6번 안에 못 맞혔어요. ') + (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>이에요.' : esc(x.err || '')) + '</p>' +
+    '<p>' + esc(A.n) + ' · ' + esc(A.grp) + ' · ' + esc(A.sido || '') + ' · 직원 ' + man(A.m) + '명 · 과장 ' + man(A.rk[2]) + '만원 · 평균 근속 ' + (A.tt ? A.tt.toFixed(1) + '년' : '-') + '</p>' +
+    '<div class="row"><a class="btn ghost sm" href="' + link(A) + '" target="_blank" rel="noopener">직급별 연봉 보기</a><a class="btn ghost sm" href="' + coLink(A) + '" target="_blank" rel="noopener">이 회사 가도 될까?</a></div>' +
+    shareBox('shT') + '<div class="row">' + againBtn('today', renderToday) + '</div></div><div id="lbT"></div>';
+  wireShare('shT', text, { title: '오늘의 회사 #' + TPZ.no, big: tries, sub: (x.solved ? man(x.score) + '점' : '아쉽게 실패') + ' · 정답은 비밀\n🔥 ' + streak() + '일 연속', lines: lines });
+  miniLb('lbT', 'today');
+}
+
+
+// ── 03 연봉 스나이퍼 — 5문제, 막대로 연봉 찍기 (오차 3% 이내 100점, 그 뒤 1%마다 4점↓)
+var SPZ = null, SST = null;
+function snEmo(p) { return p >= 90 ? '🎯' : p >= 60 ? '🟩' : p >= 30 ? '🟨' : '🟥'; }
+function pctX(v) { return (v - PC.SN_LO) / (PC.SN_HI - PC.SN_LO) * 100; }
+function renderSniper() {
+  SPZ = SPZ || PC.genSniper(TODAY, ctx);
+  var x = rec(TODAY, 'sniper'), p = prog('sniper');
+  if (x) return resultSniper(x);
+  if (!p) {
+    $('sniper').innerHTML = '<div class="intro"><h3>오늘의 스나이퍼 · ' + mmdd(TODAY) + '</h3><ul>' +
+      '<li>회사 로고와 직급이 나오면 막대를 밀어 그 직급 연봉(기본급 + 일반 성과급, 만원)을 찍어요.</li>' +
+      '<li>오차 3% 이내 100점, 그 뒤로 1%마다 4점씩 깎여 약 28%부터 0점. 5문제 합계 최대 500점.</li>' +
+      '<li>5문제 중 1문제는 이름보다 연봉이 훨씬 높거나 낮은 \'반전 회사\'예요.</li></ul>' +
+      '<div class="row" style="justify-content:flex-start"><button class="btn" id="sGo" type="button">시작하기</button></div></div>';
+    $('sGo').onclick = function () { $('sGo').disabled = true; startDaily('sniper').then(function (st) { setProg('sniper', { tok: st.tok, t0: st.t0, v: [] }); SST = null; renderSniper(); }); };
+    return;
+  }
+  drawSniper(p);
+}
+function drawSniper(p) {
+  var i = SST && SST.done ? SST.i : p.v.length;
+  if (i >= PC.SNIPER_N) return finishSniper(p);
+  var q = SPZ.qs[i], c = BYN[q.n], done = SST && SST.done && SST.i === i, truth = c.rk[q.ri];
+  var cur = done ? p.v[i] : (SST && SST.i === i ? SST.v : 7000);
+  var sc = PC.scoreSniper(SPZ, p.v, ctx);
+  var h = '<div class="gbar"><span class="lv">' + (i + 1) + ' / 5 문제</span><span class="stat"><span>점수 <b>' + sc.score + '</b></span></span></div>' +
+    '<div class="snq"><div class="who">' + logo(c, 'l') + '<span class="nm">' + esc(c.n) + '</span><span class="rk">' + RK[q.ri] + '</span></div>' +
+    '<p class="qsub" style="margin:0">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + ' — ' + RK[q.ri] + ' 연봉은 얼마일까요?</p>' +
+    '<div class="snv" aria-live="polite"><span id="snV">' + man(cur) + '</span><small>만원</small></div>' +
+    '<div class="sntrack">' + (done ? '<span class="truth" style="left:' + pctX(truth) + '%"><span>정답 ' + man(truth) + '</span></span>' : '') +
+    '<input type="range" id="snR" min="' + PC.SN_LO + '" max="' + PC.SN_HI + '" step="' + PC.SN_STEP + '" value="' + cur + '" aria-label="' + RK[q.ri] + ' 연봉 (만원)"' + (done ? ' disabled' : '') + '></div>' +
+    '<div class="snax"><span>' + man(PC.SN_LO) + '</span><span>' + man((PC.SN_LO + PC.SN_HI) / 2) + '</span><span>' + man(PC.SN_HI) + '</span></div>';
+  if (done) {
+    var e = PC.sniperErr(truth, p.v[i]), pts = PC.sniperPts(e);
+    h += '<div class="res"><p class="msg"><b class="' + (pts >= 60 ? 'ok' : 'no') + '">' + pts + '점</b> 정답 ' + man(truth) + '만원 · 오차 ' + (e > 0 ? '+' : '') + e + '%' +
+      (q.tw ? ' · <b>반전 회사</b>였어요. ' + esc(c.grp) + ' 과장 중간값보다 ' + (c.twist > 1 ? Math.round((c.twist - 1) * 100) + '% 많이' : Math.round((1 - c.twist) * 100) + '% 적게') + ' 받아요.' : '') + '</p>' +
+      '<button class="btn" id="sNx" type="button">' + (i + 1 < PC.SNIPER_N ? '다음 문제' : '결과 보기') + '</button></div>';
+  } else h += '<div class="row" style="justify-content:flex-start"><button class="btn ghost sm" type="button" data-d="-500">−500</button><button class="btn ghost sm" type="button" data-d="-50">−50</button><button class="btn ghost sm" type="button" data-d="50">+50</button><button class="btn ghost sm" type="button" data-d="500">+500</button><button class="btn" id="sShot" type="button">이 값으로 쏘기</button></div>';
+  $('sniper').innerHTML = h + '</div>';
+  if (done) { $('sNx').onclick = function () { SST = null; drawSniper(p); }; $('sNx').focus({ preventScroll: true }); return; }
+  SST = { i: i, v: cur, done: false };
+  var set = function (v) { v = PC.sniperVal(v); SST.v = v; $('snR').value = v; $('snV').textContent = man(v); };
+  $('snR').oninput = function () { set(this.value); };
+  document.querySelectorAll('#sniper [data-d]').forEach(function (b) { b.onclick = function () { set(SST.v + +b.dataset.d); }; });
+  $('sShot').onclick = function () { p.v[i] = SST.v; setProg('sniper', p); SST.done = true; drawSniper(p); };
+}
+function finishSniper(p) {
+  var S = PC.scoreSniper(SPZ, p.v, ctx);
+  $('sniper').innerHTML = '<p class="src">점수를 보내는 중이에요…</p>';
+  submitDaily('sniper', p.v, S, { per: S.per, errs: S.errs }).then(function (x) { if (x.score >= 450) award('sniper'); checkPerfect(TODAY); resultSniper(x); });
+}
+function resultSniper(x) {
+  var S = PC.scoreSniper(SPZ, x.ans, ctx), emo = S.per.map(snEmo).join('');
+  var text = '연봉 놀이터 · 연봉 스나이퍼 ' + mmdd(TODAY) + '\n' + emo + '\n' + x.score + '점 / 500\n' + SITE_S;
+  var tb = '<div class="tw"><table class="tbl"><thead><tr><th>회사 · 직급</th><th>내 값</th><th>정답</th><th>오차</th><th>점수</th><th>사람들 평균 오차</th></tr></thead><tbody>' +
+    SPZ.qs.map(function (q, i) { var c = BYN[q.n], e = S.errs[i];
+      return '<tr><td>' + esc(c.n) + ' ' + RK[q.ri] + (q.tw ? ' <span class="tag">반전</span>' : '') + '</td><td>' + (x.ans[i] ? man(x.ans[i]) : '-') + '</td><td>' + man(c.rk[q.ri]) + '</td><td class="' + (e > 0 ? 'up' : 'dn') + '">' + (e == null ? '-' : (e > 0 ? '+' : '') + e + '%') + '</td><td>' + S.per[i] + '</td><td class="crowd' + i + '">…</td></tr>'; }).join('') + '</tbody></table></div>';
+  $('sniper').innerHTML = '<div class="over"><span class="lv">연봉 스나이퍼 · ' + mmdd(TODAY) + '</span><div class="big">' + x.score + '<small>점 / 500</small></div><div class="ttl"><b>' + emo + '</b></div>' +
+    '<p>' + (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>이에요.' : esc(x.err || '')) + '</p>' + tb + '<p class="crowd" id="snCrowd" hidden></p>' +
+    shareBox('shS') + '<div class="row">' + againBtn('sniper', renderSniper) + '</div></div><div id="lbS"></div>';
+  wireShare('shS', text, { title: '연봉 스나이퍼', big: x.score + '점', sub: '500점 만점 · ' + mmdd(TODAY), lines: [emo] });
+  getTop('sniper').then(function (t) {
+    if (!t || !t.stat.err) return;
+    var best = -1, mx = 0;
+    t.stat.err.forEach(function (e, i) { var cell = document.querySelector('#sniper .crowd' + i); if (cell) cell.textContent = e == null ? '-' : (e > 0 ? '+' : '') + e + '%'; if (e != null && Math.abs(e) > mx) { mx = Math.abs(e); best = i; } });
+    if (best >= 0 && mx >= 5) { var q = SPZ.qs[best], e2 = t.stat.err[best];
+      $('snCrowd').hidden = false; $('snCrowd').innerHTML = '사람들은 <b>' + esc(BYN[q.n].n) + ' ' + RK[q.ri] + '</b>를 평균 <b>' + Math.round(Math.abs(e2)) + '% ' + (e2 > 0 ? '높게' : '낮게') + '</b>봤어요.' + mockTag(); }
+    var el = $('lbS'); if (el) el.innerHTML = lbAll(t, 'sniper') + '<p class="src"><a href="#hall">순위 · 명예의 전당 전체 보기 →</a></p>';
+  });
+}
+
+
+// ── 04 이직 로드 10년 — 2년마다 제안 고르기 × 5번. 같은 날 같은 선택이면 누구나 같은 제안·사건(씨앗)
+var RPZ = null, RREV = false;
+function rankName(x) { return RK[Math.min(4, Math.floor(x / 4))]; }
+function scaleLb(c) { return c.m >= 10000 ? '직원 1만 명 넘는 대기업' : c.m >= 3000 ? '큰 회사' : '중견 회사'; }
+function sigHtml(c, of) {
+  var s = ['<span>' + esc(c.grp) + '</span>', '<span>' + scaleLb(c) + '</span>'];
+  s.push(c.rt ? '<span class="' + (c.rt < 3 ? 'risk' : c.rt >= 3.7 ? 'goodsig' : '') + '">평점 ' + c.rt.toFixed(1) + '</span>' : '<span>평점 정보 없음</span>');
+  s.push(c.to < .06 ? '<span class="goodsig">퇴사율 낮음</span>' : c.to < .12 ? '<span>퇴사율 보통</span>' : '<span class="risk">퇴사율 높음</span>');
+  if (c.jump) s.push('<span>성과급 변동 큼</span>');
+  if (c.my >= 15) s.push('<span>폭풍 성장</span>'); else if (c.my <= -10) s.push('<span class="risk">인원 줄어드는 중</span>');
+  if (of && of.reach) s.push('<span class="risk">스펙보다 높은 제안 · 떨어질 수 있음</span>');
+  return '<span class="sig">' + s.join('') + '</span>';
+}
+function roadState(p) { return PC.simRoad(RPZ, ctx, p.picks.concat([2, 2, 2, 2, 2]).slice(0, 5)); }   // 아직 안 고른 칸은 '남기'로 채워 지금까지만 본다
+function renderRoad() {
+  RPZ = RPZ || PC.genRoad(TODAY, ctx);
+  var x = rec(TODAY, 'road'), p = prog('road');
+  if (x) return resultRoad(x);
+  if (!p) {
+    $('road').innerHTML = '<div class="intro"><h3>오늘의 이직 로드 · ' + mmdd(TODAY) + '</h3><ul>' +
+      '<li>신입으로 출발해요. 첫 직장을 고르고, 2년마다 제안 2장 중 하나를 고르거나 남아요. 모두 다섯 번 골라요.</li>' +
+      '<li>고르는 순간엔 업종·규모·평점·퇴사율 같은 신호만 보여요. 회사 이름은 고른 뒤에 공개해요.</li>' +
+      '<li>2년마다 사건 카드가 나와요: 성과급 큰 해, 구조조정(퇴사율·평점 낮은 회사일수록 잘 나옴), 이직 연봉 협상(실제 이직자 인상률 분포), 이직 실패(스펙보다 너무 높은 제안).</li>' +
+      '<li>점수는 10년 누적 연봉이에요. 같은 날엔 모두 같은 제안·사건을 받아요.</li></ul>' +
+      '<div class="row" style="justify-content:flex-start"><button class="btn" id="rGo" type="button">출발하기</button></div></div>';
+    $('rGo').onclick = function () { $('rGo').disabled = true; startDaily('road').then(function (st) { setProg('road', { tok: st.tok, t0: st.t0, picks: [] }); RREV = false; renderRoad(); }); };
+    return;
+  }
+  drawRoad(p);
+}
+function drawRoad(p) {
+  var k = p.picks.length, R = roadState(p), last = k ? R.log[k - 1] : null;
+  if (k >= 5 && !RREV) return finishRoad(p);
+  var x = RREV ? 2 * (k - 1) : 2 * k, done = R.years.slice(0, 2 * (RREV ? k : k)), sum = done.reduce(function (a, b) { return a + b; }, 0);
+  var c = last ? BYN[last.co] : null, s = last ? last.y2 : 0;
+  var h = '<div class="rstate"><div class="k"><div class="l">지금</div><div class="v">' + (k ? (RREV ? 2 * k - 1 : 2 * k + 1) + '년 차' : '취준생') + '</div></div>' +
+    '<div class="k"><div class="l">회사</div><div class="v">' + (c ? esc(c.n) : '-') + '</div></div>' +
+    '<div class="k"><div class="l">지금 연봉</div><div class="v">' + (k ? man(RREV ? last.y2 + last.bonus : s) + '만' : '-') + '</div></div>' +
+    '<div class="k"><div class="l">지금까지 누적</div><div class="v">' + (sum ? eokS(sum) : '-') + '</div></div></div>';
+  if (RREV) {   // 방금 고른 2년의 결과
+    var L = last, co = BYN[L.co];
+    var msg = L.failed ? '<b class="ev">이직 실패.</b> ' + esc(L.o) + ' 최종 면접에서 떨어져 ' + esc(co.n) + '에 그대로 남았어요.'
+      : L.moved ? (L.k ? '<b class="evg">' + esc(co.n) + '로 이직!</b> 협상 결과 ' + L.nego.toFixed(2) + '배로 첫해 ' + man(L.start) + '만원.' : '<b class="evg">' + esc(co.n) + ' 입사!</b> 첫 연봉 ' + man(L.start) + '만원.')
+      : esc(co.n) + '에 남았어요. 올해 ' + man(L.start) + '만원.';
+    var ev = L.ev === 'cut' ? ' <b class="ev">구조조정 바람:</b> 2년째 연봉이 동결됐어요.' : L.ev === 'jump' ? ' <b class="evg">성과급 큰 해:</b> 성과급 +' + man(L.bonus) + '만원!' : L.ev === 'star' ? ' <b class="evg">고과 S:</b> 2년째 +5%.' : ' 큰 일 없이 2년이 지났어요.';
+    h += '<ul class="rlog"><li>' + msg + ev + '</li></ul><div class="row" style="justify-content:flex-start;margin-top:12px"><button class="btn" id="rNx" type="button">' + (k < 5 ? '2년 뒤로' : '10년 결과 보기') + '</button></div>';
+    $('road').innerHTML = h + roadLog(R, k - 1);
+    $('rNx').onclick = function () { RREV = false; drawRoad(p); }; $('rNx').focus({ preventScroll: true });
+    return;
+  }
+  var st = RPZ.steps[k], cards = st.o.map(function (o, j) {
+    var T = BYN[o.n], of = PC.roadOffer(ctx, o, x, s);
+    var ttl = o.kind === 'new' ? '신입 공채' : o.kind === 'up' ? rankName(x + 4) + ' 제안 · 한 직급 위' : rankName(x) + ' 제안 · 같은 직급';
+    return '<button class="offer" type="button" data-j="' + j + '"><span class="ol">' + 'ABC'[j] + '</span><span class="ot">' + esc(T.grp) + ' ' + ttl + '</span>' +
+      '<span class="om">' + man(of.lo) + '~' + man(of.hi) + '<small>만원</small></span>' + sigHtml(T, of) + '</button>';
+  });
+  if (k) {
+    var nx = s * PC.curve(c, x) / PC.curve(c, x - 1);
+    cards.push('<button class="offer stay" type="button" data-j="2"><span class="ol">C</span><span class="ot">남기 · ' + esc(c.n) + '</span><span class="om">' + man(nx) + '<small>만원</small></span>' +
+      '<span class="sig"><span>' + (Math.floor(x / 4) > Math.floor((x - 2) / 4) ? rankName(x) + ' 승진' : '같은 직급') + '</span>' + (PC.roadRisk(c) >= .15 ? '<span class="risk">구조조정 걱정</span>' : '<span class="goodsig">이직 위험 없음</span>') + '</span></button>');
+  }
+  h += '<p class="qline">' + (k ? (x + 1) + '년 차, <b>제안이 왔어요</b>' : '첫 직장을 <b>골라요</b>') + '</p><p class="qsub">' + (k ? '연봉 범위는 협상에 따라 달라져요. 회사 이름은 고른 뒤에 공개해요.' : '세 곳 모두 붙었어요. 신호만 보고 하나를 고르세요.') + '</p>' +
+    '<div class="offers">' + cards.join('') + '</div>';
+  $('road').innerHTML = h + roadLog(R, k - 1);
+  document.querySelectorAll('#road .offer').forEach(function (b) { b.onclick = function () { p.picks.push(+b.dataset.j); setProg('road', p); RREV = true; drawRoad(p); }; });
+}
+function roadLog(R, upto) {
+  if (upto < 0) return '';
+  return '<ul class="rlog">' + R.log.slice(0, upto + 1).map(function (L) {
+    return '<li>' + (L.x + 1) + '~' + (L.x + 2) + '년 차 · <b>' + esc(L.co) + '</b> ' + man(L.start) + ' → ' + man(L.y2 + L.bonus) + '만원' + (L.failed ? ' · 이직 실패' : L.moved && L.k ? ' · 이직' : '') + (L.ev === 'cut' ? ' · 구조조정' : L.ev === 'jump' ? ' · 성과급 큰 해' : L.ev === 'star' ? ' · 고과 S' : '') + '</li>'; }).join('') + '</ul>';
+}
+function finishRoad(p) {
+  var S = PC.scoreRoad(RPZ, p.picks, ctx);
+  $('road').innerHTML = '<p class="src">점수를 보내는 중이에요…</p>';
+  submitDaily('road', S.picks, S, { picks: S.picks }).then(function (x) { if (x.sent && x.rank <= Math.max(1, Math.floor(x.total / 100))) award('road'); resultRoad(x); });
+}
+function roadZorro(R) {
+  var mv = R.log.filter(function (l) { return l.moved && l.k; }), out = [];
+  var risky = R.log.filter(function (l) { return l.moved && BYN[l.co].rt && BYN[l.co].rt < 3; })[0];
+  if (risky) out.push(risky.k ? (risky.x + 1) + '년 차 ' + risky.co + ', 연봉은 올랐지만 평점 ' + BYN[risky.co].rt.toFixed(1) + '은 늘 위험 신호였어요.'
+    : '첫 직장 ' + risky.co + '의 평점 ' + BYN[risky.co].rt.toFixed(1) + '은 처음부터 위험 신호였어요. 신입 때는 연봉보다 배울 수 있는 곳인지가 더 중요해요.');
+  if (R.log.some(function (l) { return l.failed; })) out.push('스펙보다 높은 제안에 도전했다가 한 번 떨어졌어요. 높은 제안은 붙을 확률까지 같이 계산하세요.');
+  if (!mv.length) out.push('첫 직장에서 10년을 지켰어요. 안정은 좋지만, 대리 때 한 번은 시장 가격을 확인해 볼 만했어요.');
+  else if (mv.length >= 4) out.push('2년마다 옮겼어요. 돈은 늘지만 실제 서류 심사에선 \'잦은 이직\'으로 읽혀 깎일 수 있어요.');
+  else out.push('이직 ' + mv.length + '번으로 10년 누적 ' + eokS(R.total) + '. 2~3번 옮기며 직급을 올리는 건 실제로도 가장 흔한 \'잘된 길\'이에요.');
+  if (out.length < 2 && R.log.some(function (l) { return l.ev === 'cut'; })) out.push('구조조정을 만난 해가 있었어요. 퇴사율 높은 회사는 그만큼 흔들릴 일도 많아요.');
+  return out.slice(0, 2).join(' ');
+}
+function roadChart(a, b) {
+  var nar = window.innerWidth < 560, W = nar ? 380 : 640, H = nar ? 240 : 260, L = 46, Rr = 16, T = 14, B = 28, all = a.concat(b || [], [10000]), mx = Math.max.apply(null, all), mn = Math.min.apply(null, all);
+  var step = mx - mn > 8000 ? 2000 : 1000, y0 = Math.floor(mn / step) * step, y1 = Math.ceil(mx / step) * step;
+  var X = function (t) { return L + (W - L - Rr) * t / 9; }, Y = function (v) { return T + (H - T - B) * (1 - (v - y0) / (y1 - y0)); };
+  var g = '', pth = function (arr) { return arr.map(function (v, t) { return (t ? 'L' : 'M') + X(t).toFixed(1) + ' ' + Y(v).toFixed(1); }).join(''); };
+  for (var v = y0; v <= y1; v += step) g += '<line class="ax" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/><text class="tx" x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + (v >= 10000 ? (v / 10000).toFixed(v % 10000 ? 1 : 0) + '억' : man(v) + '만') + '</text>';
+  for (var t = 0; t < 10; t++) g += '<text class="tx" x="' + X(t) + '" y="' + (H - 8) + '" text-anchor="middle">' + (t % 3 === 0 || t === 9 ? (t + 1) + '년' : '') + '</text>';
+  g += '<line class="eok" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + Y(10000) + '" y2="' + Y(10000) + '"/>';
+  if (b) g += '<path class="bst" d="' + pth(b) + '"/>';
+  g += '<path class="me" d="' + pth(a) + '"/>';
+  return '<div class="chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="10년 연도별 연봉: 내 길' + (b ? '과 오늘 1위의 길' : '') + '">' + g + '</svg><div class="leg"><span><i></i>내 길</span>' + (b ? '<span><i class="b"></i>오늘 1위의 길</span>' : '') + '<span>점선: 연봉 1억</span></div></div>';
+}
+function resultRoad(x) {
+  var R = PC.simRoad(RPZ, ctx, x.picks || x.ans), path = R.log.map(function (l) { return l.failed ? '💥' : l.moved ? (l.k ? '🚀' : '🎓') : '🏠'; }).join('');
+  var text = '연봉 놀이터 · 이직 로드 10년 ' + mmdd(TODAY) + '\n' + path + '\n10년 누적 ' + eokS(R.total) + (R.eok ? ' · 1억 ' + R.eok + '년 차' : ' · 1억 못 찍음') + '\n' + SITE_S;
+  $('road').innerHTML = '<div class="over"><span class="lv">이직 로드 10년 · ' + mmdd(TODAY) + '</span><div class="big" style="font-size:clamp(44px,8vw,90px)">' + eokS(R.total) + '</div>' +
+    '<div class="ttl"><b>' + (R.eok ? '연봉 1억, ' + R.eok + '년 차에 찍었어요' : '10년 안에 1억은 못 찍었어요') + '</b></div><p>' + path + ' · ' + (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>' : esc(x.err || '')) + '</p>' +
+    '<div id="rChart" style="width:100%">' + roadChart(R.years) + '</div>' +
+    '<div class="zorro"><div class="who"><i></i>조로의 한마디</div><p>' + esc(roadZorro(R)) + '</p></div>' + roadLog(R, 4).replace('class="rlog"', 'class="rlog" style="width:100%;text-align:left"') +
+    shareBox('shR') + '<div class="row">' + againBtn('road', function () { RREV = false; renderRoad(); }) + '</div></div><div id="lbR"></div>';
+  wireShare('shR', text, { title: '이직 로드 10년', big: eokS(R.total), sub: (R.eok ? '1억 ' + R.eok + '년 차' : '1억 못 찍음') + ' · ' + mmdd(TODAY), lines: [path] });
+  getTop('road').then(function (t) {
+    if (!t) return;
+    var b = t.stat.best;
+    if (b && b.picks && b.picks.length === 5) { var B2 = PC.simRoad(RPZ, ctx, b.picks); $('rChart').innerHTML = roadChart(R.years, B2.years) + '<p class="src">오늘 1위 ' + esc(b.nick) + ': ' + B2.log.map(function (l) { return l.co; }).filter(function (n, i, a) { return a.indexOf(n) === i; }).map(esc).join(' → ') + ' · ' + eokS(B2.total) + mockTag() + '</p>'; }
+    var el = $('lbR'); if (el) el.innerHTML = lbAll(t, 'road') + '<p class="src"><a href="#hall">순위 · 명예의 전당 전체 보기 →</a></p>';
+  });
+}
+
+
+// ── 05 드림 컴퍼니 월드컵 — 연봉은 가리고 고르기. 고를 때마다 전국 선택률, 우승하면 진짜 성적표
+var CUP = null, CSTAT = null, CTODAY = 0, CTHEME = 'all';
+function pctS(v) { return v == null ? '-' : Math.round(v * 1000) / 10 + '%'; }
+function loadCupStat() {
+  return call('/play/cup').then(function (j) { CSTAT = {}; (j.rows || []).forEach(function (r) { CSTAT[r[0]] = [r[1], r[2], r[3]]; }); CTODAY = j.today || 0; }).catch(function () { CSTAT = CSTAT || {}; });
+}
+function rate(n) { var s = CSTAT && CSTAT[n]; return s && s[0] >= 20 ? s[1] / s[0] : null; }
+function themeBar() {
+  return '<div class="toolbar"><div class="seg" id="cupTh" aria-label="테마">' + Object.keys(PC.THEMES).map(function (k) { return '<button type="button" data-v="' + k + '" aria-pressed="' + (k === CTHEME) + '">' + PC.THEMES[k] + '</button>'; }).join('') + '</div>' +
+    '<span class="src" style="margin:0">오늘 <b>' + man(CTODAY) + '판</b>' + mockTag() + '</span></div>';
+}
+function wireTheme() {
+  document.querySelectorAll('#cupTh button').forEach(function (b) { b.onclick = function () { CTHEME = b.dataset.v; newCup(); }; });
+}
+function renderCup() { if (!CSTAT) loadCupStat().then(function () { CUP ? cupDraw() : newCup(); }); else if (CUP) cupDraw(); else newCup(); }
+function newCup() {
+  var pool = PC.cupPool(ctx, CTHEME), n = PC.cupSize(pool), r = PC.rng(Math.random() + '|cup'), L = PC.shuffleR(r, pool).slice(0, n);
+  CUP = { theme: CTHEME, all: L, round: L, next: [], i: 0, picks: [], last: null, started: false };
+  cupDraw();
+}
+function cupDraw() {
+  var R = CUP.round, n = R.length, lv = n === 2 ? '결승' : n + '강', a = R[CUP.i], b = R[CUP.i + 1], dots = '';
+  for (var k = 0; k < n / 2; k++) dots += '<i class="' + (k < CUP.i / 2 ? 'on' : '') + '"></i>';
+  var pr = '';
+  if (CUP.last) { var rt = rate(CUP.last.n); pr = rt == null ? esc(CUP.last.n) + '는 아직 고른 사람이 적은 회사예요.' : '전국 <b>' + Math.round(rt * 100) + '%</b>가 ' + esc(CUP.last.n) + '를 골랐어요.' + mockTag(); }
+  $('cup').innerHTML = themeBar() + '<div class="cupbar"><span class="lv">' + PC.THEMES[CUP.theme] + ' · ' + lv + '</span><span class="pg">' + (CUP.i / 2 + 1) + ' / ' + n / 2 + '</span><span class="dots">' + dots + '</span></div>' +
+    '<p class="qline">어디로 <b>가고 싶어요?</b></p><p class="qsub">연봉은 아직 비밀이에요.</p>' +
+    '<div class="duel">' + [a, b].map(function (c, j) { return '<button class="pick" type="button" data-j="' + j + '">' + logo(c) + '<span class="nm">' + esc(c.n) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + '</span><span class="amt q">?</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
+    '<p class="prate" aria-live="polite">' + pr + '</p>';
+  wireTheme();
+  document.querySelectorAll('#cup .pick').forEach(function (el) { el.onclick = function () {
+    if (!CUP.started) { CUP.started = true; call('/play/start', { game: 'cup', dev: DEV }).catch(function () {}); }
+    var w = +el.dataset.j ? b : a, l = w === a ? b : a;
+    CUP.picks.push([w.n, l.n]); CUP.next.push(w); CUP.last = w; CUP.i += 2;
+    if (CUP.i >= n) { CUP.round = CUP.next; CUP.next = []; CUP.i = 0; }
+    CUP.round.length === 1 ? cupEnd(CUP.round[0]) : cupDraw();
+  }; });
+}
+function cupEnd(w) {
+  var theme = CUP.theme, all = CUP.all, picks = CUP.picks;
+  call('/play/cup', { dev: DEV, theme: theme, picks: picks }).catch(function () {}).then(function () { return loadCupStat(); }).then(function () { cupReport(w, theme, all); });
+  CUP = null;
+}
+function cupReport(w, theme, all) {
+  var by = all.slice().sort(function (x, y) { return y.rk[1] - x.rk[1]; }), r = by.indexOf(w) + 1, top = by[0], N = all.length;
+  var pool = PC.cupPool(ctx, theme), wins = function (c) { var s = CSTAT[c.n]; return s ? s[2] : 0; };
+  var want = pool.slice().sort(function (x, y) { return wins(y) - wins(x) || (rate(y.n) || 0) - (rate(x.n) || 0); }).slice(0, 10);
+  var pay = pool.slice().sort(function (x, y) { return y.rk[2] - x.rk[2]; }).slice(0, 10), payN = pay.map(function (c) { return c.n; });
+  var wr = pool.slice().sort(function (x, y) { return wins(y) - wins(x); }).indexOf(w) + 1;
+  var tw = r === 1 ? '연봉까지 ' + N + '곳 중 1등을 골랐어요. 안목 인정이에요.'
+    : r <= 4 ? '대리 연봉도 ' + N + '곳 중 ' + r + '위, 상위권이에요. 마음과 지갑이 같은 방향이네요.'
+    : '대리 연봉은 ' + N + '곳 중 ' + r + '위예요. 연봉 1등은 ' + esc(top.n) + '(' + man(top.rk[1] - w.rk[1]) + '만원 더)였어요.';
+  var text = '연봉 놀이터 · 드림 컴퍼니 월드컵 (' + PC.THEMES[theme] + ')\n🏆 ' + w.n + ' (대리 연봉 ' + N + '곳 중 ' + r + '위)\n' + SITE_S;
+  $('cup').innerHTML = themeBar() + '<div class="rep"><span class="crown">WINNER · 내 드림 컴퍼니 · ' + PC.THEMES[theme] + '</span>' + logo(w, 'l') + '<span class="nm"><b>' + esc(w.n) + '</b></span>' +
+    '<p class="twist" style="background:none;padding:0">전국 우승 순위 <b>' + wr + '위</b> (' + PC.THEMES[theme] + ' ' + pool.length + '곳 중, 우승 ' + man(wins(w)) + '번)' + mockTag() + '</p>' +
+    '<div class="stats"><div><small>신입 기준 연봉</small><b>' + (w.s0 ? man(w.s0) + '만' : '-') + '</b></div><div><small>대리</small><b>' + man(w.rk[1]) + '만</b></div><div><small>부장</small><b>' + eokS(w.rk[4]) + '</b></div>' +
+    '<div><small>1년 퇴사율</small><b>' + pctS(w.to) + '</b></div><div><small>평균 근속</small><b>' + (w.tt ? w.tt.toFixed(1) + '년' : '-') + '</b></div><div><small>직원</small><b>' + man(w.m) + '명</b></div></div>' +
+    '<p class="twist">' + tw + '</p>' +
+    '<div class="row"><a class="btn" href="' + coLink(w) + '" target="_blank" rel="noopener">이 회사 가도 될까? 판단 보기</a><a class="btn ghost" href="' + link(w) + '" target="_blank" rel="noopener">직급별 연봉 보기</a></div>' +
+    shareBox('shC') + '<div class="row"><button class="btn ghost" id="cupAgain" type="button">새 ' + N + '강 하기</button></div>' +
+    '<p class="h3" style="margin-top:6px">가고 싶은 회사 vs 연봉 높은 회사 · ' + PC.THEMES[theme] + mockTag() + '</p>' +
+    '<div class="vs2"><div><b>가고 싶은 TOP 10</b> <small class="src">(전국 우승 횟수)</small><ol>' + want.map(function (c) { return '<li class="' + (payN.indexOf(c.n) < 0 ? 'off' : '') + '">' + esc(c.n) + ' <small>· 과장 ' + man(c.rk[2]) + '</small></li>'; }).join('') + '</ol></div>' +
+    '<div><b>연봉 TOP 10</b> <small class="src">(과장 연봉)</small><ol>' + pay.map(function (c) { return '<li>' + esc(c.n) + ' <small>· ' + man(c.rk[2]) + '만원</small></li>'; }).join('') + '</ol></div></div>' +
+    '<p class="src">빨간 이름: 인기는 TOP 10인데 연봉은 TOP 10 밖인 곳이에요.</p>' +
+    '<details class="brk"><summary>이번 ' + N + '곳 대리 연봉 순위 보기</summary><ol>' + by.map(function (c) { return '<li>' + (c === w ? '<b>' + esc(c.n) + '</b>' : esc(c.n)) + ' · ' + man(c.rk[1]) + '만원</li>'; }).join('') + '</ol></details></div>';
+  wireTheme();
+  wireShare('shC', text, { title: '드림 컴퍼니 월드컵', big: '🏆', sub: w.n + '\n대리 연봉 ' + N + '곳 중 ' + r + '위 · ' + PC.THEMES[theme] });
+  $('cupAgain').onclick = newCup;
+}
+
+
+// ── 순위 · 명예의 전당 탭
+var HG = 'higher';
+function renderHall() {
+  var b = badges();
+  $('hall').innerHTML = '<div class="toolbar"><div class="seg" id="hallSeg">' + PC.DAILY.map(function (g) { return '<button type="button" data-v="' + g + '" aria-pressed="' + (g === HG) + '">' + GNAME[g] + '</button>'; }).join('') + '</div></div>' +
+    '<div id="hallLb"><p class="src">순위를 불러오는 중이에요…</p></div>' +
+    '<p class="h3">내 칭호</p><p class="src" style="margin:0">이 기기에만 저장되고, 닉네임 옆에 가장 최근 칭호가 보여요. 연속 출석 🔥 ' + streak() + '일.</p>' +
+    '<div class="badges">' + BADGES.map(function (x) { return '<div class="bdg' + (b[x[0]] ? ' on' : '') + '"><b>' + x[1] + '</b>' + x[2] + (b[x[0]] ? ' · ' + mmdd(b[x[0]]) : '') + '</div>'; }).join('') + '</div>' +
+    '<p class="h3">이번 주 내 기록</p><div class="tw"><table class="tbl"><thead><tr><th>게임</th>' + PC.weekDays(TODAY).map(function (d) { return '<th>' + mmdd(d) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    PC.DAILY.map(function (g) { return '<tr><td>' + GNAME[g] + '</td>' + PC.weekDays(TODAY).map(function (d) { var x = rec(d, g); return '<td>' + (x ? (g === 'road' ? eokS(x.score) : man(x.score)) : d > TODAY ? '' : '0') + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+  document.querySelectorAll('#hallSeg button').forEach(function (bt) { bt.onclick = function () { HG = bt.dataset.v; renderHall(); }; });
+  getTop(HG).then(function (t) { var el = $('hallLb'); if (el) el.innerHTML = t ? lbAll(t, HG) : '<p class="src">순위를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</p>'; });
+}
+
+// ── 도구: 직급 환산기 · 실시간 월급 (v1 에서 옮김, 공유 카드 유지)
+var FAM = ['삼성전자', 'SK하이닉스', '현대자동차', '기아', 'LG전자', 'LG에너지솔루션', 'NAVER', '네이버', '카카오', '쿠팡', 'SK텔레콤', 'KT', '이마트', '롯데쇼핑', '대한항공', '한국전력공사', '신한은행', '포스코', '현대모비스']
+  .map(function (n) { return BYN[n]; }).filter(Boolean);
+function rankPos(c, v) { var r = c.rk; if (v < r[0] * .9) return -1; if (v > r[4] * 1.1) return 5;
+  for (var i = 0; i < 4; i++) if (v < r[i + 1]) return Math.max(0, i + (v - r[i]) / (r[i + 1] - r[i])); return 4; }
+function rankLb(p) { return p < 0 ? '사원 연봉에도 못 미침' : p >= 5 ? '부장보다 많음' : RK[Math.round(Math.min(4, p))] + '급'; }
+function rankTool() {
+  var v = +$('rkPay').value;
+  if (!(v >= 1000 && v <= 100000)) { $('rkOut').innerHTML = '<p class="src">1,000만원에서 10억 사이로 넣어 주세요.</p>'; return; }
+  var G6 = { '-1': [], 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+  POOL.forEach(function (c) { var p = rankPos(c, v); G6[p < 0 ? -1 : p >= 5 ? 5 : Math.round(Math.min(4, p))].push(c); });
+  var up = G6[2].length + G6[3].length + G6[4].length + G6[5].length;
+  var h = '<p class="big1">연봉 ' + man(v) + '만원이면, 아는 회사 ' + POOL.length + '곳 중 <b>' + up + '곳</b>에서 과장 이상이에요.</p>';
+  h += '<div class="chips">' + FAM.map(function (c) { var p = rankPos(c, v); return '<span class="chip' + (p >= 2 ? ' hi' : '') + '">' + esc(c.n) + ' <b>' + rankLb(p) + '</b></span>'; }).join('') + '</div>';
+  var ends = function (L, txt) { if (!L.length) return ''; L = L.slice().sort(function (a, b) { return b.m - a.m; });
+    return '<p class="endl">' + L.slice(0, 4).map(function (c) { return '<b>' + esc(c.n) + '</b>'; }).join(', ') + (L.length > 4 ? ' 등 ' : ' ') + L.length + '곳은 ' + txt + '</p>'; };
+  h += ends(G6[5], '내 연봉이 그 회사 부장보다도 많아요.') + ends(G6[-1], '사원 연봉이 이미 내 연봉보다 많아요.');
+  h += '<div class="rcols">' + [[0, '사원급'], [1, '대리급'], [2, '과장급'], [3, '차장급'], [4, '부장급']].filter(function (k) { return G6[k[0]].length; }).map(function (k) {
+    var L = G6[k[0]].slice().sort(function (a, b) { return b.m - a.m; });
+    return '<div class="rcol"><h4>' + k[1] + '<small>' + L.length + '곳</small></h4><ul>' + L.slice(0, 5).map(function (c) { return '<li><span>' + esc(c.n) + '</span><small>' + man(c.rk[k[0]]) + '</small></li>'; }).join('') + '</ul>' +
+      (L.length > 5 ? '<p class="more">외 ' + (L.length - 5) + '곳</p>' : '') + '</div>'; }).join('') + '</div>';
+  var top = FAM.filter(function (c) { return rankPos(c, v) >= 2; }).slice(0, 3).map(function (c) { return c.n; });
+  h += shareBox('shRk') + '<p class="src">회사 옆 숫자는 그 직급의 추정 연봉(만원)이에요. 상장사 매출 상위 500곳·직원 1,000명 이상 회사 기준이고, 직급 연봉 사이에서 더 가까운 쪽으로 묶었어요.</p>';
+  $('rkOut').innerHTML = h;
+  wireShare('shRk', '내 연봉이면 아는 회사 ' + POOL.length + '곳 중 ' + up + '곳에서 과장 이상' + (top.length ? ' (' + top.join(', ') + ')' : '') + '\n내 직급 환산해 보기 → ' + SITE_S + '/#tools', { title: '직급 환산기', big: up + '곳', sub: '에서 과장 이상\n아는 회사 ' + POOL.length + '곳 중' });
+}
+var LV = { c: BYN['삼성전자'] || FAM[0], t0: performance.now(), raf: 0 };
+function perSec(manwon) { return manwon * 10000 / 31536000; }
+function liveDraw() {
+  var me = +$('lvPay').value || 0, c = LV.c, ex = c.ex && c.ex > c.rk[4] ? c.ex : 0;
+  var rows = [['me2', '나', '연봉 ' + man(me) + '만원', me], ['', esc(c.n) + ' 사원', '추정 ' + man(c.rk[0]) + '만원', c.rk[0]], ['', esc(c.n) + ' 부장', '추정 ' + man(c.rk[4]) + '만원', c.rk[4]]];
+  if (ex) rows.push(['ex', esc(c.n) + ' 임원 평균', (c.exR ? '공시 ' : '추정 ') + man(ex) + '만원', ex]);
+  var mx = Math.max.apply(null, rows.map(function (r) { return r[3]; })) || 1, hr = me * 10000 / 12 / 209;
+  $('lvOut').innerHTML = '<div class="ticks">' + rows.map(function (r) {
+    return '<div class="tick ' + r[0] + '"><span class="who">' + r[1] + '<small>' + r[2] + '</small></span><span class="won" data-r="' + perSec(r[3]) + '">0<small>원</small></span><span class="rt"><i style="width:' + (r[3] / mx * 100) + '%"></i></span></div>'; }).join('') + '</div>' +
+    '<div class="facts">' + (me ? '<div class="fact"><b>' + man(hr) + '원</b>내 시급이에요(주 40시간, 한 달 209시간 기준).</div><div class="fact"><b>' + (4500 / perSec(me) / 60).toFixed(0) + '분</b>커피 한 잔(4,500원)을 버는 데 걸리는 시간이에요. ' + esc(c.n) + ' 부장은 ' + (4500 / perSec(c.rk[4]) / 60).toFixed(0) + '분.</div>' : '') +
+    (me && ex ? '<div class="fact"><b>' + (ex / me).toFixed(1) + '년</b>' + esc(c.n) + ' 임원의 1년 연봉을 벌려면 내가 일해야 하는 시간이에요.</div>' : '') +
+    (me ? '<div class="fact"><b>' + (c.rk[4] / me).toFixed(1) + '배</b>' + esc(c.n) + ' 부장 연봉은 내 연봉의 이만큼이에요.</div>' : '') + '</div>' + shareBox('shLv') +
+    '<p class="src">자는 시간까지 넣은 1년 365일 기준이에요. 회사 숫자는 연봉 연구소 직급별 추정치, 임원은 공시 평균(없으면 추정)이에요.</p>';
+  if (me) wireShare('shLv', '내가 커피 한 잔 버는 데 ' + (4500 / perSec(me) / 60).toFixed(0) + '분, ' + c.n + ' 부장은 ' + (4500 / perSec(c.rk[4]) / 60).toFixed(0) + '분\n실시간 월급 재 보기 → ' + SITE_S + '/#tools',
+    { title: '실시간 월급', big: (4500 / perSec(me) / 60).toFixed(0) + '분', sub: '커피 한 잔 버는 시간\n' + c.n + ' 부장은 ' + (4500 / perSec(c.rk[4]) / 60).toFixed(0) + '분' });
+  else $('shLv').hidden = true;
+}
+function liveTick() {
+  if ($('p-tools').hidden || $('tool-live').hidden) { LV.raf = 0; return; }
+  var s = (performance.now() - LV.t0) / 1000;
+  document.querySelectorAll('#lvOut .won').forEach(function (el) { var v = +el.dataset.r * s; el.firstChild.nodeValue = v < 1000 ? v.toFixed(1) : man(v); });
+  LV.raf = REDUCE ? setTimeout(liveTick, 1000) : requestAnimationFrame(liveTick);
+}
+function liveStart() { $('lvIn').value = LV.c.n; liveDraw(); if (!LV.raf) liveTick(); }
+$('rkPay').oninput = rankTool; $('lvPay').oninput = liveDraw;
+$('lvReset').onclick = function () { LV.t0 = performance.now(); };
+ac($('lvIn'), $('lvAc'), CO, function (c) { if (!c) return; LV.c = c; $('lvIn').value = c.n; liveDraw(); });
+$('lvIn').addEventListener('blur', function () { setTimeout(function () { $('lvIn').value = LV.c.n; }, 150); });
+var TOOL = 'rank';
+document.querySelectorAll('#toolSeg button').forEach(function (b) { b.onclick = function () {
+  document.querySelectorAll('#toolSeg button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+  TOOL = b.dataset.v; $('tool-rank').hidden = TOOL !== 'rank'; $('tool-live').hidden = TOOL !== 'live';
+  TOOL === 'live' ? liveStart() : rankTool();
+}; });
+
+// ── 탭 (#higher #today #sniper #road #cup #hall #tools 로 바로 열림)
+var KEYS = ['higher', 'today', 'sniper', 'road', 'cup', 'hall', 'tools'];
+var RENDER = { higher: renderHigher, today: renderToday, sniper: renderSniper, road: renderRoad, cup: renderCup, hall: renderHall, tools: function () { TOOL === 'live' ? liveStart() : rankTool(); } };
+function show(k, push) {
+  if (KEYS.indexOf(k) < 0) k = 'higher';
+  KEYS.forEach(function (j) { $('t-' + j).setAttribute('aria-selected', j === k); $('p-' + j).hidden = j !== k; });
+  RENDER[k]();
+  if (push) { try { history.replaceState(null, '', '#' + k); } catch (e) { location.hash = k; } }
+}
+KEYS.forEach(function (k) { $('t-' + k).onclick = function () { show(k, true); }; });
+document.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a[href^="#"]'); if (a && KEYS.indexOf(a.getAttribute('href').slice(1)) >= 0) { e.preventDefault(); show(a.getAttribute('href').slice(1), true); window.scrollTo(0, 0); } });
+window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
+
+renderMe();
+renderBoard(null);
+getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); } });
+show(location.hash.slice(1) || 'higher');
+}
+
+main(D, PC);
+</script>
+
+</body>
+</html>

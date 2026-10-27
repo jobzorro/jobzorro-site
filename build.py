@@ -80,7 +80,7 @@ GROUP_COLORS = {
     "construction":     ((210, 180, 140), (18, 15, 11)),   # 샌드
 }
 
-TABS = [("index.html", "직무사전"), ("salary/index.html", '연봉<span class="lg"> 연구소</span>'), ("company/index.html", '회사<span class="lg">&nbsp;판단</span>'), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
+TABS = [("index.html", "직무사전"), ("salary/index.html", '연봉<span class="lg"> 연구소</span>'), ("company/index.html", '회사<span class="lg">&nbsp;판단</span>'), ("play/index.html", '<span class="lg">연봉&nbsp;놀이터</span><span class="sm">게임</span><span class="new">NEW</span>'), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
 APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 신청하기" 버튼이 여기로 간다)
 
 
@@ -306,7 +306,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zn-tabs a { display:flex; align-items:center; padding:0 12px; font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); text-decoration:none; white-space:nowrap; border-bottom:2px solid transparent; }
 .zn-tabs a:hover { color:var(--ink); }
 .zn-tabs a.on { color:var(--ink); border-bottom-color:var(--ink); }
-@media (max-width:480px) { .zn-tabs .lg { display:none; } }
+.zn-tabs .sm { display:none; }
+@media (max-width:480px) { .zn-tabs .lg { display:none; } .zn-tabs .sm { display:inline; } }   /* 폰: '연봉 놀이터' 대신 '게임' (2026-10-27 사용자) */
 .zn-tabs .new { margin-left:5px; font-size:9.5px; font-weight:800; letter-spacing:.04em; background:#c6ff3d; color:#0b0b0b; border-radius:99px; padding:1px 6px; line-height:1.5; }
 @media (max-width:480px) { .zn-tabs .new { font-size:0; width:7px; height:7px; padding:0; margin:0 0 10px 2px; display:inline-block; } }   /* 폰: NEW 글자 대신 라임 점 */
 .zn-cta { margin-left:auto; flex:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--paper); background:var(--ink); border-radius:999px; padding:9px 15px; text-decoration:none; white-space:nowrap; }
@@ -538,7 +539,7 @@ def footer_html(root: str, logo: str, note: str) -> str:
     c = COMPANY
     return (
         f'<footer class="zf"><div class="zf-in"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"></a>'
-        f'<div class="zf-links"><a href="{root}index.html">직무사전</a><a href="{root}salary/index.html">연봉 연구소</a><a href="{root}company/index.html">회사 판단 연구소</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
+        f'<div class="zf-links"><a href="{root}index.html">직무사전</a><a href="{root}salary/index.html">연봉 연구소</a><a href="{root}company/index.html">회사 판단 연구소</a><a href="{root}play/index.html">연봉 놀이터</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
         f'<a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a>'
         f'<a href="{root}privacy/index.html">개인정보처리방침</a></div>'
         f'<div class="zf-box"><b>법인명(상호)</b> {c["name"]} &nbsp;·&nbsp; <b>대표자</b> {c["ceo"]} &nbsp;·&nbsp; <b>개인정보보호책임자</b> {c["privacy"]}<br>'
@@ -1038,6 +1039,26 @@ def build(out_dir: Path, with_news: bool) -> None:
             f.write(f"\n## 회사 판단 연구소\n- [회사 판단 연구소]({base_url}company/): 합격한 회사가 갈 만한지 잡플래닛·블라인드·캐치 평점, 직급별 연봉, DART 5개년 재무(별도), 최근 뉴스, AI 영향을 보고 상·중·하와 'Zorro의 한마디'로 판단\n")
         co_dir = dst / "data" / "co"  # API 모드면 조각 파일이 없음 (회사 상세는 Cloudflare Worker가 줌)
         print(f"회사 판단 연구소: /company/ (" + (f"데이터 조각 {len(list(co_dir.iterdir()))}개" if co_dir.exists() else "회사 상세는 API") + ")")
+    # ---- 연봉 놀이터 (/play/): salary-lab/play/publish_to_site.py 가 만든 play/ 를 복사하고 상단 메뉴를 붙인다 (순위표는 play-api Worker)
+    play = BASE / "play"
+    if (play / "index.html").exists():
+        dst = out_dir / "play"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(play, dst)
+        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
+        zn_css = ".zn{--paper:var(--bg);--hairline:var(--line)}\n" + zn_css
+        zn_css += "\n@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) { --logo-filter: invert(1); } } :root[data-theme=\"dark\"] { --logo-filter: invert(1); }"
+        h = (dst / "index.html").read_text(encoding="utf-8")
+        h = re.sub(r'<title>[^<]*</title>|<meta (name="description"|property="og:[^"]+"|name="twitter:[^"]+")[^>]*>|<link rel="canonical"[^>]*>', "", h)
+        h = h.replace('<meta charset="utf-8">', '<meta charset="utf-8">' + seo.seo_head(base_url, "연봉 놀이터 — 회사 연봉으로 하는 오늘의 게임 | 취업조로",
+            "어디가 더 많이 줄까, 오늘의 회사, 연봉 스나이퍼, 이직 로드 10년, 드림 컴퍼니 월드컵. 매일 같은 문제로 겨루는 오늘의 도전 순위와 명예의 전당.",
+            "play/", og_salary), 1)
+        if 'class="zn"' not in h:
+            h = h.replace("</style>", zn_css + "\n</style>", 1)
+            h = h.replace("<body>", "<body>\n" + nav_html("play/index.html", "../", logo_nav), 1)
+        (dst / "index.html").write_text(h, encoding="utf-8")
+        entries.append(("play/", updated, "daily", "0.7"))
+        with open(out_dir / "llms.txt", "a", encoding="utf-8") as f:
+            f.write(f"\n## 연봉 놀이터\n- [연봉 놀이터]({base_url}play/): 연봉 연구소 자료로 하는 매일 게임 5종(어디가 더 많이 줄까·오늘의 회사·연봉 스나이퍼·이직 로드 10년·드림 컴퍼니 월드컵), 오늘의 도전 순위와 명예의 전당\n")
+        print("연봉 놀이터: /play/")
     seo.write_sitemap(out_dir, base_url, entries)
     audit_links(data, BASE / "assets" / "share")
     print(f"인앱 브라우저 → 기본 브라우저 전환: {add_inapp(out_dir)}개 페이지")
