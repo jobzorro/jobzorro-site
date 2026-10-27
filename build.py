@@ -728,6 +728,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         seo.og_image(share / "og-zorro.png", "취업조로와\n함께하기", "신입·중고신입·경력이직·선퇴사자\n1:1 맞춤 컨설팅 · 무료 상담", "TEAM ZORRO", "뽑고 싶은 인재의 비밀", art="zorro")
         seo.og_image(share / "og-salary.png", "내 연차면\n얼마 받을까", f"회사 {n_sal} 곳의 사원~부장 추정 연봉\n업계 순위 · 연봉 계산기", "연봉 연구소", "그 회사,", art="salary")
         seo.og_image(share / "og-company.png", "이직할까 말까\n내 상황으로", "연차·연봉을 넣으면 평점·연봉·재무를 보고\n갈지 말지 Zorro가 정해 드려요", "회사 판단 연구소", "합격한 그 회사, 나라면?", art="company")
+        seo.og_image(share / "og-play.png", "오늘의 도전\n연봉 놀이터", "어디가 더 많이 줄까 · 오늘의 회사 · 연봉 스나이퍼\n매일 순위와 명예의 전당", "연봉 놀이터", "회사 연봉으로 하는 게임", art="play")
         seo.og_image(share / "og-apply.png", "무료 상담 신청", "취업조로 컨설턴트가 내 상황에 맞는 길을 1:1로 정리해 드립니다", "무료 상담", "취업·이직 고민, 혼자 하지 마세요")
     else:
         print("  (한글 글꼴이 없어 공유 이미지는 다시 만들지 않고 assets/share 의 기존 파일을 씁니다)")
@@ -747,7 +748,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         return seo.abs_url(base_url, dst_rel)
     og_main = share_url("og.png")
     og_news, og_zorro, og_apply = share_url("og-news.png"), share_url("og-zorro.png"), share_url("og-apply.png")
-    og_salary, og_company = share_url("og-salary.png"), share_url("og-company.png")
+    og_salary, og_company, og_play = share_url("og-salary.png"), share_url("og-company.png"), share_url("og-play.png")
     for name in ("favicon-32.png", "favicon-180.png"):
         src = BASE / "news-collector" / "assets" / name
         if src.exists(): (out_dir / "assets" / name).write_bytes(src.read_bytes())
@@ -1050,7 +1051,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         h = re.sub(r'<title>[^<]*</title>|<meta (name="description"|property="og:[^"]+"|name="twitter:[^"]+")[^>]*>|<link rel="canonical"[^>]*>', "", h)
         h = h.replace('<meta charset="utf-8">', '<meta charset="utf-8">' + seo.seo_head(base_url, "연봉 놀이터 — 회사 연봉으로 하는 오늘의 게임 | 취업조로",
             "어디가 더 많이 줄까, 오늘의 회사, 연봉 스나이퍼, 이직 로드 10년, 드림 컴퍼니 월드컵. 매일 같은 문제로 겨루는 오늘의 도전 순위와 명예의 전당.",
-            "play/", og_salary), 1)
+            "play/", og_play), 1)
         if 'class="zn"' not in h:
             h = h.replace("</style>", zn_css + "\n</style>", 1)
             h = h.replace("<body>", "<body>\n" + nav_html("play/index.html", "../", logo_nav), 1)

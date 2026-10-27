@@ -407,6 +407,22 @@ def _art(im, d, kind, ACC, INK):
         d.text((x0 + 4, y0 + 90), "1,100+", font=f_n, fill=ACC)
         d.text((x0 + 10, y0 + 250), "컨설팅 15년 차", font=f_l, fill=PAPER)
         d.rectangle([x0 + 10, y0 + 300, x0 + 90, y0 + 306], fill=ACC)
+    elif kind == "play":      # 어디가 더 많이 줄까?: 회사 카드 두 장 VS + 오늘의 도전 순위
+        f_t = _font("GmarketSansMedium.otf", 22); f_q = _font("GmarketSansBold.otf", 72); f_v = _font("GmarketSansBold.otf", 30)
+        d.text((x0 + 10, y0 + 2), "어디가 더 많이 줄까?", font=f_t, fill=(160, 160, 160))
+        cw, ct, cb = 165, y0 + 44, y0 + 250
+        for i, (fill, fg, line) in enumerate([((26, 26, 26), PAPER, (55, 55, 55)), (ACC, INK, None)]):
+            cx = x0 + 10 + i * (cw + 50)
+            d.rounded_rectangle([cx, ct, cx + cw, cb], radius=18, fill=fill, outline=line, width=2 if line else 0)
+            q = "?" if i == 0 else "₩"
+            d.text((cx + cw / 2 - d.textlength(q, font=f_q) / 2, ct + 62), q, font=f_q, fill=fg)
+        d.text((x0 + 10 + cw + 25 - d.textlength("VS", font=f_v) / 2, (ct + cb) / 2 - 16), "VS", font=f_v, fill=ACC)
+        # 오늘의 도전 순위 세 줄 (1위만 형광)
+        f_r = _font("GmarketSansMedium.otf", 22)
+        for i, (rk, w) in enumerate([("1", 0.92), ("2", 0.74), ("3", 0.58)]):
+            yy = cb + 22 + i * 34
+            d.text((x0 + 12, yy - 2), rk, font=f_r, fill=ACC if i == 0 else (160, 160, 160))
+            d.rounded_rectangle([x0 + 44, yy + 4, x0 + 44 + int(w * 330), yy + 18], radius=7, fill=ACC if i == 0 else GRAY)
 
 
 def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조로 직무사전", light: str = "채용공고엔 안 나오는", accent=None, bg=None, art: str = "") -> bool:

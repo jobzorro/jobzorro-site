@@ -332,7 +332,6 @@ h1 b { background:linear-gradient(transparent 62%, var(--mark) 62%); }
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 
 
-<div class="note"><b>미리보기 v2</b> · 위 메뉴는 모양만 보여 주는 모형이에요(실제 메뉴는 사이트에 붙일 때 들어가요). 서버를 아직 안 만들어서 순위·플레이 수·전국 선택률은 <b>미리보기용 예시</b>이고, 내 기록은 이 기기에만 저장돼요. 실제 주소는 <b>job.jobzorro.kr/play/</b>, 숫자는 연봉 연구소 공개 추정치(<span id="ym"></span> 기준)예요.</div>
 
 <header class="hero"><div class="in">
   <div class="kick"><i></i>JOBZORRO · PLAY</div>
@@ -441,7 +440,7 @@ var store = {
 };
 var REDUCE = false; try { REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 function toast(msg) { var t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, 2800); }
-$('ym').textContent = D.ym.replace('-', '년 ') + '월';
+if ($('ym')) $('ym').textContent = D.ym.replace('-', '년 ') + '월';
 
 // ── 기기 번호(무작위)·닉네임: 로그인 없음
 var DEV = store.get('slp-dev');
