@@ -1687,7 +1687,7 @@ try { if (API && !sessionStorage.getItem("cc-visit")) { sessionStorage.setItem("
 //   규모 = 직원 수(1천 명 이상 대기업·300명 이상 중견), 업종 = 업계 묶음, 연봉 = 내 연차에 맞는 직급 추정 연봉, 평점 = 평판 종합 점수
 const ME_SIZES = ["대기업", "금융", "중견", "중소", "외국계", "공기업·공공", "스타트업"];
 const ME_INDS = ["반도체·전자", "자동차·부품", "조선·기계·장비", "화학·소재·에너지", "2차전지", "제약·바이오·의료기기", "식품 제조", "화장품·생활용품", "섬유·의복·패션",
-  "건설·부동산", "유통·커머스", "물류·운송·항공", "은행·증권·보험", "게임·소프트웨어", "통신·미디어·광고", "컨설팅·전문서비스", "인력·사업지원 서비스",
+  "건설·부동산", "유통·커머스", "물류·운송·항공", "은행·증권·보험", "게임", "게임·소프트웨어", "통신·미디어·광고", "컨설팅·전문서비스", "인력·사업지원 서비스",
   "호텔·외식·레저", "병원·의료", "교육", "공공기관·공단", "기타"];
 const ME_WLB = ["칼퇴", "보통", "야근 잦음", "매일 야근"];
 const ME_PLACES = ["서울 본사", "수도권", "지방", "지방 공장·산단", "지방 현장 순환"];
@@ -1696,8 +1696,10 @@ let meCo = null;           // 지금 화면의 회사
 const meOver = {};         // 회사별로 카드에서 고친 값 {salary, place, size}
 
 // 엔진에 넘길 업종 말: 업계 묶음 이름을 F 규칙이 알아듣는 말로 (예: 게임·소프트웨어 → 게임만 전망 나쁨이라 '소프트웨어'로)
-function engInd(g, detail) {
+const GAME_CO = new Set([]);   // 게임사 이름 (config game_companies, build.py 가 넣음)
+function engInd(g, detail, name) {
   if (/전지|축전/.test(detail || "") || g === "2차전지") return "2차전지";
+  if (g === "게임" || GAME_CO.has(name)) return "게임";
   if (g === "게임·소프트웨어") return /게임/.test(detail || "") ? "게임" : "소프트웨어";
   if (g === "화학·소재·에너지") return "화학·소재";
   if (g === "건설·부동산") return "건설";
@@ -1744,10 +1746,10 @@ async function meLoadNow() {
 function meCase(c) {
   const o = meOver[c.name] || {}, est = coSalary(c, ME.years), nc = meNow.c;
   const now = { sex: ME.sex, age: ME.age, years: ME.years, tenure: ME.tenure, moves: ME.moves, left: !!ME.left, gap: ME.left ? ME.gap : undefined,
-    size: ME.size || (nc ? coSize(nc) : "중견"), industry: engInd(ME.industry || nc?.salary?.group, nc?.salary?.industry), job: ME.job, salary: ME.salary,
+    size: ME.size || (nc ? coSize(nc) : "중견"), industry: ME.industry ? engInd(ME.industry) : engInd(nc?.salary?.group, nc?.salary?.industry, nc?.name), job: ME.job, salary: ME.salary,
     wlb: ME.wlb || coWlb(nc) || "보통", place: ME.place || (nc ? coPlace(nc) : "수도권"),
     rating: nc?.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[nc.verdict] : undefined };
-  const target = { size: o.size || coSize(c), industry: engInd(c.salary?.group, c.salary?.industry), job: ME.want || ME.job,
+  const target = { size: o.size || coSize(c), industry: engInd(c.salary?.group, c.salary?.industry, c.name), job: ME.want || ME.job,
     salary: o.salary || est?.v, wlb: coWlb(c) || "보통", place: o.place || coPlace(c),   // 옮길 회사 워라밸은 그 회사 현직자 점수로 (입력 안 받음)
     rating: c.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[c.verdict] : undefined };
   return { c: { type: "A", now, target }, est };
@@ -1762,12 +1764,15 @@ function meTone(t) {
 let meGeneral = false;     // '일반 판정 보기'를 누르면 이번 접속 동안만 내 상황을 빼고 본다
 // 판정 단계는 일반 판정과 같은 7단계로. 회사 자체 판정 × 내 상황(F 규칙) × 얼마나 좋아지는지로 사람마다 다르게 (2026-10-27)
 const ME_STEPS = ["비추예요", "다시 생각해요", "스펙 보고 결정하세요", "중립기어", "조건 보고 가세요", "가세요", "무조건 가세요"];
-function meLevel(v, gen, gain) {
+// up: 내 위치(지금 회사 급·연봉)가 이 회사보다 낮을수록 올려 줄 단계 수 (0~2)
+//   2026-10-27 사용자: "내 스펙이 낮으면 기존 판정보다 높아져야 정상. 연봉 2천 오르는데 중립기어 박으면 어떡해"
+function meLevel(v, gen, gain, up = 0) {
   const base = { "무조건 가세요": 6, "가세요": 5, "조건 보고 가세요": 4, "중립기어": 3, "스펙 보고 결정하세요": 2, "다시 생각해요": 1, "비추예요": 0 }[gen] ?? 4;   // 판단자료 부족은 중간
+  const lift = base >= 2 ? up : 0;   // 회사 자체가 나쁘면(다시 생각해요·비추) 내 조건으로 끌어올리지 않는다
   let n;
-  if (v === "가요") n = Math.max(base, 4) + (gain >= 30 ? 1 : 0) - (base <= 1 ? 1 : 0);   // 내 조건이 좋으면 회사 판정보다 올라가거나 그대로, 크게 오르면 한 단계 더
-  else if (v === "조건 보고") n = Math.min(base, gain >= 20 ? 4 : 3);                   // 사람마다 갈림: 많이 오르면 '조건 보고', 아니면 '중립기어'까지
-  else n = Math.min(base, base >= 2 ? 1 : 0);                                            // 마요: 다시 생각해요, 회사도 나쁘면 비추
+  if (v === "가요") n = Math.max(Math.max(base, 4) + (gain >= 30 ? 1 : 0) - (base <= 1 ? 1 : 0), Math.min(6, base + lift));   // 내 조건이 좋으면 회사 판정보다 올라가거나 그대로, 크게 오르면 한 단계 더
+  else if (v === "조건 보고") n = Math.max(Math.min(base, gain >= 20 ? 4 : 3), Math.min(5, base + lift));                       // 사람마다 갈림. 내 위치보다 한참 좋은 자리면 회사 판정보다 올린다(최대 '가세요')
+  else n = Math.min(base, base >= 2 ? 1 : 0);                                                                                    // 마요: 다시 생각해요, 회사도 나쁘면 비추
   return ME_STEPS[Math.max(0, Math.min(6, n))];
 }
 const ME_FIRST = { "무조건 가세요": "고민할 이유가 없어요. 무조건 가세요.", "가세요": "갈 만한 자리예요.", "조건 보고 가세요": "아래 조건이 맞을 때 가세요.",
@@ -1800,7 +1805,7 @@ function meJudgeNew(c) {
   const sex = ME.sex === "여" ? "여" : "남", lim = FitEngine.FIT.newbie_age[sex], age = ME.age || 0;
   const sp = meSpec(ME);
   const offer = FitEngine.judge({ type: "C", me: { sex, age, spec: sp && sp.lv >= 3 ? "가능성" : "" },
-    a: { size: coSize(c), industry: engInd(sl.group, sl.industry), job: ME.job, rep: rg != null && rg < 2.8 ? "하" : "" } });
+    a: { size: coSize(c), industry: engInd(sl.group, sl.industry, c.name), job: ME.job, rep: rg != null && rg < 2.8 ? "하" : "" } });
   const apply = FitEngine.judge({ type: "B", me: { years: ME.years || 0 }, target: { size: coSize(c), job: ME.job } });
   let cap = 6;   // 올리는 규칙(나이·스펙)보다 낮추는 규칙(전망 어두운 직무·계속 준비)이 늘 이긴다
   if (apply.verdict === "마요") { cap = 2; why.push(...apply.reasons.map(x => x.text)); }
@@ -1812,7 +1817,7 @@ function meJudgeNew(c) {
     const tail = sp.weak.length ? ` ${meJ(sp.weak.join("·"), "을", "를")} 채우면 한 단계 위도 노려볼 수 있어요.` : "";
     if (gap >= 2 && base <= 5) { n = Math.min(n, base - 1); why.push(`스펙 ${sp.g}(${sp.word})면 이 회사보다 한두 단계 위도 충분히 노려볼 만해요.${sp.strong.length ? ` 특히 ${meJ(sp.strong.join("·"), "이", "가")} 강점이에요.` : ""}`); }
     else if (gap >= 1 && base <= 4) { n = Math.min(n, base - 1); why.push(`스펙 ${sp.g}(${sp.word})에 비해 걸리는 게 있는 카드예요. 급하지 않다면 다른 결과도 기다려 보세요.`); }
-    else if (gap <= -1 && base >= 2 && base <= 5) { n = Math.max(n, base + 1); why.push(`스펙 ${sp.g}(${sp.word}) 기준으로는 좋은 카드예요. 잡고 들어가서 경력을 쌓으세요.${tail}`); }
+    else if (gap <= -1 && base >= 2 && base <= 5) { n = Math.max(n, Math.min(6, base + (gap <= -2 ? 2 : 1))); why.push(`스펙 ${sp.g}(${sp.word}) 기준으로는 좋은 카드예요. 잡고 들어가서 경력을 쌓으세요.${tail}`); }
     else why.push(`스펙 ${sp.g}(${sp.word})에 맞는 회사예요.${tail}`);
     why.push(`스펙은 ${sp.how}로 봤어요.`);
   }
@@ -1879,9 +1884,17 @@ function meJudge(c) {
   if (meNew()) return meJudgeNew(c);
   const { c: kase, est } = meCase(c);
   if (!kase.now.salary || !kase.target.salary) return null;
-  const r = FitEngine.judge(kase);
+  let r = FitEngine.judge(kase);
+  // 직무를 바꾸는 사람은 이미 바꾸기로 하고 가는 것 → 직무 전환은 판정에서 덜 본다 (2026-10-27 사용자: "일반 판정 무조건 가세요인데 직무 바뀐다고 죽여 놓냐")
+  //   같은 직무로 옮긴다고 치고 다시 봐서 그쪽이 더 좋으면 그 판정을 쓰고, 직무 전환은 '알고 가세요' 한 줄로만 남긴다
+  const jobMove = FitEngine.family(kase.now.job) !== FitEngine.family(kase.target.job);
+  if (jobMove) {
+    const r2 = FitEngine.judge({ ...kase, target: { ...kase.target, job: kase.now.job } }), rk = { "마요": 0, "조건 보고": 1, "가요": 2 };
+    if (rk[r2.verdict] > rk[r.verdict]) r = { ...r, verdict: r2.verdict, reasons: r.reasons.filter(x => !/^F(6|28)$/.test(x.rule) || !x.text.includes("직무")) };
+  }
   let v = r.verdict;
-  const why = r.reasons.map(x => x.text);
+  const why = r.reasons.map(x => x.rule === "F28" && /직무가 바뀌어요/.test(x.text) ? "직무가 바뀌는 건 이미 정하고 가시는 거라 판정엔 크게 넣지 않았어요." : x.text);
+  if (jobMove && !why.some(t => /직무/.test(t))) why.push(`${meJ(ME.want, "으로", "로")} 직무를 바꾸시는 거라, 첫 1년은 새 직무를 배운다는 마음으로 가세요.`);
   // 회사 자체가 나쁘면 내 조건이 좋아도 한 단계 낮춘다 (엔진은 재무를 안 봄)
   if (/비추예요|다시 생각해요/.test(c.verdict)) {
     why.push(`회사 자체 판정은 '${c.verdict}'예요. 재무·평판을 꼭 확인하고 가세요.`);
@@ -1895,7 +1908,12 @@ function meJudge(c) {
   if (rg != null) facts.push(`현직자 평점은 종합 ${rg.toFixed(2)}점이에요${rg < 3 ? ". 3.0 아래라 분위기를 꼭 확인하세요" : ""}.`);
   if (sl.tenure != null) facts.push(`직원 ${won(sl.members)}명, 평균 근속 ${sl.tenure}년인 회사예요.`);
   if (sl.newHire && (ME.years || 0) <= 1) facts.push(`신입 추정 연봉은 ${won(sl.newHire)}만 원이에요.`);
-  let V = meLevel(v, c.verdict, pct);
+  // 내 위치가 낮을수록 올린다: 한 단계 위 회사(또는 회사 판정이 지금 회사보다 2단계 이상 좋음) +1, 연봉 25% 이상 오름 +1
+  const step = FitEngine.tier(kase.target.size).n - FitEngine.tier(kase.now.size).n;
+  const better = step >= 1 || (kase.now.grade != null && kase.target.grade != null && kase.target.grade - kase.now.grade >= 2);
+  const up = (better ? 1 : 0) + (pct >= 25 ? 1 : 0);
+  let V = meLevel(v, c.verdict, pct, up);
+  if (ME_GRADE[V] > (ME_GRADE[c.verdict] ?? 4)) why.unshift(`회사 일반 판정은 '${c.verdict}'지만, ${better ? "지금 내 자리보다 위 급" : "연봉이 크게 오르는 자리"}라 내 기준에선 더 좋은 카드예요.`);
   // 옮기려는 가장 큰 이유: 그 이유를 이 회사가 풀어 주는지 회사 자료로 본다. 못 풀어 주면 '조건 보고 가세요'까지만
   const reason = meReason(c, kase, pct);
   if (reason) {
@@ -1904,8 +1922,7 @@ function meJudge(c) {
   }
   meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
   const z = meCompose(c, V, why, pay, { y: ME.years || 0, age: ME.age || 0, v: ME_GRADE[V] >= 5 ? "가요" : ME_GRADE[V] >= 3 ? "조건 보고" : "마요", est, left: !!ME.left,
-    wlb: kase.now.wlb, tenure: sl.tenure, sameInd: (ME.industry || meNow.c?.salary?.group) === c.salary?.group }, facts, { pct, cap: reason?.cap, now: kase.now.salary });
-  const step = FitEngine.tier(kase.target.size).n - FitEngine.tier(kase.now.size).n;
+    wlb: kase.now.wlb, tenure: sl.tenure, sameInd: kase.now.industry === kase.target.industry }, facts, { pct, cap: reason?.cap, now: kase.now.salary });
   const chips = [step > 0 ? "한 단계 위 회사" : step < 0 ? "아래 급 회사" : "같은 급", `연봉 ${pct >= 0 ? "+" : ""}${pct}%`,
     kase.now.industry && kase.target.industry ? (kase.now.industry === kase.target.industry ? "같은 업계" : "업계 바뀜") : "",
     FitEngine.family(kase.now.job) === FitEngine.family(kase.target.job) ? "같은 직무" : "직무 전환",
@@ -2056,7 +2073,7 @@ async function meRankFill() {
   // 신입: 1·2위 판정이 같으면 엔진의 '두 합격 비교'(회사 급·직무·근무지·연봉 점수)로 한 번 더
   let tie = "";
   if (meNew() && rows.length >= 2 && rows[0].g === rows[1].g) {
-    const o = r => ({ size: coSize(r.c), job: ME.job, place: coPlace(r.c), salary: r.sal, industry: engInd(r.c.salary?.group, r.c.salary?.industry) });
+    const o = r => ({ size: coSize(r.c), job: ME.job, place: coPlace(r.c), salary: r.sal, industry: engInd(r.c.salary?.group, r.c.salary?.industry, r.n) });
     const j = FitEngine.judge({ type: "C", me: { sex: ME.sex, age: ME.age }, a: o(rows[0]), b: o(rows[1]) });
     if (j.verdict === "뒤 회사") [rows[0], rows[1]] = [rows[1], rows[0]];
     tie = j.verdict === "상황 따라" ? `<p class="note">1·2위는 거의 같아요. ${esc(j.reasons.length > 1 ? j.reasons.at(-1).text : "회사 급·근무지·연봉이 비슷해요. 직무가 더 맞는 쪽, 출퇴근이 편한 쪽으로 정하세요.")}</p>` : `<p class="note">1·2위 판정이 같아 회사 급·직무·근무지·연봉 점수로 한 번 더 나눴어요.</p>`;
@@ -2115,7 +2132,7 @@ const meEl = id => document.getElementById(id);
 function meFill(sel, list, v) { sel.innerHTML = list.map(x => `<option>${esc(x)}</option>`).join(""); if (v) sel.value = v; }
 // 맨 앞 '모름' = 비워 두기 → 회사 정보로 채움 (사람이 고른 값이 늘 먼저)
 const ME_UNK = "모름";
-meFill(meEl("me_size"), [ME_UNK, ...ME_SIZES]); meFill(meEl("me_ind"), [ME_UNK, ...ME_INDS]); meFill(meEl("me_wlb"), [ME_UNK, ...ME_WLB]);
+meFill(meEl("me_size"), [ME_UNK, ...ME_SIZES]); meFill(meEl("me_ind"), [ME_UNK, ...ME_INDS.filter(x => x !== "게임" || GAME_CO.size)]);   // '게임'은 게임사 목록을 켰을 때만 meFill(meEl("me_wlb"), [ME_UNK, ...ME_WLB]);
 meFill(meEl("me_place"), [ME_UNK, ...ME_PLACES]);
 let meLast = null;
 function meOpen() {
