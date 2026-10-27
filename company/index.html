@@ -145,6 +145,27 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .mchk small { display:block; color:var(--muted); font-size:12px; margin-top:2px; }
 .mhelp { display:block; font-size:12px; color:var(--muted); line-height:1.5; margin-top:2px; }
 .mestrip .nowco { font-size:12.5px; color:var(--muted); }
+/* 지금 회사 vs 이 회사 · 후보 비교 · 판정 피드백 */
+.mecmp, .merank { margin:0 0 22px; border:1.5px solid var(--hairline-2); border-radius:16px; overflow:hidden; font-size:13.5px; }
+.mecmp h4, .merank h4 { margin:0; padding:10px 16px; font-size:13.5px; background:var(--mist); }
+.mecmp h4 small, .merank h4 small { font-weight:500; color:var(--muted); margin-left:6px; }
+.mecmp table, .merank table { width:100%; border-collapse:collapse; }
+.mecmp th, .mecmp td, .merank th, .merank td { padding:8px 12px; border-top:1px solid var(--hairline-2); text-align:left; vertical-align:top; }
+.mecmp th { color:var(--muted); font-weight:700; width:24%; }
+.mecmp thead th, .merank thead th { color:var(--muted); font-size:12px; font-weight:700; }
+.mecmp td.win { font-weight:800; }
+.mecmp td.win::after { content:" ▲"; font-size:10px; }
+.mecmp .note, .merank .note { margin:0; padding:8px 16px 10px; font-size:12px; color:var(--muted); border-top:1px solid var(--hairline-2); }
+.merank td.no { font-family:var(--display); font-weight:800; width:34px; }
+.merank td.why { color:var(--ink-soft); font-size:12.5px; }
+.merank .go { font:inherit; font-weight:800; background:none; border:0; padding:0; color:var(--ink); text-decoration:underline; text-underline-offset:3px; cursor:pointer; text-align:left; }
+@media (max-width:640px) { .merank td.why { display:none; } }
+.mefb { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:-8px 0 26px; font-size:13px; }
+.mefb span { color:var(--muted); font-weight:700; }
+.mefb .sep { margin-left:8px; }
+.mfb { font:inherit; font-size:12.5px; font-weight:800; padding:5px 12px; border-radius:999px; border:1.5px solid var(--hairline-2); background:var(--paper); color:var(--ink); cursor:pointer; }
+.mfb.on { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.mefb em { font-style:normal; font-size:12.5px; color:var(--muted); }
 .mgrade { grid-column:1 / -1; margin:0; font-size:13px; color:var(--muted); }
 .mgrade b { font-family:var(--display); font-size:15px; color:var(--acc-ink); background:var(--acc); border-radius:6px; padding:1px 8px; margin-right:6px; }
 .mkind { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
@@ -740,11 +761,14 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   }
   // 지금 업황이 꺾인 산업 (오르내림이 있어 자주 바꾼다) — 3회차 C1·B1
   const DOWN_INDUSTRY = [/화학/, /건설/];
-  function downInd(o = {}) { return DOWN_INDUSTRY.some(re => re.test(o.industry || "")); }
+  // 2026-10-27: 업황은 뉴스 자동 판정(industry_trend.py) → 조로 확인값(config industry_trend_confirm)을 build.py 가 아래 표로 넣는다. 표에 없는 업계만 위 정규식
+  const IND_TREND = {"화학·소재": "down", "건설": "down", "2차전지": "up", "반도체·전자": "up", "통신·미디어·광고": "down"};
+  const trendOf = o => IND_TREND[o.industry || ""];
+  function downInd(o = {}) { const t = trendOf(o); return t ? t === "down" : DOWN_INDUSTRY.some(re => re.test(o.industry || "")); }
   // 꺾였다가 올라가는 / 호황인 산업 — 많이 뽑아 옮기기 쉽고, 있는 사람은 옮길 이유가 적다 (4회차 B2·B3·C1)
   // 4회차 A5: 나중엔 뉴스·채용 수로 자동 판단 후 조로가 확인
   const UP_INDUSTRY = [/2차전지|배터리/];
-  function upInd(o = {}) { return UP_INDUSTRY.some(re => re.test(o.industry || "")); }
+  function upInd(o = {}) { const t = trendOf(o); return t ? t === "up" : UP_INDUSTRY.some(re => re.test(o.industry || "")); }
   const FACTORY = /공장|산단|현장/;   // 4회차 C3: 지방 현장 순환에서 빠져나오는 것도 공장과 같이 본다
   const PLANT_JOB = /생산|공정|품질|설비|R&D|연구/;  // 공장에 있는 게 자연스러운 직무
   const lowRating = o => o.rating != null && o.rating < FIT.rating_min;
@@ -1344,14 +1368,17 @@ async function render(name) {
     <div class="head"><div><p class="kicker"><i></i>${esc(s?.group || "")}</p><h2>${esc(c.name)}</h2>
       <div class="chips"><span class="chip">${esc(c.type)} 회사${c.age != null ? " · 업력 " + c.age + "년" : ""}</span>${c.ai ? `<span class="chip ai-${c.ai.level}">AI 영향 ${c.ai.level}</span>` : ""}</div>
       <div class="meta">${s ? `<span>직원 <b>${won(s.members)}명</b></span>` : ""}${f ? `<span>재무 <b>${f.years[0]}~${f.years.at(-1)}</b> ${esc(f.source)}</span>` : ""}<span>기준일 <b>${esc(date)}</b></span></div></div>
-      <div class="verdict ${vcls}"><small>${my ? "내 상황 기준 · " : ""}Zorro's Verdict</small><strong>${V}</strong>${!my && (c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
+      <div class="verdict ${vcls}"><small>${my ? "내 상황 기준 · " : ""}Zorro's Verdict</small><strong>${V}</strong>${!my && (c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}${my?.chips?.length ? `<div class="vtags mchips" title="이 판정이 나온 근거">${my.chips.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
     ${API ? `<div class="acts"><button class="act heart${hearted.get(c.name) ? " on" : ""}" type="button" id="b-heart" aria-label="이 회사 하트">♥ <b>${(c._s?.hearts || 0).toLocaleString("ko-KR")}</b></button>
       <button class="act" type="button" id="b-card">결과 카드 저장</button><button class="act" type="button" id="b-share">링크 공유</button>
       ${(c._s?.views7 || 0) >= 10 ? `<span class="seen">최근 7일 ${c._s.views7.toLocaleString("ko-KR")}명이 확인했어요</span>` : ""}</div>` : ""}
     ${meStrip(c, my)}
+    ${meCmp(c, my)}
+    ${meRankSlot(c, my)}
     ${vsEntry(c)}
     <div class="zorro"><div class="who">Z</div><div><p class="lbl">${my ? "내 상황에 맞춘 " : ""}Zorro의 한마디</p><p class="first">${esc(z[0])}</p>
       <ul>${z.slice(1).map((t, i, a) => `<li class="${i === a.length - 1 ? "last" : ""}">${esc(t)}</li>`).join("")}</ul></div></div>
+    ${my ? meFb(c, my) : ""}
     ${c.divisions ? `<p class="divh">부문마다 달라요${c.divSrc ? ` <small>${esc(c.divSrc)}</small>` : ""}</p><div class="divs">${c.divisions.map(d => `<div class="div"><h4>${esc(d.name)}<span class="${(/가세요$/.test(d.verdict) && d.verdict !== "조건 보고 가세요") || d.verdict === "처우 위쪽" ? "go" : ""}">${esc(d.verdict)}</span></h4>${d.lines.map(l => `<p>${esc(l)}</p>`).join("")}</div>`).join("")}</div>` : ""}
     <div class="board">${board}</div>
     <p class="legend"><span><b class="lS">S</b><b class="lAp">A+</b><b class="lA">A</b>좋음</span><span><b class="lB">B</b>보통</span><span><b class="lC">C</b><b class="lD">D</b>아쉬움</span><span><b class="lF">F</b>심각</span></p>
@@ -1753,12 +1780,13 @@ const meWho = () => meNew()
 // 신입·중고신입 판정: 회사 일반 판정(합격자 기준)에서 출발해, 내 나이·스펙·직무·다른 카드로 올리고 내린다 (2026-10-27)
 //   F21 신입 나이(남 31·여 29) 넘으면 '잡을 만하면 잡기', 어리고 스펙 좋은데 회사가 약하면 '계속 준비', 전망 어두운 직무(F26)는 낮춤
 // 익명 자료 보내기 (/me): 나이는 2살 나이대로만, 같은 내용은 이 탭에서 하루 한 번, 기기 번호는 안 보냄
+let meQuiet = false;       // 후보 비교처럼 화면 밖에서 판정만 계산할 때는 기록을 보내지 않는다
 function meSend(x) {
-  if (!ME) return;
+  if (!ME || meQuiet) return;
   const a = ME.age || 0, sp = meSpec(ME), nw = ME.kind === "new";
   const body = { ...x, mode: nw ? "new" : "career", sex: ME.sex || "", ageband: a ? `${a - a % 2}~${a - a % 2 + 1}` : "", years: ME.years || 0, job: ME.job || "",
     nstat: nw ? ME.nstat || "" : (ME.left ? "퇴사" : "재직"), school: ME.school ?? "", major: ME.major ?? "", lang: ME.lang ?? "", exp: ME.exp ?? "", fit: ME.fit ?? "", grade: sp ? sp.g : "",
-    size: nw ? "" : ME.size || "", industry: nw ? "" : ME.industry || "", salary: ME.salary || "", wlb: nw ? "" : ME.wlb || "" };
+    size: nw ? "" : ME.size || "", industry: nw ? "" : ME.industry || "", salary: ME.salary || "", wlb: nw ? "" : ME.wlb || "", fb: x.fb || "", went: x.went || "" };
   const key = "cc-me-" + new Date().toISOString().slice(0, 10) + JSON.stringify(body);
   try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch (e) {}
   send("/me", body);
@@ -1805,7 +1833,9 @@ function meJudgeNew(c) {
   meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
   const z = meCompose(c, V, why, pay, { y: ME.years || 0, age, v: n >= 5 ? "가요" : n >= 3 ? "조건 보고" : "마요", est, left: false, newbie: true,
     working: ME.nstat === "재직 중", wlb: "", tenure: sl.tenure, sameInd: false }, rg != null ? [`현직자 평점은 종합 ${rg.toFixed(2)}점이에요.`] : []);
-  return { v: V, z, est };
+  const chips = [sp && `스펙 ${sp.g}`, `회사 급 ${coSize(c)}`, age > lim ? "신입 나이 넘김" : age && age <= lim - 3 ? "시간 여유 있음" : "",
+    cap < 6 ? (apply.verdict === "마요" ? "직무 전망 주의" : "계속 준비 쪽") : "", est && `신입 ${won(est.v)}만`, `회사 판정 ${c.verdict}`].filter(Boolean);
+  return { v: V, z, est, chips };
 }
 // 회사 일반 한마디를 내 연차·나이·상황에 맞게 고친다 (2026-10-27 사용자: "그대로 붙이지 말고 15년 차면 '인생 마지막 회사'처럼")
 // 각 규칙: 문장이 re 에 걸리면 fn(문장) 결과로 바꾼다. null 은 빼기, undefined 는 그대로
@@ -1875,7 +1905,12 @@ function meJudge(c) {
   meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
   const z = meCompose(c, V, why, pay, { y: ME.years || 0, age: ME.age || 0, v: ME_GRADE[V] >= 5 ? "가요" : ME_GRADE[V] >= 3 ? "조건 보고" : "마요", est, left: !!ME.left,
     wlb: kase.now.wlb, tenure: sl.tenure, sameInd: (ME.industry || meNow.c?.salary?.group) === c.salary?.group }, facts, { pct, cap: reason?.cap, now: kase.now.salary });
-  return { v: V, z, kase, est };
+  const step = FitEngine.tier(kase.target.size).n - FitEngine.tier(kase.now.size).n;
+  const chips = [step > 0 ? "한 단계 위 회사" : step < 0 ? "아래 급 회사" : "같은 급", `연봉 ${pct >= 0 ? "+" : ""}${pct}%`,
+    kase.now.industry && kase.target.industry ? (kase.now.industry === kase.target.industry ? "같은 업계" : "업계 바뀜") : "",
+    FitEngine.family(kase.now.job) === FitEngine.family(kase.target.job) ? "같은 직무" : "직무 전환",
+    reason ? `이유(${ME.why}) ${reason.cap ? "안 풀림" : "풀림"}` : "", `회사 판정 ${c.verdict}`].filter(Boolean);
+  return { v: V, z, kase, est, chips };
 }
 // ── 내 상황 한마디 다시 짜기 (2026-10-27 사용자: "밑은 칭찬 일색인데 위 판정은 '다시 생각해요'" → 회사 말을 그대로 긁지 말고 사람에 맞춰)
 //   1) 회사 한마디에서 판정에 묶인 말(첫 줄·맺음·꼬리표)은 버린다 → 내 판정 머리말·맺음으로 바꾼다
@@ -1962,7 +1997,7 @@ function meStrip(c, my) {
     const o = meOver[c.name] || {}, sl = c.salary || {}, nh = sl.newHire || coSalary(c, 0)?.v;
     return `<div class="mestrip" id="meSlot"><span class="tag">신입 기준</span><span>지금 <b>${esc(meWho())}</b>${nh ? ` → 신입 추정 연봉 <b>${won(o.salary || nh)}만 원</b>` : ""}</span>
       <label>제시 연봉<input id="meOff" type="number" inputmode="numeric" step="100" value="${o.salary || ""}" placeholder="${nh ? won(nh) : "만 원"}"></label>
-      <span class="lnks"><button class="lnk" type="button" data-me-open>내 상황 고치기</button><button class="lnk" type="button" data-me-general>일반 판정 보기</button></span></div>`;
+      <span class="lnks">${mePickBtn(c)}<button class="lnk" type="button" data-me-open>내 상황 고치기</button><button class="lnk" type="button" data-me-general>일반 판정 보기</button></span></div>`;
   }
   const { c: kase, est } = meCase(c), o = meOver[c.name] || {};
   const opt = (list, v) => list.map(x => `<option${x === v ? " selected" : ""}>${esc(x)}</option>`).join("");
@@ -1972,7 +2007,75 @@ function meStrip(c, my) {
   return `<div class="mestrip" id="meSlot"><span class="tag">내 상황 기준</span>${nowInfo}
     <span>지금 <b>${esc(meWho())}</b> → ${o.salary ? "제시 연봉" : esc(est.how)} <b>${won(kase.target.salary)}만 원</b> · ${esc(kase.target.size)}${kase.target.rating != null ? " · 평점 " + kase.target.rating.toFixed(2) : ""}</span>
     ${offer}<label>근무지<select id="mePlace">${opt(ME_PLACES, kase.target.place)}</select></label>
-    <span class="lnks"><button class="lnk" type="button" data-me-open>내 상황 고치기</button><button class="lnk" type="button" data-me-general>일반 판정 보기</button></span></div>`;
+    <span class="lnks">${mePickBtn(c)}<button class="lnk" type="button" data-me-open>내 상황 고치기</button><button class="lnk" type="button" data-me-general>일반 판정 보기</button></span></div>`;
+}
+// ── #4 지금 회사 vs 이 회사 (경력) — 지금 회사 이름을 찾았으면 평점·재무까지, 못 찾았으면 넣은 값만
+function meCmp(c, my) {
+  if (!my || meNew() || !my.kase) return "";
+  const { now, target } = my.kase, nc = meNow.c;
+  const W = ["칼퇴", "보통", "야근 잦음", "매일 야근"], LV = ["F", "D", "C", "B", "A", "A+", "S"];
+  const lt = (o, k) => { const x = o?.grades?.[k]; return x?.grade == null ? null : ltxt(x); };
+  const num = v => v == null ? null : Number(v);
+  const rows = [
+    ["일반 판정", nc ? nc.verdict : null, c.verdict, (a, b) => (ME_GRADE[b] ?? -1) - (ME_GRADE[a] ?? -1)],
+    ["연봉", now.salary && `${won(now.salary)}만 원`, target.salary && `${won(target.salary)}만 원`, () => num(target.salary) - num(now.salary)],
+    ["규모", now.size, target.size, () => FitEngine.tier(target.size).n - FitEngine.tier(now.size).n],
+    ["현직자 평점", now.rating != null && now.rating.toFixed(2), target.rating != null && target.rating.toFixed(2), () => now.rating == null || target.rating == null ? 0 : target.rating - now.rating],
+    ["워라밸", now.wlb, target.wlb, () => W.indexOf(now.wlb) - W.indexOf(target.wlb)],
+    ["근무지", now.place, target.place, () => 0],
+    ...["안정성", "성장성", "수익성"].map(k => [k, lt(nc, k), lt(c, k), (a, b) => a && b ? LV.indexOf(b) - LV.indexOf(a) : 0]),
+  ].filter(r => r[1] || r[2]);
+  const td = (v, win) => `<td class="${win ? "win" : ""}">${v ? esc(String(v)) : "—"}</td>`;
+  const body = rows.map(([k, a, b, f]) => { const d = a && b ? f(a, b) : 0; return `<tr><th>${k}</th>${td(a, d < 0)}${td(b, d > 0)}</tr>`; }).join("");
+  return `<div class="mecmp"><h4>지금 회사 vs 이 회사<small>▲ 더 나은 쪽</small></h4><table><thead><tr><th></th><th>${esc(nc ? nc.name : "지금 (넣은 값)")}</th><th>${esc(c.name)}</th></tr></thead><tbody>${body}</tbody></table>
+    ${nc ? "" : `<p class="note">${ME.co ? `'${esc(ME.co)}'을(를) 못 찾아 넣은 값으로만 비교했어요.` : "내 상황에 지금 회사 이름을 넣으면 평점·재무까지 나란히 비교해요."}</p>`}</div>`;
+}
+// ── #5 후보 비교: 회사 화면에서 '비교 목록에 담기' → 2곳 이상이면 내 판정 순으로 줄 세운다 (이 기기에만 저장)
+const mePicks = () => { try { return JSON.parse(localStorage.getItem("cc-me-picks") || "[]"); } catch (e) { return []; } };
+function meSetPicks(a) { try { localStorage.setItem("cc-me-picks", JSON.stringify(a.slice(-5))); } catch (e) {} }
+function mePickBtn(c) { const on = mePicks().includes(c.name); return `<button class="lnk" type="button" data-me-pick>${on ? "비교 목록에서 빼기" : (meNew() ? "합격 카드 비교에 담기" : "후보 비교에 담기")}</button>`; }
+function meRankSlot(c, my) {
+  const p = mePicks();
+  if (!my || p.length < 2) return "";
+  setTimeout(meRankFill, 0);
+  return `<div class="merank" id="meRank"><h4>${meNew() ? "내 합격 카드 비교" : "내 후보 회사 비교"}<small>${p.length}곳 · 내 상황 기준</small></h4><p class="note">계산하는 중…</p></div>`;
+}
+async function meRankFill() {
+  const el = document.getElementById("meRank"); if (!el) return;
+  const cur = meCo, rows = [];
+  for (const n of mePicks()) {
+    const c = n === cur?.name ? cur : await getCo(n).catch(() => null);
+    if (!c || c.__err || c.__limit || c.__hidden) continue;
+    c.name = n;
+    meQuiet = true; let r; try { r = meJudge(c); } finally { meQuiet = false; }
+    if (r) rows.push({ n, c, v: r.v, g: ME_GRADE[r.v], sal: r.kase ? r.kase.target.salary : r.est?.v, why: meNew() ? (r.chips || []).filter(x => !/^회사 판정/.test(x)).join(" · ") : r.z[1] || "" });
+  }
+  meCo = cur;
+  if (!document.getElementById("meRank")) return;
+  rows.sort((a, b) => b.g - a.g || (b.sal || 0) - (a.sal || 0));
+  // 신입: 1·2위 판정이 같으면 엔진의 '두 합격 비교'(회사 급·직무·근무지·연봉 점수)로 한 번 더
+  let tie = "";
+  if (meNew() && rows.length >= 2 && rows[0].g === rows[1].g) {
+    const o = r => ({ size: coSize(r.c), job: ME.job, place: coPlace(r.c), salary: r.sal, industry: engInd(r.c.salary?.group, r.c.salary?.industry) });
+    const j = FitEngine.judge({ type: "C", me: { sex: ME.sex, age: ME.age }, a: o(rows[0]), b: o(rows[1]) });
+    if (j.verdict === "뒤 회사") [rows[0], rows[1]] = [rows[1], rows[0]];
+    tie = j.verdict === "상황 따라" ? `<p class="note">1·2위는 거의 같아요. ${esc(j.reasons.length > 1 ? j.reasons.at(-1).text : "회사 급·근무지·연봉이 비슷해요. 직무가 더 맞는 쪽, 출퇴근이 편한 쪽으로 정하세요.")}</p>` : `<p class="note">1·2위 판정이 같아 회사 급·직무·근무지·연봉 점수로 한 번 더 나눴어요.</p>`;
+  }
+  el.innerHTML = `<h4>${meNew() ? "내 합격 카드 비교" : "내 후보 회사 비교"}<small>${rows.length}곳 · 내 상황 기준</small></h4>
+    <table><thead><tr><th></th><th>회사</th><th>내 판정</th><th>연봉</th><th>핵심 이유</th></tr></thead><tbody>${rows.map((r, i) =>
+      `<tr><td class="no">${i + 1}</td><td><button class="go" type="button" data-me-go="${esc(r.n)}">${esc(r.n)}</button></td><td>${esc(r.v)}</td><td>${r.sal ? won(r.sal) + "만" : "—"}</td><td class="why">${esc(r.why)}</td></tr>`).join("")}</tbody></table>${tie}
+    <p class="note">회사 화면의 '비교 목록에서 빼기'로 지울 수 있어요. 최대 5곳.</p>`;
+}
+// ── #2 이 판정 맞았나요? → /me 에 t:"f" 로 (판정 규칙을 실제 결과로 고치는 데 씀). 고른 값은 이 기기에만 기억
+const meFbAll = () => { try { return JSON.parse(localStorage.getItem("cc-fb") || "{}"); } catch (e) { return {}; } };
+let meLastV = "";
+function meFb(c, my) {
+  meLastV = my.v;
+  const s = meFbAll()[c.name] || {};
+  const b = (g, v, txt) => `<button type="button" class="mfb${s[g] === v ? " on" : ""}" data-fb="${g}" data-fv="${v}">${txt}</button>`;
+  return `<div class="mefb" id="meFb"><span>이 판정, 내 생각과 맞나요?</span>${b("fb", "up", "맞아요")}${b("fb", "down", "아니에요")}
+    <span class="sep">실제로는?</span>${b("went", "갔어요", "갔어요·갈 거예요")}${b("went", "안 가요", "안 가요")}${b("went", "아직", "아직 몰라요")}
+    ${s.fb || s.went ? "<em>고마워요! 판정을 다듬는 데 써요.</em>" : ""}</div>`;
 }
 // 내 상황이 바뀌면 지금 회사 화면을 통째로 다시 그린다 (회사 자료는 이미 받아 둔 것을 씀)
 function meRefresh() {
@@ -1992,6 +2095,19 @@ document.addEventListener("click", e => {
   if (e.target.closest("[data-me-open]")) meOpen();
   if (e.target.closest("[data-me-general]")) { meGeneral = true; meRefresh(); }
   if (e.target.closest("[data-me-mine]")) { meGeneral = false; meRefresh(); }
+  if (e.target.closest("[data-me-pick]") && meCo) {
+    const p = mePicks(), n = meCo.name;
+    meSetPicks(p.includes(n) ? p.filter(x => x !== n) : [...p, n]); meRefresh();
+  }
+  const go = e.target.closest("[data-me-go]");
+  if (go) { pick(go.dataset.meGo); scrollTo(0, 0); }
+  const fb = e.target.closest("[data-fb]");
+  if (fb && meCo) {
+    const all = meFbAll(), s = all[meCo.name] = { ...(all[meCo.name] || {}), [fb.dataset.fb]: fb.dataset.fv };
+    try { localStorage.setItem("cc-fb", JSON.stringify(all)); } catch (e) {}
+    meSend({ t: "f", co: meCo.name, v: meLastV, gen: meCo.verdict, fb: s.fb, went: s.went });
+    document.getElementById("meFb").outerHTML = meFb(meCo, { v: meLastV });
+  }
 });
 
 // ---- 왼쪽 창 ----
