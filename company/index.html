@@ -138,6 +138,8 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .mchk { grid-column:1 / -1; display:flex; gap:10px; align-items:flex-start; font-size:13.5px; cursor:pointer; }
 .mchk input { width:18px; height:18px; margin-top:2px; accent-color:var(--ink); flex:none; }
 .mchk small { display:block; color:var(--muted); font-size:12px; margin-top:2px; }
+.mhelp { display:block; font-size:12px; color:var(--muted); line-height:1.5; margin-top:2px; }
+.mestrip .nowco { font-size:12.5px; color:var(--muted); }
 .mshare { background:var(--mist); border-radius:12px; padding:12px 14px; }
 .medrawer .df { padding:14px 22px 18px; border-top:1px solid var(--hairline); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 .medrawer .df button { font:inherit; font-weight:800; font-size:14px; border-radius:999px; padding:11px 20px; cursor:pointer; border:1.5px solid var(--ink); background:var(--paper); color:var(--ink); }
@@ -583,7 +585,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
       <div class="mf" id="me_gapf" hidden><label for="me_gap">쉰 기간</label><div class="u"><input id="me_gap" type="number" inputmode="decimal" step="0.5" data-k="gap" placeholder="0.5"><span>년</span></div></div>
     </fieldset>
     <fieldset><legend>지금 회사</legend>
-      <div class="mf wide"><label for="me_co">회사 이름 <small>(선택 · 연봉 보태기에만 씀)</small></label><input id="me_co" data-k="co" placeholder="예: 펄어비스" autocomplete="off"></div>
+      <div class="mf wide"><label for="me_co">회사 이름 <small>(선택)</small></label><input id="me_co" data-k="co" placeholder="예: 펄어비스" autocomplete="off">
+        <small class="mhelp">적어 주시면 지금 회사의 평점·연봉·재무를 불러와 갈 회사와 비교해서 더 정확하게 추천해요. 아래 칸 중 모르는 건 <b>모름</b>으로 두면 회사 정보로 채워요.</small></div>
       <div class="mf"><label for="me_size">규모</label><select id="me_size" data-k="size"></select></div>
       <div class="mf"><label for="me_ind">업종</label><select id="me_ind" data-k="industry"></select></div>
       <div class="mf"><label for="me_job">직무</label><input id="me_job" data-k="job" placeholder="예: 재무, 공정"></div>
@@ -753,8 +756,10 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
         // D5 중견 안정성: 빠져나오는 거면 평점·재무가 나쁠 때만 '조건 보고' (4회차 A1)
         if (tt.n === 2) add("F3", "중견도 중견 나름이에요. 갈 회사가 안정적인지 확인하세요.", !escape || lowRating(to) ? "cond" : "");
       }
-      else if (won > FIT.down_min_won * k && eff >= FIT.down_cond_pct * k)
-        add("F3", `아래 급에 +${won}만 원(${eff.toFixed(0)}%)은 애매해요. 지금 회사 평점이 갈 회사보다 낮다면 가도 돼요.`, "cond"); // 4회차 C2
+      else if (won > FIT.down_min_won * k && eff >= FIT.down_cond_pct * k) {   // 4회차 C2: 애매 구간은 평점으로 가른다
+        if (now.rating != null && to.rating != null && to.rating > now.rating) add("F3", `아래 급이지만 +${won}만 원에 평점도 지금 회사보다 좋아요. 가도 돼요.`);
+        else add("F3", `아래 급에 +${won}만 원(${eff.toFixed(0)}%)은 애매해요. 지금 회사 평점이 갈 회사보다 낮다면 가도 돼요.`, "cond");
+      }
       else if (won >= 0 && badField(now) && !badField(to))
         add("F3", "아래 급에 연봉도 그대로예요. 지금 자리에서 더 클 수 없거나, 새 직무 의지·조직문화가 확실할 때만 가세요.", "cond"); // 4회차 C5
       else add("F3", `아래 급으로 가려면 +${FIT.down_min_won}만 원 넘게, ${FIT.down_min_pct}% 이상은 올라야 해요.`, "fail");
@@ -769,7 +774,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     }
     if (upIn) add("F26", `${j(to.industry, "은", "는")} 업황이 올라오는 중이고 대기업은 좋은 곳뿐이에요. 공장 근무여도 갈 만해요.`);
     else if (upInd(now) && !upInd(to)) add("F26", `${j(now.industry, "은", "는")} 지금 호황이라 옮길 이유가 적어요.`, "cond"); // 4회차 B3
-    if (lowRating(to)) add("F12", `갈 회사 평점 ${to.rating}은 ${FIT.rating_min} 아래예요. 지금 회사보다 나은지 확인하세요.`, "cond"); // 4회차 C2
+    // 4회차 C2: 갈 회사 평점이 낮아도 지금 회사보다 높으면 괜찮다
+    if (lowRating(to) && !(now.rating != null && to.rating >= now.rating)) add("F12", `갈 회사 평점 ${to.rating}은 ${FIT.rating_min} 아래예요. 지금 회사보다 나은지 확인하세요.`, "cond");
     if (outDown) add("F26", `${j(now.industry, "은", "는")} 지금 업황이 꺾여 있어요. 다른 조건이 더 좋다면 옮길 때예요.`);
     else if (downInd(to) && !downInd(now)) add("F26", `${j(to.industry, "은", "는")} 지금 업황이 안 좋아요. 회사 사정을 확인하세요.`, "cond");
 
@@ -808,6 +814,19 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     else if (badField(now)) add("F26", "전망 어두운 산업에서 빠져나오는 기회예요. 다만 AI 시대 대비는 계속하세요."); // D2
     else if (now.industry && to.industry && now.industry !== to.industry && !jobChange && !bigGain && !outDown && !upIn)
       add("F30", `같은 ${j(to.job || "직무", "이라도", "라도")} ${j(now.industry, "과", "와")} ${j(to.industry, "은", "는")} 일하는 방식이 달라요. 어느 쪽이 맞는지 보고 정하세요.`, "cond"); // D1
+
+    // F32 지금 회사와 갈 회사의 회사 자체 평가 비교 (2026-10-27 사용자: 지금 회사 이름을 알면 두 회사 평가를 같이 본다)
+    //     grade = 일반 판정 단계 0(비추예요)~6(무조건 가세요), rating = 현직자 평점. 둘 다 있을 때만 본다
+    if (now.grade != null && to.grade != null) {
+      const d = to.grade - now.grade;
+      if (d >= 2) add("F32", "회사 자체 평가도 지금 회사보다 확실히 좋아요.");
+      else if (d <= -2) add("F32", "회사 자체 평가는 지금 회사가 더 좋아요. 옮겨서 얻는 게 그만큼 큰지 따져 보세요.", "cond");
+    }
+    if (now.rating != null && to.rating != null) {
+      const d = to.rating - now.rating;
+      if (d >= 0.3) add("F32", `현직자 평점이 지금 회사(${now.rating.toFixed(2)})보다 높아요(${to.rating.toFixed(2)}).`);
+      else if (d <= -0.3) add("F32", `현직자 평점은 지금 회사(${now.rating.toFixed(2)})가 갈 회사(${to.rating.toFixed(2)})보다 높아요. 분위기를 꼭 확인하세요.`, "cond");
+    }
 
     // 4회차 A4: 한 곳 평균 2년 미만으로 옮겨 다녔으면 다음 회사에서 오래 버텨야 한다
     const tl = (now.prev_tenures || []).concat(now.tenure != null ? [now.tenure] : []);
@@ -1249,6 +1268,7 @@ async function render(name) {
   if (c && c.__hidden) { $("#out").innerHTML = `<div class="sec">${empty("정정 요청을 검토하느라 이 회사는 잠시 내렸어요.")}</div>`; return; }
   if (c && c.__limit) { $("#out").innerHTML = `<div class="sec">${empty("조회가 너무 많아요. 잠시 후 다시 시도해 주세요.")}</div>`; return; }
   if (c && c.__err) { $("#out").innerHTML = `<div class="sec">${empty("잠시 연결이 불안정해요. 잠시 후 다시 시도해 주세요.")}</div>`; return; }
+  if (ME?.co) await meLoadNow();   // 내 상황의 지금 회사 정보 (한 번만)
   if (c) c.name = name;  // 조각 파일에는 이름 칸을 빼고 저장(용량) → 여기서 채움
   if (!c) { $("#hint").textContent = ""; document.querySelectorAll(".pill").forEach(p => p.classList.remove("on"));
     $("#out").innerHTML = `<div class="sec">${empty("'" + name + "'은(는) 아직 모은 자료가 없어요. 직원 30명 이상 회사만 들어 있어요.")}</div>`; return; }
@@ -1623,12 +1643,35 @@ function coSalary(c, years) {
   const v = s.ranks?.[rank];
   return v ? { v, how: `이 회사 ${rank}급 추정 연봉` } : s.avg ? { v: s.avg, how: "이 회사 평균 연봉" } : null;
 }
+// 회사 워라밸 점수(잡플래닛·블라인드·캐치 평균) → 워라밸 단계
+function coWlb(c) {
+  const r = c?.rep || {}, v = [r.jobplanet?.subs?.["워라밸"], r.blind?.subs?.["업무와 삶의 균형"], r.catch?.subs?.["워라밸"]].filter(x => x != null);
+  if (!v.length) return null;
+  const a = v.reduce((x, y) => x + y, 0) / v.length;
+  return a >= 3.8 ? "칼퇴" : a >= 3.0 ? "보통" : a >= 2.5 ? "야근 잦음" : "매일 야근";
+}
+const ME_GRADE = { "무조건 가세요": 6, "가세요": 5, "조건 보고 가세요": 4, "중립기어": 3, "스펙 보고 결정하세요": 2, "다시 생각해요": 1, "비추예요": 0 };
+// 지금 회사 정보 (이름을 적었을 때만 한 번 불러 둔다). 못 찾으면 null → 넣은 내용으로만 판단
+let meNow = { key: "", c: null };
+async function meLoadNow() {
+  const q = (ME?.co || "").trim();
+  if (!q) { meNow = { key: "", c: null }; return; }
+  if (meNow.key === q) return;
+  const hit = (typeof find === "function" && IDX.length ? find(q, 1)[0] : null);
+  const name = hit ? hit[0] : q;
+  const c = await getCo(name).catch(() => null);
+  meNow = { key: q, c: c && !c.__err && !c.__limit && !c.__hidden ? { ...c, name } : null };
+}
+// 사람이 넣은 값이 먼저, 안 넣은 것만 회사 정보로 채운다 (2026-10-27 사용자: 회사 워라밸이 나빠도 그 사람 워라밸은 좋을 수 있다)
 function meCase(c) {
-  const o = meOver[c.name] || {}, est = coSalary(c, ME.years);
+  const o = meOver[c.name] || {}, est = coSalary(c, ME.years), nc = meNow.c;
   const now = { sex: ME.sex, age: ME.age, years: ME.years, tenure: ME.tenure, moves: ME.moves, left: !!ME.left, gap: ME.left ? ME.gap : undefined,
-    size: ME.size, industry: engInd(ME.industry), job: ME.job, salary: ME.salary, wlb: ME.wlb, place: ME.place };
+    size: ME.size || (nc ? coSize(nc) : "중견"), industry: engInd(ME.industry || nc?.salary?.group, nc?.salary?.industry), job: ME.job, salary: ME.salary,
+    wlb: ME.wlb || coWlb(nc) || "보통", place: ME.place || (nc ? coPlace(nc) : "수도권"),
+    rating: nc?.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[nc.verdict] : undefined };
   const target = { size: o.size || coSize(c), industry: engInd(c.salary?.group, c.salary?.industry), job: ME.want || ME.job,
-    salary: o.salary || est?.v, wlb: ME.twlb || "보통", place: o.place || coPlace(c), rating: c.grades?.["평판"]?.score ?? undefined };
+    salary: o.salary || est?.v, wlb: ME.twlb || coWlb(c) || "보통", place: o.place || coPlace(c),
+    rating: c.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[c.verdict] : undefined };
   return { c: { type: "A", now, target }, est };
 }
 // 이유 문장을 + ? ! 로 나눠 보이게
@@ -1706,8 +1749,8 @@ function meJudge(c) {
   const pay = `${meOver[c.name]?.salary ? "제시 연봉" : est.how} ${won(kase.target.salary)}만 원 — 지금보다 ${gap >= 0 ? "+" : ""}${won(gap)}만 원(${pct >= 0 ? "+" : ""}${pct}%)이에요.`;
   // 회사 일반 판정의 한마디를 이어 붙여 최소 5줄 (2026-10-27 사용자 요청)
   const sl = c.salary || {}, rg = c.grades?.["평판"]?.score;
-  const gen = meAdapt(c.zorro || [], { y: ME.years || 0, age: ME.age || 0, v, est, left: !!ME.left, wlb: ME.wlb, tenure: sl.tenure,
-    sameInd: !!ME.industry && ME.industry === c.salary?.group }).map((t, i) => i === 0 ? `회사만 놓고 보면, ${t}` : t);
+  const gen = meAdapt(c.zorro || [], { y: ME.years || 0, age: ME.age || 0, v, est, left: !!ME.left, wlb: kase.now.wlb, tenure: sl.tenure,
+    sameInd: (ME.industry || meNow.c?.salary?.group) === c.salary?.group }).map((t, i) => i === 0 ? `회사만 놓고 보면, ${t}` : t);
   const facts = [];
   if (rg != null) facts.push(`현직자 평점은 종합 ${rg.toFixed(2)}점이에요${rg < 3 ? ". 3.0 아래라 분위기를 꼭 확인하세요" : ""}.`);
   if (sl.tenure != null) facts.push(`직원 ${won(sl.members)}명, 평균 근속 ${sl.tenure}년인 회사예요.`);
@@ -1724,7 +1767,8 @@ function meStrip(c, my) {
   const opt = (list, v) => list.map(x => `<option${x === v ? " selected" : ""}>${esc(x)}</option>`).join("");
   const offer = `<label>제시 연봉<input id="meOff" type="number" inputmode="numeric" step="100" value="${o.salary || ""}" placeholder="${est ? won(est.v) : "만 원"}"></label>`;
   if (!kase.target.salary) return `<div class="mestrip need" id="meSlot"><span>이 회사는 연봉 자료가 없어요. <b>제시받은 연봉</b>을 넣으면 내 기준으로 판정해요.</span>${offer}</div>`;
-  return `<div class="mestrip" id="meSlot"><span class="tag">내 상황 기준</span>
+  const nowInfo = ME.co ? (meNow.c ? `<span class="nowco">지금 회사 <b>${esc(meNow.c.name)}</b> 정보 반영</span>` : `<span class="nowco">'${esc(ME.co)}' 정보를 못 찾아 넣은 내용으로만 판단했어요</span>`) : "";
+  return `<div class="mestrip" id="meSlot"><span class="tag">내 상황 기준</span>${nowInfo}
     <span>지금 <b>${esc(meWho())}</b> → ${o.salary ? "제시 연봉" : esc(est.how)} <b>${won(kase.target.salary)}만 원</b> · ${esc(kase.target.size)}${kase.target.rating != null ? " · 평점 " + kase.target.rating.toFixed(2) : ""}</span>
     ${offer}<label>근무지<select id="mePlace">${opt(ME_PLACES, kase.target.place)}</select></label>
     <span class="lnks"><button class="lnk" type="button" data-me-open>내 상황 고치기</button><button class="lnk" type="button" data-me-general>일반 판정 보기</button></span></div>`;
@@ -1752,14 +1796,17 @@ document.addEventListener("click", e => {
 // ---- 왼쪽 창 ----
 const meEl = id => document.getElementById(id);
 function meFill(sel, list, v) { sel.innerHTML = list.map(x => `<option>${esc(x)}</option>`).join(""); if (v) sel.value = v; }
-meFill(meEl("me_size"), ME_SIZES, "중견"); meFill(meEl("me_ind"), ME_INDS, "기타"); meFill(meEl("me_wlb"), ME_WLB, "보통");
-meFill(meEl("me_twlb"), ME_WLB, "보통"); meFill(meEl("me_place"), ME_PLACES, "수도권");
+// 맨 앞 '모름' = 비워 두기 → 회사 정보로 채움 (사람이 고른 값이 늘 먼저)
+const ME_UNK = "모름";
+meFill(meEl("me_size"), [ME_UNK, ...ME_SIZES]); meFill(meEl("me_ind"), [ME_UNK, ...ME_INDS]); meFill(meEl("me_wlb"), [ME_UNK, ...ME_WLB]);
+meFill(meEl("me_twlb"), [ME_UNK, ...ME_WLB]); meFill(meEl("me_place"), [ME_UNK, ...ME_PLACES]);
 let meLast = null;
 function meOpen() {
   meLast = document.activeElement;
   meEl("meForm").querySelectorAll("[data-k]").forEach(el => {
     const v = ME?.[el.dataset.k];
     if (el.type === "checkbox") el.checked = !!v; else if (v != null) el.value = el.dataset.k === "left" ? (v ? "1" : "") : v;
+    else if (el.tagName === "SELECT" && el.options[0]?.value === ME_UNK) el.value = ME_UNK;
   });
   meEl("me_gapf").hidden = !meEl("me_left").value;
   meEl("meErr").hidden = true;
@@ -1787,7 +1834,7 @@ meEl("meSave").onclick = () => {
     if (el.type === "checkbox") m[k] = el.checked;
     else if (el.type === "number") { if (el.value !== "") m[k] = Number(el.value); }
     else if (k === "left") m[k] = !!el.value;
-    else if (el.value.trim()) m[k] = el.value.trim();
+    else if (el.value.trim() && el.value !== ME_UNK) m[k] = el.value.trim();
   });
   const err = !m.salary ? "지금 연봉을 넣어 주세요." : m.years == null ? "총 경력을 넣어 주세요." : !m.job ? "직무를 넣어 주세요." : "";
   if (err) { meEl("meErr").textContent = err; meEl("meErr").hidden = false; return; }
