@@ -1861,7 +1861,7 @@ function meBar() {
   const mine = !!ME && !meGeneral;
   b.classList.toggle("set", !!ME); b.classList.toggle("on", mine); g.classList.toggle("on", !!ME && !mine);
   b.setAttribute("aria-pressed", String(mine)); g.setAttribute("aria-pressed", String(!!ME && !mine));
-  g.querySelector("span").textContent = ME && !mine ? "지금 일반 판정을 보고 있어요" : "평점·연봉·재무로 본 일반 판정이에요";
+  g.querySelector("span").textContent = !ME ? "평점·연봉·재무로 본 일반 판정이에요" : mine ? "누르면 일반 판정으로 바꿔요" : "지금 일반 판정을 보고 있어요";
   b.innerHTML = ME
     ? `<small>${mine ? "내 상황 기준으로 보는 중" : "내 상황 입력됨"}</small><b>${esc([ME.years != null && ME.years + "년 차", ME.job, won(ME.salary) + "만 원"].filter(Boolean).join(" · "))}</b><span>${mine ? "판정·한마디가 내 기준으로 나와요 · 한 번 더 누르면 고치기" : "누르면 다시 내 기준으로 봐요"}</span>`
     : `<small>내 상황에 맞춰 보려면</small><b>내 상황 넣기 →</b><span>연차·연봉을 넣으면 판정을 내 기준으로 바꿔 드려요</span>`;
@@ -1870,9 +1870,9 @@ meEl("meOpenBtn").onclick = () => {
   if (ME && meGeneral) { meGeneral = false; meRefresh(); toast("내 상황 기준으로 바꿨어요"); }
   else meOpen();
 };
-meEl("meGenBtn").onclick = () => {
+meEl("meGenBtn").onclick = () => {   // 내 상황을 넣었든 안 넣었든 누르면 일반 판정 + 검색창으로
   if (ME && !meGeneral) { meGeneral = true; meRefresh(); toast("일반 판정으로 바꿨어요"); }
-  if (!meCo) $("#q").focus();
+  $("#q").focus({ preventScroll: !!meCo });
 };
 meRefresh();
 const first = decodeURIComponent(location.hash.slice(1));
