@@ -16,8 +16,10 @@
 /* 히어로 */
 .z-hero { padding: clamp(20px, 2.6vw, 36px) 0 28px; border-bottom:1px solid var(--line); }
 .z-hero-grid { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:40px; align-items:end; }
-.z-hero h1 { margin-top:12px; font-family:var(--display); font-weight:900; font-size:clamp(36px, 6.6vw, 96px); line-height:.96; letter-spacing:-.05em; }
-.z-hero h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--ink-soft); margin-bottom:14px; line-height:1.15; }
+/* 2026-10-29 사용자: 머리 글자 크기를 연봉·회사·직무사전과 똑같이 (전엔 36~96px로 혼자 컸음) */
+.z-hero h1 { margin-top:12px; font-family:var(--display); font-weight:900; font-size:clamp(38px, 6vw, 88px); line-height:.98; letter-spacing:-.05em; }
+.z-hero h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--ink-soft); margin-bottom:12px; line-height:1.15; }
+@media (max-width:640px) { .z-hero h1 { font-size:min(40px, 11vw); } .z-hero h1 .thin { font-size:18px; } }
 .z-hero h1 .mark { background:linear-gradient(transparent 68%, var(--mark) 68%); }
 .z-hero h1 .line { display:block; white-space:nowrap; max-width:100%; min-width:0; }
 .z-hero .lede { margin-top:26px; max-width:58ch; font-size:16px; line-height:1.7; color:var(--ink-soft); }
@@ -163,7 +165,6 @@
   .z-sec-head p { grid-column:1 / -1; justify-self:start; text-align:left; }
 }
 @media (max-width: 600px) {
-  .z-hero h1 .thin { font-size:.5em; }
   .z-stats { grid-template-columns:1fr; }
   .z-stats dd { font-size:28px; }
   .case { grid-template-columns:minmax(0,1fr) 110px; }
