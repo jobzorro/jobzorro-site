@@ -333,12 +333,16 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zf-in { max-width:1120px; margin:0 auto; padding:36px 20px 44px; }
 .zf-logo img { height:20px; width:auto; filter:var(--logo-filter,none); display:block; }
 .zf-links { display:flex; flex-wrap:wrap; gap:16px; font-size:12.5px; margin-top:18px; color:var(--ink-soft); }
-.zf-links a { text-decoration:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; } .zf-links a:hover { color:var(--muted); }
+.zf-links a { color:inherit; text-decoration:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; } .zf-links a:hover { color:var(--muted); }
 .zf-box { margin-top:18px; background:var(--mist); border:1px solid var(--hairline); border-radius:10px; padding:14px 16px; font-size:12px; line-height:1.9; color:var(--muted); }
 .zf-box b { color:var(--ink-soft); font-weight:600; }
 .zf-note { margin-top:14px; font-size:12px; color:var(--muted); line-height:1.75; max-width:80ch; }
 .zf-note summary { cursor:pointer; font-weight:600; color:var(--ink-soft); } .zf-note p { margin-top:6px; }
-.zf-biz { margin-top:14px; font-size:11.5px; line-height:1.8; color:var(--muted); }
+.zf-outro { padding-bottom:30px; margin-bottom:30px; border-bottom:1px solid var(--hairline); }
+.zf-big { display:block; width:100%; height:auto; overflow:visible; }
+.zf-big text { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; font-size:150px; letter-spacing:-.04em; }
+.zf-big .o { fill:none; stroke:var(--ink); stroke-width:2; } .zf-big .s { fill:var(--ink); }
+.zf-slogan { margin:20px 0 0; font-size:15px; color:var(--ink-soft); line-height:1.7; }
 .zf { border-top-color:var(--hairline); }
 /* 하단 고정 상담 버튼 */
 .zfab { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(18px + env(safe-area-inset-bottom,0px)); z-index:25; }
@@ -405,7 +409,6 @@ def ticker_spans(items: list) -> str:
     row = "".join(f"<span>{html_escape(t)}</span>" for t in items)
     return row + row   # 두 번 이어 붙여 끊김 없이 흐르게
 
-OUTRO_HTML = '<section class="v2-outro"><svg class="big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg><div class="row"><p>TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.</p></div></section>'
 
 NEWS_MASTHEAD_CSS = """
 /* v2 톤: 황동 포인트 → 검정, 명조 → Archivo, 라임은 배경 강조에만 */
@@ -626,14 +629,19 @@ def nav_html(active: str, root: str, logo: str) -> str:
 
 
 def footer_html(root: str, logo: str, note: str) -> str:
-    """2026-10-29 Simple is Best: 큰 로고·링크 10개·사업자 상자 → 링크 3개 + 사업자 정보 한 줄, 안내문은 접어 둔다 (메뉴는 위·아래 탭바에 이미 있음)"""
+    """모든 페이지 공용 푸터: 큰 TEAM ZORRO 글씨·슬로건 → 로고 → 링크 3개 → 사업자 정보 상자 → (있으면) 접힌 '자료 안내'
+    2026-10-29 단순화 때 큰 글씨·상자를 뺐다가, 사용자 요청('너무 밋밋해졌다')으로 다시 넣고 모든 페이지에 똑같이 붙인다. 링크는 3개 유지"""
     c = COMPANY
     return (
         f'<footer class="zf"><div class="zf-in">'
+        f'<div class="zf-outro"><svg class="zf-big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg>'
+        f'<p class="zf-slogan">TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.</p></div>'
+        f'<a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"></a>'
         f'<div class="zf-links"><a href="{root}{APPLY}">무료 상담 신청</a><a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a>'
         f'<a href="{root}privacy/index.html">개인정보처리방침</a></div>'
+        f'<div class="zf-box"><b>법인명(상호)</b> {c["name"]} &nbsp;·&nbsp; <b>대표자</b> {c["ceo"]} &nbsp;·&nbsp; <b>개인정보보호책임자</b> {c["privacy"]}<br>'
+        f'<b>사업자등록번호</b> {c["reg"]}<br><b>주소</b> {c["addr"]}<br>© Copyright 2026 All rights reserved by CAREERPROJECT inc.</div>'
         f'{f"<details class=\"zf-note\"><summary>자료 안내</summary><p>{note}</p></details>" if note else ""}'
-        f'<p class="zf-biz">{c["name"]} · 대표 {c["ceo"]} · 사업자등록번호 {c["reg"]} · 개인정보보호책임자 {c["privacy"]}<br>{c["addr"]} · © 2026 CAREERPROJECT inc.</p>'
         f'</div></footer>'
     )
 
@@ -1092,11 +1100,15 @@ def build(out_dir: Path, with_news: bool) -> None:
         zn_css += "\n@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) { --logo-filter: invert(1); } } :root[data-theme=\"dark\"] { --logo-filter: invert(1); }"
         # '숫자로 보는 회사들' 01·02 같은 테두리 숫자: 폰에서 1.5px 선이 다크·'웹사이트 어둡게'에서 흐려 보여 굵게 (2026-10-22 사용자)
         zn_css += "\n.sec-head .num:not(.sym) { -webkit-text-stroke-width:2px; }"
+        # 2026-10-29 공용 푸터(큰 TEAM ZORRO·사업자 상자)도 붙인다 — 연봉 연구소 토큰 이름(--bg·--soft·--fill)을 푸터 토큰에 연결
+        zn_css += ("\n.zf{--paper:var(--bg);--hairline:var(--line);--mist:var(--fill);--ink-soft:var(--soft);--font:\"Noto Sans KR\",system-ui,sans-serif;--display:\"Archivo\",\"Noto Sans KR\",sans-serif}\n"
+                   + "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith(".zf")))
         def add_nav(path, root):
             h = path.read_text(encoding="utf-8")
             if 'class="zn"' in h:
                 return
             h = h.replace("</style>", zn_css + "\n</style>", 1)
+            h = h.replace("</body>", footer_html(root, logo, "") + "</body>", 1)
             h = h.replace("<body>", "<body>\n" + nav_html("salary/index.html", root, logo_nav), 1) if "<body>" in h else nav_html("salary/index.html", root, logo_nav) + h
             h = h.replace("</style>", TABBAR_CSS + "</style>", 1)   # 2026-10-29 아래 탭바
             path.write_text(h, encoding="utf-8")

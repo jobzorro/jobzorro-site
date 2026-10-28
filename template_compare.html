@@ -43,6 +43,7 @@
 .tags li { font-size:12.5px; padding:4px 10px; border-radius:999px; border:1px solid var(--line-strong); color:var(--ink-soft); }
 .tags li.hit { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); font-weight:700; }
 .cmp ol.path { display:grid; gap:6px; } .cmp ol.path li b { color:var(--ink); font-weight:700; }
+.cmp ol.path details summary { display:inline; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--muted); margin-left:4px; } .cmp ol.path details[open] summary { display:none; }
 .trans a { display:inline-block; margin:0 6px 6px 0; font-size:13px; padding:6px 12px; border:1px solid var(--line-strong); border-radius:999px; text-decoration:none; color:var(--ink); }
 .trans a:hover { background:var(--ink); color:var(--paper); border-color:var(--ink); }
 .lvl { display:inline-block; font-family:var(--display); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:4px 9px; border-radius:999px; background:var(--ink); color:var(--paper); }
@@ -135,7 +136,11 @@
     h += row('하드 스킬', tagList(A.skills.hard, B.skills.hard), tagList(B.skills.hard, A.skills.hard));
     h += row('도구', tagList(A.tools, B.tools), tagList(B.tools, A.tools));
     h += row('들어가는 길', esc(A.entry.major) + '<br><span style="color:var(--muted)">비전공: ' + esc(A.entry.nonmajor) + '</span>', esc(B.entry.major) + '<br><span style="color:var(--muted)">비전공: ' + esc(B.entry.nonmajor) + '</span>');
-    h += row('커리어 패스', '<ol class="path">' + A.path.map(function (p) { return '<li><b>' + esc(p.stage) + '</b> ' + esc(p.desc) + '</li>'; }).join('') + '</ol>', '<ol class="path">' + B.path.map(function (p) { return '<li><b>' + esc(p.stage) + '</b> ' + esc(p.desc) + '</li>'; }).join('') + '</ol>');
+    // 2026-10-29 Simple is Best: 연차별 설명은 첫 문장만 보이고 나머지는 '더 보기'로
+    function path(X) { return '<ol class="path">' + X.path.map(function (p) {
+      var m = /^(.*?[.!?])\s+(.+)$/.exec(p.desc || '');
+      return '<li><b>' + esc(p.stage) + '</b> ' + esc(m ? m[1] : p.desc) + (m ? '<details><summary>더 보기</summary>' + esc(m[2]) + '</details>' : '') + '</li>'; }).join('') + '</ol>'; }
+    h += row('커리어 패스', path(A), path(B));
     h += row('옮겨갈 직무', '<div class="trans">' + A.transitions.filter(function (t) { return byId[t]; }).map(function (t) { return '<a href="?a=' + a + '&b=' + t + '">' + esc(byId[t].name) + ' →</a>'; }).join('') + '</div>', '<div class="trans">' + B.transitions.filter(function (t) { return byId[t]; }).map(function (t) { return '<a href="?a=' + t + '&b=' + b + '">' + esc(byId[t].name) + ' →</a>'; }).join('') + '</div>');
     h += row('현직자가 말하는 현실', esc((A.realities || [])[0] || ''), esc((B.realities || [])[0] || ''));
     h += row('근거', '인터뷰 ' + (A.sources.count || 0) + '건 · 공개 ' + (A.sources.public || 0) + '건', '인터뷰 ' + (B.sources.count || 0) + '건 · 공개 ' + (B.sources.public || 0) + '건');

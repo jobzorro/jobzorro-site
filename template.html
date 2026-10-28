@@ -818,12 +818,11 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
     return '<article class="card" data-id="' + j.id + '" tabindex="0" role="button" aria-label="' + esc(j.name) + ' 자세히 보기">' +
       (V2 ? art(j) : '') +
       '<button class="fav' + (favHas(j.id) ? ' on' : '') + '" type="button" data-fav="' + j.id + '" aria-pressed="' + (favHas(j.id) ? 'true' : 'false') + '" aria-label="' + esc(j.name) + ' 저장">★</button>' +
-      '<div class="card-top"><span class="group">' + esc(gname(j.group)) + (j.mj ? '<span class="mjc ' + j.mj.lv + '">' + esc(j.mj.card) + '</span>' : '') + '</span>' +
-      '<span class="ai l' + j.ai.level + '" title="AI ' + AI_LABEL[j.ai.level] + '"><i><b></b><b></b><b></b></i>AI ' + AI_LABEL[j.ai.level] + '</span></div>' +
+      '<div class="card-top"><span class="group">' + esc(gname(j.group)) + (j.mj ? '<span class="mjc ' + j.mj.lv + '">' + esc(j.mj.card) + '</span>' : '') + '</span></div>' +   // 2026-10-29 카드에서 AI 영향·현직자 자료 배지는 뺐다 (상세 페이지에만)
       '<h3><a href="jobs/' + j.id + '/">' + nameHtml(j.name) + '</a></h3><p class="en">' + esc(j.en) + '</p>' +
       '<p class="tagline">' + esc(j.tagline) + '</p>' +
       '<ul class="tags">' + j.skills.hard.slice(0, 3).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
-      '<div class="card-foot">' + evBadge(j) + '<span class="pay">신입 <b>' + range(j.salary.junior) + '</b>만원</span></div>' +
+      '<div class="card-foot"><span class="pay">신입 <b>' + range(j.salary.junior) + '</b>만원</span></div>' +
       '</article>';
   }
   function emptyHtml() {

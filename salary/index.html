@@ -269,6 +269,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
 
 @media (max-width:899px) { .car-track { grid-auto-columns:88%; gap:16px; } .hduo { grid-template-columns:minmax(0,1fr); } }
 @media (max-width:640px) { .car-track { grid-auto-columns:100%; } }   /* 2026-10-28 모바일: 한 장씩 (위 88% 규칙보다 뒤에 둬야 먹음) */
+@media (max-width:899px) { .car-track { align-items:start; transition:height .25s ease; } }   /* 2026-10-29: 폰은 지금 보이는 장 높이에 맞춘다 (긴 장 때문에 짧은 장 아래가 화면 반 장씩 비던 문제) */
 @media (max-width:900px) {
   .hero-grid { grid-template-columns:minmax(0,1fr); gap:24px; }
   .stats { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:20px; }
@@ -843,7 +844,11 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     clones();
     var cur = 0, hold = false, stop = false, t0 = performance.now(), DUR = 8000, car = $('car');
     var per = function () { return innerWidth >= 900 ? 2 : 1; };
-    function mark() { var ix = cur % N; $('carCnt').innerHTML = String(ix + 1).padStart(2, '0') + ' <span>/ ' + String(N).padStart(2, '0') + '</span>'; [].forEach.call(dots.children, function (b, i) { b.classList.toggle('on', i === ix); if (i !== ix) b.style.removeProperty('--p'); }); }
+    // 2026-10-29: 한 장씩 보이는 폰에서는 묶음 높이를 지금 장 높이로 (PC 두 장 보기는 그대로)
+    function fit() { var sl = slides[cur]; var cs = getComputedStyle(track), pad = cs.boxSizing === 'border-box' ? parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) : 0;
+      track.style.height = per() === 1 && sl ? (sl.offsetHeight + pad) + 'px' : ''; }
+    addEventListener('resize', function () { fit(); });
+    function mark() { fit(); var ix = cur % N; $('carCnt').innerHTML = String(ix + 1).padStart(2, '0') + ' <span>/ ' + String(N).padStart(2, '0') + '</span>'; [].forEach.call(dots.children, function (b, i) { b.classList.toggle('on', i === ix); if (i !== ix) b.style.removeProperty('--p'); }); }
     var pos = function (i) { return slides[i].offsetLeft - slides[0].offsetLeft; };
     function go(i) {
       if (i < 0) { track.scrollTo({ left: pos(N), behavior: 'auto' }); i = N - 1; }   // 1번에서 뒤로: 같은 모양인 복제본 자리로 옮긴 뒤 한 칸 뒤로
