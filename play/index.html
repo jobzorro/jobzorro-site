@@ -1363,10 +1363,10 @@ function mock(path, b) {
       vs: mockVs({ d: TODAY, g: b.game, n: b.nick, s: S.score, a: S.aux }) };
   }
   if (u[0] === '/play/top') {
-    var g = q.game, d = q.d || TODAY, days = PC.weekDays(d).filter(function (x) { return x <= TODAY; }), R = dayRows(d, g), hall = [];
+    var g = q.game, d = q.d || TODAY, days = PC.weekDays(d).filter(function (x) { return x <= TODAY; }), R = dayRows(d, g), hall = [], meHall = [];
     for (var w = 1; w <= 8; w++) {
       var mon = PC.addDays(PC.weekDays(d)[0], -7 * w), ws = weekSum(PC.weekDays(mon), g)[0];
-      if (ws) hall.push([PC.isoWeek(mon), ws.nick, ws.s]);
+      if (ws) { hall.push([PC.isoWeek(mon), ws.nick, ws.s]); if (ws.me) meHall.push([PC.isoWeek(mon), g]); }
     }
     var T = dayRows(d, 'today'), Y = dayRows(PC.addDays(d, -1), 'today'), okT = T.filter(function (r) { return r.aux > 0; });
     var mp = mockPlays(), di = PC.dayIndex(d), hr = new Date(Date.now() + 9 * 3600e3).getUTCHours();
@@ -1376,7 +1376,7 @@ function mock(path, b) {
     if (g === 'road') stat.best = R[0] ? { nick: R[0].nick, score: R[0].score, picks: R[0].picks } : null;
     var tday = 1800 + Math.round(hr * 130 + PC.rng('mp|' + d)() * 400) + (mp[d] || 0);
     return { day: d, game: g, week: PC.isoWeek(d), today: R.slice(0, 10).map(function (r) { return [r.nick, r.score, r.aux]; }),
-      weekTop: weekSum(days, g).slice(0, 10).map(function (r) { return [r.nick, r.s]; }), hall: hall,
+      weekTop: weekSum(days, g).slice(0, 10).map(function (r) { return [r.nick, r.s]; }), hall: hall, meHall: q.dev ? meHall : undefined,
       plays: { total: 96000 + di * 1150 + (mp.total || 0), today: tday, people: Math.round(tday * .31) },
       todayGame: { n: T.length * 53, ok: okT.length * 53, avg: stat.avg || (okT.length ? Math.round(okT.reduce(function (a, r) { return a + r.aux; }, 0) / okT.length * 10) / 10 : 0) },
       yday: { n: Y.length * 53, ok: Y.filter(function (r) { return r.aux > 0; }).length * 53 }, stat: stat };
@@ -1415,8 +1415,8 @@ function submitDaily(game, ans, S, extra) {
   }, function (err) { return save({ score: S.score, aux: S.aux, sent: 0, err: (err && err.error) || '점수를 보내지 못했어요' }); });
 }
 function getTop(game, d) {
-  return call('/play/top?game=' + game + '&d=' + (d || TODAY)).then(function (t) {   // 명예의 전당에 내 이름이 있으면 '명예의 전당 배경' 조건
-    try { if (t && t.hall && t.hall.some(function (r) { return r[1] === NICK; }) && store.get('slp-hof') !== '1') { store.set('slp-hof', '1'); itemCheck(); } } catch (e) {}
+  return call('/play/top?game=' + game + '&d=' + (d || TODAY) + '&dev=' + DEV).then(function (t) {   // 서버가 이 기기의 명예의 전당 기록(meHall)을 알려 주면 '명예의 전당 배경' 조건 (닉네임이 같은 남의 기록은 안 됨)
+    try { if (t && t.meHall && t.meHall.length && store.get('slp-hof') !== '1') { store.set('slp-hof', '1'); itemCheck(); } } catch (e) {}
     return t;
   }).catch(function () { return null; });
 }
