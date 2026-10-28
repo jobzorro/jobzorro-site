@@ -50,8 +50,8 @@
 .z-bar a:hover { color:var(--ink); border-color:var(--line-strong); }
 .z-bar a.on { background:var(--ink); color:var(--paper); border-color:var(--ink); }
 .z-bar .cta { margin-left:auto; flex:none; }
-/* 2026-10-28 모바일: 번호 빼고 이름만, 무료 상담은 아래 떠 있는 버튼이 있어 숨김, 검은 띠 높이 절반 */
-@media (max-width:640px) { .z-bar a .n { display:none; } .z-bar a { padding:8px 11px; } .z-bar .cta { display:none; } .z-ticker span { padding:7px 18px; font-size:11.5px; } .z-ticker span::after { margin-left:18px; } }
+/* 2026-10-28 모바일: 번호 빼고 이름만, 무료 상담 칩은 오른쪽 끝에 붙여 늘 보이게(아래 고정 버튼은 10-18에 뺐음), 검은 띠 높이 절반 */
+@media (max-width:640px) { .z-bar a .n { display:none; } .z-bar a { padding:8px 11px; } .z-bar .cta { position:sticky; right:0; padding-left:8px; background:linear-gradient(90deg, transparent, var(--paper) 8px); } .z-bar .cta a { padding:8px 12px; } .z-ticker span { padding:7px 18px; font-size:11.5px; } .z-ticker span::after { margin-left:18px; } }
 .z-bar .cta a { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
 
 /* 섹션 공통 */
