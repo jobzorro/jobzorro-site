@@ -589,11 +589,16 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   .vs-g { width:44px; height:38px; font-size:18px; }
 }
 @media (max-width:520px) { .vs-head { gap:8px; padding-top:28px; } .vs-side .meta { display:none; } .vs-pill { font-size:12px; padding:3px 9px; } .vs-win { display:none; } }
-.zorro .zmore summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--inkfg-soft);margin:8px 0 4px;list-style:none}
-.zorro .zmore ul{margin-top:4px}
-.zorro .zmore summary::-webkit-details-marker{display:none}
-.zorro .zmore summary::after{content:" ▾"}
-.zorro .zmore[open] summary::after{content:" ▴"}
+/* 한마디 접기: 넷째 줄은 흐리게 반만, 다섯째부터 숨김 → 카드 폭 버튼 (2026-10-28) */
+.zfold.clip li:nth-child(n+5) { display:none; }
+.zfold.clip li:nth-child(4) { max-height:2.4em; overflow:hidden; -webkit-mask-image:linear-gradient(#000 0%, transparent 95%); mask-image:linear-gradient(#000 0%, transparent 95%); }
+.zmore-btn { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; min-height:44px; margin-top:12px; font:inherit; font-size:14px; font-weight:700;
+  color:var(--inkfg); background:transparent; border:1px solid color-mix(in srgb, var(--inkfg) 28%, transparent); border-radius:12px; cursor:pointer; }
+.zmore-btn:hover { border-color:var(--inkfg); }
+.zmore-btn:focus-visible { outline:2px solid var(--acc, #c6ff3d); outline-offset:2px; }
+.zmore-btn small { font-size:12.5px; font-weight:500; color:var(--inkfg-soft); }
+.zmore-btn i { width:7px; height:7px; border:solid currentColor; border-width:0 2px 2px 0; transform:translateY(-2px) rotate(45deg); margin-left:2px; }
+.zmore-btn[aria-expanded="true"] i { transform:translateY(2px) rotate(-135deg); }
 .sec-h .why .asof{display:block;margin-top:4px;font-size:12px;opacity:.7}
 </style>
 </head>
@@ -1066,9 +1071,15 @@ function cardPick(c) {
 // 한마디 목록: 내 상황 한마디는 길어서 첫 줄 포함 4줄만 보이고 나머지는 '더 보기' (2026-10-28 사용자 요청). 일반 한마디는 그대로
 function zList(z, my) {
   const li = (t, last) => `<li class="${last ? "last" : ""}">${esc(t)}</li>`, rest = z.slice(1);
-  if (!my || rest.length <= 4) return `<ul>${rest.map((t, i) => li(t, i === rest.length - 1)).join("")}</ul>`;
-  return `<ul>${rest.slice(0, 3).map(t => li(t)).join("")}</ul><details class="zmore"><summary>더 보기 (${rest.length - 3}줄)</summary><ul>${rest.slice(3).map((t, i, a) => li(t, i === a.length - 1)).join("")}</ul></details>`;
+  const ul = `<ul>${rest.map((t, i) => li(t, i === rest.length - 1)).join("")}</ul>`;
+  if (!my || rest.length <= 4) return ul;
+  // 2026-10-28 사용자: '더 보기'가 중간에 떠 있어 이상함 → 다른 사이트처럼 넷째 줄을 흐리게 비추고, 그 아래 카드 폭 버튼. 펼치면 맨 아래에서 '접기'
+  return `<div class="zfold clip">${ul}<button type="button" class="zmore-btn" aria-expanded="false" data-n="${rest.length - 3}">더 보기 <small>${rest.length - 3}줄</small><i aria-hidden="true"></i></button></div>`;
 }
+document.addEventListener("click", e => { const b = e.target.closest(".zmore-btn"); if (!b) return;
+  const f = b.closest(".zfold"), open = f.classList.toggle("clip") === false;
+  b.setAttribute("aria-expanded", String(open)); b.innerHTML = open ? `접기<i aria-hidden="true"></i>` : `더 보기 <small>${b.dataset.n}줄</small><i aria-hidden="true"></i>`;
+  if (!open) f.closest(".zorro")?.scrollIntoView({ block: "nearest", behavior: "smooth" }); });   // 접으면 한마디가 화면 밖으로 안 나가게
 // 자료 기준일 (2026-10-28 사용자 요청): 칸마다 어느 자료·언제 것인지 한 줄
 const mdOf = d => { const m = String(d || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[1]}.${m[2]}.${m[3]}` : String(d || ""); };
 function srcOf(c, k) {
