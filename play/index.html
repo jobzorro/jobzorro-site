@@ -792,6 +792,19 @@ html.lk-open, html.lk-open body { overflow:hidden; }
 .gft { white-space:nowrap; font-weight:700; }
 .gc.feat .gft { opacity:1; }
 @media (prefers-reduced-motion: reduce) { .boxani { display:none; } .gotz { animation:none; } .itemb.r-l::after { display:none; } }
+/* ── 2배 도트 (2026-10-29): 소품 진열 칸 = 소품 크게 + 입어 본 모습, 선물 상자 = 소품 + 조로 */
+.ipv { display:flex; align-items:flex-end; justify-content:center; gap:4px; min-height:56px; }
+.itart.sil { opacity:.7; }
+.ipv .tryon { flex:none; }
+.ipv .itart { max-width:62%; height:auto !important; }
+.items { grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); }
+.drawer .items { grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); }
+.itemb { min-height:112px; }
+.gotz { display:flex; align-items:flex-end; gap:6px; }
+.dk .di { min-height:24px; height:auto; }
+.drawer .lksec { content-visibility:auto; contain-intrinsic-size:auto 640px; }   /* 서랍 아래쪽 칸은 보일 때 그림 (느린 폰) */
+.mylk .myrk { gap:8px; }
+.me .myrk .px { margin:-4px 0; }
 @media (prefers-reduced-motion: reduce) { .band { overflow-x:auto; } .band .tr { animation:none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; animation:none !important; } .pick:hover:not(:disabled), .offer:hover:not(:disabled) { transform:none; } }
 </style>
@@ -1031,17 +1044,7 @@ var PX = (function () {
   return { ok: ok, outline: outline, paint: paint, img: img, sheet: sheet, fit: fit, tok: tok, pal2: pal2 };
 }());
 
-// ── 조로 사원 (12×16, 테두리 넣으면 14×18). 직급 5단계(사원→부장) · 표정 4개(normal·happy·sad·shock)
-// h 머리 s 피부 E 눈 g 안경 M 입 w 셔츠 t 넥타이(여자 조로는 리본) J 재킷 p 바지·치마 b 신발 T 눈물 r 볼터치 k 탐정 모자 c 사원증
-var Z_BODY = ['....hhhh....', '...hhhhhh...', '..hhhhhhhh..', '..hssssssh..', '..sEEssEEs..', '..ssssssss..',
-  '...sMMMMs...', '....ssss....', '..JwwttwwJ..', '.JJwwttwwJJ.', '.sJwwttwwJs.', '.sJwwttwwJs.',
-  '..pppppppp..', '..ppp..ppp..', '..ppp..ppp..', '..bbb..bbb..'];
-var Z_RANK = [
-  { h: '#3a2a1c', jk: null, tie: '#4f7dff', gl: 0, id: 1 },      // 사원: 흰 셔츠 + 사원증
-  { h: '#3a2a1c', jk: '#3b4a6b', tie: '#4f7dff', gl: 0 },         // 대리: 남색 재킷
-  { h: '#2b2b2b', jk: '#3b4a6b', tie: '#c0392b', gl: 1 },         // 과장: 안경 + 빨간 넥타이
-  { h: '#6a6a6a', jk: '#2b2f3a', tie: '#c0392b', gl: 1 },         // 차장: 희끗한 머리
-  { h: '#c9c9c9', jk: '#1d1f26', tie: '#ffcf3d', gl: 1 }];        // 부장: 흰머리 + 금 넥타이
+// ── 조로 사원 그림(격자·소품·배경·zorro)은 page/01c_zorro.js (2026-10-29 2배 도트)
 // ── 기본 모습 (꾸미기 확장, 2026-10-28e): 남자 조로(m) / 여자 조로(f), 머리 모양, 여자 조로는 바지·치마. 처음부터 무료, 잠금 없음
 //    LOOK = { base, hair, bottom, hat, hand, acc, bg } — 예전 기록 {hat, hand, acc} 는 그대로 남자 조로 기본 머리로 읽힘
 var BASES = { m: '남자 조로', f: '여자 조로' };
@@ -1055,122 +1058,6 @@ function lookOf(o) { return o && o.plain ? {} : o && o.look ? o.look : LOOK; }
 function baseOf(L) { return L && L.base === 'f' ? 'f' : 'm'; }
 function hairOf(L) { var b = baseOf(L), H = HAIRS[b]; return H.some(function (x) { return x[0] === (L && L.hair); }) ? L.hair : H[0][0]; }
 function lookKey(L, o) { return baseOf(L) + hairOf(L) + (L.bottom === 'skirt' ? 'S' : '') + '.' + (L.hat || '') + '.' + (L.hand || '') + '.' + (L.acc || '') + (o && o.bg ? '.' + (L.bg || '') : '') + (o && o.sil ? '.sil' : ''); }
-function setCh(r, y, x, t) { r[y] = r[y].slice(0, x) + t + r[y].slice(x + t.length); }
-// 새 팔레트 글자: V 보라 N 분홍 D 남색 A 주황 Z 은색 H 후광 노랑 U 청록 X 반창고 살구
-var ITEM_DRAW = {
-  crown: function (r) { r[0] = '.....Y.YY.Y.....'; r[1] = '.....YYYYYY.....'; },
-  headset: function (r) { r[1] = '.....KKKKKK.....'; [3, 4, 5].forEach(function (y) { setCh(r, y, 3, 'K'); setCh(r, y, 12, 'K'); }); setCh(r, 6, 11, 'K'); },
-  beanie: function (r) { r[0] = '......BBBB......'; r[1] = '.....BWBWBW.....'; r[2] = '....BBBBBBBB....'; },
-  coffee: function (r) { setCh(r, 9, 13, 'WW'); setCh(r, 10, 13, 'OO'); setCh(r, 11, 13, 'OO'); },
-  bag: function (r) { setCh(r, 11, 13, 'KK'); setCh(r, 12, 12, 'OOOO'); setCh(r, 13, 12, 'OOOO'); },
-  laptop: function (r) { setCh(r, 9, 13, 'LLL'); setCh(r, 10, 13, 'LLL'); setCh(r, 11, 12, 'mmmm'); },
-  umbrella: function (r) { setCh(r, 2, 13, 'RRR'); setCh(r, 3, 12, 'RRRR'); for (var y = 4; y <= 10; y++) setCh(r, y, 14, 'K'); setCh(r, 11, 13, 'K'); },
-  plant: function (r) { setCh(r, 8, 14, 'G'); setCh(r, 9, 13, 'GGG'); setCh(r, 10, 13, 'PPP'); setCh(r, 11, 14, 'P'); },
-  idcard: function (r) { setCh(r, 8, 6, 'c'); setCh(r, 9, 6, 'c'); setCh(r, 10, 6, 'c'); setCh(r, 11, 5, 'CC'); },
-  glasses: function (r) { r[4] = r[4].slice(0, 4) + 'gEEggEEg' + r[4].slice(12); },
-  shades: function (r) { r[4] = r[4].slice(0, 4) + 'qqqqqqqq' + r[4].slice(12); },
-  goldtie: function () {},   // 넥타이(리본) 색만 바뀜 (zPal)
-  // ── 2026-10-28e 새 소품 (모자)
-  cap: function (r) { r[0] = '......RRRR......'; r[1] = '.....RRRRRR.....'; r[2] = '....RRRRRRRRRR..'; setCh(r, 1, 7, 'W'); },
-  band: function (r) { r[2] = r[2].slice(0, 4) + 'BBBBBBBB' + r[2].slice(12); setCh(r, 1, 12, 'B'); setCh(r, 2, 12, 'BB'); setCh(r, 3, 13, 'B'); },
-  beret: function (r) { r[0] = '.......V........'; r[1] = '....VVVVVVV.....'; r[2] = '...VVVVVVVVV....'; },
-  visor: function (r) { r[2] = r[2].slice(0, 4) + 'LLLLLLLL' + r[2].slice(12); setCh(r, 3, 10, 'LLLL'); },
-  helmet: function (r) { r[0] = '......YYYY......'; r[1] = '....YYWYYYYY....'; r[2] = '...YYYYYYYYYY...'; },
-  halo: function (r) { r[0] = '....HHHHHHHH....'; setCh(r, 1, 3, 'H'); setCh(r, 1, 12, 'H'); },
-  fedora: function (r) { r[0] = '.....DDDDDD.....'; r[1] = '.....DBBBBD.....'; r[2] = '..DDDDDDDDDDDD..'; },
-  laurel: function (r) { setCh(r, 1, 4, 'GG'); setCh(r, 1, 10, 'GG'); setCh(r, 2, 3, 'G'); setCh(r, 2, 12, 'G'); setCh(r, 3, 3, 'G'); setCh(r, 3, 12, 'G'); setCh(r, 1, 7, 'YY'); },
-  horns: function (r) { setCh(r, 0, 4, 'B'); setCh(r, 0, 11, 'B'); setCh(r, 1, 4, 'BB'); setCh(r, 1, 10, 'BB'); r[2] = r[2].slice(0, 4) + 'KKKKKKKK' + r[2].slice(12); },
-  // (손)
-  calc: function (r) { setCh(r, 9, 13, 'KKK'); setCh(r, 10, 13, 'LLL'); setCh(r, 11, 13, 'WKW'); setCh(r, 12, 13, 'KWK'); },
-  phone: function (r) { setCh(r, 8, 13, 'YY'); setCh(r, 9, 13, 'LL'); setCh(r, 10, 13, 'LL'); setCh(r, 11, 13, 'YY'); },
-  magglass: function (r) { setCh(r, 7, 13, 'KKK'); setCh(r, 8, 13, 'KLK'); setCh(r, 9, 13, 'KKK'); setCh(r, 10, 14, 'O'); setCh(r, 11, 15, 'O'); },
-  dart: function (r) { setCh(r, 10, 12, 'ZZZR'); setCh(r, 9, 15, 'R'); setCh(r, 11, 15, 'R'); },
-  stock: function (r) { setCh(r, 6, 12, 'WWWG'); setCh(r, 7, 12, 'WWGW'); setCh(r, 8, 12, 'WGWW'); setCh(r, 9, 12, 'GWWW'); setCh(r, 10, 13, 'O'); setCh(r, 11, 13, 'O'); setCh(r, 12, 13, 'O'); },
-  wand: function (r) { setCh(r, 6, 14, 'H'); setCh(r, 7, 13, 'HYH'); setCh(r, 8, 14, 'H'); setCh(r, 9, 14, 'N'); setCh(r, 10, 13, 'N'); setCh(r, 11, 13, 'N'); },
-  lunchbox: function (r) { setCh(r, 11, 12, 'BBBB'); setCh(r, 12, 12, 'BWWB'); setCh(r, 13, 12, 'BBBB'); },
-  flag: function (r) { for (var y = 4; y <= 12; y++) setCh(r, y, 15, 'K'); setCh(r, 4, 12, 'BBB'); setCh(r, 5, 12, 'BWB'); setCh(r, 6, 12, 'BBB'); },
-  plane: function (r) { setCh(r, 7, 13, 'W'); setCh(r, 8, 12, 'WWW'); setCh(r, 9, 13, 'WLW'); setCh(r, 10, 14, 'W'); },
-  pen: function (r) { setCh(r, 8, 14, 'Y'); setCh(r, 9, 14, 'D'); setCh(r, 10, 14, 'D'); setCh(r, 11, 14, 'Z'); },
-  // (얼굴·목)
-  monocle: function (r) { setCh(r, 3, 9, 'YY'); setCh(r, 4, 8, 'Y'); setCh(r, 4, 11, 'Y'); setCh(r, 5, 9, 'YY'); setCh(r, 6, 11, 'Y'); setCh(r, 7, 11, 'Y'); },
-  bandage: function (r) { setCh(r, 5, 9, 'XXX'); },
-  starpin: function (r) { setCh(r, 9, 5, 'Y'); setCh(r, 10, 4, 'YYY'); setCh(r, 11, 5, 'Y'); },
-  goggles: function (r) { r[4] = r[4].slice(0, 4) + 'KLLKKLLK' + r[4].slice(12); setCh(r, 3, 4, 'K'); setCh(r, 3, 11, 'K'); },
-  eyepatch: function (r) { setCh(r, 4, 9, 'qq'); setCh(r, 3, 5, 'qqqq'); setCh(r, 3, 9, 'q'); },
-  pin: function (r) { setCh(r, 9, 10, 'YY'); setCh(r, 10, 10, 'YB'); },
-  scarf: function (r) { setCh(r, 7, 5, 'VVVVVV'); setCh(r, 8, 10, 'V'); setCh(r, 9, 10, 'V'); setCh(r, 10, 10, 'V'); },
-  pillow: function (r) { setCh(r, 7, 4, 'XXX'); setCh(r, 7, 9, 'XXX'); setCh(r, 6, 4, 'X'); setCh(r, 6, 11, 'X'); },
-  rosette: function (r) { setCh(r, 8, 4, 'BBB'); setCh(r, 9, 4, 'BYB'); setCh(r, 10, 4, 'BBB'); setCh(r, 11, 4, 'B.B'); },
-  medal: function (r) { setCh(r, 8, 6, 'B'); setCh(r, 8, 9, 'B'); setCh(r, 9, 7, 'BB'); setCh(r, 10, 7, 'YY'); setCh(r, 11, 7, 'YY'); }
-};
-// 배경 판 (bg 칸): 조로 뒤 빈칸을 무늬로 채움. f(x, y, 폭, 높이) → 팔레트 글자 1~4
-var BG_DRAW = {
-  office: { p: { 1: '#dfe6ee', 2: '#b9c4d1', 3: '#9aa7b8' }, f: function (x, y, w, h) { return y >= h - 3 ? '3' : x % 5 === 0 || y % 5 === 0 ? '2' : '1'; } },
-  dawn: { p: { 1: '#ffb3c7', 2: '#ffd2a8', 3: '#fff0b3' }, f: function (x, y, w, h) { return y < h * .35 ? '1' : y < h * .7 ? '2' : '3'; } },
-  night: { p: { 1: '#1d2547', 2: '#ffffff', 3: '#2b3566' }, f: function (x, y) { return (x * 7 + y * 13) % 23 === 0 ? '2' : y % 6 === 5 ? '3' : '1'; } },
-  spot: { p: { 1: '#2b2b33', 2: '#fff3b0' }, f: function (x, y, w) { return Math.abs(x - (w - 1) / 2) <= y / 2.2 ? '2' : '1'; } },
-  bossbg: { p: { 1: '#7a1f2b', 2: '#3a0d14', 3: '#ffcf3d' }, f: function (x, y, w, h) { var top = h - 4 - (x * 7 % 5) * 2; return y >= top ? ((x + y) % 4 === 0 && y < h - 1 ? '3' : '2') : '1'; } },
-  gold: { p: { 1: '#ffcf3d', 2: '#ffe27a', 3: '#e0a800' }, f: function (x, y) { var d = (x + y) % 6; return d < 2 ? '2' : d < 4 ? '1' : '3'; } },
-  hof: { p: { 1: '#15160f', 2: '#ffcf3d', 3: '#c6ff3d' }, f: function (x, y, w, h) { return x === 0 || y === 0 || x === w - 1 || y === h - 1 ? '2' : (x * 5 + y * 3) % 19 === 0 ? '3' : '1'; } }
-};
-// 여자 조로·머리 모양: 남자 조로 격자에서 옆머리·윗머리를 채우고, 블라우스(리본)·치마로 바꿈
-function zHair(rows, L, o) {
-  var b = baseOf(L), hr = hairOf(L), set = function (y, x, ch) { var r = rows[y]; if (r[x] === '.') rows[y] = r.slice(0, x) + ch + r.slice(x + 1); };
-  if (b === 'm') {
-    if (hr === 'short') { rows[0] = '............'; }
-    if (hr === 'part') { rows[1] = '...hhshhh...'; if (rows[3] === '..hssssssh..') rows[3] = '..hhhssssh..'; }
-    return;
-  }
-  // 여자 조로: 윗머리 한 칸씩 더 넓게, 속눈썹 1칸, 옆머리(긴 머리 = 어깨까지 · 단발 = 턱까지 · 포니테일 = 귀 옆만)
-  rows[0] = '...hhhhhh...'; rows[1] = '..hhhhhhhh..'; rows[2] = '.hhhhhhhhhh.';
-  if (rows[3] === '..hssssssh..') rows[3] = '..hEssssEh..';
-  var last = hr === 'long' ? 8 : hr === 'bob' ? 6 : 4;
-  for (var y = 3; y <= last; y++) { set(y, 1, 'h'); set(y, 10, 'h'); if (y >= 6 || hr === 'long') { set(y, 2, 'h'); set(y, 9, 'h'); } }
-}
-function zRows(rk, mood, o) {
-  o = o || {};
-  var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], rows = Z_BODY.slice(), L = lookOf(o), fem = baseOf(L) === 'f';
-  rows[4] = mood === 'shock' ? (R.gl ? '..gwEggwEg..' : '..swEsswEs..') : R.gl ? '..gEEggEEg..' : '..sEEssEEs..';   // 놀람: 흰자 보이는 큰 눈
-  rows[6] = mood === 'happy' ? '..sMMMMMMs..' : mood === 'sad' ? '...ssMMss...' : mood === 'shock' ? '....sMMs....' : '...sMMMMs...';
-  if (mood === 'sad') rows[5] = '..sTssssTs..';
-  if (mood === 'happy') rows[5] = '..rssssssr..';
-  if (mood === 'shock') rows[3] = '..hEssssEh..';           // 놀라서 눈썹이 올라감
-  if (fem) { rows[8] = '..JwttttwJ..'; rows[10] = '.sJwwwwwwJs.'; rows[11] = '.sJwwwwwwJs.'; }   // 블라우스 + 리본(직급 색)
-  if (R.id) { rows[9] = '.JJwcttwwJJ.'; rows[10] = fem ? '.sJwcwwwwJs.' : '.sJwcttwwJs.'; }   // 사원증 끈
-  if (mood === 'happy') { rows[8] = fem ? 's.JwttttwJ.s' : 's.JwwttwwJ.s'; rows[9] = 'sJJwwttwwJJs'; rows[10] = fem ? '..JwwwwwwJ..' : '..JwwttwwJ..'; rows[11] = rows[10]; }   // 만세
-  if (fem && L.bottom === 'skirt') { rows[13] = '.pppppppppp.'; rows[14] = '...ss..ss...'; }
-  zHair(rows, L, o);
-  if (o.hat) { rows[0] = '...kkkkkk...'; rows[1] = '..kkkkkkkk..'; rows[2] = '.kkkkkkkkkk.'; }
-  rows = rows.map(function (r) { return '..' + r + '..'; });
-  if (fem && hairOf(L) === 'pony' && !o.hat) { setCh(rows, 2, 12, 'hh'); setCh(rows, 3, 13, 'h'); setCh(rows, 4, 13, 'h'); setCh(rows, 5, 13, 'h'); setCh(rows, 6, 12, 'h'); }   // 뒤로 묶은 머리
-  ['acc', 'hand', 'hat'].forEach(function (slot) { var f = ITEM_DRAW[L[slot]]; if (f && !(slot === 'hat' && o.hat)) f(rows); });   // 탐정 모자가 있으면 모자 소품은 빼기
-  return rows;
-}
-function zPal(rk, mood, o) {
-  var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], L = lookOf(o);
-  var p = { h: R.h, s: '#f2c79b', E: '#111', g: '#9fd3ff', M: mood === 'happy' ? '#7a1f1f' : '#5a2a2a', w: '#f4f4f4', t: L.acc === 'goldtie' ? '#ffcf3d' : R.tie, J: R.jk || '#f4f4f4',
-    p: '#2a2f45', b: '#111', T: '#6fb6ff', r: '#ff9b9b', k: '#6b4a2b', c: '#ffcf3d',
-    Y: '#ffcf3d', K: '#3a3f4a', B: '#e8412c', W: '#f4f4f4', O: '#8a5a1c', L: '#9fd3ff', m: '#6a6f7c', R: '#5b7cff', G: '#3f9a4a', P: '#c0602b', C: '#ffffff', q: '#111',
-    V: '#8e5bd6', N: '#ff8fc7', D: '#2b2f45', A: '#ff9a1f', Z: '#c9ced6', H: '#fff3a0', U: '#36b5a5', X: '#f0c6a0' };
-  var G = o && o.bg && BG_DRAW[L.bg];
-  if (G) for (var k in G.p) p[k] = G.p[k];
-  if (o && o.sil) for (var k2 in p) p[k2] = '#9a9d92';   // 못 얻은 소품 미리보기: 회색 실루엣
-  return p;
-}
-// 숨쉬기 2장: 2장째는 몸이 1칸 내려앉음 (다리는 그대로). o.bg 면 테두리 바깥 빈칸을 배경 무늬로
-function zFrames(rk, mood, o) {
-  var r = zRows(rk, mood, o), b = '................', L = lookOf(o), G = o && o.bg && BG_DRAW[L.bg];
-  var F = [PX.outline([b].concat(r)), PX.outline([b, b].concat(r.slice(0, 12), r.slice(13)))];
-  if (!G) return F;
-  return F.map(function (rows) { var h = rows.length, w = rows[0].length; return rows.map(function (row, y) { return row.replace(/\./g, function (m, x) { return G.f(x, y, w, h); }); }); });
-}
-// 조로 그림 글: anim = 'idle'(숨쉬기) | 'jump' | '' , s = 한 칸 크기(px)
-function zorro(rk, mood, s, anim, o) {
-  mood = mood || 'normal';
-  var name = 'z' + rk + mood + (o && o.hat ? 'h' : '') + '|' + lookKey(lookOf(o), o), pal = zPal(rk, mood, o);
-  if (anim === 'idle' || anim === 'jump') return PX.sheet(name + 'S', zFrames(rk, mood, o), pal, s, 'zr ' + anim);
-  return PX.img(name, zFrames(rk, mood, o)[0], pal, s, 'zr');
-}
 
 // ── 회사 = 도트 빌딩. 폭 ← 직원 수, 층 ← 부장 연봉, 불 켜진 창 ← 사원 연봉, 색 ← 업종 묶음, 지붕 모양·창 무늬 ← 회사 이름 해시
 //    o.blind: 숫자를 안 드러내는 빌딩(층 6 고정, 창 반쯤, 문제 푸는 중에 답을 흘리지 않게) · o.neutral: 색도 업종 대신 이름 해시
@@ -1309,6 +1196,255 @@ function stage(inner, cls, label) { return PX.ok ? '<div class="pxst ' + (cls ||
 // 빌딩 크기 배율: 화면 폭에 맞춰 (휴대폰 작게)
 function bS(big) { var w = window.innerWidth || 400; return big ? (w < 560 ? 4 : 5) : (w < 560 ? 3 : 4); }
 
+// ── 조로 사원 2배 도트 (2026-10-29 '그림 개선'): 32×36 격자 (테두리 넣으면 34×38). 머리 14칸 · 몸 14칸 + 손 소품 자리 · 머리 위 모자 자리
+//    직급 5단계(재킷 색 · 과장부터 안경 · 차장 희끗 · 부장 흰머리) · 표정 4개 · 만세 자세 · 탐정 모자 · 숨쉬기 2장 · 남/여 · 바지/치마 · 머리 6가지
+//    그리는 순서: (뒤) 포니테일 → 얼굴·머리 → 몸·팔 → 표정 → 안경 → 소품(얼굴·목 → 손 → 모자) · 배경은 빈칸을 장면으로 채움
+//    글자 = 팔레트: h 머리 i 머리 그늘 j 머리 빛 s 피부 f 피부 그늘 E 눈 C 흰색(눈빛) n 눈썹 M 입 u 입속 r 볼 T 눈물
+//                  w 셔츠 x 셔츠 그늘 t 넥타이·리본 y 그늘 J 재킷 d 재킷 그늘 l 옷깃 p 바지·치마 a 그늘 b 신발 z 신발 빛 c 사원증 끈 k v 탐정 모자
+var ZW = 32, ZH = 36;
+var Z_RANK = [
+  { h: '#4a3322', jk: null, tie: '#4f7dff', gl: 0, id: 1 },      // 사원: 흰 셔츠 + 사원증
+  { h: '#4a3322', jk: '#3b4a6b', tie: '#4f7dff', gl: 0 },         // 대리: 남색 재킷
+  { h: '#2b2b2b', jk: '#34405e', tie: '#c0392b', gl: 1 },         // 과장: 안경 + 빨간 넥타이
+  { h: '#77736c', jk: '#2b2f3a', tie: '#c0392b', gl: 1 },         // 차장: 희끗한 머리
+  { h: '#d2d0cb', jk: '#1d1f26', tie: '#ffcf3d', gl: 1 }];        // 부장: 흰머리 + 금 넥타이
+function zg(w, h) { var g = []; for (var y = 0; y < (h || ZH); y++) { var r = []; for (var x = 0; x < (w || ZW); x++) r.push('.'); g.push(r); } return g; }
+function zp(g, x, y, c) { if (y >= 0 && y < g.length && x >= 0 && x < g[0].length) g[y][x] = c; }
+function zr(g, x0, y0, x1, y1, c) { for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) zp(g, x, y, c); }
+function zs(g, x, y, rows) { rows.forEach(function (s, j) { for (var i = 0; i < s.length; i++) if (s[i] !== ' ') zp(g, x + i, y + j, s[i] === '_' ? '.' : s[i]); }); }   // ' ' = 그대로, '_' = 지움
+function zat(g, x, y) { return g[y] && g[y][x] !== undefined ? g[y][x] : '.'; }
+// ── 얼굴 (피부) 16칸 x8~23, y8~19 + 귀
+function zFace(g) {
+  zs(g, 8, 8, ['  ssssssssssss  ', ' ssssssssssssss ', 'ssssssssssssssss', 'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf',
+    'sssssssssssssssf', 'sssssssssssssssf', ' sssssssssssssf ', '  ssssssssssff  ', '    ffffffff    ']);
+  zr(g, 7, 12, 7, 14, 's'); zr(g, 24, 12, 24, 14, 'f');
+}
+// ── 머리 모양 6가지 (남: basic · short · part / 여: long · bob · pony). 여자 머리는 옆머리가 얼굴 양옆(x6~8, x23~25)을 덮음
+function zHairBack(g, b, hr) {   // 얼굴보다 뒤에 그리는 머리: 긴 머리·단발 뒷머리, 포니테일(왼쪽으로 늘어짐)
+  if (b !== 'f') return;
+  if (hr === 'long') { zr(g, 6, 9, 25, 25, 'i'); zr(g, 7, 24, 24, 26, 'i'); }
+  if (hr === 'bob') zr(g, 6, 9, 25, 19, 'i');
+  if (hr === 'pony') {   // 묶은 자리(빨간 끈) + 왼쪽 뒤로 늘어지는 꼬리
+    zs(g, 1, 5, ['    hhB ', '   hhhBB', '  hhjhh ', ' hhjhhh ', ' hhhhhi ', 'hhjhhhi ', 'hhhhhii ', 'hhhhhi  ', 'hjhhhi  ', 'hhhhii  ', ' hhhi   ', ' hhhi   ', ' hhii   ', '  hi    ', '  hi    ', '  i     ']);
+  }
+}
+function zHair(g, b, hr) {
+  if (b === 'f') {
+    zs(g, 7, 3, ['   hhhhhhhhhhhh   ', '  hhhjjjhhhhhhhh  ', ' hhhjjhhhhhhhhhhh ', 'hhhjhhhhhhhhhhhhhi', 'hhhhhhhhhhhhhhhhhi', 'hhhhhhhhhhhhhhhhii', 'hhhhihhhhhhhihhhii', 'hhhh hh iihh hhhhi']);
+    if (hr === 'long') { zs(g, 6, 11, ['hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhi', 'hhi', 'hi ', 'hi ']); zs(g, 23, 11, ['hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hii', 'hii', ' hi', ' hi']); }
+    if (hr === 'bob') { zs(g, 6, 11, ['hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhi', 'hii']); zs(g, 23, 11, ['hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hii', 'ii ']); zs(g, 7, 10, ['h']); zs(g, 24, 10, ['h']); }
+    if (hr === 'pony') { zs(g, 7, 11, ['hh', 'hj', 'hh', 'hi', ' i']); zs(g, 23, 11, ['hh', 'hi', 'hi', 'hi', 'i ']); }
+    return;
+  }
+  if (hr === 'short') { zs(g, 7, 4, ['    hhhhhhhhhh    ', '  hhihhhhhihhhhh  ', ' hhhhhhihhhhhhhih ', ' hhihhhhhhhhihhhi ', 'hhhhhhhhhhhhhhhhhi', 'hi  i  i  i  i  ih', 'h                h']); return; }
+  if (hr === 'part') { zs(g, 7, 3, ['    hhhhhhhhhh    ', '  hhhhfhhhhjjhhh  ', ' hhhhfhhhhjjhhhhh ', ' hhhfhhhhhhhhhhhi ', 'hhhfhhhhhhhhhhhhii', 'hhhhhhhhhhhhhhhhii', 'hh  iihhhhhhhhhiih', 'h      iihhhhhh hh', 'h               hh']); return; }
+  zs(g, 7, 3, ['    hhhhhhhhhh    ', '  hhhhjjjhhhhhhh  ', ' hhhjjjhhhhhhhhhh ', ' hhjjhhhhhhhhhhhi ', 'hhhhhhhhhhhhhhhhii', 'hhhhhhhhhhhhhhhhii', 'hhiihhhhihhhhhhiih', 'hh   hh    hh   hh', 'h                h']);
+}
+// ── 몸: 셔츠·재킷·넥타이(여자 = 리본)·사원증·팔·손·바지/치마·신발. pose = 'stand' | 'up'(만세)
+function zBody(g, R, fem, skirt, pose) {
+  var jk = R.jk ? 'J' : 'w', sh = R.jk ? 'd' : 'x';
+  zr(g, 14, 20, 17, 20, 's'); zp(g, 17, 20, 'f');   // 목
+  zr(g, 9, 21, 22, 28, jk); zr(g, 22, 21, 22, 28, sh); zr(g, 9, 28, 22, 28, sh);   // 몸통 + 그늘
+  // 셔츠 V + 옷깃(재킷이면 옷깃 l)
+  zs(g, 12, 21, [R.jk ? 'lwwwwwwl' : 'xwwwwwwx', R.jk ? ' lwwwwl ' : ' xwwwwx ', R.jk ? ' lwwwwl ' : '  wwww  ', R.jk ? '  lwwl  ' : '  wwww  ']);
+  if (!R.jk) { zr(g, 13, 25, 18, 27, 'w'); zp(g, 21, 23, 'x'); zp(g, 10, 26, 'x'); }
+  if (fem) zs(g, 12, 21, [' ttyytt ', '  t  t  ', '  y  y  ']);   // 리본
+  else zs(g, 15, 21, ['yy', 'tt', 'ty', 'ty', 'ty', 'ty', 'tt', ' y']);   // 넥타이
+  if (R.jk) { zp(g, 12, 25, 'd'); zp(g, 19, 25, 'd'); zp(g, 13, 26, 'Y'); zp(g, 13, 27, 'Y'); }   // 단추
+  if (R.id) zs(g, 11, 21, ['  c', ' c ', ' c ', 'cccc', 'cRRc', 'cCmc', 'cccc']);   // 사원증 + 끈
+  // 팔·손
+  if (pose === 'up') {
+    zs(g, 3, 9, [' sss', 'ssss', 'sssf', ' ' + jk + jk + sh, ' ' + jk + jk + sh, jk + jk + sh + ' ', jk + jk + sh + ' ', jk + jk + sh + ' ', jk + jk + sh + ' ', jk + jk + sh + ' ', ' ' + jk + jk + sh, ' ' + jk + jk + jk + jk + jk, '  ' + jk + jk + jk + jk]);
+    zs(g, 24, 9, ['sss ', 'ssss', 'fsss', jk + jk + sh + ' ', jk + jk + sh + ' ', ' ' + jk + jk + sh, ' ' + jk + jk + sh, ' ' + jk + jk + sh, ' ' + jk + jk + sh, ' ' + jk + jk + sh, jk + jk + sh + ' ', jk + jk + jk + jk + ' ', jk + jk + jk + '  ']);
+  } else {
+    zs(g, 6, 21, [' ' + jk + jk, jk + jk + jk, sh + jk + jk, sh + jk + jk, sh + jk + jk, sh + jk + jk, 'xxx', 'sss', ' sf']);
+    zs(g, 23, 21, [jk + jk + ' ', jk + jk + sh, jk + jk + sh, jk + jk + sh, jk + jk + sh, jk + jk + sh, 'xxx', 'ssf', 'sf ']);
+  }
+  // 아래
+  if (skirt) {
+    zs(g, 9, 29, [' pppppppppppa ', 'ppappappappapa', 'papppapppapppa', ' ssss    ssss ']);
+    zr(g, 10, 32, 13, 32, 's'); zr(g, 18, 32, 21, 32, 's'); zp(g, 13, 32, 'f'); zp(g, 21, 32, 'f'); zr(g, 14, 32, 17, 32, '.');
+  } else {
+    zs(g, 10, 29, ['DDDDDcDDDDDD', 'ppppppppppaa', 'pppppp  ppaa', 'pppapp  ppaa']);
+  }
+  zs(g, 9, 33, [' bzbbb  bzbbb ', 'bbbbbb  bbbbbb']);   // 신발
+}
+// ── 표정 4개 (+ 볼터치·눈물)
+function zMood(g, mood) {
+  if (mood === 'happy') {
+    zs(g, 10, 12, [' EE     EE ', 'E  E   E  E']); zs(g, 13, 15, ['MMMMMM', 'MuuuuM', ' MuuM ']); zs(g, 9, 15, ['rr']); zs(g, 21, 15, ['rr']);
+  } else if (mood === 'sad') {
+    zs(g, 10, 10, ['  n     n  ', ' n       n ', 'n         n']); zs(g, 11, 13, ['EE      EE', 'EC      EC']); zs(g, 11, 15, ['T', 'T']); zs(g, 14, 16, [' MM ', 'M  M']);
+  } else if (mood === 'shock') {
+    zs(g, 10, 11, ['CCC     CCC', 'CEC     CEC', 'CCC     CCC']); zs(g, 14, 15, [' MM ', 'MuuM', 'MuuM', ' MM ']);
+  } else {
+    zs(g, 10, 10, ['nnn     nnn']); zs(g, 11, 12, ['CE      CE', 'EE      EE', 'EE      EE']); zs(g, 14, 16, ['M  M', ' MM ']);
+  }
+}
+function zGlasses(g, lens) {
+  [[10, 13], [18, 21]].forEach(function (a) {
+    for (var x = a[0]; x <= a[1]; x++) { zp(g, x, 11, 'K'); zp(g, x, 15, 'K'); }
+    for (var y = 11; y <= 15; y++) { zp(g, a[0], y, 'K'); zp(g, a[1], y, 'K'); }
+    for (var y2 = 12; y2 <= 14; y2++) for (var x2 = a[0] + 1; x2 < a[1]; x2++) { var c = zat(g, x2, y2); if (c === 's' || c === 'f' || lens === 'q') zp(g, x2, y2, lens || 'g'); }
+  });
+  zr(g, 14, 12, 17, 12, 'K');
+}
+// ── 소품 (2배 그림). 손 소품은 자세마다 손 위치(A.hx, A.hy)에 맞춰 그림 · 'alone' 은 소품만 따로 크게 그릴 때(진열 칸)
+var Z_HAND = { stand: [24, 28], up: [26, 10] };
+function hand(f) { return function (g, A) { f(g, A.hx, A.hy, A); }; }
+var ITEM_DRAW = {
+  // 모자
+  crown: function (g) { zs(g, 9, 2, ['Y     YY     Y', 'YH   YHHY   YY', 'YYY YYYYYY YYY', 'YYYYYYYYYYYYYY', 'YRYYYYBBYYYYGY', 'FFFFFFFFFFFFFF']); },
+  headset: function (g) { zs(g, 9, 1, ['  KKKKKKKKKK  ', ' K          K ', 'K            K']); zr(g, 7, 4, 7, 9, 'K'); zr(g, 24, 4, 24, 9, 'K'); zs(g, 5, 10, ['KKK', 'KmK', 'KmK', 'KmK', 'KKK']); zs(g, 24, 10, ['KKK', 'KmK', 'KmK', 'KmK', 'KKK']); zs(g, 19, 15, ['    K', '   K ', ' KK  ', 'mm   ']); },
+  beanie: function (g) { zs(g, 13, 0, [' WWWW ', 'WWZWWW', ' WWWW ']); zs(g, 8, 3, ['   BBBBBBBBBB   ', '  BBBBBBBBBBBB  ', ' BBBBBBBBBBBBBBQ', ' WWWWWWWWWWWWWWZ', 'BBBBBBBBBBBBBBBQ', 'BQBQBQBQBQBQBQBQ', 'BQBQBQBQBQBQBQBQ']); },
+  cap: function (g) { zs(g, 8, 2, ['    RRRRRRRR    ', '  RRRRRRRRRRRR  ', ' RRRRRWWRRRRRRI ', ' RRRRRWWRRRRRRI ', 'RRRRRRRRRRRRRRII', 'IIIIIIIIIIIIIIII', ' IIIIIIIIIIIIII ']); },
+  band: function (g) { zs(g, 7, 8, ['WWWWWWWWBBWWWWWWWW', 'ZWWWWWWWBBWWWWWWWZ']); zs(g, 25, 9, ['WW  ', ' WWW', '  WW', '   W']); },
+  beret: function (g) { zs(g, 8, 1, ['        V       ', '    VVVVVVVVV   ', '  VVVVVNVVVVVVV ', ' VVVVVVVVVVVVVVV', 'VVVVVVVVVVVVVVVV', ' QQQQQQQQQQQQQQ ']); },
+  visor: function (g) { zs(g, 6, 8, [' LLLLLLLLLLLLLLLLLL ', 'LLLLLLLLLLLLLLLLLLLL', 'IIIIIIIIIIIIIIIIIIII']); },
+  helmet: function (g) { zs(g, 8, 1, ['     YYYYYY     ', '   YYHHYYYYYY   ', '  YHHYYYWWYYYYF ', ' YHYYYYYWWYYYYYF', ' YYYYYYYYYYYYYYF', 'YYYYYYYYYYYYYYYF', 'YYYYYYYYYYYYYYYF', 'FFFFFFFFFFFFFFFF']); zr(g, 6, 9, 25, 9, 'F'); },
+  halo: function (g) { zs(g, 9, 0, ['  HHHHHHHHHH  ', ' H          H ', '  YYYYYYYYYY  ']); zp(g, 5, 3, 'W'); zp(g, 26, 2, 'W'); zp(g, 4, 6, 'H'); },
+  fedora: function (g) { zs(g, 9, 1, ['    DDD  DDD  ', '  DDDDDDDDDDDD', '  DDDDDDDDDDDD', '  DDDDDDDDDDDD', '  BBBBBBBBBBBB', '  BBBBBBBBBBBB']); zs(g, 5, 7, [' DDDDDDDDDDDDDDDDDDDD ', 'KDDDDDDDDDDDDDDDDDDDDK']); },
+  laurel: function (g) { zs(g, 6, 3, ['     GG    YY    GG  ', '   GGS  GG    GG  SGG', '  GS                SG', ' GG                  GG', ' GS                  SG', 'GG                    G'].map(function (s) { return s.slice(0, 22); })); },
+  horns: function (g) { zs(g, 5, 0, ['B                    B', 'BB                  BB', 'QBB                BBQ', ' QBB              BBQ ', '  QBB            BBQ  ', '   QBB          BBQ   ']); zr(g, 8, 7, 23, 8, 'K'); },
+  // 손 (자세마다 손 위치 기준)
+  coffee: hand(function (g, x, y) { zs(g, x - 1, y - 7, ['  Z ', ' Z  ', 'WWWWW', 'WWWWZ', 'OOOOO', 'OOOOO', 'WWWWZ', 'WWWZ ']); }),
+  bag: hand(function (g, x, y) { zs(g, x - 2, y + 1, ['  KKK  ', ' K   K ', 'OOOOOOO', 'OeeeeeO', 'OOOYOOO', 'OOOOOOO', 'PPPPPPP']); }),
+  laptop: hand(function (g, x, y) { zs(g, x - 1, y - 7, [' mmmmmmm', ' mLLLLLm', ' mLWLLLm', ' mLLLLLm', ' mLLLLLm', ' mmmmmmm', 'ZZZZZZZZ', ' ZZZZZZ ']); }),
+  umbrella: hand(function (g, x, y) { var t = Math.max(0, y - 16); zs(g, x - 4, t, ['   RRRR   ', ' RRRRRRRR ', 'RRRIRRIRRR', 'RIRRIRRIRI', ' I  I  I  ']); for (var yy = t + 5; yy <= y; yy++) zp(g, x + 1, yy, 'K'); zs(g, x - 1, y + 1, ['O O', ' O ']); }),
+  plant: hand(function (g, x, y) { zs(g, x - 2, y - 8, ['  G  S ', ' GGSGG ', 'GSGGSGG', ' GGSGG ', '  GSG  ', '   S   ', 'PPPPPPP', ' PPPPe ', ' PPPPe ', '  PPe  ']); }),
+  calc: hand(function (g, x, y) { zs(g, x - 1, y - 8, ['KKKKKK', 'KUUUUK', 'KUUUUK', 'KKKKKK', 'KWZWAK', 'KZWZWK', 'KWZWZK', 'KZWZWK', 'KKKKKK']); }),
+  phone: hand(function (g, x, y) { zs(g, x - 1, y - 7, ['FYYYF', 'YLLLY', 'YLWLY', 'YLLLY', 'YLLLY', 'YLLLY', 'YYKYY', 'FYYYF']); }),
+  magglass: hand(function (g, x, y) { zs(g, x - 1, y - 9, ['  KKKKK ', ' KLLLLLK', 'KLWWLLLLK'.slice(0, 8), 'KLWLLLLK', 'KLLLLLLK', ' KLLLLK ', '  KKKK  ', ' OO     ', 'OO      ']); }),
+  dart: hand(function (g, x, y) { zs(g, x - 2, y - 3, ['R      ', 'RR     ', 'RRZZZZK', 'RR     ', 'R      ']); }),
+  stock: hand(function (g, x, y) { var t = Math.max(0, y - 14); zs(g, x - 2, t, ['KKKKKKKK', 'KWWWWWGK', 'KWWWWGGK', 'KWWWGWWK', 'KWGGWWWK', 'KGWWWWWK', 'KKKKKKKK']); for (var yy = t + 7; yy <= y + 1; yy++) zp(g, x + 1, yy, 'O'); }),
+  wand: hand(function (g, x, y) { zs(g, x, y - 10, ['   W   ', '  HYH  ', 'HHYYYHH', ' HYYYH ', ' H   H ']); zs(g, x, y - 5, ['  N', '  N', ' N ', ' N ', 'N  ']); }),
+  lunchbox: hand(function (g, x, y) { zs(g, x - 2, y, ['   QQ  ', 'BBBQQBB', 'BWWWWWB', 'BBBBBBB', 'BQBBBQB', 'BBBBBBB']); }),
+  flag: hand(function (g, x, y) { var t = Math.max(0, y - 14); for (var yy = t; yy <= y + 1; yy++) zp(g, x, yy, 'K'); zp(g, x, t, 'Y'); zs(g, x + 1, t + 1, ['BBBBBB', 'BBWWBB', 'BWWWWB', 'BBWWBB', 'BBBBB ', 'BBBB  ']); }),
+  plane: hand(function (g, x, y) { zs(g, x - 1, y - 6, ['      W', '    WWW', '  WWWZW', 'WWWWZW ', '  ZZW  ', '   W   ']); }),
+  pen: hand(function (g, x, y) { zs(g, x, y - 7, ['    Y', '   DY', '  DD ', ' ZD  ', ' D   ', 'D    ']); }),
+  // 얼굴 · 목 · 가슴
+  idcard: function (g) { zs(g, 10, 21, ['  B     B  ', '   B   B   ', '    BBB    ']); zs(g, 13, 24, ['WWWWW', 'RRRRR', 'WmmWW', 'WmmZW', 'WWWWW']); },
+  glasses: function (g) { zGlasses(g, 'g'); },
+  shades: function (g) { zGlasses(g, 'q'); zp(g, 11, 12, 'Z'); zp(g, 19, 12, 'Z'); },
+  goldtie: function (g, A) { if (A && A.alone) zs(g, 14, 21, ['YYYY', ' YY ', ' YF ', ' YF ', ' YF ', ' YY ', '  Y ']); },   // 넥타이(리본) 색만 금색 (zPal)
+  monocle: function (g) { zs(g, 17, 10, [' YYYY ', 'Y    Y', 'Y    Y', 'Y    Y', 'Y    Y', ' YYYY ', '     Y', '     Y', '    Y ', '    Y ']); },
+  bandage: function (g) { zs(g, 18, 15, ['XXXXX', 'XeXeX', 'XXXXX']); },
+  starpin: function (g) { zs(g, 9, 22, ['  Y  ', ' YYY ', 'YYHYY', ' YFY ', ' Y Y ']); },
+  goggles: function (g) { zr(g, 6, 12, 25, 13, 'A'); zs(g, 9, 10, ['KKKKKK  KKKKKK', 'KUUWUK  KUUWUK', 'KUUUUKKKKUUUUK', 'KUUUUK  KUUUUK', 'KKKKKK  KKKKKK']); },
+  eyepatch: function (g, A) { if (!(A && A.alone)) { zr(g, 7, 10, 17, 10, 'q'); zr(g, 22, 11, 24, 11, 'q'); } zs(g, 17, 10, [' qqqq ', 'qqqqqq', 'qqZqqq', 'qqqqqq', ' qqqq ']); },
+  pin: function (g) { zs(g, 19, 23, ['YY', 'YB']); },
+  scarf: function (g) { zs(g, 10, 19, ['VVVVVVVVVVVV', 'VNVVNVVNVVNV', 'VVVVVVVVVVVV']); zs(g, 18, 22, ['VV', 'NV', 'VV', 'NV', 'VV', 'V V']); },
+  pillow: function (g) { zs(g, 7, 17, ['XX              XX', 'XXe            eXX', 'XXXe          eXXX', ' XXXXXXXXXXXXXXXX ', '  eeeeeeeeeeeeee  ']); },
+  rosette: function (g) { zs(g, 8, 21, [' BBB ', 'BBYBB', 'BYYYB', 'BBYBB', ' BBB ', ' B B ', ' B B ']); },
+  medal: function (g) { zs(g, 12, 21, ['B      B', ' R    R ', '  B  B  ', '  YYYY  ', ' YFYYFY ', ' YYWWYY ', ' YFYYFY ', '  YYYY  ']); }
+};
+// 배경 판 (bg 칸): 테두리 바깥 빈칸을 작은 장면으로 채움. f(x, y, 폭, 높이) → 팔레트 글자 1~9
+function zCirc(x, y, cx, cy, r) { return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r; }
+var BG_DRAW = {
+  office: { p: { 1: '#e9edf2', 2: '#9aa7b8', 3: '#bfe3ff', 4: '#d6eefe', 5: '#3f9a4a', 6: '#c0602b', 7: '#b8916a', 8: '#9c7652' }, f: function (x, y, w, h) {
+    if (y >= h - 6) return (x + (y % 2) * 3) % 7 === 0 ? '8' : '7';   // 나무 바닥
+    if (x >= 1 && x <= 4 && y >= h - 13) return y >= h - 9 ? (x === 1 || x === 4 ? '.' : '6') : ((x + y) % 2 ? '5' : '5');   // 화분
+    if (x >= 6 && x <= w - 7 && y >= 3 && y <= h - 12) { if (x === 6 || x === w - 7 || y === 3 || y === h - 12 || x === Math.floor(w / 2) || y === Math.floor((h - 9) / 2)) return '2'; return (x + y) % 9 === 0 ? '4' : '3'; }
+    return '1'; } },
+  dawn: { p: { 1: '#ff9fbd', 2: '#ffc0a8', 3: '#ffe0a0', 4: '#fff3b0', 5: '#5a4a6a', 6: '#ffd36b' }, f: function (x, y, w, h) {
+    var sky = y < h * .3 ? '1' : y < h * .55 ? '2' : '3';
+    var bh = h - 7 - ((x * 5 + 3) % 7) - (x % 9 < 3 ? 4 : 0);
+    if (y >= bh) return (y - bh) % 3 === 1 && x % 2 === 0 && y < h - 1 ? '6' : '5';
+    if (zCirc(x, y, w * .72, h * .55, 5)) return '4';
+    return sky; } },
+  night: { p: { 1: '#16204a', 2: '#ffffff', 3: '#f6f0c4', 4: '#2b3566', 5: '#ffd36b', 6: '#0e1430' }, f: function (x, y, w, h) {
+    var bh = h - 6 - ((x * 7 + 1) % 9) - (x % 11 < 4 ? 5 : 0);
+    if (y >= bh) return (y - bh) % 3 === 1 && (x % 3 === 1) && ((x * 13 + y * 7) % 5) ? '5' : y === bh ? '4' : '6';
+    if (zCirc(x, y, w - 7, 6, 3.2)) return zCirc(x, y, w - 6, 5, 1) ? '4' : '3';
+    return (x * 7 + y * 13) % 29 === 0 ? '2' : '1'; } },
+  spot: { p: { 1: '#1d1d26', 2: '#fff3b0', 3: '#b3263a', 4: '#7a1726', 5: '#6b4a2b', 6: '#ffe680' }, f: function (x, y, w, h) {
+    if (y >= h - 5) return y === h - 5 ? '6' : (x % 4 === 0 ? '5' : '5');
+    if (x <= 3) return x % 2 ? '4' : '3'; if (x >= w - 4) return x % 2 ? '3' : '4';
+    if (y <= 1) return '3';
+    return Math.abs(x - (w - 1) / 2) <= 2 + y * .45 ? '2' : '1'; } },
+  bossbg: { p: { 1: '#a3283a', 2: '#2a0b12', 3: '#ffcf3d', 4: '#6b1222', 5: '#e8412c' }, f: function (x, y, w, h) {
+    var cx = Math.floor(w / 2);
+    if (x >= cx - 6 && x <= cx + 6 && y >= 6) return (y - 6) % 3 === 1 && (x - cx) % 3 !== 0 ? '3' : '2';   // 보스 빌딩
+    if ((x === cx - 6 || x === cx - 7) && y >= 2 && y < 6) return '5'; if ((x === cx + 6 || x === cx + 7) && y >= 2 && y < 6) return '5';   // 뿔
+    var bh = h - 8 - ((x * 5) % 6);
+    if (y >= bh) return '4';
+    return y < h * .4 ? '1' : '4' === '4' && y % 2 ? '1' : '1'; } },
+  gold: { p: { 1: '#ffcf3d', 2: '#ffe680', 3: '#e0a800', 4: '#ffffff' }, f: function (x, y, w, h) {
+    var a = Math.atan2(y - h * .45, x - w / 2), k = Math.floor((a + Math.PI) / (Math.PI / 8));
+    if ((x * 11 + y * 5) % 37 === 0) return '4';
+    return k % 2 ? '2' : (y > h - 4 ? '3' : '1'); } },
+  hof: { p: { 1: '#15160f', 2: '#ffcf3d', 3: '#3f9a4a', 4: '#fff3b0', 5: '#c99a00', 6: '#26281d' }, f: function (x, y, w, h) {
+    if (x <= 1 || y <= 1 || x >= w - 2 || y >= h - 2) return (x + y) % 2 ? '2' : '5';
+    if ((x <= 4 && y <= 4) || (x >= w - 5 && y <= 4)) return (x + y) % 2 ? '3' : '1';
+    if ((x * 5 + y * 3) % 23 === 0) return '4';
+    return y % 4 === 0 ? '6' : '1'; } }
+};
+function zPose(mood) { return mood === 'happy' ? 'up' : 'stand'; }
+function zRows(rk, mood, o) {
+  o = o || {};
+  var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], L = lookOf(o), b = baseOf(L), hr = hairOf(L), fem = b === 'f', pose = zPose(mood), g = zg();
+  var H = Z_HAND[pose], A = { hx: H[0], hy: H[1], pose: pose };
+  zHairBack(g, b, hr);
+  zFace(g);
+  if (!o.hat) zHair(g, b, hr); else { zHair(g, b, hr); zs(g, 5, 2, ['    kkkkkkkkkkkkkk    ', '   kkkkkkkkkkkkkkkk   ', '   kkkkkkkkkkkkkkkk   ', '   kkkkkkkkkkkkkkkk   ', '   vvvvvvvvvvvvvvvv   ', '   kkkkkkkkkkkkkkkk   ', ' kkkkkkkkkkkkkkkkkkkk ', 'vvvvvvvvvvvvvvvvvvvvvv']); }
+  zBody(g, R, fem, fem && L.bottom === 'skirt', pose);
+  zMood(g, mood);
+  if (fem && mood !== 'happy' && mood !== 'shock') { zp(g, 10, mood === 'sad' ? 12 : 11, 'E'); zp(g, 21, mood === 'sad' ? 12 : 11, 'E'); }   // 여자 조로 속눈썹
+  if (R.gl && L.acc !== 'shades' && L.acc !== 'goggles' && L.acc !== 'glasses') zGlasses(g, 'g');
+  ['acc', 'hand', 'hat'].forEach(function (slot) { var f = ITEM_DRAW[L[slot]]; if (f && !(slot === 'hat' && o.hat)) f(g, A); });   // 탐정 모자가 있으면 모자 소품은 빼기
+  return g.map(function (r) { return r.join(''); });
+}
+function zPal(rk, mood, o) {
+  var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], L = lookOf(o), hc = R.h, jk = R.jk || '#f4f4f4', tie = L.acc === 'goldtie' ? '#ffcf3d' : R.tie;
+  var p = { h: hc, i: shade(hc, -.28), j: shade(hc, .35), n: shade(hc, -.35), s: '#f6cfa6', f: '#e2aa82', E: '#1b1b22', M: '#7a2a2a', u: '#d0505a', r: '#ff9b9b', T: '#6fb6ff',
+    w: '#f6f6f2', x: '#d3d6de', t: tie, y: shade(tie, -.3), J: jk, d: shade(jk, -.3), l: shade(jk, .25), p: '#2a2f45', a: '#1b1f30', b: '#191919', z: '#5a5a5a', c: '#ffcf3d', g: '#cfe9ff', k: '#6b4a2b', v: '#3d2a18',
+    Y: '#ffcf3d', F: '#c99a00', H: '#fff3a0', K: '#3a3f4a', B: '#e8412c', Q: '#a8281b', W: '#f6f6f2', Z: '#c9ced6', O: '#8a5a1c', e: '#b98a5a', L: '#9fd3ff', m: '#6a6f7c',
+    R: '#5b7cff', I: '#3550b8', G: '#3f9a4a', S: '#2a6b33', P: '#c0602b', C: '#ffffff', q: '#111111', V: '#8e5bd6', N: '#ff8fc7', D: '#2b2f45', A: '#ff9a1f', U: '#36b5a5', X: '#f0c6a0' };
+  var G = o && o.bg && BG_DRAW[L.bg];
+  if (G) for (var k in G.p) p[k] = G.p[k];
+  if (o && o.sil) for (var k2 in p) p[k2] = '#a3a69b';   // 못 얻은 소품 미리보기: 회색 실루엣
+  return p;
+}
+// 숨쉬기 2장: 2장째는 몸이 1칸 내려앉음(허리 한 줄을 빼고 위를 내림, 다리는 그대로). o.head = 머리·어깨만(탭바·프로필), o.bg = 빈칸을 배경 장면으로
+function zFrames(rk, mood, o) {
+  var r = zRows(rk, mood, o), L = lookOf(o), G = o && o.bg && BG_DRAW[L.bg], blank = r[0].replace(/./g, '.');
+  var f2 = [blank].concat(r.slice(0, 29), r.slice(30));
+  var F = [r, f2].map(function (rows) { return PX.outline(o && o.head ? rows.slice(0, 25) : rows); });
+  if (!G) return F;
+  return F.map(function (rows) { var h = rows.length, w = rows[0].length; return rows.map(function (row, y) { return row.replace(/\./g, function (m, x) { return G.f(x, y, w, h); }); }); });
+}
+// 조로 그림 글: anim = 'idle'(숨쉬기) | 'jump' | '' , s = 한 칸 크기(px, 2배 격자 기준)
+var ZCACHE = {};
+function zorro(rk, mood, s, anim, o) {
+  mood = mood || 'normal';
+  var name = 'z' + rk + mood + (o && o.hat ? 'h' : '') + (o && o.head ? 'H' : '') + '|' + lookKey(lookOf(o), o);
+  var F = ZCACHE[name] || (ZCACHE[name] = { f: zFrames(rk, mood, o), p: zPal(rk, mood, o) });   // 격자는 한 번만 만들고, PNG 주소는 PX 가 캐시
+  if (anim === 'idle' || anim === 'jump') return PX.sheet(name + 'S', F.f, F.p, s, 'zr ' + anim);
+  return PX.img(name, F.f[0], F.p, s, 'zr');
+}
+// 소품만 따로 크게 (진열 칸 · 선물 상자): 빈 격자에 서 있는 자세 기준으로 그리고 둘레를 잘라 냄. 배경은 장면 축소판
+function itemArt(id, s, cls, maxPx) {
+  var it = ITEM_BY[id]; if (!it || !PX.ok) return '';
+  var sil = cls === 'sil', key = 'it|' + id + (sil ? '|sil' : ''), c = ZCACHE[key];
+  if (!c) {
+    var g = zg(), pal = zPal(2, 'normal', { look: {} });
+    if (it[1] === 'bg') { var B = BG_DRAW[id], rows = []; for (var y = 0; y < 22; y++) { var row = ''; for (var x = 0; x < 26; x++) row += B.f(x, y + 6, 26, 28); rows.push(row); } for (var k in B.p) pal[k] = B.p[k]; c = { r: rows, p: pal }; }
+    else {
+      ITEM_DRAW[id](g, { hx: Z_HAND.stand[0], hy: Z_HAND.stand[1], pose: 'stand', alone: 1 });
+      if (id === 'glasses') zGlasses(g, 'g');
+      var rs = g.map(function (r) { return r.join(''); }), y0 = rs.length, y1 = -1, x0 = ZW, x1 = -1;
+      rs.forEach(function (r, y) { for (var x = 0; x < r.length; x++) if (r[x] !== '.') { y0 = Math.min(y0, y); y1 = Math.max(y1, y); x0 = Math.min(x0, x); x1 = Math.max(x1, x); } });
+      if (id === 'glasses' || id === 'shades') rs = rs.map(function (r) { return r.replace(/[sfEC]/g, '.'); });
+      c = { r: y1 < 0 ? ['.'] : PX.outline(rs.slice(y0, y1 + 1).map(function (r) { return r.slice(x0, x1 + 1); })), p: pal };
+    }
+    if (sil) { var gp = {}; for (var k3 in c.p) gp[k3] = '#a3a69b'; c = { r: c.r, p: gp }; }   // 못 얻은 소품: 회색 실루엣
+    ZCACHE[key] = c;
+  }
+  var big = Math.max(c.r.length, c.r[0].length), se = big <= 9 ? s * 2 : big <= 14 ? s * 1.5 : s;   // 작은 소품(배지·반창고)은 크게
+  if (maxPx) se = Math.max(1, Math.min(se, Math.floor(maxPx / c.r[0].length * 2) / 2));   // 칸 폭에 맞춤
+  return PX.img(key, c.r, c.p, se, 'itart ' + (cls || ''));
+}
+
 
 // ── 서버 부르기. API_BASE 가 비었거나 연결이 안 되면 모의 서버(mock)로 — 미리보기도 끝까지 놀 수 있게
 var MOCK = !API_BASE;
@@ -1428,7 +1564,7 @@ function renderMe(edit) {
   var b = topBadge(), s = streak();
   var r = myRank(), nx = nextXP();
   // 2차 UX: 조로 그림·닉네임을 누르면 '내 조로' 옆 서랍이 열림
-  var h = '<button type="button" class="mylk" data-go="look" aria-label="내 조로 열기 · ' + esc(NICK) + ', 조로 ' + RK[r] + '">' + (PX.ok ? '<span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + zorro(r, 'normal', 2, '', { bg: 1 }) + '조로 ' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span>' : '') +
+  var h = '<button type="button" class="mylk" data-go="look" aria-label="내 조로 열기 · ' + esc(NICK) + ', 조로 ' + RK[r] + '">' + (PX.ok ? '<span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + zorro(r, 'normal', 1.5, '', { bg: 1, head: 1 }) + '조로 ' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span>' : '') +
     '<span class="nick">' + esc(NICK) + '</span></button>' + (b ? '<span class="badge1">' + esc(b) + '</span>' : '') +
     '<span class="fire" title="오늘의 회사를 이어서 푼 날">' + (s ? '🔥 ' + s + '일 연속' : '🔥 0일') + '</span><span class="sp"></span>' +
     '<button class="lnk" id="nickEd" type="button" aria-label="닉네임 바꾸기"><span class="pc">닉네임 바꾸기</span><span class="ph" aria-hidden="true">✎</span></button>' + sndBtn('sndM');
@@ -1536,8 +1672,8 @@ function drawCard(card, box) {
       g.fillStyle = tk('--line2'); g.fillRect(600, 500, 530, 8);
       if (P.co) { var bw = bldSize(P.co, P.o)[0] * 7;   // 빌딩 폭을 먼저 재서 오른쪽 끝에 맞춤
         var bh = pxDraw(g, 'bld', P.co, x1 - bw, 500, 7, P.o)[1]; if (P.icon) pxDraw(g, 'icon', P.icon, x1 - bw / 2 - 44, 500 - bh - 8, 8); x1 -= bw + 26; }
-      var zo = { hat: P.hat ? 1 : 0, bg: 1 }, zw = zFrames(0, 'normal', zo)[0][0].length * 8;   // 꾸민 조로(소품 포함) 폭
-      pxDraw(g, 'zorro', { rk: P.rk == null ? myRank() : P.rk, mood: P.mood || 'normal' }, x1 - zw, 500, 8, zo);
+      var zo = { hat: P.hat ? 1 : 0, bg: 1 }, zw = zFrames(0, 'normal', zo)[0][0].length * 4;   // 꾸민 조로(소품 포함) 폭
+      pxDraw(g, 'zorro', { rk: P.rk == null ? myRank() : P.rk, mood: P.mood || 'normal' }, x1 - zw, 500, 4, zo);
     } catch (e) {}
   }
   g.fillStyle = tk('--ink'); g.fillRect(70, 520, 1060, 2);
@@ -1625,7 +1761,7 @@ function duelStage(q, R, run) {
   };
   var mile = run === 3 || run === 5 || run === 8;
   var mid = '<div class="pxmid">' + (ok && run >= 3 ? '<span class="pxcombo c' + (run >= 8 ? 3 : run >= 5 ? 2 : 1) + (mile ? ' burst' : '') + '">' + icon('flame', 2) + 'COMBO ×' + run + '</span>' : done ? '' : '<span class="pxvs">VS</span>') +
-    zorro(myRank(), !done ? 'normal' : ok ? 'happy' : R.pick ? 'sad' : 'shock', 3, ok ? 'jump' : 'idle') + '</div>';
+    zorro(myRank(), !done ? 'normal' : ok ? 'happy' : R.pick ? 'sad' : 'shock', 2, ok ? 'jump' : 'idle') + '</div>';
   return stage(col('a') + mid + col('b'), 'duelst');
 }
 // 값 차오르기: 무대의 숫자 칸을 0 에서 진짜 값까지 8칸으로
@@ -1720,14 +1856,14 @@ function finishH() {
 function confetti() { var c = ['#ffcf3d', '#c6ff3d', '#ff5bb0', '#5b7cff', '#e8412c'], h = ''; for (var i = 0; i < 18; i++) h += '<i style="left:' + (i * 5.5 + 2) + '%;background:' + c[i % 5] + ';animation-delay:' + (i % 6) * .12 + 's"></i>'; return '<span class="conf">' + h + '</span>'; }
 function promoScene(pr) {
   var a = pr[0], b = pr[1];
-  return stage('<span class="pxbanner">' + (b > a ? '특진! 조로 ' + RK[b] : '부장 만렙 · 10/10') + '</span><div class="pxrow">' + (b > a ? zorro(a, 'normal', 4) + '<span class="pxarrow">▶</span>' : '') +
-    zorro(b, 'happy', 5, 'jump') + icon(b >= 4 ? 'crown' : 'star', 4) + '</div>' + confetti(), 'promo', '10문제를 다 맞혀 조로 ' + RK[b] + '로 특진했어요');
+  return stage('<span class="pxbanner">' + (b > a ? '특진! 조로 ' + RK[b] : '부장 만렙 · 10/10') + '</span><div class="pxrow">' + (b > a ? zorro(a, 'normal', 3) + '<span class="pxarrow">▶</span>' : '') +
+    zorro(b, 'happy', 4, 'jump') + icon(b >= 4 ? 'crown' : 'star', 4) + '</div>' + confetti(), 'promo', '10문제를 다 맞혀 조로 ' + RK[b] + '로 특진했어요');
 }
 function moodOf(ratio) { return ratio >= .8 ? 'happy' : ratio >= .5 ? 'normal' : ratio > 0 ? 'sad' : 'shock'; }
 function resultHigher(x) {
   var per = x.per || PC.scoreHigher(HPZ, x.ans, ctx).per;
   var top = HPZ.qs.map(function (q) { return BYN[q.a].rk[2] > BYN[q.b].rk[2] ? BYN[q.a] : BYN[q.b]; }).sort(function (a, b) { return b.rk[2] - a.rk[2]; })[0];   // 오늘 문제에서 과장 연봉 1등 회사
-  var scene = x.aux === 10 ? promoScene(x.promo || [myRank(), myRank()]) : stage('<div class="pxrow">' + zorro(myRank(), moodOf(x.aux / 10), 4, 'idle') + bld(top, 4) + '</div>', 'resst');
+  var scene = x.aux === 10 ? promoScene(x.promo || [myRank(), myRank()]) : stage('<div class="pxrow">' + zorro(myRank(), moodOf(x.aux / 10), 3, 'idle') + bld(top, 4) + '</div>', 'resst');
   var text = '연봉 놀이터 · 어디가 더 많이 줄까? ' + mmdd(TODAY) + '\n' + per.map(function (v) { return v ? '🟩' : '🟥'; }).join('') + '\n' + man(x.score) + '점 (' + x.aux + '/10)\n' + SITE_S;
   $('higher').innerHTML = '<div class="over"><span class="lv">오늘의 도전 · ' + mmdd(TODAY) + '</span>' + scene + vsScene('higher', x) + '<div class="big">' + man(x.score) + '<small>점</small></div>' +
     '<div class="ttl"><b>10문제 중 ' + x.aux + '개</b> 맞혔어요</div>' +
@@ -1833,7 +1969,7 @@ function chances(left) { var h = ''; for (var i = 0; i < PC.TODAY_PICKS; i++) h 
 function tBld(c, o, s) { return bld(c, s || 3, o, 'cb'); }
 function tBlind(n, extra) { var o = { blind: 1, neutral: 1, w: 9 }; for (var k in extra) o[k] = extra[k]; return o; }
 // 탐정 조로: 모자 쓴 조로 사원 (틀린 수에 따라 표정)
-function tDet(R) { return PX.ok ? '<span class="tdet" aria-hidden="true">' + zorro(myRank(), R.wrong.length >= 2 ? 'shock' : R.wrong.length ? 'sad' : 'normal', 2, 'idle', { hat: 1 }) + icon('magnifier', 2) + '</span>' : ''; }
+function tDet(R) { return PX.ok ? '<span class="tdet" aria-hidden="true">' + zorro(myRank(), R.wrong.length >= 2 ? 'shock' : R.wrong.length ? 'sad' : 'normal', 1.5, 'idle', { hat: 1 }) + icon('magnifier', 2) + '</span>' : ''; }
 function drawToday(p, fresh) {
   var R = PC.simToday(TPZ, p.log);
   if (!R) { p.log = []; setProg('today', p); R = PC.simToday(TPZ, []); }
@@ -1880,8 +2016,8 @@ function resultToday(x) {
       tBld(c, n === TPZ.ans ? { all: 1 } : R.wrong.indexOf(n) >= 0 ? { off: 1 } : null, 2) + '</div>';
   }).join('');
   var det = { hat: 1 }, scene = ok
-    ? stage('<div class="pxrow">' + zorro(myRank(), 'happy', 4, 'jump', det) + icon('magnifier', 4) + bld(A, 4, { all: 1 }, 'lightup') + '</div>', 'resst', '정답 ' + A.n + ' 빌딩에 불이 다 켜졌어요')
-    : stage('<div class="pxrow">' + zorro(myRank(), 'shock', 4, 'idle', det) + '<span class="fleetx">범인 도주!</span><div class="runaway" style="position:relative">' + icon('puff', 3, 'puff') + bld(A, 4, { sil: 1 }) + '</div></div>', 'resst flee', '숨은 회사가 도망갔어요');
+    ? stage('<div class="pxrow">' + zorro(myRank(), 'happy', 3, 'jump', det) + icon('magnifier', 4) + bld(A, 4, { all: 1 }, 'lightup') + '</div>', 'resst', '정답 ' + A.n + ' 빌딩에 불이 다 켜졌어요')
+    : stage('<div class="pxrow">' + zorro(myRank(), 'shock', 3, 'idle', det) + '<span class="fleetx">범인 도주!</span><div class="runaway" style="position:relative">' + icon('puff', 3, 'puff') + bld(A, 4, { sil: 1 }) + '</div></div>', 'resst flee', '숨은 회사가 도망갔어요');
   $('today').innerHTML = todayInfo() + '<div class="over"><span class="lv">오늘의 회사 #' + TPZ.no + ' · ' + (ok ? '성공' : '다음 기회에') + '</span>' + scene + vsScene('today', x) + (ok ? logo(A, 'l').replace('class="lg l', 'class="lg l lightup') : logo(A, 'l')) +
     '<div class="ttl"><b>' + esc(A.n) + '</b></div><div class="big">' + tries + '<small> 단서</small></div>' +
     '<p>' + (ok ? '단서 ' + R.open + '개 보고 ' + (R.wrong.length ? R.wrong.length + '번 틀린 뒤 ' : '한 번에 ') + '맞혔어요. ' + man(x.score) + '점' : '3번 다 틀렸어요. 0점') +
@@ -2033,7 +2169,7 @@ function roadMap(R, k, rev) {
   var X0 = RPZ.x0 || 0, cur = rev ? k - 1 : k;
   return '<ol class="pxmap" aria-label="10년 지도: ' + (cur + 1) + '번째 스테이지">' + [0, 1, 2, 3, 4].map(function (i) {
     var L = R.log[i], st = i === cur ? 'cur' : i < k ? 'done' : 'todo', x = X0 + 2 * i;
-    var top = i === cur ? zorro(rankAt(x), rev && L ? evMood(L) : 'normal', 2, rev ? 'jump' : 'idle') : '';
+    var top = i === cur ? zorro(rankAt(x), rev && L ? evMood(L) : 'normal', 1.5, rev ? 'jump' : 'idle') : '';
     return '<li class="' + st + '">' + top + '<span class="tile">' + (i < k ? icon(evIcon(L), 2) : icon('quest', 2)) + '</span><small>' + (x + 1) + '~' + (x + 2) + '년</small></li>';
   }).join('') + '</ol>';
 }
@@ -2080,7 +2216,7 @@ function drawRoad(p) {
       : esc(co.n) + '에 남았어요. 올해 ' + man(L.start) + '만원.';
     var ev = L.ev === 'cut' ? ' <b class="ev">구조조정 바람:</b> 2년째 연봉이 동결됐어요.' : L.ev === 'jump' ? ' <b class="evg">성과급 큰 해:</b> 성과급 +' + man(L.bonus) + '만원!'
       : L.ev === 'stock' ? ' <b class="evg">스톡옵션 대박:</b> +' + man(L.bonus) + '만원!' : L.ev === 'star' ? ' <b class="evg">고과 S:</b> 2년째 +5%.' : ' 큰 일 없이 2년이 지났어요.';
-    h += stage(zorro(rankAt(L.x), evMood(L), 4, evMood(L) === 'happy' ? 'jump' : 'idle') + icon(evIcon(L), 5, 'evi') + bld(co, bS(), null, 'grow'), 'evst') +
+    h += stage(zorro(rankAt(L.x), evMood(L), 3, evMood(L) === 'happy' ? 'jump' : 'idle') + icon(evIcon(L), 5, 'evi') + bld(co, bS(), null, 'grow'), 'evst') +
       '<ul class="rlog"><li>' + msg + ev + '</li></ul><div class="row" style="justify-content:flex-start;margin-top:12px"><button class="btn" id="rNx" type="button">' + (k < 5 ? '2년 뒤로' : '10년 결과 보기') + '</button></div>';
     $('road').innerHTML = h + roadLog(R, k - 1);
     $('rNx').onclick = function () { RREV = false; drawRoad(p); }; $('rNx').focus({ preventScroll: true });
@@ -2157,7 +2293,7 @@ function resultRoad(x, fresh) {
   if (isNew) { B[EN.id] = TODAY; store.setJ('slp-endings', B); }
   var fin = BYN[R.log[4].co], scn = PC.ROAD_SC[RPZ.sc || 'new'];
   var text = '연봉 놀이터 · 이직 로드 10년 ' + mmdd(TODAY) + ' (' + scn + ')\n' + path + '\n엔딩: ' + EN.lb + '\n10년 누적 ' + eokS(R.total) + (R.eok ? ' · 1억 ' + (R.eok + (RPZ.x0 || 0)) + '년 차' : ' · 1억 못 찍음') + '\n' + SITE_S;
-  var scene = '<div class="ending">' + stage('<div class="pxrow">' + zorro(T[3], T[2], 5, T[2] === 'happy' ? 'jump' : 'idle') + icon(T[0], 5, 'evi') + bld(fin, bS(true), null, 'grow') + '</div>' + (T[2] === 'happy' ? confetti() : ''), '', '엔딩: ' + EN.lb) +
+  var scene = '<div class="ending">' + stage('<div class="pxrow">' + zorro(T[3], T[2], 4, T[2] === 'happy' ? 'jump' : 'idle') + icon(T[0], 5, 'evi') + bld(fin, bS(true), null, 'grow') + '</div>' + (T[2] === 'happy' ? confetti() : ''), '', '엔딩: ' + EN.lb) +
     '<span class="lv">ENDING · ' + esc(scn) + (isNew ? ' · NEW!' : '') + '</span><div class="endnm"><b>' + esc(EN.lb) + '</b></div><p>' + T[1] + '</p></div>';
   $('road').innerHTML = '<div class="over"><span class="lv">이직 로드 10년 · ' + mmdd(TODAY) + '</span>' + scene + vsScene('road', x) + '<div class="big" style="font-size:clamp(44px,8vw,90px)">' + eokS(R.total) + '</div>' +
     '<div class="ttl"><b>' + (R.eok ? '연봉 1억, ' + (R.eok + (RPZ.x0 || 0)) + '년 차에 찍었어요' : '10년 안에 1억은 못 찍었어요') + '</b></div><p>' + path + '</p>' + rankBox('road', x) +
@@ -2250,7 +2386,7 @@ function cupReport(w, theme, all, picks) {
     : '대리 연봉은 ' + N + '곳 중 ' + r + '위예요. 연봉 1등은 ' + esc(top.n) + '(' + man(top.rk[1] - w.rk[1]) + '만원 더)였어요.';
   var text = '연봉 놀이터 · 드림 컴퍼니 월드컵 (' + PC.THEMES[theme] + ')\n🏆 ' + w.n + ' (대리 연봉 ' + N + '곳 중 ' + r + '위)\n' + SITE_S;
   $('cup').innerHTML = themeBar() + '<div class="rep"><span class="crown">WINNER · 내 드림 컴퍼니 · ' + PC.THEMES[theme] + '</span>' +
-    stage('<div class="pxrow">' + zorro(myRank(), 'happy', 4, 'jump') + '<div class="champ">' + icon('trophy', 4) + bld(w, bS(true), null, 'grow') + '</div></div>' + confetti(), 'resst', '우승 ' + w.n + ' 빌딩 위에 트로피') + logo(w, 'l') + '<span class="nm"><b>' + esc(w.n) + '</b></span>' +
+    stage('<div class="pxrow">' + zorro(myRank(), 'happy', 3, 'jump') + '<div class="champ">' + icon('trophy', 4) + bld(w, bS(true), null, 'grow') + '</div></div>' + confetti(), 'resst', '우승 ' + w.n + ' 빌딩 위에 트로피') + logo(w, 'l') + '<span class="nm"><b>' + esc(w.n) + '</b></span>' +
     '<p class="twist" style="background:none;padding:0">전국 우승 순위 <b>' + wr + '위</b> (' + PC.THEMES[theme] + ' ' + pool.length + '곳 중, 우승 ' + man(wins(w)) + '번)' + mockTag() + '</p>' +
     '<div class="stats"><div><small>신입 기준 연봉</small><b>' + (w.s0 ? man(w.s0) + '만' : '-') + '</b></div><div><small>대리</small><b>' + man(w.rk[1]) + '만</b></div><div><small>부장</small><b>' + eokS(w.rk[4]) + '</b></div>' +
     '<div><small>1년 퇴사율</small><b>' + pctS(w.to) + '</b></div><div><small>평균 근속</small><b>' + (w.tt ? w.tt.toFixed(1) + '년' : '-') + '</b></div><div><small>직원</small><b>' + man(w.m) + '명</b></div></div>' +
@@ -2453,7 +2589,7 @@ function renderVs() {
   var el = $('vsbar'); if (!el || !VS) return;
   if (VS.bad) { placeVs(); el.innerHTML = '<div class="vsbn"><p>도전장을 찾을 수 없어요. 주소가 잘렸거나 60일이 지난 도전장일 수 있어요. 오늘 문제는 그대로 할 수 있어요.</p></div>'; return; }
   var same = VS.day === TODAY;
-  el.innerHTML = '<div class="vsbn">' + zorro(1, 'normal', 2, 'idle', { plain: 1 }) + '<p><b>' + esc(VS.nick) + '님의 도전장</b> · ' + GNAME[VS.game] + ' ' +
+  el.innerHTML = '<div class="vsbn">' + zorro(1, 'normal', 1.5, 'idle', { plain: 1 }) + '<p><b>' + esc(VS.nick) + '님의 도전장</b> · ' + GNAME[VS.game] + ' ' +
     (same ? '오늘 <b>' + fmtVs(VS.game, VS.score) + '</b>. 같은 문제로 이겨 보세요!' : mmdd(VS.day) + ' 문제(' + fmtVs(VS.game, VS.score) + ')였어요. 지난 문제는 다시 풀 수 없어서, 대신 오늘 문제로 도전해 보세요.') + '</p>' +
     '<button class="btn" type="button" id="vsGo">' + (same ? '도전하기' : '오늘 문제 하기') + '</button></div>';
   $('vsGo').onclick = function () { go(VS.game); var p = $('p-' + VS.game); if (p) p.scrollIntoView({ block: 'start' }); };
@@ -2466,8 +2602,8 @@ function vsScene(game, x) {
   if (r === 'win') { var W = store.getJ('slp-vswins', {}); if (!W || typeof W !== 'object') W = {}; W[TODAY + '|' + game] = 1; store.setJ('slp-vswins', W); }   // 소품 '승리 메달'·'월계관'
   var who = function (z, nm, sc) { return '<div class="vsw">' + z + '<b>' + nm + '</b><small>' + sc + '</small></div>'; };
   return stage('<span class="pxbanner">' + (r === 'win' ? '승리!' : r === 'lose' ? '패배…' : '무승부') + '</span><div class="pxrow vsrow">' +
-    who(zorro(myRank(), r === 'win' ? 'happy' : r === 'lose' ? 'sad' : 'normal', 4, r === 'win' ? 'jump' : 'idle'), '나', fmtVs(game, me)) + '<span class="pxvs">VS</span>' +
-    who(zorro(1, r === 'lose' ? 'happy' : r === 'win' ? 'sad' : 'normal', 4, r === 'lose' ? 'jump' : 'idle', { plain: 1 }), esc(VS.nick), fmtVs(game, th)) + '</div>' + (r === 'win' ? confetti() : ''),
+    who(zorro(myRank(), r === 'win' ? 'happy' : r === 'lose' ? 'sad' : 'normal', 3, r === 'win' ? 'jump' : 'idle'), '나', fmtVs(game, me)) + '<span class="pxvs">VS</span>' +
+    who(zorro(1, r === 'lose' ? 'happy' : r === 'win' ? 'sad' : 'normal', 3, r === 'lose' ? 'jump' : 'idle', { plain: 1 }), esc(VS.nick), fmtVs(game, th)) + '</div>' + (r === 'win' ? confetti() : ''),
     'promo vsst', esc(VS.nick) + '님과 대결: ' + (r === 'win' ? '승리' : r === 'lose' ? '패배' : '무승부'));
 }
 
@@ -2530,7 +2666,7 @@ function lookWith(k, v) { var L = {}; for (var x in LOOK) L[x] = LOOK[x]; if (v)
 function saveLook() { store.setJ('slp-look', LOOK); }
 function lookTop() {
   var r = myRank(), x = myXP(), nx = nextXP(), lo = RANK_XP[r], hi = RANK_XP[Math.min(4, r + 1)], pct = r >= 4 ? 100 : Math.round((x - lo) / Math.max(1, hi - lo) * 100);
-  return '<div class="lktop">' + (PX.ok ? stage(zorro(r, 'happy', 8, 'idle', { bg: 1 }), 'resst lkst', '지금 내 조로: ' + BASES[baseOf(LOOK)] + ', 조로 ' + RK[r]) : '') +
+  return '<div class="lktop">' + (PX.ok ? stage(zorro(r, 'happy', 6, 'idle', { bg: 1 }), 'resst lkst', '지금 내 조로: ' + BASES[baseOf(LOOK)] + ', 조로 ' + RK[r]) : '') +
     '<div class="lkme"><p class="lknm">' + esc(NICK) + (topBadge() ? ' <span class="badge1">' + esc(topBadge()) + '</span>' : '') + '</p>' +
     '<p class="lkrk">조로 <b>' + RK[r] + '</b> · 경험치 ' + x + (r >= 4 ? ' · 만렙' : ' · ' + RK[r + 1] + ' 승진까지 ' + nx + '판') + '</p>' +
     '<div class="xpbar" role="progressbar" aria-label="다음 직급까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' +
@@ -2542,13 +2678,13 @@ function lookBase() {
     return '<button type="button" class="opt" data-' + attr + '="' + v + '" aria-pressed="' + on + '"' + (label ? ' aria-label="' + esc(label) + '"' : '') + '>' + inner + '</button>'; };
   var h = '<div class="opts big" role="group" aria-label="기본 모습">' + ['m', 'f'].map(function (k) {
     var L = { base: k, hair: k === b ? hr : HAIRS[k][0][0], bottom: LOOK.bottom, hat: LOOK.hat, hand: LOOK.hand, acc: LOOK.acc };
-    return opt('base', k, k === b, (PX.ok ? zorro(r, 'normal', 3, '', { look: L }) : '') + '<span>' + BASES[k] + '</span>');
+    return opt('base', k, k === b, (PX.ok ? zorro(r, 'normal', 2, '', { look: L }) : '') + '<span>' + BASES[k] + '</span>');
   }).join('') + '</div><p class="lkh4">머리 모양</p><div class="opts" role="group" aria-label="머리 모양">' + HAIRS[b].map(function (x) {
-    return opt('hair', x[0], x[0] === hr, (PX.ok ? zorro(r, 'normal', 2, '', { look: { base: b, hair: x[0] } }) : '') + '<span>' + x[1] + '</span>');
+    return opt('hair', x[0], x[0] === hr, (PX.ok ? zorro(r, 'normal', 1.5, '', { look: { base: b, hair: x[0] }, head: 1 }) : '') + '<span>' + x[1] + '</span>');
   }).join('') + '</div>';
   if (b === 'f') h += '<p class="lkh4">아래옷</p><div class="opts" role="group" aria-label="아래옷">' + BOTTOMS.map(function (x) {
     var on = (LOOK.bottom === 'skirt' ? 'skirt' : 'pants') === x[0];
-    return opt('bottom', x[0], on, (PX.ok ? zorro(r, 'normal', 2, '', { look: { base: 'f', hair: hr, bottom: x[0] } }) : '') + '<span>' + x[1] + '</span>');
+    return opt('bottom', x[0], on, (PX.ok ? zorro(r, 'normal', 1.5, '', { look: { base: 'f', hair: hr, bottom: x[0] } }) : '') + '<span>' + x[1] + '</span>');
   }).join('') + '</div>';
   return h;
 }
@@ -2561,7 +2697,7 @@ function lookItems() {
       L.map(function (it) {
         var have = !!own[it[0]], look = lookWith(slot, it[0]);
         return '<button type="button" class="itemb r-' + it[6] + (have ? '' : ' locked') + '" data-slot="' + slot + '" data-id="' + it[0] + '" title="' + esc(it[8]) + '"' + (have ? ' aria-pressed="' + (LOOK[slot] === it[0]) + '"' : ' disabled') + '>' +
-          (PX.ok ? zorro(r, 'normal', 2, '', { look: look, sil: !have, bg: slot === 'bg' }) : '') + '<span class="iname">' + esc(it[2]) + '</span>' +
+          (PX.ok ? '<span class="ipv">' + itemArt(it[0], slot === 'bg' ? 2 : 3, have ? '' : 'sil', 58) + '<span class="tryon" data-tz="' + it[0] + '"></span></span>' : '') + '<span class="iname">' + esc(it[2]) + '</span>' +
           (it[6] !== 'c' ? '<span class="rar">' + RAR_LB[it[6]] + '</span>' : '') + (have ? '' : '<small>' + esc(it[3]) + '</small>') + '</button>';
       }).join('') + '</div></div>';
   }).join('');
@@ -2584,6 +2720,7 @@ function renderLook() {
   var sc = el.parentNode ? el.parentNode.scrollTop : 0;
   el.innerHTML = lookTop() + LOOK_SECS.map(function (s) { return '<section class="lksec" id="' + s[0] + '"><h3 class="lkh">' + s[1] + '</h3>' + s[2]() + '</section>'; }).join('');
   if (el.parentNode) el.parentNode.scrollTop = sc;
+  lookTryOn(el);
   var after = function (sel) { renderLook(); renderMe(); var f = $('look').querySelector(sel); if (f) f.focus({ preventScroll: true }); };
   el.querySelectorAll('.itemb:not([disabled])').forEach(function (b) { b.onclick = function () {
     LOOK[b.dataset.slot] = b.dataset.id; if (!b.dataset.id) delete LOOK[b.dataset.slot];
@@ -2597,13 +2734,26 @@ function renderLook() {
     saveLook(); sfx('coin'); after(d.base ? '.opt[data-base="' + d.base + '"]' : d.hair ? '.opt[data-hair="' + d.hair + '"]' : '.opt[data-bottom="' + d.bottom + '"]');
   }; });
 }
+// 소품 칸의 '입어 본 모습'은 서랍을 연 뒤 몇 개씩 나눠 그림 (처음 열 때 한꺼번에 48장을 만들면 느린 폰에서 멈칫해서). 한 번 그린 그림은 캐시
+function lookTryOn(root) {
+  var L = [].slice.call(root.querySelectorAll('.tryon[data-tz]')), own = itemsOwned(), r = myRank(), i = 0;
+  clearTimeout(lookTryOn.t);
+  (function step() {
+    var t0 = performance.now();
+    while (i < L.length && performance.now() - t0 < 12) {
+      var el = L[i++], it = ITEM_BY[el.dataset.tz]; if (!it || !el.isConnected) continue;
+      el.innerHTML = zorro(r, 'normal', 1, '', { look: lookWith(it[1], it[0]), sil: !own[it[0]], bg: it[1] === 'bg' }); el.removeAttribute('data-tz');
+    }
+    if (i < L.length) lookTryOn.t = setTimeout(step, 16);
+  }());
+}
 // ── 결과 화면: 새로 얻은 소품(상자 열리는 도트 장면 + '입어 보기') · 다음에 가까운 소품 진행
 function gotBox(game) {
   var got = itemCheck(true), nx = nextItem(game), h = '', gift = got.some(function (g) { return g.indexOf('gift:') === 0; });
   if (got.length) {
     h += '<div class="gotbox" role="status"><p class="gtl">' + (gift ? '오늘의 <b>선물 상자</b>가 열렸어요!' : '새 <b>소품</b>을 얻었어요!') + '</p><div class="gotl">' + got.map(function (g) {
       var id = g.replace('gift:', ''), it = ITEM_BY[id];
-      return '<div class="goti r-' + it[6] + '">' + (PX.ok ? '<span class="gotart"><span class="boxani" aria-hidden="true">' + icon('chest', 4) + '</span><span class="gotz">' + zorro(myRank(), 'happy', 3, '', { look: lookWith(it[1], id), bg: it[1] === 'bg' }) + '</span></span>' : '') +
+      return '<div class="goti r-' + it[6] + '">' + (PX.ok ? '<span class="gotart"><span class="boxani" aria-hidden="true">' + icon('chest', 4) + '</span><span class="gotz">' + itemArt(id, it[1] === 'bg' ? 2 : 4) + zorro(myRank(), 'happy', 2, '', { look: lookWith(it[1], id), bg: it[1] === 'bg' }) + '</span></span>' : '') +
         '<b>' + esc(it[2]) + '</b><small>' + RAR_LB[it[6]] + (g !== id ? ' · 오늘의 선물' : '') + ' · ' + esc(it[8]) + '</small>' +
         '<button type="button" class="btn sm" data-try="' + id + '">입어 보기</button></div>';
     }).join('') + '</div></div>';
@@ -2639,8 +2789,9 @@ function lkOpen(push) {
   if (!LK.open) {
     LK.open = true; LK.last = document.activeElement;
     clearTimeout(LK.t); E.d.hidden = false; E.b.hidden = false; E.d.style.transform = ''; E.b.style.opacity = '';
-    void E.d.offsetWidth;   // 처음 위치(화면 밖)를 잡은 뒤 미끄러지게
-    E.d.classList.add('open'); E.b.classList.add('on'); document.documentElement.classList.add('lk-open');
+    document.documentElement.classList.add('lk-open');
+    // 화면 밖 위치를 한 번 그린 다음 프레임에 'open' → 미끄러짐 (예전엔 offsetWidth 로 강제 배치해서 느린 폰에서 멈칫)
+    requestAnimationFrame(function () { requestAnimationFrame(function () { if (LK.open) { E.d.classList.add('open'); E.b.classList.add('on'); } }); });
     $('lkClose').focus({ preventScroll: true });
     if (push) { try { history.pushState({ lk: 1 }, '', '#look'); } catch (e) {} }
   }
@@ -2824,7 +2975,7 @@ function dockSubs() {
   var hk = PC.DAILY.filter(function (k) { var x = rec(TODAY, k); return x && x.sent && x.rank; })[0], B = endBook();
   $('dkHall').textContent = hk ? '오늘 ' + PNAME[hk] + ' ' + man(rec(TODAY, hk).rank) + '위' : '오늘의 도전 순위 · 명예의 전당';
   $('dkLook').textContent = '칭호 ' + Object.keys(badges()).length + '개 · 소품 ' + Object.keys(itemsOwned()).length + '개 · 엔딩 ' + PC.ENDINGS.filter(function (e) { return B[e[0]]; }).length + '/7';
-  if (PX.ok) document.querySelectorAll('#dock .di[data-ic]').forEach(function (el) { var n = el.dataset.ic; el.innerHTML = n === 'zorro' ? zorro(myRank(), 'normal', 1.5) : icon(n, 2); });
+  if (PX.ok) document.querySelectorAll('#dock .di[data-ic]').forEach(function (el) { var n = el.dataset.ic; el.innerHTML = n === 'zorro' ? zorro(myRank(), 'normal', 1, '', { head: 1 }) : icon(n, 2); });
 }
 function dockSync() {
   var a = LK.open ? 'look' : CUR;
@@ -2920,7 +3071,7 @@ renderMe();
 renderBoard(null);
 getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); } });
 route();   // 주소 #게임 · #look 으로 바로 열림
-if (!API_BASE) window.__slp = { zRows: zRows, zorro: zorro, ITEMS: ITEMS, itemCheck: itemCheck, giftPick: giftPick, allDoneToday: allDoneToday, cleanLook: cleanLook, getLook: function () { return LOOK; }, DEV: DEV, TODAY: TODAY, HAIRS: HAIRS, ITEM_DRAW: ITEM_DRAW, BG_DRAW: BG_DRAW };   // 미리보기 시험용 (실제 사이트엔 없음)
+if (!API_BASE) window.__slp = { zRows: zRows, zorro: zorro, itemArt: itemArt, ITEMS: ITEMS, itemCheck: itemCheck, giftPick: giftPick, allDoneToday: allDoneToday, cleanLook: cleanLook, getLook: function () { return LOOK; }, DEV: DEV, TODAY: TODAY, HAIRS: HAIRS, ITEM_DRAW: ITEM_DRAW, BG_DRAW: BG_DRAW };   // 미리보기 시험용 (실제 사이트엔 없음)
 vsLoad();   // ?vs=도전장 으로 왔으면 도전장 띠 + 그 게임으로
 }
 
