@@ -1283,6 +1283,15 @@ function zMood(g, mood) {
     zs(g, 10, 10, ['nnn     nnn']); zs(g, 11, 12, ['CE      CE', 'EE      EE', 'EE      EE']); zs(g, 14, 16, ['M  M', ' MM ']);
   }
 }
+// 여자 조로 큰 눈 (기본·슬픔): 4×4 눈 + 갈색 눈동자(o) + 반짝이(C) + 바깥 속눈썹 · 기본 표정엔 볼터치
+function zFemEyes(g, mood) {
+  if (mood !== 'normal' && mood !== 'sad') return;
+  var y = mood === 'sad' ? 12 : 11, eye = ['EEEE', 'ECoE', 'EooE', ' EE '];
+  zs(g, 10, y, eye); zs(g, 18, y, eye);
+  zp(g, 9, y, 'E'); zp(g, 22, y, 'E');   // 속눈썹(눈꼬리)
+  if (mood === 'sad') zs(g, 11, 16, ['T', 'T']);   // 눈물은 눈 아래로
+  else { zs(g, 9, 15, ['rr']); zs(g, 21, 15, ['rr']); }   // 볼터치
+}
 function zGlasses(g, lens) {
   [[10, 13], [18, 21]].forEach(function (a) {
     for (var x = a[0]; x <= a[1]; x++) { zp(g, x, 11, 'K'); zp(g, x, 15, 'K'); }
@@ -1391,14 +1400,14 @@ function zRows(rk, mood, o) {
   if (!o.hat) zHair(g, b, hr); else { zHair(g, b, hr); zs(g, 5, 2, ['    kkkkkkkkkkkkkk    ', '   kkkkkkkkkkkkkkkk   ', '   kkkkkkkkkkkkkkkk   ', '   kkkkkkkkkkkkkkkk   ', '   vvvvvvvvvvvvvvvv   ', '   kkkkkkkkkkkkkkkk   ', ' kkkkkkkkkkkkkkkkkkkk ', 'vvvvvvvvvvvvvvvvvvvvvv']); }
   zBody(g, R, fem, fem && L.bottom === 'skirt', pose);
   zMood(g, mood);
-  if (fem && mood !== 'happy' && mood !== 'shock') { zp(g, 10, mood === 'sad' ? 12 : 11, 'E'); zp(g, 21, mood === 'sad' ? 12 : 11, 'E'); }   // 여자 조로 속눈썹
+  if (fem) zFemEyes(g, mood);
   if (R.gl && L.acc !== 'shades' && L.acc !== 'goggles' && L.acc !== 'glasses') zGlasses(g, 'g');
   ['acc', 'hand', 'hat'].forEach(function (slot) { var f = ITEM_DRAW[L[slot]]; if (f && !(slot === 'hat' && o.hat)) f(g, A); });   // 탐정 모자가 있으면 모자 소품은 빼기
   return g.map(function (r) { return r.join(''); });
 }
 function zPal(rk, mood, o) {
   var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], L = lookOf(o), hc = R.h, jk = R.jk || '#f4f4f4', tie = L.acc === 'goldtie' ? '#ffcf3d' : R.tie;
-  var p = { h: hc, i: shade(hc, -.28), j: shade(hc, .35), n: shade(hc, -.35), s: '#f6cfa6', f: '#e2aa82', E: '#1b1b22', M: '#7a2a2a', u: '#d0505a', r: '#ff9b9b', T: '#6fb6ff',
+  var p = { h: hc, i: shade(hc, -.28), j: shade(hc, .35), n: shade(hc, -.35), s: '#f6cfa6', f: '#e2aa82', E: '#1b1b22', o: '#7a4a32', M: '#7a2a2a', u: '#d0505a', r: '#ff9b9b', T: '#6fb6ff',
     w: '#f6f6f2', x: '#d3d6de', t: tie, y: shade(tie, -.3), J: jk, d: shade(jk, -.3), l: shade(jk, .25), p: '#2a2f45', a: '#1b1f30', b: '#191919', z: '#5a5a5a', c: '#ffcf3d', g: '#cfe9ff', k: '#6b4a2b', v: '#3d2a18',
     Y: '#ffcf3d', F: '#c99a00', H: '#fff3a0', K: '#3a3f4a', B: '#e8412c', Q: '#a8281b', W: '#f6f6f2', Z: '#c9ced6', O: '#8a5a1c', e: '#b98a5a', L: '#9fd3ff', m: '#6a6f7c',
     R: '#5b7cff', I: '#3550b8', G: '#3f9a4a', S: '#2a6b33', P: '#c0602b', C: '#ffffff', q: '#111111', V: '#8e5bd6', N: '#ff8fc7', D: '#2b2f45', A: '#ff9a1f', U: '#36b5a5', X: '#f0c6a0' };
