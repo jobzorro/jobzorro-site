@@ -205,6 +205,30 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .pulse .top button { font:inherit; font-size:13px; font-weight:700; padding:5px 12px; border-radius:999px; border:1px solid var(--hairline-2); background:var(--paper); color:var(--ink); cursor:pointer; }
 .pulse .top button i { font-style:normal; font-family:var(--display); color:var(--muted); margin-right:5px; }
 .pulse .top button:hover { border-color:var(--ink); }
+.picks .pill i { font-style:normal; font-family:var(--display); color:var(--muted); margin-right:5px; }
+.series { width:100%; max-width:960px; text-align:left; margin-top:10px; }
+.ser-h { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.ser-nav button { font:inherit; font-size:18px; line-height:1; width:34px; height:34px; border-radius:999px; border:1px solid var(--hairline-2); background:var(--paper); color:var(--ink); cursor:pointer; margin-left:6px; }
+.ser-nav button:hover { border-color:var(--ink); }
+.ser-track { display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; padding:2px 2px 6px; overscroll-behavior-x:contain; }
+.ser-track::-webkit-scrollbar { display:none; }
+.ser { flex:0 0 min(84%, 340px); scroll-snap-align:start; border:1.5px solid var(--ink); border-radius:16px; padding:18px 18px 12px; background:var(--paper); color:var(--ink); }
+.ser .no { font-family:var(--display); font-size:12px; color:var(--muted); margin:0; }
+.ser h3 { font-size:20px; font-weight:900; margin:4px 0 2px; }
+.ser .d { font-size:13px; color:var(--ink-soft); margin:0 0 10px; }
+.ser ol { list-style:none; margin:0; padding:0; display:grid; }
+.ser li button { all:unset; box-sizing:border-box; width:100%; display:flex; gap:10px; align-items:baseline; padding:7px 0; border-top:1px solid var(--hairline-2); cursor:pointer; }
+.ser li:first-child button { border-top:0; }
+.ser li button:hover span { text-decoration:underline; }
+.ser li b { font-family:var(--display); font-size:14px; width:18px; color:var(--muted); }
+.ser li span { font-size:15px; font-weight:700; display:flex; flex-direction:column; }
+.ser li small { font-size:12px; font-weight:500; color:var(--muted); letter-spacing:0; }
+.ser-must { background:#c6ff3d; color:#0b0b0b; border-color:#0b0b0b; }
+.ser-must .no, .ser-must .d, .ser-must li b, .ser-must li small { color:#3a3a3a; }
+.ser-must li button { border-top-color:#0b0b0b22; }
+.ser-dots { display:flex; gap:6px; justify-content:center; margin-top:8px; }
+.ser-dots i { width:6px; height:6px; border-radius:99px; background:var(--hairline-2); transition:width .2s; }
+.ser-dots i.on { width:18px; background:var(--ink); }
 .pulse small { font-size:11.5px; color:var(--faint); letter-spacing:.04em; }
 
 .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
@@ -562,6 +586,12 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   .vs-g { width:44px; height:38px; font-size:18px; }
 }
 @media (max-width:520px) { .vs-head { gap:8px; padding-top:28px; } .vs-side .meta { display:none; } .vs-pill { font-size:12px; padding:3px 9px; } .vs-win { display:none; } }
+.zorro .zmore summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--inkfg-soft);margin:8px 0 4px;list-style:none}
+.zorro .zmore ul{margin-top:4px}
+.zorro .zmore summary::-webkit-details-marker{display:none}
+.zorro .zmore summary::after{content:" ▾"}
+.zorro .zmore[open] summary::after{content:" ▴"}
+.sec-h .why .asof{display:block;margin-top:4px;font-size:12px;opacity:.7}
 </style>
 </head>
 <body>
@@ -580,7 +610,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   <!-- 두 가지 보는 법: 그냥 검색 / 내 상황 넣고 검색 (2026-10-27) -->
   <div class="mebar"><button class="way gen" type="button" id="meGenBtn" aria-pressed="false"><small>그냥 궁금하면</small><b>회사 이름만 검색</b><span>평점·연봉·재무로 본 일반 판정이에요</span></button>
     <button class="way" type="button" id="meOpenBtn" aria-pressed="false"></button></div>
-  <div class="picks" id="picks"><span>이런 회사부터</span></div>
+  <div class="picks" id="picks"><span>이번 주 많이 본 회사</span></div>
   <p class="hint" id="hint"></p>
   </div>
   <!-- 숫자판 (연봉 연구소·직무사전과 같은 모양, 2026-10-20 사용자 결정) -->
@@ -991,7 +1021,9 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 <script>
 // 회사 데이터는 data/index.json(검색용 이름 목록) + data/co/NNN.json(회사 상세 128조각)으로 나눠 필요할 때만 읽는다
 const SHARDS = 128;
-const PICKS = ["펄어비스", "유풍", "오뚜기", "삼성전자", "현대자동차"];
+const PICKS = ["펄어비스", "유풍", "오뚜기", "삼성전자", "현대자동차"];   // 많이 본 회사(/top)를 못 받을 때만 쓰는 기본 5곳
+const SERIES = [{"k": "must", "t": "무조건 가세요", "d": "붙으면 고민 말고 가라고 한 회사", "r": [["기아", "직원 31,366명 · 연봉 업계 상위 1%"], ["케이티", "직원 13,817명 · 연봉 업계 상위 1%"], ["엘지유플러스", "직원 9,321명 · 연봉 업계 상위 1%"], ["네이버", "직원 5,183명 · 연봉 업계 상위 1%"], ["한화시스템", "직원 5,083명 · 연봉 업계 상위 1%"], ["케이티앤지", "직원 4,009명 · 연봉 업계 상위 1%"], ["카카오", "직원 3,788명 · 연봉 업계 상위 1%"], ["셀트리온", "직원 3,106명 · 연봉 업계 상위 1%"], ["하이트 진로", "직원 2,757명"], ["코닝정밀소재", "직원 2,467명 · 연봉 업계 상위 3%"]]}, {"k": "go", "t": "가세요", "d": "재무·평점·연봉이 고르게 괜찮은 회사", "r": [["에이치디현대중공업", "직원 17,172명 · 연봉 업계 상위 3%"], ["포스코", "직원 16,794명 · 연봉 업계 상위 7%"], ["우리은행", "직원 13,023명 · 연봉 업계 상위 10%"], ["삼성SDI", "직원 12,426명 · 연봉 업계 상위 3%"], ["엘지화학", "직원 12,231명 · 연봉 업계 상위 1%"], ["서울아산병원", "직원 9,267명 · 연봉 업계 상위 1%"], ["한화에어로스페이스", "직원 8,023명 · 연봉 업계 상위 1%"], ["코스트코코리아", "직원 7,592명 · 연봉 업계 상위 35%"], ["근로복지공단", "직원 6,210명 · 연봉 업계 상위 17%"], ["한국타이어앤테크놀로지", "직원 6,117명 · 연봉 업계 상위 6%"]]}, {"k": "wlb", "t": "워라밸 좋은 회사", "d": "잡플래닛 워라밸 3.8점 넘고 판정도 '가세요' 이상", "r": [["한국중부발전", "워라밸 4.5점 · 리뷰 395개"], ["지엠테크니컬센터코리아", "워라밸 4.5점 · 리뷰 104개"], ["한국전력기술", "워라밸 4.4점 · 리뷰 608개"], ["한국도로교통공단", "워라밸 4.3점 · 리뷰 695개"], ["한국남동발전", "워라밸 4.3점 · 리뷰 407개"], ["한국지엠", "워라밸 4.3점 · 리뷰 665개"], ["서울도시가스", "워라밸 4.3점 · 리뷰 51개"], ["구글코리아", "워라밸 4.3점 · 리뷰 286개"], ["로버트보쉬코리아", "워라밸 4.2점 · 리뷰 428개"], ["코스콤", "워라밸 4.2점 · 리뷰 153개"]]}, {"k": "hidden", "t": "숨은 알짜 중견", "d": "직원 300~1천 명인데 연봉은 업계 상위 10% 안", "r": [["티케이지태광", "직원 918명 · 연봉 업계 상위 1%"], ["한국필립모리스", "직원 902명 · 연봉 업계 상위 1%"], ["에스케이하이이엔지", "직원 774명 · 연봉 업계 상위 1%"], ["두산", "직원 699명 · 연봉 업계 상위 1%"], ["포스코홀딩스", "직원 693명 · 연봉 업계 상위 1%"], ["한국원자력안전기술원", "직원 612명 · 연봉 업계 상위 1%"], ["에스케이가스", "직원 612명 · 연봉 업계 상위 1%"], ["로버트보쉬코리아", "직원 591명 · 연봉 업계 상위 1%"], ["한국교직원공제회", "직원 537명 · 연봉 업계 상위 1%"], ["쎄트렉아이", "직원 501명 · 연봉 업계 상위 1%"]]}, {"k": "newbie", "t": "신입 초봉 높은 회사", "d": "신입 추정 연봉이 높은 순, 판정도 '가세요' 이상", "r": [["LS증권", "신입 추정 7,485만 원"], ["코오롱제약", "신입 추정 7,426만 원"], ["한국휴렛팩커드", "신입 추정 7,352만 원"], ["신한라이프생명보험", "신입 추정 7,262만 원"], ["경신", "신입 추정 7,240만 원"], ["현대엘리베이터", "신입 추정 7,177만 원"], ["화신", "신입 추정 7,157만 원"], ["에어메드텍코리아", "신입 추정 7,073만 원"], ["코오롱인더스트리（주）", "신입 추정 7,003만 원"], ["（주）신세계프라퍼티", "신입 추정 6,991만 원"]]}, {"k": "stay", "t": "오래 다니는 회사", "d": "평균 근속 15년 넘고 퇴사율은 낮은 곳", "r": [["대성에너지", "평균 근속 20.7년 · 한 해 퇴사 6%"], ["한국씨티은행", "평균 근속 19.4년 · 한 해 퇴사 10%"], ["디와이파워（주）", "평균 근속 18.6년 · 한 해 퇴사 9%"], ["케이티앤지", "평균 근속 18.2년 · 한 해 퇴사 9%"], ["미래에셋생명보험", "평균 근속 17.5년 · 한 해 퇴사 4%"], ["삼천리", "평균 근속 16.8년 · 한 해 퇴사 6%"], ["롯데정밀화학", "평균 근속 16.8년 · 한 해 퇴사 7%"], ["지엠비코리아", "평균 근속 16.1년 · 한 해 퇴사 8%"], ["한화오션", "평균 근속 15.9년 · 한 해 퇴사 9%"], ["신한라이프생명보험", "평균 근속 15.5년 · 한 해 퇴사 8%"]]}, {"k": "grow", "t": "요즘 크는 회사", "d": "매출이 연평균 15% 넘게 크고 성장성 등급 A+ 이상", "r": [["케이씨에이서비스", "매출 연평균 +461% · 직원 425명"], ["포티투닷", "매출 연평균 +164% · 직원 799명"], ["에스케이온", "매출 연평균 +110% · 직원 3,180명"], ["한화에어로스페이스", "매출 연평균 +67% · 직원 8,023명"], ["한화생명금융서비스", "매출 연평균 +65% · 직원 1,420명"], ["제주항공", "매출 연평균 +53% · 직원 2,739명"], ["에스피엠텍", "매출 연평균 +50% · 직원 1,010명"], ["케이엘에이텐코코리아", "매출 연평균 +43% · 직원 901명"], ["클래시스", "매출 연평균 +35% · 직원 551명"], ["인카금융서비스", "매출 연평균 +35% · 직원 475명"]]}];  // 첫 화면 시리즈 4개 (build.py series, 주마다 바뀜) — 맨 앞 '많이 본 TOP 10'은 /top 으로
+const TS_KEY = "";   // Cloudflare Turnstile 사이트 키 (공개값, config turnstile_sitekey). 하루 많이 본 사람에게만 봇 확인 (2026-10-28)
 const API = "https://company-api.jobzorro.workers.dev";  // 비어 있지 않으면 회사 상세는 API에서 한 곳씩 (조각 파일은 사이트에 안 올림)
 let IDX = [];            // [이름, 판정 코드, 업계] — 판정 코드 0=판단자료 부족
 const cache = {};        // 조각 번호 → 회사 상세
@@ -1000,7 +1032,7 @@ function shardOf(name) { let h = 0; for (let i = 0; i < name.length; i++) h = (h
 async function getCo(name) {
   if (API) {
     if (!cache[name]) cache[name] = fetch(`${API}/co?n=${encodeURIComponent(name)}`)
-      .then(r => r.ok ? r.json() : r.status === 429 ? { __limit: true } : r.status === 410 ? { __hidden: true } : r.status >= 500 ? { __err: true } : null)
+      .then(r => r.ok ? r.json() : r.status === 429 ? { __limit: true } : r.status === 401 ? { __limit: true, __challenge: true } : r.status === 410 ? { __hidden: true } : r.status >= 500 ? { __err: true } : null)
       .catch(() => ({ __err: true }));   // 서버 오류·연결 끊김은 '자료 없음'과 구분
     const c = await cache[name];
     if (c && (c.__limit || c.__err)) delete cache[name];  // 제한 풀리거나 서버가 돌아오면 다시 받을 수 있게
@@ -1028,8 +1060,34 @@ function cardPick(c) {
   const why = [good.length ? "좋은 점 " + good.slice(0, 2).join("·") : "", bad.length ? "걸리는 점 " + bad.slice(0, 2).join("·") : ""].filter(Boolean).join("   /   ");
   return { word, why, bg: g >= 4 ? "#f3ffd6" : g <= 1 ? "#fff1ef" : "#f5f5f5", fg: g >= 4 ? "#0b0b0b" : g <= 1 ? "#d92d20" : "#3a3a3a" };
 }
+// 한마디 목록: 내 상황 한마디는 길어서 첫 줄 포함 4줄만 보이고 나머지는 '더 보기' (2026-10-28 사용자 요청). 일반 한마디는 그대로
+function zList(z, my) {
+  const li = (t, last) => `<li class="${last ? "last" : ""}">${esc(t)}</li>`, rest = z.slice(1);
+  if (!my || rest.length <= 4) return `<ul>${rest.map((t, i) => li(t, i === rest.length - 1)).join("")}</ul>`;
+  return `<ul>${rest.slice(0, 3).map(t => li(t)).join("")}</ul><details class="zmore"><summary>더 보기 (${rest.length - 3}줄)</summary><ul>${rest.slice(3).map((t, i, a) => li(t, i === a.length - 1)).join("")}</ul></details>`;
+}
+// 자료 기준일 (2026-10-28 사용자 요청): 칸마다 어느 자료·언제 것인지 한 줄
+const mdOf = d => { const m = String(d || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[1]}.${m[2]}.${m[3]}` : String(d || ""); };
+function srcOf(c, k) {
+  const f = c.fin, s = c.salary;
+  if (k === "평판") return c.rep?.date ? `${mdOf(c.rep.date)} 잡플래닛·블라인드·캐치 공개 평점` : "";
+  if (k === "연봉") return s ? `평균 연봉 ${s.avgSrc || "국민연금 기준"} · 직급별은 추정` : "";
+  if (k === "주요 뉴스") return c.news?.date ? `${mdOf(c.news.date)}까지 기사` : "";
+  if (k === "AI 영향") return c.ai ? "업종 기준 조로 판단" : "";
+  if (f?.years?.length) return `${f.years[0]}~${f.years.at(-1)}년 ${f.source || "재무제표"}`;
+  return "";
+}
+// 봇 확인: 하루 많이 본 사람에게 Turnstile 상자 하나 → 통과하면 /pass 로 알리고 그 회사를 다시 연다
+function humanCheck(name) {
+  $("#out").innerHTML = `<div class="sec">${empty("오늘 많이 보셨네요. 사람인지 한 번만 확인할게요.")}<div id="tsbox" style="display:flex;justify-content:center;margin:16px 0"></div></div>`;
+  const draw = () => window.turnstile.render("#tsbox", { sitekey: TS_KEY, language: "ko",
+    callback: async token => { const r = await send("/pass", { token }); if (r?.ok) render(name); else toast("확인에 실패했어요. 다시 시도해 주세요."); } });
+  if (window.turnstile) return draw();
+  const sc = document.createElement("script"); sc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"; sc.async = true; sc.onload = draw; document.head.append(sc);
+}
 // 결과 카드: 판정·등급·한마디 첫 줄을 1080×1350 이미지로 (카톡·인스타 공유용, 사이트 주소 박힘)
-async function makeCard(c) {
+async function makeCard(c, my = null) {   // my = 내 상황 판정(meJudge 결과). 있으면 판정·PICK을 내 기준으로 (2026-10-28)
+  const verdict = my ? my.v : c.verdict;
   const W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const x = cv.getContext("2d"), F = '"Noto Sans KR","Malgun Gothic",sans-serif', D = '"Archivo","Noto Sans KR",sans-serif';
   try { await document.fonts.ready; } catch (e) {}
@@ -1039,11 +1097,11 @@ async function makeCard(c) {
   let fs = 92; x.font = `900 ${fs}px ${F}`; while (x.measureText(c.name).width > W - 160 && fs > 48) { fs -= 4; x.font = `900 ${fs}px ${F}`; }
   x.fillStyle = "#0b0b0b"; x.fillText(c.name, 80, 230);
   // 판정 알약
-  const go = /가세요$/.test(c.verdict) && c.verdict !== "조건 보고 가세요", bad = c.verdict === "비추예요";
-  x.font = `900 52px ${F}`; const vw = x.measureText(c.verdict).width + 80;
+  const go = /가세요$/.test(verdict) && verdict !== "조건 보고 가세요", bad = verdict === "비추예요";
+  x.font = `900 52px ${F}`; const vw = x.measureText(verdict).width + 80;
   x.fillStyle = bad ? "#d92d20" : go ? "#c6ff3d" : "#ffffff"; x.strokeStyle = bad ? "#d92d20" : go ? "#c6ff3d" : "#0b0b0b"; x.lineWidth = 4;
   x.beginPath(); x.roundRect(80, 290, vw, 96, 48); x.fill(); x.stroke();
-  x.fillStyle = bad ? "#ffffff" : "#0b0b0b"; x.fillText(c.verdict, 120, 357);
+  x.fillStyle = bad ? "#ffffff" : "#0b0b0b"; x.fillText(verdict, 120, 357);
   x.font = `800 28px ${F}`; x.fillStyle = "#3a3a3a"; x.fillText((c.tags || []).join("  ·  "), 80, 440);
   // 다섯 칸 등급
   const ks = ["평판", "연봉", "성장성", "수익성", "안정성"], cw = (W - 160) / 5;
@@ -1053,24 +1111,27 @@ async function makeCard(c) {
     x.font = `900 104px ${D}`; x.fillStyle = L === "F" ? "#d92d20" : /^(S|A\+|A)$/.test(L) ? "#1b8f63" : /^(C|D)$/.test(L) ? "#c2410c" : L === "?" ? "#a3a3a3" : "#3a3a3a";
     x.fillText(L, cx + 14, 680); });
   // 조로의 PICK 칸: 가세요 / 가지 마세요 한 단어 + 좋은 점·걸리는 점 + 한마디 첫 줄 (2026-10-27 사용자 요청)
-  const pk = cardPick(c);
+  const pk = cardPick({ ...c, verdict });
+  // 내 상황 카드: 근거는 칩(연봉 %, 급, 직무)으로만 — 내 연봉 금액·나이는 카드에 안 싣는다 (남에게 보내는 이미지라서)
+  if (my) pk.why = (my.chips || []).filter(t => !/^회사 판정/.test(t)).slice(0, 3).join("  ·  ");
   x.fillStyle = pk.bg; x.strokeStyle = "#0b0b0b"; x.lineWidth = 4; x.beginPath(); x.roundRect(80, 760, W - 160, 380, 28); x.fill(); x.stroke();
-  x.font = `800 30px ${F}`; x.fillStyle = "#3a3a3a"; x.fillText("조로의 PICK", 124, 830);
+  x.font = `800 30px ${F}`; x.fillStyle = "#3a3a3a"; x.fillText(my ? "내 상황 기준 · 조로의 PICK" : "조로의 PICK", 124, 830);
   x.font = `900 84px ${F}`; x.fillStyle = pk.fg; x.fillText(pk.word, 124, 935);
   x.font = `700 32px ${F}`; x.fillStyle = "#3a3a3a"; if (pk.why) x.fillText(pk.why, 124, 1000);
   x.font = `700 34px ${F}`; x.fillStyle = "#0b0b0b";
-  let line = "", y = pk.why ? 1062 : 1010; for (const ch of (c.zorro?.[0] || "")) { if (x.measureText(line + ch).width > W - 250) { x.fillText(line, 124, y); line = ch.trim(); y += 48; if (y > 1110) break; } else line += ch; }
+  let line = "", y = pk.why ? 1062 : 1010; for (const ch of ((my ? ME_FIRST[verdict]?.replace("아래 ", "") : c.zorro?.[0]) || "")) { if (x.measureText(line + ch).width > W - 250) { x.fillText(line, 124, y); line = ch.trim(); y += 48; if (y > 1110) break; } else line += ch; }
   if (y <= 1110) x.fillText(line, 124, y);
   // 아래: 주소 + 로고
   x.fillStyle = "#c6ff3d"; x.fillRect(0, H - 150, W, 150);
   x.font = `900 38px ${F}`; x.fillStyle = "#0b0b0b"; x.fillText("job.jobzorro.kr/company", 80, H - 62);
   try { const img = new Image(); img.src = "assets/jobzorro_logo.png"; await img.decode(); const h = 56, w = img.width * h / img.height; x.drawImage(img, W - 80 - w, H - 103, w, h); } catch (e) {}
-  x.font = `500 22px ${F}`; x.fillStyle = "#7a7a7a"; x.fillText("회사에 대한 일반적인 평가예요. 본인 스펙과 상황에 따라 판단하세요.", 80, H - 180);
+  x.font = `500 22px ${F}`; x.fillStyle = "#7a7a7a"; x.fillText(my ? `회사 일반 판정은 '${c.verdict}'예요. 위는 내 상황을 넣어 본 결과라 사람마다 달라요.` : "회사에 대한 일반적인 평가예요. 본인 스펙과 상황에 따라 판단하세요.", 80, H - 180);
   return new Promise(r => cv.toBlob(r, "image/png"));
 }
 async function saveCard() {
   const c = CUR; if (!c) return;
-  const blob = await makeCard(c), file = new File([blob], `${c.name}_조로판정.png`, { type: "image/png" });
+  meQuiet = true; let my = null; try { my = meJudge(c); } finally { meQuiet = false; }   // 카드용으로 다시 계산할 땐 기록 안 보냄
+  const blob = await makeCard(c, my), file = new File([blob], `${c.name}_조로판정.png`, { type: "image/png" });
   ev("card", c.name);
   // 휴대폰은 공유창(카톡·갤러리), PC는 바로 저장
   if (/Android|iPhone|iPad/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: c.name + " · Zorro의 판정" }); return; } catch (e) { if (e.name === "AbortError") return; } }
@@ -1353,6 +1414,7 @@ async function render(name) {
   $("#out").innerHTML = `<p class="loading">불러오는 중…</p>`;
   const c = await getCo(name);
   if (c && c.__hidden) { $("#out").innerHTML = `<div class="sec">${empty("정정 요청을 검토하느라 이 회사는 잠시 내렸어요.")}</div>`; return; }
+  if (c && c.__challenge && TS_KEY) { humanCheck(name); return; }
   if (c && c.__limit) { $("#out").innerHTML = `<div class="sec">${empty("조회가 너무 많아요. 잠시 후 다시 시도해 주세요.")}</div>`; return; }
   if (c && c.__err) { $("#out").innerHTML = `<div class="sec">${empty("잠시 연결이 불안정해요. 잠시 후 다시 시도해 주세요.")}</div>`; return; }
   if (ME?.co) await meLoadNow();   // 내 상황의 지금 회사 정보 (한 번만)
@@ -1375,12 +1437,12 @@ async function render(name) {
       ${abuse.length ? `<ul>${abuse.map(a => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
       <p style="margin-top:6px">스타트업은 인사팀이 리뷰 작성을 독려하거나 관리하는 경우가 있어요. 원문 링크에서 ① 최근 몇 달 사이 5점 리뷰가 몰렸는지 ② 장점만 길고 단점이 '없음'·'딱히'로 끝나는 리뷰가 많은지 ③ 인사·채용 직군 리뷰가 유독 후한지 ④ 블라인드와 잡플래닛·캐치 점수 차이가 큰지 직접 확인해 보세요.</p></div>` : "";
   const repsum = rg.score == null ? "" : `<div class="repsum"><span>종합 <b>${rg.score.toFixed(2)}</b> / 5</span><span>${esc(c.type)} 회사 기준 · A ${rg.good} 이상 · B ${rg.ok} 이상 · F 2.0 미만</span>${fl.inflation ? `<span class="flag">점수 뻥튀기 의심 (블라인드보다 ${fl.inflation}점 높음)</span>` : ""}${fl.few ? `<span class="flag">평가 ${fl.few}명뿐 · 참고만</span>` : ""}</div>`;
-  const secH = (i, k) => { const x = c.grades[k], g = x?.grade, has = k in c.grades;
-    return `<div class="sec-h"><span class="no">0${i}</span><h3>${k}</h3>${has ? `<span class="gr ${g == null ? "gq" : lcls(x)}">${g == null ? "?" : ltxt(x)}</span>` : ""}<p class="why">${WHY[k]}</p></div>`; };
+  const secH = (i, k) => { const x = c.grades[k], g = x?.grade, has = k in c.grades, src = srcOf(c, k);
+    return `<div class="sec-h"><span class="no">0${i}</span><h3>${k}</h3>${has ? `<span class="gr ${g == null ? "gq" : lcls(x)}">${g == null ? "?" : ltxt(x)}</span>` : ""}<p class="why">${WHY[k]}${src ? `<small class="asof">자료 기준 · ${esc(src)}</small>` : ""}</p></div>`; };
   $("#out").innerHTML = `
     <div class="head"><div><p class="kicker"><i></i>${esc(grpName(s, c.name))}</p><h2>${esc(c.name)}</h2>
       <div class="chips"><span class="chip">${esc(c.type)} 회사${c.age != null ? " · 업력 " + c.age + "년" : ""}</span>${c.ai ? `<span class="chip ai-${c.ai.level}">AI 영향 ${c.ai.level}</span>` : ""}</div>
-      <div class="meta">${s ? `<span>직원 <b>${won(s.members)}명</b></span>` : ""}${f ? `<span>재무 <b>${f.years[0]}~${f.years.at(-1)}</b> ${esc(f.source)}</span>` : ""}<span>기준일 <b>${esc(date)}</b></span></div></div>
+      <div class="meta">${s ? `<span>직원 <b>${won(s.members)}명</b></span>` : ""}${f ? `<span>재무 <b>${f.years[0]}~${f.years.at(-1)}</b> ${esc(f.source)}</span>` : ""}${date ? `<span>평점 <b>${esc(mdOf(date))}</b></span>` : ""}${c.news?.date ? `<span>뉴스 <b>${esc(mdOf(c.news.date))}</b></span>` : ""}</div></div>
       <div class="verdict ${vcls}"><small>${my ? "내 상황 기준 · " : ""}Zorro's Verdict</small><strong>${V}</strong>${!my && (c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}${my?.chips?.length ? `<div class="vtags mchips" title="이 판정이 나온 근거">${my.chips.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
     ${API ? `<div class="acts"><button class="act heart${hearted.get(c.name) ? " on" : ""}" type="button" id="b-heart" aria-label="이 회사 하트">♥ <b>${(c._s?.hearts || 0).toLocaleString("ko-KR")}</b></button>
       <button class="act" type="button" id="b-card">결과 카드 저장</button><button class="act" type="button" id="b-share">링크 공유</button>
@@ -1390,7 +1452,7 @@ async function render(name) {
     ${meRankSlot(c, my)}
     ${vsEntry(c)}
     <div class="zorro"><div class="who">Z</div><div><p class="lbl">${my ? "내 상황에 맞춘 " : ""}Zorro의 한마디</p><p class="first">${esc(z[0])}</p>
-      <ul>${z.slice(1).map((t, i, a) => `<li class="${i === a.length - 1 ? "last" : ""}">${esc(t)}</li>`).join("")}</ul></div></div>
+      ${zList(z, my)}</div></div>
     ${my ? meFb(c, my) : ""}
     ${c.divisions ? `<p class="divh">부문마다 달라요${c.divSrc ? ` <small>${esc(c.divSrc)}</small>` : ""}</p><div class="divs">${c.divisions.map(d => `<div class="div"><h4>${esc(d.name)}<span class="${(/가세요$/.test(d.verdict) && d.verdict !== "조건 보고 가세요") || d.verdict === "처우 위쪽" ? "go" : ""}">${esc(d.verdict)}</span></h4>${d.lines.map(l => `<p>${esc(l)}</p>`).join("")}</div>`).join("")}</div>` : ""}
     <div class="board">${board}</div>
@@ -1625,19 +1687,35 @@ function route(h) {
   if (p.length >= 2 && p[0] && p[1]) renderVS(p[0], p[1], p[2] === "now"); else if (h) render(h);
 }
 
-// 검색: 정확히 같은 이름 → 앞부분 일치 → 포함 순, 판정이 있는 회사 먼저
+// 한글 자모 맞추기 (2026-10-28 사용자: 'ㄱ' 누르면 ㄱ으로, '기' 치면 기로 시작하는 회사가 치는 대로 따라오게)
+//   글자를 자음·모음으로 쪼개 앞부분을 비교한다: '깅'(기아 치는 중) = ㄱㅣㅇ → 기아(ㄱㅣㅇㅏ)와 맞음. 'ㅅㅅㅈㅈ'처럼 초성만 쳐도 삼성전자
+const HG = { cho: "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ", jung: ["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅗㅏ","ㅗㅐ","ㅗㅣ","ㅛ","ㅜ","ㅜㅓ","ㅜㅔ","ㅜㅣ","ㅠ","ㅡ","ㅡㅣ","ㅣ"],
+  jong: ["","ㄱ","ㄲ","ㄱㅅ","ㄴ","ㄴㅈ","ㄴㅎ","ㄷ","ㄹ","ㄹㄱ","ㄹㅁ","ㄹㅂ","ㄹㅅ","ㄹㅌ","ㄹㅍ","ㄹㅎ","ㅁ","ㅂ","ㅂㅅ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"],
+  pair: { "ㄳ":"ㄱㅅ","ㄵ":"ㄴㅈ","ㄶ":"ㄴㅎ","ㄺ":"ㄹㄱ","ㄻ":"ㄹㅁ","ㄼ":"ㄹㅂ","ㄽ":"ㄹㅅ","ㄾ":"ㄹㅌ","ㄿ":"ㄹㅍ","ㅀ":"ㄹㅎ","ㅄ":"ㅂㅅ","ㅘ":"ㅗㅏ","ㅙ":"ㅗㅐ","ㅚ":"ㅗㅣ","ㅝ":"ㅜㅓ","ㅞ":"ㅜㅔ","ㅟ":"ㅜㅣ","ㅢ":"ㅡㅣ" } };
+function jamo(s) {
+  let o = "";
+  for (const ch of s) { const c = ch.charCodeAt(0) - 0xac00;
+    if (c >= 0 && c < 11172) o += HG.cho[Math.floor(c / 588)] + HG.jung[Math.floor(c % 588 / 28)] + HG.jong[c % 28];
+    else o += HG.pair[ch] || ch; }
+  return o;
+}
+const choOf = s => [...s].map(ch => { const c = ch.charCodeAt(0) - 0xac00; return c >= 0 && c < 11172 ? HG.cho[Math.floor(c / 588)] : ch; }).join("");
+const onlyCho = q => /^[ㄱ-ㅎ]+$/.test(q);
+// 검색: 정확히 같은 이름 → 앞부분 일치(자모·초성 포함) → 포함 순, 판정이 있는 회사 먼저
 function find(q, n = 8) {
   q = plain(q); if (!q) return [];
-  const exact = [], head = [], part = [];
+  const exact = [], head = [], jhead = [], part = [];   // jhead = 글자로는 아직 안 맞지만 치는 중인 자모로 맞는 것 ('기' → 길·김), 진짜 앞부분 일치 뒤에
   q = q.toLowerCase();
+  const qj = jamo(q), qc = onlyCho(q);
   for (const row of IDX) { const p = plain(row[0]).toLowerCase(), al = row[3] ? row[3].split(" · ").map(x => plain(x).toLowerCase()) : [];
     // 별칭(SK하이닉스·버거킹 같은 브랜드·영문 이름)도 이름과 똑같이 찾는다
     if (p === q || al.includes(q)) exact.push(row);
     else if (p.startsWith(q) || al.some(x => x.startsWith(q))) head.push(row);
-    else if (p.includes(q) || (q.length >= 2 && al.some(x => x.includes(q)))) part.push(row);
+    else if ((row[4] ??= jamo(p)).startsWith(qj) || (qc && (row[5] ??= choOf(p)).startsWith(q))) jhead.push(row);
+    else if (p.includes(q) || (q.length >= 2 && al.some(x => x.includes(q))) || (qc && q.length >= 2 && (row[5] ??= choOf(p)).includes(q))) part.push(row);
     if (exact.length + head.length >= n * 4) break; }
   const by = (a, b) => (b[1] > 0) - (a[1] > 0);
-  return [...exact, ...head.sort(by), ...part.sort(by)].slice(0, n);
+  return [...exact, ...head.sort(by), ...jhead.sort(by), ...part.sort(by)].slice(0, n);
 }
 let sel = -1;
 function showSug() {
@@ -1647,21 +1725,37 @@ function showSug() {
 }
 function pick(name) { $("#q").value = name; $("#sug").hidden = true; render(name); }
 $("#q").addEventListener("input", showSug);
+$("#q").addEventListener("compositionupdate", () => setTimeout(showSug, 0));   // 한글 조합 중('ㄱ'→'기')에도 바로 따라오게
 $("#q").addEventListener("keydown", e => { const li = [...$("#sug").children]; if (!li.length || $("#sug").hidden) return;
   if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + li.length) % li.length; li.forEach((x, i) => x.classList.toggle("on", i === sel)); }
   if (e.key === "Enter" && sel >= 0) { e.preventDefault(); pick(li[sel].dataset.n); }
   if (e.key === "Escape") $("#sug").hidden = true; });
 $("#sug").addEventListener("click", e => { const li = e.target.closest("li"); if (li) pick(li.dataset.n); });
 document.addEventListener("click", e => { if (!e.target.closest(".qbox")) $("#sug").hidden = true; });
-$("#picks").insertAdjacentHTML("beforeend", PICKS.map(n => `<button class="pill" type="button" data-n="${esc(n)}">${esc(n)}</button>`).join(""));
+// 검색창 아래: 이번 주 많이 본 회사 TOP 5 (2026-10-28 사용자: '이런 회사부터' 대신). /top 이 없거나 5곳이 안 되면 기본 목록으로 채움
+const pillsOf = ns => ns.map((n, i) => `<button class="pill" type="button" data-n="${esc(n)}"><i>${i + 1}</i>${esc(n)}</button>`).join("");
+function heroTop(top) {
+  const ns = [...new Set([...(top || []).map(r => r[0]), ...PICKS])].slice(0, 5);
+  $("#picks").querySelectorAll(".pill").forEach(b => b.remove()); $("#picks").insertAdjacentHTML("beforeend", pillsOf(ns));
+}
 $("#picks").addEventListener("click", e => { const b = e.target.closest(".pill"); if (b) render(b.dataset.n); });
 $("#f").addEventListener("submit", e => { e.preventDefault(); const r = find($("#q").value, 1)[0]; $("#sug").hidden = true;
   if (r) render(r[0]); else if ($("#q").value.trim()) render($("#q").value.trim()); });
 addEventListener("hashchange", () => { const h = decodeURIComponent(location.hash.slice(1)); if (h) route(h); });
-fetch("data/index.json").then(r => r.json()).then(d => { IDX = d.r.map(([n, v, g, a]) => [n, v, d.g[g], a]);
-  const n = IDX.filter(r => r[1]).length;
-  $("#stCo").innerHTML = IDX.length.toLocaleString("ko-KR") + "<small>곳</small>";
-  $("#stJudged").innerHTML = n.toLocaleString("ko-KR") + "<small>곳</small>"; TK.co = IDX.length; TK.judged = n; tick(); });
+// 검색 목록은 두 번에 나눠 받는다 (2026-10-28 속도): 판정 있는 회사 먼저, 판단자료 부족 회사는 검색창을 누르거나 4초 뒤에
+let IDX_G = [], moreP = null;
+function loadMore() {
+  return moreP = moreP || fetch("data/index_more.json").then(r => r.json()).then(d => {
+    IDX = IDX.concat(d.r.map(([n, v, g, a]) => [n, v, IDX_G[g], a]));
+    if (document.activeElement?.id === "q" && $("#q").value) showSug();   // 치는 중이면 목록 다시
+  }).catch(() => { moreP = null; });
+}
+fetch("data/index.json").then(r => r.json()).then(d => { IDX_G = d.g; IDX = d.r.map(([n, v, g, a]) => [n, v, d.g[g], a]);
+  const n = IDX.filter(r => r[1]).length, total = d.total || IDX.length;
+  $("#stCo").innerHTML = total.toLocaleString("ko-KR") + "<small>곳</small>";
+  $("#stJudged").innerHTML = n.toLocaleString("ko-KR") + "<small>곳</small>"; TK.co = total; TK.judged = n; tick();
+  setTimeout(loadMore, 4000); });
+document.addEventListener("focusin", e => { if (e.target.matches?.("#q, #q2")) loadMore(); });
 // 검은 띠: 숫자판과 같은 숫자로 자동 갱신 (직무사전·연봉 연구소와 같은 모양)
 const TK = {};
 function tick() { const f = v => v.toLocaleString("ko-KR");
@@ -1678,18 +1772,62 @@ alignStats(); addEventListener("resize", alignStats); document.fonts?.ready.then
 // 숫자판 '현재까지 검색한 사람' = 누적 (2026-10-20 사용자: 5명 미만이어도 숨기지 않음)
 // /top 은 한 번만 부르고 숫자판·많이 본 회사가 같이 쓴다 (2026-10-21)
 const topP = API ? fetch(API + "/top").then(r => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null);
+topP.then(d => heroTop(d?.top)).catch(() => heroTop(null));
 topP.then(d => { if (d) { $("#stPeople").innerHTML = (d.total ?? d.today).toLocaleString("ko-KR") + "<small>명</small>"; TK.people = d.total ?? d.today; TK.vs = d.vs?.[0]; tick(); } }).catch(() => {});
+// 첫 화면 시리즈 (2026-10-28 사용자: 옆으로 넘기는 시리즈물 5개): ① 이번 주 많이 본 TOP 10 ② 무조건 가세요 ③ 가세요 ④ 워라밸 ⑤ 숨은 알짜 중견
+// 화면에 보이는 이름은 검색 별칭 첫 번째(에이치디현대중공업 → HD현대중공업)가 있으면 그걸로
+const serName = n => (IDX.find(r => r[0] === n)?.[3] || "").split(" · ")[0] || n;
+function seriesHtml(top) {
+  const all = [...(top.length >= 3 ? [{ k: "hot", t: "이번 주 많이 본 회사 TOP 10", d: "최근 7일 사람들이 가장 많이 찾아본 회사", r: top.slice(0, 10).map(([n, v]) => [n, `이번 주 ${v.toLocaleString("ko-KR")}번 봤어요`]) }] : []),
+    ...SERIES.filter(x => x.r.length >= 3)];
+  if (!all.length) return "";
+  const card = (x, i) => `<article class="ser ser-${x.k}"><p class="no">${String(i + 1).padStart(2, "0")} / ${String(all.length).padStart(2, "0")}</p><h3>${esc(x.t)}</h3><p class="d">${esc(x.d)}</p>
+    <ol>${x.r.map(([n, info], j) => `<li><button type="button" data-n="${esc(n)}"><b>${j + 1}</b><span>${esc(serName(n))}${info ? `<small>${esc(info)}</small>` : ""}</span></button></li>`).join("")}</ol></article>`;
+  return `<div class="series"><div class="ser-h"><small>조로의 회사 시리즈 · 매주 바뀌어요</small><span class="ser-nav"><button type="button" data-d="-1" aria-label="이전">‹</button><button type="button" data-d="1" aria-label="다음">›</button></span></div>
+    <div class="ser-track" tabindex="0">${all.map(card).join("")}</div><div class="ser-dots">${all.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div></div>`;
+}
+// 끝까지 가면 1번으로 (2026-10-28 사용자): 맨 뒤에 1번 카드 복사본을 붙여 두고, 복사본에 멈추면 진짜 1번으로 순간 이동
+function seriesWire(el) {
+  const tr = el.querySelector(".ser-track"); if (!tr) return;
+  const dots = [...el.querySelectorAll(".ser-dots i")], real = [...tr.children], n = real.length;
+  if (n > 1) { const cl = real[0].cloneNode(true); cl.setAttribute("aria-hidden", "true"); cl.classList.add("ser-clone"); tr.append(cl); }
+  const cards = [...tr.children], x0 = () => cards[0].offsetLeft, at = k => cards[k].offsetLeft - x0();
+  const cur = () => cards.reduce((b, c, i) => Math.abs(at(i) - tr.scrollLeft) < Math.abs(at(b) - tr.scrollLeft) ? i : b, 0);
+  let t = 0;
+  tr.addEventListener("scroll", () => {
+    const k = cur(); dots.forEach((d, i) => d.classList.toggle("on", i === k % n));
+    clearTimeout(t); t = setTimeout(() => { if (cur() === n) tr.scrollTo({ left: 0, behavior: "instant" }); }, 140);
+  }, { passive: true });
+  const go = d => { const k = cur() % n;
+    if (d < 0 && k === 0) return tr.scrollTo({ left: at(n - 1), behavior: "smooth" });   // 1번에서 뒤로 → 마지막
+    tr.scrollTo({ left: at(k + d), behavior: "smooth" }); };                                 // 마지막에서 앞으로 → 복사본(=1번) → 순간 이동
+  let seen = true, pause = 0;
+  const hold = () => { pause = Date.now() + 8000; };
+  el.querySelectorAll(".ser-nav button").forEach(b => b.onclick = () => { go(Number(b.dataset.d)); hold(); });
+  // 저절로 돌기 (2026-10-28 사용자: "1로 돌아가서 2 3 4 5 계속 팽이 돌듯"): 4초마다 다음 카드.
+  //   손대면(터치·마우스·키보드) 멈췄다가 8초 뒤 다시, 화면에서 안 보이거나 다른 탭이면 쉰다. '움직임 줄이기' 설정한 사람은 안 돌림
+  if (n < 2 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  ["pointerdown", "wheel", "keydown", "focusin"].forEach(e => tr.addEventListener(e, hold, { passive: true }));
+  tr.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") pause = Infinity; });
+  tr.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") hold(); });
+  if ("IntersectionObserver" in window) new IntersectionObserver(es => { seen = es[0].isIntersecting; }).observe(tr);
+  const timer = setInterval(() => {
+    if (!tr.isConnected) return clearInterval(timer);   // 회사 화면으로 넘어가면 끝
+    if (seen && !document.hidden && Date.now() > pause) go(1);
+  }, 4000);
+}
 // 첫 화면은 비워 두고 검색을 유도한다 (주소에 #회사명 이 있을 때만 바로 보여 줌)
 const intro = () => { $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b>
   <p>평점·직급별 연봉·5개년 재무·최근 뉴스를 한 번에 보고, Zorro가 갈 만한지 정리해 드려요.</p><div class="pulse" id="pulse"></div></div>`;
-  if (!API) return;
+  if (!API) { const el = $("#pulse"); if (el) { el.innerHTML = seriesHtml([]); seriesWire(el); el.querySelectorAll("button[data-n]").forEach(b => b.onclick = () => pick(b.dataset.n)); } return; }
   topP.then(d => { const el = $("#pulse"); if (!d || !el) return;
     const vs = d.vs || [], go = (a, b) => { location.hash = encodeURIComponent(a) + "~" + encodeURIComponent(b); };
     const mu = vs.length ? `<div class="mu"><small>최근 7일 가장 많이 붙은 대결</small>
       <button class="vs1" type="button" data-a="${esc(vs[0][0])}" data-b="${esc(vs[0][1])}"><span>${esc(vs[0][0])}</span><i>VS</i><span>${esc(vs[0][1])}</span></button>
       <p>최근 7일 동안 <b>${vs[0][2].toLocaleString("ko-KR")}명</b>이 이 두 회사를 놓고 고민했어요. 눌러서 바로 비교해 보세요.</p>
       ${vs.length > 1 ? `<ol>${vs.slice(1).map((x, i) => `<li><button type="button" data-a="${esc(x[0])}" data-b="${esc(x[1])}"><span><b>${i + 2}</b>${esc(x[0])} vs ${esc(x[1])}</span><span>${x[2].toLocaleString("ko-KR")}명</span></button></li>`).join("")}</ol>` : ""}</div>` : "";
-    el.innerHTML = mu + `${d.top.length >= 3 ? `<small>이번 주 많이 본 회사</small><div class="top">${d.top.map(([n], i) => `<button type="button" data-n="${esc(n)}"><i>${i + 1}</i>${esc(n)}</button>`).join("")}</div>` : ""}`;
+    el.innerHTML = mu + seriesHtml(d.top || []);
+    seriesWire(el);
     el.querySelectorAll("button[data-n]").forEach(b => b.onclick = () => pick(b.dataset.n));
     el.querySelectorAll("button[data-a]").forEach(b => b.onclick = () => go(b.dataset.a, b.dataset.b)); }).catch(() => {}); };
 // 오늘 처음 들어온 방문만 한 번 기록
@@ -1709,7 +1847,7 @@ let meCo = null;           // 지금 화면의 회사
 const meOver = {};         // 회사별로 카드에서 고친 값 {salary, place, size}
 
 // 엔진에 넘길 업종 말: 업계 묶음 이름을 F 규칙이 알아듣는 말로 (예: 게임·소프트웨어 → 게임만 전망 나쁨이라 '소프트웨어'로)
-const GAME_CO = new Set(["111퍼센트", "게임덱스", "게임듀오", "그라비티", "그레이게임즈", "네오위즈", "네오플", "넥슨게임즈", "넥슨네트웍스", "넥슨코리아", "넵튠", "넷마블", "넷마블네오", "넷마블넥서스", "넷마블몬스터", "넷마블에프앤씨", "넷마블엔투", "니즈게임즈", "님블뉴런", "더블유게임즈", "데브시스터즈 (Devsisters Corp.)", "데브캣", "드래곤플라이", "라이엇게임즈코리아", "라이온하트스튜디오", "라이징윙스", "라인게임즈", "레드랩게임즈", "레드징코게임즈", "레포르게임즈", "렐루게임즈", "로드컴플릿", "룬샷게임즈", "링게임즈", "매드엔진", "모비릭스", "미스틸게임즈", "민트로켓", "밸로프", "붐잇게임즈", "블루포션게임즈", "블루홀스튜디오", "블리자드엔터테인먼트", "빅게임스튜디오", "빅파이어게임즈", "빌리네어게임즈", "세븐티세븐스트리트게임즈", "슈퍼캣", "스마일게이트", "시프트업", "신지게임즈", "아름게임즈", "아이덴티티게임즈", "아이엠씨게임즈", "액토즈소프트", "어썸피스", "에이블게임즈", "에이시티게임즈", "에이엔게임즈", "엑스엘게임즈", "엔드림", "엔씨", "엔씨큐에이", "엔엑스쓰리게임즈", "엔픽셀", "엠게임", "오븐게임즈", "웹젠", "웹젠레드스타", "위메이드맥스", "위메이드커넥트", "위메이드플레이", "이스트게임즈", "이안게임즈", "조이시티", "카카오게임즈", "컴투스", "컴투스플랫폼", "컴투스홀딩스", "코그노스피어코리아", "쿡앱스", "크래프톤", "파우게임즈", "퍼스트스파크게임즈", "펄어비스", "폴스타게임즈", "플라이웨이게임즈", "플레이위드게임즈", "하운드13", "한빛소프트", "（주）게임테일즈", "（주）나딕게임즈", "（주）에피드게임즈"]);   // 게임사 이름 (config game_companies, build.py 가 넣음)
+const GAME_CO = new Set(["111퍼센트", "게임덱스", "게임듀오", "그라비티", "그레이게임즈", "네오위즈", "네오플", "넥슨게임즈", "넥슨네트웍스", "넥슨코리아", "넵튠", "넷마블", "넷마블네오", "넷마블넥서스", "넷마블몬스터", "넷마블에프앤씨", "넷마블엔투", "니즈게임즈", "님블뉴런", "더블유게임즈", "데브시스터즈 (Devsisters Corp.)", "데브캣", "드래곤플라이", "라이엇게임즈코리아", "라이온하트스튜디오", "라이징윙스", "라인게임즈", "레드랩게임즈", "레드징코게임즈", "렐루게임즈", "로드컴플릿", "룬샷게임즈", "링게임즈", "매드엔진", "모비릭스", "미스틸게임즈", "민트로켓", "밸로프", "붐잇게임즈", "블루포션게임즈", "블루홀스튜디오", "블리자드엔터테인먼트", "빅게임스튜디오", "빅파이어게임즈", "빌리네어게임즈", "세븐티세븐스트리트게임즈", "슈퍼캣", "스마일게이트", "시프트업", "신지게임즈", "아름게임즈", "아이덴티티게임즈", "아이엠씨게임즈", "액토즈소프트", "어썸피스", "에이블게임즈", "에이시티게임즈", "에이엔게임즈", "엑스엘게임즈", "엔드림", "엔씨", "엔씨큐에이", "엔엑스쓰리게임즈", "엔픽셀", "엠게임", "오븐게임즈", "웹젠", "웹젠레드스타", "위메이드맥스", "위메이드커넥트", "위메이드플레이", "이스트게임즈", "이안게임즈", "조이시티", "카카오게임즈", "컴투스", "컴투스플랫폼", "컴투스홀딩스", "코그노스피어코리아", "쿡앱스", "크래프톤", "파우게임즈", "퍼스트스파크게임즈", "펄어비스", "폴스타게임즈", "플라이웨이게임즈", "플레이위드게임즈", "하운드13", "한빛소프트", "（주）나딕게임즈", "（주）에피드게임즈"]);   // 게임사 이름 (config game_companies, build.py 가 넣음)
 function engInd(g, detail, name) {
   if (/전지|축전/.test(detail || "") || g === "2차전지") return "2차전지";
   if (g === "게임" || GAME_CO.has(name)) return "게임";

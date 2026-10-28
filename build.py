@@ -80,7 +80,8 @@ GROUP_COLORS = {
     "construction":     ((210, 180, 140), (18, 15, 11)),   # 샌드
 }
 
-TABS = [("index.html", "직무사전"), ("salary/index.html", '연봉<span class="lg"> 연구소</span>'), ("company/index.html", '회사<span class="lg">&nbsp;판단</span>'), ("play/index.html", '<span class="lg">연봉&nbsp;놀이터</span><span class="sm">게임</span><span class="new">NEW</span>'), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
+# 2026-10-28 사용자: 연봉 연구소 - 연봉 놀이터 - 회사 판단 - 직무사전 - 취업뉴스 - 함께하기 순서
+TABS = [("salary/index.html", '연봉<span class="lg"> 연구소</span>'), ("play/index.html", '<span class="lg">연봉&nbsp;놀이터</span><span class="sm">게임</span><span class="new">NEW</span>'), ("company/index.html", '회사<span class="lg">&nbsp;판단</span>'), ("index.html", "직무사전"), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
 APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 신청하기" 버튼이 여기로 간다)
 
 
@@ -539,7 +540,7 @@ def footer_html(root: str, logo: str, note: str) -> str:
     c = COMPANY
     return (
         f'<footer class="zf"><div class="zf-in"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"></a>'
-        f'<div class="zf-links"><a href="{root}index.html">직무사전</a><a href="{root}salary/index.html">연봉 연구소</a><a href="{root}company/index.html">회사 판단 연구소</a><a href="{root}play/index.html">연봉 놀이터</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
+        f'<div class="zf-links"><a href="{root}salary/index.html">연봉 연구소</a><a href="{root}play/index.html">연봉 놀이터</a><a href="{root}company/index.html">회사 판단 연구소</a><a href="{root}index.html">직무사전</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
         f'<a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a>'
         f'<a href="{root}privacy/index.html">개인정보처리방침</a></div>'
         f'<div class="zf-box"><b>법인명(상호)</b> {c["name"]} &nbsp;·&nbsp; <b>대표자</b> {c["ceo"]} &nbsp;·&nbsp; <b>개인정보보호책임자</b> {c["privacy"]}<br>'
