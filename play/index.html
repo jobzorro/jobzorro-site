@@ -941,7 +941,7 @@ html.lk-open, html.lk-open body { overflow:hidden; }
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module">
-import * as PC from './play_core.js';
+import * as PC from './play_core.js?v=db9456347c';
 const D = await (await fetch('data/play.json', { cache: 'no-cache' })).json();
 // 연봉 놀이터 v2 화면. make.py 가 page/*.js 를 이름순으로 이어 붙여 function main(D, PC) 하나로 만든다.
 // D = 회사 자료(make.py), PC = play_core.js (서버와 같은 규칙). 점수는 항상 PC.score* 로만 계산한다.
@@ -3917,7 +3917,7 @@ function runFinish() {
   var R = RUN; R.on = 0; cancelAnimationFrame(R.raf); document.documentElement.classList.remove('rn-play'); runMg(null);
   var ei = Math.floor(RR() * R_END.length), E = R_END[ei]; R.money += E[1]; R.pen += E[2];
   var arr = runClock(R), late = arr > R_DUE, early = late ? 0 : Math.floor(R_DUE - arr);
-  var money = Math.max(0, Math.min(PC.RUN_MONEY_MAX, Math.round(R.money))), bonus = late ? 0 : Math.min(PC.RUN_BONUS_MAX, 1000 + early * 50), score = money + bonus;
+  var money = Math.max(0, Math.min(PC.RUN_MONEY_MAX || 30000, Math.round(R.money))), bonus = late ? 0 : Math.min(PC.RUN_BONUS_MAX || 2000, 1000 + early * 50), score = money + bonus;   // || : 옛 규칙 파일이 남아 있어도 숫자가 깨지지 않게
   var x = runRec() || {}, all = store.getJ('slp-runbest', null), newAll = !all || score > all.s, n = (x.n || 0) + 1, best = Math.max(score, x.best || 0), newDay = score > (x.best || 0) && n > 1;
   if (newAll) store.setJ('slp-runbest', { s: score, d: TODAY });
   var st = runStats(); st.n++; if (!late) st.ontime++; st.esc += R.esc; st.maxHits = Math.max(st.maxHits, R.hits); st.maxMoney = Math.max(st.maxMoney, money);
