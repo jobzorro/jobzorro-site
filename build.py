@@ -343,6 +343,25 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zfab a:hover { background:var(--acc); color:var(--acc-ink); }
 .zfab a { font-family:var(--display); letter-spacing:.04em; }
 """
+# 2026-10-29 모바일 아래 탭바 CSS (뉴스 페이지에도 그대로 붙이려고 따로 둔다)
+TABBAR_CSS = """.zb { display:none; }
+@media (max-width:640px) {   /* 2026-10-29 모바일: 아래 탭바 — 위 메뉴는 숨기고 로고만 */
+  :root { --tabbar-h:58px; }
+  .zn-tabs { display:none !important; }
+  body { padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom,0px)); }
+  .zb { display:grid; grid-template-columns:repeat(6,1fr); position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--paper, var(--bg, #fff)); border-top:1px solid var(--hairline, var(--line, #e5e5e5));
+    padding:6px max(4px, env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(4px, env(safe-area-inset-right,0px)); transition:transform .25s ease; }
+  .zb.hide { transform:translateY(110%); }
+  .zb a { position:relative; display:grid; justify-items:center; gap:2px; padding:4px 0; color:var(--muted, #777); text-decoration:none; font-family:"Noto Sans KR",sans-serif; font-size:11px; font-weight:700; -webkit-tap-highlight-color:transparent; }
+  .zb a svg { width:23px; height:23px; }
+  .zb a.on { color:var(--ink, #0b0b0b); }
+  .zb a.on svg { stroke-width:2.4; }
+  .zb a.on::before { content:""; position:absolute; top:-7px; width:26px; height:3px; border-radius:0 0 3px 3px; background:var(--ink, #0b0b0b); }
+  .zb .dot { position:absolute; top:3px; right:calc(50% - 16px); width:7px; height:7px; border-radius:50%; background:#c6ff3d; border:1px solid var(--ink, #0b0b0b); }
+}
+@media (prefers-reduced-motion: reduce) { .zb { transition:none; } }
+"""
+SHARED_CSS += TABBAR_CSS
 
 
 # 취업뉴스 페이지에 끼울 때 덮어쓰는 스타일 (보조 글자 선명하게). 제호는 build_site.py 의 .hero-top 이 그린다
@@ -538,6 +557,18 @@ NEWS_MASTHEAD_CSS = """
 """
 
 
+# 2026-10-29 모바일: 폰(640px 이하)에선 위 메뉴 대신 화면 아래 탭바 (메뉴 순서는 TABS 그대로). 아이콘은 선 하나짜리 SVG
+TAB_ICON = {
+    "salary/index.html": '<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',
+    "play/index.html": '<rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15.5 12h.01M18 13.5h.01"/>',
+    "company/index.html": '<path d="M4 21V5l8-2v18M12 9l8 2v10M2 21h20M7.5 8h1M7.5 12h1M7.5 16h1M15.5 14h1M15.5 18h1"/>',
+    "index.html": '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/>',
+    "news/index.html": '<path d="M4 5h13v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v10a2 2 0 0 1-2 2M8 9h5M8 13h5M8 17h3"/>',
+    "zorro/index.html": '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 12h.01M13 12h.01M17 12h.01"/>',
+}
+TAB_SHORT = {"salary/index.html": "연봉", "play/index.html": "게임", "company/index.html": "회사", "index.html": "직무", "news/index.html": "뉴스", "zorro/index.html": "상담"}
+
+
 def nav_html(active: str, root: str, logo: str) -> str:
     tabs = "".join(
         f'<a href="{root}{href}"{" class=\"on\"" if href == active else ""}>{label}</a>' for href, label in TABS
@@ -551,6 +582,12 @@ def nav_html(active: str, root: str, logo: str) -> str:
         "<script>(function(){var n=document.currentScript.previousElementSibling.querySelector('.zn-tabs');if(!n)return;"
         "var a=n.querySelector('a.on');if(a&&a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12;"
         "var f=function(){n.classList.toggle('more',n.scrollWidth-n.scrollLeft-n.clientWidth>4)};f();n.addEventListener('scroll',f,{passive:true});addEventListener('resize',f)})();</script>"
+        + '<nav class="zb" aria-label="사이트 탭">' + "".join(
+            f'<a href="{root}{href}"{" class=\"on\" aria-current=\"page\"" if href == active else ""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{TAB_ICON[href]}</svg>'
+            f'<span>{TAB_SHORT[href]}</span>{"<i class=\"dot\"></i>" if href == "play/index.html" else ""}</a>' for href, _ in TABS) + '</nav>'
+        # 아래로 스크롤하면 탭바를 살짝 숨기고, 올리면 다시 (읽는 공간 확보)
+        "<script>(function(){var b=document.currentScript.previousElementSibling,y=scrollY;addEventListener('scroll',function(){var n=scrollY;if(Math.abs(n-y)<8)return;"
+        "b.classList.toggle('hide',n>y&&n>120);y=n},{passive:true})})();</script>"
     )
 
 
@@ -917,12 +954,12 @@ def build(out_dir: Path, with_news: bool) -> None:
             raise SystemExit(f"뉴스 결과물이 없습니다: {NEWS_SRC} (news-collector/build_site.py 를 먼저 실행하거나 NEWS_URL 설정, 또는 --no-news)")
         n = news_src.read_text(encoding="utf-8")
         nav_css = "<style>" + "".join(
-            line + "\n" for line in SHARED_CSS.splitlines() if line.startswith((".zn", ".zf", "@media (max-width:640px) { .zn", "@media (max-width:480px) { .zn"))) + (
+            line + "\n" for line in SHARED_CSS.splitlines() if line.startswith((".zn", ".zf", "@media (max-width:640px) { .zn", "@media (max-width:480px) { .zn"))) + TABBAR_CSS + (
             "@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) { --logo-filter: invert(1); } } :root[data-theme=\"dark\"] { --logo-filter: invert(1); }\n"
         ) + NEWS_MASTHEAD_CSS + "</style>"
         # 공용 푸터·하단 버튼이 쓰는 토큰 중 뉴스 페이지에 없는 것들을 뉴스 토큰에 연결
         nav_css = nav_css.replace("</style>", ":root { --font: var(--sans); --fill: var(--ink); --fillfg: var(--paper); --ink-soft: var(--ink-soft); }\n"
-                                  "body { padding-bottom: 24px; }\n</style>")
+                                  "body { padding-bottom: max(24px, calc(var(--tabbar-h, 0px) + env(safe-area-inset-bottom, 0px))); }\n</style>")
         inject = nav_css + nav_html("news/index.html", "../", logo_nav)
         n = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + inject, n, count=1)
         n = n.replace('<div class="controls">', '<div class="v2-ticker" aria-hidden="true"><div class="v2-ticker-track">' + ticker_spans(TICK["news"]) + '</div></div><div class="controls">', 1)   # 히어로 → 검은 띠 → 탭 (연봉 연구소와 같은 순서)
@@ -1013,6 +1050,7 @@ def build(out_dir: Path, with_news: bool) -> None:
                 return
             h = h.replace("</style>", zn_css + "\n</style>", 1)
             h = h.replace("<body>", "<body>\n" + nav_html("salary/index.html", root, logo_nav), 1) if "<body>" in h else nav_html("salary/index.html", root, logo_nav) + h
+            h = h.replace("</style>", TABBAR_CSS + "</style>", 1)   # 2026-10-29 아래 탭바
             path.write_text(h, encoding="utf-8")
         add_nav(dst / "index.html", "../")
         # 공유(카톡) 미리보기: 첫 화면은 제목·설명·이미지를 새로, 회사 페이지는 이미지만 붙인다
@@ -1051,6 +1089,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         if 'class="zn"' not in h:
             h = h.replace("</style>", zn_css + "\n</style>", 1)
             h = h.replace("<body>", "<body>\n" + nav_html("company/index.html", "../", logo_nav), 1)
+            h = h.replace("</style>", TABBAR_CSS + "</style>", 1)   # 2026-10-29 아래 탭바
             # 시안용 푸터 → 사이트 공용 푸터 (다크모드 로고 흰색 등 다른 페이지와 같게)
             h = re.sub(r"<!--FOOT-->.*?<!--/FOOT-->", lambda m: footer_html("../", logo, COMPANY_NOTE), h, count=1, flags=re.S)
             (dst / "index.html").write_text(h, encoding="utf-8")
@@ -1074,6 +1113,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         if 'class="zn"' not in h:
             h = h.replace("</style>", zn_css + "\n</style>", 1)
             h = h.replace("<body>", "<body>\n" + nav_html("play/index.html", "../", logo_nav), 1)
+            h = h.replace("</style>", TABBAR_CSS + "</style>", 1)   # 2026-10-29 아래 탭바
         (dst / "index.html").write_text(h, encoding="utf-8")
         entries.append(("play/", updated, "daily", "0.7"))
         with open(out_dir / "llms.txt", "a", encoding="utf-8") as f:
