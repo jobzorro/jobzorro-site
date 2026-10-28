@@ -265,6 +265,10 @@ body.v2 h1, body.v2 h2, body.v2 h3 { letter-spacing:-.04em; }
   body.v2 .v2-cta { margin-top:10px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; gap:6px; }
   body.v2 .v2-cta::-webkit-scrollbar { display:none; }
   body.v2 .v2-cta .pill { flex:none; padding:8px 13px; font-size:13px; }
+  /* 2026-10-28 사용자: 폰에서 '면접 질문'이 오른쪽 끝에서 잘려 보임 → 첫 버튼 글자를 줄여 세 개가 한 줄에 다 보이게 (아주 좁은 폰은 다음 줄로) */
+  body.v2 .v2-cta { flex-wrap:wrap; overflow:visible; }
+  body.v2 .v2-cta .pill .lg { display:none; }
+  body.v2 .v2-cta .pill .sm { display:inline; }
   .v2-bar .v2-search { margin:0; padding:7px 12px; gap:8px; border:1.5px solid var(--v-ink); border-radius:12px; }
   .v2-bar .v2-search svg { width:18px; height:18px; }
   .v2-bar .v2-search input { font-size:16px; font-weight:700; }
@@ -441,6 +445,7 @@ body.v2 .card .ai.l1 { color:var(--lvl1); } body.v2 .card .ai.l2 { color:var(--l
 /* 히어로 보조 버튼 */
 .v2-cta { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
 .v2-cta .pill { display:inline-flex; align-items:center; gap:8px; font-family:var(--v-display); font-weight:700; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; padding:11px 18px; border-radius:999px; text-decoration:none; border:1px solid var(--v-ink); color:var(--v-ink); }
+.v2-cta .pill .sm { display:none; }
 .v2-cta .pill.solid { background:var(--v-acc); color:var(--v-acc-ink); border-color:var(--v-acc); }
 .v2-cta .pill:hover { background:var(--v-ink); color:var(--v-bg); border-color:var(--v-ink); }
 /* 직군 칩 스크롤 표시 */
@@ -522,7 +527,7 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
         <h1><span class="thin">채용공고엔 안 나오는</span><span class="line" data-fit>그 직무의 <span class="mark">진짜 모습.</span></span></h1>
         <p class="v2-mmeta">직무 <b id="mJobs">0</b> · 현직자 자료 <b id="mSrc">0</b>건 · <span id="mDate"></span></p>
         <p class="lede">취업조로가 <b>현직자 인터뷰·자료 <span id="ledeSources">0</span>건</b>을 바탕으로, 상담실에서 설명하는 말투 그대로 정리했습니다. 하는 일, 하루 일과, 들어가는 길, 연봉대, 옮겨갈 수 있는 직무, 현직자가 말하는 현실까지 한 장에서 봅니다.</p>
-        <div class="v2-cta"><a class="pill solid" href="fit/">1분 진단으로 내 직무 찾기 →</a><a class="pill" href="compare/">직무 비교</a><a class="pill" href="interview/">면접 질문</a></div>
+        <div class="v2-cta"><a class="pill solid" href="fit/"><span class="lg">1분 진단으로 내 직무 찾기 →</span><span class="sm">1분 직무 진단 →</span></a><a class="pill" href="compare/">직무 비교</a><a class="pill" href="interview/">면접 질문</a></div>
         <form class="v2-search" role="search" id="searchForm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <input id="q" type="search" placeholder="직무명, 역량, 도구, 업종으로 검색" autocomplete="off" aria-label="직무 검색">

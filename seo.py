@@ -423,6 +423,52 @@ def _art(im, d, kind, ACC, INK):
             yy = cb + 22 + i * 34
             d.text((x0 + 12, yy - 2), rk, font=f_r, fill=ACC if i == 0 else (160, 160, 160))
             d.rounded_rectangle([x0 + 44, yy + 4, x0 + 44 + int(w * 330), yy + 18], radius=7, fill=ACC if i == 0 else GRAY)
+    # 2026-10-28 사용자: 직무 비교·직무 진단·면접 질문·개인정보 페이지도 전용 공유 그림
+    elif kind == "compare":   # 직무 카드 두 장을 나란히: 항목 줄 + VS
+        f_t = _font("GmarketSansMedium.otf", 22); f_h = _font("GmarketSansBold.otf", 30); f_v = _font("GmarketSansBold.otf", 30)
+        d.text((x0 + 10, y0 + 2), "두 직무를 나란히", font=f_t, fill=(160, 160, 160))
+        cw, ct, cb = 170, y0 + 44, y1 - 10
+        for i, (fill, fg, line, nm) in enumerate([((26, 26, 26), PAPER, (55, 55, 55), "직무 A"), (ACC, INK, None, "직무 B")]):
+            cx = x0 + 10 + i * (cw + 50)
+            d.rounded_rectangle([cx, ct, cx + cw, cb], radius=18, fill=fill, outline=line, width=2 if line else 0)
+            d.text((cx + 22, ct + 22), nm, font=f_h, fill=fg)
+            for k, w in enumerate((0.8, 0.6, 0.72, 0.5)):   # 연봉대·역량·들어가는 길·커리어 패스 줄
+                yy = ct + 86 + k * 52
+                d.rounded_rectangle([cx + 22, yy, cx + 22 + int(w * (cw - 44)), yy + 14], radius=7, fill=GRAY if i == 0 else INK)
+        d.text((x0 + 10 + cw + 25 - d.textlength("VS", font=f_v) / 2, (ct + cb) / 2 - 16), "VS", font=f_v, fill=ACC)
+    elif kind == "fit":       # 질문 하나 + 보기 세 개, 하나에 체크 → 결과 '직무 3개'
+        f_t = _font("GmarketSansMedium.otf", 22); f_o = _font("GmarketSansBold.otf", 30)
+        d.text((x0 + 10, y0 + 2), "Q1 · 최종 학력은?", font=f_t, fill=(160, 160, 160))
+        y = y0 + 44
+        for i, txt in enumerate(("학사", "석사", "박사")):
+            on = i == 0
+            d.rounded_rectangle([x0 + 10, y, x1 - 20, y + 70], radius=16, fill=ACC if on else (26, 26, 26), outline=None if on else (55, 55, 55), width=0 if on else 2)
+            d.text((x0 + 36, y + 18), txt, font=f_o, fill=INK if on else PAPER)
+            if on:
+                cx = x1 - 70
+                d.line([(cx, y + 36), (cx + 14, y + 50), (cx + 38, y + 22)], fill=INK, width=7, joint="curve")
+            y += 86
+        d.text((x0 + 10, y + 8), "→ 지금 갈 수 있는 직무 3개", font=f_t, fill=ACC)
+    elif kind == "interview": # 면접관 질문 말풍선 + 내 답 말풍선 + 의도
+        f_q = _font("GmarketSansBold.otf", 28); f_s = _font("GmarketSansMedium.otf", 22)
+        d.rounded_rectangle([x0 + 10, y0 + 10, x1 - 60, y0 + 120], radius=22, fill=(26, 26, 26), outline=(55, 55, 55), width=2)
+        d.polygon([(x0 + 50, y0 + 118), (x0 + 50, y0 + 150), (x0 + 84, y0 + 118)], fill=(26, 26, 26))
+        d.text((x0 + 38, y0 + 30), "Q.", font=f_q, fill=ACC)
+        d.text((x0 + 84, y0 + 32), "1분 자기소개 해 보세요", font=f_s, fill=PAPER)
+        d.text((x0 + 84, y0 + 70), "왜 우리 회사인가요?", font=f_s, fill=(160, 160, 160))
+        d.rounded_rectangle([x0 + 70, y0 + 172, x1 - 10, y0 + 272], radius=22, fill=ACC)
+        d.polygon([(x1 - 52, y0 + 270), (x1 - 52, y0 + 302), (x1 - 86, y0 + 270)], fill=ACC)
+        d.text((x0 + 98, y0 + 192), "A.", font=f_q, fill=INK)
+        for k, w in enumerate((0.78, 0.56)):
+            d.rounded_rectangle([x0 + 146, y0 + 200 + k * 34, x0 + 146 + int(w * 260), y0 + 214 + k * 34], radius=7, fill=INK)
+        d.text((x0 + 10, y1 - 34), "면접관이 확인하려는 의도까지", font=f_s, fill=(160, 160, 160))
+    elif kind == "privacy":   # 방패 + 자물쇠: 수집 항목·보유 기간
+        cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+        d.polygon([(cx, y0 + 10), (cx + 150, y0 + 60), (cx + 140, cy + 60), (cx, y1 - 10), (cx - 140, cy + 60), (cx - 150, y0 + 60)], fill=(26, 26, 26), outline=(55, 55, 55))
+        d.rounded_rectangle([cx - 56, cy - 10, cx + 56, cy + 80], radius=14, fill=ACC)
+        d.arc([cx - 38, cy - 66, cx + 38, cy + 10], 180, 360, fill=ACC, width=12)
+        d.ellipse([cx - 10, cy + 22, cx + 10, cy + 42], fill=INK)
+        d.rectangle([cx - 4, cy + 36, cx + 4, cy + 60], fill=INK)
 
 
 def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조로 직무사전", light: str = "채용공고엔 안 나오는", accent=None, bg=None, art: str = "") -> bool:

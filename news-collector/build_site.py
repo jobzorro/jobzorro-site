@@ -1765,9 +1765,9 @@ def render(today, archive):
     sections = today.get("sections", [])
     published = stats.get("published", sum(len(s.get("articles", [])) for s in sections))
 
+    # 2026-10-28 사용자: 숫자판 4개 → 3개 ('중복 제거' 뺌)
     funnel = [
         (stats.get("collected", 0), "수집"),
-        (stats.get("deduped", 0), "중복 제거"),
         (stats.get("relevant", 0), "커리어 관련"),
         (published, "지면 게재"),
     ]
