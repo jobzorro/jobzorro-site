@@ -3,7 +3,7 @@
 // 점수는 (문제, 답) → 점수 함수로만 계산하고, 서버는 브라우저가 보낸 답으로 다시 계산한다.
 // 주의: 'export { ... };' 줄은 파일 맨 끝 한 줄로만 둔다 (make.py 가 미리보기에서 이 줄을 전역 변수로 바꿈).
 
-const RULES = 2;                 // 규칙 판: 점수 규칙을 바꾸면 올린다 (2 = 2026-10-28 오늘의 회사 8지선다)
+const RULES = 3;                 // 규칙 판: 점수 규칙을 바꾸면 올린다 (2 = 2026-10-28 오늘의 회사 8지선다, 3 = 이직 로드 요일별 시나리오 팩·엔딩)
 const EPOCH = '2026-10-01';      // 오늘의 회사 #1 날짜 (바꾸면 모든 날의 문제가 바뀜)
 const RK = ['사원', '대리', '과장', '차장', '부장'];
 const DAILY = ['higher', 'today', 'sniper', 'road'];        // 순위표가 있는 오늘의 도전
@@ -240,7 +240,20 @@ function negoMul(u, N) {
   return u < .25 ? a + (N.p25 - a) * u / .25 : u < .5 ? N.p25 + (N.p50 - N.p25) * (u - .25) / .25
     : u < .75 ? N.p50 + (N.p75 - N.p50) * (u - .5) / .25 : N.p75 + (z - N.p75) * Math.min(1, (u - .75) / .25);
 }
+// 시나리오 팩 (규칙 3, 2026-10-28): 요일로만 정한다 → 같은 날은 누구나 같은 팩, 서버도 날짜(시작 표의 날)로 같은 팩.
+// 브라우저가 팩을 보내지 않는다. 일 공기업 · 월 신입 · 화 중고신입 · 수 개발자 · 목 신입 · 금 중고신입 · 토 공기업
+const ROAD_SC = { new: '신입 공채', jr: '중고신입', dev: '개발자', pub: '공기업 준비생' };
+const ROAD_WEEK = ['pub', 'new', 'jr', 'dev', 'new', 'jr', 'pub'];   // 0 = 일요일
+// 팩 돌리기 시작일: 이 날 전에는 모두 신입 공채(규칙 2 와 같은 문제) → 이 날 전에 서버·화면을 다시 올려도 그날 문제가 안 바뀜.
+// 2026-10-29(목)도 원래 신입 날이라 실제로 다른 팩이 처음 나오는 날은 10-30(금, 중고신입)
+const ROAD_SC_FROM = '2026-10-29';
+function roadScen(day) { return day < ROAD_SC_FROM ? 'new' : ROAD_WEEK[dow(day)]; }
+const DEV_GRP = { 'IT·게임': 1, '통신·미디어': 1, '반도체·전자': 1 };
+function devCo(c) { return !!DEV_GRP[c.grp]; }
 function genRoad(day, ctx) {
+  const sc = roadScen(day);
+  if (sc !== 'new') return genRoadSc(sc, day, ctx);
+  // 신입 공채: 규칙 2 와 한 글자도 다르지 않게 (같은 날 같은 문제 · 같은 점수)
   const r = rng('road|' + day), used = {}, P = ctx.P;
   const hiPay = P.slice().sort((a, b) => b.rk[2] - a.rk[2] || (a.n < b.n ? -1 : 1)).slice(0, 250);
   const take = (list, f) => {
@@ -254,24 +267,64 @@ function genRoad(day, ctx) {
     const A = take(hiPay), B = take(P, c => c.my >= 8 || (c.rt && c.rt < 3.2) || c.jump);   // 한 직급 위 제안은 흔들리거나 급성장하는 회사에서
     steps.push({ o: shuffleR(r, [{ n: A.n, kind: 'same' }, { n: B.n, kind: 'up' }]), u: u3() });
   }
-  return { game: 'road', day, steps };
+  return { game: 'road', day, sc, steps };
+}
+// 다른 팩 3개: 회사 고르는 곳만 다르고 주사위·제안 모양은 신입과 같다
+//   중고신입: 작은 회사(직원 1,500명 미만) 2년 차에서 출발(x0 = 2, home). 첫 고르기는 큰 회사 '중고신입' 제안 2장 + 남기
+//   개발자: IT·게임·통신·미디어·반도체·전자 회사 위주, 그 회사에선 '스톡옵션' 사건(급성장 회사일수록 큼)
+//   공기업 준비생: 첫 직장은 공공기관 3곳, 그 뒤 공공기관 경력 공채(같은 직급) vs 민간 한 직급 위 제안. 공공기관은 구조조정이 드묾
+function genRoadSc(sc, day, ctx) {
+  const r = rng('road|' + sc + '|' + day), used = {}, P = ctx.P;
+  const byPay = L => L.slice().sort((a, b) => b.rk[2] - a.rk[2] || (a.n < b.n ? -1 : 1));
+  const take = (list, f) => {
+    for (let t = 0; t < 400; t++) { const c = pickR(r, list); if (!used[c.n] && (!f || f(c))) { used[c.n] = 1; return c; } }
+    const c = list.find(x => !used[x.n] && (!f || f(x))) || list.find(x => !used[x.n]) || P.find(x => !used[x.n]); used[c.n] = 1; return c;
+  };
+  const u3 = () => [0, 1, 2].map(() => [r(), r(), r()]);
+  const shaky = c => c.my >= 8 || (c.rt && c.rt < 3.2) || c.jump;
+  const pz = { game: 'road', day, sc, steps: [] };
+  if (sc === 'jr') {
+    const home = take(P.filter(c => c.m < 1500 && c.m >= 200));
+    pz.x0 = 2; pz.home = home.n;
+    const big = [P.filter(c => c.m >= 5000), P.filter(c => c.m >= 1500 && c.m < 5000)];
+    pz.steps.push({ o: shuffleR(r, big.map(L => ({ n: take(L).n, kind: 'jr' }))), u: u3() });
+    const hiPay = byPay(P).slice(0, 250);
+    for (let k = 1; k < 5; k++) { const A = take(hiPay), B = take(P, shaky); pz.steps.push({ o: shuffleR(r, [{ n: A.n, kind: 'same' }, { n: B.n, kind: 'up' }]), u: u3() }); }
+  } else if (sc === 'dev') {
+    const DV = P.filter(devCo), hiPay = byPay(DV).slice(0, 50);
+    const sz = [DV.filter(c => c.m >= 3000), DV.filter(c => c.m >= 800 && c.m < 3000), DV.filter(c => c.m < 800)];
+    pz.steps.push({ o: shuffleR(r, sz.map(L => ({ n: take(L.length ? L : DV).n, kind: 'new' }))), u: u3() });
+    for (let k = 1; k < 5; k++) { const A = take(hiPay), B = take(DV, shaky); pz.steps.push({ o: shuffleR(r, [{ n: A.n, kind: 'same' }, { n: B.n, kind: 'up' }]), u: u3() }); }
+  } else {
+    const PB = P.filter(c => c.pub), priv = byPay(P.filter(c => !c.pub)).slice(0, 250);
+    const sz = [PB.filter(c => c.m >= 5000), PB.filter(c => c.m >= 2000 && c.m < 5000), PB.filter(c => c.m < 2000)];
+    pz.steps.push({ o: shuffleR(r, sz.map(L => ({ n: take(L.length ? L : PB).n, kind: 'new' }))), u: u3() });
+    for (let k = 1; k < 5; k++) { const A = take(PB), B = take(priv); pz.steps.push({ o: shuffleR(r, [{ n: A.n, kind: 'same' }, { n: B.n, kind: 'up' }]), u: u3() }); }
+  }
+  return pz;
 }
 // 제안 카드: 가운데 값 O, 보이는 범위(협상 결과 ±약 10%), 스펙 대비 너무 높은 제안(reach)
+// 'jr'(중고신입): 큰 회사 신입 연봉 + 경력 일부 인정 5% — 지금 연봉보다 30% 넘게 높으면 떨어질 수 있음
 function roadOffer(ctx, o, x, s) {
   const T = ctx.by[o.n], N = ctx.nego;
-  const O = o.kind === 'new' ? (T.s0 || T.rk[0] * .92) : Math.max(s * .92, Math.min(curve(T, x + (o.kind === 'up' ? 4 : 0)), s * 1.5));
+  const O = o.kind === 'new' ? (T.s0 || T.rk[0] * .92) : o.kind === 'jr' ? (T.s0 || T.rk[0] * .92) * 1.05
+    : Math.max(s * .92, Math.min(curve(T, x + (o.kind === 'up' ? 4 : 0)), s * 1.5));
   return { O, lo: Math.round(O * negoMul(0, N) / N.p50 / 100) * 100, hi: Math.round(O * negoMul(1, N) / N.p50 / 100) * 100,
     reach: o.kind !== 'new' && O >= s * 1.3 };
 }
 function roadRisk(c) { return Math.min(.25, Math.max(.03, (c.to || 0) * 1.5)) + (c.rt && c.rt < 3 ? .08 : 0) + (c.my <= -10 ? .05 : 0); }
+// 팩까지 넣은 구조조정 확률 (공기업 준비생 팩의 공공기관은 0.3배)
+function roadRiskSc(pz, c) { const p = roadRisk(c); return pz.sc === 'pub' && c.pub ? p * .3 : p; }
 function roadPicks(picks) { return [0, 1, 2, 3, 4].map(k => { const p = Math.floor(Number((picks || [])[k])); return p >= 0 && p <= 2 ? p : 2 - (k === 0 ? 2 : 0); }); }
-// picks: [0~2] × 5 (첫 칸은 첫 직장 3곳 중 하나, 그 뒤 0·1 = 제안, 2 = 남기)
+// 출발점: 신입은 취준생(연차 0, 회사 없음), 중고신입은 home 회사 x0 년 차(작년 연봉 = 그 회사 곡선)
+function roadStart(pz, ctx) { const c = pz.home ? ctx.by[pz.home] : null, x = pz.x0 || 0; return { x, c, s: c ? curve(c, x - 1) : 0 }; }
+// picks: [0~2] × 5 (첫 칸은 첫 직장 3곳 중 하나(중고신입은 0·1 제안, 2 남기), 그 뒤 0·1 = 제안, 2 = 남기)
 function simRoad(pz, ctx, picks) {
   picks = roadPicks(picks);
-  const N = ctx.nego, years = [], log = [];
-  let x = 0, s = 0, c = null;
+  const N = ctx.nego, years = [], log = [], S0 = roadStart(pz, ctx);
+  let x = S0.x, s = S0.s, c = S0.c;
   for (let k = 0; k < 5; k++) {
-    const st = pz.steps[k], p = picks[k], u = st.u[p], o = k === 0 || p < 2 ? st.o[p] : null;
+    const st = pz.steps[k], p = picks[k], u = st.u[p], o = (k === 0 && !pz.home) || p < 2 ? st.o[p] : null;
     let moved = false, failed = false, start = 0, nego = 0;
     if (o) {
       const of = roadOffer(ctx, o, x, s);
@@ -280,8 +333,9 @@ function simRoad(pz, ctx, picks) {
     }
     if (!moved) start = s * curve(c, x) / curve(c, x - 1);   // 남으면 그 회사 곡선대로
     let y2 = start * curve(c, x + 1) / curve(c, x), ev = '', bonus = 0;
-    const pr = roadRisk(c);
+    const pr = roadRiskSc(pz, c);
     if (u[2] < pr) { ev = 'cut'; y2 = start; }                                                  // 구조조정: 2년째 연봉 동결
+    else if (pz.sc === 'dev' && devCo(c) && u[2] > .78) { ev = 'stock'; bonus = start * (c.my >= 8 ? .9 : .35); }   // 개발자 팩: 스톡옵션
     else if (c.jump && u[2] < pr + .6) { ev = 'jump'; bonus = start * Math.min(c.jump, 80) / 100 * .5; }  // 성과급 큰 해
     else if (u[2] > .9) { ev = 'star'; y2 *= 1.05; }                                          // 고과 S
     years.push(Math.round(start), Math.round(y2 + bonus));
@@ -294,6 +348,39 @@ function simRoad(pz, ctx, picks) {
 }
 // 점수 = 10년 누적 연봉(만원), aux = 1억 찍은 연차(0 = 못 찍음)
 function scoreRoad(pz, ans, ctx) { const R = simRoad(pz, ctx, ans); return { score: R.total, aux: R.eok, perfect: false, picks: R.picks, R }; }
+
+// ── 4-1 엔딩 7종 (도감). 길 결과만으로 정하는 규칙 — 서버도 같은 함수로 다시 낼 수 있다. 위에서부터 처음 맞는 것
+//   startup 스타트업 대박   : 직원이 1년에 8% 넘게 느는 회사에서 성과급 큰 해 또는 스톡옵션
+//   boss    억대 연봉 부장  : 그날 가능한 길 243개 중 누적 상위 5% 안 + 연봉 1억 찍음
+//   hopper  이직의 신       : 이직 4번 이상 성공 (신입 팩의 첫 직장은 이직이 아님, 중고신입은 첫 고르기도 이직)
+//   lifer   대기업 정년각   : 첫 회사(직원 5,000명 이상)에서 한 번도 안 옮기고(이직 실패도 없음), 구조조정 1번 이하
+//   survivor 구조조정 생존자: 구조조정 2번 넘김
+//   burnout 번아웃 퇴사     : 평점 3.0 미만 회사에서 6년(3번) 넘게 연속
+//   normal  무난한 직장인   : 그 밖
+const ENDINGS = [['startup', '스타트업 대박'], ['boss', '억대 연봉 부장'], ['hopper', '이직의 신'], ['lifer', '대기업 정년각'],
+  ['survivor', '구조조정 생존자'], ['burnout', '번아웃 퇴사'], ['normal', '무난한 직장인']];
+const roadTopCache = new WeakMap();
+// 그날 문제의 길 3^5 = 243개 누적 연봉, 큰 순서 (문제 객체마다 한 번만 계산)
+function roadTotals(pz, ctx) {
+  let a = roadTopCache.get(pz);
+  if (!a) { a = []; for (let n = 0; n < 243; n++) a.push(simRoad(pz, ctx, [0, 1, 2, 3, 4].map(k => Math.floor(n / 3 ** k) % 3)).total); a.sort((x, y) => y - x); roadTopCache.set(pz, a); }
+  return a;
+}
+function roadEnding(pz, ctx, picks) {
+  const R = simRoad(pz, ctx, picks), L = R.log, by = ctx.by;
+  const moves = L.filter(l => l.moved && (l.k > 0 || !!pz.home)).length, cuts = L.filter(l => l.ev === 'cut').length;
+  let run = 0, low = 0;
+  L.forEach(l => { const c = by[l.co]; run = c.rt > 0 && c.rt < 3 ? run + 1 : 0; low = Math.max(low, run); });
+  const top = roadTotals(pz, ctx), cut5 = top[Math.ceil(top.length * .05) - 1];
+  const id = L.some(l => (l.ev === 'jump' || l.ev === 'stock') && by[l.co].my >= 8) ? 'startup'
+    : R.total >= cut5 && R.eok > 0 ? 'boss'
+    : moves >= 4 ? 'hopper'
+    : moves === 0 && !L.some(l => l.failed) && cuts <= 1 && by[L[0].co].m >= 5000 ? 'lifer'
+    : cuts >= 2 ? 'survivor'
+    : low >= 3 ? 'burnout'
+    : 'normal';
+  return { id, lb: ENDINGS.find(e => e[0] === id)[1], moves, cuts, low, top: top.indexOf(R.total) + 1, R };
+}
 
 // ── 5 드림 컴퍼니 월드컵 (점수 없음, 전국 선택률만)
 const THEMES = { all: '전체', it: 'IT·게임', food: '식품·유통', fin: '금융', pub: '공기업' };
@@ -340,4 +427,4 @@ function nickCheck(s) {   // '' = 괜찮음, 아니면 고칠 점
 function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : game === 'today' ? genToday(day, ctx) : game === 'sniper' ? genSniper(day, ctx) : game === 'road' ? genRoad(day, ctx) : null; }
 function score(game, pz, ans, ctx) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : null; }
 
-export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, genRoad, roadOffer, roadRisk, simRoad, scoreRoad, THEMES, cupPool, cupSize, cupCheck, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
+export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, THEMES, cupPool, cupSize, cupCheck, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
