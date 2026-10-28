@@ -600,11 +600,7 @@ def nav_html(active: str, root: str, logo: str) -> str:
         # 실제로 보이는 화면(visualViewport) 아래 끝에 맞춰 탭바를 그만큼 올린다 (가리는 게 없으면 0이라 다른 브라우저는 그대로)
         "<script>(function(){var b=document.currentScript.previousElementSibling,v=window.visualViewport;if(!v||!b)return;"
         "var f=function(){var g=Math.round(innerHeight-v.height-v.offsetTop);b.style.bottom=(g>0&&g<200&&Math.abs(v.scale-1)<.01?g:0)+'px'};"
-        "v.addEventListener('resize',f);v.addEventListener('scroll',f);addEventListener('scroll',f,{passive:true});f();"
-        # 확인용: 주소에 ?dbg=1 이 있을 때만 폰이 계산한 화면 높이 숫자를 위에 띄운다 (삼성 인터넷 아래 바 문제 진단, 2026-10-28)
-        "if(/[?&]dbg=1/.test(location.search)){var d=document.createElement('pre');d.style.cssText='position:fixed;top:60px;left:8px;z-index:99;margin:0;padding:6px 8px;font:11px/1.4 monospace;background:#ff0;color:#000;border-radius:6px';"
-        "document.body.appendChild(d);var u=function(){var r=b.getBoundingClientRect(),e=document.documentElement;d.textContent='inner '+innerWidth+'x'+innerHeight+'\\nvv '+Math.round(v.width)+'x'+Math.round(v.height)+' top'+Math.round(v.offsetTop)+' s'+v.scale.toFixed(2)+'\\nclient '+e.clientHeight+' doc '+e.scrollHeight+'\\nscreen '+screen.height+' avail '+screen.availHeight+'\\nbar '+Math.round(r.top)+'~'+Math.round(r.bottom)+' bottom='+b.style.bottom+'\\ny '+Math.round(scrollY)};"
-        "v.addEventListener('resize',u);addEventListener('scroll',u,{passive:true});u();setInterval(u,1000)}})();</script>"
+        "v.addEventListener('resize',f);v.addEventListener('scroll',f);addEventListener('scroll',f,{passive:true});f()})();</script>"
     )
 
 
