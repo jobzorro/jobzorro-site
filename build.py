@@ -337,6 +337,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zf-box { margin-top:18px; background:var(--mist); border:1px solid var(--hairline); border-radius:10px; padding:14px 16px; font-size:12px; line-height:1.9; color:var(--muted); }
 .zf-box b { color:var(--ink-soft); font-weight:600; }
 .zf-note { margin-top:14px; font-size:12px; color:var(--muted); line-height:1.75; max-width:80ch; }
+.zf-note summary { cursor:pointer; font-weight:600; color:var(--ink-soft); } .zf-note p { margin-top:6px; }
+.zf-biz { margin-top:14px; font-size:11.5px; line-height:1.8; color:var(--muted); }
 .zf { border-top-color:var(--hairline); }
 /* 하단 고정 상담 버튼 */
 .zfab { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(18px + env(safe-area-inset-bottom,0px)); z-index:25; }
@@ -624,15 +626,15 @@ def nav_html(active: str, root: str, logo: str) -> str:
 
 
 def footer_html(root: str, logo: str, note: str) -> str:
+    """2026-10-29 Simple is Best: 큰 로고·링크 10개·사업자 상자 → 링크 3개 + 사업자 정보 한 줄, 안내문은 접어 둔다 (메뉴는 위·아래 탭바에 이미 있음)"""
     c = COMPANY
     return (
-        f'<footer class="zf"><div class="zf-in"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"></a>'
-        f'<div class="zf-links"><a href="{root}salary/index.html">연봉 연구소</a><a href="{root}play/index.html">연봉 놀이터</a><a href="{root}company/index.html">회사 판단 연구소</a><a href="{root}index.html">직무사전</a><a href="{root}news/index.html">취업뉴스</a><a href="{root}zorro/index.html">취업조로와 함께하기</a><a href="{root}{APPLY}">무료 상담 신청</a>'
-        f'<a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a>'
+        f'<footer class="zf"><div class="zf-in">'
+        f'<div class="zf-links"><a href="{root}{APPLY}">무료 상담 신청</a><a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a>'
         f'<a href="{root}privacy/index.html">개인정보처리방침</a></div>'
-        f'<div class="zf-box"><b>법인명(상호)</b> {c["name"]} &nbsp;·&nbsp; <b>대표자</b> {c["ceo"]} &nbsp;·&nbsp; <b>개인정보보호책임자</b> {c["privacy"]}<br>'
-        f'<b>사업자등록번호</b> {c["reg"]}<br><b>주소</b> {c["addr"]}<br>© Copyright 2026 All rights reserved by CAREERPROJECT inc.</div>'
-        f'{f"<p class=\"zf-note\">{note}</p>" if note else ""}</div></footer>'
+        f'{f"<details class=\"zf-note\"><summary>자료 안내</summary><p>{note}</p></details>" if note else ""}'
+        f'<p class="zf-biz">{c["name"]} · 대표 {c["ceo"]} · 사업자등록번호 {c["reg"]} · 개인정보보호책임자 {c["privacy"]}<br>{c["addr"]} · © 2026 CAREERPROJECT inc.</p>'
+        f'</div></footer>'
     )
 
 
@@ -759,7 +761,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     n_jobs = len(data["jobs"])
     n_evidence = data["meta"].get("sourceDocs", 0) + sum(j["sources"].get("public", 0) for j in data["jobs"])
     data["meta"]["evidenceTotal"] = n_evidence
-    disclaimer = data["meta"]["disclaimer"]
+    disclaimer = data["meta"]["disclaimer"]   # 2026-10-29 사용자: 직무사전 푸터 안내 문단은 뺌 (값은 jobs.json 에 그대로)
 
     # 1) 직무사전
     #    전체 JSON(1.1MB)은 site/data/jobs.json 으로 따로 두고 상세 패널이 첫 클릭 때 한 번 받아 간다.
@@ -784,7 +786,7 @@ def build(out_dir: Path, with_news: bool) -> None:
             raise SystemExit(f"template.html 에 {ph} 가 없습니다")
     html = (html.replace("/*__SHARED_CSS__*/", SHARED_CSS)
                 .replace("/*__NAV__*/", nav_html("index.html", "", logo_nav))
-                .replace("/*__FOOTER__*/", footer_html("", logo, disclaimer))
+                .replace("/*__FOOTER__*/", footer_html("", logo, ""))
                 .replace("/*__FAB__*/", fab_html(""))
                 .replace("/*__JOBS_JSON__*/", payload)
                 # 상단 띠 숫자: 직무·인터뷰가 늘면 자동으로 바뀐다
@@ -953,7 +955,7 @@ def build(out_dir: Path, with_news: bool) -> None:
                 + head + "\n" + fonts + "<style>" + css + "</style>\n</head>\n<body>\n"
                 + nav_html("index.html", "../../", logo_nav)
                 + "<main class=\"jobpage\"><div class=\"d-body\">" + body + "</div></main>\n"
-                + footer_html("../../", logo, disclaimer) + fab_html("../../")
+                + footer_html("../../", logo, "") + fab_html("../../")
                 + "\n</body>\n</html>\n")
         d = out_dir / "jobs" / jid
         d.mkdir(parents=True, exist_ok=True)
@@ -1009,7 +1011,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         inject = nav_css + nav_html("news/index.html", "../", logo_nav)
         n = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + inject, n, count=1)
         n = n.replace('<div class="controls">', '<div class="v2-ticker" aria-hidden="true"><div class="v2-ticker-track">' + ticker_spans(TICK["news"]) + '</div></div><div class="controls">', 1)   # 히어로 → 검은 띠 → 탭 (연봉 연구소와 같은 순서)
-        foot = FIT_JS + OUTRO_HTML + footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
+        foot = FIT_JS + footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
         n = n.replace("</body>", foot + NEWS_FOLD + "</body>", 1)
         news_ld = [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/")]),
                    {"@context": "https://schema.org", "@type": "WebPage", "@id": seo.abs_url(base_url, "news/"), "name": "취업조로의 커리어브리핑", "inLanguage": "ko",
@@ -1118,9 +1120,8 @@ def build(out_dir: Path, with_news: bool) -> None:
         entries += [(f"salary/co/{urllib.parse.quote(d.name)}/", sal_updated, "monthly", "0.5") for d in cos]
         print(f"연봉 연구소: /salary/ + 회사 페이지 {len(cos):,}개")
     # 2026-10-21 사용자: 법적·평판 리스크 대비 안내 (판정은 공개 자료 기반 참고용 의견, 출처·기준일 표기, 정정 창구)
-    COMPANY_NOTE = ("회사 판단 연구소의 판정과 'Zorro의 한마디'는 금융감독원 전자공시(DART), 국민연금 가입 사업장 내역, 잡플래닛·블라인드·캐치 공개 평점, 언론 보도 등 "
-                    "공개된 자료를 모아 취업조로 기준으로 정리한 참고용 의견입니다. 회사의 공식 입장이나 사실 확정이 아니며, 항목마다 출처와 기준일을 함께 표기합니다. "
-                    "평점·후기 원문은 각 사이트에서 확인할 수 있습니다. 사실과 다른 내용은 회사 화면 아래 '정정 요청하기'로 알려 주시면 확인 후 고치거나 내립니다.")
+    COMPANY_NOTE = ("해당사항은 회사의 공식 입장과 사실확정은 아니며, 항목마다 출처와 기준일을 표기합니다. "   # 2026-10-29 사용자 문구로 줄임
+                    "사실과 다른 내용은 회사 화면 아래 '정정 요청하기'로 알려주시면 확인 후 고치거나 내려드리겠습니다.")
     # ---- 회사 판단 연구소 (/company/): company-check/publish_to_site.py 가 만든 company/ 를 복사하고 상단 메뉴를 붙인다
     comp = BASE / "company"
     if comp.exists():
@@ -1183,6 +1184,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     print(f"인앱 브라우저 → 기본 브라우저 전환: {add_inapp(out_dir)}개 페이지")
     print(f"다크모드 지원 표시(color-scheme): {add_color_scheme(out_dir)}개 페이지")
     print(f"화면 끝까지(viewport-fit=cover) 맞춤: {add_viewport_fit(out_dir)}개 페이지")
+    print(f"단순화(영어 꼬리표 숨김): {add_simple(out_dir)}개 페이지")
     print(f"앱(PWA) 설치 연결: {pwa.add_pwa(out_dir, base_url)}개 페이지 (manifest·sw.js)")
     print(f"sitemap.xml: URL {len(entries)}개 -> {out_dir / 'sitemap.xml'}")
 
@@ -1220,6 +1222,22 @@ def add_color_scheme(out_dir: Path) -> int:
         n += 1
     return n
 
+
+
+# 2026-10-29 Simple is Best: 제목 위 영어 꼬리표(Salary Lab · …)를 모든 페이지에서 숨긴다 (검은 띠는 사용자 요청으로 유지)
+# (페이지마다 만드는 곳이 달라 — 연봉·회사·뉴스·함께하기 — 마지막에 한 번에 처리)
+SIMPLE_CSS = ('<style data-simple>.kick,.kicker,.masthead .brand-name{display:none!important}</style>')
+
+
+def add_simple(out_dir: Path) -> int:
+    n = 0
+    for f in out_dir.rglob("*.html"):
+        h = f.read_text(encoding="utf-8")
+        if "data-simple" in h or "</head>" not in h:
+            continue
+        f.write_text(h.replace("</head>", SIMPLE_CSS + "</head>", 1), encoding="utf-8")
+        n += 1
+    return n
 
 
 def add_viewport_fit(out_dir: Path) -> int:

@@ -119,6 +119,9 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .act:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
 .act.heart b { font-family:var(--display); font-variant-numeric:tabular-nums; }
 .act.heart.on { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
+.sharebox { position:relative; } .sharebox summary { list-style:none; } .sharebox summary::-webkit-details-marker { display:none; }   /* 2026-10-29 공유 버튼 하나로 묶음 */
+.sharemenu { position:absolute; z-index:20; top:44px; left:0; display:grid; min-width:150px; background:var(--paper); border:1.5px solid var(--ink); border-radius:12px; overflow:hidden; }
+.sharemenu button { font:inherit; font-size:13.5px; font-weight:700; text-align:left; padding:11px 14px; background:none; border:0; color:var(--ink); cursor:pointer; } .sharemenu button + button { border-top:1px solid var(--hairline-2); } .sharemenu button:hover { background:var(--mist); }
 .acts .seen { font-size:12.5px; color:var(--muted); margin-left:4px; }
 .toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:999px; font-size:13.5px; font-weight:700; z-index:50; }
 /* ---- 내 상황 (2026-10-27): 왼쪽에서 나오는 입력 창 + 회사 화면의 '내 상황이라면' 카드. 판정은 fit_engine.js (F 규칙) ---- */
@@ -465,6 +468,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 /* 출처 */
 .note { margin:56px 0 0; padding:22px 0 60px; border-top:1px solid var(--ink); font-size:12.5px; color:var(--muted); display:grid; gap:6px; }
 .note b { color:var(--ink-soft); }
+.note summary { cursor:pointer; font-weight:700; color:var(--ink-soft); list-style:none; } .note summary::-webkit-details-marker { display:none; } .note summary::after { content:" ▾"; } .note[open] summary::after { content:" ▴"; }   /* 2026-10-29 접어 둠 */
+.note:not([open]) { padding-bottom:24px; }
 /* 참고 안내 (2026-10-21 사용자: 법적·평판 리스크 대비 — 판정은 공개 자료 기반 의견, 출처·기준일 표기) */
 .disc { margin:34px 0 0; font-size:12.5px; line-height:1.65; color:var(--muted); }
 /* 2026-10-22 새 기능: J 레드플래그 · G 내 연봉 비교 · I 여기도 보세요 · E 최근 7일 VS 매치업 */
@@ -651,22 +656,21 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     <div><dt>검색 가능 회사</dt><dd id="stCo">-</dd></div>
     <div><dt>판정 나온 회사<small>자료는 계속 모으는 중</small></dt><dd id="stJudged">-</dd></div>
     <div class="hot"><dt>현재까지 검색한 사람</dt><dd id="stPeople">-</dd></div>
-    <div><dt>기준일</dt><dd id="stDate">2026.10.28</dd></div>
+    <div><dt>기준일</dt><dd id="stDate">2026.10.29</dd></div>
   </dl>
 </div></section>
 
 <div class="ticker" aria-hidden="true"><div class="tr" id="tick"></div></div>
 
-<div class="wrap topdisc"><p class="disc"><i>!</i><span><b>회사에 대한 일반적인 평가예요.</b> 좋은 회사의 기준은 내 스펙·연차·상황·가치관에 따라 달라요. 누군가에겐 천국 같은 회사가 누군가에겐 지옥일 수도 있으니, 아래 판정은 참고로만 보시고 최종 선택은 내 상황과 함께 판단하세요.</span></p></div>
+<div class="wrap topdisc"><p class="disc"><i>!</i><span><b>회사에 대한 일반적인 평가예요.</b> 내 스펙·상황에 따라 달라요.</span></p></div>
 <main class="wrap" id="out"></main>
 
-<div class="wrap"><div class="note">
+<div class="wrap"><details class="note"><summary>자료 출처</summary>
   <p><b>평판</b> 잡플래닛·블라인드·캐치에 공개된 종합 점수와 평가 인원만 옮깁니다. 리뷰 내용은 각 사이트 원문 링크에서 확인하세요.</p>
   <p><b>연봉</b> 취업조로 연봉 연구소 추정치(국민연금·사업보고서 기반)입니다. 실제 처우와 다를 수 있어요.</p>
   <p><b>뉴스</b> Google 뉴스 검색 결과 중 제목에 회사 이름이 들어간 기사만 모아 제목과 링크만 보여 줍니다.</p>
   <p><b>재무</b> 금융감독원 DART 사업보고서·감사보고서 기준. 입사하는 법인 자체를 보도록 별도재무제표를 우선해요 (단위 억원).</p>
-  <p><b>판정</b> 15개 재무 지표와 평판·연봉을 합친 참고용 결과입니다. 최종 결정은 본인의 커리어 방향과 함께 판단하세요.</p>
-</div></div>
+</details></div>
 <!--FOOT--><footer class="pf"><div class="wrap"><img src="assets/jobzorro_logo.png" alt="TEAM ZORRO">커리어프로젝트 주식회사 · 취업조로 · 시안 v0.1</div></footer><!--/FOOT-->
 
 <!-- 내 상황 입력 창 (왼쪽에서 나옴). 입력값은 이 기기(localStorage)에만 저장, '연봉 보태기'에 체크했을 때만 익명으로 /sal 에 보냄 -->
@@ -1514,7 +1518,7 @@ function finSec(c, key) {
   const ys = f.years, d = ys.map(y => f.data[y]), col = k => d.map(x => x[k] ?? null);
   const it = l => m.items.find(i => i.label.startsWith(l));
   const fmtv = i => i.value == null ? "-" : (i.unit === "%" ? i.value.toFixed(1) : i.value === 99 ? "무차입" : i.value) ;
-  const basis = `<details class="basis"><summary>판단 근거 보기 (상담용)</summary><table>${m.items.map(i =>
+  const basis = `<details class="basis" hidden><summary>판단 근거 보기 (상담용)</summary><table>${m.items.map(i =>
       `<tr><td>${esc(i.label)}</td><td>${fmtv(i)}${i.value === 99 ? "" : (i.unit.startsWith("/") ? i.unit : i.unit)}</td><td class="dot${i.pts}">${"●".repeat(i.pts ?? 0)}${"○".repeat(2 - (i.pts ?? 0))}</td></tr>`).join("")}</table></details>`;
   let chart, keys;
   if (key === "성장성") {
@@ -1655,23 +1659,24 @@ function askSec(c) {
   const keys = Object.keys(on).filter(k => on[k]).slice(0, 4);
   if (keys.length < 2) keys.push("base");
   let h = 0; for (const ch of c.name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return `<section class="sec" id="s8"><div class="sec-h"><span class="no">08</span><h3>면접 때 이렇게 물어보세요</h3><p class="why">이 회사에서 확인해 두면 좋은 부분을, 면접 마지막 "질문 있으세요?"에서 자연스럽게 꺼낼 수 있는 질문으로 골랐어요. 답 속에서 들어 볼 포인트도 같이 적었어요.</p></div>
+  return `<section class="sec" id="s8"><div class="sec-h"><span class="no">08</span><h3>면접 때 이렇게 물어보세요</h3><p class="why">"질문 있으세요?" 때 꺼내면 좋은 질문이에요.</p></div>
     <div class="qs">${keys.map((k, i) => { const q = ASK[k];
       return `<div class="q"><p class="tag"><span>${q.tag}</span></p><p class="ask">${esc(q.ask[(h + i) % q.ask.length])}</p>
         <div class="hear"><div class="g"><small>이러면 안심</small>${esc(q.g)}</div><div class="b"><small>이러면 한 번 더 확인</small>${esc(q.b)}</div></div></div>`; }).join("")}</div>
-    <p class="qtip"><b>Zorro 팁</b> · 1~2개만 고르세요. 질문 앞에 "입사하면 빨리 적응하고 싶어서요"를 붙이면 어떤 질문이든 의욕으로 들려요. 숫자나 평점 이야기는 꺼내지 않는 게 좋아요.</p></section>`;
+    <p class="qtip"><b>Zorro 팁</b> · 1~2개만 고르세요. 숫자·평점 이야기는 꺼내지 마세요.</p></section>`;
 }
 
 // ── I 고민 중이면 여기도 보세요 (build.py add_alts 가 고른 3곳)
 function altSec(c) {
   const a = c.alts; if (!a?.length) return "";
   const me = c.grades || {}, P = LETTER_PTS;
-  return `<section class="sec" id="s9"><div class="sec-h"><span class="no">+</span><h3>${esc(c.name)} 고민 중이면, 여기도 보세요</h3><p class="why">같은 일을 하는 회사(업종 코드가 같은 곳) 중 규모가 너무 차이 나지 않으면서 판정이 더 좋은 곳이에요. 초록 테두리는 ${esc(c.name)}보다 좋은 항목이에요.</p></div>
+  return `<section class="sec" id="s9"><div class="sec-h"><span class="no">+</span><h3>${esc(c.name)} 고민 중이면, 여기도 보세요</h3><p class="why">같은 업종에서 판정이 더 좋은 곳이에요.</p></div>
     <div class="alts">${a.map(x => `<a class="alt" href="#${encodeURIComponent(x.n)}"><h4>${esc(x.n)}<span>${esc(x.v)}</span></h4>
       <div class="gr">${["평판","연봉","성장성","수익성","안정성"].filter(k => x.g?.[k]).map(k => `<span class="${me[k]?.letter && P[x.g[k]] > P[me[k].letter] ? "up" : ""}">${k.replace("성장성","성장").replace("수익성","수익").replace("안정성","안정")} ${x.g[k]}</span>`).join("")}</div>
       <p>${esc(x.why)}</p><small>직원 ${won(x.m)}명</small></a>`).join("")}</div></section>`;
 }
 
+// 2026-10-29: 칸 설명은 화면에서 뺐다 (Simple is Best). 문구는 기록용으로 남겨 둠
 const WHY = {
   "평판": "잡플래닛·블라인드·캐치를 평가 인원 수대로 합쳤어요. 캐치는 최소 8%, 점수가 후하게 나오는 편이라 최대 30%까지만 넣어요. 평가자가 30명 미만이면 3.0점 쪽으로 살짝 당기고, 회사 성격(보수적·일반·스타트업)마다 기준을 달리 봅니다.",
   "주요 뉴스": "최근 90일 기사 중 같은 사건을 묶어 중요한 것만 골랐어요. 초록 점은 호재, 빨간 점은 악재예요.",
@@ -1710,14 +1715,14 @@ async function render(name) {
       <p style="margin-top:6px">스타트업은 인사팀이 리뷰 작성을 독려하거나 관리하는 경우가 있어요. 원문 링크에서 ① 최근 몇 달 사이 5점 리뷰가 몰렸는지 ② 장점만 길고 단점이 '없음'·'딱히'로 끝나는 리뷰가 많은지 ③ 인사·채용 직군 리뷰가 유독 후한지 ④ 블라인드와 잡플래닛·캐치 점수 차이가 큰지 직접 확인해 보세요.</p></div>` : "";
   const repsum = rg.score == null ? "" : `<div class="repsum"><span>종합 <b>${rg.score.toFixed(2)}</b> / 5</span><span>${esc(c.type)} 회사 기준 · A ${rg.good} 이상 · B ${rg.ok} 이상 · F 2.0 미만</span>${fl.inflation ? `<span class="flag">점수 뻥튀기 의심 (블라인드보다 ${fl.inflation}점 높음)</span>` : ""}${fl.few ? `<span class="flag">평가 ${fl.few}명뿐 · 참고만</span>` : ""}</div>`;
   const secH = (i, k) => { const x = c.grades[k], g = x?.grade, has = k in c.grades, src = srcOf(c, k);
-    return `<div class="sec-h"><span class="no">0${i}</span><h3>${k}</h3>${has ? `<span class="gr ${g == null ? "gq" : lcls(x)}">${g == null ? "?" : ltxt(x)}</span>` : ""}<p class="why">${WHY[k]}${src ? `<small class="asof">자료 기준 · ${esc(src)}</small>` : ""}</p></div>`; };
+    return `<div class="sec-h"><span class="no">0${i}</span><h3>${k}</h3>${has ? `<span class="gr ${g == null ? "gq" : lcls(x)}">${g == null ? "?" : ltxt(x)}</span>` : ""}${src ? `<p class="why"><small class="asof">자료 기준 · ${esc(src)}</small></p>` : ""}</div>`; };   // 2026-10-29 Simple is Best: 칸 설명(WHY)은 빼고 기준일만
   $("#out").innerHTML = `
     <div class="head"><div><p class="kicker"><i></i>${esc(grpName(s, c.name))}</p><h2>${esc(c.name)}</h2>
       <div class="chips"><span class="chip">${esc(c.type)} 회사${c.age != null ? " · 업력 " + c.age + "년" : ""}</span>${c.ai ? `<span class="chip ai-${c.ai.level}">AI 영향 ${c.ai.level}</span>` : ""}</div>
       <div class="meta">${s ? `<span>직원 <b>${won(s.members)}명</b></span>` : ""}${f ? `<span>재무 <b>${f.years[0]}~${f.years.at(-1)}</b> ${esc(f.source)}</span>` : ""}${date ? `<span>평점 <b>${esc(mdOf(date))}</b></span>` : ""}${c.news?.date ? `<span>뉴스 <b>${esc(mdOf(c.news.date))}</b></span>` : ""}</div></div>
       <p class="disc1">회사에 대한 일반적인 평가예요. 내 스펙·상황에 따라 달라요.</p><div class="verdict ${vcls}"><small>${my ? "내 상황 기준 · " : ""}Zorro's Verdict</small><strong>${V}</strong>${!my && (c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}${my?.chips?.length ? `<div class="vtags mchips" title="이 판정이 나온 근거">${my.chips.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
     ${API ? `<div class="acts"><button class="act heart${hearted.get(c.name) ? " on" : ""}" type="button" id="b-heart" aria-label="이 회사 하트">♥ <b>${(c._s?.hearts || 0).toLocaleString("ko-KR")}</b></button>
-      <button class="act" type="button" id="b-card">결과 카드 저장</button><button class="act" type="button" id="b-share">링크 공유</button>
+      <details class="sharebox"><summary class="act">공유</summary><div class="sharemenu"><button type="button" id="b-share">링크 공유</button><button type="button" id="b-card">결과 카드 저장</button></div></details>
       ${(c._s?.views7 || 0) >= 10 ? `<span class="seen">최근 7일 ${c._s.views7.toLocaleString("ko-KR")}명이 확인했어요</span>` : ""}</div>` : ""}
     ${meStrip(c, my)}
     ${meCmp(c, my)}
@@ -1739,7 +1744,6 @@ async function render(name) {
     <section class="sec" id="s7">${secH(7,"AI 영향")}${aiSec(c)}</section>
     ${askSec(c)}
     ${altSec(c)}
-    <p class="disc">판정과 Zorro의 한마디는 전자공시·국민연금·공개 평점·언론 보도 같은 공개 자료를 모아 취업조로 기준으로 정리한 <b>참고용 의견</b>이에요. 회사의 공식 입장이나 사실 확정이 아니며, 평점은 기준일 ${esc(date)}에 각 사이트에 공개된 값이에요.</p>
     ${API ? `<details class="fixbox"><summary>정보가 틀렸거나 문제가 있나요? 정정 요청하기</summary>
       <form id="fixform"><p>회사 관계자·현직자 누구나 보낼 수 있어요. 확인 후 고치거나 내립니다.</p>
         <label class="sr" for="fixmsg">요청 내용</label><textarea id="fixmsg" maxlength="1000" placeholder="어떤 내용이 왜 틀렸는지 적어 주세요" required></textarea>
@@ -1752,7 +1756,7 @@ async function render(name) {
   if (API) $("#fixform").onsubmit = async e => { e.preventDefault();
     const r = await send("/fix", { n: c.name, msg: $("#fixmsg").value, contact: $("#fixcontact").value });
     if (r?.ok) { e.target.closest("details").innerHTML = `<p style="margin:0;font-size:14px;font-weight:700">요청을 받았어요. 확인 후 반영할게요.</p>`; } else toast("보내지 못했어요. 내용을 5자 이상 적었는지 확인해 주세요."); };
-  if (API) { $("#b-heart").onclick = e => heart(e.currentTarget); $("#b-card").onclick = saveCard; $("#b-share").onclick = shareLink; }
+  if (API) { $("#b-heart").onclick = e => heart(e.currentTarget); $("#b-card").onclick = e => { e.target.closest("details").open = false; saveCard(); }; $("#b-share").onclick = e => { e.target.closest("details").open = false; shareLink(); }; }
   // 2026-10-28 모바일: 회사 화면에선 검은 띠·위 안내 상자를 숨기고(판정 밑 한 줄로), 결과 머리(회사 이름·판정)로 바로 내려 준다
   document.body.classList.add("has-co");
   if (matchMedia("(max-width:640px)").matches) { const h = document.querySelector("#out .head"); if (h) scrollTo(0, h.getBoundingClientRect().top + scrollY - 66); }
@@ -2071,9 +2075,12 @@ function seriesWire(el) {
   const tr = el.querySelector(".ser-track"); if (!tr) return;
   const dots = [...el.querySelectorAll(".ser-dots i")], cards = [...tr.children], n = cards.length;
   const x0 = () => cards[0].offsetLeft, at = k => cards[k].offsetLeft - x0();
-  const cur = () => cards.reduce((b, c, i) => Math.abs(at(i) - tr.scrollLeft) < Math.abs(at(b) - tr.scrollLeft) ? i : b, 0);
+  // 2026-10-29: 카드가 여러 장 보이거나 마지막 카드 위치가 스크롤 끝보다 멀면 8번에서 멈추던 문제 → 끝에 닿으면 마지막 카드로 친다
+  const max = () => tr.scrollWidth - tr.clientWidth;
+  const cur = () => tr.scrollLeft >= max() - 4 ? n - 1 : cards.reduce((b, c, i) => Math.abs(at(i) - tr.scrollLeft) < Math.abs(at(b) - tr.scrollLeft) ? i : b, 0);
   tr.addEventListener("scroll", () => { const k = cur(); dots.forEach((d, i) => d.classList.toggle("on", i === k)); }, { passive: true });
-  const go = d => { const k = cur(); tr.scrollTo({ left: at((k + d + n) % n), behavior: "smooth" }); };
+  const go = d => { const k = cur(), m = max(), t = (k + d + n) % n;
+    tr.scrollTo({ left: t === n - 1 ? m : Math.min(at(t), m), behavior: "smooth" }); };   // 8 → 1, 1 → 8 (끝 카드는 스크롤 끝으로)
   let seen = true, pause = 0;
   const hold = () => { pause = Date.now() + 8000; };
   el.querySelectorAll(".ser-nav button").forEach(b => b.onclick = () => { go(Number(b.dataset.d)); hold(); });
@@ -2090,8 +2097,7 @@ function seriesWire(el) {
   }, 4000);
 }
 // 첫 화면은 비워 두고 검색을 유도한다 (주소에 #회사명 이 있을 때만 바로 보여 줌)
-const intro = () => { document.body.classList.remove("has-co"); document.getElementById("codock")?.classList.remove("on"); $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b>
-  <p>평점·직급별 연봉·5개년 재무·최근 뉴스를 한 번에 보고, Zorro가 갈 만한지 정리해 드려요.</p><div class="pulse" id="pulse"></div></div>`;
+const intro = () => { document.body.classList.remove("has-co"); document.getElementById("codock")?.classList.remove("on"); $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b><div class="pulse" id="pulse"></div></div>`;
   if (!API) { const el = $("#pulse"); if (el) { el.innerHTML = seriesHtml([]); seriesWire(el); el.querySelectorAll("button[data-n]").forEach(b => b.onclick = () => pick(b.dataset.n)); } return; }
   topP.then(d => { const el = $("#pulse"); if (!d || !el) return;
     const vs = d.vs || [], go = (a, b) => { location.hash = encodeURIComponent(a) + "~" + encodeURIComponent(b); };
@@ -2530,8 +2536,8 @@ function meFb(c, my) {
 function meRefresh() {
   meBar();
   const d = document.querySelector(".disc span");
-  if (d) d.innerHTML = ME && !meGeneral ? "<b>내 상황 기준 판정이에요.</b> 넣어 주신 연차·연봉·근무지와 이 회사 자료를 함께 보고 취업조로 상담 기준으로 정리했어요. 실제 제시 조건을 넣을수록 정확해져요."
-    : "<b>회사에 대한 일반적인 평가예요.</b> 좋은 회사의 기준은 내 스펙·연차·상황·가치관에 따라 달라요. 누군가에겐 천국 같은 회사가 누군가에겐 지옥일 수도 있으니, 아래 판정은 참고로만 보시고 최종 선택은 내 상황과 함께 판단하세요. 내 상황에 맞춘 판정은 위 <b>내 상황 넣기</b>로 볼 수 있어요.";
+  if (d) d.innerHTML = ME && !meGeneral ? "<b>내 상황 기준 판정이에요.</b> 실제 제시 조건을 넣을수록 정확해져요."
+    : "<b>회사에 대한 일반적인 평가예요.</b> 내 상황에 맞춘 판정은 위 <b>내 상황 넣기</b>로 보세요.";
   if (meCo && document.getElementById("meSlot")) { const y = scrollY; render(meCo.name).then(() => scrollTo(0, y)); }
 }
 // 카드 안 입력 (제시 연봉·근무지)

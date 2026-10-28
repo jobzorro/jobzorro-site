@@ -362,7 +362,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
 
     <section class="sec car" id="car" aria-roledescription="carousel" aria-label="숫자로 보는 회사들">
       <div class="car-top">
-        <h2>숫자로 보는 <b>회사들</b><small>8초마다 넘어가요 · 밀거나 화살표로 넘길 수 있어요</small></h2>
+        <h2>숫자로 보는 <b>회사들</b></h2>
         <div class="car-ctl">
           <span class="car-cnt" id="carCnt"></span>
           <button type="button" id="carPrev" aria-label="이전 장">←</button>
@@ -422,7 +422,6 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     </div>
   </section>
 
-  <p class="foot" id="foot">출처: 국민연금공단 국민연금 가입 사업장 내역(공공데이터포털). 연봉은 고지금액에서 거꾸로 계산한 추정치이며 성과급·임원 보수 일부가 빠지거나 상한에 걸려 실제와 다를 수 있습니다. 가입자 30명 미만 사업장은 싣지 않습니다.</p>
 </main>
 
 <script>
@@ -489,9 +488,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   fetch('data/meta.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (m) {
     D.meta = m; hint(); heroFill(m);
     var ym = m.ym.replace('-', '년 ') + '월';
-    $('foot').textContent = '출처: ' + m.source + ', ' + ym + ' 기준' + (m.dartCount ? ' · 금융감독원 전자공시(DART) 사업보고서 직원 현황' : '') +
-      (m.validation ? ' · 직급별 추정은 취업조로 경력이직 고객 ' + m.validation.nMatched + '명의 실제 연봉(이직 직전)으로 검증·보정했습니다(집계값만 사용)' : '') +
-      '. 평균 연봉 = 당월 고지금액 ÷ 가입자 수 ÷ 보험료율 ' + (m.rate * 100).toFixed(1) + '% × 12. 가입자 ' + m.minMembers + '명 미만 사업장은 싣지 않습니다. 모든 수치는 추정치입니다.';
+    // 2026-10-29 페이지 아래 출처 문단은 뺌 (Simple is Best)
     hookCar(); netCalc(); posCalc(); negCalc(); emptyDetail();
     var q = decodeURIComponent((location.hash || '').slice(1));
     if (q) { $('q').value = q; loadIndex().then(function () { search(); var hit = IDX.find(function (x) { return x.n === q; }); if (hit) openCo(hit.i); }); }
@@ -670,7 +667,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
         return '<option value="' + esc(x[0]) + '"' + (x[0] === JOBK ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</select>' +
         '<small>' + (jx ? '이 직무는 같은 직급 평균의 약 ' + Math.round(jf * 100) + '% (이직자 ' + jx[3] + '명 기준, 직무 간 차이는 크지 않은 편)' : '취업조로 이직자 연봉으로 본 직무별 차이를 반영합니다') + '</small>' + jobLinks(JOBK) + '</div>') +
       cmpHtml(r) +
-      '<details class="how"><summary>이 숫자는 어떻게 계산했나요?</summary><ol>' + how + '</ol></details>' + repHtml(r) +
+      repHtml(r) +   // 2026-10-29 '이 숫자는 어떻게 계산했나요?' 펼침은 뺌 (Simple is Best)
       '</article>';
     var sh = $('sheet'); sh.scrollTop = 0;
     if (isPhone()) {

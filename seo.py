@@ -810,7 +810,7 @@ def render_interview_all(common: dict, iq: dict, jobs, groups) -> str:
     h = []
     h.append('<section class="iq-hero"><div class="kick"><i></i>Interview · 면접 질문</div>'
              f'<h1>면접에서 진짜 묻는 질문, <span class="mark">한 화면에.</span></h1>'
-             f'<p>공통 빈출 TOP 20과 직무별 단골 질문 {n_job_q}개입니다. 질문 아래 동그란 칩은 면접관이 그 질문으로 확인하려는 것, 곧 답변에 꼭 담아야 할 것입니다. 위에서 직무를 고르면 그 직무 질문으로 바로 이동합니다.</p></section>')
+             f'<p>공통 TOP 20 + 직무별 {n_job_q}개. 칩은 답변에 꼭 담을 내용이에요.</p></section>')   # 2026-10-29 Simple is Best: 설명 한 줄로
     # 직무 선택 바
     opts = "".join(f'<optgroup label="{e(g["name"])}">' + "".join(f'<option value="j-{e(j["id"])}">{e(j["name"])}</option>' for j in by_g[g["id"]]) + '</optgroup>' for g in groups if by_g.get(g["id"]))
     gchips = "".join(f'<a href="#g-{e(g["id"])}">{e(g["name"])}</a>' for g in groups if by_g.get(g["id"]))
@@ -819,16 +819,16 @@ def render_interview_all(common: dict, iq: dict, jobs, groups) -> str:
              f'<select id="iqJob" aria-label="직무 선택"><option value="">직무를 고르면 바로 이동</option>{opts}</select>'
              f'<div class="iq-gw"><button class="iq-prev" type="button" aria-label="직군 이전">‹</button><div class="iq-g">{gchips}</div><button class="iq-next" type="button" aria-label="직군 더 보기">›</button></div></div></nav>')
     # 공통 TOP 10
-    h.append('<section class="iq-sec" id="common"><div class="iq-head"><span class="num">01</span><h2>공통 빈출 <b>TOP 10</b></h2><p>직무와 상관없이 거의 모든 면접에서 나옵니다. 빈출도는 취업조로 면접 질문 모음집 기준입니다.</p></div><ol class="iq-top">')
+    h.append('<section class="iq-sec" id="common"><div class="iq-head"><span class="num">01</span><h2>공통 빈출 <b>TOP 10</b></h2></div><ol class="iq-top">')
     for k, t in enumerate(top[:10], 1):
         h.append(f'<li><div class="no">{k:02d}</div><div class="body"><div class="meta"><span class="tp">{e(t["topic"])}</span>{stars(t.get("f", 0))}</div><p class="q">{e(t["q"])}</p>{chips(t["i"])}</div></li>')
     h.append('</ol>')
-    h.append('<div class="iq-head sub"><h3>11 — 20</h3></div><ol class="iq-list" start="11">')
+    h.append('<details class="iq-more"><summary>11~20위 더 보기</summary><ol class="iq-list" start="11">')   # 2026-10-29 11~20위는 접어 둔다
     for k, t in enumerate(top[10:20], 11):
         h.append(f'<li><span class="no">{k}</span><div class="body"><p class="q">{e(t["q"])}</p>{chips(t["i"])}</div><span class="tp">{e(t["topic"])}</span></li>')
-    h.append('</ol></section>')
-    # 직무별
-    h.append('<section class="iq-sec" id="jobs"><div class="iq-head"><span class="num">02</span><h2>직무별 <b>단골 질문 5</b></h2><p>현직자 인터뷰와 컨설팅 사례에서 그 직무라서 나오는 질문만 골랐습니다.</p></div>')
+    h.append('</ol></details></section>')
+    # 직무별 — 2026-10-29: 한 번에 한 직군만 보인다 (직군 칩·직무 선택으로 바꿈, 처음엔 첫 직군)
+    h.append('<section class="iq-sec" id="jobs"><div class="iq-head"><span class="num">02</span><h2>직무별 <b>단골 질문 5</b></h2></div>')
     for g in groups:
         js = by_g.get(g["id"])
         if not js:
@@ -842,7 +842,7 @@ def render_interview_all(common: dict, iq: dict, jobs, groups) -> str:
             h.append('</ol></article>')
         h.append('</div>')
     h.append('</section>')
-    h.append('<div class="cta"><h2>답변 스크립트, 혼자 만들기 어렵다면</h2><p>지원 회사와 직무에 맞춘 면접 스크립트를 취업조로 컨설턴트가 1:1로 같이 만듭니다.</p><div class="cta-row"><a class="btn primary" href="../apply/index.html">무료 상담 신청하기 ⚡</a></div></div>')
+    h.append('<div class="cta"><h2>답변 스크립트, 혼자 만들기 어렵다면</h2><div class="cta-row"><a class="btn primary" href="../apply/index.html">무료 상담 신청하기 ⚡</a></div></div>')
     return "\n".join(h)
 
 
@@ -898,6 +898,10 @@ INTERVIEW_ALL_CSS = """
 .iq-job .en { font-family: var(--display); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .iq-job .go { margin-left: auto; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--ink); text-decoration: none; border-bottom: 2px solid var(--ink); }
 .iqpage .cta { margin-top: 48px; }
+.iq-group:not(.show) { display: none; }
+.iq-more summary { margin-top: 18px; padding: 13px 0; text-align: center; border: 1px solid var(--line-strong); border-radius: 12px; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer; list-style: none; }
+.iq-more summary::-webkit-details-marker { display: none; }
+.iq-more[open] summary { display: none; }
 @media (max-width: 760px) {
   .iq-top { grid-template-columns: 1fr; }
   .iq-top > li { grid-template-columns: 48px minmax(0,1fr); }
@@ -916,8 +920,14 @@ INTERVIEW_ALL_CSS = """
 
 INTERVIEW_ALL_JS = """<script>
 (function () {
+  // 2026-10-29: 직군은 한 번에 하나만 보인다 → 이동하기 전에 그 직군을 연다
+  function show(el) {
+    var g = el && (el.classList.contains('iq-group') ? el : el.closest('.iq-group')); if (!g) return;
+    document.querySelectorAll('.iq-group').forEach(function (x) { x.classList.toggle('show', x === g); });
+  }
   function go(id, smooth) {
     var el = document.getElementById(id); if (!el) return;
+    show(el);
     var bar = document.querySelector('.iq-bar'), off = 54 + (bar ? bar.offsetHeight : 0) + 12;
     window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - off, behavior: smooth ? 'smooth' : 'auto' });
     if (el.classList.contains('iq-job')) { el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 1400); }
@@ -932,15 +942,15 @@ INTERVIEW_ALL_JS = """<script>
   gs.addEventListener('scroll', arrows, { passive: true }); window.addEventListener('resize', arrows); arrows();
   gs.addEventListener('click', function (e) { var a = e.target.closest('a'); if (!a) return; e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); go(a.getAttribute('href').slice(1), true); });
   var groups = [].slice.call(document.querySelectorAll('.iq-group')), jobs = [].slice.call(document.querySelectorAll('.iq-job')), curG = null, curJ = null, tk = false;
+  show(groups[0]);
   function spy() {
     tk = false;
     var bar = document.querySelector('.iq-bar'), line = 54 + (bar ? bar.offsetHeight : 0) + 24, g = null, j = null;
-    groups.forEach(function (el) { if (el.getBoundingClientRect().top <= line) g = el; });
-    jobs.forEach(function (el) { if (el.getBoundingClientRect().top <= line) j = el; });
+    groups.forEach(function (el) { if (el.classList.contains('show')) g = el; });   // 보이는 직군은 하나뿐
+    jobs.forEach(function (el) { if (el.offsetParent && el.getBoundingClientRect().top <= line) j = el; });
     // 페이지 끝까지 내려와 마지막 직군이 위로 더 올라갈 수 없으면, 화면 위쪽 절반 안에 들어온 마지막 직군을 지금 직군으로 본다
     if (window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 4) {
-      groups.forEach(function (el) { if (el.getBoundingClientRect().top < window.innerHeight * .5) g = el; });
-      jobs.forEach(function (el) { if (el.getBoundingClientRect().top < window.innerHeight * .5) j = el; });
+      jobs.forEach(function (el) { if (el.offsetParent && el.getBoundingClientRect().top < window.innerHeight * .5) j = el; });
     }
     var gid = g ? g.id : null;
     if (gid !== curG) {

@@ -843,8 +843,7 @@ SCRIPT = r"""
       var lead = el('p', 'news-lead');
       lead.appendChild(el('span', 'ai-tag', 'AI'));
       lead.appendChild(document.createTextNode(' ' + article.ai_line));
-      body.appendChild(lead);
-      if (original) body.appendChild(el('p', 'news-sum', original));
+      body.appendChild(lead);   // 2026-10-29 AI 요약이 있으면 원문 첫 문단은 뺀다
     } else {
       if (article.lead) body.appendChild(el('p', 'news-lead', article.lead));
       if (article.summary) body.appendChild(el('p', 'news-sum', article.summary));
@@ -871,23 +870,7 @@ SCRIPT = r"""
       body.appendChild(jobs);
     }
 
-    if (article.keywords && article.keywords.length) {
-      var tags = el('div', 'news-tags');
-      article.keywords.slice(0, 3).forEach(function (k) { tags.appendChild(tagButton(k)); });
-      body.appendChild(tags);
-    }
-
-    if (article.related && article.related.length) {
-      var rel = el('div', 'news-related');
-      rel.appendChild(el('span', null, '같은 사건 다른 보도'));
-      article.related.forEach(function (r) {
-        var ra = link(r.url);
-        ra.textContent = r.source;
-        ra.title = r.title;
-        rel.appendChild(ra);
-      });
-      body.appendChild(rel);
-    }
+    // 2026-10-29 키워드 칩·'같은 사건 다른 보도'는 뺐다 (Simple is Best)
 
     card.appendChild(body);
     return card;
@@ -1582,9 +1565,7 @@ def render_static_article(a, numeral):
              f'        <h3 class="news-title"><a class="news-link" href="{e(a.get("url"))}" target="_blank" rel="noopener noreferrer">{e(a.get("title"))}</a></h3>']
     original = " ".join(t for t in (a.get("lead"), a.get("summary")) if t)
     if a.get("ai_line"):
-        parts.append(f'        <p class="news-lead"><span class="ai-tag">AI</span> {e(a["ai_line"])}</p>')
-        if original:
-            parts.append(f'        <p class="news-sum">{e(original)}</p>')
+        parts.append(f'        <p class="news-lead"><span class="ai-tag">AI</span> {e(a["ai_line"])}</p>')   # 2026-10-29 AI 요약이 있으면 원문 첫 문단은 뺀다 (겹침)
     else:
         if a.get("lead"):
             parts.append(f'        <p class="news-lead">{e(a["lead"])}</p>')
@@ -1596,14 +1577,7 @@ def render_static_article(a, numeral):
     if a.get("ai_tags"):
         parts.append('        <div class="news-tags job-tags">'
                      + "".join(job_tag_html(t, "../../") for t in a["ai_tags"]) + '</div>')
-    if a.get("keywords"):
-        # 키워드는 오늘 지면의 검색(#q=)으로 보낸다
-        parts.append('        <div class="news-tags">'
-                     + "".join(f'<a class="tag" href="../#q={e(k)}">{e(k)}</a>' for k in a["keywords"][:3]) + '</div>')
-    if a.get("related"):
-        parts.append('        <div class="news-related"><span>같은 사건 다른 보도</span>'
-                     + "".join(f'<a href="{e(r.get("url"))}" target="_blank" rel="noopener noreferrer" title="{e(r.get("title"))}">{e(r.get("source"))}</a>'
-                               for r in a["related"]) + '</div>')
+    # 2026-10-29 Simple is Best: 키워드 칩·'같은 사건 다른 보도'는 카드에서 뺐다 (제목·AI 요약·Zorro의 한마디·직무 태그만)
     parts.append('      </div>\n    </article>')
     return "\n".join(parts)
 
@@ -1872,20 +1846,6 @@ def render(today, archive):
 <main class="container" id="view"></main>
 
 <section class="howto" aria-label="이 지면 읽는 법">
-  <div class="howto-inner">
-    <div class="howto-block">
-      <div class="howto-label">읽는 법</div>
-      <p class="howto-text">카드를 누르면 원문으로 갑니다. <b>AI</b> 표시 문장과 "Zorro의 한마디"는 취업조로의 관점을 학습한 Claude가 제목·요약만 보고 쓴 것이라 원문과 다를 수 있고, 회색 글은 원문 요약입니다. #태그는 관련 직무, 키워드를 누르면 지난 기사를 검색합니다.</p>
-    </div>
-    <div class="howto-block">
-      <div class="howto-label">수집 방식</div>
-      <p class="howto-text">언론사 RSS와 Google News 피드를 매일 아침 읽어 고용·커리어 키워드로 점수를 매기고, 홍보성 보도자료와 유사 중복 기사를 걸러 섹션별 상위 기사만 남깁니다.</p>
-    </div>
-    <div class="howto-block">
-      <div class="howto-label">점수와 랭킹</div>
-      <p class="howto-text">점수는 키워드 가중치, 통계 수치 인용, 언론사 신뢰도를 더한 값입니다. 주간·월간 랭킹은 그 기간 지면 기사를 점수순으로 세운 것이고, 키워드 화살표는 직전 같은 길이 구간 대비 변동입니다.</p>
-    </div>
-  </div>
   <div class="howto-more"><a href="archive/">지난 지면 전체 보기 &rarr;</a> <span style="font-weight:500;color:var(--muted)">날짜별 지면을 각각의 주소로 볼 수 있습니다.</span></div>
 {render_health(stats)}
 </section>
