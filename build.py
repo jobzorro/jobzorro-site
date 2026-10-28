@@ -1121,6 +1121,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     audit_links(data, BASE / "assets" / "share")
     print(f"인앱 브라우저 → 기본 브라우저 전환: {add_inapp(out_dir)}개 페이지")
     print(f"다크모드 지원 표시(color-scheme): {add_color_scheme(out_dir)}개 페이지")
+    print(f"화면 끝까지(viewport-fit=cover) 맞춤: {add_viewport_fit(out_dir)}개 페이지")
     print(f"앱(PWA) 설치 연결: {pwa.add_pwa(out_dir, base_url)}개 페이지 (manifest·sw.js)")
     print(f"sitemap.xml: URL {len(entries)}개 -> {out_dir / 'sitemap.xml'}")
 
@@ -1158,6 +1159,20 @@ def add_color_scheme(out_dir: Path) -> int:
         n += 1
     return n
 
+
+
+def add_viewport_fit(out_dir: Path) -> int:
+    """아래 탭바가 있는 페이지는 모두 viewport-fit=cover 로 (2026-10-28 사용자 폰 제보: 뉴스에서만 아래 바가 한 칸 밑으로 밀림)
+    뉴스(news-collector)·회사 판단 템플릿은 이 값 없이 만들어져, 폰 아래 시스템 영역(safe-area) 계산이 다른 페이지와 달랐다"""
+    n = 0
+    for f in out_dir.rglob("*.html"):
+        h = f.read_text(encoding="utf-8")
+        if 'class="zb"' not in h:
+            continue
+        h2 = re.sub(r'<meta name="viewport" content="(?![^"]*viewport-fit)([^"]*)">', lambda m: f'<meta name="viewport" content="{m.group(1)}, viewport-fit=cover">', h, count=1)
+        if h2 != h:
+            f.write_text(h2, encoding="utf-8"); n += 1
+    return n
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
