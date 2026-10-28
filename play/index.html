@@ -616,6 +616,14 @@ body > .zn { margin-left:calc(-1 * max(16px, env(safe-area-inset-left,0px))); ma
   .me .lnk { min-height:44px; min-width:44px; text-decoration:none; font-size:16px; }
   .me .lnk .ph { display:inline; }
   .me .nick { font-size:15px; }
+  /* 2026-10-28 사용자: 폰에서 효과음 버튼이 캐릭터 아래 한 줄로 떨어지던 것 → 연필 옆 같은 줄에 (닉네임이 길면 말줄임) */
+  .me { flex-wrap:nowrap; gap:2px 8px; }
+  .me .mylk { flex:0 1 auto; min-width:0; display:flex; align-items:center; overflow:hidden; }
+  .me .myrk { flex:none; white-space:nowrap; }
+  .me .nick { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .me .lnk { flex:none; }
+  .me .fire { white-space:nowrap; }
+  .me .sndb { flex:none; width:44px; min-width:44px; padding:0; }
   .lh { margin:8px 0 10px; padding-bottom:6px; }
   .lh h2 { font-size:20px; }
   .lh span { font-size:12px; }
@@ -970,7 +978,9 @@ var BADGES = [
   ['sniper', '스나이퍼', '연봉 스나이퍼 450점 이상'],
   ['att7', '7일 출석', '오늘의 회사 7일 연속 풀기'],
   ['perfect', '퍼펙트 데이', '같은 날 1번 10문제 다 맞힘 + 2번 단서 2개 안에 성공 + 3번 450점 이상'],
-  ['road', '이직의 신', '이직 로드 10년 그날 상위 1%']];
+  ['road', '이직의 신', '이직 로드 10년 그날 상위 1%'],
+  ['commute', '출근의 신', '조로 출근길 꽈당 0번 + 정시 출근'],
+  ['early', '얼리버드', '조로 출근길 8시 50분 전 도착']];
 function badges() { return store.getJ('slp-badges', {}); }
 function award(id) {
   var b = badges(); if (b[id]) return;
@@ -1169,7 +1179,7 @@ function sfx(name) {
   try {
     var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     var ac = SND.ac || (SND.ac = new AC()); if (ac.state === 'suspended') ac.resume();
-    var N = { coin: [[988, .07], [1319, .16]], combo: [[784, .06], [988, .06], [1175, .06], [1568, .14]], wrong: [[220, .12], [165, .22]],
+    var N = { coin: [[988, .07], [1319, .16]], jump: [[523, .04], [784, .07]], combo: [[784, .06], [988, .06], [1175, .06], [1568, .14]], wrong: [[220, .12], [165, .22]],
       fanfare: [[523, .1], [659, .1], [784, .1], [1047, .24], [784, .08], [1047, .3]] }[name] || [], t = ac.currentTime + .01;
     N.forEach(function (n) {
       var o = ac.createOscillator(), g = ac.createGain();
@@ -1347,7 +1357,18 @@ var ITEM_DRAW = {
   scarf: function (g) { zs(g, 10, 19, ['VVVVVVVVVVVV', 'VNVVNVVNVVNV', 'VVVVVVVVVVVV']); zs(g, 18, 22, ['VV', 'NV', 'VV', 'NV', 'VV', 'V V']); },
   pillow: function (g) { zs(g, 7, 17, ['XX              XX', 'XXe            eXX', 'XXXe          eXXX', ' XXXXXXXXXXXXXXXX ', '  eeeeeeeeeeeeee  ']); },
   rosette: function (g) { zs(g, 8, 21, [' BBB ', 'BBYBB', 'BYYYB', 'BBYBB', ' BBB ', ' B B ', ' B B ']); },
-  medal: function (g) { zs(g, 12, 21, ['B      B', ' R    R ', '  B  B  ', '  YYYY  ', ' YFYYFY ', ' YYWWYY ', ' YFYYFY ', '  YYYY  ']); }
+  medal: function (g) { zs(g, 12, 21, ['B      B', ' R    R ', '  B  B  ', '  YYYY  ', ' YFYYFY ', ' YYWWYY ', ' YFYYFY ', '  YYYY  ']); },
+  // 조로 출근길 소품 (2026-10-29)
+  raincap: function (g) { zs(g, 7, 1, ['     YYYYYYYY     ', '   YYYYYYYYYYYY   ', '  YYYHYYYYYYYYYF  ', '  YYYYYYYYYYYYYF  ', ' YYYYYYYYYYYYYYYF ', 'FFFFFFFFFFFFFFFFFF', 'FFFFFFFFFFFFFFFFFF']); },
+  bikehelm: function (g, A) { zs(g, 8, 1, ['    UUUUUUUU    ', '  UUWUUUUUUWUU  ', ' UUUUUKUUKUUUUU ', 'UUUUUUUUUUUUUUUU', 'UUUUUUUUUUUUUUUU', 'DDDDDDDDDDDDDDDD']); if (!(A && A.alone)) { zr(g, 8, 7, 8, 12, 'K'); zr(g, 23, 7, 23, 12, 'K'); } },
+  conehat: function (g) { zs(g, 11, 0, ['    A    ', '   AAA   ', '   WWW   ', '  AAAAA  ', '  WWWWW  ', ' AAAAAAA ', 'KKKKKKKKK']); },
+  ticket: hand(function (g, x, y) { zs(g, x - 1, y - 6, ['RRRRRRR', 'RWWWWWR', 'RRRRRRR', 'RYYRRRR', 'RRRRRRR']); }),
+  tteok: hand(function (g, x, y) { zs(g, x, y - 10, ['  BB ', ' BQBB', '  BB ', ' BQBB', '  BB ', ' BQBB', '  O  ', '  O  ', '  O  ', '  O  ']); }),
+  balloon: hand(function (g, x, y) { var t = Math.max(0, y - 17); zs(g, x - 2, t, [' NNN ', 'NNWNN', 'NNNNN', 'NNNNN', ' NNN ', '  N  ']); for (var yy = t + 6; yy <= y; yy++) zp(g, x, yy, 'K'); }),
+  moneybag: hand(function (g, x, y) { zs(g, x - 2, y - 1, [' K K  ', '  K   ', ' eeee ', 'eeYYee', 'eYeeee', 'eeYYee', 'eeeeYe', 'eYYYee', ' eeee ']); }),
+  mask: function (g) { zs(g, 10, 14, ['WWWWWWWWWWWW', 'WWWZWWWWZWWW', 'WWWWWWWWWWWW', ' WWWWWWWWWW ']); zp(g, 9, 14, 'Z'); zp(g, 22, 14, 'Z'); },
+  sweat: function (g) { zs(g, 22, 7, [' L', 'LL', 'LL', '  ', ' L', 'LL']); zs(g, 8, 9, ['L', 'L']); },
+  clockpin: function (g) { zs(g, 18, 22, [' YYY ', 'YWKWY', 'YWKKY', 'YWWWY', ' YYY ']); }
 };
 // 배경 판 (bg 칸): 테두리 바깥 빈칸을 작은 장면으로 채움. f(x, y, 폭, 높이) → 팔레트 글자 1~9
 function zCirc(x, y, cx, cy, r) { return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r; }
@@ -1388,7 +1409,23 @@ var BG_DRAW = {
     if (x <= 1 || y <= 1 || x >= w - 2 || y >= h - 2) return (x + y) % 2 ? '2' : '5';
     if ((x <= 4 && y <= 4) || (x >= w - 5 && y <= 4)) return (x + y) % 2 ? '3' : '1';
     if ((x * 5 + y * 3) % 23 === 0) return '4';
-    return y % 4 === 0 ? '6' : '1'; } }
+    return y % 4 === 0 ? '6' : '1'; } },
+  hanriver: { p: { 1: '#bfe3ff', 2: '#dff1ff', 3: '#3f7fbf', 4: '#d6eeff', 5: '#8796ab', 6: '#9fb4c8', 7: '#7d8088' }, f: function (x, y, w, h) {   // 한강 다리에서 본 강
+    var rv = Math.floor(h * .58), bm = Math.floor(h * .46);
+    if (y >= h - 5) return '7';
+    if (y >= rv) return (x * 7 + y * 3) % 11 === 0 ? '4' : '3';
+    if (y === bm || (x % 8 === 0 && y > bm)) return '5';
+    if (y >= rv - 2 - ((x * 5) % 7) - (x % 9 < 3 ? 4 : 0)) return '6';
+    return y < h * .3 ? '1' : '2'; } },
+  rainbow: { p: { 1: '#bfe3ff', 2: '#e8412c', 3: '#ff9a1f', 4: '#ffcf3d', 5: '#3f9a4a', 6: '#3f6fb5', 7: '#8e5bd6', 8: '#ffffff', 9: '#7fbf5a' }, f: function (x, y, w, h) {   // 비 온 뒤 무지개
+    if (y >= h - 5) return '9';
+    if (zCirc(x, y, 5, h - 8, 4) || zCirc(x, y, 9, h - 7, 3) || zCirc(x, y, w - 7, h - 9, 4) || zCirc(x, y, w - 3, h - 8, 3)) return '8';
+    var d = Math.sqrt((x - w / 2) * (x - w / 2) + (y - h * .95) * (y - h * .95)), k = Math.floor((h * .85 - d) / 2);
+    return k >= 0 && k < 6 ? String(k + 2) : '1'; } },
+  metro: { p: { 1: '#f6f6f2', 2: '#36b5a5', 3: '#e8412c', 4: '#3f6fb5', 5: '#ff9a1f', 6: '#8e5bd6', 7: '#ffffff', 8: '#1b1d18' }, f: function (x, y, w, h) {   // 지하철 노선도
+    var on = y === 8 ? '2' : y === h - 10 ? '3' : x === 6 ? '4' : x === w - 7 ? '5' : x - y === 4 || x - y === 5 ? '6' : '';
+    if (on && (x + y) % 7 === 0) return '8';
+    return on || '1'; } }
 };
 function zPose(mood) { return mood === 'happy' ? 'up' : 'stand'; }
 function zRows(rk, mood, o) {
@@ -1695,7 +1732,7 @@ function drawCard(card, box) {
 }
 
 // ── 순위표 칸
-function fmtScore(game, s) { return game === 'road' ? eokS(s) : man(s) + '점'; }
+function fmtScore(game, s) { return game === 'road' ? eokS(s) : game === 'run' ? man(s) + '만원' : man(s) + '점'; }
 function lbCol(title, sub, rows, game, mine) {   // rows: [[이름, 점수]], mine: {rank, score} (10위 밖이면 아래에 고정)
   var inTop = false, li = rows.map(function (r, i) {
     var me = mine && mine.rank === i + 1 && r[0] === NICK; if (me) inTop = true;
@@ -2491,6 +2528,20 @@ var ITEMS = [
   // 이번 주 보스
   ['horns', 'hat', '악마 뿔', '이번 주 보스를 4주 만나기', function () { return bossCount() >= 4; }, 'etc', 'r', function () { return [bossCount(), 4]; }, '보스를 너무 자주 봤더니'],
   ['bossbg', 'bg', '보스 빌딩 배경', '일요일에 보스 정체 공개 보기', function () { return store.get('slp-bosssun') === '1'; }, 'etc', 'r', null, '그 빌딩 앞에서 인증샷'],
+  // 조로 출근길 (2026-10-29): 조건은 이 기기 출근길 누적 기록(runStats)
+  ['ticket', 'hand', '교통카드', '조로 출근길 첫 완주', function () { return runStats().n >= 1; }, 'run', 'c', null, '삑— 환승입니다'],
+  ['raincap', 'hat', '노란 우비 모자', '비 오는 날 출근 완주', function () { return !!runStats().wx.rain; }, 'run', 'c', null, '우산은 버스에 두고 내렸어요'],
+  ['mask', 'acc', 'KF94 마스크', '미세먼지 날 출근 완주', function () { return !!runStats().wx.dust; }, 'run', 'c', null, '숨은 쉬고 다녀요'],
+  ['bikehelm', 'hat', '따릉이 헬멧', '따릉이 3번 타기', function () { return (runStats().cnt.bike || 0) >= 3; }, 'run', 'c', function () { return [runStats().cnt.bike || 0, 3]; }, '안전 제일 출근'],
+  ['tteok', 'hand', '떡꼬치', '전통시장 지나가기', function () { return !!runStats().cnt.market; }, 'run', 'c', null, '아침은 이걸로 해결'],
+  ['hanriver', 'bg', '한강 배경', '한강 다리 3번 건너기', function () { return (runStats().cnt.bridge || 0) >= 3; }, 'run', 'c', function () { return [runStats().cnt.bridge || 0, 3]; }, '출근길 뷰 맛집'],
+  ['sweat', 'acc', '식은땀', '쫓아오는 부장님 따돌리기', function () { return runStats().esc >= 1; }, 'run', 'c', null, '방금 그거 부장님 맞죠?'],
+  ['conehat', 'hat', '라바콘 모자', '한 판에 꽈당 10번 이상', function () { return runStats().maxHits >= 10; }, 'run', 'c', null, '공사 중… 머리도'],
+  ['balloon', 'hand', '생일 풍선', '로비 깜짝 생일 파티 만나기', function () { return !!runStats().end.party; }, 'run', 'r', null, '오늘 주인공은 나'],
+  ['clockpin', 'acc', '정시 출근 배지', '정시 출근 10번', function () { return runStats().ontime >= 10; }, 'run', 'r', function () { return [runStats().ontime, 10]; }, '9시 전 도착 전문'],
+  ['moneybag', 'hand', '돈 자루', '한 판에 1억 이상 줍기', function () { return runStats().maxMoney >= 10000; }, 'run', 'r', function () { return [runStats().maxMoney, 10000]; }, '출근길에 연봉을 다 주웠어요'],
+  ['metro', 'bg', '노선도 배경', '11가지 길 모두 지나가 보기', function () { return Object.keys(runStats().cnt).length >= 11; }, 'run', 'l', function () { return [Object.keys(runStats().cnt).length, 11]; }, '서울 출근길 마스터'],
+  ['rainbow', 'bg', '무지개 배경', '날씨 6가지 모두 겪고 완주', function () { return Object.keys(runStats().wx).length >= 6; }, 'run', 'l', function () { return [Object.keys(runStats().wx).length, 6]; }, '비 온 뒤 출근길'],
   // 출석 · 직급 · 순위
   ['office', 'bg', '사무실 배경', '오늘의 도전 아무거나 한 판 끝내기', function () { return DLY.some(function (g) { return recsOf(g).length > 0; }); }, 'etc', 'c', null, '자리 배치 끝'],
   ['dawn', 'bg', '새벽 배경', '연속 출석 3일', function () { return streakMax() >= 3; }, 'etc', 'c', function () { return [streakMax(), 3]; }, '출근 전에 한 판'],
@@ -2501,7 +2552,7 @@ var ITEMS = [
   ['hof', 'bg', '명예의 전당 배경', '주간 1위로 명예의 전당에 오르기', function () { return store.get('slp-hof') === '1'; }, 'etc', 'l', null, '이름이 박제됐어요']];
 var ITEM_BY = {}; ITEMS.forEach(function (it) { ITEM_BY[it[0]] = it; });
 // 진행 표시 단위 (다음 소품: '450점까지 32점')
-var PUNIT = { crown: '개', beanie: '일', bag: '개', idcard: '', glasses: '', goldtie: '', pen: '', calc: '개', monocle: '개', band: '개', phone: '개', starpin: '일', goggles: '점', halo: '종', rosette: '곳', laurel: '번', horns: '주', dawn: '일', night: '일', gold: '일' };
+var PUNIT = { bikehelm: '번', hanriver: '번', clockpin: '번', moneybag: '만원', metro: '곳', rainbow: '가지', crown: '개', beanie: '일', bag: '개', idcard: '', glasses: '', goldtie: '', pen: '', calc: '개', monocle: '개', band: '개', phone: '개', starpin: '일', goggles: '점', halo: '종', rosette: '곳', laurel: '번', horns: '주', dawn: '일', night: '일', gold: '일' };
 var SLOT_LB = { hat: '모자', hand: '손에 들기', acc: '얼굴 · 목', bg: '배경' };
 var RAR_LB = { c: '일반', r: '희귀', l: '전설' };
 function itemsOwned() { var o = store.getJ('slp-items', {}); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; }
@@ -2646,7 +2697,7 @@ function nextBtn(game) {
   var order = G5.slice(G5.indexOf(game) + 1).concat(G5.slice(0, G5.indexOf(game) + 1)), nx = '';
   order.forEach(function (k) { if (!nx && k !== game) { var S = gState(k); if (!S || !S.done) nx = k; } });
   return '<div class="nxrow">' + (nx ? '<button type="button" class="btn lime nx" data-go="' + nx + '">다음 게임: ' + esc(nx === 'today' ? '오늘의 회사' : PNAME[nx]) + ' ▶</button>'
-    : '<button type="button" class="btn lime nx" data-go="lobby">오늘 5개 다 했어요 · 게임 고르기로</button>') + '</div>';
+    : '<button type="button" class="btn lime nx" data-go="lobby">오늘 ' + G5.length + '개 다 했어요 · 게임 고르기로</button>') + '</div>';
 }
 // 이번 주 7칸: 한 날 = 라임 채움, 오늘 = 점선 테두리, 아직 안 온 날 = 흐리게
 var DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
@@ -2681,7 +2732,7 @@ function lookTop() {
     '<div class="lkme"><p class="lknm">' + esc(NICK) + (topBadge() ? ' <span class="badge1">' + esc(topBadge()) + '</span>' : '') + '</p>' +
     '<p class="lkrk">조로 <b>' + RK[r] + '</b> · 경험치 ' + x + (r >= 4 ? ' · 만렙' : ' · ' + RK[r + 1] + ' 승진까지 ' + nx + '판') + '</p>' +
     '<div class="xpbar" role="progressbar" aria-label="다음 직급까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' +
-    '<p class="src" style="margin:4px 0 0">오늘의 도전을 끝낼 때마다 경험치 +1, 칭호마다 +3. 10문제 다 맞히면 특진.</p></div></div>';
+    '<p class="src" style="margin:4px 0 0">오늘의 도전·조로 출근길을 끝낼 때마다(게임마다 하루 한 번) 경험치 +1, 칭호마다 +3. 10문제 다 맞히면 특진.</p></div></div>';
 }
 // 기본 모습: 남자/여자 조로 · 머리 모양 · (여자 조로) 바지/치마 — 모두 무료
 function lookBase() {
@@ -2869,6 +2920,667 @@ document.addEventListener('keydown', function (e) {
 }());
 
 
+// ── 06 조로 출근길 (2026-10-29): 내 조로(꾸민 모습·직급 그대로)가 집에서 출근지까지 1분~1분 20초 달리기
+//    판마다 다 다르게: 출근 회사 · 날씨 6종 · 갈림길 3번(구간 3개 중 2개씩) · 배치 · 돌발 사건 11종(구간마다 1개) · 도착 사건 8종
+//    구간 5개 = 집 앞 골목 → [버스|지하철|따릉이] → [한강 다리|전통시장|공원] → [지름길|큰길|지하상가] → 회사 로비
+//    2층 발판: 위로 뛰어 올라가 달리고, 화면 아래쪽(↓)으로 내려옴. 갈림길 = 끝에서 위층에 있으면 위 길, 아래면 아래 길
+//    적(야근 유령·스팸 메일·서류 괴물)은 머리를 밟으면 처치. 콤보(돈 최대 ×3) · 아슬아슬 보너스 · 갈수록 빨라짐
+//    점수 = 주운 연봉(만원) + 정시 출근 보너스. 순위 없음 — 오늘·역대 최고는 이 기기에, 하루 첫 완주에 경험치 +1
+//    tpl.html 은 건드리지 않고 화면 칸(#p-run)·스타일을 여기서 만들어 넣는다
+var RW = 280, RH = 180, RGY = 158, RPX = 52;          // 캔버스 칸(논리 픽셀) · 바닥선 · 조로 화면 x
+var RG = 1500, RJ1 = 480, RJ2 = 420;                  // 중력 · 1단 / 2단 점프 속도 (1단 최고 약 77칸)
+var R_T1 = 48, R_T2 = 92, R_RAMP = .4;                // 2층 · 3층 발판 높이, 끝으로 갈수록 빨라지는 정도(+40%)
+var R_T0 = 7 * 60 + 40, R_RATE = 80 / 72, R_DUE = 9 * 60;   // 07:40 출발. 가장 긴 길도 안 넘어지면 9시 전 도착
+var R_VAL = { coin: 40, cash: 200, bonus: 600 };      // 주우면 만원 (콤보 배율 곱함)
+var R_SLOTS = [['alley'], ['bus', 'subway', 'bike'], ['bridge', 'market', 'park'], ['short', 'avenue', 'under'], ['lobby']];
+var R_ASK = ['', '뭐 타고 갈까?', '어디로 지나갈까?', '회사가 코앞! 어느 길로?'];
+// pc = 발판 색 [윗면, 옆면], foe = 잘 나오는 적
+var RMAP = {
+  alley:  { nm: '집 앞 골목', emo: '🏠', len: 2700, spd: 170, obs: ['cone', 'trash', 'cat', 'bag', 'pigeon'], pc: ['#b5523b', '#7d3a2c'], foe: ['blob', 'mail'] },
+  bus:    { nm: '버스 안', emo: '🚌', len: 2900, spd: 160, obs: ['bag', 'person', 'papers'], coin: 1.4, ev: 'brake', inn: 1, pc: ['#9aa0a6', '#5a5d63'], foe: ['blob', 'ghost'], pick: '돈 많음 · 조금 느림' },
+  subway: { nm: '지하철 안', emo: '🚇', len: 2900, spd: 185, obs: ['person', 'bag', 'papers'], ev: 'crowd', inn: 1, pc: ['#b9c0c9', '#7e848c'], foe: ['ghost', 'blob'], pick: '빠름 · 사람 파도' },
+  bike:   { nm: '따릉이', emo: '🚲', len: 3200, spd: 215, obs: ['cone', 'pigeon', 'puddle', 'cat'], bike: 1, pc: ['#36b5a5', '#25806f'], foe: ['mail'], pick: '제일 빠름 · 브레이크 없음' },
+  bridge: { nm: '한강 다리', emo: '🌉', len: 2800, spd: 175, obs: ['puddle', 'pigeon', 'cone', 'scooter'], pc: ['#8796ab', '#5f6f84'], foe: ['mail', 'ghost'], pick: '킥보드 쌩쌩' },
+  market: { nm: '전통시장', emo: '🍢', len: 2800, spd: 165, obs: ['bag', 'cat', 'trash', 'papers'], coin: 1.3, pc: ['#e8412c', '#a8281b'], foe: ['blob', 'mail'], pick: '동전 많음' },
+  park:   { nm: '공원 산책로', emo: '🌳', len: 2800, spd: 175, obs: ['dog', 'pigeon', 'puddle', 'scooter'], pc: ['#8a5a32', '#5e3c20'], foe: ['ghost', 'mail'], pick: '강아지 조심' },
+  short:  { nm: '지름길 골목', emo: '🐈', len: 2500, spd: 180, obs: ['trash', 'cat', 'pigeon', 'bag', 'puddle'], dense: 1, pc: ['#6b6f74', '#3e3530'], foe: ['ghost', 'blob'], pick: '짧지만 빽빽' },
+  avenue: { nm: '큰길', emo: '🏙', len: 3000, spd: 175, obs: ['scooter', 'cone', 'person', 'papers'], coin: 1.4, pc: ['#8f96a3', '#5f646b'], foe: ['mail', 'blob'], pick: '길지만 돈 많음' },
+  under:  { nm: '지하상가', emo: '🛍', len: 2800, spd: 175, obs: ['person', 'bag', 'papers', 'cone'], inn: 1, pc: ['#c4cbd4', '#8a8f98'], foe: ['ghost', 'blob'], pick: '사람 많음' },
+  lobby:  { nm: '회사 로비', emo: '🏢', len: 2200, spd: 160, obs: ['gate', 'papers', 'person'], inn: 1, pc: ['#c9c1b1', '#9b917f'], foe: ['blob', 'ghost'] }
+};
+var R_VX = { cat: -35, scooter: -110, person: -22, dog: -60, blob: -40, ghost: -50, mail: -100 };   // 다가오는 것들 속도
+var R_FOE = { blob: '서류 괴물', ghost: '야근 유령', mail: '스팸 메일' };   // 밟으면 처치되는 적
+// 날씨: [이름, 이모지, 확률 가중치]. 실내 구간(inn)엔 그림만 빠짐
+var R_WX = { sun: ['맑음', '☀️', 3], rain: ['비', '☔', 2], snow: ['눈', '❄️', 1.5], wind: ['강풍', '🍃', 1.5], fog: ['안개', '🌫', 1], dust: ['미세먼지', '😷', 1] };
+// 장애물·적·줍는 것 그림 (격자 글자 → 색, 테두리 자동)
+var RSPR = {
+  coin: [ICON.coin[0], ICON.coin[1]],
+  cash: [ICON.money[0], ICON.money[1]],
+  bonus: [ICON.chest[0], ICON.chest[1]],
+  coffee: [['.s.s.', 's.s..', 'WWWWW', 'WbbbW', 'WbbbW', 'WbbbW', '.WWW.'], { W: '#f6f6f2', b: '#7a4a24', s: '#cfcfc8' }],
+  box: [['KKKKKKKKK', 'KYYYYYYYK', 'KYYKKKYYK', 'KYYYYKYYK', 'KYYYKKYYK', 'KYYYKYYYK', 'KYYYYYYYK', 'KYYYKYYYK', 'KKKKKKKKK'], { Y: '#ffcf3d', K: '#8a5a1c' }],
+  bag: [['...kkkk...', '..k....k..', 'BBBBBBBBBB', 'BbbbbbbbbB', 'BbbbYbbbbB', 'BbbbbbbbbB', 'BbbbbbbbbB', 'BBBBBBBBBB'], { B: '#6b3f22', b: '#8a5a32', k: '#2b2b2b', Y: '#ffcf3d' }],
+  cone: [['....O....', '...OOO...', '...OOO...', '..OWWWO..', '..OWWWO..', '..OOOOO..', '.OOOOOOO.', '.OWWWWWO.', '.OWWWWWO.', 'OOOOOOOOO', 'KKKKKKKKK'], { O: '#ff7a1a', W: '#f6f6f2', K: '#3a3f4a' }],
+  papers: [['..WWWWWWWW...', '..WzzzzzzW...', '.WWWWWWWWWW..', '.WzzzzzzzzW..', 'WWWWWWWWWWWW.', 'WzzzzzzzzzzW.', 'WWWWWWWWWWWWW', 'WzzzzRzzzzzzW', 'WWWWWWWWWWWWW', 'WzzzzzzzzzzzW', 'WWWWWWWWWWWWW'], { W: '#f6f6f2', z: '#c9ced6', R: '#e8412c' }],
+  trash: [['.GGGGGGGGG.', 'GGGGGGGGGGG', '.ggggggggg.', '.gGgGgGgGg.', '.gGgGgGgGg.', '.gGgGgGgGg.', '.gGgGgGgGg.', '.gGgGgGgGg.', '.gGgGgGgGg.', '.gGgGgGgGg.', '.ggggggggg.'], { G: '#3f9a4a', g: '#2a6b33' }],
+  cat: [['k..k..........', 'kkkk.........k', 'kykk........k.', 'kkkk.kkkkkkkk.', '.kkkkkkkkkkkk.', '..kkkkkkkkkk..', '..k.k....k.k..', '..k.k....k.k..'], { k: '#3a3a3a', y: '#ffcf3d' }],
+  dog: [['bb............', 'bbbb.........b', 'bkbbb.......b.', 'bbbbbbbbbbbbb.', 'Pbbbbbbbbbbbb.', '..bbbbbbbbbb..', '..b.b....b.b..', '..b.b....b.b..'], { b: '#c98a4a', k: '#1b1b22', P: '#ff8fc7' }],
+  pigeon: [['...ww......', '.Ywkw......', '..wwwwwwww.', '...gwwwwwww', '....ggggg..'], { w: '#b8bec8', k: '#1b1b22', Y: '#ffb02e', g: '#6f7a8c' }],
+  puddle: [['..LLLLLLLLLLLLLL..', 'LLLWLLLLLLLLWLLLLL', '..LLLLLLLLLLLLLL..'], { L: '#5fa8e8', W: '#d6eeff' }],
+  scooter: [['.........KK.', '.........K..', '.........K..', '.........K..', '.........K..', '.........K..', 'GGGGGGGGGG..', '.KK.....KK..'], { K: '#2b2f3a', G: '#36b5a5' }],
+  gate: [['KKKKKK......', 'KmGGmK......', 'KmmmmK......', 'KmmmmK......', 'KmmmmKRRRRRR', 'KmmmmKRRRRRR', 'KmmmmK......', 'KmmmmK......', 'KmmmmK......', 'KmmmmK......', 'KmmmmK......', 'KmmmmK......', 'KKKKKK......'], { K: '#3a3f4a', m: '#9aa3b0', G: '#3f9a4a', R: '#e8412c' }],
+  bike: [['.......GG......', '..........G....', '...GGGGGGGG....', '..G....G...G...', '.KKK..G...KKK..', 'K...K.G..K...K.', 'K.......GK...K.', 'K...K....K...K.', '.KKK......KKK..'], { G: '#36b5a5', K: '#2b2f3a' }],
+  // 적 3종: 밟으면 처치
+  ghost: [['...VVVVV...', '..VVVVVVV..', '.VVWWVWWVV.', '.VVWKVWKVV.', '.VVVVVVVVV.', '.VVVNNNVVV.', '.VVVVVVVVV.', '.VVVVVVVVV.', '.VV.VV.VV..'], { V: '#9b7ad6', W: '#ffffff', K: '#1b1b22', N: '#5a3a8a' }],
+  mail: [['ZZ..........ZZ', '.ZWWWWWWWWWWZ.', '..WRWWWWWWRW..', '..WWRWWWWRWW..', '..WWWRRRRWWW..', '..WWWWWWWWWW..', '..WWWWWWWWWW..'], { W: '#f6f6f2', R: '#e8412c', Z: '#c9ced6' }],
+  blob: [['..WWWWWWWW..', '.WzzzzzzzzW.', '.WWWWWWWWWW.', '.WKKWWWWKKW.', '.WWWWWWWWWW.', '.WzzzzzzzzW.', '.WKKKKKKKKW.', '.WWKWKWKWWW.', '.WWWWWWWWWW.', '..W......W..', '.WW......WW.'], { W: '#f6f6f2', z: '#c9ced6', K: '#c0392b' }]
+};
+ICON.bus = [['gggggggggg', 'gLLgLLgLLg', 'gLLgLLgLLg', 'gggggggggg', 'wggggggggw', '.kk....kk.'], { g: '#3f9a4a', L: '#bfe6ff', w: '#ffe27a', k: '#2b2b2b' }];
+var RUN = null, RIMG = null;
+
+// 화면 칸 + 스타일 (로비 '06' 카드 → #run)
+(function () {
+  var cup = $('p-cup'); if (!cup) return;
+  var s = document.createElement('section');
+  s.className = 'sec gp'; s.id = 'p-run'; s.hidden = true; s.setAttribute('aria-label', '조로 출근길');
+  s.innerHTML = '<div class="in"><div id="run"></div></div>';
+  cup.parentNode.insertBefore(s, cup.nextSibling);
+  var st = document.createElement('style');
+  st.textContent = '.rn{max-width:760px;margin:12px auto 0;position:relative;-webkit-user-select:none;user-select:none}' +
+    '.rn-hud{display:flex;gap:8px;align-items:center;font-family:var(--display);font-weight:800;font-size:14px;margin-bottom:6px}' +
+    '.rn-hud .ck{background:var(--ink);color:var(--bg);border-radius:8px;padding:3px 8px;font-variant-numeric:tabular-nums}.rn-hud .ck.late{background:var(--truth);color:#fff}' +
+    '.rn-hud .ck.warn{animation:rnBl .5s steps(2) infinite}@keyframes rnBl{50%{background:var(--truth);color:#fff}}' +
+    '.rn-hud .mo{font-variant-numeric:tabular-nums}.rn-hud .cb{color:var(--truth);font-variant-numeric:tabular-nums}.rn-hud .sg{margin-left:auto;color:var(--muted);font-size:13px;white-space:nowrap}' +
+    '.rn-pips{display:flex;gap:4px;margin-bottom:6px}.rn-pips i{flex:1;height:6px;border-radius:3px;background:var(--line2)}.rn-pips i.on{background:var(--ink)}' +
+    '.rn-pips i.cur{background:linear-gradient(90deg,var(--ink) var(--p),var(--line2) var(--p))}' +
+    '.rn-cv{position:relative;border:2px solid var(--ink);border-radius:12px;overflow:hidden;background:#0d0f0a;touch-action:none;cursor:pointer}' +
+    '.rn-cv canvas{display:block;width:100%;height:auto;aspect-ratio:280/180;image-rendering:pixelated;image-rendering:crisp-edges}' +
+    '.rn-bn{position:absolute;left:50%;top:10%;transform:translateX(-50%);background:rgba(13,15,10,.84);color:#fff;font-weight:800;padding:6px 14px;border-radius:999px;font-size:clamp(12px,2.4vw,17px);white-space:nowrap;pointer-events:none;max-width:94%;overflow:hidden;text-overflow:ellipsis}' +
+    '.rn-bn.big{top:34%;font-size:clamp(28px,8vw,56px);padding:4px 26px;font-family:var(--display)}' +
+    '.rn-fk{position:absolute;right:6px;top:6px;display:grid;gap:3px;pointer-events:none}.rn-fk b{background:rgba(13,15,10,.6);color:#fff;font-size:clamp(11px,2.2vw,14px);padding:3px 9px;border-radius:999px;opacity:.65}' +
+    '.rn-fk b.on{background:var(--px-arc-acc,#c6ff3d);color:#0d0f0a;opacity:1}' +
+    '.rn-ov{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:10px;background:rgba(13,15,10,.6);padding:10px;cursor:default}' +
+    '.rn-ov .q{color:#fff;font-weight:800;text-align:center;font-size:clamp(14px,2.6vw,18px);margin:0}' +
+    '.rn-help{font-size:12px;color:var(--muted);margin:6px 0 0;text-align:center}.rn-route{font-size:22px;letter-spacing:.1em}' +
+    '.rn-log{list-style:none;margin:0;padding:0;font-size:13px;color:var(--soft);display:grid;gap:2px}';
+  document.head.appendChild(st);
+}());
+
+// ── 그림 준비: 격자 → 작은 캔버스 (판마다 한 번)
+function rPad(rows) { var w = Math.max.apply(null, rows.map(function (r) { return r.length; })); return rows.map(function (r) { return r + new Array(w - r.length + 1).join('.'); }); }
+function rCv(rows, pal) { var c = document.createElement('canvas'); c.width = rows[0].length; c.height = rows.length; PX.paint(c.getContext('2d'), rows, PX.pal2(pal), 0, 0, 1); return c; }
+// 달리기 4장: (무릎 올림 왼발 + 오른팔 위) → 디딤 → (무릎 올림 오른발 + 왼팔 위) → 디딤. 위쪽 몸은 한 칸 앞으로 숙이고, 무릎 올린 장은 한 칸 뜸
+function zRunFrames(rows) {
+  var G0 = rows.map(function (r) { return r.split(''); }), H = G0.length, W = G0[0].length;
+  var cp = function () { return G0.map(function (r) { return r.slice(); }); };
+  var blit = function (g, x0, y0, x1, y1, dx, dy) {   // 원본(G0)의 네모 칸을 (dx, dy) 만큼 옮겨 그림 (옮기기 전 자리는 지움)
+    var px = [], x, y;
+    for (y = y0; y <= y1; y++) for (x = x0; x <= x1; x++) { px.push([x, y, G0[y][x]]); g[y][x] = '.'; }
+    px.forEach(function (p) { var nx = p[0] + dx, ny = p[1] + dy; if (p[2] !== '.' && ny >= 0 && ny < H && nx >= 0 && nx < W) g[ny][nx] = p[2]; });
+  };
+  var fr = function (leg, arm, bob) {
+    var g = cp();
+    if (arm) blit(g, arm === 'L' ? 2 : 23, 21, arm === 'L' ? 8 : 29, 30, 0, -3);           // 팔 앞으로(위로) 흔들기 — 손 소품도 같이
+    if (leg) blit(g, leg === 'L' ? 9 : 16, 30, leg === 'L' ? 15 : 22, 34, leg === 'L' ? 1 : -1, -3);   // 무릎 올리기
+    for (var y = 0; y <= 28; y++) { g[y].pop(); g[y].unshift('.'); }                       // 몸 앞으로 숙이기
+    var out = g.map(function (r) { return r.join(''); });
+    return bob ? out.slice(1).concat([out[0].replace(/./g, '.')]) : out;
+  };
+  return [fr('L', 'R', 1), fr('', '', 0), fr('R', 'L', 1), fr('', '', 0)];
+}
+function rImgs(D, r) {
+  var rk = myRank(), pal = zPal(rk, 'normal', {});
+  var I = {
+    run: zRunFrames(zRows(rk, 'normal', {})).map(function (f) { return rCv(PX.outline(f), pal); }),
+    stand: rCv(PX.outline(zRows(rk, 'normal', {})), pal),
+    jump: rCv(PX.outline(zRows(rk, 'happy', {})), zPal(rk, 'happy', {})),
+    hit: rCv(PX.outline(zRows(rk, 'shock', {})), zPal(rk, 'shock', {})),
+    boss: rCv(PX.outline(zRows(4, 'normal', { plain: 1 })), zPal(4, 'normal', { plain: 1 })),   // 쫓아오는 부장님
+    obj: {}, ppl: [], bld: []
+  };
+  for (var k in RSPR) I.obj[k] = rCv(PX.outline(rPad(RSPR[k][0])), RSPR[k][1]);
+  for (var p = 0; p < 4; p++) I.ppl.push(rCv(PX.outline(zRows(p, 'normal', { plain: 1 })), zPal(p, 'normal', { plain: 1 })));   // 다른 조로 승객들 (꾸밈 없는 모습)
+  var L = POOL.slice();
+  for (var b = 0; b < 14 && L.length; b++) { var c = L.splice(Math.floor(r() * L.length), 1)[0]; I.bld.push(rCv(bldRows(c), bldPal(c))); }   // 창밖·큰길 빌딩 = 진짜 회사 빌딩
+  I.dest = rCv(bldRows(D), bldPal(D)); I.destCol = GRP_COL[D.grp] || GRP_COL['기타·서비스'];
+  if (D.lg) { I.logo = new Image(); I.logo.src = D.lg; }
+  return I;
+}
+function rPickW(r, W) { var s = 0, k; for (k in W) s += W[k][2]; var x = r() * s; for (k in W) { x -= W[k][2]; if (x < 0) return k; } return k; }
+// 판 설계: 출근지 · 날씨 · 갈림길마다 3개 중 2개 (첫째 = 위층 길, 둘째 = 아래 길)
+function runPlan(seed) {
+  var r = PC.rng('runplan|' + seed), L = POOL.filter(function (c) { return c.lg && c.m >= 1000; });
+  if (!L.length) L = POOL;
+  var slots = R_SLOTS.map(function (s) { return s.length < 3 ? s : PC.shuffleR(r, s).slice(0, 2); });
+  return { dest: L[Math.floor(r() * L.length)], wx: rPickW(r, R_WX), slots: slots };
+}
+function rSpd(M, seg, f) { return M.spd * (1 + R_RAMP * (seg + (f || 0)) / R_SLOTS.length); }   // 이 구간 이 지점의 달리기 속도
+
+// ── 구간 만들기: 판 씨앗으로 배치. 다가오는 것들은 '원래 자리'에 맞춰 도착하도록 출발점을 뒤로 뺌
+//    발판(plat) = { x 시작, w 폭, y 윗면 높이 } — 아래에서 뚫고 올라가고 위에서 내려앉음
+function rGen(key, R, seg) {
+  var M = RMAP[key], r = PC.rng('run|' + R.seed + '|' + key), L = [], x = 300, cm = M.coin || 1;
+  var fork = R.slots[seg + 1] && R.slots[seg + 1].length > 1, end = fork ? M.len - 760 : M.len - 200;
+  var obs = M.obs.concat(!M.inn && R.wx === 'rain' ? ['puddle', 'puddle'] : []);   // 비 오는 날은 물웅덩이 많이
+  var add = function (k, at, y) { var vx = R_VX[k] || 0, v = rSpd(M, seg, at / M.len); var o = { k: k, x: at - vx * at / v, y: y || 0, by: y || 0, vx: vx, p: k === 'person' ? Math.floor(r() * 4) : 0 }; L.push(o); return o; };
+  var plat = function (at, w, y) { L.push({ k: 'plat', x: at, w: w, y: y }); };
+  var row = function (at, n, y) { for (var i = 0; i < n; i++) add('coin', at + i * 13, y); };
+  var arc = function (at, b) { for (var i = -2; i <= 2; i++) add('coin', at + i * 13, (b || 0) + 14 + 34 * (1 - i * i / 6)); };
+  var evX = (M.ev === 'brake' || M.ev === 'crowd' ? [.5] : []).map(function (f) { return Math.round(M.len * f); });
+  var gap = function () { return (M.dense ? 140 : 160) + r() * 90; };
+  while (x < end) {
+    if (evX.some(function (e) { return x > e - 80 && x < e + 640; })) { x += 40; continue; }   // 사건 자리는 비워 둠
+    var p = r(), k = obs[Math.floor(r() * obs.length)];
+    if (p < .24) {   // 2층 발판: 위엔 동전(가끔 적·3층), 아래엔 장애물
+      var w = 150 + Math.floor(r() * 170); plat(x, w, R_T1); row(x + 14, Math.floor((w - 20) / 26), R_T1 + 4);
+      if (r() < .45) add('blob', x + w * .7, R_T1).vx = 0;   // 발판 위 서류 괴물 (제자리)
+      if (r() < .4) { var w2 = 70 + Math.floor(r() * 50); plat(x + w * .35, w2, R_T2); add(r() < .5 ? 'cash' : 'bonus', x + w * .35 + w2 / 2 - 4, R_T2 + 6); }
+      if (r() < .6) add(k === 'pigeon' ? 'cone' : k, x + w * .5);
+      x += w + 110;
+    } else if (p < .5) {   // 땅 장애물 (+ 위로 동전 아치)
+      if (k === 'pigeon') { add('pigeon', x, 44); row(x - 26, 5, 4); }   // 머리 위 비둘기 + 바닥 동전 (점프하면 부딪힘)
+      else { add(k, x); if (r() < .6 * cm) arc(x + 6); }
+      x += gap();
+    } else if (p < .7) {   // 적
+      var f = M.foe[Math.floor(r() * M.foe.length)];
+      add(f, x, f === 'ghost' ? 22 : f === 'mail' ? 26 : 0); if (r() < .5) row(x + 40, 4, 4);
+      x += gap();
+    } else if (p < .86) { row(x, r() < .5 ? 5 : 7, r() < .3 ? 56 : 4); x += 110 + r() * 60; }
+    else { var q = r(); add(q < .35 ? 'cash' : q < .6 ? 'coffee' : q < .8 ? 'box' : 'bonus', x, q < .35 ? 26 : q < .6 ? 20 : q < .8 ? 28 : 66); x += 130 + r() * 60; }
+  }
+  var ev = evX.map(function (e) {
+    if (M.ev === 'brake') { add('bag', e + 300); add('bag', e + 480); row(e + 360, 6, 4); }
+    else { add('person', e + 300); add('person', e + 450); add('person', e + 600); row(e + 340, 3, 52); row(e + 490, 3, 52); }
+    return { at: e, k: M.ev };
+  });
+  if (fork) {   // 갈림길: 표지판 → 긴 2층 발판(위 길, 동전 많음) / 땅(아래 길, 장애물·적)
+    var fx = M.len - 560;
+    L.push({ k: 'sign', x: fx - 200, up: R.slots[seg + 1][0], dn: R.slots[seg + 1][1] });
+    plat(fx, 640, R_T1); row(fx + 20, 18, R_T1 + 4);
+    add(obs[0] === 'pigeon' ? 'cone' : obs[0], fx + 170); add(M.foe[0], fx + 340, M.foe[0] === 'ghost' ? 22 : M.foe[0] === 'mail' ? 26 : 0); row(fx + 230, 4, 4);
+    ev.push({ at: fx - 420, k: 'fork' });
+  }
+  // 돌발 사건 1개: 이 구간에 맞는 것 중에서 무작위
+  var pool = Object.keys(R_EV).filter(function (k) { var E = R_EV[k]; return !(E.out && M.inn) && !(E.inn && !M.inn) && !(E.not && E.not.indexOf(key) >= 0); });
+  ev.push({ at: Math.round(M.len * (.25 + r() * .25)), k: PC.shuffleR(r, pool)[0] });
+  L.sort(function (a, b) { return a.x - b.x; });
+  return { objs: L, ev: ev };
+}
+// ── 돌발 사건: msg = 띠 글, go(R) = 효과 (spawn 으로 앞쪽에 물건을 떨어뜨림). out = 바깥 구간만, inn = 실내만
+function rSpawn(R, k, ahead, y, o) { var x = { k: k, x: R.dist + ahead, y: o && o.fall ? 150 : y, by: y, ty: y, vx: (o && o.vx) || 0, p: Math.floor(Math.random() * 4) }; R.objs.push(x); return x; }
+function rClear(R, a, b) { R.objs.forEach(function (o) { var d = o.x - R.dist; if (!o.done && !R_VAL[o.k] && o.k !== 'plat' && o.k !== 'sign' && d > a && d < b) o.done = 1; }); }   // 사건 자리의 장애물 치우기
+var R_EV = {
+  money:  { msg: '💸 하늘에서 연봉이 쏟아져요!', go: function (R) { for (var i = 0; i < 12; i++) rSpawn(R, i % 4 ? 'coin' : 'cash', RW + i * 26, 6 + Math.random() * 58, { fall: 1 }); } },
+  magnet: { msg: '🧲 연봉 자석! 6초 동안 돈이 따라와요', go: function (R) { R.magnet = 6; rClear(R, RW - 40, RW + 300); for (var i = 0; i < 10; i++) rSpawn(R, 'coin', RW + 20 + i * 22, 10 + (i % 3) * 22); } },
+  wind:   { msg: '🌪 돌풍! 6초 동안 몸이 가벼워요', out: 1, go: function (R) { R.lowg = 6; for (var i = 0; i < 6; i++) rSpawn(R, 'coin', RW + 40 + i * 24, 80 + (i % 2) * 10); } },
+  boss:   { msg: '😱 부장님이 뒤에서 쫓아와요! 7초 버티기', go: function (R) { R.chase = 7; R.chHit = 0; } },
+  fever:  { msg: '🔥 피버 타임! 6초 동안 돈 2배', go: function (R) { R.fever = 6; for (var i = 0; i < 8; i++) rSpawn(R, 'coin', RW + i * 15, 4); } },
+  box:    { msg: '🎁 수상한 상자 발견!', go: function (R) { rClear(R, RW - 20, RW + 120); rSpawn(R, 'box', RW + 40, 26); } },
+  stock:  { msg: '', go: function (R) {
+    var c = POOL[Math.floor(Math.random() * POOL.length)], up = Math.random() < .6, d = Math.max(50, Math.round(R.money * (.08 + Math.random() * .12) / 10) * 10);
+    if (!up) d = Math.min(d, R.money); R.money += up ? d : -d; R.log.push((up ? '📈 ' : '📉 ') + c.n + ' 주가 ' + (up ? '급등 +' : '급락 −') + man(d) + '만원');
+    runBanner((up ? '📈 ' : '📉 ') + c.n + ' 주가 ' + (up ? '급등! +' : '급락… −') + man(d) + '만원', 2200); sfx(up ? 'combo' : 'wrong'); } },
+  treat:  { msg: '☕ 동기가 커피를 쐈어요!', go: function (R) { for (var i = 0; i < 3; i++) rSpawn(R, 'coffee', RW + 30 + i * 120, 18); } },
+  dark:   { msg: '💡 정전! 앞이 잘 안 보여요', inn: 1, not: ['lobby'], go: function (R) { R.dark = 5; } },
+  dogs:   { msg: '🐕 산책하는 강아지 떼!', out: 1, go: function (R) { rClear(R, RW - 40, RW + 520); rSpawn(R, 'dog', RW + 80, 0, { vx: -60 }); rSpawn(R, 'dog', RW + 300, 0, { vx: -60 }); } },
+  warp:   { msg: '🛵 동네 형 오토바이 얻어 탐! ⏰ −2분', out: 1, go: function (R) { R.dist += 420; R.pen -= 2; rClear(R, -60, 160); } }
+};
+// 도착 사건: [글, 만원, 분]
+var R_END = [['🤝 엘리베이터에서 대표님과 단둘이 · 눈도장', 500, 0], ['🪪 사원증을 집에 두고 옴… 경비실 들렀다 감', 0, 3], ['🎂 로비에서 깜짝 생일 파티', 300, 0],
+  ['🛗 엘리베이터 만원 · 다음 거 탐', 0, 1], ['📞 헤드헌터 전화: "이직 생각 있으세요?" 몸값 확인', 200, 0], ['☕ 팀장님이 엘리베이터에서 커피 사 줌', 100, 0],
+  ['🏠 알고 보니 오늘 재택이었다… 그래도 출근 도장 쾅', 0, 0], ['📅 회의실 예약 성공! 오늘 하루 순탄', 150, 0]];
+
+// ── 배경 (구간마다 다른 맵). cam = 이 구간에서 달린 거리, 층마다 다른 속도(f)로 흘러감
+function rr(c, col, x, y, w, h) { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); }
+function ih(i, s) { var x = (i * 374761393 + s * 668265263) | 0; x = Math.imul(x ^ (x >>> 13), 1274126177); return ((x ^ (x >>> 16)) >>> 0) % 1000 / 1000; }
+function tile(cam, f, P, fn) { var off = cam * f, i = Math.floor(off / P); for (var x = -(off - i * P); x < RW; x += P, i++) fn(x, i); }
+function clipWin(c, cam, P, x0, y0, w, h, inner) {   // 창문 모양으로 잘라서 바깥 풍경 그리기
+  c.save(); c.beginPath(); tile(cam, 1, P, function (x) { c.rect(Math.round(x + x0), y0, w, h); }); c.clip(); inner(); c.restore();
+}
+function bldAt(c, i, x, y) { var n = RIMG.bld.length, b = RIMG.bld[((i % n) + n) % n]; c.drawImage(b, Math.round(x), y - b.height); }
+var RBG = {
+  alley: function (c, cam) {
+    rr(c, '#ffd9b3', 0, 0, RW, 56); rr(c, '#ffe9cc', 0, 56, RW, 54); rr(c, '#fff4c2', 214, 20, 16, 12); rr(c, '#fff4c2', 216, 18, 12, 16);
+    tile(cam, .3, 52, function (x, i) { var h = 30 + ih(i, 1) * 26, col = ['#e9c9a8', '#d9b8a0', '#c9d3c0', '#e2d1b8'][Math.floor(ih(i, 2) * 4)];
+      rr(c, col, x, 110 - h, 44, h); rr(c, ['#b5523b', '#4f6f93', '#7a5a3a'][Math.floor(ih(i, 3) * 3)], x - 2, 104 - h, 48, 6);
+      rr(c, ih(i, 4) < .6 ? '#fff3b0' : '#8a94a6', x + 8, 116 - h, 8, 8); rr(c, ih(i, 5) < .5 ? '#fff3b0' : '#8a94a6', x + 28, 116 - h, 8, 8); });
+    tile(cam, .6, 96, function (x, i) {
+      if (ih(i, 6) < .3) { rr(c, '#3f9a4a', x + 8, 98, 64, 9); rr(c, '#ffffff', x + 14, 101, 22, 3); rr(c, '#bfe6ff', x + 10, 107, 60, RGY - 107); rr(c, '#9fd3ff', x + 40, 107, 2, RGY - 107); }   // 편의점
+      else { rr(c, '#cdbfae', x, 98, 96, RGY - 98); rr(c, '#b3a492', x, 95, 96, 4); for (var k = 0; k < 7; k++) rr(c, '#bfb09f', x, 106 + k * 8, 96, 1); }
+      rr(c, '#5a5d63', x + 82, 66, 3, RGY - 66); rr(c, '#ffe27a', x + 78, 63, 11, 4); });
+    rr(c, '#6d6f73', 0, RGY, RW, RH - RGY); rr(c, '#a9abaf', 0, RGY, RW, 3);
+    tile(cam, 1, 40, function (x) { rr(c, '#e9e9e9', x, RGY + 12, 18, 2); });
+  },
+  bus: function (c, cam) {
+    rr(c, '#efe6d2', 0, 0, RW, RGY);
+    clipWin(c, cam, 70, 6, 22, 58, 66, function () {   // 창밖: 하늘 + 진짜 회사 빌딩이 빠르게 지나감
+      rr(c, '#bfe3ff', 0, 22, RW, 40); rr(c, '#dff1ff', 0, 62, RW, 26);
+      tile(cam, 2.4, 44, function (x, i) { bldAt(c, i, x, 88); });
+      tile(cam, 3.2, 60, function (x, i) { if (ih(i, 7) < .5) { rr(c, '#4f9a4a', x, 70, 14, 12); rr(c, '#7a5a3a', x + 6, 82, 2, 6); } });
+    });
+    tile(cam, 1, 70, function (x) { rr(c, '#c8bba0', x, 18, 70, 4); rr(c, '#b3a68b', x, 88, 70, 5); rr(c, '#c8bba0', x, 18, 6, 75); });
+    rr(c, '#9aa0a6', 0, 9, RW, 2);
+    tile(cam, 1, 28, function (x) { rr(c, '#9aa0a6', x + 12, 11, 1, 6); rr(c, '#ffcf3d', x + 10, 17, 5, 1); rr(c, '#ffcf3d', x + 10, 21, 5, 1); rr(c, '#ffcf3d', x + 10, 17, 1, 5); rr(c, '#ffcf3d', x + 14, 17, 1, 5); });
+    tile(cam, 1, 70, function (x) { rr(c, '#3f6fb5', x + 10, 100, 50, 24); rr(c, '#2f5a96', x + 8, 122, 54, 8); rr(c, '#5a5d63', x + 14, 130, 3, RGY - 130); rr(c, '#5a5d63', x + 53, 130, 3, RGY - 130); });
+    tile(cam, 1, 140, function (x) { rr(c, '#ffcf3d', x + 40, 11, 3, RGY - 11); rr(c, '#e8412c', x + 39, 72, 5, 4); });   // 기둥 + 하차벨
+    rr(c, '#4f5359', 0, RGY, RW, RH - RGY); tile(cam, 1, 8, function (x) { rr(c, '#5f646b', x, RGY + 4, 4, RH - RGY - 4); });
+  },
+  subway: function (c, cam, t) {
+    rr(c, '#e3e7ec', 0, 0, RW, RGY);
+    clipWin(c, cam, 110, 14, 24, 78, 54, function () {   // 창밖 = 깜깜한 터널, 불빛이 휙휙
+      rr(c, '#1a2030', 0, 24, RW, 54);
+      tile(cam + t * 400, 1, 46, function (x, i) { rr(c, '#ffe27a', x, 34 + Math.floor(ih(i, 8) * 3) * 14, 24, 2); });
+    });
+    tile(cam, 1, 110, function (x) { rr(c, '#b9c0c9', x + 12, 22, 82, 2); rr(c, '#b9c0c9', x + 12, 78, 82, 2); });
+    rr(c, '#36b5a5', 0, 88, RW, 4); rr(c, '#9aa0a6', 0, 9, RW, 2);   // 노선 색 띠
+    tile(cam, 1, 26, function (x) { rr(c, '#9aa0a6', x + 12, 11, 1, 6); rr(c, '#f6f6f2', x + 10, 17, 5, 5); rr(c, '#e3e7ec', x + 11, 18, 3, 3); });
+    tile(cam, 1, 330, function (x) { rr(c, '#c4cbd4', x + 140, 16, 50, RGY - 16); rr(c, '#a6aeb8', x + 164, 16, 2, RGY - 16); rr(c, '#1a2030', x + 146, 30, 14, 30); rr(c, '#1a2030', x + 172, 30, 14, 30); });   // 출입문
+    tile(cam, 1, 110, function (x) { rr(c, '#3f8f7a', x + 2, 104, 104, 20); rr(c, '#2f6f5f', x, 122, 108, 8); });
+    rr(c, '#9aa0a8', 0, RGY, RW, RH - RGY); rr(c, '#ffcf3d', 0, RGY, RW, 2);
+  },
+  bike: function (c, cam) {   // 자전거 도로: 강변 + 초록 자전거길
+    rr(c, '#bfe3ff', 0, 0, RW, 70); rr(c, '#dff1ff', 0, 70, RW, 30);
+    tile(cam, .15, 30, function (x, i) { var h = 10 + ih(i, 30) * 30; rr(c, '#a9bccf', x, 100 - h, 26, h); });
+    rr(c, '#4f8fd0', 0, 100, RW, 26); tile(cam, .5, 34, function (x, i) { rr(c, '#bfe3ff', x + ih(i, 31) * 20, 106 + (i % 3) * 6, 7, 1); });
+    rr(c, '#7fbf5a', 0, 126, RW, 18); tile(cam, .9, 70, function (x, i) { if (ih(i, 32) < .6) { rr(c, '#3f9a4a', x + 10, 112, 16, 18); rr(c, '#7a5a3a', x + 17, 130, 2, 8); } });
+    rr(c, '#c95a4a', 0, RGY - 14, RW, 14); rr(c, '#b14a3c', 0, RGY - 14, RW, 2);   // 붉은 자전거길
+    rr(c, '#6d6f73', 0, RGY, RW, RH - RGY); tile(cam, 1, 36, function (x) { rr(c, '#f2f2f2', x, RGY + 10, 16, 2); });
+    tile(cam, 1, 300, function (x) { rr(c, '#f2f2f2', x + 20, RGY - 10, 12, 6); rr(c, '#c95a4a', x + 23, RGY - 8, 6, 2); });   // 자전거 표시
+  },
+  bridge: function (c, cam, t) {
+    rr(c, '#a8d8ff', 0, 0, RW, 40); rr(c, '#c4e4ff', 0, 40, RW, 40); rr(c, '#e0f0ff', 0, 80, RW, 22);
+    tile(cam, .12, 26, function (x, i) { var h = 14 + ih(i, 9) * 36; rr(c, '#9fb4c8', x, 102 - h, 22, h); if (i % 23 === 5) { rr(c, '#9fb4c8', x + 9, 102 - h - 22, 4, 22); rr(c, '#9fb4c8', x + 6, 102 - h - 26, 10, 5); } });   // 남산 타워 비슷한 것 하나
+    rr(c, '#3f7fbf', 0, 102, RW, RGY - 116);
+    tile(cam, .5, 30, function (x, i) { rr(c, (Math.floor(t * 3) + i) % 3 ? '#9fd3ff' : '#d6eeff', x + ih(i, 10) * 20, 108 + (i % 4) * 8, 6, 1); });
+    tile(cam, .75, 120, function (x) { rr(c, '#8796ab', x, 68, 4, RGY - 82); rr(c, '#8796ab', x, 68, 120, 3); rr(c, '#8796ab', x + 60, 68, 2, RGY - 82); });
+    rr(c, '#d0d4da', 0, RGY - 14, RW, 3); tile(cam, 1, 14, function (x) { rr(c, '#a6abb3', x, RGY - 14, 2, 14); });
+    rr(c, '#7d8088', 0, RGY, RW, RH - RGY); tile(cam, 1, 48, function (x) { rr(c, '#ffcf3d', x, RGY + 11, 24, 2); });
+  },
+  market: function (c, cam) {   // 전통시장: 줄무늬 차양 + 좌판
+    rr(c, '#f3e2c4', 0, 0, RW, RGY); rr(c, '#d9c7a8', 0, 0, RW, 10);
+    tile(cam, .4, 30, function (x, i) { rr(c, ['#ffcf3d', '#e8412c', '#ffffff'][i % 3], x, 4, 30, 3); });   // 위에 걸린 등
+    tile(cam, .8, 84, function (x, i) {
+      var a = ['#e8412c', '#3f6fb5', '#3f9a4a', '#ff9a1f'][Math.floor(ih(i, 33) * 4)];
+      for (var k = 0; k < 7; k++) rr(c, k % 2 ? '#ffffff' : a, x + k * 12, 30, 12, 12);   // 차양
+      rr(c, '#8a6a4a', x + 2, 42, 2, RGY - 60); rr(c, '#8a6a4a', x + 80, 42, 2, RGY - 60);
+      rr(c, '#b98a5a', x + 4, RGY - 34, 78, 6); rr(c, '#8a5a32', x + 4, RGY - 28, 78, 12);
+      var g = ['#e8412c', '#ffcf3d', '#3f9a4a', '#ff9a1f', '#c06bd6'];
+      for (var j = 0; j < 6; j++) rr(c, g[(i + j) % 5], x + 8 + j * 12, RGY - 40, 8, 6);   // 과일·떡볶이
+      rr(c, '#1b1d18', x + 26, 50, 34, 10); rr(c, '#ffe27a', x + 30, 53, 26, 4);   // 간판
+    });
+    rr(c, '#a89a86', 0, RGY, RW, RH - RGY); tile(cam, 1, 20, function (x) { rr(c, '#968873', x, RGY, 1, RH - RGY); });
+  },
+  park: function (c, cam, t) {   // 공원 산책로: 나무·잔디·벤치·분수
+    rr(c, '#cdeeff', 0, 0, RW, 80); rr(c, '#e6f7ff', 0, 80, RW, 20);
+    tile(cam, .25, 40, function (x, i) { var h = 26 + ih(i, 34) * 20; rr(c, '#7fbf6a', x, 100 - h, 36, h); rr(c, '#6aa85a', x + 6, 100 - h - 6, 24, 6); });
+    rr(c, '#8fd06a', 0, 100, RW, RGY - 100);
+    tile(cam, .7, 110, function (x, i) {
+      rr(c, '#7a5a3a', x + 20, RGY - 44, 5, 36); rr(c, '#3f9a4a', x + 6, RGY - 72, 34, 30); rr(c, '#56b04a', x + 12, RGY - 78, 22, 8);
+      if (ih(i, 35) < .4) { rr(c, '#8a5a32', x + 60, RGY - 22, 30, 4); rr(c, '#8a5a32', x + 60, RGY - 30, 30, 3); rr(c, '#3a3f4a', x + 62, RGY - 18, 2, 10); rr(c, '#3a3f4a', x + 86, RGY - 18, 2, 10); }   // 벤치
+      else if (ih(i, 36) < .3) { rr(c, '#b9c0c9', x + 58, RGY - 16, 34, 8); rr(c, '#9fd3ff', x + 72, RGY - 30 - Math.abs(Math.sin(t * 4 + i)) * 6, 6, 14); }   // 분수
+    });
+    rr(c, '#e0c99a', 0, RGY, RW, RH - RGY); tile(cam, 1, 26, function (x, i) { rr(c, '#cdb585', x + ih(i, 37) * 20, RGY + 6 + (i % 3) * 5, 3, 2); });
+  },
+  short: function (c, cam) {
+    rr(c, '#ffd8a8', 0, 0, RW, 24);
+    tile(cam, .8, 64, function (x, i) {
+      rr(c, ih(i, 11) < .5 ? '#a5553c' : '#94493a', x, 18, 64, RGY - 18);
+      for (var k = 0; k < 23; k++) rr(c, '#7d3a2c', x, 24 + k * 6, 64, 1);
+      rr(c, '#6b6f74', x + 52, 18, 3, RGY - 18);
+      if (ih(i, 12) < .5) { rr(c, '#d7dbe0', x + 10, 58, 18, 13); rr(c, '#9aa0a6', x + 13, 61, 12, 1); rr(c, '#9aa0a6', x + 13, 65, 12, 1); }   // 실외기
+      if (ih(i, 13) < .35) { rr(c, '#2b2f3a', x + 30, 40, 2, 10); rr(c, ['#ff9bd3', '#ffe27a', '#9fd3ff'][i % 3], x + 22, 50, 18, 12); }   // 빨래
+    });
+    rr(c, '#5b4f48', 0, RGY, RW, RH - RGY); tile(cam, 1, 200, function (x) { rr(c, '#3e3530', x, RGY + 8, 16, 4); });
+  },
+  avenue: function (c, cam) {
+    rr(c, '#cfe9ff', 0, 0, RW, 70); rr(c, '#e2f2ff', 0, 70, RW, 64);
+    tile(cam, .35, 46, function (x, i) { bldAt(c, i, x, RGY - 22); });
+    rr(c, '#5d6066', 0, RGY - 24, RW, 16); tile(cam, 1, 400, function (x) { for (var k = 0; k < 7; k++) rr(c, '#f2f2f2', x + k * 8, RGY - 22, 5, 12); });   // 횡단보도
+    var dx = RMAP.avenue.len + 30 - cam + RPX, D = RIMG.dest;   // 끝에 오늘의 출근지 빌딩(2배)
+    if (dx < RW + 10) c.drawImage(D, Math.round(dx), RGY - 8 - D.height * 2, D.width * 2, D.height * 2);
+    tile(cam, .9, 90, function (x) { rr(c, '#7a5a3a', x + 30, RGY - 30, 4, 22); rr(c, '#4f9a4a', x + 20, RGY - 52, 24, 22); rr(c, '#5fb05a', x + 24, RGY - 56, 16, 6); });
+    rr(c, '#b5b0a5', 0, RGY - 8, RW, 8); rr(c, '#d8d2c6', 0, RGY, RW, RH - RGY); tile(cam, 1, 16, function (x) { rr(c, '#c4bdb0', x, RGY, 1, RH - RGY); });
+  },
+  under: function (c, cam) {   // 지하상가: 환한 가게 유리창 + 타일
+    rr(c, '#d9dde3', 0, 0, RW, RGY); rr(c, '#bfc5cd', 0, 0, RW, 14);
+    tile(cam, 1, 40, function (x) { rr(c, '#fff8d8', x + 10, 4, 20, 4); });   // 천장 등
+    tile(cam, .8, 100, function (x, i) {
+      var a = ['#ff9bd3', '#9fd3ff', '#ffe27a', '#b8f0a0', '#d9b8ff'][Math.floor(ih(i, 38) * 5)];
+      rr(c, '#2b2f3a', x + 4, 22, 92, 12); rr(c, a, x + 10, 25, 40, 6);   // 간판
+      rr(c, '#fffdf4', x + 4, 34, 92, RGY - 50); rr(c, a, x + 8, 40, 84, 3);
+      for (var j = 0; j < 4; j++) { rr(c, a, x + 12 + j * 20, 54, 12, 16); rr(c, '#8a8f98', x + 12 + j * 20, 70, 12, 2); }   // 진열 옷·상품
+      rr(c, '#8a8f98', x + 4, RGY - 16, 92, 2); rr(c, '#a6aeb8', x + 2, 22, 2, RGY - 38);
+    });
+    rr(c, '#c9ccd2', 0, RGY, RW, RH - RGY); tile(cam, 1, 22, function (x, i) { rr(c, i % 2 ? '#b9bdc4' : '#d6d9de', x, RGY, 22, RH - RGY); });
+  },
+  lobby: function (c, cam) {
+    rr(c, '#f0ede6', 0, 0, RW, RGY);
+    tile(cam, .5, 60, function (x) { rr(c, '#cfe3ef', x + 4, 10, 52, 84); rr(c, '#b9cfdc', x + 4, 50, 52, 1); });
+    tile(cam, .5, 240, function (x) {   // 회사 간판 (출근지 로고)
+      rr(c, RIMG.destCol, x + 58, 14, 94, 30); rr(c, '#ffffff', x + 62, 18, 86, 22);
+      var L = RIMG.logo; if (L && L.complete && L.naturalWidth) { var h = 18, w = Math.min(80, L.naturalWidth * h / L.naturalHeight); c.drawImage(L, Math.round(x + 105 - w / 2), 20, Math.round(w), h); }
+    });
+    tile(cam, .8, 150, function (x) { rr(c, '#c0602b', x + 20, RGY - 16, 12, 16); rr(c, '#3f9a4a', x + 16, RGY - 34, 20, 18); rr(c, '#2a6b33', x + 24, RGY - 38, 4, 6); });
+    var ex = RMAP.lobby.len + 10 - cam + RPX;   // 끝: 엘리베이터
+    if (ex < RW + 10) { rr(c, '#8f96a3', ex - 4, RGY - 74, 48, 74); rr(c, '#c4cbd4', ex, RGY - 64, 40, 64); rr(c, '#8f96a3', ex + 19, RGY - 64, 2, 64); rr(c, '#1b1d18', ex + 12, RGY - 72, 16, 6); rr(c, '#c6ff3d', ex + 18, RGY - 71, 4, 4); }
+    rr(c, '#ddd6c8', 0, RGY, RW, RH - RGY); rr(c, '#c9c1b1', 0, RGY + 10, RW, 1); tile(cam, 1, 24, function (x) { rr(c, '#c9c1b1', x, RGY, 1, RH - RGY); });
+  }
+};
+// 날씨 그림 (바깥 구간만)
+function runWx(c, R) {
+  var t = R.t, w = R.wx, i;
+  if (w === 'rain') { rr(c, 'rgba(40,60,90,.16)', 0, 0, RW, RH); c.fillStyle = 'rgba(190,215,240,.85)'; for (i = 0; i < 46; i++) c.fillRect(Math.floor(((ih(i, 20) * RW - t * 70 - R.dist * .3) % RW + RW) % RW), Math.floor((ih(i, 21) * RH + t * 280) % RH), 1, 5); }
+  else if (w === 'snow') { c.fillStyle = '#ffffff'; for (i = 0; i < 50; i++) c.fillRect(Math.floor(((ih(i, 22) * RW + Math.sin(t * 2 + i) * 6 - R.dist * .2) % RW + RW) % RW), Math.floor((ih(i, 23) * RH + t * 34) % RH), 2, 2); }
+  else if (w === 'wind') { c.fillStyle = '#e0a020'; for (i = 0; i < 18; i++) c.fillRect(Math.floor(((ih(i, 24) * RW - t * 240) % RW + RW) % RW), Math.floor(ih(i, 25) * RGY + Math.sin(t * 5 + i) * 8), 3, 2); }
+  else if (w === 'fog') { rr(c, 'rgba(240,242,245,.28)', 0, 0, RW, RH); rr(c, 'rgba(240,242,245,.45)', 170, 0, RW - 170, RGY); rr(c, 'rgba(240,242,245,.3)', 220, 0, RW - 220, RGY); }   // 멀리가 안 보임
+  else if (w === 'dust') rr(c, 'rgba(196,166,96,.24)', 0, 0, RW, RH);
+}
+
+
+// ── 판 진행
+function runRec() { return rec(TODAY, 'run'); }   // slp-r-<날>-run → 하루 첫 완주에 경험치 +1 (myXP 가 slp-r- 기록 수를 셈)
+// 출근길 누적 기록 (소품 조건): n 완주 · ontime 정시 · esc 부장님 따돌림 · maxHits · maxMoney · wx{날씨} · cnt{구간: 지나간 수} · end{도착 사건}
+function runStats() {
+  var s = store.getJ('slp-runst', null); s = s && typeof s === 'object' ? s : {};
+  ['n', 'ontime', 'esc', 'maxHits', 'maxMoney'].forEach(function (k) { s[k] = +s[k] || 0; });
+  ['wx', 'cnt', 'end'].forEach(function (k) { if (!s[k] || typeof s[k] !== 'object') s[k] = {}; });
+  return s;
+}
+function runClock(R) { return R_T0 + R.t * R_RATE + R.pen; }
+function hhmm(m) { m = Math.floor(m); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+function renderRun() {
+  if (!PX.ok) { $('run').innerHTML = '<p class="src">이 브라우저에선 그림 게임을 열 수 없어요. 다른 게임을 즐겨 주세요.</p>'; return; }
+  if (RUN && RUN.on) { if (!$('rnC')) runStage(); runPause('계속 달리려면 누르세요'); return; }   // 다른 화면에 다녀오면 멈춰 둔 판으로
+  var x = runRec(), all = store.getJ('slp-runbest', null);
+  $('run').innerHTML = '<div class="intro"><h3>조로 출근길</h3>' +
+    stage(zorro(myRank(), 'normal', 3, 'idle') + icon('bus', 5), 'resst', '내 조로와 버스') +
+    '<p class="sum"><b>내 조로</b>가 집에서 회사까지 달려요. 한 판 1분 남짓!<br>2층 발판으로 올라갔다 내려갔다, 적은 밟아서 처치. 갈림길에선 <b>위층이냐 아래냐</b>로 길이 갈려요.</p>' +
+    '<button class="btn big" id="rGo" type="button">출근하기 ▶</button>' +
+    (x || all ? '<p class="src" style="margin:8px 0 0">' + (x ? '오늘 최고 <b>' + man(x.score) + '만원</b> (' + x.n + '판)' : '') + (x && all ? ' · ' : '') + (all ? '역대 최고 <b>' + man(all.s) + '만원</b>' : '') + '</p>' : '') +
+    '<p class="src" style="margin:6px 0 0">달리는 조로는 <a href="#look">내 조로</a>에서 꾸민 모습 그대로예요.</p>' +
+    '<details class="rules"><summary>규칙 보기</summary><ul>' +
+    '<li>화면 누르기 · 스페이스 · ↑ = 점프 (공중에서 한 번 더 = 2단 점프). <b>화면 아래쪽 누르기 · ↓ = 발판에서 내려오기</b>.</li>' +
+    '<li>적(야근 유령 · 스팸 메일 · 서류 괴물)은 위에서 밟으면 처치 +100만원. 옆에서 부딪히면 꽈당.</li>' +
+    '<li>쉬지 않고 돈을 주우면 콤보! 10콤보마다 돈 배율이 올라가요(최대 ×3). 꽈당하면 콤보가 끊겨요.</li>' +
+    '<li>장애물을 아슬아슬하게 넘으면 +50만원. 꽈당하면 시계가 2분 늦어지고 100만원을 흘려요.</li>' +
+    '<li>갈림길 3번: 표지판이 나오면 끝까지 <b>위층에 있으면 위 길, 아래에 있으면 아래 길</b>로 가요.</li>' +
+    '<li>판마다 출근 회사 · 날씨 · 길 · 돌발 사건 11가지 · 도착 사건이 다 달라요. 갈수록 빨라져요.</li>' +
+    '<li>9시 전에 도착하면 정시 출근 보너스 1,000만원 + 일찍 온 1분마다 50만원.</li>' +
+    '<li>하루 첫 완주에 경험치 +1. 소품 ' + gameItems('run').length + '개와 칭호 2개(출근의 신 · 얼리버드)를 얻을 수 있어요.</li>' +
+    '<li>순위 없이 이 기기에 오늘·역대 최고 기록만 남아요.</li></ul></details>' + gotBox('run') + '</div>';
+  $('rGo').onclick = runStart;
+}
+function runStart() {
+  var seed = Date.now().toString(36) + Math.random().toString(36).slice(2, 7), P = runPlan(seed);
+  RIMG = rImgs(P.dest, PC.rng('runbld|' + seed));
+  RUN = { on: 1, seed: seed, dest: P.dest, wx: P.wx, slots: P.slots, seg: 0, key: 'alley', route: ['alley'], dist: 0, t: 0, pen: 0, h: 0, v: 0, jumps: 0, air: 0, drop: 0,
+    money: 0, got: 0, hits: 0, combo: 0, maxCombo: 0, kills: 0, near: 0, esc: 0, cd: 1.8, cdn: 0, warned: 0,
+    stun: 0, inv: 0, boost: 0, shake: 0, flash: 0, magnet: 0, lowg: 0, chase: 0, fever: 0, dark: 0, fx: [], dust: [], pops: [], log: [], pause: '', last: 0, raf: 0, bn: 0, step: 0 };
+  var G = rGen('alley', RUN, 0); RUN.objs = G.objs; RUN.ev = G.ev;
+  runStage(); runGo();
+}
+function runStage() {
+  $('run').innerHTML = '<div class="rn"><div class="rn-hud"><span class="ck" id="rnCk"></span><span class="mo" id="rnMo"></span><span class="cb" id="rnCb"></span><span class="sg" id="rnSg"></span></div>' +
+    '<div class="rn-pips" id="rnPips" aria-hidden="true"></div>' +
+    '<div class="rn-cv" id="rnCv"><canvas id="rnC" width="' + RW + '" height="' + RH + '" role="img" aria-label="조로 출근길 게임 화면. 누르면 점프, 아래쪽을 누르면 내려오기"></canvas>' +
+    '<div class="rn-fk" id="rnFk" hidden></div><div class="rn-bn" id="rnBn" hidden></div><div class="rn-ov" id="rnOv" hidden></div></div>' +
+    '<p class="rn-help">누르기 · 스페이스 = 점프 (공중에서 한 번 더) · 화면 아래쪽 · ↓ = 내려오기 · <button class="lnk" type="button" id="rnPz">잠깐 멈춤</button></p></div>';
+  $('rnCv').addEventListener('pointerdown', function (e) {
+    if (e.target.closest('.rn-ov')) return; e.preventDefault();
+    var b = this.getBoundingClientRect(); if ((e.clientY - b.top) / b.height > .8) runDrop(); else runJump();
+  });
+  $('rnPz').onclick = function () { runPause('잠깐 멈췄어요'); };
+  runHud(1);
+}
+function runMult(R) { return 1 + Math.min(2, Math.floor(R.combo / 10) * .5); }
+function runHud(force) {
+  var R = RUN; if (!R || !$('rnCk')) return;
+  var cl = runClock(R), ck = hhmm(cl), M = RMAP[R.key];
+  if (force || ck !== R.hck) { R.hck = ck; $('rnCk').textContent = '⏰ ' + ck; $('rnCk').classList.toggle('late', cl > R_DUE); $('rnCk').classList.toggle('warn', cl >= R_DUE - 8 && cl <= R_DUE); }
+  if (force || R.money !== R.hmo) { R.hmo = R.money; $('rnMo').textContent = '💰 ' + man(R.money) + '만원'; }
+  var cb = R.combo >= 5 ? '🔥' + R.combo + (runMult(R) > 1 ? ' ×' + runMult(R) : '') : '';
+  if (force || cb !== R.hcb) { R.hcb = cb; $('rnCb').textContent = cb; }
+  if (force) $('rnSg').textContent = M.emo + ' ' + M.nm + (M.inn ? '' : ' · ' + R_WX[R.wx][1]);
+  var p = Math.round(Math.min(1, R.dist / M.len) * 20) * 5;
+  if (force || p !== R.hp) { R.hp = p; $('rnPips').innerHTML = R_SLOTS.map(function (x, i) { return '<i class="' + (i < R.seg ? 'on' : i === R.seg ? 'cur' : '') + '"' + (i === R.seg ? ' style="--p:' + p + '%"' : '') + '></i>'; }).join(''); }
+  // 갈림길 안내: 지금 위층이면 위 길에 불
+  var F = R.fork, up = R.h >= R_T1 - 2, fk = F ? (up ? 'u' : 'd') : '';
+  if (force || fk !== R.hfk) { R.hfk = fk; var el = $('rnFk'); el.hidden = !F;
+    if (F) el.innerHTML = '<b class="' + (up ? 'on' : '') + '">⬆ 위층 ' + RMAP[F.up].emo + ' ' + RMAP[F.up].nm + '</b><b class="' + (up ? '' : 'on') + '">⬇ 아래 ' + RMAP[F.dn].emo + ' ' + RMAP[F.dn].nm + '</b>'; }
+}
+function runBanner(txt, ms, big) { var b = $('rnBn'); if (!b) return; b.textContent = txt; b.className = 'rn-bn' + (big ? ' big' : ''); b.hidden = false; clearTimeout(RUN.bn); RUN.bn = setTimeout(function () { b.hidden = true; }, ms || 1400); }
+function runPop(R, x, y, txt, col) { R.pops.push({ x: x, y: y, t: 0, s: txt, c: col || '#ffe27a' }); }
+function runJump() {
+  var R = RUN; if (!R || !R.on || R.pause || R.cd > 0) return;
+  if (R.jumps === 0 && R.air) R.jumps = 1;   // 발판 끝에서 떨어지는 중엔 2단 점프만 남음
+  if (R.jumps >= 2) return;
+  R.v = R.jumps ? RJ2 : RJ1; R.jumps++; R.air = 1; sfx('jump');
+  if (R.jumps === 1) for (var i = 0; i < 3; i++) R.dust.push({ x: RPX + 12 + i * 4, y: RGY - R.h - 1, t: 0, vx: -40 - i * 20 });
+}
+function runDrop() { var R = RUN; if (!R || !R.on || R.pause || R.cd > 0) return; if (!R.air && R.h > 0) { R.drop = .25; R.v = -80; R.air = 1; R.jumps = 1; } }   // 발판에서 내려오기
+function runGo() { var R = RUN; R.pause = ''; $('rnOv').hidden = true; R.last = performance.now(); cancelAnimationFrame(R.raf); R.raf = requestAnimationFrame(runFrame); }
+function runPause(msg) {
+  var R = RUN; if (!R || !R.on) return;
+  R.pause = 'pause'; cancelAnimationFrame(R.raf); runDraw();
+  var o = $('rnOv'); o.hidden = false; o.innerHTML = '<p class="q">' + esc(msg) + '</p><button class="btn lime" type="button" id="rnRe">계속 달리기 ▶</button>';
+  $('rnRe').onclick = runGo;
+}
+document.addEventListener('visibilitychange', function () { if (document.hidden && RUN && RUN.on && !RUN.pause) runPause('잠깐 멈췄어요'); });
+document.addEventListener('keydown', function (e) {
+  if (CUR !== 'run' || !RUN || !RUN.on || (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return;
+  if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { e.preventDefault(); runDrop(); return; }
+  if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { if (e.target && e.target.tagName === 'BUTTON' && RUN.pause) return; e.preventDefault(); if (RUN.pause) runGo(); else runJump(); }
+});
+function runFrame(now) {
+  var R = RUN; if (!R || !R.on || R.pause) return;
+  if (CUR !== 'run') { runPause('계속 달리려면 누르세요'); return; }
+  var dt = Math.min(.04, (now - R.last) / 1000); R.last = now;
+  runStep(dt); if (!R.on) return;
+  runDraw(); runHud();
+  if (!R.pause) R.raf = requestAnimationFrame(runFrame);
+}
+function runHitBox(R) { return [RPX + 10, RGY - R.h - 32, RPX + 24, RGY - R.h - 2]; }
+function runImg(o) { return o.k === 'person' ? RIMG.ppl[o.p] : RIMG.obj[o.k]; }
+function runStep(dt) {
+  var R = RUN, M = RMAP[R.key];
+  // 출발 카운트다운 3 · 2 · 1 · GO
+  if (R.cd > 0) {
+    R.cd -= dt; var n = Math.ceil(R.cd / .6);
+    if (n !== R.cdn) { R.cdn = n; if (n > 0) { runBanner(String(n), 700, 1); sfx('coin'); } }
+    if (R.cd <= 0) { runBanner('GO! 🏢 ' + R.dest.n + ' · ' + R_WX[R.wx][1] + ' ' + R_WX[R.wx][0], 1800); sfx('combo'); }
+    return;
+  }
+  var f = Math.min(1, R.dist / M.len), spd = rSpd(M, R.seg, f) * (R.boost > 0 ? 1.35 : 1) * (R.stun > 0 ? .35 : 1);
+  R.dist += spd * dt; R.t += dt; R.spdx = spd / M.spd;
+  ['stun', 'inv', 'boost', 'shake', 'flash', 'magnet', 'lowg', 'fever', 'dark', 'drop'].forEach(function (k) { R[k] = Math.max(0, R[k] - dt); });
+  if (R.chase > 0) { R.chase -= dt; if (R.chase <= 0) { R.chase = 0; if (!R.chHit) { R.esc++; R.money += 200; R.log.push('😮‍💨 부장님 따돌림 +200만원'); runBanner('부장님 따돌렸다! +200만원'); sfx('combo'); } } }
+  if (!R.warned && runClock(R) >= R_DUE - 8 && runClock(R) <= R_DUE) { R.warned = 1; runBanner('⏰ 지각 위기! 서둘러요', 1500); }
+  // 몸: 중력 → 발판(위에서 내려앉을 때만) → 땅
+  var g = RG * (R.lowg > 0 ? .55 : !M.inn && R.wx === 'wind' ? .88 : 1), prevH = R.h;   // 돌풍 사건 · 강풍 날씨 = 몸이 가벼움
+  R.v -= g * dt; R.h += R.v * dt;
+  var sup = 0;
+  if (R.drop <= 0 && R.v <= 0) R.objs.forEach(function (o) {
+    if (o.k !== 'plat') return; var sx = o.x - R.dist + RPX;
+    if (sx > RPX + 24 || sx + o.w < RPX + 10) return;
+    if (prevH >= o.y - .5 && R.h <= o.y && o.y > sup) sup = o.y;
+  });
+  if (R.h <= sup) {
+    if (R.air && R.v < -520) { R.shake = REDUCE ? 0 : .12; for (var d = 0; d < 4; d++) R.dust.push({ x: RPX + 8 + d * 6, y: RGY - sup - 1, t: 0, vx: (d - 1.5) * 40 }); }   // 높은 데서 착지: 먼지 + 쿵
+    R.h = sup; R.v = 0; R.jumps = 0; R.air = 0;
+  } else R.air = 1;
+  // 발소리 먼지: 발이 땅에 닿는 장(2·4번째)마다
+  var st = Math.floor(R.dist / 11) % 4;
+  if (!R.air && st !== R.step && (st === 1 || st === 3) && !M.bike) R.dust.push({ x: RPX + 12, y: RGY - R.h - 1, t: 0, vx: -60 });
+  R.step = st;
+  // 사건: 버스 급정거 · 지하철 사람 파도 · 갈림길 · 돌발 사건
+  R.ev.forEach(function (E) {
+    if (E.done || R.dist < E.at) return; E.done = 1;
+    if (E.k === 'brake') { R.shake = REDUCE ? 0 : .5; runBanner('끼익— 급정거! 가방이 미끄러져요', 1600); R.objs.forEach(function (o) { if (o.k === 'bag' && o.x > E.at && o.x < E.at + 600) o.vx = -130; }); return; }
+    if (E.k === 'crowd') { R.shake = REDUCE ? 0 : .3; runBanner('문이 열립니다 · 사람 파도!', 1600); return; }
+    if (E.k === 'fork') { var s = R.slots[R.seg + 1]; R.fork = { up: s[0], dn: s[1] }; runBanner('갈림길! ' + R_ASK[R.seg + 1] + ' ⬆위층 ' + RMAP[s[0]].emo + ' · ⬇아래 ' + RMAP[s[1]].emo, 2200); runHud(1); return; }
+    var X = R_EV[E.k]; if (X.msg) { runBanner(X.msg, 1800); R.log.push(X.msg.split('!')[0].split(' ·')[0]); } X.go(R);
+  });
+  var P = runHitBox(R), cx = (P[0] + P[2]) / 2, cy = (P[1] + P[3]) / 2;
+  R.objs.forEach(function (o) {
+    if (o.k === 'plat' || o.k === 'sign') return;
+    if (o.sq > 0) { o.sq -= dt; return; }   // 밟힌 적: 납작해지는 중
+    if (o.done) return;
+    o.x += o.vx * dt;
+    if (o.ty != null && o.y > o.ty) o.y = Math.max(o.ty, o.y - 150 * dt);   // 하늘에서 떨어지는 돈
+    if (o.k === 'ghost') o.y = o.by + Math.sin(R.t * 3 + o.x * .02) * 8;   // 둥실둥실
+    var sx = o.x - R.dist + RPX; if (sx < -60 || sx > RW + 20) return;
+    var im = runImg(o), top = RGY - o.y - im.height, good = R_VAL[o.k] || o.k === 'coffee' || o.k === 'box';
+    if (R.magnet > 0 && R_VAL[o.k] && sx < RW - 10) { var dx = cx - (sx + im.width / 2), dy = cy - (top + im.height / 2), dd = Math.sqrt(dx * dx + dy * dy) || 1;   // 자석: 화면 안의 돈이 조로 쪽으로
+      if (dd < 150) { var mv = Math.min(dd, 260 * dt); o.x += dx / dd * mv; o.y -= dy / dd * mv; sx = o.x - R.dist + RPX; top = RGY - o.y - im.height; o.ty = null; } }
+    var pad = good ? 0 : 3;
+    var hit = sx + pad < P[2] && sx + im.width - pad > P[0] && top + pad < P[3] && RGY - o.y - 1 > P[1];
+    if (!hit) {   // 아슬아슬: 공중에서 장애물·적 바로 위를 스치고 지나감
+      if (!good && !o.pass && sx + im.width < P[0]) { o.pass = 1; var gp = top - (RGY - prevH); if (R.air && gp >= -2 && gp < 10) { R.near++; R.combo += 3; R.money += 50; runPop(R, RPX + 16, P[1] - 4, '아슬아슬 +50', '#c6ff3d'); sfx('coin'); } }
+      return;
+    }
+    if (R_VAL[o.k]) {
+      o.done = 1; R.combo++; R.maxCombo = Math.max(R.maxCombo, R.combo);
+      var v = Math.round(R_VAL[o.k] * runMult(R) * (R.fever > 0 ? 2 : 1) / 10) * 10; R.money += v; R.got++;
+      R.fx.push({ x: sx + im.width / 2, y: top, t: 0 }); if (o.k !== 'coin') runPop(R, sx, top, '+' + v);
+      sfx(o.k === 'coin' ? 'coin' : 'combo');
+      if (R.combo % 10 === 0) { runBanner('🔥 ' + R.combo + ' 콤보! 돈 ×' + runMult(R), 1000); sfx('combo'); }
+      return;
+    }
+    if (o.k === 'coffee') { o.done = 1; R.boost = 4; R.inv = Math.max(R.inv, 4); sfx('combo'); runBanner('☕ 커피 부스트! 4초 무적'); return; }
+    if (o.k === 'box') { o.done = 1; runBox(R); return; }
+    if (R_FOE[o.k] && R.v < 0 && P[3] <= top + 9) {   // 적 밟기: 처치 + 통통 튀기
+      o.done = 1; o.sq = .35; R.v = 400; R.jumps = 1; R.air = 1; R.kills++; R.combo += 2; R.maxCombo = Math.max(R.maxCombo, R.combo);
+      var kv = Math.round(100 * runMult(R) / 10) * 10; R.money += kv; runPop(R, sx, top - 4, R_FOE[o.k] + ' 처치 +' + kv, '#ff9bd3'); R.shake = REDUCE ? 0 : .1; sfx('combo'); return;
+    }
+    if (R.inv > 0) { if (R.boost > 0 && R_FOE[o.k]) { o.done = 1; o.sq = .35; R.kills++; runPop(R, sx, top, '퍽!', '#ff9bd3'); } return; }   // 커피 무적이면 적을 튕겨 냄
+    o.done = 1; R.hits++; R.stun = .7; R.inv = 1.4; R.pen += 2; R.shake = REDUCE ? 0 : .35; R.flash = .18;
+    var lost = Math.min(100, R.money); R.money -= lost; sfx('wrong');
+    var broke = R.combo >= 10; R.combo = 0;
+    if (R.chase > 0 && !R.chHit) { R.chHit = 1; R.pen += 3; R.log.push('😱 부장님한테 딱 걸림 ⏰ +3분'); runBanner('부장님한테 딱 걸렸다! ⏰ +5분', 1600); return; }
+    runBanner('꽈당! ⏰ +2분' + (lost ? ' · −' + lost + '만원' : '') + (broke ? ' · 콤보 끊김' : ''));
+  });
+  R.fx = R.fx.filter(function (f) { f.t += dt; return f.t < .45; });
+  R.dust = R.dust.filter(function (d) { d.t += dt; d.x += d.vx * dt; return d.t < .35; });
+  R.pops = R.pops.filter(function (p) { p.t += dt; return p.t < .8; });
+  if (R.dist >= M.len) runSegEnd();
+}
+// ❓ 상자: 열어 봐야 앎
+function runBox(R) {
+  var x = Math.random(), m;
+  if (x < .28) { R.money += 1000; m = '🎉 대박! 특별 성과급 +1,000만원'; sfx('fanfare'); }
+  else if (x < .53) { R.money += 300; m = '🎫 백화점 상품권 +300만원'; sfx('combo'); }
+  else if (x < .7) { R.boost = 5; R.inv = 5; m = '⚡ 에너지 드링크! 5초 무적'; sfx('combo'); }
+  else if (x < .85) { var d = Math.min(200, R.money); R.money -= d; m = '💳 카드값 청구서… −' + d + '만원'; sfx('wrong'); }
+  else { R.pen += 1; m = '📄 결재 서류 떠안음… ⏰ +1분'; sfx('wrong'); }
+  R.log.push('❓ 상자: ' + m.replace(/^\S+ /, '')); runBanner(m, 1800);
+}
+// 구간 끝: 갈림길이면 지금 층으로 다음 길 결정 (위층 = 첫째 길)
+function runSegEnd() {
+  var R = RUN, F = R.fork; R.seg++;
+  if (R.seg >= R_SLOTS.length) return runFinish();
+  var opts = R.slots[R.seg], k = opts.length === 1 ? opts[0] : R.h >= R_T1 - 2 ? opts[0] : opts[1];
+  if (F) R.log.push((k === F.up ? '⬆ 위층으로 ' : '⬇ 아래로 ') + RMAP[k].emo + ' ' + RMAP[k].nm);
+  R.fork = null; runEnter(k);
+}
+function runEnter(key) {
+  var R = RUN, G = rGen(key, R, R.seg), M = RMAP[key];
+  R.key = key; R.route.push(key); R.dist = 0; R.objs = G.objs; R.ev = G.ev; R.fx = []; R.chase = 0; R.dark = 0; R.magnet = 0;
+  R.h = 0; R.v = 0; R.air = 0; R.jumps = 0;   // 새 구간은 땅에서 시작
+  runHud(1); runBanner(hhmm(runClock(R)) + ' ' + M.emo + ' ' + M.nm + (key === 'lobby' ? ' · ' + R.dest.n : ''), 1600);
+}
+function runDraw() {
+  var R = RUN, cv = $('rnC'); if (!R || !cv) return;
+  var c = cv.getContext('2d'), sh = R.shake > 0 ? Math.round((Math.random() - .5) * 5) : 0, shy = R.shake > 0 ? Math.round((Math.random() - .5) * 3) : 0, M = RMAP[R.key];
+  c.imageSmoothingEnabled = false; c.save(); c.translate(sh, shy);
+  RBG[R.key](c, R.dist, R.t);
+  if (R.fever > 0) rr(c, 'rgba(255,207,61,' + (.12 + .06 * Math.sin(R.t * 12)) + ')', 0, 0, RW, RH);
+  // 발판 (2층·3층): 윗면 + 옆면 + 기둥
+  R.objs.forEach(function (o) {
+    if (o.k !== 'plat') return; var sx = Math.round(o.x - R.dist + RPX); if (sx > RW || sx + o.w < 0) return;
+    var y = RGY - o.y;
+    for (var k = 8; k < o.w - 4; k += 56) rr(c, M.pc[1], sx + k, y + 7, 3, o.y - 7);
+    rr(c, '#1b1d18', sx - 1, y - 1, o.w + 2, 9); rr(c, M.pc[0], sx, y, o.w, 3); rr(c, M.pc[1], sx, y + 3, o.w, 4);
+    for (var j = 4; j < o.w; j += 12) rr(c, 'rgba(255,255,255,.35)', sx + j, y, 4, 1);
+  });
+  // 갈림길 표지판: 위층·아래 길 이모지
+  R.objs.forEach(function (o) {
+    if (o.k !== 'sign') return; var sx = Math.round(o.x - R.dist + RPX); if (sx > RW || sx < -40) return;
+    rr(c, '#5a5d63', sx + 14, RGY - 92, 3, 92);
+    [[o.up, RGY - 92, '⬆'], [o.dn, RGY - 52, '⬇']].forEach(function (b) { rr(c, '#1b1d18', sx - 3, b[1] - 1, 38, 18); rr(c, '#3f9a4a', sx - 2, b[1], 36, 16); c.font = '10px sans-serif'; c.fillStyle = '#fff'; c.fillText(b[2] + RMAP[b[0]].emo, sx, b[1] + 12); });
+  });
+  R.objs.forEach(function (o) {
+    if (o.k === 'plat' || o.k === 'sign' || (o.done && !(o.sq > 0))) return;
+    var sx = o.x - R.dist + RPX; if (sx < -60 || sx > RW + 20) return;
+    var im = runImg(o), bob = R_VAL[o.k] || o.k === 'coffee' || o.k === 'box' ? Math.round(Math.sin(R.t * 6 + o.x) * 1.5) : 0;
+    if (o.sq > 0) { c.drawImage(im, Math.round(sx - 2), Math.round(RGY - o.y - im.height / 3), im.width + 4, Math.round(im.height / 3)); return; }   // 밟혀서 납작
+    var fl = (o.k === 'mail' || o.k === 'pigeon') && Math.floor(R.t * 8) % 2 ? 1 : 0;   // 날갯짓
+    c.drawImage(im, Math.round(sx), Math.round(RGY - o.y - im.height + bob - fl));
+  });
+  if (R.chase > 0) c.drawImage(RIMG.boss, Math.round(RPX - 46 + Math.sin(R.t * 3) * 6), RGY - 37 - (Math.floor(R.t * 8) % 2));   // 쫓아오는 부장님
+  // 속도선: 빨라질수록 · 커피 부스트
+  var lines = (R.boost > 0 ? 6 : 0) + Math.max(0, Math.round((R.spdx - 1.15) * 20));
+  for (var k = 0; k < lines; k++) rr(c, 'rgba(255,255,255,.55)', RW - ((R.t * 600 + k * 53) % (RW + 40)), 20 + (k * 37) % (RGY - 30), 14 + (k % 3) * 6, 1);
+  R.dust.forEach(function (d) { var a = 1 - d.t / .35; c.fillStyle = 'rgba(200,190,170,' + a + ')'; c.fillRect(Math.round(d.x), Math.round(d.y - d.t * 14), 3, 3); });
+  if (!(R.inv > 0 && R.boost <= 0 && Math.floor(R.t * 12) % 2)) {   // 부딪힌 뒤 깜빡임
+    var bike = M.bike && R.stun <= 0, zy = Math.round(RGY - R.h - 37 - (bike ? 7 : 0));
+    var im = R.cd > 0 ? RIMG.stand : R.stun > 0 ? RIMG.hit : bike ? RIMG.run[1] : R.air ? RIMG.jump : RIMG.run[Math.floor(R.dist / 11) % 4];
+    c.drawImage(im, RPX, zy);
+    if (bike) c.drawImage(RIMG.obj.bike, RPX + 9, Math.round(RGY - R.h - RIMG.obj.bike.height));   // 따릉이
+  }
+  R.fx.forEach(function (f) { var a = 1 - f.t / .45; c.fillStyle = 'rgba(255,226,122,' + a + ')'; c.fillRect(Math.round(f.x - 1), Math.round(f.y - f.t * 30), 3, 3); c.fillRect(Math.round(f.x - 5), Math.round(f.y - f.t * 22 + 3), 2, 2); c.fillRect(Math.round(f.x + 4), Math.round(f.y - f.t * 26 + 2), 2, 2); });
+  c.font = 'bold 8px sans-serif';
+  R.pops.forEach(function (p) { var y = Math.round(p.y - p.t * 24); c.fillStyle = 'rgba(13,15,10,.7)'; c.fillText(p.s, Math.round(p.x) + 1, y + 1); c.fillStyle = p.c; c.fillText(p.s, Math.round(p.x), y); });
+  if (!M.inn) runWx(c, R);
+  if (R.dark > 0) { c.fillStyle = 'rgba(5,6,10,.9)'; c.beginPath(); c.rect(0, 0, RW, RH); c.arc(RPX + 17, RGY - R.h - 18, 52, 0, Math.PI * 2, true); c.fill('evenodd'); }   // 정전: 조로 둘레만 보임
+  if (R.flash > 0) rr(c, 'rgba(232,65,44,' + (R.flash * 2) + ')', 0, 0, RW, RH);   // 꽈당: 빨갛게 번쩍
+  c.restore();
+}
+
+// ── 도착: 도착 사건 → 점수 = 주운 연봉 + 정시 보너스. 오늘·역대 최고 · 누적 기록(소품) · 칭호 · 하루 첫 완주 경험치
+function runFinish() {
+  var R = RUN; R.on = 0; cancelAnimationFrame(R.raf);
+  var ei = Math.floor(Math.random() * R_END.length), E = R_END[ei]; R.money += E[1]; R.pen += E[2];
+  var arr = runClock(R), late = arr > R_DUE, early = late ? 0 : Math.floor(R_DUE - arr), bonus = late ? 0 : 1000 + early * 50, score = R.money + bonus;
+  var x = runRec() || { score: 0, n: 0 }, first = !x.n, all = store.getJ('slp-runbest', null), newDay = score > x.score, newAll = !all || score > all.s;
+  x.n++; if (newDay) { x.score = score; x.arr = hhmm(arr); x.route = R.route; } setRec(TODAY, 'run', x);
+  if (newAll) store.setJ('slp-runbest', { s: score, d: TODAY });
+  var st = runStats(); st.n++; if (!late) st.ontime++; st.esc += R.esc; st.maxHits = Math.max(st.maxHits, R.hits); st.maxMoney = Math.max(st.maxMoney, R.money);
+  st.wx[R.wx] = 1; R.route.forEach(function (k) { st.cnt[k] = (st.cnt[k] || 0) + 1; });
+  st.end[['ceo', 'card', 'party', 'elev', 'hunter', 'coffee', 'home', 'room'][ei]] = 1; store.setJ('slp-runst', st);   // R_END 순서와 같음
+  if (!late && !R.hits) award('commute'); if (arr < 8 * 60 + 50) award('early');
+  if (first) setTimeout(function () { promoCheck(); }, 900);   // 하루 첫 완주 = 경험치 +1 → 승진 확인
+  sfx(late ? 'wrong' : 'fanfare');
+  runResult({ score: score, money: R.money, bonus: bonus, arr: hhmm(arr), late: late, early: early, hits: R.hits, kills: R.kills, near: R.near, combo: R.maxCombo, route: R.route, dest: R.dest, wx: R.wx, log: R.log,
+    first: first, end: E[0] + (E[1] ? ' +' + man(E[1]) + '만원' : '') + (E[2] ? ' ⏰ +' + E[2] + '분' : ''), newDay: newDay && x.n > 1, newAll: newAll && !!all, best: x.score, all: newAll ? score : all.s });
+}
+function runResult(S) {
+  var D = S.dest, emo = S.route.map(function (k) { return RMAP[k].emo; }).join('→'), names = S.route.slice(1, 4).map(function (k) { return RMAP[k].nm; }).join(' · ');
+  var best = null; FAM.forEach(function (c) { c.rk.forEach(function (v, i) { var d = Math.abs(v - S.score); if (!best || d < best.d) best = { c: c, i: i, v: v, d: d }; }); });
+  var lo = Math.min.apply(null, FAM.map(function (c) { return c.rk[0]; }));
+  var cmp = S.score < lo * .6 ? '아직 어느 회사 사원 연봉에도 한참 못 미쳐요. 다음 판엔 더 주워 봐요!' : '이 돈이면 <b>' + esc(best.c.n) + ' ' + RK[best.i] + '</b> 연봉(추정 ' + man(best.v) + '만원)쯤이에요.';
+  var tips = S.late ? ['지각 한 번은 해프닝, 세 번이면 평판이에요.', '늦은 날일수록 인사는 더 밝게. 그게 경력이에요.', '다음엔 커피부터 챙겨요. 출근길도 전략이에요.']
+    : S.hits ? ['넘어져도 9시 전에만 도착하면 돼요. 커리어도 그래요.', '꽈당은 몇 번 했지만 결국 도착. 그게 실력이에요.'] : ['한 번도 안 넘어졌어요. 이 정도면 출근의 신이에요.', '깔끔한 출근. 오늘 회의도 이렇게만 넘겨요.'];
+  var tip = tips[Math.floor(Math.random() * tips.length)];
+  $('run').innerHTML = '<div class="over"><span class="lv">조로 출근길 · ' + mmdd(TODAY) + ' · ' + R_WX[S.wx][1] + ' ' + R_WX[S.wx][0] + '</span>' +
+    stage(zorro(myRank(), S.late ? 'sad' : 'happy', 3, 'idle') + bld(D, 3, null, 'grow'), 'resst', (S.late ? '지각한' : '정시 출근한') + ' 내 조로와 ' + D.n) +
+    '<div class="big">' + man(S.score) + '<small>만원</small></div>' +
+    '<div class="ttl"><b>' + esc(D.n) + ' ' + (S.late ? '⏰ ' + S.arr + ' 지각!' : '⏰ ' + S.arr + ' 정시 출근') + '</b></div>' +
+    '<p class="rn-route" aria-label="지나온 길">' + emo + '</p>' +
+    '<p><b>도착하자마자</b> ' + esc(S.end) + '</p>' +
+    '<p>주운 연봉 ' + man(S.money) + '만원' + (S.bonus ? ' + 정시 보너스 ' + man(S.bonus) + '만원' + (S.early ? ' (' + S.early + '분 일찍)' : '') : '') + '</p>' +
+    '<p>🔥 최대 ' + S.combo + '콤보 · 👊 적 처치 ' + S.kills + ' · 😮 아슬아슬 ' + S.near + ' · 💥 꽈당 ' + S.hits + '</p>' +
+    '<p>' + cmp + '</p>' + (S.first ? '<p>⭐ 오늘 첫 출근 완주 · <b>경험치 +1</b></p>' : '') +
+    '<p>' + (S.newAll ? '🎉 <b>역대 최고 기록!</b>' : S.newDay ? '🎉 <b>오늘 최고 기록!</b>' : '오늘 최고 ' + man(S.best) + '만원 · 역대 최고 ' + man(S.all) + '만원') + '</p>' +
+    (S.log.length ? '<details class="more"><summary>오늘 출근길에 생긴 일 ' + S.log.length + '가지</summary><ul class="rn-log">' + S.log.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul></details>' : '') +
+    '<p><b>조로의 한마디</b> — ' + esc(tip) + '</p>' +
+    gotBox('run') + shareBox('shRn') + '<div class="row"><button class="btn" type="button" id="rnAgain">다시 출근하기 ▶</button></div>' + nextBtn('run') + week7('run') +
+    '<p class="src">다음 판은 출근 회사·날씨·길·사건이 또 달라요.</p></div>';
+  $('rnAgain').onclick = runStart;
+  wireShare('shRn', '연봉 놀이터 · 조로 출근길 ' + mmdd(TODAY) + '\n' + D.n + ' 출근 ' + R_WX[S.wx][1] + '\n' + emo + '\n💰 ' + man(S.score) + '만원 · 🔥' + S.combo + '콤보 · ⏰ ' + S.arr + (S.late ? ' 지각' : ' 정시 출근') + '\n' + SITE_S + '/#run',
+    { title: '조로 출근길', big: man(S.score) + '만원', sub: D.n + ' ⏰ ' + S.arr + (S.late ? ' 지각' : ' 정시 출근') + '\n' + names, lines: [emo.replace(/→/g, ' ')], px: { mood: S.late ? 'sad' : 'happy', co: D } });
+}
+
+
 // ── 순위 · 명예의 전당 탭
 var HG = 'higher';
 function renderHall() {   // 2차 UX: 게임 고르기는 가로 한 줄(넘치면 옆으로 밀기), 칭호는 내 조로로, 이번 주 기록은 게임별 7칸 점
@@ -2944,20 +3656,22 @@ function setTool(v) {
 }
 document.querySelectorAll('#toolSeg button').forEach(function (b) { b.onclick = function () { setTool(b.dataset.v); toolRender(); dockSync(); gbSync(); }; });
 
-var KEYS = ['higher', 'today', 'sniper', 'road', 'cup', 'hall', 'tools'], G5 = KEYS.slice(0, 5);
-var RENDER = { higher: renderHigher, today: renderToday, sniper: renderSniper, road: renderRoad, cup: renderCup, hall: renderHall, tools: function () { toolRender(); } };
+var KEYS = ['higher', 'today', 'sniper', 'road', 'cup', 'run', 'hall', 'tools'], G5 = KEYS.slice(0, 6);   // G5 = 로비 게임 카드 (2026-10-29 조로 출근길 추가로 6개)
+var RENDER = { higher: renderHigher, today: renderToday, sniper: renderSniper, road: renderRoad, cup: renderCup, run: renderRun, hall: renderHall, tools: function () { toolRender(); } };
 function toolRender() { TOOL === 'live' ? liveStart() : rankTool(); }
-var PNAME = { higher: GNAME.higher, today: '오늘의 회사', sniper: GNAME.sniper, road: GNAME.road, cup: '드림 컴퍼니 월드컵', hall: '순위 · 명예의 전당', look: '내 조로', tools: '연봉 도구' };
+var PNAME = { higher: GNAME.higher, today: '오늘의 회사', sniper: GNAME.sniper, road: GNAME.road, cup: '드림 컴퍼니 월드컵', run: '조로 출근길', hall: '순위 · 명예의 전당', look: '내 조로', tools: '연봉 도구' };
 // 게임 카드: [도트 아이콘, 한 줄 설명, 걸리는 시간]
 var GINFO = {
   higher: ['money', '두 회사 중 더 많이 주는 쪽을 골라요. 문제마다 비교 기준이 바뀌어요.', '10문제 · 문제당 15초'],
   today: ['magnifier', '후보 8곳 중 숨은 회사 1곳을 찾아요. 단서는 하나씩 열려요.', '기회 3번 · 약 1분'],
   sniper: ['target', '회사와 직급을 보고 막대를 밀어 연봉을 찍어요.', '5문제 · 약 2분'],
   road: ['sign', '2년마다 이직할까 남을까. 10년 누적 연봉으로 겨뤄요.', '약 3분'],
-  cup: ['trophy', '연봉은 가리고 이름만 보고 가고 싶은 회사를 골라요.', '순위 없음 · 연습']
+  cup: ['trophy', '연봉은 가리고 이름만 보고 가고 싶은 회사를 골라요.', '순위 없음 · 연습'],
+  run: ['bus', '내 조로가 2층을 오르내리며 회사까지 질주! 적은 밟고, 길은 층으로 골라요.', '1분 남짓 · 순위 없음']
 };
 // 오늘 이 기기 상태: 끝낸 판(slp-r-<날>-<게임>, 월드컵은 slp-cupw-<날>) · 하던 판(slp-p-…)
 function gState(k) {
+  if (k === 'run') { var rx = runRec(); return RUN && RUN.on ? { prog: 1, meta: '달리는 중이에요', go: '이어서 달리기 ▶' } : rx ? { done: 1, meta: '✓ 오늘 최고 ' + man(rx.score) + '만원 · ' + rx.n + '판', go: '다시 출근하기' } : null; }
   if (k === 'cup') { var w = store.get('slp-cupw-' + TODAY); return w ? { done: 1, meta: '✓ 오늘 우승: ' + w, go: '다시 하기' } : null; }
   var x = rec(TODAY, k);
   if (x) return { done: 1, meta: '✓ ' + fmtScore(k, x.score) + (x.sent && x.rank ? ' · 오늘 ' + man(x.rank) + '위' : ''), go: '결과 보기' };
@@ -2978,7 +3692,7 @@ function renderLobby() {
       '<b class="gn">' + esc(nm) + '</b><span class="d">' + esc(I[1]) + '</span><span class="meta">' + meta + ' ' + giftTag(k) + '</span>' +
       '<span class="go" aria-hidden="true">' + (S ? S.go : '시작하기 ▶') + '</span></button>';
   }).join('');
-  $('lobbyN').innerHTML = '5개 중 ' + nDone + '개 했어요<span class="pc"> · 순위는 매일 첫 판만</span>';
+  $('lobbyN').innerHTML = G5.length + '개 중 ' + nDone + '개 했어요<span class="pc"> · 순위는 매일 첫 판만</span>';
   dockSubs();
 }
 // 순위·내 조로·도구 칸의 작은 글 + 아이콘
@@ -3021,6 +3735,9 @@ function gbSync() {
       p = prog('road');
       if (rec(TODAY, 'road')) t = '끝';
       else if (p && p.picks) { t = Math.min(p.picks.length + 1, 5) + ' / 5'; f = p.picks.length / 5; }
+    } else if (k === 'run') {
+      if (RUN && RUN.on) { t = hhmm(runClock(RUN)); f = (RUN.seg + Math.min(1, RUN.dist / RMAP[RUN.key].len)) / R_SLOTS.length; }
+      else if (runRec()) t = '끝';
     } else if (k === 'cup') {
       if (CUP) { var tot = CUP.all.length - 1; t = Math.min(CUP.picks.length + 1, tot) + ' / ' + tot; f = CUP.picks.length / tot; }
       else if ($('cup').querySelector('.rep')) t = '끝';
