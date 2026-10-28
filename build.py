@@ -81,7 +81,19 @@ GROUP_COLORS = {
 }
 
 # 2026-10-28 사용자: 연봉 연구소 - 연봉 놀이터 - 회사 판단 - 직무사전 - 취업뉴스 - 함께하기 순서
-TABS = [("salary/index.html", '연봉<span class="lg"> 연구소</span>'), ("play/index.html", '<span class="lg">연봉&nbsp;놀이터</span><span class="sm">게임</span><span class="new">NEW</span>'), ("company/index.html", '회사<span class="lg">&nbsp;판단</span>'), ("index.html", "직무사전"), ("news/index.html", "취업뉴스"), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;</span>함께하기')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
+# 폰(480px 이하)에서는 sm 두 글자 이름만 (2026-10-28 모바일 개선: 6개가 한 줄에 다 들어가게)
+TABS = [("salary/index.html", '<span class="lg">연봉 연구소</span><span class="sm">연봉</span>'), ("play/index.html", '<span class="lg">연봉&nbsp;놀이터</span><span class="sm">게임</span><span class="new">NEW</span>'),
+        ("company/index.html", '<span class="lg">회사&nbsp;판단</span><span class="sm">회사</span>'), ("index.html", '<span class="lg">직무사전</span><span class="sm">직무</span>'),
+        ("news/index.html", '<span class="lg">취업뉴스</span><span class="sm">뉴스</span>'), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;함께하기</span><span class="sm">상담</span>')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
+# 2026-10-28 모바일: 뉴스 섹션마다 처음 3건만 보이고 '이 섹션 n건 더 보기' (일간·주간·월간이 화면에서 다시 그려져도 다시 접는다)
+NEWS_FOLD = ("<style>@media (max-width:640px){.news-grid.fold>.news-card:nth-child(n+4){display:none}}"
+             ".nf-more{display:none}@media (max-width:640px){.nf-more{display:flex;align-items:center;justify-content:center;width:100%;min-height:46px;margin:14px 0 0;"
+             "font:inherit;font-size:14.5px;font-weight:700;color:var(--ink);background:transparent;border:1px solid var(--line,#d2d2d2);border-radius:12px;cursor:pointer}}</style>"
+             "<script>(function(){if(!matchMedia('(max-width:640px)').matches)return;"
+             "function fold(){document.querySelectorAll('.news-grid:not([data-nf])').forEach(function(g){g.setAttribute('data-nf','1');var k=g.querySelectorAll(':scope>.news-card').length;if(k<=3)return;"
+             "g.classList.add('fold');var b=document.createElement('button');b.type='button';b.className='nf-more';b.textContent='이 섹션 '+(k-3)+'건 더 보기';"
+             "b.onclick=function(){g.classList.remove('fold');b.remove()};g.after(b)})}"
+             "fold();new MutationObserver(fold).observe(document.body,{childList:true,subtree:true})})();</script>")
 APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 신청하기" 버튼이 여기로 간다)
 
 
@@ -314,6 +326,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zn-cta { margin-left:auto; flex:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--paper); background:var(--ink); border-radius:999px; padding:9px 15px; text-decoration:none; white-space:nowrap; }
 .zn-cta:hover { background:var(--acc); color:var(--acc-ink); }
 @media (max-width:640px) { .zn-cta { display:none; } .zn-in { gap:10px; padding:0 14px; } .zn-logo img { height:19px; } .zn-logo img[src$="_halo.png"] { height:21.85px; margin:-1.43px; } .zn-tabs a { padding:0 9px; font-size:13px; } }
+@media (max-width:480px) { .zn-in { gap:6px; padding:0 10px; } .zn-tabs { margin-left:0; } .zn-tabs a { padding:0 6px; font-size:13.5px; } .zn-tabs.more { -webkit-mask-image:linear-gradient(90deg,#000 85%,transparent); mask-image:linear-gradient(90deg,#000 85%,transparent); } }   /* 2026-10-28: 두 글자 메뉴, 그래도 넘치면 오른쪽을 흐리게 */
 /* 공용 푸터 (뉴스 푸터처럼 먹색 윗선 + 종이색) */
 .zf { margin-top:72px; background:var(--paper); color:var(--ink); border-top:1px solid var(--ink); font-family:var(--font); }
 .zf-in { max-width:1120px; margin:0 auto; padding:36px 20px 44px; }
@@ -441,6 +454,7 @@ NEWS_MASTHEAD_CSS = """
 .v2-ticker span::after { content:"✦"; margin-left:28px; color:#c6ff3d; }
 @keyframes v2marquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .v2-ticker-track { animation:none; } }
+@media (max-width:640px) { .v2-ticker span { padding:7px 18px; font-size:11.5px; } .v2-ticker span::after { margin-left:18px; } }   /* 2026-10-28 모바일: 검은 띠 높이 절반 */
 /* 고정 컨트롤 바 = 직무사전 필터 바 */
 .controls { top:calc(54px + env(safe-area-inset-top,0px)); border-bottom:1px solid var(--hairline); box-shadow:none; }
 .controls-inner { max-width:1320px; padding:10px 20px; gap:12px; overflow-x:auto; scrollbar-width:none; }
@@ -533,6 +547,10 @@ def nav_html(active: str, root: str, logo: str) -> str:
         theme + f'<header class="zn"><div class="zn-in"><a class="zn-logo" href="{root}index.html"><img src="{logo_src(logo, root)}" alt="TEAM ZORRO"></a>'
         f'<nav class="zn-tabs" aria-label="사이트 탭">{tabs}</nav>'
         f'</div></header>'
+        # 2026-10-28 모바일: 지금 탭이 화면 밖이면 보이게 옮기고, 메뉴가 넘치면 오른쪽 끝을 흐리게 (.more)
+        "<script>(function(){var n=document.currentScript.previousElementSibling.querySelector('.zn-tabs');if(!n)return;"
+        "var a=n.querySelector('a.on');if(a&&a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12;"
+        "var f=function(){n.classList.toggle('more',n.scrollWidth-n.scrollLeft-n.clientWidth>4)};f();n.addEventListener('scroll',f,{passive:true});addEventListener('resize',f)})();</script>"
     )
 
 
@@ -899,7 +917,7 @@ def build(out_dir: Path, with_news: bool) -> None:
             raise SystemExit(f"뉴스 결과물이 없습니다: {NEWS_SRC} (news-collector/build_site.py 를 먼저 실행하거나 NEWS_URL 설정, 또는 --no-news)")
         n = news_src.read_text(encoding="utf-8")
         nav_css = "<style>" + "".join(
-            line + "\n" for line in SHARED_CSS.splitlines() if line.startswith((".zn", ".zf", "@media (max-width:640px) { .zn"))) + (
+            line + "\n" for line in SHARED_CSS.splitlines() if line.startswith((".zn", ".zf", "@media (max-width:640px) { .zn", "@media (max-width:480px) { .zn"))) + (
             "@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) { --logo-filter: invert(1); } } :root[data-theme=\"dark\"] { --logo-filter: invert(1); }\n"
         ) + NEWS_MASTHEAD_CSS + "</style>"
         # 공용 푸터·하단 버튼이 쓰는 토큰 중 뉴스 페이지에 없는 것들을 뉴스 토큰에 연결
@@ -909,7 +927,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         n = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + inject, n, count=1)
         n = n.replace('<div class="controls">', '<div class="v2-ticker" aria-hidden="true"><div class="v2-ticker-track">' + ticker_spans(TICK["news"]) + '</div></div><div class="controls">', 1)   # 히어로 → 검은 띠 → 탭 (연봉 연구소와 같은 순서)
         foot = FIT_JS + OUTRO_HTML + footer_html("../", logo, "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다.") + fab_html("../")
-        n = n.replace("</body>", foot + "</body>", 1)
+        n = n.replace("</body>", foot + NEWS_FOLD + "</body>", 1)
         news_ld = [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/")]),
                    {"@context": "https://schema.org", "@type": "WebPage", "@id": seo.abs_url(base_url, "news/"), "name": "취업조로의 커리어브리핑", "inLanguage": "ko",
                     "description": "취업조로가 매일 아침 고르는 채용·이직·기업·고용 뉴스와 한마디", "isPartOf": {"@id": seo.abs_url(base_url, "#website")}, "author": {"@id": seo.abs_url(base_url, "zorro/#person")}}]

@@ -251,6 +251,7 @@ body.v2 h1, body.v2 h2, body.v2 h3 { letter-spacing:-.04em; }
 .v2-ticker span::after { content:"✦"; margin-left:28px; color:var(--v-acc); }
 @keyframes v2marquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .v2-ticker-track { animation:none; } }
+@media (max-width:640px) { .v2-ticker span { padding:7px 18px; font-size:11.5px; } .v2-ticker span::after { margin-left:18px; } }   /* 2026-10-28 모바일: 검은 띠 높이 절반 */
 
 /* 필터 바 (고정) */
 .v2-bar { position:sticky; top:calc(54px + env(safe-area-inset-top,0px)); z-index:15; background:var(--v-bg); border-bottom:1px solid var(--v-line); }
@@ -298,6 +299,20 @@ body.v2 .card h3::after { content:""; }
 body.v2 .card .en { font-family:var(--v-display); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--v-muted); margin-top:2px; }
 body.v2 .card .tagline { margin-top:10px; font-size:14.5px; color:var(--v-ink-2); }
 body.v2 .card .tags { margin-top:10px; }
+/* 2026-10-28 모바일: 큰 그림 카드 → 한 줄 목록 (그림·영문·기술 태그 빼고 이름·한 줄 설명·AI·연봉만). 처음엔 20개, 아래 '더 보기' */
+@media (max-width:640px) {
+  body.v2 .grid { grid-template-columns:minmax(0,1fr); gap:0; }
+  body.v2 .card { padding:14px 0; border-bottom:1px solid var(--v-line); }
+  body.v2 .card .thumb, body.v2 .card .art, body.v2 .card .en, body.v2 .card .tags { display:none; }
+  body.v2 .card .card-top { margin-top:0; }
+  body.v2 .card h3 { margin-top:4px; font-size:19px; }
+  body.v2 .card .tagline { margin-top:4px; font-size:14px; }
+  body.v2 .card .card-foot { margin-top:6px; }
+  body.v2 .card .fav { top:12px; right:0; }
+  body.v2 .card .card-top { padding-right:46px; }
+}
+.more-jobs { display:flex; align-items:center; justify-content:center; width:100%; min-height:46px; margin-top:16px; font:inherit; font-size:14.5px; font-weight:700; color:var(--v-ink); background:transparent; border:1px solid var(--v-line); border-radius:12px; cursor:pointer; }
+.more-jobs:hover { border-color:var(--v-ink); }
 body.v2 .card .tags li { font-size:12px; padding:3px 9px; border-radius:999px; background:transparent; border:1px solid var(--v-line-2); color:var(--v-ink-2); }
 body.v2 .card .tags { margin-bottom:14px; }
 body.v2 .card .card-foot { margin-top:auto; padding-top:12px; border-top:1px solid var(--v-line); font-family:var(--v-display); font-size:12px; letter-spacing:.04em; }
@@ -783,15 +798,20 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
       '<p class="e-sub">현직자 자료가 가장 많은 직무</p><div class="e-pick">' +
       pick.map(function (j) { return '<button type="button" data-pick="' + j.id + '"><b>' + esc(j.name) + '</b><span>' + esc(j.tagline) + '</span></button>'; }).join('') + '</div>';
   }
+  var PHONE_N = 20, showAll = false;   // 2026-10-28 모바일: 폰에선 처음 20개만, '더 보기'로 전부
   function renderGrid() {
     var list = filtered();
-    $('grid').innerHTML = list.map(card).join('');
+    var cut = !showAll && list.length > PHONE_N && matchMedia('(max-width:640px)').matches;
+    $('grid').innerHTML = (cut ? list.slice(0, PHONE_N) : list).map(card).join('');
+    var mb = $('moreJobs'); if (mb) mb.remove();
+    if (cut) $('grid').insertAdjacentHTML('afterend', '<button type="button" class="more-jobs" id="moreJobs">직무 ' + (list.length - PHONE_N) + '개 더 보기</button>');
     $('empty').hidden = list.length > 0;
     if (!list.length) $('empty').innerHTML = emptyHtml();
     var label = state.group === '전체' ? (state.track === '전체' ? '전체' : (TRACKS.filter(function (t) { return t.id === state.track; })[0] || {}).name) : gname(state.group);
     $('count').innerHTML = '<b>' + esc(label) + '</b> ' + list.length + '개 직무' + (state.q ? ' · "' + esc(state.q) + '" 검색' : '');
     favSync();
   }
+  document.addEventListener('click', function (e) { if (e.target.closest('#moreJobs')) { showAll = true; renderGrid(); } });
   $('grid').addEventListener('click', function (e) { var f = e.target.closest('[data-fav]'); if (f) { e.preventDefault(); e.stopPropagation(); favToggle(f.getAttribute('data-fav')); if (state.fav) renderGrid(); return; } var c = e.target.closest('.card'); if (c) { e.preventDefault(); openJob(c.getAttribute('data-id')); } });
   $('empty').addEventListener('click', function (e) {
     var p = e.target.closest('[data-pick]'); if (p) { openJob(p.getAttribute('data-pick')); return; }

@@ -75,6 +75,13 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .ticker span::after { content:"✦"; margin-left:26px; color:var(--acc); }
 @keyframes tick { to { transform:translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .ticker .tr { animation:none; } }
+.disc1 { display:none; }
+@media (max-width:640px) {   /* 2026-10-28 모바일: 회사 화면에선 띠·안내 상자 숨기고 한 줄로, 첫 화면 띠는 높이 절반 */
+  body.has-co .ticker, body.has-co .topdisc { display:none; }
+  body.has-co .head { padding-top:18px; }
+  body.has-co .disc1 { display:block; order:9; font-size:12.5px; color:var(--muted); margin:6px 0 0; }
+  .ticker span { padding:7px 18px; font-size:11.5px; } .ticker span::after { margin-left:18px; }
+}
 .picks { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; align-items:center; }
 .picks span { font-size:12.5px; color:var(--muted); margin-right:4px; }
 .pill { border:1px solid var(--hairline-2); background:var(--paper); border-radius:999px; padding:7px 14px; font-size:13.5px; font-weight:700; cursor:pointer; }
@@ -632,7 +639,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 
 <div class="ticker" aria-hidden="true"><div class="tr" id="tick"></div></div>
 
-<div class="wrap"><p class="disc"><i>!</i><span><b>회사에 대한 일반적인 평가예요.</b> 좋은 회사의 기준은 내 스펙·연차·상황·가치관에 따라 달라요. 누군가에겐 천국 같은 회사가 누군가에겐 지옥일 수도 있으니, 아래 판정은 참고로만 보시고 최종 선택은 내 상황과 함께 판단하세요.</span></p></div>
+<div class="wrap topdisc"><p class="disc"><i>!</i><span><b>회사에 대한 일반적인 평가예요.</b> 좋은 회사의 기준은 내 스펙·연차·상황·가치관에 따라 달라요. 누군가에겐 천국 같은 회사가 누군가에겐 지옥일 수도 있으니, 아래 판정은 참고로만 보시고 최종 선택은 내 상황과 함께 판단하세요.</span></p></div>
 <main class="wrap" id="out"></main>
 
 <div class="wrap"><div class="note">
@@ -1457,7 +1464,7 @@ async function render(name) {
     <div class="head"><div><p class="kicker"><i></i>${esc(grpName(s, c.name))}</p><h2>${esc(c.name)}</h2>
       <div class="chips"><span class="chip">${esc(c.type)} 회사${c.age != null ? " · 업력 " + c.age + "년" : ""}</span>${c.ai ? `<span class="chip ai-${c.ai.level}">AI 영향 ${c.ai.level}</span>` : ""}</div>
       <div class="meta">${s ? `<span>직원 <b>${won(s.members)}명</b></span>` : ""}${f ? `<span>재무 <b>${f.years[0]}~${f.years.at(-1)}</b> ${esc(f.source)}</span>` : ""}${date ? `<span>평점 <b>${esc(mdOf(date))}</b></span>` : ""}${c.news?.date ? `<span>뉴스 <b>${esc(mdOf(c.news.date))}</b></span>` : ""}</div></div>
-      <div class="verdict ${vcls}"><small>${my ? "내 상황 기준 · " : ""}Zorro's Verdict</small><strong>${V}</strong>${!my && (c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}${my?.chips?.length ? `<div class="vtags mchips" title="이 판정이 나온 근거">${my.chips.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
+      <p class="disc1">회사에 대한 일반적인 평가예요. 내 스펙·상황에 따라 달라요.</p><div class="verdict ${vcls}"><small>${my ? "내 상황 기준 · " : ""}Zorro's Verdict</small><strong>${V}</strong>${!my && (c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}${my?.chips?.length ? `<div class="vtags mchips" title="이 판정이 나온 근거">${my.chips.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
     ${API ? `<div class="acts"><button class="act heart${hearted.get(c.name) ? " on" : ""}" type="button" id="b-heart" aria-label="이 회사 하트">♥ <b>${(c._s?.hearts || 0).toLocaleString("ko-KR")}</b></button>
       <button class="act" type="button" id="b-card">결과 카드 저장</button><button class="act" type="button" id="b-share">링크 공유</button>
       ${(c._s?.views7 || 0) >= 10 ? `<span class="seen">최근 7일 ${c._s.views7.toLocaleString("ko-KR")}명이 확인했어요</span>` : ""}</div>` : ""}
@@ -1495,6 +1502,9 @@ async function render(name) {
     const r = await send("/fix", { n: c.name, msg: $("#fixmsg").value, contact: $("#fixcontact").value });
     if (r?.ok) { e.target.closest("details").innerHTML = `<p style="margin:0;font-size:14px;font-weight:700">요청을 받았어요. 확인 후 반영할게요.</p>`; } else toast("보내지 못했어요. 내용을 5자 이상 적었는지 확인해 주세요."); };
   if (API) { $("#b-heart").onclick = e => heart(e.currentTarget); $("#b-card").onclick = saveCard; $("#b-share").onclick = shareLink; }
+  // 2026-10-28 모바일: 회사 화면에선 검은 띠·위 안내 상자를 숨기고(판정 밑 한 줄로), 결과 머리(회사 이름·판정)로 바로 내려 준다
+  document.body.classList.add("has-co");
+  if (matchMedia("(max-width:640px)").matches) { const h = document.querySelector("#out .head"); if (h) scrollTo(0, h.getBoundingClientRect().top + scrollY - 66); }
 }
 
 // ── VS 비교 (2026-10-20 사용자 결정: 결과 화면 버튼·같은 업계 칩으로 진입, 무승부 허용, 우선순위 버튼, 지금 회사 vs 옮길 회사)
@@ -1801,21 +1811,14 @@ function seriesHtml(top) {
   return `<div class="series"><div class="ser-h"><small>조로의 회사 시리즈 · 매주 바뀌어요</small><span class="ser-nav"><button type="button" data-d="-1" aria-label="이전">‹</button><button type="button" data-d="1" aria-label="다음">›</button></span></div>
     <div class="ser-track" tabindex="0">${all.map(card).join("")}</div><div class="ser-dots">${all.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div></div>`;
 }
-// 끝까지 가면 1번으로 (2026-10-28 사용자): 맨 뒤에 1번 카드 복사본을 붙여 두고, 복사본에 멈추면 진짜 1번으로 순간 이동
+// 카드는 1~8번만 (2026-10-28 사용자): 8번에서 다음 → 1번으로 날아가고, 1번에서 이전 → 8번으로 날아간다 (복사본 카드 없이)
 function seriesWire(el) {
   const tr = el.querySelector(".ser-track"); if (!tr) return;
-  const dots = [...el.querySelectorAll(".ser-dots i")], real = [...tr.children], n = real.length;
-  if (n > 1) { const cl = real[0].cloneNode(true); cl.setAttribute("aria-hidden", "true"); cl.classList.add("ser-clone"); tr.append(cl); }
-  const cards = [...tr.children], x0 = () => cards[0].offsetLeft, at = k => cards[k].offsetLeft - x0();
+  const dots = [...el.querySelectorAll(".ser-dots i")], cards = [...tr.children], n = cards.length;
+  const x0 = () => cards[0].offsetLeft, at = k => cards[k].offsetLeft - x0();
   const cur = () => cards.reduce((b, c, i) => Math.abs(at(i) - tr.scrollLeft) < Math.abs(at(b) - tr.scrollLeft) ? i : b, 0);
-  let t = 0;
-  tr.addEventListener("scroll", () => {
-    const k = cur(); dots.forEach((d, i) => d.classList.toggle("on", i === k % n));
-    clearTimeout(t); t = setTimeout(() => { if (cur() === n) tr.scrollTo({ left: 0, behavior: "instant" }); }, 140);
-  }, { passive: true });
-  const go = d => { const k = cur() % n;
-    if (d < 0 && k === 0) return tr.scrollTo({ left: at(n - 1), behavior: "smooth" });   // 1번에서 뒤로 → 마지막
-    tr.scrollTo({ left: at(k + d), behavior: "smooth" }); };                                 // 마지막에서 앞으로 → 복사본(=1번) → 순간 이동
+  tr.addEventListener("scroll", () => { const k = cur(); dots.forEach((d, i) => d.classList.toggle("on", i === k)); }, { passive: true });
+  const go = d => { const k = cur(); tr.scrollTo({ left: at((k + d + n) % n), behavior: "smooth" }); };
   let seen = true, pause = 0;
   const hold = () => { pause = Date.now() + 8000; };
   el.querySelectorAll(".ser-nav button").forEach(b => b.onclick = () => { go(Number(b.dataset.d)); hold(); });
@@ -1832,7 +1835,7 @@ function seriesWire(el) {
   }, 4000);
 }
 // 첫 화면은 비워 두고 검색을 유도한다 (주소에 #회사명 이 있을 때만 바로 보여 줌)
-const intro = () => { $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b>
+const intro = () => { document.body.classList.remove("has-co"); $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b>
   <p>평점·직급별 연봉·5개년 재무·최근 뉴스를 한 번에 보고, Zorro가 갈 만한지 정리해 드려요.</p><div class="pulse" id="pulse"></div></div>`;
   if (!API) { const el = $("#pulse"); if (el) { el.innerHTML = seriesHtml([]); seriesWire(el); el.querySelectorAll("button[data-n]").forEach(b => b.onclick = () => pick(b.dataset.n)); } return; }
   topP.then(d => { const el = $("#pulse"); if (!d || !el) return;
