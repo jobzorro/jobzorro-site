@@ -692,7 +692,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
       <div class="mf" data-work hidden><label for="me_nsize">지금 회사 규모</label><select id="me_nsize" data-k="prevSize"><option value="">모름</option><option>대기업</option><option>중견</option><option>중소</option><option>스타트업</option><option>공기업</option></select></div>
       <div class="mf" data-work hidden><label for="me_nsame">지원 직무가 지금 직무와</label><select id="me_nsame" data-k="prevSame"><option value="">모름</option><option value="같은">같아요</option><option value="다른">달라요</option></select></div>
       <div class="mf wide"><label for="me_school">학교</label><select id="me_school" data-k="school" data-spec><option value="">선택 안 함</option>
-        <option value="4">SKY·KAIST·POSTECH</option><option value="3">서성한·중경외시·이화 등 인서울 상위 · 과기원(GIST·UNIST·DGIST)</option><option value="2">그 밖의 인서울 · 지방 거점 국립대</option><option value="1">수도권·지방 4년제</option><option value="0">전문대·고졸·기타</option></select></div>
+        <option value="4">SKY·KAIST·POSTECH</option><option value="3">서성한·중경외시·이화 등 인서울 상위 · 과기원(GIST·UNIST·DGIST)</option><option value="2">그 밖의 인서울 · 지방 거점 국립대</option><option value="1">수도권·지방 4년제</option><option value="g4">해외대 · 글로벌 탑</option><option value="g3">해외대 · 유명</option><option value="g1">해외대 · 그 밖</option><option value="0">전문대·고졸·기타</option></select></div>
       <div class="mf wide"><label for="me_major">학과</label><select id="me_major" data-k="major" data-spec><option value="">선택 안 함</option>
         <optgroup label="문과"><option value="lib:4">경영·경제·회계</option><option value="lib:3">법·행정·정치외교·사회과학</option><option value="lib:3">영어·중국어·일본어 등 어문</option><option value="lib:2">미디어·광고·심리·교육</option><option value="lib:2">인문 (국문·사학·철학 등)</option></optgroup>
         <optgroup label="이공계"><option value="sci:4">전자·전기·컴퓨터·반도체</option><option value="sci:4">기계·화학공학·신소재·산업공학</option><option value="sci:3">자연과학 (수학·물리·화학·생명·통계)</option><option value="sci:3">건축·토목·환경·그 밖의 공학</option></optgroup>
@@ -767,8 +767,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     avg_tenure_apply_min: 2,    // F23 평균 근속이 이보다 짧고
     last_tenure_apply: 3,       //     마지막 회사 3년 전이면 지원 보류
     newbie_age: { "남": 30, "여": 28 }, // F21 만 나이 이 이상이면 신입으로 늦은 편 (5회차 A4, 중고신입은 경력만큼 1~2살 더)
-    tier_up_cut_pct: 10,
-    spec_cut: [3.5, 2.8, 2.0, 1.2],  // 신입 스펙 등급 S·A·B·C 기준 평균 (그 아래는 D). 2026-10-28 사용자 "후하다" → 반올림에서 높임        // 5회차 D4: 회사 급이 2단계 이상 오르거나 공기업이면 경력도 10%까지 삭감 허용
+    tier_up_cut_pct: 10,        // 5회차 D4: 회사 급이 2단계 이상 오르거나 공기업이면 경력도 10%까지 삭감 허용
+    spec_cut: [3.7, 3.4, 2.7, 2.0, 1.2],  // 신입 스펙 등급 SS·S·A·B·C 기준 평균 (그 아래는 D). 2026-10-28 사용자: 6단계, 수도권4년제·경영·토익850·인턴1=B, SKY·950·인턴2·전공일치=SS
     left_gap_cut_pct: 5,        // F11 3회차 C3: 선퇴사 + 공백 1년 넘은 4년 차 이상은 5%까지 삭감도 '조건 보고'
     down_cond_pct: 10,          // F3 4회차 C2: 아래 급 +500만 넘고 10~15%면 '조건 보고'(지금 회사 평점이 더 낮을 때)
     rating_min: 3.0,            // 조로 규칙 3.0 기준 — 갈 회사 평점이 이보다 낮으면 확인
@@ -1087,7 +1087,9 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     return { tr, lang, rnd, plant, w };
   }
   const SPEC_F = [["school", "학교"], ["major", "학과"], ["lang", "어학"], ["exp", "인턴·직무 경험"], ["fit", "직무 적합도"], ["gpa", "학점"], ["cert", "직무 자격증"], ["degree", "학위"]];
-  const SPEC_G = [["D", "낮은 편"], ["C", "보통 아래"], ["B", "보통"], ["A", "상위"], ["S", "최상위"]];
+  const SPEC_G = [["D", "낮은 편"], ["C", "보통 아래"], ["B", "보통"], ["A", "좋은 편"], ["S", "상위"], ["SS", "최상위"]];
+  // 학교 값: 숫자 또는 해외대 'g4'(글로벌 탑 = SKY급)·'g3'(유명 = 중경외시급)·'g1'(그 밖 = 수도권 4년제급) (2026-10-28 사용자)
+  const schoolV = m => { const v = parseFloat(String(m?.school ?? "").replace(/^g/, "")); return isNaN(v) ? null : v; };
   // 5회차 A6: 4.0·4.3·4.5 만점을 다 받고 4.5 기준으로 바꿔 본다
   function gpa45(m = {}) { const g = Number(m.gpa), mx = Number(m.gpaMax) || 4.5; return g > 0 ? Math.round(g * 4.5 / mx * 100) / 100 : null; }
   // 스펙 등급 S~D: 고른 항목(0~4)을 직무 기준 무게로 평균 (안 고른 항목은 뺀다). co 를 주면 공기업 가산(A7)까지
@@ -1103,9 +1105,10 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
       if (k === "gpa") {   // 5회차 A6: 3.0 이하는 둘 다 최악, 문과는 3.7 이상이면 문제없음, 이공계는 높을수록 좋고 3.5 이하는 공격받음
         if (g <= 3.0) return 0;
         const v = tr === "sci" ? (g >= 4.0 ? 4 : g >= 3.7 ? 3 : g > 3.5 ? 2 : 1) : (g >= 3.7 ? 3 : g >= 3.3 ? 2 : 1);
-        return v < 3 && Number(m.school) >= 3 ? v + 1 : v;   // 학벌이 좋으면 조금 완화
+        return v < 3 && schoolV(m) >= 3 ? v + 1 : v;   // 학벌이 좋으면 조금 완화
       }
       if (k === "cert") return Math.min(3, Number(m.cert)) + 1;            // 0개 1 · 1개 2 · 2개 3 · 3개 이상 4
+      if (k === "school") return schoolV(m);
       if (k === "degree") return { "학사": 1, "석사": 3, "박사": 4 }[m.degree];
       return Number(m[k]);
     };
@@ -1119,7 +1122,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     const pub = !!m.gcert && tier(co.size).kind === "public";
     if (pub) avg += 0.3;                                                    // 5회차 A7: 직무 무관 자격증(컴활·한국사)은 공기업 지원일 때만
     // 등급 기준 (2026-10-28 반올림 대신 높인 기준): S 3.5 · A 2.8 · B 2.0 · C 1.2 이상
-    let lv = FIT.spec_cut.findIndex(c => avg >= c); lv = lv < 0 ? 0 : 4 - lv;
+    let lv = FIT.spec_cut.findIndex(c => avg >= c); lv = lv < 0 ? 0 : FIT.spec_cut.length - lv;   // 0 D ~ 5 SS
     const gpaBad = g != null && g <= 3.0;
     if (gpaBad) lv = Math.min(lv, 1);                                       // 학점 3.0 이하는 학교와 관계없이 C 아래
     const big = got.filter(([, , wt]) => wt >= 3).map(([n]) => n);         // 이 직무에서 크게 보는 항목
@@ -1158,10 +1161,11 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     if (offer.verdict === "계속 준비") { cap = 2; offer.reasons.forEach(x => { if (!R.some(r => r.text === x.text)) R.push(x); }); add("F21", "급하지 않다면 더 좋은 카드를 노려 보세요."); tags.push("계속 준비 쪽"); }
     // 스펙 vs 회사 수준
     if (sp) {
-      const nd = specNeed(co, me.job || ""), gap = sp.lv > nd.hi ? sp.lv - nd.hi : sp.lv < nd.lo ? sp.lv - nd.lo : 0;
+      const lv = Math.min(sp.lv, 4);   // 회사 수준과 비교할 땐 SS도 S로 (SS가 대기업 붙었다고 '아깝다'로 내리지 않게)
+      const nd = specNeed(co, me.job || ""), gap = lv > nd.hi ? lv - nd.hi : lv < nd.lo ? lv - nd.lo : 0;
       const fill = sp.weak.length ? `${j(sp.weak.join("·"), "을", "를")} 채우고` : sp.plant ? "기사 자격증을 채우고" : "인턴·자격증을 채우고";
       const tail = sp.weak.length ? ` ${j(sp.weak.join("·"), "을", "를")} 채우면 한 단계 위도 노려볼 수 있어요.` : "";
-      if ((gap >= 2 || (gap >= 1 && Number(me.school) >= 3)) && !old && base <= 3) {   // 5회차 C3·C4: 아직 나이 여유 있고 회사가 약하면 한 시즌 더 (C3 "학벌이 좋으니까" → 학교 상위면 1단계 위로도)
+      if ((gap >= 2 || (gap >= 1 && schoolV(me) >= 3)) && !old && base <= 3) {   // 5회차 C3·C4: 아직 나이 여유 있고 회사가 약하면 한 시즌 더 (C3 "학벌이 좋으니까" → 학교 상위면 1단계 위로도)
         cap = Math.min(cap, 1);
         add("N1", `스펙 ${sp.g}(${sp.word})면 이 회사는 아까워요. 아직 나이 여유가 있으니 ${fill} 다음 시즌에 한 단계 위를 노리세요.`);
         tags.push("다음 시즌 추천");
