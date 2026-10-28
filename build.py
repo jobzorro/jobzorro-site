@@ -438,7 +438,12 @@ NEWS_MASTHEAD_CSS = """
 .masthead .brand-ko { margin-left:-6px; }
 .masthead .brand-ko::before { content:"· "; }
 /* 좁은 화면: 한글 설명을 다음 줄로 내리고 점 대신 글자 시작선에 맞춤 */
-@media (max-width:560px) { .masthead .brand-ko { flex-basis:100%; margin-left:20px; } .masthead .brand-ko::before { content:none; } }
+/* 2026-10-28 사용자: 폰에서도 'Career Briefing · 조로의 News Pick' 한 줄 (글자 간격을 줄여 360px 폰에서도 들어감), 머리 부분 간격 줄여 일간/주간을 위로 */
+@media (max-width:560px) {
+  .masthead .brand-name, .masthead .brand-en { font-size:11.5px; letter-spacing:.08em; }
+  .masthead .brand-name { flex-wrap:nowrap; white-space:nowrap; }
+  .masthead .brand-ko { margin-left:-4px; }
+}
 .stamp { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
 .theme-btn { font-family:"Archivo",sans-serif; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; border-radius:999px; }
 .hero { background:var(--paper); border-bottom:1px solid var(--hairline); }
@@ -554,6 +559,11 @@ NEWS_MASTHEAD_CSS = """
   .masthead-inner { flex-wrap:wrap; gap:8px; }
   .v2-outro { padding:40px 16px 16px; }
 }
+/* 2026-10-28 사용자: 폰에서 머리 부분 간격 줄여 일간/주간을 위로 (위의 .hero-inner·.hero h1 보다 뒤에 있어야 이김) */
+@media (max-width:560px) {
+  .hero-inner { padding-top:8px; padding-bottom:24px; gap:22px; }
+  .hero h1 { margin-top:6px; margin-bottom:18px; }
+}
 """
 
 
@@ -590,7 +600,11 @@ def nav_html(active: str, root: str, logo: str) -> str:
         # 실제로 보이는 화면(visualViewport) 아래 끝에 맞춰 탭바를 그만큼 올린다 (가리는 게 없으면 0이라 다른 브라우저는 그대로)
         "<script>(function(){var b=document.currentScript.previousElementSibling,v=window.visualViewport;if(!v||!b)return;"
         "var f=function(){var g=Math.round(innerHeight-v.height-v.offsetTop);b.style.bottom=(g>0&&g<200&&Math.abs(v.scale-1)<.01?g:0)+'px'};"
-        "v.addEventListener('resize',f);v.addEventListener('scroll',f);addEventListener('scroll',f,{passive:true});f()})();</script>"
+        "v.addEventListener('resize',f);v.addEventListener('scroll',f);addEventListener('scroll',f,{passive:true});f();"
+        # 확인용: 주소에 ?dbg=1 이 있을 때만 폰이 계산한 화면 높이 숫자를 위에 띄운다 (삼성 인터넷 아래 바 문제 진단, 2026-10-28)
+        "if(/[?&]dbg=1/.test(location.search)){var d=document.createElement('pre');d.style.cssText='position:fixed;top:60px;left:8px;z-index:99;margin:0;padding:6px 8px;font:11px/1.4 monospace;background:#ff0;color:#000;border-radius:6px';"
+        "document.body.appendChild(d);var u=function(){var r=b.getBoundingClientRect(),e=document.documentElement;d.textContent='inner '+innerWidth+'x'+innerHeight+'\\nvv '+Math.round(v.width)+'x'+Math.round(v.height)+' top'+Math.round(v.offsetTop)+' s'+v.scale.toFixed(2)+'\\nclient '+e.clientHeight+' doc '+e.scrollHeight+'\\nscreen '+screen.height+' avail '+screen.availHeight+'\\nbar '+Math.round(r.top)+'~'+Math.round(r.bottom)+' bottom='+b.style.bottom+'\\ny '+Math.round(scrollY)};"
+        "v.addEventListener('resize',u);addEventListener('scroll',u,{passive:true});u();setInterval(u,1000)}})();</script>"
     )
 
 
