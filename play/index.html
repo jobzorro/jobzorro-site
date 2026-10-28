@@ -437,16 +437,36 @@ img.px, .pxs { image-rendering:crisp-edges; image-rendering:pixelated; display:b
 .bkt .rnd { display:flex; justify-content:center; align-items:flex-end; gap:4px; flex-wrap:wrap; }
 .bkt .rl { font-family:var(--px-font); font-size:11px; color:var(--muted); text-align:center; }
 /* 명예의 전당 · 오락실 HI-SCORE 틀 (이 탭에서만) */
-.arcade { background:var(--px-arc); color:var(--px-arc-ink); border:3px solid var(--px-arc-acc); border-radius:6px; box-shadow:0 0 0 3px var(--px-arc), 0 0 0 5px var(--px-arc-y); padding:16px 14px 12px; margin-top:16px; font-family:var(--px-font); }
-.arcade .ahd { text-align:center; color:var(--px-arc-y); font-size:clamp(18px,3vw,24px); letter-spacing:.08em; margin:0 0 2px; }
+.arcade { background:var(--px-arc); color:var(--px-arc-ink); border:3px solid var(--px-arc-acc); border-radius:6px; box-shadow:0 0 0 3px var(--px-arc), 0 0 0 5px var(--px-arc-y); padding:16px 14px 12px; margin-top:16px; font-family:var(--font); }   /* 2026-10-29 사용자: 도트 글꼴 별로 → 사이트 글꼴 */
+.arcade .ahd { text-align:center; color:var(--px-arc-y); font-family:var(--display); font-weight:900; font-size:clamp(20px,3.4vw,28px); letter-spacing:.04em; margin:0 0 2px; }
 .arcade .ahd2 { text-align:center; color:var(--px-arc-acc); font-size:12px; letter-spacing:.2em; margin:0 0 10px; animation:pxBlink 1.2s steps(2) infinite; }
-.arcade .ahd2.g { animation:none; color:var(--px-arc-ink); letter-spacing:.04em; font-size:14px; margin-bottom:2px; }
+.arcade .ahd2.g { animation:none; color:var(--px-arc-ink); letter-spacing:-.01em; font-family:var(--display); font-weight:900; font-size:17px; margin-bottom:2px; }
 .arcade .lb { margin-top:6px; }
 .arcade .lbc { border-top:2px dashed var(--px-arc-acc); }
-.arcade .lbc h4 { color:var(--px-arc-y); font-family:var(--px-font); font-weight:400; }
+.arcade .lbc h4 { color:var(--px-arc-y); font-family:var(--display); font-weight:900; font-size:19px; }
 .arcade .lbc .sub, .arcade .lbc .empty { color:#9a9d92; }
 .arcade .lbc li { border-bottom:1px dotted #2c3022; font-variant-numeric:tabular-nums; }
-.arcade .lbc li .r, .arcade .lbc li .s { font-family:var(--px-font); font-weight:400; color:var(--px-arc-ink); }
+.arcade .lbc li .r, .arcade .lbc li .s { font-family:var(--display); font-weight:900; color:var(--px-arc-ink); }
+/* 순위표 줄: 순위 · 조로 얼굴 · 이름 · 점수. 1~3위 금은동 (2026-10-29) */
+.lbc li { grid-template-columns:2em auto minmax(0,1fr) auto; align-items:center; }
+.lbc li .fc { display:inline-grid; place-items:center; width:26px; height:24px; overflow:hidden; }
+.lbc li .fc img { max-height:24px; width:auto; }
+.lbc li:not(:has(.fc)) { grid-template-columns:2em minmax(0,1fr) auto; }
+.arcade .lbc li.top1 .r { color:#ffcf3d; } .arcade .lbc li.top2 .r { color:#d6dbe4; } .arcade .lbc li.top3 .r { color:#e0a26a; }
+/* 명예의 전당: 주간 1위의 꾸민 조로 액자 */
+.lbc.hof .hofl { grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px; }
+.lbc.hof .hofl li { display:grid; grid-template-columns:none; justify-items:center; gap:2px; text-align:center; border:1px solid var(--line2); border-radius:12px; padding:8px 4px; }
+.lbc.hof .hofl li.hof1 { grid-column:1 / -1; padding:12px 8px; }
+.lbc.hof .hz { display:grid; place-items:end center; min-height:56px; }
+.lbc.hof .hz img { image-rendering:pixelated; border-radius:6px; }
+.lbc.hof .hw { font-size:11.5px; font-weight:800; color:var(--muted); }
+.lbc.hof .hof1 .hw { font-size:13px; }
+.lbc.hof .n { font-weight:900; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lbc.hof .hof1 .n { font-size:17px; }
+.lbc.hof .s { font-family:var(--display); font-weight:900; font-size:13px; }
+.arcade .lbc.hof .hofl li { border:2px solid #2c3022; background:#14170f; }
+.arcade .lbc.hof .hofl li.hof1 { border-color:var(--px-arc-y); box-shadow:0 0 0 2px var(--px-arc), 0 0 0 4px var(--px-arc-acc); }
+.arcade .lbc.hof .hw { color:var(--px-arc-y); }
 .arcade .lbc li:first-child .r, .arcade .lbc li:first-child .s { color:var(--px-arc-acc); }
 .arcade .lbc li.mine { background:#1f2318; }
 .arcade .lbc li.mine .n::after { color:#9a9d92; }
@@ -530,8 +550,8 @@ h1 .thin { margin-bottom:8px; }
 .lh h2 { margin:0; font-family:var(--display); font-weight:900; font-size:clamp(22px,2.4vw,28px); letter-spacing:-.04em; line-height:1.2; }
 .lh h2 b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
 .lh span { font-size:13px; color:var(--muted); }
-.games { display:grid; grid-template-columns:1.35fr 1fr 1fr; gap:14px; }
-.gc { position:relative; text-align:left; border:2px solid var(--ink); border-radius:18px; background:var(--card); color:var(--ink); padding:16px 16px 18px; display:grid; gap:6px; align-content:start; justify-items:start; min-width:0; transition:transform .12s; }
+.games { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }   /* 2026-10-29 사용자: 1~6 같은 크기로 두 줄 */
+.gc { position:relative; text-align:left; border:2px solid var(--ink); border-radius:18px; background:var(--card); color:var(--ink); padding:16px 16px 18px; display:flex; flex-direction:column; align-items:flex-start; gap:6px; min-width:0; transition:transform .12s; }   /* 세로로 쌓고 시작 버튼은 맨 아래 (2026-10-29) */
 .gc:hover { transform:translateY(-2px); box-shadow:0 6px 0 var(--ink); }
 .gc:focus-visible { outline-offset:4px; }
 .gc .no { font-family:var(--display); font-weight:900; font-size:34px; line-height:.9; letter-spacing:-.04em; color:transparent; -webkit-text-stroke:1.5px var(--ink); }
@@ -540,17 +560,15 @@ h1 .thin { margin-bottom:8px; }
 .gc .gn { font-family:var(--display); font-weight:900; font-size:18px; letter-spacing:-.03em; line-height:1.25; padding-right:44px; word-break:keep-all; overflow-wrap:anywhere; }
 .gc .d { font-size:13px; color:var(--muted); line-height:1.5; }
 .gc .meta { font-size:12px; color:var(--muted); font-weight:700; }
-.gc .go { margin-top:8px; background:var(--acc); color:var(--acc-ink); border:2px solid var(--ink); border-radius:999px; font-weight:900; font-size:15px; padding:9px 20px; box-shadow:3px 3px 0 var(--ink); white-space:nowrap; }
-.gc.feat { grid-row:span 2; background:var(--ink); color:var(--bg); padding:22px 22px 24px; }
-.gc.feat .no { -webkit-text-stroke-color:var(--featno); font-size:46px; }
-.gc.feat .gi { right:22px; top:22px; }
-.gc.feat .gn { font-size:clamp(24px,2.4vw,32px); padding-right:80px; }
-.gc.feat .d { font-size:14.5px; color:var(--bg); opacity:.8; max-width:34ch; }
+.gc .go { margin-top:auto; align-self:stretch; text-align:center; min-height:46px; box-sizing:border-box; background:var(--acc); color:var(--acc-ink); border:2px solid var(--ink); border-radius:999px; font-weight:900; font-size:15px; padding:9px 20px; box-shadow:3px 3px 0 var(--ink); white-space:nowrap; }
+.gc.feat { background:var(--ink); color:var(--bg); }
+.gc.feat .no { -webkit-text-stroke-color:var(--featno); }
+.gc.feat .d { color:var(--bg); opacity:.8; }
 .gc.feat .meta { color:var(--bg); opacity:.8; }
-.gc.feat .go { font-size:18px; padding:13px 32px; border-color:var(--acc); box-shadow:none; margin-top:12px; }
+.gc.feat .go { border-color:var(--acc); box-shadow:none; }
 .gc.done { background:var(--fill); border-color:var(--line2); }
 .gc.done .meta { color:var(--good); }
-.gc.done .go { background:transparent; color:var(--ink); box-shadow:none; border:1.5px solid var(--ink); font-size:13px; padding:7px 16px; }
+.gc.done .go { background:transparent; color:var(--ink); box-shadow:none; }   /* 2026-10-29 사용자: 6개 시작 버튼 모두 같은 크기 (색만 다름) */
 /* 순위·내 조로·도구: PC 는 게임 카드 아래 작은 칸 3개, 폰은 아래 고정 탭바(게임 칸 더해 4개) */
 .dock { display:none; }
 :root[data-view="lobby"] .dock, :root:not([data-view]) .dock { display:block; }
@@ -594,7 +612,6 @@ body > .zn { margin-left:calc(-1 * max(16px, env(safe-area-inset-left,0px))); ma
   .hstats { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:20px; }
   .hstats dd { font-size:24px; }
   .games { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
-  .gc.feat { grid-column:1 / -1; grid-row:auto; }
 }
 @media (max-width:640px) {
   .hero { padding-block:14px 12px; }
@@ -636,12 +653,8 @@ body > .zn { margin-left:calc(-1 * max(16px, env(safe-area-inset-left,0px))); ma
   .gc .d { display:none; }
   .gc .meta { font-size:11.5px; }
   .gc .meta .pc { display:none; }
-  .gc .go { justify-self:stretch; text-align:center; font-size:13.5px; padding:8px 6px; margin-top:4px; min-height:40px; box-shadow:2px 2px 0 var(--ink); }
-  .gc.feat { padding:14px; }
-  .gc.feat .gi { right:14px; top:14px; }
-  .gc.feat .gn { font-size:21px; padding-right:60px; margin-top:2px; }
-  .gc.feat .go { font-size:16px; padding:12px; min-height:48px; margin-top:8px; }
-  .gc.done .go { min-height:40px; font-size:13px; padding:7px 6px; }
+  .gc .go { font-size:13.5px; padding:8px 6px; min-height:42px; box-shadow:2px 2px 0 var(--ink); }
+  .gc .ft { max-width:calc(100% - 34px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }   /* 폰: '추천' 띠가 오른쪽 아이콘과 겹치지 않게 */
   :root[data-view="menu"] .dock { display:block; }
   .dock { position:fixed; left:0; right:0; bottom:0; z-index:30; background:var(--bg); border-top:1px solid var(--line2); padding-bottom:env(safe-area-inset-bottom,0px); }
   .dock-in { grid-template-columns:repeat(4,minmax(0,1fr)); gap:2px; margin:0 auto; padding:4px max(8px, env(safe-area-inset-left,0px)) 4px max(8px, env(safe-area-inset-right,0px)); }
@@ -655,6 +668,15 @@ body > .zn { margin-left:calc(-1 * max(16px, env(safe-area-inset-left,0px))); ma
   .dk[aria-current="page"] .di { background:var(--acc); box-shadow:0 0 0 1.5px var(--ink); }
   :root:not([data-view="game"]) body { padding-bottom:calc(84px + env(safe-area-inset-bottom,0px)); }
   :root:not([data-view="game"]) .toast { bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+  /* 2026-10-29 사용자: 앱·폰에서 순위·내 조로·도구가 안 보임 — 사이트 공용 아래 탭바(.zb, z 40)가 놀이터 탭바를 덮음.
+     공용 탭바가 있으면 놀이터 메뉴는 고정 바를 그만두고 로비 게임 카드 바로 아래 버튼 3개로 (게임 화면에선 ← 게임 고르기) */
+  body:has(.zb) .dock { position:static; background:transparent; border:0; padding:0; }
+  :root[data-view="menu"] body:has(.zb) .dock { display:none; }
+  body:has(.zb) .dock-in { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:0; margin-top:10px; }
+  body:has(.zb) .dk { border:1.5px solid var(--ink); background:var(--card); color:var(--ink); border-radius:14px; min-height:64px; }
+  body:has(.zb) .dk b { font-size:13px; font-weight:900; }
+  body:has(.zb) .dk-game { display:none; }
+  :root:not([data-view="game"]) body:has(.zb) { padding-bottom:calc(var(--tabbar-h, 58px) + 16px + env(safe-area-inset-bottom,0px)); }
   .pb-back span { display:none; }
   .pb-in { gap:6px 10px; min-height:48px; }
   .pb-name { font-size:15px; }
@@ -856,7 +878,6 @@ html.lk-open, html.lk-open body { overflow:hidden; }
 </div></nav>
 <div class="lobby2" id="lobby2"><div class="in">
   <div id="boss" hidden></div>
-  <p class="outl">숫자가 궁금해지면 <a href="https://job.jobzorro.kr/salary/">연봉 연구소</a> · 그 회사 가도 될지는 <a href="https://job.jobzorro.kr/company/">회사 판단</a> · 내 이직이 고민이면 <a href="https://job.jobzorro.kr/apply/">무료 상담 신청</a></p>
 </div></div>
 
 <main>
@@ -932,7 +953,7 @@ var API_BASE = 'https://play-api.jobzorro.workers.dev';
 var SITE = 'https://job.jobzorro.kr/play/', SITE_S = 'job.jobzorro.kr/play';
 var ctx = PC.load(D), CO = ctx.all, BYN = ctx.by, POOL = ctx.P, RK = PC.RK;
 var TODAY = PC.kstDay();
-var GNAME = { higher: '어디가 더 많이 줄까?', today: '오늘의 회사', sniper: '연봉 스나이퍼', road: '이직 로드 10년' };
+var GNAME = { higher: '어디가 더 많이 줄까?', today: '오늘의 회사', sniper: '연봉 스나이퍼', road: '이직 로드 10년', run: '조로 출근길' };
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]; }); }
@@ -1069,6 +1090,21 @@ if (typeof LOOK !== 'object' || Array.isArray(LOOK)) LOOK = {};
 function lookOf(o) { return o && o.plain ? {} : o && o.look ? o.look : LOOK; }
 function baseOf(L) { return L && L.base === 'f' ? 'f' : 'm'; }
 function hairOf(L) { var b = baseOf(L), H = HAIRS[b]; return H.some(function (x) { return x[0] === (L && L.hair); }) ? L.hair : H[0][0]; }
+// 꾸민 조로를 짧은 글로 (순위표·명예의 전당에 남의 조로를 그리려고 점수와 같이 보냄, 2026-10-29): 'r2.bf.hbob.os.t<모자>.d<손>.a<얼굴>.g<배경>'
+function lookCode() {
+  var L = LOOK, a = ['r' + myRank()]; if (baseOf(L) === 'f') a.push('bf'); a.push('h' + hairOf(L)); if (baseOf(L) === 'f' && L.bottom === 'skirt') a.push('os');
+  [['t', 'hat'], ['d', 'hand'], ['a', 'acc'], ['g', 'bg']].forEach(function (p) { if (L[p[1]]) a.push(p[0] + L[p[1]]); });
+  return a.join('.');
+}
+function lookParse(c) {   // → { rk, look } — 모르는 소품·자리가 안 맞는 소품은 버림
+  var L = {}, rk = 0, SL = { t: 'hat', d: 'hand', a: 'acc', g: 'bg' };
+  String(c || '').split('.').forEach(function (x) {
+    var k = x.charAt(0), v = x.slice(1);
+    if (k === 'r') rk = Math.max(0, Math.min(4, +v || 0)); else if (k === 'b' && v === 'f') L.base = 'f'; else if (k === 'h') L.hair = v; else if (k === 'o' && v === 's') L.bottom = 'skirt';
+    else if (SL[k] && ITEM_BY[v] && ITEM_BY[v][1] === SL[k]) L[SL[k]] = v;
+  });
+  return { rk: rk, look: L };
+}
 function lookKey(L, o) { return baseOf(L) + hairOf(L) + (L.bottom === 'skirt' ? 'S' : '') + '.' + (L.hat || '') + '.' + (L.hand || '') + '.' + (L.acc || '') + (o && o.bg ? '.' + (L.bg || '') : '') + (o && o.sil ? '.sil' : ''); }
 
 // ── 회사 = 도트 빌딩. 폭 ← 직원 수, 층 ← 부장 연봉, 불 켜진 창 ← 사원 연봉, 색 ← 업종 묶음, 지붕 모양·창 무늬 ← 회사 이름 해시
@@ -1513,21 +1549,28 @@ function mockDay(day, game) {
   var rows = [], pz = game === 'road' ? PC.genRoad(day, ctx) : null;
   mockNicks(PC.isoWeek(day)).forEach(function (n, i) {
     var r = PC.rng('mock|' + key + '|' + n); if (r() > .72) return;
-    var row = { nick: n, dev: 'mock' + i, ts: i };
+    var row = { nick: n, dev: 'mock' + i, ts: i, lk: mockLook(r) };
     if (game === 'higher') { var ok = 4 + Math.floor(r() * 7); row.aux = ok; row.score = ok * 100 + Math.round(ok * (6 + r() * 12)); }
     else if (game === 'today') { var op = r() < .18 ? 0 : 1 + Math.floor(r() * PC.TODAY_CLUES), ms = op ? Math.floor(r() * Math.min(PC.TODAY_PICKS, op)) : 0; row.aux = op; row.score = op ? PC.todayPts(op, ms) : 0; }   // op = 본 단서 수(0 = 실패), ms = 틀린 수
     else if (game === 'sniper') { var s = 0, errs = []; for (var q = 0; q < 5; q++) { var e = Math.round((r() - .42) * 40 * 10) / 10; errs.push(e); s += PC.sniperPts(e); } row.score = s; row.aux = 5; row.errs = errs; }
+    else if (game === 'run') { row.aux = r() < .7 ? 1 : 0; row.score = Math.round((4000 + r() * 9000) / 10) * 10 + (row.aux ? 1000 + Math.floor(r() * 10) * 50 : 0); }
     else { var picks = [0, 1, 2, 3, 4].map(function () { return Math.floor(r() * 3); }), R = PC.simRoad(pz, ctx, picks); row.score = R.total; row.aux = R.eok; row.picks = R.picks; }
     rows.push(row);
   });
   return (mockCache[key] = rows);
 }
-function myRow(day, game) { var x = rec(day, game); return x && x.sent ? { nick: x.nick, dev: DEV, score: x.score, aux: x.aux, ts: 1e15, errs: x.errs, picks: x.picks, me: 1 } : null; }
+// 가짜 참가자의 꾸민 조로 (모양 글 lookCode 와 같은 꼴)
+function mockLook(r) {
+  var f = r() < .45, a = ['r' + Math.floor(r() * 5)], H = HAIRS[f ? 'f' : 'm']; if (f) a.push('bf'); a.push('h' + H[Math.floor(r() * H.length)][0]); if (f && r() < .5) a.push('os');
+  [['t', 'hat'], ['d', 'hand'], ['a', 'acc'], ['g', 'bg']].forEach(function (p) { var L = ITEMS.filter(function (it) { return it[1] === p[1]; }); if (L.length && r() < .55) a.push(p[0] + L[Math.floor(r() * L.length)][0]); });
+  return a.join('.');
+}
+function myRow(day, game) { var x = rec(day, game); return x && x.sent ? { nick: x.nick, dev: DEV, score: x.score, aux: x.aux, ts: 1e15, errs: x.errs, picks: x.picks, me: 1, lk: lookCode() } : null; }
 function byScore(a, b) { return b.score - a.score || a.ts - b.ts; }
 function dayRows(day, game) { var a = mockDay(day, game).slice(), m = myRow(day, game); if (m) a.push(m); return a.sort(byScore); }
 function weekSum(days, game) {
   var m = {};
-  days.forEach(function (d) { dayRows(d, game).forEach(function (r) { var k = r.dev; m[k] = m[k] || { nick: r.nick, s: 0, me: r.me }; m[k].s += r.score; }); });
+  days.forEach(function (d) { dayRows(d, game).forEach(function (r) { var k = r.dev; m[k] = m[k] || { nick: r.nick, s: 0, me: r.me, lk: r.lk }; m[k].s += r.score; }); });
   return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.s - a.s; });
 }
 function mockPlays() { return store.getJ('slp-mplays', {}); }
@@ -1550,7 +1593,7 @@ function mock(path, b) {
     var g = q.game, d = q.d || TODAY, days = PC.weekDays(d).filter(function (x) { return x <= TODAY; }), R = dayRows(d, g), hall = [], meHall = [];
     for (var w = 1; w <= 8; w++) {
       var mon = PC.addDays(PC.weekDays(d)[0], -7 * w), ws = weekSum(PC.weekDays(mon), g)[0];
-      if (ws) { hall.push([PC.isoWeek(mon), ws.nick, ws.s]); if (ws.me) meHall.push([PC.isoWeek(mon), g]); }
+      if (ws) { hall.push([PC.isoWeek(mon), ws.nick, ws.s, ws.lk || '']); if (ws.me) meHall.push([PC.isoWeek(mon), g]); }
     }
     var T = dayRows(d, 'today'), Y = dayRows(PC.addDays(d, -1), 'today'), okT = T.filter(function (r) { return r.aux > 0; });
     var mp = mockPlays(), di = PC.dayIndex(d), hr = new Date(Date.now() + 9 * 3600e3).getUTCHours();
@@ -1559,8 +1602,8 @@ function mock(path, b) {
     if (g === 'sniper') stat.err = [0, 1, 2, 3, 4].map(function (i) { var e = R.filter(function (r) { return r.errs && r.errs[i] != null; }); return e.length ? Math.round(e.reduce(function (a, r) { return a + r.errs[i]; }, 0) / e.length * 10) / 10 : null; });
     if (g === 'road') stat.best = R[0] ? { nick: R[0].nick, score: R[0].score, picks: R[0].picks } : null;
     var tday = 1800 + Math.round(hr * 130 + PC.rng('mp|' + d)() * 400) + (mp[d] || 0);
-    return { day: d, game: g, week: PC.isoWeek(d), today: R.slice(0, 10).map(function (r) { return [r.nick, r.score, r.aux]; }),
-      weekTop: weekSum(days, g).slice(0, 10).map(function (r) { return [r.nick, r.s]; }), hall: hall, meHall: q.dev ? meHall : undefined,
+    return { day: d, game: g, week: PC.isoWeek(d), today: R.slice(0, 10).map(function (r) { return [r.nick, r.score, r.aux, r.lk || '']; }),
+      weekTop: weekSum(days, g).slice(0, 10).map(function (r) { return [r.nick, r.s, r.lk || '']; }), hall: hall, meHall: q.dev ? meHall : undefined,
       plays: { total: 96000 + di * 1150 + (mp.total || 0), today: tday, people: Math.round(tday * .31) },
       todayGame: { n: T.length * 53, ok: okT.length * 53, avg: stat.avg || (okT.length ? Math.round(okT.reduce(function (a, r) { return a + r.aux; }, 0) / okT.length * 10) / 10 : 0) },
       yday: { n: Y.length * 53, ok: Y.filter(function (r) { return r.aux > 0; }).length * 53 }, stat: stat };
@@ -1592,7 +1635,7 @@ function startDaily(game) {
   return call('/play/start', { game: game, dev: DEV }).then(function (j) { return { tok: j.tok || '', t0: Date.now() }; }, function () { return { tok: '', t0: Date.now() }; });
 }
 function submitDaily(game, ans, S, extra) {
-  var p = prog(game) || {}, body = { game: game, tok: p.tok || '', dev: DEV, nick: NICK, ans: ans, ver: ctx.ver };
+  var p = prog(game) || {}, body = { game: game, tok: p.tok || '', dev: DEV, nick: NICK, ans: ans, ver: ctx.ver, lk: lookCode() };   // lk = 꾸민 조로 (순위표·명예의 전당 그림)
   var save = function (x) { x = Object.assign({ nick: NICK, ans: ans }, extra || {}, x); setRec(TODAY, game, x); setProg(game, null); setTimeout(function () { promoCheck(); }, 900); return x; };   // 판이 끝나면 경험치 +1 → 승진 확인. 새 소품은 결과 화면(gotBox)이 바로 확인해서 상자로 보여 줌
   return call('/play/score', body).then(function (j) {
     return save({ score: j.score != null ? j.score : S.score, aux: j.aux != null ? j.aux : S.aux, rank: j.rank, total: j.total, sent: 1, vs: j.vs || '' });
@@ -1733,24 +1776,33 @@ function drawCard(card, box) {
 
 // ── 순위표 칸
 function fmtScore(game, s) { return game === 'road' ? eokS(s) : game === 'run' ? man(s) + '만원' : man(s) + '점'; }
-function lbCol(title, sub, rows, game, mine) {   // rows: [[이름, 점수]], mine: {rank, score} (10위 밖이면 아래에 고정)
+// 순위표 줄 앞 조로 얼굴: 서버가 준 모양 글(lk) 그대로. 모양이 없던 예전 기록은 꾸밈 없는 사원 조로 (2026-10-29)
+function lbFace(lk, me) {
+  if (!PX.ok) return '';
+  var P = me ? { rk: myRank(), look: LOOK } : lookParse(lk);
+  return '<span class="fc" aria-hidden="true">' + zorro(P.rk, 'normal', 1, '', { head: 1, look: P.look }) + '</span>';
+}
+function lbCol(title, sub, rows, game, mine, li0) {   // rows: [[이름, 점수, …]], li0 = 모양 글 칸 번호, mine: {rank, score} (10위 밖이면 아래에 고정)
   var inTop = false, li = rows.map(function (r, i) {
     var me = mine && mine.rank === i + 1 && r[0] === NICK; if (me) inTop = true;
-    return '<li class="' + (me ? 'mine' : '') + '"><span class="r">' + (i + 1) + '</span><span class="n">' + esc(r[0]) + '</span><span class="s">' + fmtScore(game, r[1]) + '</span></li>';
+    return '<li class="' + (me ? 'mine' : '') + (i < 3 ? ' top' + (i + 1) : '') + '"><span class="r">' + (i + 1) + '</span>' + lbFace(r[li0], me) + '<span class="n">' + esc(r[0]) + '</span><span class="s">' + fmtScore(game, r[1]) + '</span></li>';
   }).join('');
-  if (mine && mine.rank && !inTop) li += '<li class="mine pin"><span class="r">' + mine.rank + '</span><span class="n">' + esc(NICK) + '</span><span class="s">' + fmtScore(game, mine.score) + '</span></li>';
+  if (mine && mine.rank && !inTop) li += '<li class="mine pin"><span class="r">' + mine.rank + '</span>' + lbFace('', 1) + '<span class="n">' + esc(NICK) + '</span><span class="s">' + fmtScore(game, mine.score) + '</span></li>';
   return '<div class="lbc"><h4>' + title + mockTag() + '</h4><p class="sub">' + sub + '</p>' + (li ? '<ol>' + li + '</ol>' : '<p class="empty">아직 기록이 없어요. 첫 번째가 되어 보세요.</p>') + '</div>';
 }
 function hallCol(rows, game) {
-  return '<div class="lbc"><h4>명예의 전당' + mockTag() + '</h4><p class="sub">역대 주간 1위 · 날짜와 함께 영구 박제</p>' + (rows.length ? '<ol>' + rows.map(function (r) {
-    return '<li><span class="r">' + esc(r[0].slice(-3)) + '</span><span class="n">' + esc(r[1]) + '</span><span class="s">' + fmtScore(game, r[2]) + '</span></li>'; }).join('') + '</ol>' : '<p class="empty">첫 주가 끝나면 1위가 여기 올라요.</p>') + '</div>';
+  // 2026-10-29 사용자: 주간 1위마다 그 사람이 꾸민 조로(배경 포함)를 액자처럼. 맨 위(가장 최근 주)는 크게
+  return '<div class="lbc hof"><h4>명예의 전당' + mockTag() + '</h4><p class="sub">역대 주간 1위 · 그 주의 조로 그대로 영구 박제</p>' + (rows.length ? '<ol class="hofl">' + rows.map(function (r, i) {
+    var P = lookParse(r[3]), wk = r[0].replace(/^(\d{4})-W0?(\d+)$/, '$1년 $2주');
+    return '<li class="' + (i ? '' : 'hof1') + '">' + (PX.ok ? '<span class="hz">' + zorro(P.rk, 'happy', i ? 1.5 : 2.5, i ? '' : 'idle', { look: P.look, bg: 1 }) + '</span>' : '') +
+      '<span class="hw">👑 ' + esc(wk) + '</span><span class="n">' + esc(r[1]) + '</span><span class="s">' + fmtScore(game, r[2]) + '</span></li>'; }).join('') + '</ol>' : '<p class="empty">첫 주가 끝나면 1위가 여기 올라요.</p>') + '</div>';
 }
 function myWeek(game, days) { var s = 0, any = false; days.forEach(function (d) { var x = rec(d, game); if (x && x.sent) { s += x.score; any = true; } }); return any ? s : null; }
 function lbAll(t, game) {
   var x = rec(TODAY, game), mine = x && x.sent ? { rank: x.rank, score: x.score } : null, wk = myWeek(game, PC.weekDays(TODAY).filter(function (d) { return d <= TODAY; }));
   var wkMine = null; if (wk != null) { var pos = t.weekTop.findIndex(function (r) { return r[0] === NICK && r[1] === wk; }); wkMine = pos >= 0 ? { rank: pos + 1, score: wk } : null; }
-  return '<div class="lb">' + lbCol('오늘', mmdd(TODAY) + ' · ' + GNAME[game] + ' TOP 10', t.today, game, mine) +
-    lbCol('이번 주', t.week.replace('-W', '년 ') + '주 · 7일 합계, 빠진 날 0점', t.weekTop, game, wkMine) + hallCol(t.hall, game) + '</div>';
+  return '<div class="lb">' + lbCol('오늘', mmdd(TODAY) + ' · ' + GNAME[game] + ' TOP 10', t.today, game, mine, 3) +
+    lbCol('이번 주', t.week.replace('-W', '년 ') + '주 · 7일 합계, 빠진 날 0점', t.weekTop, game, wkMine, 2) + hallCol(t.hall, game) + '</div>';
 }
 function miniLb(elId, game) {
   getTop(game).then(function (t) { fillNb(game, t); var el = $(elId); if (!el || !t) return; el.innerHTML = lbAll(t, game) + '<p class="src"><a href="#hall">순위 · 명예의 전당 전체 보기 →</a></p>'; });
@@ -2621,7 +2673,7 @@ function renderBoss() {
 // ── 친구 대결 도전장: 결과 화면 '친구에게 도전장 보내기' → job.jobzorro.kr/play/?vs=<도전장>#<게임>
 //    도전장은 서버가 서명해서 점수 낼 때 돌려줌(x.vs, 기기 번호 없음). 받은 사람은 같은 날이면 같은 문제로, 끝나면 둘이 나란히
 var VS = null;
-function fmtVs(game, s) { return game === 'road' ? eokS(s) : man(s) + '점'; }
+function fmtVs(game, s) { return game === 'road' ? eokS(s) : game === 'run' ? man(s) + '만원' : man(s) + '점'; }
 function vsLink(game, code) { return SITE + '?vs=' + encodeURIComponent(code) + '#' + game; }
 function vsBox(game, x) {
   if (!x || !x.vs) return '';
@@ -2921,37 +2973,65 @@ document.addEventListener('keydown', function (e) {
 
 
 // ── 06 조로 출근길 (2026-10-29): 내 조로(꾸민 모습·직급 그대로)가 집에서 출근지까지 1분~1분 20초 달리기
-//    판마다 다 다르게: 출근 회사 · 날씨 6종 · 갈림길 3번(구간 3개 중 2개씩) · 배치 · 돌발 사건 11종(구간마다 1개) · 도착 사건 8종
 //    구간 5개 = 집 앞 골목 → [버스|지하철|따릉이] → [한강 다리|전통시장|공원] → [지름길|큰길|지하상가] → 회사 로비
-//    2층 발판: 위로 뛰어 올라가 달리고, 화면 아래쪽(↓)으로 내려옴. 갈림길 = 끝에서 위층에 있으면 위 길, 아래면 아래 길
-//    적(야근 유령·스팸 메일·서류 괴물)은 머리를 밟으면 처치. 콤보(돈 최대 ×3) · 아슬아슬 보너스 · 갈수록 빨라짐
-//    점수 = 주운 연봉(만원) + 정시 출근 보너스. 순위 없음 — 오늘·역대 최고는 이 기기에, 하루 첫 완주에 경험치 +1
+//    길마다 달리는 규칙이 다르고(천장·경사로·트램펄린 차양·어둠·무빙워크…) 미니게임이 끼어든다 (연타 탑승·손잡이 버티기·페달 박자·신호등…)
+//    갈림길: 큰 화살표 표지판 → 끝에서 위층에 있으면 위 길, 아래면 아래 길. 구간이 바뀔 땐 규칙 카드
+//    조작: 화면 어디든 누르기 = 점프(길게 = 높이, 공중에서 한 번 더 = 2단) · ⬇ 버튼/아래로 쓸기/↓ = 발판에서 내려오기
+//    순위: 하루 첫 판 = 오늘의 코스(모두 같은 길) → 점수 서버로 (다른 게임과 같은 오늘·주간 순위·명예의 전당). 다음 판부턴 무작위 연습
 //    tpl.html 은 건드리지 않고 화면 칸(#p-run)·스타일을 여기서 만들어 넣는다
 var RW = 280, RH = 180, RGY = 158, RPX = 52;          // 캔버스 칸(논리 픽셀) · 바닥선 · 조로 화면 x
-var RG = 1500, RJ1 = 480, RJ2 = 420;                  // 중력 · 1단 / 2단 점프 속도 (1단 최고 약 77칸)
+var RG = 1500, RJ1 = 480, RJ2 = 420, RJCUT = 290;     // 중력 · 1단 / 2단 점프 속도 (1단 최고 약 77칸) · 손을 일찍 떼면 이 속도로 잘라 낮게
 var R_T1 = 48, R_T2 = 92, R_RAMP = .4;                // 2층 · 3층 발판 높이, 끝으로 갈수록 빨라지는 정도(+40%)
-var R_T0 = 7 * 60 + 40, R_RATE = 80 / 72, R_DUE = 9 * 60;   // 07:40 출발. 가장 긴 길도 안 넘어지면 9시 전 도착
+var R_BUF = .14, R_COY = .1;                          // 착지 직전 누른 점프 기억 · 발판 끝에서 늦게 눌러도 되는 시간 (초)
+var R_T0 = 7 * 60 + 40, R_RATE = 70 / 72, R_DUE = 9 * 60;   // 07:40 출발. 미니게임 다 성공·안 넘어지면 8시 50분쯤 도착
 var R_VAL = { coin: 40, cash: 200, bonus: 600 };      // 주우면 만원 (콤보 배율 곱함)
 var R_SLOTS = [['alley'], ['bus', 'subway', 'bike'], ['bridge', 'market', 'park'], ['short', 'avenue', 'under'], ['lobby']];
 var R_ASK = ['', '뭐 타고 갈까?', '어디로 지나갈까?', '회사가 코앞! 어느 길로?'];
-// pc = 발판 색 [윗면, 옆면], foe = 잘 나오는 적
+// 길마다: tip = 갈림길 표지판 한 줄 · rule = 들어갈 때 카드 설명 · mini = [미니게임, 구간 비율('s' = 시작하자마자)]
+//   ceil 천장 높이 · bike 2단 점프 없음+경사로 · float 몸이 가벼움 · bouncy 차양 트램펄린 · hop 강아지 깡충 · dim 어둠 · kill2 처치 2배 · car 차 · belt 무빙워크
 var RMAP = {
-  alley:  { nm: '집 앞 골목', emo: '🏠', len: 2700, spd: 170, obs: ['cone', 'trash', 'cat', 'bag', 'pigeon'], pc: ['#b5523b', '#7d3a2c'], foe: ['blob', 'mail'] },
-  bus:    { nm: '버스 안', emo: '🚌', len: 2900, spd: 160, obs: ['bag', 'person', 'papers'], coin: 1.4, ev: 'brake', inn: 1, pc: ['#9aa0a6', '#5a5d63'], foe: ['blob', 'ghost'], pick: '돈 많음 · 조금 느림' },
-  subway: { nm: '지하철 안', emo: '🚇', len: 2900, spd: 185, obs: ['person', 'bag', 'papers'], ev: 'crowd', inn: 1, pc: ['#b9c0c9', '#7e848c'], foe: ['ghost', 'blob'], pick: '빠름 · 사람 파도' },
-  bike:   { nm: '따릉이', emo: '🚲', len: 3200, spd: 215, obs: ['cone', 'pigeon', 'puddle', 'cat'], bike: 1, pc: ['#36b5a5', '#25806f'], foe: ['mail'], pick: '제일 빠름 · 브레이크 없음' },
-  bridge: { nm: '한강 다리', emo: '🌉', len: 2800, spd: 175, obs: ['puddle', 'pigeon', 'cone', 'scooter'], pc: ['#8796ab', '#5f6f84'], foe: ['mail', 'ghost'], pick: '킥보드 쌩쌩' },
-  market: { nm: '전통시장', emo: '🍢', len: 2800, spd: 165, obs: ['bag', 'cat', 'trash', 'papers'], coin: 1.3, pc: ['#e8412c', '#a8281b'], foe: ['blob', 'mail'], pick: '동전 많음' },
-  park:   { nm: '공원 산책로', emo: '🌳', len: 2800, spd: 175, obs: ['dog', 'pigeon', 'puddle', 'scooter'], pc: ['#8a5a32', '#5e3c20'], foe: ['ghost', 'mail'], pick: '강아지 조심' },
-  short:  { nm: '지름길 골목', emo: '🐈', len: 2500, spd: 180, obs: ['trash', 'cat', 'pigeon', 'bag', 'puddle'], dense: 1, pc: ['#6b6f74', '#3e3530'], foe: ['ghost', 'blob'], pick: '짧지만 빽빽' },
-  avenue: { nm: '큰길', emo: '🏙', len: 3000, spd: 175, obs: ['scooter', 'cone', 'person', 'papers'], coin: 1.4, pc: ['#8f96a3', '#5f646b'], foe: ['mail', 'blob'], pick: '길지만 돈 많음' },
-  under:  { nm: '지하상가', emo: '🛍', len: 2800, spd: 175, obs: ['person', 'bag', 'papers', 'cone'], inn: 1, pc: ['#c4cbd4', '#8a8f98'], foe: ['ghost', 'blob'], pick: '사람 많음' },
-  lobby:  { nm: '회사 로비', emo: '🏢', len: 2200, spd: 160, obs: ['gate', 'papers', 'person'], inn: 1, pc: ['#c9c1b1', '#9b917f'], foe: ['blob', 'ghost'] }
+  alley:  { nm: '집 앞 골목', emo: '🏠', len: 1700, spd: 170, obs: ['cone', 'trash', 'cat', 'bag', 'pigeon'], pc: ['#b5523b', '#7d3a2c'], foe: ['blob', 'mail'],
+    rule: '몸풀기! 누르면 점프, 길게 누르면 더 높이. 적은 머리를 밟아요.' },
+  bus:    { nm: '버스', emo: '🚌', len: 2000, spd: 160, obs: ['bag', 'person', 'papers'], coin: 1.4, inn: 1, pc: ['#9aa0a6', '#5a5d63'], foe: ['blob', 'ghost'],
+    tip: '연타로 버스 잡기 · 급정거 버티기', rule: '떠나는 버스부터 잡고, 급정거 경고가 뜨면 꾹 눌러 손잡이를 잡아요.', mini: [['chase', 's'], ['brake', .32], ['brake', .62]] },
+  subway: { nm: '지하철', emo: '🚇', len: 2000, spd: 185, obs: ['person', 'bag', 'papers'], inn: 1, ceil: 64, pc: ['#b9c0c9', '#7e848c'], foe: ['ghost', 'blob'],
+    tip: '연타로 밀고 타기 · 천장 낮음', rule: '문 닫히기 전에 연타로 밀고 타요! 안은 천장이 낮아서 2층까지만.', mini: [['board', 's']] },
+  bike:   { nm: '따릉이', emo: '🚲', len: 2300, spd: 215, obs: ['cone', 'pigeon', 'puddle', 'cat'], bike: 1, pc: ['#36b5a5', '#25806f'], foe: ['mail'],
+    tip: '제일 빠름 · 오르막 페달 박자', rule: '제일 빠르지만 2단 점프가 없어요. 경사로를 밟으면 붕! 오르막에선 박자 맞춰 페달.', mini: [['pedal', .45]] },
+  bridge: { nm: '한강 다리', emo: '🌉', len: 1900, spd: 175, obs: ['puddle', 'pigeon', 'cone', 'scooter'], float: .68, pc: ['#8796ab', '#5f6f84'], foe: ['mail', 'ghost'],
+    tip: '몸이 둥실 · 돌풍 버티기', rule: '강바람에 몸이 둥실 떠요. 높이 뜬 돈을 노리고, 돌풍이 오면 꾹 눌러 버텨요.', mini: [['wind', .4]] },
+  market: { nm: '전통시장', emo: '🍢', len: 1900, spd: 165, obs: ['bag', 'cat', 'trash', 'papers'], coin: 1.3, bouncy: 1, pc: ['#e8412c', '#a8281b'], foe: ['blob', 'mail'],
+    tip: '차양 트램펄린 · 떡꼬치 낚아채기', rule: '줄무늬 차양을 밟으면 통통 튀어요. 시식 코너에선 타이밍 맞춰 떡꼬치를 낚아채요.', mini: [['snack', .45]] },
+  park:   { nm: '공원', emo: '🌳', len: 1900, spd: 175, obs: ['pigeon', 'puddle', 'scooter'], hop: 1, pc: ['#8a5a32', '#5e3c20'], foe: [],
+    tip: '적 없음 · 산책줄 줄넘기', rule: '적은 없지만 강아지가 깡충깡충! 산책줄이 오면 박자 맞춰 줄넘기.', mini: [['rope', .42]] },
+  short:  { nm: '지름길 골목', emo: '🐈', len: 1700, spd: 180, obs: ['trash', 'cat', 'pigeon', 'bag', 'puddle'], dense: 1, dim: 1, kill2: 1, pc: ['#6b6f74', '#3e3530'], foe: ['ghost', 'blob'],
+    tip: '어둡고 짧음 · 적 처치 2배', rule: '불 꺼진 골목이라 조로 주변만 보여요. 짧아서 시간을 벌고, 적을 밟으면 돈 2배!' },
+  avenue: { nm: '큰길', emo: '🏙', len: 2100, spd: 175, obs: ['scooter', 'cone', 'person', 'papers'], coin: 1.4, car: 1, pc: ['#8f96a3', '#5f646b'], foe: ['mail', 'blob'],
+    tip: '돈 많음 · 신호등 꾹 멈추기', rule: '돈은 많지만 차가 쌩쌩. 횡단보도에선 빨간불에 꾹 눌러 멈추고, 초록불에 떼서 건너요.', mini: [['light', .45]] },
+  under:  { nm: '지하상가', emo: '🛍', len: 1900, spd: 175, obs: ['person', 'bag', 'papers', 'cone'], inn: 1, belt: 1, pc: ['#c4cbd4', '#8a8f98'], foe: ['ghost', 'blob'],
+    tip: '무빙워크 쭉 · 세일 매대 연타', rule: '무빙워크에 올라타면 쭉 빨라져요. 끝에서 세일 매대를 연타로 털어요!', mini: [['sale', .8]] },
+  lobby:  { nm: '회사 로비', emo: '🏢', len: 1500, spd: 160, obs: ['papers', 'person'], inn: 1, pc: ['#c9c1b1', '#9b917f'], foe: ['blob', 'ghost'],
+    rule: '사원증을 타이밍 맞춰 찍고, 닫히는 엘리베이터에 연타로 타요!', mini: [['badge', 's'], ['elev', .82]] }
 };
-var R_VX = { cat: -35, scooter: -110, person: -22, dog: -60, blob: -40, ghost: -50, mail: -100 };   // 다가오는 것들 속도
+var R_VX = { cat: -35, scooter: -110, person: -22, dog: -60, blob: -40, ghost: -50, mail: -100, car: -170 };   // 다가오는 것들 속도
 var R_FOE = { blob: '서류 괴물', ghost: '야근 유령', mail: '스팸 메일' };   // 밟으면 처치되는 적
 // 날씨: [이름, 이모지, 확률 가중치]. 실내 구간(inn)엔 그림만 빠짐
 var R_WX = { sun: ['맑음', '☀️', 3], rain: ['비', '☔', 2], snow: ['눈', '❄️', 1.5], wind: ['강풍', '🍃', 1.5], fog: ['안개', '🌫', 1], dust: ['미세먼지', '😷', 1] };
+// 미니게임: nm 이름 · how 조작 (카드·화면 아래 안내) · fr = 화면 멈춤(세상이 안 흘러감) · nj = 누르기가 점프가 아님
+//   연타(mash) · 꾹 누르기(hold) · 타이밍(tap) · 박자(beat)
+var R_MINI = {
+  chase: { nm: '🚌 떠나는 버스 잡기', how: '연타! 빨리 눌러서 따라잡아요', fr: 1, nj: 1 },
+  board: { nm: '🚇 문 닫히기 전에 탑승', how: '연타! 사람들 사이를 밀고 들어가요', fr: 1, nj: 1 },
+  brake: { nm: '✊ 급정거!', how: '경고가 뜨면 꾹 누르고 있기', nj: 1 },
+  pedal: { nm: '🚲 오르막길 페달', how: '고리가 딱 맞을 때 눌러요 (박자)', fr: 1, nj: 1 },
+  wind:  { nm: '🌪 한강 돌풍', how: '돌풍 경고가 뜨면 꾹 눌러 버티기', nj: 1 },
+  snack: { nm: '🍢 시식 코너 떡꼬치', how: '떡꼬치가 가운데 올 때 딱 눌러요 (3번)', fr: 1, nj: 1 },
+  rope:  { nm: '🐕 산책줄 줄넘기', how: '줄이 발밑에 올 때 점프! (6번)', fr: 1 },
+  light: { nm: '🚦 횡단보도 신호등', how: '빨간불 = 꾹 눌러 멈춤 · 초록불 = 떼고 건너기', nj: 1 },
+  sale:  { nm: '🛍 세일 매대 털기', how: '연타! 누를 때마다 쇼핑백 하나', fr: 1, nj: 1 },
+  badge: { nm: '🪪 사원증 찍기', how: '막대가 초록 칸에 올 때 딱 눌러요', fr: 1, nj: 1 },
+  elev:  { nm: '🛗 닫히는 엘리베이터', how: '연타! 문 닫히기 전에 비집고 타요', fr: 1, nj: 1 }
+};
 // 장애물·적·줍는 것 그림 (격자 글자 → 색, 테두리 자동)
 var RSPR = {
   coin: [ICON.coin[0], ICON.coin[1]],
@@ -2977,6 +3057,10 @@ var RSPR = {
 };
 ICON.bus = [['gggggggggg', 'gLLgLLgLLg', 'gLLgLLgLLg', 'gggggggggg', 'wggggggggw', '.kk....kk.'], { g: '#3f9a4a', L: '#bfe6ff', w: '#ffe27a', k: '#2b2b2b' }];
 var RUN = null, RIMG = null;
+RSPR.car = [['......RRRRRRRRR.....', '.....RLLLRLLLLLR....', '....RLLLLRLLLLLLR...', 'RRRRRRRRRRRRRRRRRRRR', 'YRRRRRRRRRRRRRRRRRWR', 'RRRRRRRRRRRRRRRRRRRR', '.KKK..........KKK...', 'K.g.K........K.g.K..', '.KKK..........KKK...'], { R: '#3f6fb5', L: '#bfe6ff', Y: '#ffe27a', W: '#e8412c', K: '#1b1d18', g: '#9aa0a6' }];
+RSPR.ramp = [['..........YY', '........YYKK', '......YYKKKK', '....YYKKKKKK', '..YYKKKKKKKK', 'YYKKKKKKKKKK'], { Y: '#ffcf3d', K: '#8a5a32' }];
+RSPR.tteok = [['..K..', '.RRR.', '.RRR.', '.RRR.', '.RRR.', '..k..', '..k..', '..k..'], { R: '#e8412c', K: '#ffcf3d', k: '#b98a5a' }];
+RSPR.sbag = [['..k..k..', '.k....k.', 'PPPPPPPP', 'PWWWWWWP', 'PWRRRRWP', 'PWWWWWWP', 'PPPPPPPP'], { P: '#ff8fc7', W: '#ffffff', R: '#e8412c', k: '#2b2b2b' }];
 
 // 화면 칸 + 스타일 (로비 '06' 카드 → #run)
 (function () {
@@ -2986,23 +3070,45 @@ var RUN = null, RIMG = null;
   s.innerHTML = '<div class="in"><div id="run"></div></div>';
   cup.parentNode.insertBefore(s, cup.nextSibling);
   var st = document.createElement('style');
-  st.textContent = '.rn{max-width:760px;margin:12px auto 0;position:relative;-webkit-user-select:none;user-select:none}' +
+  st.textContent = '.rn{max-width:760px;margin:12px auto 0;position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}' +
+    'html.rn-play,html.rn-play body{touch-action:none;overscroll-behavior:none}html.rn-play #p-run{touch-action:none}' +   // 달리는 동안 화면 밀기·두 번 눌러 확대 막기 (누르는 대로 바로 점프)
     '.rn-hud{display:flex;gap:8px;align-items:center;font-family:var(--display);font-weight:800;font-size:14px;margin-bottom:6px}' +
     '.rn-hud .ck{background:var(--ink);color:var(--bg);border-radius:8px;padding:3px 8px;font-variant-numeric:tabular-nums}.rn-hud .ck.late{background:var(--truth);color:#fff}' +
     '.rn-hud .ck.warn{animation:rnBl .5s steps(2) infinite}@keyframes rnBl{50%{background:var(--truth);color:#fff}}' +
-    '.rn-hud .mo{font-variant-numeric:tabular-nums}.rn-hud .cb{color:var(--truth);font-variant-numeric:tabular-nums}.rn-hud .sg{margin-left:auto;color:var(--muted);font-size:13px;white-space:nowrap}' +
+    '.rn-hud .mo{font-variant-numeric:tabular-nums}.rn-hud .cb{color:var(--truth);font-variant-numeric:tabular-nums}.rn-hud .sg{margin-left:auto;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}' +
     '.rn-pips{display:flex;gap:4px;margin-bottom:6px}.rn-pips i{flex:1;height:6px;border-radius:3px;background:var(--line2)}.rn-pips i.on{background:var(--ink)}' +
     '.rn-pips i.cur{background:linear-gradient(90deg,var(--ink) var(--p),var(--line2) var(--p))}' +
     '.rn-cv{position:relative;border:2px solid var(--ink);border-radius:12px;overflow:hidden;background:#0d0f0a;touch-action:none;cursor:pointer}' +
     '.rn-cv canvas{display:block;width:100%;height:auto;aspect-ratio:280/180;image-rendering:pixelated;image-rendering:crisp-edges}' +
     '.rn-bn{position:absolute;left:50%;top:10%;transform:translateX(-50%);background:rgba(13,15,10,.84);color:#fff;font-weight:800;padding:6px 14px;border-radius:999px;font-size:clamp(12px,2.4vw,17px);white-space:nowrap;pointer-events:none;max-width:94%;overflow:hidden;text-overflow:ellipsis}' +
     '.rn-bn.big{top:34%;font-size:clamp(28px,8vw,56px);padding:4px 26px;font-family:var(--display)}' +
-    '.rn-fk{position:absolute;right:6px;top:6px;display:grid;gap:3px;pointer-events:none}.rn-fk b{background:rgba(13,15,10,.6);color:#fff;font-size:clamp(11px,2.2vw,14px);padding:3px 9px;border-radius:999px;opacity:.65}' +
-    '.rn-fk b.on{background:var(--px-arc-acc,#c6ff3d);color:#0d0f0a;opacity:1}' +
+    // 갈림길 안내: 위·아래 길 + 그 길의 공략 한 줄. 지금 층에 맞는 쪽에 불
+    '.rn-fk{position:absolute;left:6px;right:6px;top:6px;display:grid;grid-template-columns:1fr 1fr;gap:5px;pointer-events:none}' +
+    '.rn-fk b{display:grid;gap:1px;background:rgba(13,15,10,.66);color:#fff;font-size:clamp(12px,2.6vw,16px);padding:4px 9px;border-radius:10px;opacity:.7;line-height:1.25}' +
+    '.rn-fk b small{font-size:clamp(10px,2vw,12px);font-weight:700;opacity:.85}' +
+    '.rn-fk b.on{background:var(--px-arc-acc,#c6ff3d);color:#0d0f0a;opacity:1;box-shadow:0 0 0 2px #0d0f0a}' +
+    '.rn-fk:not([hidden])~.rn-bn{top:34%}' +   // 갈림길 안내가 떠 있으면 띠 글은 아래로
+    // 규칙 카드(구간 바뀔 때·미니게임 시작): 화면 가운데
+    '.rn-tc{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:4px;padding:10px 14px;text-align:center;color:#fff;pointer-events:none}' +
+    '.rn-tc .e{font-size:clamp(34px,9vw,60px);line-height:1}.rn-tc .t{font-family:var(--display);font-weight:900;font-size:clamp(20px,5vw,34px);letter-spacing:-.02em}' +
+    '.rn-tc .k{font-size:clamp(11px,2.2vw,13px);font-weight:800;color:#0d0f0a;background:var(--px-arc-acc,#c6ff3d);border-radius:999px;padding:1px 10px}' +
+    '.rn-tc .r{font-size:clamp(13px,2.8vw,17px);font-weight:700;max-width:30em;line-height:1.45}.rn-tc .s{font-size:12px;opacity:.7}' +
+    // 미니게임 칸: 아래쪽에 안내 + 게이지
+    '.rn-mg{position:absolute;left:8px;right:8px;bottom:8px;display:grid;gap:4px;justify-items:center;pointer-events:none;color:#fff;text-align:center}' +
+    '.rn-mg .h{font-family:var(--display);font-weight:900;font-size:clamp(15px,3.6vw,22px);background:rgba(13,15,10,.78);border-radius:999px;padding:2px 14px}' +
+    '.rn-mg .g{width:min(100%,360px);height:12px;border-radius:6px;background:rgba(13,15,10,.7);box-shadow:0 0 0 2px #0d0f0a;overflow:hidden}.rn-mg .g i{display:block;height:100%;width:0;background:var(--px-arc-acc,#c6ff3d)}' +
+    '.rn-mg .g.hot i{background:#ffcf3d}.rn-mg.go .h{animation:rnPu .25s ease-out}@keyframes rnPu{from{transform:scale(1.25)}}' +
     '.rn-ov{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:10px;background:rgba(13,15,10,.6);padding:10px;cursor:default}' +
     '.rn-ov .q{color:#fff;font-weight:800;text-align:center;font-size:clamp(14px,2.6vw,18px);margin:0}' +
+    // 폰: 화면 아래 조작 칸 (어디를 눌러도 점프지만, 엄지 자리 + 내려오기 버튼)
+    '.rn-pad{display:none;grid-template-columns:auto 1fr;gap:8px;margin-top:8px}' +
+    '.rn-pad .dn{min-height:64px;min-width:84px;border:2px solid var(--ink);border-radius:14px;background:var(--card);color:var(--ink);font-weight:900;font-size:15px;touch-action:none}' +
+    '.rn-pad .jp{min-height:64px;border:2px solid var(--ink);border-radius:14px;background:var(--acc);color:var(--acc-ink);font-weight:900;font-size:17px;display:grid;place-items:center;touch-action:none}' +
+    '.rn-pad .jp.on{transform:translateY(2px);box-shadow:inset 0 3px 0 rgba(0,0,0,.2)}' +
+    '@media (pointer:coarse){.rn-pad{display:grid}}' +
     '.rn-help{font-size:12px;color:var(--muted);margin:6px 0 0;text-align:center}.rn-route{font-size:22px;letter-spacing:.1em}' +
-    '.rn-log{list-style:none;margin:0;padding:0;font-size:13px;color:var(--soft);display:grid;gap:2px}';
+    '.rn-log{list-style:none;margin:0;padding:0;font-size:13px;color:var(--soft);display:grid;gap:2px}' +
+    '.rn-maps{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px;padding:0;list-style:none;margin:4px 0 8px}.rn-maps li{font-size:13px;line-height:1.45}';
   document.head.appendChild(st);
 }());
 
@@ -3057,67 +3163,74 @@ function runPlan(seed) {
 function rSpd(M, seg, f) { return M.spd * (1 + R_RAMP * (seg + (f || 0)) / R_SLOTS.length); }   // 이 구간 이 지점의 달리기 속도
 
 // ── 구간 만들기: 판 씨앗으로 배치. 다가오는 것들은 '원래 자리'에 맞춰 도착하도록 출발점을 뒤로 뺌
-//    발판(plat) = { x 시작, w 폭, y 윗면 높이 } — 아래에서 뚫고 올라가고 위에서 내려앉음
+//    발판(plat) = { x 시작, w 폭, y 윗면 높이, b 트램펄린 } — 아래에서 뚫고 올라가고 위에서 내려앉음
+//    무빙워크(belt) = { x, w } 땅에 깔림 · 경사로(ramp) = 밟으면 높이 튀어 오름
+var R_ZONE = { brake: 320, wind: 820, light: 1100, pedal: 450 };   // 화면이 계속 흐르는 미니게임이 차지하는 길이 (그 자리는 비워 둠)
 function rGen(key, R, seg) {
   var M = RMAP[key], r = PC.rng('run|' + R.seed + '|' + key), L = [], x = 300, cm = M.coin || 1;
   var fork = R.slots[seg + 1] && R.slots[seg + 1].length > 1, end = fork ? M.len - 760 : M.len - 200;
   var obs = M.obs.concat(!M.inn && R.wx === 'rain' ? ['puddle', 'puddle'] : []);   // 비 오는 날은 물웅덩이 많이
   var add = function (k, at, y) { var vx = R_VX[k] || 0, v = rSpd(M, seg, at / M.len); var o = { k: k, x: at - vx * at / v, y: y || 0, by: y || 0, vx: vx, p: k === 'person' ? Math.floor(r() * 4) : 0 }; L.push(o); return o; };
-  var plat = function (at, w, y) { L.push({ k: 'plat', x: at, w: w, y: y }); };
+  var plat = function (at, w, y) { L.push({ k: 'plat', x: at, w: w, y: y, b: M.bouncy ? 1 : 0 }); };
   var row = function (at, n, y) { for (var i = 0; i < n; i++) add('coin', at + i * 13, y); };
   var arc = function (at, b) { for (var i = -2; i <= 2; i++) add('coin', at + i * 13, (b || 0) + 14 + 34 * (1 - i * i / 6)); };
-  var evX = (M.ev === 'brake' || M.ev === 'crowd' ? [.5] : []).map(function (f) { return Math.round(M.len * f); });
+  var ev = (M.mini || []).map(function (m) { return { at: m[1] === 's' ? 40 : Math.round(M.len * m[1]), k: 'mini', m: m[0] }; });
+  var zones = ev.map(function (e) { return [e.at - 80, e.at + (R_ZONE[e.m] || 200)]; });
   var gap = function () { return (M.dense ? 140 : 160) + r() * 90; };
+  var hiY = M.float ? [4, 56, 104] : M.ceil ? [4, 4, 52] : [4, 4, 56];   // 동전 줄 높이 (다리 = 높이 뜬 돈, 지하철 = 천장 아래)
   while (x < end) {
-    if (evX.some(function (e) { return x > e - 80 && x < e + 640; })) { x += 40; continue; }   // 사건 자리는 비워 둠
+    if (zones.some(function (z) { return x > z[0] && x < z[1]; })) { x += 40; continue; }   // 미니게임 자리는 비워 둠
     var p = r(), k = obs[Math.floor(r() * obs.length)];
-    if (p < .24) {   // 2층 발판: 위엔 동전(가끔 적·3층), 아래엔 장애물
-      var w = 150 + Math.floor(r() * 170); plat(x, w, R_T1); row(x + 14, Math.floor((w - 20) / 26), R_T1 + 4);
-      if (r() < .45) add('blob', x + w * .7, R_T1).vx = 0;   // 발판 위 서류 괴물 (제자리)
-      if (r() < .4) { var w2 = 70 + Math.floor(r() * 50); plat(x + w * .35, w2, R_T2); add(r() < .5 ? 'cash' : 'bonus', x + w * .35 + w2 / 2 - 4, R_T2 + 6); }
+    if (p < .24) {   // 2층 발판: 위엔 동전(가끔 적·3층), 아래엔 장애물. 시장 차양은 트램펄린 → 위로 동전
+      var w = 150 + Math.floor(r() * 170); plat(x, w, R_T1); row(x + 14, Math.floor((w - 20) / 26), M.bouncy ? R_T1 + 62 : R_T1 + 4);
+      if (!M.bouncy && r() < .45) add('blob', x + w * .7, R_T1).vx = 0;   // 발판 위 서류 괴물 (제자리)
+      if (!M.ceil && !M.bouncy && r() < .4) { var w2 = 70 + Math.floor(r() * 50); plat(x + w * .35, w2, R_T2); add(r() < .5 ? 'cash' : 'bonus', x + w * .35 + w2 / 2 - 4, R_T2 + 6); }
       if (r() < .6) add(k === 'pigeon' ? 'cone' : k, x + w * .5);
       x += w + 110;
-    } else if (p < .5) {   // 땅 장애물 (+ 위로 동전 아치)
+    } else if (p < .5) {   // 땅 장애물 (+ 위로 동전 아치). 따릉이 = 경사로, 큰길 = 차
+      if (M.bike && r() < .4) { add('ramp', x); arc(x + 90, 62); x += 260; continue; }
+      if (M.car && r() < .35) { add('car', x); if (r() < .6) arc(x + 10, 8); x += gap() + 40; continue; }
       if (k === 'pigeon') { add('pigeon', x, 44); row(x - 26, 5, 4); }   // 머리 위 비둘기 + 바닥 동전 (점프하면 부딪힘)
-      else { add(k, x); if (r() < .6 * cm) arc(x + 6); }
+      else { add(k, x); if (r() < .6 * cm) arc(x + 6, M.float ? 30 : 0); }
       x += gap();
-    } else if (p < .7) {   // 적
-      var f = M.foe[Math.floor(r() * M.foe.length)];
+    } else if (p < .7) {   // 적 (공원은 깡충 강아지)
+      var f = M.foe.length ? M.foe[Math.floor(r() * M.foe.length)] : 'dog';
       add(f, x, f === 'ghost' ? 22 : f === 'mail' ? 26 : 0); if (r() < .5) row(x + 40, 4, 4);
       x += gap();
-    } else if (p < .86) { row(x, r() < .5 ? 5 : 7, r() < .3 ? 56 : 4); x += 110 + r() * 60; }
-    else { var q = r(); add(q < .35 ? 'cash' : q < .6 ? 'coffee' : q < .8 ? 'box' : 'bonus', x, q < .35 ? 26 : q < .6 ? 20 : q < .8 ? 28 : 66); x += 130 + r() * 60; }
+    } else if (p < .86) {
+      if (M.belt && r() < .55) { var bw = 240 + Math.floor(r() * 120); L.push({ k: 'belt', x: x, w: bw }); row(x + 20, Math.floor(bw / 30), 4); x += bw + 90; continue; }
+      row(x, r() < .5 ? 5 : 7, hiY[Math.floor(r() * 3)]); x += 110 + r() * 60;
+    }
+    else { var q = r(); add(q < .35 ? 'cash' : q < .6 ? 'coffee' : q < .8 ? 'box' : 'bonus', x, q < .35 ? 26 : q < .6 ? 20 : q < .8 ? 28 : M.ceil ? 50 : 66); x += 130 + r() * 60; }
   }
-  var ev = evX.map(function (e) {
-    if (M.ev === 'brake') { add('bag', e + 300); add('bag', e + 480); row(e + 360, 6, 4); }
-    else { add('person', e + 300); add('person', e + 450); add('person', e + 600); row(e + 340, 3, 52); row(e + 490, 3, 52); }
-    return { at: e, k: M.ev };
-  });
-  if (fork) {   // 갈림길: 표지판 → 긴 2층 발판(위 길, 동전 많음) / 땅(아래 길, 장애물·적)
+  if (fork) {   // 갈림길: 큰 화살표 표지판 → 긴 2층 발판(위 길, 동전 많음) / 땅(아래 길, 장애물·적)
     var fx = M.len - 560;
-    L.push({ k: 'sign', x: fx - 200, up: R.slots[seg + 1][0], dn: R.slots[seg + 1][1] });
-    plat(fx, 640, R_T1); row(fx + 20, 18, R_T1 + 4);
-    add(obs[0] === 'pigeon' ? 'cone' : obs[0], fx + 170); add(M.foe[0], fx + 340, M.foe[0] === 'ghost' ? 22 : M.foe[0] === 'mail' ? 26 : 0); row(fx + 230, 4, 4);
-    ev.push({ at: fx - 420, k: 'fork' });
+    L.push({ k: 'sign', x: fx - 230, up: R.slots[seg + 1][0], dn: R.slots[seg + 1][1] });
+    plat(fx, 640, R_T1); row(fx + 20, 18, M.bouncy ? R_T1 + 62 : R_T1 + 4);
+    var f0 = M.foe[0] || 'dog';
+    add(obs[0] === 'pigeon' ? 'cone' : obs[0], fx + 170); add(f0, fx + 340, f0 === 'ghost' ? 22 : f0 === 'mail' ? 26 : 0); row(fx + 230, 4, 4);
+    ev.push({ at: fx - 440, k: 'fork' });
   }
-  // 돌발 사건 1개: 이 구간에 맞는 것 중에서 무작위
+  // 돌발 사건 1개: 이 구간에 맞는 것 중에서 무작위 (미니게임 자리는 피함)
   var pool = Object.keys(R_EV).filter(function (k) { var E = R_EV[k]; return !(E.out && M.inn) && !(E.inn && !M.inn) && !(E.not && E.not.indexOf(key) >= 0); });
-  ev.push({ at: Math.round(M.len * (.25 + r() * .25)), k: PC.shuffleR(r, pool)[0] });
+  var at = Math.round(M.len * (.2 + r() * .35));
+  for (var t = 0; t < 6 && zones.some(function (z) { return at > z[0] - 200 && at < z[1] + 100; }); t++) at = Math.round(M.len * (.15 + r() * .5));
+  ev.push({ at: at, k: PC.shuffleR(r, pool)[0] });
   L.sort(function (a, b) { return a.x - b.x; });
   return { objs: L, ev: ev };
 }
 // ── 돌발 사건: msg = 띠 글, go(R) = 효과 (spawn 으로 앞쪽에 물건을 떨어뜨림). out = 바깥 구간만, inn = 실내만
-function rSpawn(R, k, ahead, y, o) { var x = { k: k, x: R.dist + ahead, y: o && o.fall ? 150 : y, by: y, ty: y, vx: (o && o.vx) || 0, p: Math.floor(Math.random() * 4) }; R.objs.push(x); return x; }
+function rSpawn(R, k, ahead, y, o) { var x = { k: k, x: R.dist + ahead, y: o && o.fall ? 150 : y, by: y, ty: y, vx: (o && o.vx) || 0, p: Math.floor(RR() * 4) }; R.objs.push(x); return x; }
 function rClear(R, a, b) { R.objs.forEach(function (o) { var d = o.x - R.dist; if (!o.done && !R_VAL[o.k] && o.k !== 'plat' && o.k !== 'sign' && d > a && d < b) o.done = 1; }); }   // 사건 자리의 장애물 치우기
 var R_EV = {
-  money:  { msg: '💸 하늘에서 연봉이 쏟아져요!', go: function (R) { for (var i = 0; i < 12; i++) rSpawn(R, i % 4 ? 'coin' : 'cash', RW + i * 26, 6 + Math.random() * 58, { fall: 1 }); } },
+  money:  { msg: '💸 하늘에서 연봉이 쏟아져요!', go: function (R) { for (var i = 0; i < 12; i++) rSpawn(R, i % 4 ? 'coin' : 'cash', RW + i * 26, 6 + RR() * 58, { fall: 1 }); } },
   magnet: { msg: '🧲 연봉 자석! 6초 동안 돈이 따라와요', go: function (R) { R.magnet = 6; rClear(R, RW - 40, RW + 300); for (var i = 0; i < 10; i++) rSpawn(R, 'coin', RW + 20 + i * 22, 10 + (i % 3) * 22); } },
   wind:   { msg: '🌪 돌풍! 6초 동안 몸이 가벼워요', out: 1, go: function (R) { R.lowg = 6; for (var i = 0; i < 6; i++) rSpawn(R, 'coin', RW + 40 + i * 24, 80 + (i % 2) * 10); } },
   boss:   { msg: '😱 부장님이 뒤에서 쫓아와요! 7초 버티기', go: function (R) { R.chase = 7; R.chHit = 0; } },
   fever:  { msg: '🔥 피버 타임! 6초 동안 돈 2배', go: function (R) { R.fever = 6; for (var i = 0; i < 8; i++) rSpawn(R, 'coin', RW + i * 15, 4); } },
   box:    { msg: '🎁 수상한 상자 발견!', go: function (R) { rClear(R, RW - 20, RW + 120); rSpawn(R, 'box', RW + 40, 26); } },
   stock:  { msg: '', go: function (R) {
-    var c = POOL[Math.floor(Math.random() * POOL.length)], up = Math.random() < .6, d = Math.max(50, Math.round(R.money * (.08 + Math.random() * .12) / 10) * 10);
+    var c = POOL[Math.floor(RR() * POOL.length)], up = RR() < .6, d = Math.max(50, Math.round(R.money * (.08 + RR() * .12) / 10) * 10);
     if (!up) d = Math.min(d, R.money); R.money += up ? d : -d; R.log.push((up ? '📈 ' : '📉 ') + c.n + ' 주가 ' + (up ? '급등 +' : '급락 −') + man(d) + '만원');
     runBanner((up ? '📈 ' : '📉 ') + c.n + ' 주가 ' + (up ? '급등! +' : '급락… −') + man(d) + '만원', 2200); sfx(up ? 'combo' : 'wrong'); } },
   treat:  { msg: '☕ 동기가 커피를 쐈어요!', go: function (R) { for (var i = 0; i < 3; i++) rSpawn(R, 'coffee', RW + 30 + i * 120, 18); } },
@@ -3276,9 +3389,9 @@ function runWx(c, R) {
   else if (w === 'dust') rr(c, 'rgba(196,166,96,.24)', 0, 0, RW, RH);
 }
 
-
 // ── 판 진행
-function runRec() { return rec(TODAY, 'run'); }   // slp-r-<날>-run → 하루 첫 완주에 경험치 +1 (myXP 가 slp-r- 기록 수를 셈)
+function runRec() { return rec(TODAY, 'run'); }   // slp-r-<날>-run → 하루 첫 완주에 경험치 +1 (myXP 가 slp-r- 기록 수를 셈). sent 가 있으면 오늘 순위 판은 끝
+function runRanked() { var x = runRec(); return !(x && x.sent != null); }   // 오늘 아직 점수를 안 보냈으면 이번 판 = 오늘의 코스(순위 판)
 // 출근길 누적 기록 (소품 조건): n 완주 · ontime 정시 · esc 부장님 따돌림 · maxHits · maxMoney · wx{날씨} · cnt{구간: 지나간 수} · end{도착 사건}
 function runStats() {
   var s = store.getJ('slp-runst', null); s = s && typeof s === 'object' ? s : {};
@@ -3291,44 +3404,50 @@ function hhmm(m) { m = Math.floor(m); return String(Math.floor(m / 60)).padStart
 function renderRun() {
   if (!PX.ok) { $('run').innerHTML = '<p class="src">이 브라우저에선 그림 게임을 열 수 없어요. 다른 게임을 즐겨 주세요.</p>'; return; }
   if (RUN && RUN.on) { if (!$('rnC')) runStage(); runPause('계속 달리려면 누르세요'); return; }   // 다른 화면에 다녀오면 멈춰 둔 판으로
-  var x = runRec(), all = store.getJ('slp-runbest', null);
+  var x = runRec(), ranked = runRanked(), all = store.getJ('slp-runbest', null);
+  var maps = Object.keys(RMAP).filter(function (k) { return RMAP[k].tip; }).map(function (k) { var M = RMAP[k]; return '<li>' + M.emo + ' <b>' + M.nm + '</b> — ' + esc(M.tip) + '</li>'; }).join('');
   $('run').innerHTML = '<div class="intro"><h3>조로 출근길</h3>' +
     stage(zorro(myRank(), 'normal', 3, 'idle') + icon('bus', 5), 'resst', '내 조로와 버스') +
-    '<p class="sum"><b>내 조로</b>가 집에서 회사까지 달려요. 한 판 1분 남짓!<br>2층 발판으로 올라갔다 내려갔다, 적은 밟아서 처치. 갈림길에선 <b>위층이냐 아래냐</b>로 길이 갈려요.</p>' +
-    '<button class="btn big" id="rGo" type="button">출근하기 ▶</button>' +
-    (x || all ? '<p class="src" style="margin:8px 0 0">' + (x ? '오늘 최고 <b>' + man(x.score) + '만원</b> (' + x.n + '판)' : '') + (x && all ? ' · ' : '') + (all ? '역대 최고 <b>' + man(all.s) + '만원</b>' : '') + '</p>' : '') +
-    '<p class="src" style="margin:6px 0 0">달리는 조로는 <a href="#look">내 조로</a>에서 꾸민 모습 그대로예요.</p>' +
+    '<p class="sum"><b>내 조로</b>가 집에서 회사까지 달려요. 한 판 1분 남짓!<br>탈것·길마다 규칙이 달라요. 지하철은 <b>연타</b>로 밀고 타고, 신호등에선 <b>꾹</b> 눌러 멈춰요.</p>' +
+    (ranked ? '<p class="src" style="margin:0">오늘의 코스는 모두 같은 길이에요. <b>오늘 첫 판이 순위에 올라가요.</b></p>'
+      : '<p class="src" style="margin:0">오늘 순위 판은 끝났어요' + (x.sent && x.rank ? ' · <b>' + man(x.rank) + '위</b> / ' + man(x.total) + '명 (' + man(x.score) + '만원)' : '') + '. 지금부턴 길·날씨가 매번 바뀌는 연습 판이에요.</p>') +
+    '<button class="btn big" id="rGo" type="button">' + (ranked ? '오늘의 코스 출근하기 ▶' : '연습 출근하기 ▶') + '</button>' +
+    (x || all ? '<p class="src" style="margin:8px 0 0">' + (x && x.best ? '오늘 최고 <b>' + man(x.best) + '만원</b> (' + (x.n || 1) + '판)' : '') + (x && x.best && all ? ' · ' : '') + (all ? '역대 최고 <b>' + man(all.s) + '만원</b>' : '') + '</p>' : '') +
+    '<p class="src" style="margin:6px 0 0">달리는 조로는 <a href="#look">내 조로</a>에서 꾸민 모습 그대로예요. 순위표·명예의 전당에도 이 모습으로 올라가요.</p>' +
     '<details class="rules"><summary>규칙 보기</summary><ul>' +
-    '<li>화면 누르기 · 스페이스 · ↑ = 점프 (공중에서 한 번 더 = 2단 점프). <b>화면 아래쪽 누르기 · ↓ = 발판에서 내려오기</b>.</li>' +
-    '<li>적(야근 유령 · 스팸 메일 · 서류 괴물)은 위에서 밟으면 처치 +100만원. 옆에서 부딪히면 꽈당.</li>' +
-    '<li>쉬지 않고 돈을 주우면 콤보! 10콤보마다 돈 배율이 올라가요(최대 ×3). 꽈당하면 콤보가 끊겨요.</li>' +
-    '<li>장애물을 아슬아슬하게 넘으면 +50만원. 꽈당하면 시계가 2분 늦어지고 100만원을 흘려요.</li>' +
-    '<li>갈림길 3번: 표지판이 나오면 끝까지 <b>위층에 있으면 위 길, 아래에 있으면 아래 길</b>로 가요.</li>' +
-    '<li>판마다 출근 회사 · 날씨 · 길 · 돌발 사건 11가지 · 도착 사건이 다 달라요. 갈수록 빨라져요.</li>' +
+    '<li><b>화면 어디를 눌러도 점프</b> (길게 누르면 더 높이, 공중에서 한 번 더 = 2단 점프). 폰은 아래 <b>⬇ 버튼</b>이나 <b>아래로 쓸기</b>, 키보드는 ↓ = 발판에서 내려오기.</li>' +
+    '<li>적(야근 유령 · 스팸 메일 · 서류 괴물)은 위에서 밟으면 처치 +100만원. 옆에서 부딪히면 꽈당(⏰ +2분 · −100만원).</li>' +
+    '<li>쉬지 않고 돈을 주우면 콤보! 10콤보마다 돈 배율이 올라가요(최대 ×3). 장애물을 아슬아슬하게 넘으면 +50만원.</li>' +
+    '<li>갈림길 3번: 큰 화살표 표지판이 나오면 끝까지 <b>위층에 있으면 위 길, 땅에 있으면 아래 길</b>. 길마다 규칙과 미니게임이 달라요:</li></ul>' +
+    '<ul class="rn-maps">' + maps + '</ul><ul>' +
     '<li>9시 전에 도착하면 정시 출근 보너스 1,000만원 + 일찍 온 1분마다 50만원.</li>' +
-    '<li>하루 첫 완주에 경험치 +1. 소품 ' + gameItems('run').length + '개와 칭호 2개(출근의 신 · 얼리버드)를 얻을 수 있어요.</li>' +
-    '<li>순위 없이 이 기기에 오늘·역대 최고 기록만 남아요.</li></ul></details>' + gotBox('run') + '</div>';
+    '<li>하루 첫 판 = 오늘의 코스(순위 · 이번 주 합계 · 명예의 전당). 하루 첫 완주에 경험치 +1. 소품 ' + gameItems('run').length + '개와 칭호 2개(출근의 신 · 얼리버드).</li></ul></details>' +
+    (!ranked ? '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbR"></div></details>' : '') + gotBox('run') + '</div>';
   $('rGo').onclick = runStart;
+  if (!ranked) miniLb('lbR', 'run');
 }
+function RR() { return RUN && RUN.rnd ? RUN.rnd() : Math.random(); }   // 판 안의 운(상자·주가·도착 사건): 오늘의 코스는 모두 같은 운
 function runStart() {
-  var seed = Date.now().toString(36) + Math.random().toString(36).slice(2, 7), P = runPlan(seed);
+  var ranked = runRanked(), seed = ranked ? 'day|' + TODAY : Date.now().toString(36) + Math.random().toString(36).slice(2, 7), P = runPlan(seed);
   RIMG = rImgs(P.dest, PC.rng('runbld|' + seed));
-  RUN = { on: 1, seed: seed, dest: P.dest, wx: P.wx, slots: P.slots, seg: 0, key: 'alley', route: ['alley'], dist: 0, t: 0, pen: 0, h: 0, v: 0, jumps: 0, air: 0, drop: 0,
-    money: 0, got: 0, hits: 0, combo: 0, maxCombo: 0, kills: 0, near: 0, esc: 0, cd: 1.8, cdn: 0, warned: 0,
+  RUN = { on: 1, ranked: ranked, seed: seed, rnd: PC.rng('runev|' + seed), dest: P.dest, wx: P.wx, slots: P.slots, seg: 0, key: 'alley', route: ['alley'], dist: 0, t: 0, el: 0, pen: 0,
+    h: 0, v: 0, jumps: 0, air: 0, drop: 0, buf: 0, coy: 0, held: 0, jumpHeld: 0, jt: -9, jh: 0,
+    money: 0, got: 0, hits: 0, combo: 0, maxCombo: 0, kills: 0, near: 0, esc: 0, cd: 1.8, cdn: 0, warned: 0, mini: null, card: null, seen: {}, mres: [],
     stun: 0, inv: 0, boost: 0, shake: 0, flash: 0, magnet: 0, lowg: 0, chase: 0, fever: 0, dark: 0, fx: [], dust: [], pops: [], log: [], pause: '', last: 0, raf: 0, bn: 0, step: 0 };
+  if (ranked) { setProg('run', { tok: '', t0: Date.now() }); startDaily('run').then(function (t) { var p = prog('run'); if (p) { p.tok = t.tok; setProg('run', p); } }); }   // 시작 표 (플레이 수 +1)
   var G = rGen('alley', RUN, 0); RUN.objs = G.objs; RUN.ev = G.ev;
-  runStage(); runGo();
+  runStage(); runSegCard('alley', 1); runGo();
+  try { $('rnCv').scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
 }
 function runStage() {
   $('run').innerHTML = '<div class="rn"><div class="rn-hud"><span class="ck" id="rnCk"></span><span class="mo" id="rnMo"></span><span class="cb" id="rnCb"></span><span class="sg" id="rnSg"></span></div>' +
     '<div class="rn-pips" id="rnPips" aria-hidden="true"></div>' +
-    '<div class="rn-cv" id="rnCv"><canvas id="rnC" width="' + RW + '" height="' + RH + '" role="img" aria-label="조로 출근길 게임 화면. 누르면 점프, 아래쪽을 누르면 내려오기"></canvas>' +
-    '<div class="rn-fk" id="rnFk" hidden></div><div class="rn-bn" id="rnBn" hidden></div><div class="rn-ov" id="rnOv" hidden></div></div>' +
-    '<p class="rn-help">누르기 · 스페이스 = 점프 (공중에서 한 번 더) · 화면 아래쪽 · ↓ = 내려오기 · <button class="lnk" type="button" id="rnPz">잠깐 멈춤</button></p></div>';
-  $('rnCv').addEventListener('pointerdown', function (e) {
-    if (e.target.closest('.rn-ov')) return; e.preventDefault();
-    var b = this.getBoundingClientRect(); if ((e.clientY - b.top) / b.height > .8) runDrop(); else runJump();
-  });
+    '<div class="rn-cv" id="rnCv"><canvas id="rnC" width="' + RW + '" height="' + RH + '" role="img" aria-label="조로 출근길 게임 화면. 어디를 눌러도 점프"></canvas>' +
+    '<div class="rn-fk" id="rnFk" hidden></div><div class="rn-bn" id="rnBn" hidden></div><div class="rn-mg" id="rnMg" hidden><span class="h" id="rnMgH"></span><span class="g" id="rnMgG"><i></i></span></div>' +
+    '<div class="rn-tc" id="rnTc" hidden></div><div class="rn-ov" id="rnOv" hidden></div></div>' +
+    '<div class="rn-pad"><button type="button" class="dn" id="rnDn" aria-label="발판에서 내려오기">⬇ 내려오기</button><div class="jp" id="rnJp" aria-hidden="true">점프 · 어디를 눌러도 돼요</div></div>' +
+    '<p class="rn-help">아무 데나 누르기 · 스페이스 = 점프 (길게 = 높이) · ⬇ 버튼 · 아래로 쓸기 · ↓ = 내려오기 · <button class="lnk" type="button" id="rnPz">잠깐 멈춤</button></p></div>';
+  $('rnDn').addEventListener('pointerdown', function (e) { e.preventDefault(); runDrop(); });
   $('rnPz').onclick = function () { runPause('잠깐 멈췄어요'); };
   runHud(1);
 }
@@ -3343,34 +3462,74 @@ function runHud(force) {
   if (force) $('rnSg').textContent = M.emo + ' ' + M.nm + (M.inn ? '' : ' · ' + R_WX[R.wx][1]);
   var p = Math.round(Math.min(1, R.dist / M.len) * 20) * 5;
   if (force || p !== R.hp) { R.hp = p; $('rnPips').innerHTML = R_SLOTS.map(function (x, i) { return '<i class="' + (i < R.seg ? 'on' : i === R.seg ? 'cur' : '') + '"' + (i === R.seg ? ' style="--p:' + p + '%"' : '') + '></i>'; }).join(''); }
-  // 갈림길 안내: 지금 위층이면 위 길에 불
-  var F = R.fork, up = R.h >= R_T1 - 2, fk = F ? (up ? 'u' : 'd') : '';
-  if (force || fk !== R.hfk) { R.hfk = fk; var el = $('rnFk'); el.hidden = !F;
-    if (F) el.innerHTML = '<b class="' + (up ? 'on' : '') + '">⬆ 위층 ' + RMAP[F.up].emo + ' ' + RMAP[F.up].nm + '</b><b class="' + (up ? '' : 'on') + '">⬇ 아래 ' + RMAP[F.dn].emo + ' ' + RMAP[F.dn].nm + '</b>'; }
+  // 갈림길 안내: 위·아래 길과 공략. 지금 위층이면 위 길에 불
+  var F = R.fork, up = R.h >= R_T1 - 2, fk = F && !R.card ? (up ? 'u' : 'd') : '';
+  if (force || fk !== R.hfk) { R.hfk = fk; var el = $('rnFk'); el.hidden = !fk;
+    if (fk) el.innerHTML = [[F.up, '⬆ 위층', up], [F.dn, '➡ 아래', !up]].map(function (a) { var X = RMAP[a[0]]; return '<b class="' + (a[2] ? 'on' : '') + '">' + a[1] + ' ' + X.emo + ' ' + X.nm + '<small>' + esc(X.tip || '') + '</small></b>'; }).join(''); }
 }
 function runBanner(txt, ms, big) { var b = $('rnBn'); if (!b) return; b.textContent = txt; b.className = 'rn-bn' + (big ? ' big' : ''); b.hidden = false; clearTimeout(RUN.bn); RUN.bn = setTimeout(function () { b.hidden = true; }, ms || 1400); }
 function runPop(R, x, y, txt, col) { R.pops.push({ x: x, y: y, t: 0, s: txt, c: col || '#ffe27a' }); }
-function runJump() {
-  var R = RUN; if (!R || !R.on || R.pause || R.cd > 0) return;
-  if (R.jumps === 0 && R.air) R.jumps = 1;   // 발판 끝에서 떨어지는 중엔 2단 점프만 남음
-  if (R.jumps >= 2) return;
-  R.v = R.jumps ? RJ2 : RJ1; R.jumps++; R.air = 1; sfx('jump');
-  if (R.jumps === 1) for (var i = 0; i < 3; i++) R.dust.push({ x: RPX + 12 + i * 4, y: RGY - R.h - 1, t: 0, vx: -40 - i * 20 });
-}
-function runDrop() { var R = RUN; if (!R || !R.on || R.pause || R.cd > 0) return; if (!R.air && R.h > 0) { R.drop = .25; R.v = -80; R.air = 1; R.jumps = 1; } }   // 발판에서 내려오기
-function runGo() { var R = RUN; R.pause = ''; $('rnOv').hidden = true; R.last = performance.now(); cancelAnimationFrame(R.raf); R.raf = requestAnimationFrame(runFrame); }
-function runPause(msg) {
-  var R = RUN; if (!R || !R.on) return;
-  R.pause = 'pause'; cancelAnimationFrame(R.raf); runDraw();
-  var o = $('rnOv'); o.hidden = false; o.innerHTML = '<p class="q">' + esc(msg) + '</p><button class="btn lime" type="button" id="rnRe">계속 달리기 ▶</button>';
-  $('rnRe').onclick = runGo;
-}
+
+// ── 조작: 화면 어디든 누르기 = 누름(runPress) · 떼기 = runRelease. 링크·버튼·입력칸·메뉴는 빼고
+function runOn() { return CUR === 'run' && RUN && RUN.on && !RUN.pause; }
+document.addEventListener('pointerdown', function (e) {
+  if (!runOn() || e.button > 0) return;
+  var t = e.target; if (t && t.closest && t.closest('a,button,input,select,textarea,summary,label,.rn-ov,.dock,.zn,.zb')) return;
+  e.preventDefault(); RUN.py = e.clientY; RUN.pt = performance.now(); RUN.swiped = 0;
+  runPress();
+}, { passive: false });
+document.addEventListener('pointermove', function (e) {   // 아래로 쓸기 = 내려오기 (방금 누른 점프는 취소)
+  var R = RUN; if (!runOn() || !R.held || R.swiped || R.py == null) return;
+  if (e.clientY - R.py > 26 && performance.now() - R.pt < 350) { R.swiped = 1; runDrop(1); }
+});
+['pointerup', 'pointercancel'].forEach(function (n) { document.addEventListener(n, function () { if (RUN && RUN.on) runRelease(); }); });
 document.addEventListener('visibilitychange', function () { if (document.hidden && RUN && RUN.on && !RUN.pause) runPause('잠깐 멈췄어요'); });
 document.addEventListener('keydown', function (e) {
   if (CUR !== 'run' || !RUN || !RUN.on || (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return;
   if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { e.preventDefault(); runDrop(); return; }
-  if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { if (e.target && e.target.tagName === 'BUTTON' && RUN.pause) return; e.preventDefault(); if (RUN.pause) runGo(); else runJump(); }
+  if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+    if (e.target && e.target.tagName === 'BUTTON' && RUN.pause) return; e.preventDefault();
+    if (RUN.pause) runGo(); else if (!e.repeat) runPress();
+  }
 });
+document.addEventListener('keyup', function (e) { if (RUN && RUN.on && (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W')) runRelease(); });
+function runPress() {
+  var R = RUN; if (!R || !R.on || R.pause) return;
+  R.held = 1; var jp = $('rnJp'); if (jp) jp.classList.add('on');
+  if (R.card) { if (R.card.t > .4) R.card.t = Math.max(R.card.t, R.card.dur - .25); return; }   // 카드는 누르면 넘어감
+  if (R.cd > 0) return;
+  var m = R.mini;
+  if (m) { if (m.ph !== 'play') return; if (RM[m.k].press) RM[m.k].press(R, m); if (R_MINI[m.k].nj) return; }
+  runJump();
+}
+function runRelease() {
+  var R = RUN; R.held = 0; var jp = $('rnJp'); if (jp) jp.classList.remove('on');
+  if (R.jumpHeld && R.air && R.v > RJCUT) R.v = RJCUT;   // 짧게 누르면 낮은 점프 (2층까지는 닿음)
+  R.jumpHeld = 0;
+}
+function runJump() {
+  var R = RUN, M = RMAP[R.key], maxJ = M.bike ? 1 : 2;
+  if (!R.air || R.coy > 0) {   // 땅·발판 위, 또는 발판 끝에서 막 떨어진 직후
+    R.v = RJ1; R.jumps = 1; R.air = 1; R.coy = 0; R.buf = 0; R.jumpHeld = 1; R.jt = R.t; R.jh = R.h; sfx('jump');
+    for (var i = 0; i < 3; i++) R.dust.push({ x: RPX + 12 + i * 4, y: RGY - R.h - 1, t: 0, vx: -40 - i * 20 });
+    return;
+  }
+  if (R.jumps === 0) R.jumps = 1;   // 뛰지 않고 떨어지는 중이면 2단 점프만 남음
+  if (R.jumps < maxJ) { R.v = RJ2; R.jumps++; R.jumpHeld = 1; sfx('jump'); return; }
+  R.buf = R_BUF;   // 지금은 못 뛰면 기억했다가 착지하자마자 뜀
+}
+function runDrop(sw) {   // 발판에서 내려오기. sw = 아래로 쓸기 (방금 누른 점프를 취소하고 내려옴)
+  var R = RUN; if (!R || !R.on || R.pause || R.cd > 0 || R.card || (R.mini && R_MINI[R.mini.k].fr)) return;
+  if (!R.air && R.h > 0) { R.drop = .25; R.v = -80; R.air = 1; R.jumps = 1; return; }
+  if (sw && R.air && R.t - R.jt < .35 && R.jh > 0) { R.drop = .3; R.v = -120; R.jumps = 1; R.jumpHeld = 0; }
+}
+function runGo() { var R = RUN; R.pause = ''; $('rnOv').hidden = true; R.last = performance.now(); document.documentElement.classList.add('rn-play'); cancelAnimationFrame(R.raf); R.raf = requestAnimationFrame(runFrame); }
+function runPause(msg) {
+  var R = RUN; if (!R || !R.on) return;
+  R.pause = 'pause'; R.held = 0; cancelAnimationFrame(R.raf); runDraw(); document.documentElement.classList.remove('rn-play');
+  var o = $('rnOv'); o.hidden = false; o.innerHTML = '<p class="q">' + esc(msg) + '</p><button class="btn lime" type="button" id="rnRe">계속 달리기 ▶</button>';
+  $('rnRe').onclick = runGo;
+}
 function runFrame(now) {
   var R = RUN; if (!R || !R.on || R.pause) return;
   if (CUR !== 'run') { runPause('계속 달리려면 누르세요'); return; }
@@ -3379,10 +3538,195 @@ function runFrame(now) {
   runDraw(); runHud();
   if (!R.pause) R.raf = requestAnimationFrame(runFrame);
 }
-function runHitBox(R) { return [RPX + 10, RGY - R.h - 32, RPX + 24, RGY - R.h - 2]; }
-function runImg(o) { return o.k === 'person' ? RIMG.ppl[o.p] : RIMG.obj[o.k]; }
+
+// ── 카드: 구간이 바뀔 때(검게 닫혔다 열림, 그 사이 맵 교체) · 미니게임 시작(반투명). 시계는 멈춤, 누르면 넘어감
+function runCard(o) {
+  var R = RUN; R.card = { t: 0, dur: o.dur || 1.8, dark: o.dark == null ? 1 : o.dark, mid: o.mid, end: o.end, did: 0 };
+  var el = $('rnTc'); if (!el) return;
+  el.innerHTML = (o.k ? '<span class="k">' + esc(o.k) + '</span>' : '') + '<span class="e">' + o.e + '</span><span class="t">' + esc(o.t) + '</span>' + (o.r ? '<span class="r">' + esc(o.r) + '</span>' : '') + '<span class="s">' + esc(o.s || '누르면 바로 시작') + '</span>';
+  el.hidden = true; $('rnFk').hidden = true; R.hfk = '';
+}
+function runSegCard(key, first, mid) {
+  var R = RUN, M = RMAP[key], mn = [];
+  (M.mini || []).forEach(function (m) { var n = R_MINI[m[0]].nm; if (mn.indexOf(n) < 0) mn.push(n); });
+  runCard({ k: first ? (R.ranked ? '오늘의 코스 · 순위 판' : '연습 판') : hhmm(runClock(R)) + ' · ' + (R_SLOTS[R.seg] ? R.seg + 1 : '') + '구간', e: M.emo,
+    t: M.nm + (key === 'lobby' ? ' · ' + R.dest.n : ''), r: (first ? '어디를 눌러도 점프! ' : '') + M.rule, s: (mn.length ? '미니게임 ' + mn.join(' · ') + ' — ' : '') + '누르면 바로 시작',
+    dur: first ? 3.4 : 2.4, mid: mid });
+}
+
+// ── 미니게임. 각 게임: start · step(끝나면 true) · press · draw. 결과는 runMiniEnd(돈, 분, 글)
+function runMini(k) {
+  var R = RUN, X = R_MINI[k], m = { k: k, ph: 'intro', t: 0, g: 0, n: 0, ok: 0, tries: 0 };
+  R.mini = m;
+  var go = function () { m.ph = 'play'; m.t = 0; if (RM[k].start) RM[k].start(R, m); runMg(m); };
+  if (X.fr || !R.seen[k]) { R.seen[k] = 1; runCard({ k: '미니게임', e: X.nm.split(' ')[0], t: X.nm.slice(X.nm.indexOf(' ') + 1), r: X.how, dur: 1.7, dark: .6, end: go }); }
+  else go();   // 같은 미니게임 두 번째(버스 급정거)는 카드 없이 바로
+}
+function runMg(m, h, g, hot) {   // 화면 아래 안내 + 게이지 (g = 0~1, null 이면 게이지 숨김)
+  var el = $('rnMg'); if (!el) return;
+  if (!m) { el.hidden = true; return; }
+  el.hidden = false; h = h || R_MINI[m.k].how;
+  if (h !== el._h) { el._h = h; $('rnMgH').textContent = h; el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); }
+  var G = $('rnMgG'); G.hidden = g == null; if (g != null) { G.firstChild.style.width = Math.round(Math.max(0, Math.min(1, g)) * 100) + '%'; G.classList.toggle('hot', !!hot); }
+}
+function runMiniEnd(money, pen, msg, good) {
+  var R = RUN, m = R.mini; if (!m) return;
+  R.mini = null; runMg(null);
+  if (money) { R.money = Math.max(0, R.money + money); }
+  if (pen) R.pen += pen;
+  R.mres.push([m.k, good ? 1 : 0]);
+  var t = msg + (money > 0 ? ' +' + man(money) + '만원' : money < 0 ? ' −' + man(-money) + '만원' : '') + (pen > 0 ? ' ⏰ +' + pen + '분' : '');
+  R.log.push(R_MINI[m.k].nm.split(' ')[0] + ' ' + t); runBanner(t, 1600); sfx(good ? 'combo' : 'wrong');
+  if (good) { R.combo += 3; R.maxCombo = Math.max(R.maxCombo, R.combo); }
+}
+function rBar(c, pos, zone, lab) {   // 타이밍 막대: 가운데 초록 칸 + 움직이는 표시
+  var x0 = 70, w = 140, y = 34;
+  rr(c, '#0d0f0a', x0 - 2, y - 2, w + 4, 14); rr(c, '#3a3f4a', x0, y, w, 10); rr(c, '#3f9a4a', x0 + w * (.5 - zone), y, w * zone * 2, 10); rr(c, '#c6ff3d', x0 + w / 2 - 1, y, 2, 10);
+  var px = x0 + w * pos; rr(c, '#0d0f0a', px - 3, y - 6, 7, 22); rr(c, lab || '#ffcf3d', px - 2, y - 5, 5, 20);
+}
+function rDoor(c, x, open, col) {   // 닫히는 문 두 짝 (open 0~1)
+  var w = 40, g = Math.round(w * open);
+  rr(c, '#5a5d63', x - 4, RGY - 74, 2 * w + 8, 74); rr(c, '#1a2030', x, RGY - 70, 2 * w, 70);
+  rr(c, col, x, RGY - 70, w - g, 70); rr(c, col, x + w + g, RGY - 70, w - g, 70);
+  rr(c, '#bfe6ff', x + 6, RGY - 60, Math.max(0, w - g - 12), 24); rr(c, '#bfe6ff', x + w + g + 6, RGY - 60, Math.max(0, w - g - 12), 24);
+}
+var RM = {
+  // 연타: 떠나는 버스와의 거리를 좁힘
+  chase: { start: function (R, m) { m.g = 100; },
+    press: function (R, m) { m.g -= 7; R.step++; },
+    step: function (R, m, dt) { m.t += dt; m.g = Math.min(130, m.g + 15 * dt); runMg(m, '연타! 버스까지 ' + Math.max(0, Math.round(m.g)) + 'm', 1 - m.g / 130, m.g < 30);
+      if (m.g <= 0) { runMiniEnd(200, 0, '🚌 버스 잡았다!', 1); return; } if (m.t > 4.6) runMiniEnd(0, 2, '🚌 버스 놓침… 다음 버스'); },
+    draw: function (c, R, m) { var bx = Math.round(RPX + 34 + Math.max(0, m.g) * 1.3);
+      rr(c, '#1b1d18', bx - 1, RGY - 47, 92, 41); rr(c, '#3f9a4a', bx, RGY - 46, 90, 36); rr(c, '#ffe27a', bx, RGY - 16, 90, 3);
+      for (var i = 0; i < 4; i++) rr(c, '#bfe6ff', bx + 6 + i * 21, RGY - 41, 16, 14);
+      rr(c, '#2b2b2b', bx + 12, RGY - 10, 14, 10); rr(c, '#2b2b2b', bx + 64, RGY - 10, 14, 10); rr(c, '#ffcf3d', bx + 2, RGY - 44, 4, 4);
+      c.font = 'bold 9px sans-serif'; c.fillStyle = '#fff'; c.fillText('출근 ' + (R.dest.n.length > 6 ? R.dest.n.slice(0, 6) : R.dest.n), bx + 8, RGY - 20); } },
+  // 연타: 문이 닫히기 전에 게이지 채우기 (가만히 있으면 밀려남)
+  board: { press: function (R, m) { m.g += 9; R.shake = REDUCE ? 0 : .06; },
+    step: function (R, m, dt) { m.t += dt; m.g = Math.max(0, Math.min(100, m.g - 16 * dt)); runMg(m, '연타! 밀고 들어가기 ' + Math.round(m.g) + '%', m.g / 100, m.g > 70);
+      if (m.g >= 100) { runMiniEnd(300, 0, '🚇 탑승 성공!', 1); return; } if (m.t > 4.6) runMiniEnd(0, 2, '🚇 문이 닫혔다… 다음 열차'); },
+    draw: function (c, R, m) { rDoor(c, 150, Math.max(0, 1 - m.t / 4.6), '#c4cbd4'); rr(c, '#36b5a5', 146, RGY - 78, 88, 4);
+      for (var i = 0; i < 3; i++) { var P = RIMG.ppl[i]; c.drawImage(P, Math.round(160 + i * 18 + Math.sin(R.t * 9 + i) * 2), RGY - P.height); } } },
+  // 꾹 누르기: 경고 1초 뒤 급정거 순간에 누르고 있으면 버팀
+  brake: { step: function (R, m, dt) { m.t += dt;
+      if (m.t < 1) { runMg(m, '✊ 급정거 온다! 꾹 누르세요', 1 - m.t, R.held); R.shake = REDUCE ? 0 : .04; return; }
+      if (!m.hit) { m.hit = 1; R.shake = REDUCE ? 0 : .45;
+        R.objs.forEach(function (o) { if (o.k === 'bag' && !o.done) { var d = o.x - R.dist; if (d > 0 && d < 400) o.vx = -130; } });
+        if (R.held) { runMiniEnd(100, 0, '✊ 손잡이 꽉! 버텼다', 1); return; }
+        R.stun = .6; R.combo = 0; runMiniEnd(0, 1, '끼익— 휘청! 급정거'); } } },
+  // 박자: 고리가 줄어들어 딱 맞을 때 누르기 10번
+  pedal: { start: function (R, m) { m.b0 = .7; m.hit = {}; },
+    press: function (R, m) { var i = Math.round((m.t - m.b0) / .55), d = Math.abs(m.t - m.b0 - i * .55);
+      if (i < 0 || i > 9 || m.hit[i]) return; m.hit[i] = 1;
+      if (d < .13) { m.ok++; runPop(R, RPX + 4, RGY - 52, d < .06 ? 'PERFECT' : 'GOOD', '#c6ff3d'); sfx('coin'); } else { runPop(R, RPX + 4, RGY - 52, 'MISS', '#ff9b9b'); } },
+    step: function (R, m, dt) { m.t += dt; R.dist += 40 * dt * (1 + m.ok * .1); runMg(m, '박자 맞춰 페달! ' + m.ok + ' / 10', m.ok / 10, m.ok >= 7);
+      if (m.t > m.b0 + 9 * .55 + .4) { var g = m.ok >= 7; runMiniEnd(m.ok * 30 + (g ? 200 : 0), m.ok < 4 ? 1 : 0, g ? '🚲 오르막 정복!' : m.ok < 4 ? '🚲 헉헉… 끌고 올라감' : '🚲 오르막 통과', g); } },
+    draw: function (c, R, m) { var i = Math.max(0, Math.ceil((m.t - m.b0) / .55 - .25)), nt = m.b0 + i * .55 - m.t, cx = RPX + 17, cy = RGY - 30;
+      if (i <= 9) { c.strokeStyle = '#c6ff3d'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy, 12, 0, Math.PI * 2); c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,.9)'; c.beginPath(); c.arc(cx, cy, 12 + Math.max(0, nt) * 60, 0, Math.PI * 2); c.stroke(); }
+      rr(c, 'rgba(13,15,10,.25)', 0, RGY - 2, RW, 2); } },
+  // 꾹 누르기: 돌풍 3번 (경고 .9초 → 그 순간 누르고 있으면 버팀). 화면은 천천히 흐름
+  wind: { start: function (R, m) { m.gs = [1.5, 3.5, 5.5]; m.i = 0; },
+    step: function (R, m, dt) { m.t += dt; var at = m.gs[m.i];
+      if (at != null) {
+        var warn = m.t > at - .9 && m.t < at;
+        runMg(m, warn ? '🌪 돌풍 온다! 꾹 누르기' : '돌풍 ' + (m.i + 1) + ' / 3 · 손 떼고 달려요', warn ? 1 - (at - m.t) / .9 : null, warn && R.held);
+        if (m.t >= at) { m.i++; R.shake = REDUCE ? 0 : .3;
+          if (R.held) { m.ok++; R.money += 60; runPop(R, RPX, RGY - R.h - 44, '버텼다 +60', '#c6ff3d'); sfx('coin'); }
+          else { R.dist = Math.max(0, R.dist - 50); R.pen += .5; R.money = Math.max(0, R.money - 50); R.combo = 0; runPop(R, RPX, RGY - R.h - 44, '휘청! −50', '#ff9b9b'); sfx('wrong'); } }
+        return;
+      }
+      if (m.t > 6.1) runMiniEnd(m.ok === 3 ? 200 : 0, 0, m.ok === 3 ? '🌪 돌풍 3번 다 버텼다!' : '🌪 돌풍 ' + m.ok + '번 버팀', m.ok >= 2); },
+    draw: function (c, R, m) { var at = m.gs[m.i], warn = at != null && m.t > at - .9 && m.t < at;
+      c.fillStyle = warn ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.4)';
+      for (var i = 0; i < (warn ? 26 : 8); i++) c.fillRect(Math.floor(((ih(i, 40) * RW - R.t * (warn ? 520 : 200)) % RW + RW) % RW), Math.floor(ih(i, 41) * RGY), warn ? 16 : 8, 1); } },
+  // 타이밍: 떡꼬치가 가운데 올 때 누르기 3번
+  snack: { start: function (R, m) { m.tt = 0; m.wait = 0; },
+    press: function (R, m) { if (m.wait > 0) return; var pos = .5 + .5 * Math.sin(m.tt * (3 + m.tries)); m.tries++; m.wait = .55;
+      if (Math.abs(pos - .5) < .11) { m.ok++; m.last = 1; R.money += 150; runPop(R, 120, 30, '떡꼬치 GET +150', '#c6ff3d'); sfx('combo'); } else { m.last = 0; runPop(R, 120, 30, '헛손질!', '#ff9b9b'); sfx('wrong'); } },
+    step: function (R, m, dt) { m.t += dt; if (m.wait > 0) { m.wait -= dt; if (m.wait <= 0 && m.tries >= 3) { runMiniEnd(m.ok === 3 ? 200 : 0, 0, m.ok === 3 ? '🍢 시식 코너 싹쓸이!' : '🍢 떡꼬치 ' + m.ok + '개', m.ok >= 2); } return; }
+      m.tt += dt; runMg(m, '가운데서 딱! (' + (m.tries + 1) + ' / 3)', null);
+      if (m.tt > 2.6 * (m.tries + 1)) { m.tries++; m.wait = .3; m.last = 0; } },
+    draw: function (c, R, m) { var pos = .5 + .5 * Math.sin(m.tt * (3 + m.tries)); rBar(c, pos, .11); c.drawImage(RIMG.obj.tteok, Math.round(70 + 140 * pos - 3), 18);
+      rr(c, '#8a5a32', 180, RGY - 30, 70, 30); rr(c, '#e8412c', 176, RGY - 40, 78, 10); c.font = 'bold 9px sans-serif'; c.fillStyle = '#fff'; c.fillText('시식 코너', 192, RGY - 32); } },
+  // 박자 점프: 산책줄이 발밑을 지날 때 떠 있으면 통과 (6번, 점점 빨라짐). 이 미니게임만 누르기 = 점프
+  rope: { start: function (R, m) { m.next = 1.1; m.per = 1.05; },
+    step: function (R, m, dt) { m.t += dt; runMg(m, '줄이 발밑에 올 때 점프! ' + m.n + ' / 6', m.n / 6, m.ok === m.n && m.n > 0);
+      if (m.n < 6 && m.t >= m.next) { m.n++;
+        if (R.h > 6) { m.ok++; R.money += 40; R.combo++; runPop(R, RPX, RGY - R.h - 44, '휙! +40', '#c6ff3d'); sfx('coin'); }
+        else { R.stun = .35; R.money = Math.max(0, R.money - 30); runPop(R, RPX, RGY - 44, '걸림! −30', '#ff9b9b'); sfx('wrong'); }
+        m.per = Math.max(.72, m.per - .06); m.next += m.per; }
+      if (m.n >= 6 && m.t > m.next - m.per + .45) runMiniEnd(m.ok === 6 ? 200 : 0, 0, m.ok === 6 ? '🐕 줄넘기 완벽!' : '🐕 줄넘기 ' + m.ok + ' / 6', m.ok >= 4); },
+    draw: function (c, R, m) { var ph = 1 - Math.max(0, m.next - m.t) / m.per, ang = ph * Math.PI * 2, ry = RGY - 30 - Math.cos(ang) * 30, a = RPX - 34, b = RPX + 68;
+      c.drawImage(RIMG.obj.dog, a - 14, RGY - RIMG.obj.dog.height); c.drawImage(RIMG.obj.dog, b, RGY - RIMG.obj.dog.height);
+      c.strokeStyle = Math.cos(ang) > .2 ? '#e8412c' : '#ffcf3d'; c.lineWidth = 2; c.beginPath(); c.moveTo(a, RGY - 6); c.quadraticCurveTo((a + b) / 2, ry * 2 - (RGY - 6), b, RGY - 6); c.stroke(); } },
+  // 꾹 누르기: 빨간불엔 누르고 있으면 멈춤, 안 누르고 있으면 차에 꽈당. 초록불엔 떼고 달리기
+  light: { ph: [['g', 1.6], ['y', .6], ['r', 1.8], ['g', 1.3], ['y', .5], ['r', 1.7], ['g', .5]],
+    start: function (R, m) { m.hits = 0; },
+    cur: function (m) { var t = m.t, P = RM.light.ph; for (var i = 0; i < P.length; i++) { if (t < P[i][1]) return [P[i][0], i]; t -= P[i][1]; } return ['', P.length]; },
+    step: function (R, m, dt) { m.t += dt; var c = RM.light.cur(m), s = c[0];
+      if (!s) { runMiniEnd(m.ok * 80 + (m.ok === 2 ? 120 : 0), 0, m.ok === 2 ? '🚦 신호 완벽 준수!' : '🚦 횡단보도 통과', m.ok === 2); return; }
+      runMg(m, s === 'r' ? '🔴 빨간불! 꾹 눌러 멈춰요' : s === 'y' ? '🟡 노란불… 곧 빨간불' : '🟢 초록불! 손 떼고 건너요', null);
+      if (s === 'r') { if (!R.held && m.redHit !== c[1]) { m.redHit = c[1]; m.hits++; R.stun = .6; R.pen += 1.5; R.money = Math.max(0, R.money - 100); R.combo = 0; R.flash = .18; R.shake = REDUCE ? 0 : .35; runBanner('빵빵! 빨간불엔 멈춰요 ⏰ +1.5분', 1300); sfx('wrong'); }
+        m.inRed = c[1]; }
+      else if (m.inRed != null) { if (m.redHit !== m.inRed) { m.ok++; runPop(R, RPX, RGY - 50, '안전 +80', '#c6ff3d'); sfx('coin'); } m.inRed = null; } },
+    draw: function (c, R, m) { var s = RM.light.cur(m)[0], x = 236;
+      rr(c, '#1b1d18', x - 2, 8, 30, 64); rr(c, '#2b2f3a', x, 10, 26, 60); rr(c, '#5a5d63', x + 12, 72, 3, RGY - 72);
+      [['r', '#ff3b30', 14], ['y', '#ffcc00', 34], ['g', '#34c759', 54]].forEach(function (L) { c.fillStyle = s === L[0] ? L[1] : '#3a3f4a'; c.beginPath(); c.arc(x + 13, L[2] + 2, 7, 0, Math.PI * 2); c.fill(); });
+      for (var k = 0; k < 9; k++) rr(c, '#f2f2f2', RPX + 40 + k * 14, RGY - 4, 8, 4);   // 횡단보도
+      if (s === 'r') { var car = RIMG.obj.car, cx = RW - ((m.t * 260) % (RW + 60)); c.drawImage(car, Math.round(cx), RGY - car.height - 8); c.drawImage(car, Math.round(cx + 150), RGY - car.height - 8); } } },
+  // 연타: 3초 동안 누를 때마다 쇼핑백 +15만원
+  sale: { press: function (R, m) { if (m.n >= 40) return; m.n++; R.money += 15; R.fx.push({ x: 150 + Math.random() * 60, y: RGY - 40, t: 0 }); m.bags = (m.bags || []).concat([{ x: 170 + Math.random() * 40, t: 0 }]); sfx('coin'); },
+    step: function (R, m, dt) { m.t += dt; (m.bags || []).forEach(function (b) { b.t += dt; }); m.bags = (m.bags || []).filter(function (b) { return b.t < .6; });
+      runMg(m, '연타! 쇼핑백 ' + m.n + '개', 1 - m.t / 3.2, m.n > 20); if (m.t > 3.2) runMiniEnd(m.n >= 25 ? 150 : 0, 0, '🛍 세일 매대 쇼핑백 ' + m.n + '개 (+' + man(m.n * 15) + '만원)', m.n >= 15); },
+    draw: function (c, R, m) { rr(c, '#e8412c', 150, RGY - 44, 90, 12); c.font = 'bold 9px sans-serif'; c.fillStyle = '#fff'; c.fillText('오늘만 SALE 70%', 156, RGY - 35); rr(c, '#b98a5a', 150, RGY - 32, 90, 32);
+      (m.bags || []).forEach(function (b) { c.drawImage(RIMG.obj.sbag, Math.round(b.x - b.t * 80), Math.round(RGY - 40 - b.t * 50)); }); } },
+  // 타이밍: 사원증 찍기 (3번 안에 초록 칸)
+  badge: { start: function (R, m) { m.wait = 0; },
+    press: function (R, m) { if (m.wait > 0) return; var pos = .5 + .5 * Math.sin(m.t * 3.4); m.tries++;
+      if (Math.abs(pos - .5) < .1) { m.ok = 1; m.wait = .5; runPop(R, 120, 30, '삑!', '#c6ff3d'); sfx('coin'); }
+      else { m.wait = .45; R.pen += .5; runPop(R, 120, 30, '삐빅! 다시', '#ff9b9b'); sfx('wrong'); } },
+    step: function (R, m, dt) { if (m.wait > 0) { m.wait -= dt; if (m.wait <= 0 && (m.ok || m.tries >= 3)) runMiniEnd(m.ok ? (m.tries === 1 ? 150 : 50) : 0, 0, m.ok ? '🪪 출입 완료' + (m.tries === 1 ? ' · 한 번에!' : '') : '🪪 경비원이 열어 줌', m.ok); return; }
+      m.t += dt; runMg(m, '초록 칸에서 딱! (' + (m.tries + 1) + ' / 3)', null); if (m.t > 3 * (m.tries + 1)) { m.tries++; m.wait = .3; R.pen += .5; } },
+    draw: function (c, R, m) { rBar(c, .5 + .5 * Math.sin(m.t * 3.4), .1, '#ffffff'); c.drawImage(RIMG.obj.gate, 150, RGY - RIMG.obj.gate.height); c.drawImage(RIMG.obj.gate, 190, RGY - RIMG.obj.gate.height); } },
+  // 연타: 닫히는 엘리베이터
+  elev: { press: function (R, m) { m.g += 10; R.shake = REDUCE ? 0 : .05; },
+    step: function (R, m, dt) { m.t += dt; m.g = Math.max(0, Math.min(100, m.g - 18 * dt)); runMg(m, '연타! 엘리베이터 ' + Math.round(m.g) + '%', m.g / 100, m.g > 70);
+      if (m.g >= 100) { runMiniEnd(200, 0, '🛗 엘리베이터 탑승!', 1); return; } if (m.t > 3.8) runMiniEnd(0, 1, '🛗 문 닫힘… 다음 엘리베이터'); },
+    draw: function (c, R, m) { rDoor(c, 150, Math.max(0, 1 - m.t / 3.8), '#8f96a3'); rr(c, '#1b1d18', 176, RGY - 82, 28, 8); rr(c, '#c6ff3d', 186, RGY - 80, 8, 4); } }
+};
+
+// ── 한 장면: 카드 → 카운트다운 → (미니게임) → 달리기·몸·부딪힘
+function runPhys(dt, M, frozen) {   // 위아래 몸 움직임: 중력 → 발판(위에서 내려앉을 때만, 차양은 튕김) → 땅 · 천장 · 경사로 · 점프 기억/늦은 점프
+  var R = RUN, g = RG * (R.lowg > 0 ? .55 : M.float ? M.float : !M.inn && R.wx === 'wind' ? .88 : 1), prevH = R.h, wasGround = !R.air;
+  R.v -= g * dt; R.h += R.v * dt;
+  if (M.ceil && R.h > M.ceil) { R.h = M.ceil; if (R.v > 0) R.v = -40; }   // 지하철 천장: 머리 콩
+  var sup = 0, so = null;
+  if (!frozen && R.drop <= 0 && R.v <= 0) R.objs.forEach(function (o) {
+    if (o.k !== 'plat') return; var sx = o.x - R.dist + RPX;
+    if (sx > RPX + 24 || sx + o.w < RPX + 10) return;
+    if (prevH >= o.y - .5 && R.h <= o.y && o.y > sup) { sup = o.y; so = o; }
+  });
+  if (R.h <= sup) {
+    if (R.air && R.v < -520) { R.shake = REDUCE ? 0 : .12; for (var d = 0; d < 4; d++) R.dust.push({ x: RPX + 8 + d * 6, y: RGY - sup - 1, t: 0, vx: (d - 1.5) * 40 }); }   // 높은 데서 착지: 먼지 + 쿵
+    R.h = sup; R.v = 0; R.jumps = 0; R.air = 0; R.jumpHeld = 0;
+    if (so && so.b) { R.v = 470; R.air = 1; R.jumps = 1; sfx('jump'); return prevH; }   // 시장 차양: 통통
+    if (R.buf > 0) runJump();   // 착지 직전에 누른 점프
+  } else {
+    if (wasGround && R.v <= 0) { R.coy = R_COY; R.jumps = 0; }   // 발판 끝에서 걸어 떨어짐 → 잠깐은 1단 점프 가능
+    R.air = 1;
+  }
+  return prevH;
+}
 function runStep(dt) {
   var R = RUN, M = RMAP[R.key];
+  R.el += dt;
+  if (R.card) {
+    var C = R.card; C.t += dt;
+    if (!C.did && C.t >= .28) { C.did = 1; if (C.mid) C.mid(); var tc = $('rnTc'); if (tc) tc.hidden = false; }
+    if (C.t >= C.dur) { R.card = null; var tc2 = $('rnTc'); if (tc2) tc2.hidden = true; runHud(1); if (C.end) C.end(); }
+    return;
+  }
   // 출발 카운트다운 3 · 2 · 1 · GO
   if (R.cd > 0) {
     R.cd -= dt; var n = Math.ceil(R.cd / .6);
@@ -3390,49 +3734,49 @@ function runStep(dt) {
     if (R.cd <= 0) { runBanner('GO! 🏢 ' + R.dest.n + ' · ' + R_WX[R.wx][1] + ' ' + R_WX[R.wx][0], 1800); sfx('combo'); }
     return;
   }
-  var f = Math.min(1, R.dist / M.len), spd = rSpd(M, R.seg, f) * (R.boost > 0 ? 1.35 : 1) * (R.stun > 0 ? .35 : 1);
+  ['stun', 'inv', 'boost', 'shake', 'flash', 'magnet', 'lowg', 'fever', 'dark', 'drop', 'buf', 'coy'].forEach(function (k) { R[k] = Math.max(0, R[k] - dt); });
+  var m = R.mini;
+  if (m && (m.ph !== 'play' || R_MINI[m.k].fr)) {   // 멈춘 화면 미니게임: 시계만 흐름 (줄넘기는 점프도)
+    R.t += dt; if (m.k === 'rope') runPhys(dt, M, 1);
+    if (m.ph === 'play') RM[m.k].step(R, m, dt);
+    runFx(dt); return;
+  }
+  var f = Math.min(1, R.dist / M.len), belt = 0;
+  if (M.belt && !R.air && R.h === 0) R.objs.forEach(function (o) { if (o.k === 'belt' && o.x - R.dist + RPX < RPX + 17 && o.x + o.w - R.dist + RPX > RPX + 17) belt = 1; });
+  var spd = rSpd(M, R.seg, f) * (R.boost > 0 ? 1.35 : 1) * (R.stun > 0 ? .35 : 1) * (belt ? 1.6 : 1) * (m && m.k === 'wind' ? .6 : 1) * (m && m.k === 'light' && R.held ? 0 : 1);
+  if (belt && !R.onBelt) runPop(R, RPX, RGY - 46, '무빙워크 쭉~', '#9fd3ff'); R.onBelt = belt;
   R.dist += spd * dt; R.t += dt; R.spdx = spd / M.spd;
-  ['stun', 'inv', 'boost', 'shake', 'flash', 'magnet', 'lowg', 'fever', 'dark', 'drop'].forEach(function (k) { R[k] = Math.max(0, R[k] - dt); });
+  if (m) RM[m.k].step(R, m, dt);
   if (R.chase > 0) { R.chase -= dt; if (R.chase <= 0) { R.chase = 0; if (!R.chHit) { R.esc++; R.money += 200; R.log.push('😮‍💨 부장님 따돌림 +200만원'); runBanner('부장님 따돌렸다! +200만원'); sfx('combo'); } } }
   if (!R.warned && runClock(R) >= R_DUE - 8 && runClock(R) <= R_DUE) { R.warned = 1; runBanner('⏰ 지각 위기! 서둘러요', 1500); }
-  // 몸: 중력 → 발판(위에서 내려앉을 때만) → 땅
-  var g = RG * (R.lowg > 0 ? .55 : !M.inn && R.wx === 'wind' ? .88 : 1), prevH = R.h;   // 돌풍 사건 · 강풍 날씨 = 몸이 가벼움
-  R.v -= g * dt; R.h += R.v * dt;
-  var sup = 0;
-  if (R.drop <= 0 && R.v <= 0) R.objs.forEach(function (o) {
-    if (o.k !== 'plat') return; var sx = o.x - R.dist + RPX;
-    if (sx > RPX + 24 || sx + o.w < RPX + 10) return;
-    if (prevH >= o.y - .5 && R.h <= o.y && o.y > sup) sup = o.y;
-  });
-  if (R.h <= sup) {
-    if (R.air && R.v < -520) { R.shake = REDUCE ? 0 : .12; for (var d = 0; d < 4; d++) R.dust.push({ x: RPX + 8 + d * 6, y: RGY - sup - 1, t: 0, vx: (d - 1.5) * 40 }); }   // 높은 데서 착지: 먼지 + 쿵
-    R.h = sup; R.v = 0; R.jumps = 0; R.air = 0;
-  } else R.air = 1;
+  var prevH = runPhys(dt, M);
+  // 경사로(따릉이): 바퀴가 닿으면 높이 튀어 오름
+  if (!R.air) R.objs.forEach(function (o) { if (o.k !== 'ramp' || o.done) return; var sx = o.x - R.dist + RPX; if (sx < RPX + 20 && sx + 12 > RPX + 12) { o.done = 1; R.v = 600; R.air = 1; R.jumps = 1; R.jumpHeld = 0; runPop(R, RPX, RGY - 50, '붕~', '#9fd3ff'); sfx('jump'); } });
   // 발소리 먼지: 발이 땅에 닿는 장(2·4번째)마다
   var st = Math.floor(R.dist / 11) % 4;
   if (!R.air && st !== R.step && (st === 1 || st === 3) && !M.bike) R.dust.push({ x: RPX + 12, y: RGY - R.h - 1, t: 0, vx: -60 });
   R.step = st;
-  // 사건: 버스 급정거 · 지하철 사람 파도 · 갈림길 · 돌발 사건
+  // 사건: 미니게임 · 갈림길 · 돌발 사건
   R.ev.forEach(function (E) {
-    if (E.done || R.dist < E.at) return; E.done = 1;
-    if (E.k === 'brake') { R.shake = REDUCE ? 0 : .5; runBanner('끼익— 급정거! 가방이 미끄러져요', 1600); R.objs.forEach(function (o) { if (o.k === 'bag' && o.x > E.at && o.x < E.at + 600) o.vx = -130; }); return; }
-    if (E.k === 'crowd') { R.shake = REDUCE ? 0 : .3; runBanner('문이 열립니다 · 사람 파도!', 1600); return; }
-    if (E.k === 'fork') { var s = R.slots[R.seg + 1]; R.fork = { up: s[0], dn: s[1] }; runBanner('갈림길! ' + R_ASK[R.seg + 1] + ' ⬆위층 ' + RMAP[s[0]].emo + ' · ⬇아래 ' + RMAP[s[1]].emo, 2200); runHud(1); return; }
+    if (E.done || R.dist < E.at || R.card || R.mini) return; E.done = 1;
+    if (E.k === 'mini') { runMini(E.m); return; }
+    if (E.k === 'fork') { var s = R.slots[R.seg + 1]; R.fork = { up: s[0], dn: s[1] }; runBanner('갈림길! ' + R_ASK[R.seg + 1], 1800); sfx('combo'); runHud(1); return; }
     var X = R_EV[E.k]; if (X.msg) { runBanner(X.msg, 1800); R.log.push(X.msg.split('!')[0].split(' ·')[0]); } X.go(R);
   });
   var P = runHitBox(R), cx = (P[0] + P[2]) / 2, cy = (P[1] + P[3]) / 2;
   R.objs.forEach(function (o) {
-    if (o.k === 'plat' || o.k === 'sign') return;
+    if (o.k === 'plat' || o.k === 'sign' || o.k === 'belt' || o.k === 'ramp') return;
     if (o.sq > 0) { o.sq -= dt; return; }   // 밟힌 적: 납작해지는 중
     if (o.done) return;
     o.x += o.vx * dt;
     if (o.ty != null && o.y > o.ty) o.y = Math.max(o.ty, o.y - 150 * dt);   // 하늘에서 떨어지는 돈
     if (o.k === 'ghost') o.y = o.by + Math.sin(R.t * 3 + o.x * .02) * 8;   // 둥실둥실
+    if (M.hop && o.k === 'dog') o.y = Math.max(0, Math.sin(R.t * 4 + o.x * .013)) * 30;   // 공원 강아지 깡충
     var sx = o.x - R.dist + RPX; if (sx < -60 || sx > RW + 20) return;
     var im = runImg(o), top = RGY - o.y - im.height, good = R_VAL[o.k] || o.k === 'coffee' || o.k === 'box';
     if (R.magnet > 0 && R_VAL[o.k] && sx < RW - 10) { var dx = cx - (sx + im.width / 2), dy = cy - (top + im.height / 2), dd = Math.sqrt(dx * dx + dy * dy) || 1;   // 자석: 화면 안의 돈이 조로 쪽으로
       if (dd < 150) { var mv = Math.min(dd, 260 * dt); o.x += dx / dd * mv; o.y -= dy / dd * mv; sx = o.x - R.dist + RPX; top = RGY - o.y - im.height; o.ty = null; } }
-    var pad = good ? 0 : 3;
+    var pad = good ? -1 : 4;   // 돈은 넉넉히, 장애물은 너그럽게
     var hit = sx + pad < P[2] && sx + im.width - pad > P[0] && top + pad < P[3] && RGY - o.y - 1 > P[1];
     if (!hit) {   // 아슬아슬: 공중에서 장애물·적 바로 위를 스치고 지나감
       if (!good && !o.pass && sx + im.width < P[0]) { o.pass = 1; var gp = top - (RGY - prevH); if (R.air && gp >= -2 && gp < 10) { R.near++; R.combo += 3; R.money += 50; runPop(R, RPX + 16, P[1] - 4, '아슬아슬 +50', '#c6ff3d'); sfx('coin'); } }
@@ -3448,9 +3792,9 @@ function runStep(dt) {
     }
     if (o.k === 'coffee') { o.done = 1; R.boost = 4; R.inv = Math.max(R.inv, 4); sfx('combo'); runBanner('☕ 커피 부스트! 4초 무적'); return; }
     if (o.k === 'box') { o.done = 1; runBox(R); return; }
-    if (R_FOE[o.k] && R.v < 0 && P[3] <= top + 9) {   // 적 밟기: 처치 + 통통 튀기
-      o.done = 1; o.sq = .35; R.v = 400; R.jumps = 1; R.air = 1; R.kills++; R.combo += 2; R.maxCombo = Math.max(R.maxCombo, R.combo);
-      var kv = Math.round(100 * runMult(R) / 10) * 10; R.money += kv; runPop(R, sx, top - 4, R_FOE[o.k] + ' 처치 +' + kv, '#ff9bd3'); R.shake = REDUCE ? 0 : .1; sfx('combo'); return;
+    if (R_FOE[o.k] && R.v < 0 && P[3] <= top + 10) {   // 적 밟기: 처치 + 통통 튀기 (지름길 = 2배)
+      o.done = 1; o.sq = .35; R.v = 400; R.jumps = 1; R.air = 1; R.jumpHeld = 0; R.kills++; R.combo += 2; R.maxCombo = Math.max(R.maxCombo, R.combo);
+      var kv = Math.round(100 * runMult(R) * (M.kill2 ? 2 : 1) / 10) * 10; R.money += kv; runPop(R, sx, top - 4, R_FOE[o.k] + ' 처치 +' + kv, '#ff9bd3'); R.shake = REDUCE ? 0 : .1; sfx('combo'); return;
     }
     if (R.inv > 0) { if (R.boost > 0 && R_FOE[o.k]) { o.done = 1; o.sq = .35; R.kills++; runPop(R, sx, top, '퍽!', '#ff9bd3'); } return; }   // 커피 무적이면 적을 튕겨 냄
     o.done = 1; R.hits++; R.stun = .7; R.inv = 1.4; R.pen += 2; R.shake = REDUCE ? 0 : .35; R.flash = .18;
@@ -3459,14 +3803,20 @@ function runStep(dt) {
     if (R.chase > 0 && !R.chHit) { R.chHit = 1; R.pen += 3; R.log.push('😱 부장님한테 딱 걸림 ⏰ +3분'); runBanner('부장님한테 딱 걸렸다! ⏰ +5분', 1600); return; }
     runBanner('꽈당! ⏰ +2분' + (lost ? ' · −' + lost + '만원' : '') + (broke ? ' · 콤보 끊김' : ''));
   });
+  runFx(dt);
+  if (R.dist >= M.len && !R.mini) runSegEnd();
+}
+function runFx(dt) {
+  var R = RUN;
   R.fx = R.fx.filter(function (f) { f.t += dt; return f.t < .45; });
   R.dust = R.dust.filter(function (d) { d.t += dt; d.x += d.vx * dt; return d.t < .35; });
   R.pops = R.pops.filter(function (p) { p.t += dt; return p.t < .8; });
-  if (R.dist >= M.len) runSegEnd();
 }
+function runHitBox(R) { return [RPX + 10, RGY - R.h - 32, RPX + 24, RGY - R.h - 2]; }
+function runImg(o) { return o.k === 'person' ? RIMG.ppl[o.p] : RIMG.obj[o.k]; }
 // ❓ 상자: 열어 봐야 앎
 function runBox(R) {
-  var x = Math.random(), m;
+  var x = RR(), m;
   if (x < .28) { R.money += 1000; m = '🎉 대박! 특별 성과급 +1,000만원'; sfx('fanfare'); }
   else if (x < .53) { R.money += 300; m = '🎫 백화점 상품권 +300만원'; sfx('combo'); }
   else if (x < .7) { R.boost = 5; R.inv = 5; m = '⚡ 에너지 드링크! 5초 무적'; sfx('combo'); }
@@ -3474,56 +3824,80 @@ function runBox(R) {
   else { R.pen += 1; m = '📄 결재 서류 떠안음… ⏰ +1분'; sfx('wrong'); }
   R.log.push('❓ 상자: ' + m.replace(/^\S+ /, '')); runBanner(m, 1800);
 }
-// 구간 끝: 갈림길이면 지금 층으로 다음 길 결정 (위층 = 첫째 길)
+// 구간 끝: 갈림길이면 지금 층으로 다음 길 결정 (위층 = 첫째 길) → 검은 카드 사이에 맵 교체
 function runSegEnd() {
   var R = RUN, F = R.fork; R.seg++;
   if (R.seg >= R_SLOTS.length) return runFinish();
   var opts = R.slots[R.seg], k = opts.length === 1 ? opts[0] : R.h >= R_T1 - 2 ? opts[0] : opts[1];
-  if (F) R.log.push((k === F.up ? '⬆ 위층으로 ' : '⬇ 아래로 ') + RMAP[k].emo + ' ' + RMAP[k].nm);
-  R.fork = null; runEnter(k);
+  if (F) R.log.push((k === F.up ? '⬆ 위층으로 ' : '➡ 아래로 ') + RMAP[k].emo + ' ' + RMAP[k].nm);
+  R.fork = null;
+  runSegCard(k, 0, function () { runEnter(k); });
 }
 function runEnter(key) {
-  var R = RUN, G = rGen(key, R, R.seg), M = RMAP[key];
+  var R = RUN, G = rGen(key, R, R.seg);
   R.key = key; R.route.push(key); R.dist = 0; R.objs = G.objs; R.ev = G.ev; R.fx = []; R.chase = 0; R.dark = 0; R.magnet = 0;
-  R.h = 0; R.v = 0; R.air = 0; R.jumps = 0;   // 새 구간은 땅에서 시작
-  runHud(1); runBanner(hhmm(runClock(R)) + ' ' + M.emo + ' ' + M.nm + (key === 'lobby' ? ' · ' + R.dest.n : ''), 1600);
+  R.h = 0; R.v = 0; R.air = 0; R.jumps = 0; R.buf = 0; R.coy = 0;   // 새 구간은 땅에서 시작
+}
+function rArrow(c, x, y, dir, col) {   // 큰 도트 화살표 (dir 'u' 위 · 'r' 오른쪽), 검은 테두리
+  var px = function (a, b, w, h) { rr(c, '#0d0f0a', a - 1, b - 1, w + 2, h + 2); };
+  var draw = function (f) { for (var i = 0; i < 9; i++) f(i); };
+  if (dir === 'u') { px(x + 5, y + 9, 8, 14); draw(function (i) { px(x + 8 - i, y + i, 2 + i * 2, 1); }); rr(c, col, x + 5, y + 9, 8, 14); draw(function (i) { rr(c, col, x + 8 - i, y + i, 2 + i * 2, 1); }); }
+  else { px(x, y + 5, 14, 8); draw(function (i) { px(x + 14 + i, y + i, 1, 18 - i * 2); }); rr(c, col, x, y + 5, 14, 8); draw(function (i) { rr(c, col, x + 14 + i, y + i, 1, 18 - i * 2); }); }
 }
 function runDraw() {
   var R = RUN, cv = $('rnC'); if (!R || !cv) return;
-  var c = cv.getContext('2d'), sh = R.shake > 0 ? Math.round((Math.random() - .5) * 5) : 0, shy = R.shake > 0 ? Math.round((Math.random() - .5) * 3) : 0, M = RMAP[R.key];
+  var c = cv.getContext('2d'), sh = R.shake > 0 ? Math.round((Math.random() - .5) * 5) : 0, shy = R.shake > 0 ? Math.round((Math.random() - .5) * 3) : 0, M = RMAP[R.key], m = R.mini;
   c.imageSmoothingEnabled = false; c.save(); c.translate(sh, shy);
   RBG[R.key](c, R.dist, R.t);
+  if (M.ceil) { var cy = RGY - M.ceil - 40; rr(c, '#aab2bc', 0, 0, RW, cy); rr(c, '#7e848c', 0, cy - 2, RW, 2); tile(R.dist, 1, 26, function (x) { rr(c, '#9aa0a6', x + 12, cy, 1, 5); rr(c, '#f6f6f2', x + 10, cy + 5, 5, 5); }); }   // 지하철 낮은 천장 + 손잡이
   if (R.fever > 0) rr(c, 'rgba(255,207,61,' + (.12 + .06 * Math.sin(R.t * 12)) + ')', 0, 0, RW, RH);
-  // 발판 (2층·3층): 윗면 + 옆면 + 기둥
+  // 무빙워크: 땅에 깔린 띠 (줄무늬가 흐름)
+  R.objs.forEach(function (o) {
+    if (o.k !== 'belt') return; var sx = Math.round(o.x - R.dist + RPX); if (sx > RW || sx + o.w < 0) return;
+    rr(c, '#1b1d18', sx - 1, RGY - 4, o.w + 2, 8); rr(c, '#4a4f57', sx, RGY - 3, o.w, 6); for (var j = Math.floor((R.t * 40) % 10); j < o.w; j += 10) rr(c, '#6d737c', sx + j, RGY - 3, 4, 6);
+    rr(c, '#ffcf3d', sx, RGY - 4, 6, 1); rr(c, '#ffcf3d', sx + o.w - 6, RGY - 4, 6, 1); rr(c, '#2b2f3a', sx, RGY - 26, o.w, 3); rr(c, '#2b2f3a', sx + 2, RGY - 23, 2, 20); rr(c, '#2b2f3a', sx + o.w - 4, RGY - 23, 2, 20);
+  });
+  // 발판 (2층·3층): 윗면 + 옆면 + 기둥. 시장 차양은 줄무늬
   R.objs.forEach(function (o) {
     if (o.k !== 'plat') return; var sx = Math.round(o.x - R.dist + RPX); if (sx > RW || sx + o.w < 0) return;
     var y = RGY - o.y;
     for (var k = 8; k < o.w - 4; k += 56) rr(c, M.pc[1], sx + k, y + 7, 3, o.y - 7);
     rr(c, '#1b1d18', sx - 1, y - 1, o.w + 2, 9); rr(c, M.pc[0], sx, y, o.w, 3); rr(c, M.pc[1], sx, y + 3, o.w, 4);
-    for (var j = 4; j < o.w; j += 12) rr(c, 'rgba(255,255,255,.35)', sx + j, y, 4, 1);
+    if (o.b) for (var s = 0; s < o.w; s += 12) rr(c, '#ffffff', sx + s, y, 6, 7);
+    else for (var j = 4; j < o.w; j += 12) rr(c, 'rgba(255,255,255,.35)', sx + j, y, 4, 1);
   });
-  // 갈림길 표지판: 위층·아래 길 이모지
+  // 갈림길 표지판: 큰 판 2개(⬆ 위층 길 · ➡ 아래 길) + 발판 입구의 큰 화살표
   R.objs.forEach(function (o) {
-    if (o.k !== 'sign') return; var sx = Math.round(o.x - R.dist + RPX); if (sx > RW || sx < -40) return;
-    rr(c, '#5a5d63', sx + 14, RGY - 92, 3, 92);
-    [[o.up, RGY - 92, '⬆'], [o.dn, RGY - 52, '⬇']].forEach(function (b) { rr(c, '#1b1d18', sx - 3, b[1] - 1, 38, 18); rr(c, '#3f9a4a', sx - 2, b[1], 36, 16); c.font = '10px sans-serif'; c.fillStyle = '#fff'; c.fillText(b[2] + RMAP[b[0]].emo, sx, b[1] + 12); });
+    if (o.k !== 'sign') return; var sx = Math.round(o.x - R.dist + RPX); if (sx > RW + 240 || sx < -330) return;
+    rr(c, '#5a5d63', sx + 44, RGY - 112, 4, 112);
+    [[o.up, RGY - 116, '#3f9a4a', '⬆ 위층'], [o.dn, RGY - 76, '#3f6fb5', '➡ 아래']].forEach(function (b) {
+      var X = RMAP[b[0]]; rr(c, '#0d0f0a', sx - 2, b[1] - 2, 96, 34); rr(c, b[2], sx, b[1], 92, 30); rr(c, 'rgba(255,255,255,.25)', sx, b[1], 92, 2);
+      c.font = '16px sans-serif'; c.fillStyle = '#fff'; c.fillText(X.emo, sx + 3, b[1] + 21);
+      c.font = 'bold 8px sans-serif'; c.fillText(b[3], sx + 25, b[1] + 11); c.font = 'bold 10px sans-serif'; c.fillText(X.nm, sx + 25, b[1] + 24);
+    });
+    var ux = sx + 230;   // 긴 2층 발판 시작 (rGen: 표지판 + 230)
+    rArrow(c, ux + 6, RGY - R_T1 - 46, 'u', '#c6ff3d'); c.font = '14px sans-serif'; c.fillText(RMAP[o.up].emo, ux + 26, RGY - R_T1 - 30);
+    rArrow(c, ux + 4, RGY - 30, 'r', '#ffffff'); c.fillText(RMAP[o.dn].emo, ux + 30, RGY - 16);
   });
   R.objs.forEach(function (o) {
-    if (o.k === 'plat' || o.k === 'sign' || (o.done && !(o.sq > 0))) return;
+    if (o.k === 'plat' || o.k === 'sign' || o.k === 'belt' || (o.done && !(o.sq > 0) && o.k !== 'ramp')) return;
     var sx = o.x - R.dist + RPX; if (sx < -60 || sx > RW + 20) return;
     var im = runImg(o), bob = R_VAL[o.k] || o.k === 'coffee' || o.k === 'box' ? Math.round(Math.sin(R.t * 6 + o.x) * 1.5) : 0;
     if (o.sq > 0) { c.drawImage(im, Math.round(sx - 2), Math.round(RGY - o.y - im.height / 3), im.width + 4, Math.round(im.height / 3)); return; }   // 밟혀서 납작
     var fl = (o.k === 'mail' || o.k === 'pigeon') && Math.floor(R.t * 8) % 2 ? 1 : 0;   // 날갯짓
     c.drawImage(im, Math.round(sx), Math.round(RGY - o.y - im.height + bob - fl));
   });
+  if (m && m.ph === 'play' && RM[m.k].draw) RM[m.k].draw(c, R, m);
   if (R.chase > 0) c.drawImage(RIMG.boss, Math.round(RPX - 46 + Math.sin(R.t * 3) * 6), RGY - 37 - (Math.floor(R.t * 8) % 2));   // 쫓아오는 부장님
-  // 속도선: 빨라질수록 · 커피 부스트
-  var lines = (R.boost > 0 ? 6 : 0) + Math.max(0, Math.round((R.spdx - 1.15) * 20));
+  // 속도선: 빨라질수록 · 커피 부스트 · 무빙워크
+  var lines = (R.boost > 0 ? 6 : 0) + (R.onBelt ? 4 : 0) + Math.max(0, Math.round((R.spdx - 1.15) * 20));
   for (var k = 0; k < lines; k++) rr(c, 'rgba(255,255,255,.55)', RW - ((R.t * 600 + k * 53) % (RW + 40)), 20 + (k * 37) % (RGY - 30), 14 + (k % 3) * 6, 1);
   R.dust.forEach(function (d) { var a = 1 - d.t / .35; c.fillStyle = 'rgba(200,190,170,' + a + ')'; c.fillRect(Math.round(d.x), Math.round(d.y - d.t * 14), 3, 3); });
   if (!(R.inv > 0 && R.boost <= 0 && Math.floor(R.t * 12) % 2)) {   // 부딪힌 뒤 깜빡임
+    var fr = m && m.ph === 'play' && R_MINI[m.k].fr, mash = fr && /chase|board|elev|sale/.test(m.k);
     var bike = M.bike && R.stun <= 0, zy = Math.round(RGY - R.h - 37 - (bike ? 7 : 0));
-    var im = R.cd > 0 ? RIMG.stand : R.stun > 0 ? RIMG.hit : bike ? RIMG.run[1] : R.air ? RIMG.jump : RIMG.run[Math.floor(R.dist / 11) % 4];
+    var im = R.cd > 0 || R.card || (fr && !mash && m.k !== 'rope' && m.k !== 'pedal') ? RIMG.stand : R.stun > 0 ? RIMG.hit : mash ? RIMG.run[Math.floor(R.t * 14) % 4]
+      : bike ? RIMG.run[1] : R.air ? RIMG.jump : m && m.k === 'light' && R.held ? RIMG.stand : RIMG.run[Math.floor(R.dist / 11) % 4];
     c.drawImage(im, RPX, zy);
     if (bike) c.drawImage(RIMG.obj.bike, RPX + 9, Math.round(RGY - R.h - RIMG.obj.bike.height));   // 따릉이
   }
@@ -3531,54 +3905,67 @@ function runDraw() {
   c.font = 'bold 8px sans-serif';
   R.pops.forEach(function (p) { var y = Math.round(p.y - p.t * 24); c.fillStyle = 'rgba(13,15,10,.7)'; c.fillText(p.s, Math.round(p.x) + 1, y + 1); c.fillStyle = p.c; c.fillText(p.s, Math.round(p.x), y); });
   if (!M.inn) runWx(c, R);
-  if (R.dark > 0) { c.fillStyle = 'rgba(5,6,10,.9)'; c.beginPath(); c.rect(0, 0, RW, RH); c.arc(RPX + 17, RGY - R.h - 18, 52, 0, Math.PI * 2, true); c.fill('evenodd'); }   // 정전: 조로 둘레만 보임
+  var dk = R.dark > 0 ? [.9, 52] : M.dim ? [.8, 74] : null;   // 정전 · 어두운 골목: 조로 둘레만 보임
+  if (dk) { c.fillStyle = 'rgba(5,6,10,' + dk[0] + ')'; c.beginPath(); c.rect(0, 0, RW, RH); c.arc(RPX + 17 + (M.dim ? 20 : 0), RGY - R.h - 18, dk[1], 0, Math.PI * 2, true); c.fill('evenodd'); }
   if (R.flash > 0) rr(c, 'rgba(232,65,44,' + (R.flash * 2) + ')', 0, 0, RW, RH);   // 꽈당: 빨갛게 번쩍
+  if (R.card) { var C = R.card, a = C.t < .28 ? C.t / .28 : C.t > C.dur - .28 ? Math.max(0, (C.dur - C.t) / .28) : 1; rr(c, 'rgba(13,15,10,' + (a * C.dark) + ')', 0, 0, RW, RH); }   // 카드: 닫혔다 열림
   c.restore();
 }
 
-// ── 도착: 도착 사건 → 점수 = 주운 연봉 + 정시 보너스. 오늘·역대 최고 · 누적 기록(소품) · 칭호 · 하루 첫 완주 경험치
+// ── 도착: 도착 사건 → 점수 = 주운 연봉 + 정시 보너스. 오늘의 코스면 서버로(순위), 연습이면 이 기기에만 · 누적 기록(소품) · 칭호
 function runFinish() {
-  var R = RUN; R.on = 0; cancelAnimationFrame(R.raf);
-  var ei = Math.floor(Math.random() * R_END.length), E = R_END[ei]; R.money += E[1]; R.pen += E[2];
-  var arr = runClock(R), late = arr > R_DUE, early = late ? 0 : Math.floor(R_DUE - arr), bonus = late ? 0 : 1000 + early * 50, score = R.money + bonus;
-  var x = runRec() || { score: 0, n: 0 }, first = !x.n, all = store.getJ('slp-runbest', null), newDay = score > x.score, newAll = !all || score > all.s;
-  x.n++; if (newDay) { x.score = score; x.arr = hhmm(arr); x.route = R.route; } setRec(TODAY, 'run', x);
+  var R = RUN; R.on = 0; cancelAnimationFrame(R.raf); document.documentElement.classList.remove('rn-play'); runMg(null);
+  var ei = Math.floor(RR() * R_END.length), E = R_END[ei]; R.money += E[1]; R.pen += E[2];
+  var arr = runClock(R), late = arr > R_DUE, early = late ? 0 : Math.floor(R_DUE - arr);
+  var money = Math.max(0, Math.min(PC.RUN_MONEY_MAX, Math.round(R.money))), bonus = late ? 0 : Math.min(PC.RUN_BONUS_MAX, 1000 + early * 50), score = money + bonus;
+  var x = runRec() || {}, all = store.getJ('slp-runbest', null), newAll = !all || score > all.s, n = (x.n || 0) + 1, best = Math.max(score, x.best || 0), newDay = score > (x.best || 0) && n > 1;
   if (newAll) store.setJ('slp-runbest', { s: score, d: TODAY });
-  var st = runStats(); st.n++; if (!late) st.ontime++; st.esc += R.esc; st.maxHits = Math.max(st.maxHits, R.hits); st.maxMoney = Math.max(st.maxMoney, R.money);
+  var st = runStats(); st.n++; if (!late) st.ontime++; st.esc += R.esc; st.maxHits = Math.max(st.maxHits, R.hits); st.maxMoney = Math.max(st.maxMoney, money);
   st.wx[R.wx] = 1; R.route.forEach(function (k) { st.cnt[k] = (st.cnt[k] || 0) + 1; });
   st.end[['ceo', 'card', 'party', 'elev', 'hunter', 'coffee', 'home', 'room'][ei]] = 1; store.setJ('slp-runst', st);   // R_END 순서와 같음
   if (!late && !R.hits) award('commute'); if (arr < 8 * 60 + 50) award('early');
-  if (first) setTimeout(function () { promoCheck(); }, 900);   // 하루 첫 완주 = 경험치 +1 → 승진 확인
   sfx(late ? 'wrong' : 'fanfare');
-  runResult({ score: score, money: R.money, bonus: bonus, arr: hhmm(arr), late: late, early: early, hits: R.hits, kills: R.kills, near: R.near, combo: R.maxCombo, route: R.route, dest: R.dest, wx: R.wx, log: R.log,
-    first: first, end: E[0] + (E[1] ? ' +' + man(E[1]) + '만원' : '') + (E[2] ? ' ⏰ +' + E[2] + '분' : ''), newDay: newDay && x.n > 1, newAll: newAll && !!all, best: x.score, all: newAll ? score : all.s });
+  var S = { score: score, money: money, bonus: bonus, arr: hhmm(arr), late: late, early: early, hits: R.hits, kills: R.kills, near: R.near, combo: R.maxCombo, route: R.route, dest: R.dest, wx: R.wx, log: R.log,
+    mres: R.mres, ranked: R.ranked, end: E[0] + (E[1] ? ' +' + man(E[1]) + '만원' : '') + (E[2] ? ' ⏰ +' + E[2] + '분' : ''), newDay: newDay, newAll: newAll && !!all, all: newAll ? score : all.s, best: best, n: n };
+  if (R.ranked) {   // 오늘의 코스: 서버가 숫자가 말이 되는지 보고 순위 (하루 첫 판 = 경험치 +1, 승진 확인은 submitDaily 가)
+    $('run').innerHTML = '<p class="src" style="text-align:center;margin:40px 0">점수 보내는 중…</p>';
+    submitDaily('run', { s: score, m: money, b: bonus, el: Math.round(R.el), h: R.hits }, { score: score, aux: late ? 0 : 1 }, { n: n, best: best, arr: hhmm(arr), route: R.route })
+      .then(function (y) { S.x = y; runResult(S); });
+  } else {
+    x.n = n; x.best = best; setRec(TODAY, 'run', x); S.x = x; runResult(S);
+  }
 }
 function runResult(S) {
-  var D = S.dest, emo = S.route.map(function (k) { return RMAP[k].emo; }).join('→'), names = S.route.slice(1, 4).map(function (k) { return RMAP[k].nm; }).join(' · ');
+  var D = S.dest, x = S.x || runRec() || {}, emo = S.route.map(function (k) { return RMAP[k].emo; }).join('→'), names = S.route.slice(1, 4).map(function (k) { return RMAP[k].nm; }).join(' · ');
   var best = null; FAM.forEach(function (c) { c.rk.forEach(function (v, i) { var d = Math.abs(v - S.score); if (!best || d < best.d) best = { c: c, i: i, v: v, d: d }; }); });
   var lo = Math.min.apply(null, FAM.map(function (c) { return c.rk[0]; }));
   var cmp = S.score < lo * .6 ? '아직 어느 회사 사원 연봉에도 한참 못 미쳐요. 다음 판엔 더 주워 봐요!' : '이 돈이면 <b>' + esc(best.c.n) + ' ' + RK[best.i] + '</b> 연봉(추정 ' + man(best.v) + '만원)쯤이에요.';
   var tips = S.late ? ['지각 한 번은 해프닝, 세 번이면 평판이에요.', '늦은 날일수록 인사는 더 밝게. 그게 경력이에요.', '다음엔 커피부터 챙겨요. 출근길도 전략이에요.']
     : S.hits ? ['넘어져도 9시 전에만 도착하면 돼요. 커리어도 그래요.', '꽈당은 몇 번 했지만 결국 도착. 그게 실력이에요.'] : ['한 번도 안 넘어졌어요. 이 정도면 출근의 신이에요.', '깔끔한 출근. 오늘 회의도 이렇게만 넘겨요.'];
-  var tip = tips[Math.floor(Math.random() * tips.length)];
-  $('run').innerHTML = '<div class="over"><span class="lv">조로 출근길 · ' + mmdd(TODAY) + ' · ' + R_WX[S.wx][1] + ' ' + R_WX[S.wx][0] + '</span>' +
-    stage(zorro(myRank(), S.late ? 'sad' : 'happy', 3, 'idle') + bld(D, 3, null, 'grow'), 'resst', (S.late ? '지각한' : '정시 출근한') + ' 내 조로와 ' + D.n) +
+  var tip = tips[Math.floor(Math.random() * tips.length)], mok = S.mres.filter(function (r) { return r[1]; }).length;
+  $('run').innerHTML = '<div class="over"><span class="lv">조로 출근길 · ' + mmdd(TODAY) + ' · ' + (S.ranked ? '오늘의 코스' : '연습 판') + ' · ' + R_WX[S.wx][1] + ' ' + R_WX[S.wx][0] + '</span>' +
+    stage(zorro(myRank(), S.late ? 'sad' : 'happy', 3, 'idle') + bld(D, 3, null, 'grow'), 'resst', (S.late ? '지각한' : '정시 출근한') + ' 내 조로와 ' + D.n) + (S.ranked ? vsScene('run', x) : '') +
     '<div class="big">' + man(S.score) + '<small>만원</small></div>' +
     '<div class="ttl"><b>' + esc(D.n) + ' ' + (S.late ? '⏰ ' + S.arr + ' 지각!' : '⏰ ' + S.arr + ' 정시 출근') + '</b></div>' +
+    (S.ranked ? rankBox('run', x) : '<p class="src" style="margin:0">연습 판은 순위에 안 올라가요' + (x.sent && x.rank ? ' · 오늘 순위 판 <b>' + man(x.rank) + '위</b> (' + man(x.score) + '만원)' : '') + '</p>') +
     '<p class="rn-route" aria-label="지나온 길">' + emo + '</p>' +
     '<p><b>도착하자마자</b> ' + esc(S.end) + '</p>' +
     '<p>주운 연봉 ' + man(S.money) + '만원' + (S.bonus ? ' + 정시 보너스 ' + man(S.bonus) + '만원' + (S.early ? ' (' + S.early + '분 일찍)' : '') : '') + '</p>' +
-    '<p>🔥 최대 ' + S.combo + '콤보 · 👊 적 처치 ' + S.kills + ' · 😮 아슬아슬 ' + S.near + ' · 💥 꽈당 ' + S.hits + '</p>' +
-    '<p>' + cmp + '</p>' + (S.first ? '<p>⭐ 오늘 첫 출근 완주 · <b>경험치 +1</b></p>' : '') +
-    '<p>' + (S.newAll ? '🎉 <b>역대 최고 기록!</b>' : S.newDay ? '🎉 <b>오늘 최고 기록!</b>' : '오늘 최고 ' + man(S.best) + '만원 · 역대 최고 ' + man(S.all) + '만원') + '</p>' +
+    '<p>🎮 미니게임 ' + mok + ' / ' + S.mres.length + ' 성공 · 🔥 최대 ' + S.combo + '콤보 · 👊 적 ' + S.kills + ' · 😮 아슬아슬 ' + S.near + ' · 💥 꽈당 ' + S.hits + '</p>' +
+    '<p>' + cmp + '</p>' + (S.ranked && x.sent != null ? '<p>⭐ 오늘 첫 출근 완주 · <b>경험치 +1</b></p>' : '') +
+    '<p>' + (S.newAll ? '🎉 <b>역대 최고 기록!</b>' : S.newDay ? '🎉 <b>오늘 최고 기록!</b>' : '오늘 최고 ' + man(S.best) + '만원 (' + S.n + '판) · 역대 최고 ' + man(S.all) + '만원') + '</p>' +
     (S.log.length ? '<details class="more"><summary>오늘 출근길에 생긴 일 ' + S.log.length + '가지</summary><ul class="rn-log">' + S.log.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul></details>' : '') +
     '<p><b>조로의 한마디</b> — ' + esc(tip) + '</p>' +
-    gotBox('run') + shareBox('shRn') + '<div class="row"><button class="btn" type="button" id="rnAgain">다시 출근하기 ▶</button></div>' + nextBtn('run') + week7('run') +
-    '<p class="src">다음 판은 출근 회사·날씨·길·사건이 또 달라요.</p></div>';
+    gotBox('run') + shareBox('shRn', S.ranked ? vsBox('run', x) : '') + '<div class="row"><button class="btn" type="button" id="rnAgain">연습 출근하기 ▶</button></div>' + nextBtn('run') + week7('run') +
+    '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbR"></div></details>' +
+    '<p class="src">연습 판은 출근 회사·날씨·길·사건이 매번 달라요. 내일 0시에 새 오늘의 코스가 열려요.</p></div>';
   $('rnAgain').onclick = runStart;
-  wireShare('shRn', '연봉 놀이터 · 조로 출근길 ' + mmdd(TODAY) + '\n' + D.n + ' 출근 ' + R_WX[S.wx][1] + '\n' + emo + '\n💰 ' + man(S.score) + '만원 · 🔥' + S.combo + '콤보 · ⏰ ' + S.arr + (S.late ? ' 지각' : ' 정시 출근') + '\n' + SITE_S + '/#run',
+  miniLb('lbR', 'run');
+  wireShare('shRn', '연봉 놀이터 · 조로 출근길 ' + mmdd(TODAY) + '\n' + D.n + ' 출근 ' + R_WX[S.wx][1] + '\n' + emo + '\n💰 ' + man(S.score) + '만원 · 🎮 미니게임 ' + mok + '/' + S.mres.length + ' · ⏰ ' + S.arr + (S.late ? ' 지각' : ' 정시 출근') + '\n' + SITE_S + '/#run',
     { title: '조로 출근길', big: man(S.score) + '만원', sub: D.n + ' ⏰ ' + S.arr + (S.late ? ' 지각' : ' 정시 출근') + '\n' + names, lines: [emo.replace(/→/g, ' ')], px: { mood: S.late ? 'sad' : 'happy', co: D } });
 }
+// 미리보기(가짜 서버)에서만: 자동 점검 스크립트가 판 상태를 읽는 손잡이 (실사이트엔 API_BASE 가 있어 안 생김)
+if (!API_BASE) window.__run = { R: function () { return RUN; }, RM: RM, rec: function () { return runRec(); } };
 
 
 // ── 순위 · 명예의 전당 탭
@@ -3667,11 +4054,12 @@ var GINFO = {
   sniper: ['target', '회사와 직급을 보고 막대를 밀어 연봉을 찍어요.', '5문제 · 약 2분'],
   road: ['sign', '2년마다 이직할까 남을까. 10년 누적 연봉으로 겨뤄요.', '약 3분'],
   cup: ['trophy', '연봉은 가리고 이름만 보고 가고 싶은 회사를 골라요.', '순위 없음 · 연습'],
-  run: ['bus', '내 조로가 2층을 오르내리며 회사까지 질주! 적은 밟고, 길은 층으로 골라요.', '1분 남짓 · 순위 없음']
+  run: ['bus', '탈것마다 미니게임이 바뀌는 출근 질주! 지하철은 연타로 타고, 신호등에선 꾹 멈춰요.', '약 1분 15초']
 };
 // 오늘 이 기기 상태: 끝낸 판(slp-r-<날>-<게임>, 월드컵은 slp-cupw-<날>) · 하던 판(slp-p-…)
 function gState(k) {
-  if (k === 'run') { var rx = runRec(); return RUN && RUN.on ? { prog: 1, meta: '달리는 중이에요', go: '이어서 달리기 ▶' } : rx ? { done: 1, meta: '✓ 오늘 최고 ' + man(rx.score) + '만원 · ' + rx.n + '판', go: '다시 출근하기' } : null; }
+  if (k === 'run') { var rx = runRec(); return RUN && RUN.on ? { prog: 1, meta: '달리는 중이에요', go: '이어서 달리기 ▶' }
+    : rx && rx.sent != null ? { done: 1, meta: '✓ ' + man(rx.score) + '만원' + (rx.sent && rx.rank ? ' · 오늘 ' + man(rx.rank) + '위' : ''), go: '연습 출근하기' } : null; }   // sent = 오늘의 코스(순위 판)를 낸 날
   if (k === 'cup') { var w = store.get('slp-cupw-' + TODAY); return w ? { done: 1, meta: '✓ 오늘 우승: ' + w, go: '다시 하기' } : null; }
   var x = rec(TODAY, k);
   if (x) return { done: 1, meta: '✓ ' + fmtScore(k, x.score) + (x.sent && x.rank ? ' · 오늘 ' + man(x.rank) + '위' : ''), go: '결과 보기' };
@@ -3680,14 +4068,14 @@ function gState(k) {
 }
 function renderLobby() {
   var st = {}, nDone = 0, feat = '', ph = (window.innerWidth || 400) <= 640;
-  G5.forEach(function (k) { st[k] = gState(k); if (st[k] && st[k].done) nDone++; else if (!feat) feat = k; });   // 아직 안 끝낸 첫 게임을 크게
+  G5.forEach(function (k) { st[k] = gState(k); if (st[k] && st[k].done) nDone++; else if (!feat) feat = k; });   // 아직 안 끝낸 첫 게임 = 추천 (검은 카드)
   RPZ = RPZ || PC.genRoad(TODAY, ctx);
-  var tno = PC.genToday(TODAY, ctx).no, order = feat ? [feat].concat(G5.filter(function (k) { return k !== feat; })) : G5;
+  var tno = PC.genToday(TODAY, ctx).no, order = G5;   // 2026-10-29 사용자: 01~06 번호 순서 그대로 두 줄, 추천 카드도 같은 크기 (색만 다름)
   $('games').innerHTML = order.map(function (k) {
     var S = st[k], f = k === feat, I = GINFO[k], nm = k === 'today' ? '오늘의 회사 #' + tno : PNAME[k];
     var meta = esc(S ? S.meta : k === 'road' ? '오늘 팩: ' + PC.ROAD_SC[RPZ.sc || 'new'] : I[2]) + (!S && k === 'today' && TTOP ? '<span class="pc"> · 정답자 ' + man(TTOP.todayGame.ok) + '명</span>' : !S && k === 'road' ? '<span class="pc"> · ' + I[2] + '</span>' : '');
     return '<button type="button" class="gc' + (f ? ' feat' : '') + (S && S.done ? ' done' : '') + '" id="t-' + k + '" data-go="' + k + '">' +
-      '<span class="no" aria-hidden="true">0' + (G5.indexOf(k) + 1) + '</span>' + (PX.ok ? '<span class="gi">' + icon(I[0], f ? (ph ? 4 : 6) : (ph ? 2.5 : 3)) + '</span>' : '') +
+      '<span class="no" aria-hidden="true">0' + (G5.indexOf(k) + 1) + '</span>' + (PX.ok ? '<span class="gi">' + icon(I[0], ph ? 2.5 : 3) + '</span>' : '') +
       (f ? '<span class="ft">' + (nDone ? '추천 · 아직 안 한 게임' : '오늘의 추천') + '</span>' : '') +
       '<b class="gn">' + esc(nm) + '</b><span class="d">' + esc(I[1]) + '</span><span class="meta">' + meta + ' ' + giftTag(k) + '</span>' +
       '<span class="go" aria-hidden="true">' + (S ? S.go : '시작하기 ▶') + '</span></button>';

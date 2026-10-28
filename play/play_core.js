@@ -6,7 +6,7 @@
 const RULES = 3;                 // 규칙 판: 점수 규칙을 바꾸면 올린다 (2 = 2026-10-28 오늘의 회사 8지선다, 3 = 이직 로드 요일별 시나리오 팩·엔딩)
 const EPOCH = '2026-10-01';      // 오늘의 회사 #1 날짜 (바꾸면 모든 날의 문제가 바뀜)
 const RK = ['사원', '대리', '과장', '차장', '부장'];
-const DAILY = ['higher', 'today', 'sniper', 'road'];        // 순위표가 있는 오늘의 도전
+const DAILY = ['higher', 'today', 'sniper', 'road', 'run'];   // 순위표가 있는 오늘의 도전 (2026-10-29 조로 출근길 추가)
 const GAMES = DAILY.concat(['endless', 'cup']);              // 플레이 수만 세는 판
 
 // ── 씨앗 있는 난수 (FNV-1a 해시 → mulberry32)
@@ -431,7 +431,18 @@ function nickCheck(s) {   // '' = 괜찮음, 아니면 고칠 점
 }
 
 // ── 공통: 게임별 문제·점수
-function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : game === 'today' ? genToday(day, ctx) : game === 'sniper' ? genSniper(day, ctx) : game === 'road' ? genRoad(day, ctx) : null; }
-function score(game, pz, ans, ctx) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : null; }
+// ── 조로 출근길 (2026-10-29): 손으로 하는 달리기라 서버가 판을 다시 돌릴 수는 없다.
+//    대신 오늘 코스는 날짜 씨앗 하나(모두 같은 길)이고, 보낸 숫자가 말이 되는지만 본다:
+//    점수 = 주운 돈 m + 정시 보너스 b, 돈·보너스 상한, 걸린 시간 el(초)이 너무 짧지 않을 것 (서버는 시작 표 이후 실제 걸린 시간과도 맞춰 봄)
+const RUN_MONEY_MAX = 30000, RUN_BONUS_MAX = 2000, RUN_EL_MIN = 45;
+function genRun(day) { return { day, seed: 'day|' + day }; }
+function scoreRun(pz, ans) {
+  const a = ans || {}, n = k => Number.isInteger(a[k]) ? a[k] : -1;
+  const m = n('m'), b = n('b'), s = n('s'), el = n('el'), h = n('h');
+  if (m < 0 || m > RUN_MONEY_MAX || b < 0 || b > RUN_BONUS_MAX || s !== m + b || el < RUN_EL_MIN || el > 1800 || h < 0 || h > 200) return { bad: 1, score: 0, aux: 0 };
+  return { score: s, aux: b > 0 ? 1 : 0, el };   // aux = 정시 출근(1) · 지각(0)
+}
+function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : game === 'today' ? genToday(day, ctx) : game === 'sniper' ? genSniper(day, ctx) : game === 'road' ? genRoad(day, ctx) : game === 'run' ? genRun(day) : null; }
+function score(game, pz, ans, ctx) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : game === 'run' ? scoreRun(pz, ans) : null; }
 
-export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, THEMES, cupPool, cupSize, cupCheck, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
+export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
