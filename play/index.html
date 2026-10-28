@@ -46,7 +46,7 @@ a { color:inherit; }
 .kick { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; gap:12px; align-items:center; }
 .kick i { width:8px; height:8px; border-radius:50%; background:var(--acc); display:inline-block; }
 h1 { margin:12px 0 0; font-family:var(--display); font-weight:900; font-size:clamp(38px,6vw,80px); line-height:.98; letter-spacing:-.05em; text-wrap:balance; }
-h1 .thin { display:block; font-weight:500; font-size:.42em; letter-spacing:-.03em; color:var(--soft); margin-bottom:12px; line-height:1.2; }
+h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--soft); margin-bottom:12px; line-height:1.2; }
 h1 b { background:linear-gradient(transparent 62%, var(--mark) 62%); }
 .me { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; margin-top:16px; font-size:14px; }
 .me .nick { font-weight:900; font-family:var(--display); font-size:17px; letter-spacing:-.02em; }
@@ -501,7 +501,7 @@ img.px, .pxs { image-rendering:crisp-edges; image-rendering:pixelated; display:b
 .hero-t { min-width:0; }
 .kick { white-space:nowrap; overflow:hidden; min-width:0; }
 .kick.short .k1, .kick.short .k3 { display:none; }
-h1 { font-size:clamp(36px,4.6vw,66px); }
+h1 { font-size:clamp(38px,6vw,88px); }   /* 2026-10-28 머리 글자 다른 페이지와 통일 (높이는 줄 수로 낮춤) */
 h1 .thin { margin-bottom:8px; }
 .lead { margin:14px 0 0; max-width:58ch; font-size:15px; line-height:1.7; color:var(--soft); }
 .hstats { margin:0; display:grid; border-top:1px solid var(--ink); }
@@ -597,7 +597,7 @@ body:has(> .zn) .playbar { top:calc(54px + env(safe-area-inset-top,0px)); }
 @media (max-width:640px) {
   .hero { padding-block:14px 12px; }
   .hero-grid { grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:end; }
-  h1 { font-size:31px; margin-top:6px; }
+  h1 { font-size:40px; margin-top:6px; }
   h1 .thin, .lead, .stnote { display:none; }
   .hstats { display:grid; grid-template-columns:none; border-top:0; gap:4px; }
   .hstats .s1, .hstats .s3 { display:none; }
