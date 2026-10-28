@@ -1086,7 +1086,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     // 2026-10-28 사용자 "스펙 등급이 후하다": 학과는 인기 학과면 거의 4점이라 무게를 3 → 1.5로 (학과는 직무와 맞는지 보는 정도)
     return { tr, lang, rnd, plant, w };
   }
-  const SPEC_F = [["school", "학교"], ["major", "학과"], ["lang", "어학"], ["exp", "인턴·직무 경험"], ["fit", "직무 적합도"], ["gpa", "학점"], ["cert", "직무 자격증"], ["degree", "학위"]];
+  const SPEC_F = [["school", "학교"], ["major", "학과"], ["lang", "어학"], ["exp", "직무 경험"], ["fit", "직무 적합도"], ["gpa", "학점"], ["cert", "직무 자격증"], ["degree", "학위"]];
+  const FILLABLE = new Set(["어학", "직무 경험", "직무 적합도", "직무 자격증"]);   // 2026-10-28 사용자: "이미 학교를 갔는데 학교를 왜 채워?"
   const SPEC_G = [["D", "낮은 편"], ["C", "보통 아래"], ["B", "보통"], ["A", "좋은 편"], ["S", "상위"], ["SS", "최상위"]];
   // 학교 값: 숫자 또는 해외대 'g4'(글로벌 탑 = SKY급)·'g3'(유명 = 중경외시급)·'g1'(그 밖 = 수도권 4년제급) (2026-10-28 사용자)
   const schoolV = m => { const v = parseFloat(String(m?.school ?? "").replace(/^g/, "")); return isNaN(v) ? null : v; };
@@ -1126,8 +1127,9 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     const gpaBad = g != null && g <= 3.0;
     if (gpaBad) lv = Math.min(lv, 1);                                       // 학점 3.0 이하는 학교와 관계없이 C 아래
     const big = got.filter(([, , wt]) => wt >= 3).map(([n]) => n);         // 이 직무에서 크게 보는 항목
-    return { lv, g: SPEC_G[lv][0], word: SPEC_G[lv][1], strong: got.filter(([, v]) => v >= 3).map(([n]) => n), weak: got.filter(([, v, , miss]) => v <= 1 && !miss).map(([n]) => n),
-      n: got.filter(x => !x[3]).length, miss: got.filter(x => x[3]).map(([n]) => n), avg: Math.round(avg * 100) / 100, tr, lang, rnd, plant, big, gpa: g, gpaBad, pub, how: `${tr === "sci" ? "이공계" : "문과"} 직무 기준 · ${big.join("·")} 크게` };
+    return { lv, g: SPEC_G[lv][0], word: SPEC_G[lv][1], strong: got.filter(([, v, , miss]) => v >= 3 && !miss).sort((a, b) => b[2] * b[1] - a[2] * a[1]).slice(0, 2).map(([n]) => n), weak: got.filter(([, v, , miss]) => v <= 1 && !miss).map(([n]) => n),
+      fill: got.filter(([n, v]) => v <= 1 && FILLABLE.has(n)).sort((a, b) => b[2] - a[2]).slice(0, 2).map(([n]) => n),   // 학교·학과·학점·학위는 이미 정해진 것이라 '채우라'고 하지 않는다
+      n: got.filter(x => !x[3]).length, miss: got.filter(x => x[3]).map(([n]) => n), avg: Math.round(avg * 100) / 100, tr, lang, rnd, plant, big, gpa: g, gpaBad, pub, how: `${tr === "sci" ? "이공계" : "문과"} 직무 기준으로 ${j(big.join("·"), "을", "를")} 크게` };
   }
   // 5회차 A2: '보통 붙는 스펙'은 회사 급 + 직무 난이도(2회차 합격 쉬운 순: 영업·생산관리 > 재무·연구개발·품질 > 기획·인사·환경안전 > 나머지 > 홍보·IT개발·데이터)
   //   좋은 스타트업·공기업·외국계는 회사마다 편차가 커서 C~A 폭으로 본다
@@ -1145,9 +1147,11 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   }
   function judgeNewbie(c) {
     const me = c.me || {}, co = c.target || {}, R = [], tags = [];
-    const add = (rule, text) => R.push({ rule, text });
+    // go: '잡으세요·들어가서' 쪽 말 — 마지막 판정이 말리는 쪽(스펙 보고 이하)이면 빼거나 바꾼다 (2026-10-28 문장 검수)
+    const add = (rule, text, go) => R.push(go ? { rule, text, go } : { rule, text });
     const base = co.base ?? 4, y = me.years || 0, age = me.age || 0, lim = newbieLimit(me), old = age > 0 && age >= lim;
     const t = tier(co.size), sp = spec(me, co);
+    let liftAt = -1, lifted = 0;   // 스펙으로 올린 말의 자리 (뒤에서 낮추는 규칙이 이기면 말을 바꾼다)
     let n = base, cap = 6;   // 올리는 규칙(나이·스펙)보다 낮추는 규칙(전망 어두운 직무·다음 시즌)이 늘 이긴다
     // F26 전망 어두운 직무 지원, F21 어리고 스펙 좋은데 회사가 약하면 계속 준비
     const apply = judgeApply({ me: { years: y }, target: { size: co.size, job: me.job } });
@@ -1157,51 +1161,60 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     // 게임사 ②안: 회사 판정 '가세요' 이상이면 업계 전망 때문에 '계속 준비'로 말리지 않고 '조건 보고 가세요'까지만
     const gameSoft = /게임/.test(co.industry || "") && base >= 5 && offer.verdict === "계속 준비" && offerOf("").verdict !== "계속 준비";
     if (gameSoft) offer = offerOf("");
-    if (apply.verdict === "마요") { cap = 2; R.push(...apply.reasons); tags.push("직무 전망 주의"); }
-    if (offer.verdict === "계속 준비") { cap = 2; offer.reasons.forEach(x => { if (!R.some(r => r.text === x.text)) R.push(x); }); add("F21", "급하지 않다면 더 좋은 카드를 노려 보세요."); tags.push("계속 준비 쪽"); }
+    if (apply.verdict === "마요") { cap = 2; apply.reasons.forEach(x => add(x.rule, x.text.replace(/ 다른 직무를 보세요\.$/, " 합격했더라도 다른 직무를 같이 알아보세요."))); tags.push("직무 전망 주의"); }
+    const prep = offer.verdict === "계속 준비";
+    if (prep) {
+      cap = 2; offer.reasons.forEach(x => { if (!R.some(r => r.text === x.text)) R.push(x); });
+      if (co.rating != null && co.rating < 2.8) add("F21", `현직자 평점이 ${co.rating.toFixed(2)}점으로 낮은 편이에요.`);   // 왜 '계속 준비'인지 말해 준다 (2026-10-28 문장 검수)
+      add("F21", "급하지 않다면 더 좋은 카드를 노려 보세요."); tags.push("계속 준비 쪽");
+    }
     // 스펙 vs 회사 수준
     if (sp) {
       const lv = Math.min(sp.lv, 4);   // 회사 수준과 비교할 땐 SS도 S로 (SS가 대기업 붙었다고 '아깝다'로 내리지 않게)
       const nd = specNeed(co, me.job || ""), gap = lv > nd.hi ? lv - nd.hi : lv < nd.lo ? lv - nd.lo : 0;
-      const fill = sp.weak.length ? `${j(sp.weak.join("·"), "을", "를")} 채우고` : sp.plant ? "기사 자격증을 채우고" : "인턴·자격증을 채우고";
-      const tail = sp.weak.length ? ` ${j(sp.weak.join("·"), "을", "를")} 채우면 한 단계 위도 노려볼 수 있어요.` : "";
-      if ((gap >= 2 || (gap >= 1 && schoolV(me) >= 3)) && !old && base <= 3) {   // 5회차 C3·C4: 아직 나이 여유 있고 회사가 약하면 한 시즌 더 (C3 "학벌이 좋으니까" → 학교 상위면 1단계 위로도)
+      const fill = sp.fill.length ? `${j(sp.fill.join("·"), "을", "를")} 채우고` : sp.lv >= 4 ? "" : sp.plant ? "기사 자격증을 더 따고" : "인턴·자격증을 더 쌓고";
+      const tail = sp.fill.length ? ` ${j(sp.fill.join("·"), "을", "를")} 채우면 한 단계 위도 노려볼 수 있어요.` : "";
+      if (prep && gap >= 0) add("N1", `스펙 ${sp.g}(${sp.word})면 선택지가 많으니 서두를 필요 없어요.`);
+      else if ((gap >= 2 || (gap >= 1 && schoolV(me) >= 3)) && !old && base <= 3) {   // 5회차 C3·C4: 아직 나이 여유 있고 회사가 약하면 한 시즌 더 (C3 "학벌이 좋으니까" → 학교 상위면 1단계 위로도)
         cap = Math.min(cap, 1);
-        add("N1", `스펙 ${sp.g}(${sp.word})면 이 회사는 아까워요. 아직 나이 여유가 있으니 ${fill} 다음 시즌에 한 단계 위를 노리세요.`);
+        add("N1", `스펙 ${sp.g}(${sp.word})면 이 회사는 아까워요. ${age}세면 아직 나이 여유가 있으니 ${fill ? fill + " " : ""}다음 시즌에 한 단계 위 회사에 지원해 보세요.`);
         tags.push("다음 시즌 추천");
       } else if (gap >= 2 && base <= 5) {
         n = Math.min(n, base - 1);
         add("N1", `스펙 ${sp.g}(${sp.word})면 이 회사보다 한두 단계 위도 충분히 노려볼 만해요.${sp.strong.length ? ` 특히 ${j(sp.strong.join("·"), "이", "가")} 강점이에요.` : ""}`);
-        if (old) add("N1", `${age}세면 나이가 있는 편이니, 일단 들어가서 경력을 쌓고 이직으로 한 단계 위로 꺾으세요.`);   // 5회차 A3
+        if (old) add("N1", `${age}세면 나이가 있는 편이니, 일단 들어가서 경력을 쌓고 이직으로 한 단계 위로 꺾으세요.`, true);   // 5회차 A3
+      } else if (gap >= 1 && t.n >= 3 && base >= 5) {   // 대기업·금융·공기업인데 회사 자체도 좋으면 '더 위'가 없다 (삼성전자에 '위도 노려볼 만해요'는 이상함)
+        add("N1", `스펙 ${sp.g}(${sp.word})에 걸맞은 회사예요.`);
       } else if (gap >= 1) {   // 1단계 위는 판정은 그대로, 말만
-        add("N1", `스펙 ${sp.g}(${sp.word})면 이 회사보다 위도 노려볼 만해요. 회사가 괜찮다면 잡아도 되고, 급하지 않다면 한 번 더 도전해도 돼요.`);
-        if (old) add("N1", `${age}세면 일단 들어가서 3~4년 뒤 경력 이직으로 꺾는 쪽이 나아요.`);
+        if (old) { add("N1", `스펙 ${sp.g}(${sp.word})면 이 회사보다 위도 노려볼 만해요.`); add("N1", `${age}세면 일단 들어가서 3~4년 뒤 경력 이직으로 꺾는 쪽이 나아요.`, true); }
+        else add("N1", `스펙 ${sp.g}(${sp.word})면 이 회사보다 위도 노려볼 만해요. 회사가 괜찮다면 잡아도 되고, 급하지 않다면 한 번 더 도전해도 돼요.`);
       } else if (gap <= -1 && base >= 2 && base <= 5) {
         n = Math.max(n, Math.min(6, base + (gap <= -2 ? 2 : 1)));
-        add("N1", `스펙 ${sp.g}(${sp.word}) 기준으로는 좋은 카드예요. 잡고 들어가서 경력을 쌓으세요.${tail}`);
+        liftAt = R.length; lifted = n;
+        add("N1", `스펙 ${sp.g}(${sp.word}) 기준으로는 좋은 카드예요. 잡고 들어가서 경력을 쌓으세요.${tail}`, true);
       } else add("N1", `스펙 ${sp.g}(${sp.word})에 맞는 회사예요.${tail}`);
-      if (sp.gpaBad) add("N2", `학점 ${sp.gpa}(4.5 기준)는 서류에서 크게 걸려요. 학교와 상관없이 약점으로 봐요.`);
-      else if (sp.tr === "sci" && sp.gpa != null && sp.gpa <= 3.5) add("N2", `이공계는 학점 ${sp.gpa}(4.5 기준)면 면접에서 공격받기 쉬워요. 답을 준비해 두세요.`);
-      add("N1", `스펙은 ${sp.how}로 봤어요.`);
+      if (sp.gpaBad) add("N2", `학점 ${sp.gpa}점(4.5 만점 기준)은 서류에서 크게 걸려요. 학교와 상관없이 약점으로 봐요.`);
+      else if (sp.tr === "sci" && sp.gpa != null && sp.gpa <= 3.5) add("N2", `이공계는 학점 ${sp.gpa}점(4.5 만점 기준)이면 면접에서 공격받기 쉬워요. 답을 준비해 두세요.`);
+      add("N1", `스펙은 ${sp.how} 봤어요.`);
     }
     // 5회차 B2: 직무별로 크게 먹히는 스펙
     const jb = me.job || "";
-    if (FIN_JOB.test(jb) && !(Number(me.cert) > 0)) add("N3", "재무는 재경관리사 같은 자격증이 크게 먹혀요.");
+    if (FIN_JOB.test(jb) && !(Number(me.cert) > 0)) add("N3", "재무는 재경관리사 같은 자격증이 크게 먹혀요. 아직 없다면 따 두세요.");
     else if (/인사|HR/.test(jb)) add("N3", "인사는 업무 이해도와 HR 트렌드를 얼마나 아는지를 봐요.");
-    else if (RND_JOB.test(jb) && !/석사|박사/.test(me.degree || "")) add("N3", "연구개발은 석사 이상이 크게 유리해요.");
-    else if (PLANT_SPEC_JOB.test(jb) && !(Number(me.cert) >= 2)) add("N3", "생산·공정·품질·안전은 기사 자격증 여러 개(3기사·4기사)가 절대적으로 유리해요.");
+    else if (RND_JOB.test(jb) && !/석사|박사/.test(me.degree || "")) add("N3", "연구개발은 석사 이상이 크게 유리해요. 학사로 가는 거면 들어가서 맡는 일의 범위를 꼭 확인하세요.");
+    else if (PLANT_SPEC_JOB.test(jb) && !(Number(me.cert) >= 2)) add("N3", "생산·공정·품질·안전은 기사 자격증이 여러 개(3기사·4기사)면 절대적으로 유리해요.");
     // 나이 (F21) · 공기업 (A8) · 취준 기간 (B5)
     if (old) {
-      if (t.kind === "public") { n = Math.max(n, 6); add("N4", `공기업은 안정성을 보고 가는 곳이에요. ${age}세면 고민 없이 잡으세요.`); }   // 5회차 A8·C8
+      if (t.kind === "public") { n = Math.max(n, 6); add("N4", `공기업은 안정성을 보고 가는 곳이에요. ${age}세면 고민 없이 잡으세요.`, true); }   // 5회차 A8·C8
       else {
         if (base >= 3 && base <= 4) n = Math.max(n, base + 1);   // 조건 보고·중립기어만 한 단계 올린다
-        add("F21", y > 0 ? `${age}세면 신입 공채보다 경력 지원이 맞는 나이예요. 이 카드가 괜찮다면 잡고 경력을 이어 가세요.` : `${age}세면 신입 지원이 점점 어려워져요. 갈 만한 곳이면 잡으세요.`);
+        add("F21", y > 0 ? `${age}세면 신입 공채보다 경력 지원이 맞는 나이예요. 이 카드가 괜찮다면 잡고 경력을 이어 가세요.` : `${age}세면 신입 지원이 점점 어려워져요. 갈 만한 곳이면 잡으세요.`, true);
       }
       tags.push("신입 나이 넘김");
-    } else if (age && age <= lim - 3 && base <= 3) { add("F21", `${age}세면 아직 시간이 있어요. 서두르지 말고 더 맞는 곳을 찾아도 돼요.`); tags.push("시간 여유 있음"); }
+    } else if (age && age <= lim - 3 && base <= 3 && liftAt < 0 && !(Number(me.search) >= 12) && !R.some(x => /나이 여유|지원이 가능한 나이/.test(x.text))) { add("F21", `${age}세면 아직 시간이 있어요. 서두르지 말고 더 맞는 곳을 찾아도 돼요.`); tags.push("시간 여유 있음"); }
     if (Number(me.search) >= 12) {
       if (base >= 3 && base <= 4) n = Math.max(n, base + 1);
-      add("N5", "취업 준비가 1년을 넘었으면 갈 만한 곳은 잡고, 들어가서 경력으로 꺾는 게 나아요.");
+      add("N5", "취업 준비가 1년을 넘었으면 갈 만한 곳은 잡고, 들어가서 경력으로 꺾는 게 나아요.", true);
     }
     // 중고신입: 지금 회사보다 위 급이면 올리고, 연봉이 깎이면 급·직무로 가른다 (5회차 A5·C7)
     if (y > 0 && me.salary && co.salary) {
@@ -1227,6 +1240,12 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     if (/지방/.test(co.place || "") && !PLANT_JOB.test(jb)) add("N9", "근무지가 지방이에요. 사는 곳에서 다닐 만한지 먼저 보세요.");   // 5회차 C5
     if (gameSoft) { cap = Math.min(cap, 4); add("F26", "게임 업계는 전망이 밝은 편이 아니라 '조건 보고 가세요'까지만 드려요. 회사가 좋아서 잡아도 되지만, 다른 업계에서도 통하는 경력으로 키워 두세요."); tags.push("게임 업계 전망 주의"); }
     n = Math.max(0, Math.min(6, Math.min(n, cap)));
+    if (liftAt >= 0 && n < Math.min(lifted, 5)) R[liftAt] = { rule: "N1", text: `스펙 ${sp.g}(${sp.word}) 기준으로는 좋은 회사지만, 다른 걸리는 점 때문에 판정을 올리지 않았어요.` };
+    if (n <= 2) {   // 말리는 판정이면 '잡으세요·들어가서' 말을 빼고, 나이 있는 사람에겐 한 줄로 바꿔 준다
+      const goes = R.filter(x => x.go).length;
+      for (let i = R.length - 1; i >= 0; i--) if (R[i].go) R.splice(i, 1);
+      if (goes && old) add("F21", `${age}세라 서두르고 싶겠지만, 이 카드는 아니에요. 갈 만한 다른 곳을 잡으세요.`);
+    }
     return { verdict: STEPS[n], n, reasons: R, tags, spec: sp, lim, old, gameSoft };
   }
 
@@ -2222,7 +2241,7 @@ function meJudgeNew(c) {
   }
   meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
   const z = meCompose(c, V, why, pay, { y: ME.years || 0, age, v: n >= 5 ? "가요" : n >= 3 ? "조건 보고" : "마요", est, left: false, newbie: true,
-    working: ME.nstat === "재직 중", wlb: "", tenure: sl.tenure, sameInd: false }, rg != null ? [`현직자 평점은 종합 ${rg.toFixed(2)}점이에요.`] : []);
+    working: ME.nstat === "재직 중", wlb: "", tenure: sl.tenure, sameInd: false }, rg != null ? [`현직자 평점은 종합 ${rg.toFixed(2)}점이에요.`] : [], { newbie: true, working: ME.nstat === "재직 중" });
   const sp = r.spec;
   const chips = [sp && `스펙 ${sp.g}`, `회사 급 ${coSize(c)}`, ...r.tags, est && `신입 ${won(est.v)}만`, `회사 판정 ${c.verdict}`].filter(Boolean);
   return { v: V, z, est, chips };
@@ -2235,6 +2254,7 @@ function meAdapt(lines, x) {
   const RULES = [
     [/정년까지 여기라고 생각하기보단/, () => late ? (v === "가요" ? `${y}년 차에 이 정도 처우·분위기면 여기가 인생 마지막 회사예요. 정년까지 다닐 생각으로 가세요.` : `조건만 맞으면 ${y}년 차에 정년까지 그림을 그려도 되는 회사예요.`)
       : senior ? `${y}년 차면 다음 이직이 점점 어려워져요. 여기서 오래 다닐 수 있을지를 기준으로 보세요.`
+      : x.newbie ? "신입으로 들어가 3~4년 일을 배우고 몸값을 키워 다음 점프를 준비하기 딱 좋아요."
       : y <= 5 ? `${y}년 차면 여기서 3~4년 몸값을 키워 다음 점프를 준비하기 딱 좋아요.` : undefined],
     [/이 회사 밖에서도 통하는 경력을/, () => late ? `${y}년 차면 밖으로 다시 나가기보다 이 회사 안에서 입지를 다지는 게 중요해요.` : undefined],
     [/2~3년.*(이직|환승|발판)|발판으로 쓰는|다음 이직의 무기|다음 이직 카드|다음 이직 때 든든/, () => late ? "이 연차엔 발판이 아니라 종착지로 볼 회사인지가 핵심이에요. 오래 다닐 팀인지 꼭 확인하세요."
@@ -2347,6 +2367,13 @@ function zKind(t, i, len) {
   return /가세요|잡으세요|놓치지|축하|사인하세요|합류하세요|타이밍|들어가면|들어가서|입사 첫해|누리되/.test(t) ? "v" : tone === "fail" ? "-" : tone === "plus" ? "+" : tone === "cond" ? "-" : "0";
 }
 function meTail(V, o = {}) {
+  // 신입·중고신입: 다니는 회사가 없거나(취준) 직급 협상이 없으니 말을 바꾼다 (2026-10-28 문장 검수)
+  if (o.newbie) {
+    if (V === "무조건 가세요") return "합격 통보 받으면 망설이지 말고 입사하세요." + (o.working ? " 지금 회사엔 인수인계만 깔끔하게 하고 오세요." : "");
+    if (V === "가세요") return "입사 전에 배치 부서와 근무지만 확인하고 가세요.";
+    if (V === "중립기어") return o.working ? "결국 지금 회사보다 나아지는 게 분명한지가 답이에요. 분명하면 가고, 아니면 남으세요." : "결국 이 회사에서 3년 뒤 내 모습이 그려지는지가 답이에요. 그려지면 가고, 아니면 다음 카드를 보세요.";
+    if (V === "다시 생각해요") return o.working ? "지금 자리에서 버틸 만하다면, 이 카드보다 내 조건에 맞는 곳을 조금 더 기다려 보세요." : "급하지 않다면 이 카드보다 내 조건에 맞는 곳을 조금 더 기다려 보세요.";
+  }
   if (V === "무조건 가세요") return "오퍼 받으면 망설이지 말고 사인하세요. 지금 회사엔 인수인계만 깔끔하게 하고 오세요.";
   if (V === "가세요") return "가기 전에 입사 직급과 연봉만 확실히 맞추고 가세요.";
   if (V === "조건 보고 가세요") return "위 조건 중 하나라도 안 맞으면 미련 없이 접어도 되는 카드예요.";
@@ -2373,7 +2400,7 @@ function meCompose(c, V, why, pay, ctx, facts = [], o = {}) {
   const reasons = why.map((t, i) => [t, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
   const z = [`지금 ${meWho()} 기준이면, ${ME_FIRST[V]}`, ...reasons, pay];
   let co;
-  if (base != null && n <= 2 && base >= 4) co = [`회사 자체는 일반 판정 '${c.verdict}'일 만큼 괜찮은 곳이에요. 걸리는 건 회사가 아니라 지금 내 조건이에요.`, ...plus.slice(0, 1), ...minus.slice(0, 2)];
+  if (base != null && n <= 2 && base >= 4) co = [`회사 자체는 일반 판정 '${c.verdict}'일 만큼 괜찮은 곳이에요. ${o.newbie ? "판정이 낮은 건 내 나이·스펙·직무로 봤을 때 더 맞는 길이 있어서예요." : "걸리는 건 회사가 아니라 지금 내 조건이에요."}`, ...plus.slice(0, 1), ...minus.slice(0, 2)];
   else if (n <= 2) co = [...minus.slice(0, 3), ...plus.slice(0, 1)];
   else if (base != null && n >= 5 && base <= 2) co = [`회사 자체 판정은 '${c.verdict}'예요. 그래도 내 조건에선 얻는 게 더 커요. 아래 걸리는 점은 알고 가세요.`, ...minus.slice(0, 2), ...plus.slice(0, 2)];
   else if (n >= 5) co = [...plus.slice(0, 3), ...minus.slice(0, 2).map(t => /다만/.test(t) ? t : `다만 ${t}`)];
@@ -2595,7 +2622,7 @@ const meJ = (w, a, b) => { const c = w.charCodeAt(w.length - 1); return w + (c >
 function meGradeShow() {
   const m = { job: meEl("me_njob").value.trim() }; document.querySelectorAll("[data-spec]").forEach(el => { m[el.dataset.k] = el.value; });
   const sp = meSpec(m), el = meEl("me_grade");
-  el.innerHTML = sp ? `<b>${sp.g}</b>내 스펙 ${sp.word} · ${esc(sp.how)}${sp.gpaBad ? " · 학점 3.0 이하라 C 아래로" : ""}${sp.miss.length ? ` · 안 고른 ${sp.miss.length}개는 '보통 아래'로 계산` : ""}` : "항목을 고르면 스펙 등급(S~D)을 보여 드려요. 지원 직무에 따라 크게 보는 항목이 달라져요.";
+  el.innerHTML = sp ? `<b>${sp.g}</b>내 스펙 ${sp.word} · ${esc(sp.how)} 봐요${sp.gpaBad ? " · 학점 3.0 이하라 C 아래로" : ""}${sp.miss.length ? ` · 안 고른 ${sp.miss.length}개는 '보통 아래'로 계산` : ""}` : "항목을 고르면 스펙 등급(SS~D)을 보여 드려요. 지원 직무에 따라 크게 보는 항목이 달라져요.";
 }
 document.querySelectorAll("[data-spec]").forEach(el => el.addEventListener(el.type === "number" ? "input" : "change", meGradeShow));
 meEl("me_njob").addEventListener("input", meGradeShow);   // 직무가 바뀌면 문과/이공계 기준도 바뀐다
