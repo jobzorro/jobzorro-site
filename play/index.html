@@ -464,6 +464,38 @@ img.px, .pxs { image-rendering:crisp-edges; image-rendering:pixelated; display:b
 /* 효과음 켜기 */
 .sndb { border:1px solid var(--line2); background:transparent; border-radius:999px; padding:0 14px; min-height:44px; font-size:13px; font-weight:700; color:var(--soft); }
 .sndb[aria-pressed="true"] { border-color:var(--ink); color:var(--ink); }
+/* 4차: 이번 주 보스 · 친구 대결 · 소품 꾸미기 */
+.bossbn { display:flex; gap:14px; align-items:flex-end; margin-top:16px; padding:12px 14px; border:1.5px solid var(--ink); border-radius:16px; background:linear-gradient(var(--px-sky), var(--px-sky2)); min-width:0; }
+.bossart { display:grid; justify-items:center; gap:0; flex:none; }
+.bossart .ico { margin-bottom:-2px; }
+.bossi { min-width:0; display:grid; gap:2px; }
+.bossi .bk { margin:0; font-family:var(--px-font); font-size:12px; color:var(--muted); letter-spacing:.04em; }
+.bossi .bnm { margin:0; font-family:var(--display); font-weight:900; font-size:clamp(18px,2.4vw,24px); letter-spacing:-.03em; display:flex; gap:8px; align-items:center; flex-wrap:wrap; overflow-wrap:anywhere; }
+.bossi .bt { margin:0; font-size:13px; color:var(--soft); }
+.bstats { display:grid; grid-template-columns:repeat(auto-fit,minmax(74px,1fr)); gap:6px; margin:4px 0; }
+.bstats div { border-top:2px solid var(--ink); padding-top:4px; min-width:0; }
+.bstats small { display:block; font-size:11.5px; color:var(--muted); font-weight:700; }
+.bstats b { font-family:var(--display); font-weight:900; font-size:16px; }
+.bossb { display:inline-flex; align-items:center; gap:3px; margin-left:6px; vertical-align:middle; font-family:var(--px-font); font-size:11px; font-weight:400; letter-spacing:.04em; color:#fff; background:#c0392b; border:1.5px solid var(--ink); border-radius:4px; padding:0 5px 0 3px; line-height:1.5; white-space:nowrap; }
+.vsbn { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:14px; padding:10px 14px; border:2px dashed var(--ink); border-radius:16px; background:var(--fill); }
+.vsbn p { margin:0; flex:1 1 220px; font-size:14px; min-width:0; }
+.vsbn .btn { min-height:44px; }
+.vsbox { display:grid; gap:6px; justify-items:center; width:100%; }
+.vsbox .btn { min-height:44px; }
+.vsbox .vslink { width:100%; max-width:460px; font:inherit; font-size:13px; padding:8px 10px; border:1px solid var(--line2); border-radius:10px; background:var(--bg); color:var(--ink); }
+.vsrow { gap:18px; }
+.vsw { display:grid; justify-items:center; gap:2px; }
+.vsw b { font-size:14px; max-width:9em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vsw small { font-family:var(--px-font); font-size:13px; color:var(--soft); }
+.lookp { display:grid; gap:14px; grid-template-columns:minmax(0,1fr); }
+@media (min-width:860px) { .lookp { grid-template-columns:280px minmax(0,1fr); align-items:start; } }
+.lookpv { min-height:180px; }
+.items { display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:8px; }
+.itemb { display:grid; justify-items:center; align-content:end; gap:3px; min-height:88px; padding:8px 6px; border:1.5px solid var(--ink); border-radius:12px; background:var(--card); text-align:center; min-width:0; }
+.itemb .iname { font-weight:800; font-size:13px; }
+.itemb small { font-size:11px; color:var(--muted); line-height:1.3; }
+.itemb[aria-pressed="true"] { background:var(--acc); color:var(--acc-ink); box-shadow:inset 0 -4px 0 var(--acc-ink); }
+.itemb.locked { border-style:dashed; border-color:var(--line2); cursor:default; }
 .myrk { display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:13.5px; }
 .myrk small { color:var(--muted); font-weight:500; }
 @media (prefers-reduced-motion: reduce) { .pxmag, .conf { display:none; } }
@@ -482,6 +514,8 @@ img.px, .pxs { image-rendering:crisp-edges; image-rendering:pixelated; display:b
   <p class="outl">숫자가 궁금해지면 <a href="https://job.jobzorro.kr/salary/">연봉 연구소</a> · 그 회사 가도 될지는 <a href="https://job.jobzorro.kr/company/">회사 판단</a> · 내 이직이 고민이면 <a href="https://job.jobzorro.kr/apply/">무료 상담 신청</a></p>
   <div class="board" id="board" aria-live="polite"></div>
   <div class="me" id="me"></div>
+  <div id="vsbar"></div>
+  <div id="boss"></div>
   <div class="tabs" role="tablist" aria-label="게임 고르기">
     <button role="tab" id="t-higher" data-k="higher" aria-controls="p-higher" aria-selected="true">01 어디가 더 많이 줄까?</button>
     <button role="tab" id="t-today" data-k="today" aria-controls="p-today" aria-selected="false">02 오늘의 회사</button>
@@ -528,13 +562,14 @@ img.px, .pxs { image-rendering:crisp-edges; image-rendering:pixelated; display:b
 </div></section>
 
 <section class="sec" id="p-tools" role="tabpanel" aria-labelledby="t-tools" hidden><div class="in">
-  <div class="sec-head"><span class="num">⚙</span><h2>연봉 <b>도구</b></h2><p>게임은 아니지만 자주 쓰는 계산 두 가지예요. 넣은 숫자는 이 화면에서만 쓰고 어디에도 보내지 않아요.</p></div>
-  <div class="toolbar"><div class="seg" id="toolSeg"><button data-v="rank" aria-pressed="true">직급 환산기</button><button data-v="live" aria-pressed="false">실시간 월급</button></div></div>
+  <div class="sec-head"><span class="num">⚙</span><h2>연봉 <b>도구</b></h2><p>게임은 아니지만 자주 쓰는 계산 두 가지, 그리고 내 조로 꾸미기예요. 넣은 숫자는 이 화면에서만 쓰고 어디에도 보내지 않아요.</p></div>
+  <div class="toolbar"><div class="seg" id="toolSeg"><button data-v="rank" aria-pressed="true">직급 환산기</button><button data-v="live" aria-pressed="false">실시간 월급</button><button data-v="look" aria-pressed="false">내 조로 꾸미기</button></div></div>
   <div id="tool-rank">
     <p class="big1" style="font-size:clamp(20px,2.6vw,28px)">내 연봉, 저 회사에선 <b>무슨 직급?</b></p>
     <div class="bar1"><div class="fld"><label for="rkPay">내 연봉 (만원)</label><input type="number" id="rkPay" inputmode="numeric" value="5000"></div></div>
     <div id="rkOut"></div>
   </div>
+  <div id="tool-look" hidden></div>
   <div id="tool-live" hidden>
     <p class="big1" style="font-size:clamp(20px,2.6vw,28px)">지금 이 순간에도 <b>통장에 쌓이는 돈</b></p>
     <div class="bar1"><div class="fld"><label for="lvPay">내 연봉 (만원)</label><input type="number" id="lvPay" inputmode="numeric" value="4000"></div>
@@ -690,6 +725,26 @@ var Z_RANK = [
   { h: '#2b2b2b', jk: '#3b4a6b', tie: '#c0392b', gl: 1 },         // 과장: 안경 + 빨간 넥타이
   { h: '#6a6a6a', jk: '#2b2f3a', tie: '#c0392b', gl: 1 },         // 차장: 희끗한 머리
   { h: '#c9c9c9', jk: '#1d1f26', tie: '#ffcf3d', gl: 1 }];        // 부장: 흰머리 + 금 넥타이
+// ── 소품 꾸미기 (4차): 격자를 좌우 2칸씩 넓혀 16칸 → 손에 든 소품은 오른쪽 빈칸에. 입은 모습 LOOK = {hat, hand, acc}
+//    o.plain = 꾸밈 없는 기본 조로(친구 대결 상대), o.look = 이 모습으로(꾸미기 미리보기)
+var LOOK = store.getJ('slp-look', {}) || {};
+function lookOf(o) { return o && o.plain ? {} : o && o.look ? o.look : LOOK; }
+function lookKey(L) { return (L.hat || '') + '.' + (L.hand || '') + '.' + (L.acc || ''); }
+function setCh(r, y, x, t) { r[y] = r[y].slice(0, x) + t + r[y].slice(x + t.length); }
+var ITEM_DRAW = {
+  crown: function (r) { r[0] = '.....Y.YY.Y.....'; r[1] = '.....YYYYYY.....'; },
+  headset: function (r) { r[1] = '.....KKKKKK.....'; [3, 4, 5].forEach(function (y) { setCh(r, y, 3, 'K'); setCh(r, y, 12, 'K'); }); setCh(r, 6, 11, 'K'); },
+  beanie: function (r) { r[0] = '......BBBB......'; r[1] = '.....BWBWBW.....'; r[2] = '....BBBBBBBB....'; },
+  coffee: function (r) { setCh(r, 9, 13, 'WW'); setCh(r, 10, 13, 'OO'); setCh(r, 11, 13, 'OO'); },
+  bag: function (r) { setCh(r, 11, 13, 'KK'); setCh(r, 12, 12, 'OOOO'); setCh(r, 13, 12, 'OOOO'); },
+  laptop: function (r) { setCh(r, 9, 13, 'LLL'); setCh(r, 10, 13, 'LLL'); setCh(r, 11, 12, 'mmmm'); },
+  umbrella: function (r) { setCh(r, 2, 13, 'RRR'); setCh(r, 3, 12, 'RRRR'); for (var y = 4; y <= 10; y++) setCh(r, y, 14, 'K'); setCh(r, 11, 13, 'K'); },
+  plant: function (r) { setCh(r, 8, 14, 'G'); setCh(r, 9, 13, 'GGG'); setCh(r, 10, 13, 'PPP'); setCh(r, 11, 14, 'P'); },
+  idcard: function (r) { setCh(r, 8, 6, 'c'); setCh(r, 9, 6, 'c'); setCh(r, 10, 6, 'c'); setCh(r, 11, 5, 'CC'); },
+  glasses: function (r) { r[4] = '....gEEggEEg....'; },
+  shades: function (r) { r[4] = '....qqqqqqqq....'; },
+  goldtie: function () {}   // 넥타이 색만 바뀜 (zPal)
+};
 function zRows(rk, mood, o) {
   o = o || {};
   var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], rows = Z_BODY.slice();
@@ -701,22 +756,26 @@ function zRows(rk, mood, o) {
   if (R.id) { rows[9] = '.JJwcttwwJJ.'; rows[10] = '.sJwcttwwJs.'; }   // 사원증 끈
   if (mood === 'happy') { rows[8] = 's.JwwttwwJ.s'; rows[9] = 'sJJwwttwwJJs'; rows[10] = '..JwwttwwJ..'; rows[11] = '..JwwttwwJ..'; }   // 만세
   if (o.hat) { rows[0] = '...kkkkkk...'; rows[1] = '..kkkkkkkk..'; rows[2] = '.kkkkkkkkkk.'; }
+  rows = rows.map(function (r) { return '..' + r + '..'; });
+  var L = lookOf(o);
+  ['acc', 'hand', 'hat'].forEach(function (slot) { var f = ITEM_DRAW[L[slot]]; if (f && !(slot === 'hat' && o.hat)) f(rows); });   // 탐정 모자가 있으면 모자 소품은 빼기
   return rows;
 }
-function zPal(rk, mood) {
-  var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))];
-  return { h: R.h, s: '#f2c79b', E: '#111', g: '#9fd3ff', M: mood === 'happy' ? '#7a1f1f' : '#5a2a2a', w: '#f4f4f4', t: R.tie, J: R.jk || '#f4f4f4',
-    p: '#2a2f45', b: '#111', T: '#6fb6ff', r: '#ff9b9b', k: '#6b4a2b', c: '#ffcf3d' };
+function zPal(rk, mood, o) {
+  var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], L = lookOf(o);
+  return { h: R.h, s: '#f2c79b', E: '#111', g: '#9fd3ff', M: mood === 'happy' ? '#7a1f1f' : '#5a2a2a', w: '#f4f4f4', t: L.acc === 'goldtie' ? '#ffcf3d' : R.tie, J: R.jk || '#f4f4f4',
+    p: '#2a2f45', b: '#111', T: '#6fb6ff', r: '#ff9b9b', k: '#6b4a2b', c: '#ffcf3d',
+    Y: '#ffcf3d', K: '#3a3f4a', B: '#e8412c', W: '#f4f4f4', O: '#8a5a1c', L: '#9fd3ff', m: '#6a6f7c', R: '#5b7cff', G: '#3f9a4a', P: '#c0602b', C: '#ffffff', q: '#111' };
 }
 // 숨쉬기 2장: 2장째는 몸이 1칸 내려앉음 (다리는 그대로)
 function zFrames(rk, mood, o) {
-  var r = zRows(rk, mood, o), b = '............';
+  var r = zRows(rk, mood, o), b = '................';
   return [PX.outline([b].concat(r)), PX.outline([b, b].concat(r.slice(0, 12), r.slice(13)))];
 }
 // 조로 그림 글: anim = 'idle'(숨쉬기) | 'jump' | '' , s = 한 칸 크기(px)
 function zorro(rk, mood, s, anim, o) {
   mood = mood || 'normal';
-  var name = 'z' + rk + mood + (o && o.hat ? 'h' : ''), pal = zPal(rk, mood);
+  var name = 'z' + rk + mood + (o && o.hat ? 'h' : '') + '|' + lookKey(lookOf(o)), pal = zPal(rk, mood, o);
   if (anim === 'idle' || anim === 'jump') return PX.sheet(name + 'S', zFrames(rk, mood, o), pal, s, 'zr ' + anim);
   return PX.img(name, zFrames(rk, mood, o)[0], pal, s, 'zr');
 }
@@ -788,13 +847,14 @@ var ICON = {
   quest: [['.yyyy.', 'yy..yy', '....yy', '...yy.', '..yy..', '......', '..yy..'], { y: '#ffcf3d' }],
   crown: [['y..y..y', 'yy.y.yy', 'yyyyyyy', 'yrybyry', 'yyyyyyy'], { y: '#ffcf3d', r: '#e8412c', b: '#4f7dff' }],
   target: [['..rrr..', '.rwwwr.', 'rwrrrwr', 'rwrkrwr', 'rwrrrwr', '.rwwwr.', '..rrr..'], { r: '#e8412c', w: '#ffffff', k: '#2b2b2b' }],   // 과녁(진짜 연봉)
+  horns: [['r.......r', 'rr.....rr', '.rr...rr.', '..rrrrr..'], { r: '#e8412c' }],   // 보스 뿔
   boss: [['.kkkkk.', 'kyyyyyk', 'kyykyyk', 'kyyyyyk', '.kkkkk.'], { k: '#8a5a1c', y: '#ffcf3d' }]   // 금 명패
 };
 function icon(name, s, cls, alt) { var d = ICON[name]; return d ? PX.img('i|' + name, PX.outline(d[0]), d[1], s, 'ico ' + (cls || ''), alt) : ''; }
 // 큰 캔버스(공유 카드)에 바로 그리기: 아이콘·조로·빌딩 격자
 function pxDraw(g, kind, a, x, y, s, o) {
   var rows, pal;
-  if (kind === 'zorro') { rows = zFrames(a.rk, a.mood, o)[0]; pal = zPal(a.rk, a.mood); }
+  if (kind === 'zorro') { rows = zFrames(a.rk, a.mood, o)[0]; pal = zPal(a.rk, a.mood, o); }
   else if (kind === 'bld') { rows = bldRows(a, o); pal = bldPal(a, o); }
   else { rows = PX.outline(ICON[a][0]); pal = ICON[a][1]; }
   pal = PX.pal2(pal); PX.paint(g, rows, pal, x, y - rows.length * s, s);   // y = 바닥선
@@ -891,6 +951,8 @@ function weekSum(days, game) {
   return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.s - a.s; });
 }
 function mockPlays() { return store.getJ('slp-mplays', {}); }
+function mockVs(o) { try { return 'mk' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return ''; } }
+function mockVsRead(c) { try { c = String(c || ''); if (c.slice(0, 2) !== 'mk') return null; var v = JSON.parse(decodeURIComponent(escape(atob(c.slice(2).replace(/-/g, '+').replace(/_/g, '/'))))); return PC.DAILY.indexOf(v.g) >= 0 ? v : null; } catch (e) { return null; } }
 function mock(path, b) {
   var u = path.split('?'), q = {};
   (u[1] || '').split('&').forEach(function (kv) { if (kv) { var p = kv.split('='); q[p[0]] = decodeURIComponent(p[1] || ''); } });
@@ -901,7 +963,8 @@ function mock(path, b) {
   if (u[0] === '/play/score') {   // 서버와 똑같이: 날짜로 문제를 다시 만들고, 보낸 답으로 점수를 다시 계산
     var pz = PC.gen(b.game, TODAY, ctx), S = PC.score(b.game, pz, b.ans, ctx);
     var rows = mockDay(TODAY, b.game).concat([{ score: S.score, ts: 1e15 }]).sort(byScore);
-    return { ok: true, day: TODAY, score: S.score, aux: S.aux, rank: rows.findIndex(function (r) { return r.ts === 1e15; }) + 1, total: rows.length };
+    return { ok: true, day: TODAY, score: S.score, aux: S.aux, rank: rows.findIndex(function (r) { return r.ts === 1e15; }) + 1, total: rows.length,
+      vs: mockVs({ d: TODAY, g: b.game, n: b.nick, s: S.score, a: S.aux }) };
   }
   if (u[0] === '/play/top') {
     var g = q.game, d = q.d || TODAY, days = PC.weekDays(d).filter(function (x) { return x <= TODAY; }), R = dayRows(d, g), hall = [];
@@ -921,6 +984,9 @@ function mock(path, b) {
       plays: { total: 96000 + di * 1150 + (mp.total || 0), today: tday, people: Math.round(tday * .31) },
       todayGame: { n: T.length * 53, ok: okT.length * 53, avg: stat.avg || (okT.length ? Math.round(okT.reduce(function (a, r) { return a + r.aux; }, 0) / okT.length * 10) / 10 : 0) },
       yday: { n: Y.length * 53, ok: Y.filter(function (r) { return r.aux > 0; }).length * 53 }, stat: stat };
+  }
+  if (u[0] === '/play/vs') {   // 모의 도전장: 'mk' + 내용(base64url). 진짜 서버 도전장은 서명만 들어 있음
+    var v = mockVsRead(q.c); return v ? { day: v.d, game: v.g, nick: v.n, score: v.s, aux: v.a } : { error: 'not found' };
   }
   if (u[0] === '/play/cup' && !b) {
     var mine = store.getJ('slp-cup', {}), out = [];
@@ -947,9 +1013,9 @@ function startDaily(game) {
 }
 function submitDaily(game, ans, S, extra) {
   var p = prog(game) || {}, body = { game: game, tok: p.tok || '', dev: DEV, nick: NICK, ans: ans, ver: ctx.ver };
-  var save = function (x) { x = Object.assign({ nick: NICK, ans: ans }, extra || {}, x); setRec(TODAY, game, x); setProg(game, null); setTimeout(promoCheck, 900); return x; };   // 판이 끝나면 경험치 +1 → 승진 확인
+  var save = function (x) { x = Object.assign({ nick: NICK, ans: ans }, extra || {}, x); setRec(TODAY, game, x); setProg(game, null); setTimeout(function () { promoCheck(); itemCheck(); }, 900); return x; };   // 판이 끝나면 경험치 +1 → 승진 확인
   return call('/play/score', body).then(function (j) {
-    return save({ score: j.score != null ? j.score : S.score, aux: j.aux != null ? j.aux : S.aux, rank: j.rank, total: j.total, sent: 1 });
+    return save({ score: j.score != null ? j.score : S.score, aux: j.aux != null ? j.aux : S.aux, rank: j.rank, total: j.total, sent: 1, vs: j.vs || '' });
   }, function (err) { return save({ score: S.score, aux: S.aux, sent: 0, err: (err && err.error) || '점수를 보내지 못했어요' }); });
 }
 function getTop(game, d) { return call('/play/top?game=' + game + '&d=' + (d || TODAY)).catch(function () { return null; }); }
@@ -1035,7 +1101,8 @@ function drawCard(card, box) {
       g.fillStyle = tk('--line2'); g.fillRect(600, 500, 530, 8);
       if (P.co) { var bw = bldSize(P.co, P.o)[0] * 7;   // 빌딩 폭을 먼저 재서 오른쪽 끝에 맞춤
         var bh = pxDraw(g, 'bld', P.co, x1 - bw, 500, 7, P.o)[1]; if (P.icon) pxDraw(g, 'icon', P.icon, x1 - bw / 2 - 44, 500 - bh - 8, 8); x1 -= bw + 26; }
-      pxDraw(g, 'zorro', { rk: P.rk == null ? myRank() : P.rk, mood: P.mood || 'normal' }, x1 - 112, 500, 8, P.hat ? { hat: 1 } : null);
+      var zo = P.hat ? { hat: 1 } : null, zw = zFrames(0, 'normal', zo)[0][0].length * 8;   // 꾸민 조로(소품 포함) 폭
+      pxDraw(g, 'zorro', { rk: P.rk == null ? myRank() : P.rk, mood: P.mood || 'normal' }, x1 - zw, 500, 8, zo);
     } catch (e) {}
   }
   g.fillStyle = tk('--ink'); g.fillRect(70, 520, 1060, 2);
@@ -1134,7 +1201,7 @@ function duelHtml(q, R, run) {   // R: {done, pick, win}
   var card = function (side) {
     var c = BYN[q[side]], v = PC.STATS[q.k].v(c), cls = R.done ? (R.win === side ? ' win' : ' lose') : '';
     return '<button class="pick' + cls + '" type="button" data-s="' + side + '"' + (R.done ? ' disabled' : '') + '>' +
-      (R.done && R.pick === side ? '<span class="badge">내 선택</span>' : '') + logo(c) + '<span class="nm">' + esc(c.n) + '</span>' +
+      (R.done && R.pick === side ? '<span class="badge">내 선택</span>' : '') + logo(c) + '<span class="nm">' + esc(c.n) + bossMark(c) + '</span>' +
       '<span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명</span><span class="amt' + (R.done ? '' : ' q') + '">' + (R.done ? fmtStat(q.k, v) : '?') + '</span></button>';
   };
   return '<p class="qline">' + STAT_Q[q.k] + '</p><p class="qsub">' + (BYN[q.a].grp === BYN[q.b].grp ? '같은 업종 대결이에요.' : '업종이 다른 두 회사예요.') + '</p>' +
@@ -1147,12 +1214,13 @@ function gapMsg(q, win) {
 var HM = 'daily';
 document.querySelectorAll('#hMode button').forEach(function (b) { b.onclick = function () {
   document.querySelectorAll('#hMode button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
-  HM = b.dataset.v; clearTimeout(HT.to); cancelAnimationFrame(HT.raf); HR = null; renderHigher();   // 풀던 문제는 시간 초과로 처리
+  HM = b.dataset.v; clearTimeout(HT.to); stopTick(); HR = null; renderHigher();   // 풀던 문제는 시간 초과로 처리
 }; });
 function renderHigher() { HM === 'endless' ? (E ? drawE() : introE()) : dailyHigher(); }
 
 // 오늘의 도전
 var HPZ = null, HT = { to: 0, raf: 0 }, HR = null;
+function stopTick() { REDUCE ? clearTimeout(HT.raf) : cancelAnimationFrame(HT.raf); }   // 줄어든 움직임이면 타이머는 setTimeout 으로 돌았음
 function dailyHigher() {
   HPZ = HPZ || PC.genHigher(TODAY, ctx);
   var x = rec(TODAY, 'higher'), p = prog('higher');
@@ -1196,7 +1264,7 @@ function drawH() {
 }
 function pickH(side) {
   if (!HR || HR.done) return;
-  clearTimeout(HT.to); cancelAnimationFrame(HT.raf); clearTimeout(HT.raf);
+  clearTimeout(HT.to); stopTick();
   var p = prog('higher'); if (!p || p.ans.length !== HR.i) return;
   var ms = side ? Math.min(PC.HIGHER_MS, Math.round(performance.now() - HR.t0)) : PC.HIGHER_MS;
   p.ans.push({ p: side, ms: ms }); p.cur = -1; setProg('higher', p);
@@ -1223,10 +1291,10 @@ function resultHigher(x) {
   var top = HPZ.qs.map(function (q) { return BYN[q.a].rk[2] > BYN[q.b].rk[2] ? BYN[q.a] : BYN[q.b]; }).sort(function (a, b) { return b.rk[2] - a.rk[2]; })[0];   // 오늘 문제에서 과장 연봉 1등 회사
   var scene = x.aux === 10 ? promoScene(x.promo || [myRank(), myRank()]) : stage('<div class="pxrow">' + zorro(myRank(), moodOf(x.aux / 10), 4, 'idle') + bld(top, 4) + '</div>', 'resst');
   var text = '연봉 놀이터 · 어디가 더 많이 줄까? ' + mmdd(TODAY) + '\n' + per.map(function (v) { return v ? '🟩' : '🟥'; }).join('') + '\n' + man(x.score) + '점 (' + x.aux + '/10)\n' + SITE_S;
-  $('higher').innerHTML = '<div class="over"><span class="lv">오늘의 도전 · ' + mmdd(TODAY) + '</span>' + scene + '<div class="big">' + man(x.score) + '<small>점</small></div>' +
+  $('higher').innerHTML = '<div class="over"><span class="lv">오늘의 도전 · ' + mmdd(TODAY) + '</span>' + scene + vsScene('higher', x) + '<div class="big">' + man(x.score) + '<small>점</small></div>' +
     '<div class="ttl"><b>10문제 중 ' + x.aux + '개</b> 맞혔어요</div>' +
     '<p>' + (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>이에요.' : esc(x.err || '')) + ' 내일 0시에 새 문제가 나와요.</p>' +
-    shareBox('shH') + '<div class="row"><button class="btn ghost" type="button" id="toE">무한 모드 하러 가기</button>' + againBtn('higher', dailyHigher) + '</div></div><div id="lbH"></div>';
+    vsBox('higher', x) + shareBox('shH') + '<div class="row"><button class="btn ghost" type="button" id="toE">무한 모드 하러 가기</button>' + againBtn('higher', dailyHigher) + '</div></div><div id="lbH"></div>';
   wireShare('shH', text, { title: '어디가 더 많이 줄까?', big: man(x.score) + '점', sub: '10문제 중 ' + x.aux + '개 · ' + mmdd(TODAY), lines: [per.slice(0, 5).map(function (v) { return v ? '🟩' : '🟥'; }).join(''), per.slice(5).map(function (v) { return v ? '🟩' : '🟥'; }).join('')],
     px: { mood: moodOf(x.aux / 10), co: top, icon: x.aux === 10 ? 'crown' : '' } });
   $('toE').onclick = function () { document.querySelector('#hMode button[data-v="endless"]').click(); };
@@ -1334,7 +1402,7 @@ function drawToday(p, fresh) {
     '<div class="cands" role="group" aria-label="후보 회사 8곳">' + (fresh != null && fresh >= 0 && PX.ok ? '<span class="pxmag" aria-hidden="true">' + icon('magnifier', 4) + '</span>' : '') + TPZ.cands.map(function (n) {
       var c = BYN[n], out = R.wrong.indexOf(n) >= 0;
       return '<button type="button" class="cand' + (out ? ' out' : '') + '" data-n="' + esc(n) + '"' + (out ? ' disabled aria-label="' + esc(n) + ', 아니에요"' : ' aria-pressed="' + (TSEL === n) + '"') + '>' +
-        logo(c, 'm') + '<span class="cn">' + esc(n) + '</span>' + (out ? '<small>아니에요</small>' : '') + tBld(c, tBlind(n, { off: out })) + '</button>';
+        logo(c, 'm') + '<span class="cn">' + esc(n) + bossMark(c) + '</span>' + (out ? '<small>아니에요</small>' : '') + tBld(c, tBlind(n, { off: out })) + '</button>';
     }).join('') + '</div>' +
     '<div class="row tact"><button class="btn" id="tPick" type="button"' + (TSEL ? '' : ' disabled') + '>' + (TSEL ? esc(TSEL) + ' 고르기' : '회사를 먼저 골라 주세요') + '</button>' +
     (R.open < PC.TODAY_CLUES ? '<button class="btn ghost" id="tClue" type="button">다음 단서 보기 (−' + PC.TODAY_CLUE + '점)</button>' : '<span class="qsub" style="margin:0">단서를 다 열었어요</span>') + '</div>' +
@@ -1371,13 +1439,13 @@ function resultToday(x) {
   var det = { hat: 1 }, scene = ok
     ? stage('<div class="pxrow">' + zorro(myRank(), 'happy', 4, 'jump', det) + icon('magnifier', 4) + bld(A, 4, { all: 1 }, 'lightup') + '</div>', 'resst', '정답 ' + A.n + ' 빌딩에 불이 다 켜졌어요')
     : stage('<div class="pxrow">' + zorro(myRank(), 'shock', 4, 'idle', det) + '<span class="fleetx">범인 도주!</span><div class="runaway" style="position:relative">' + icon('puff', 3, 'puff') + bld(A, 4, { sil: 1 }) + '</div></div>', 'resst flee', '숨은 회사가 도망갔어요');
-  $('today').innerHTML = todayInfo() + '<div class="over"><span class="lv">오늘의 회사 #' + TPZ.no + ' · ' + (ok ? '성공' : '다음 기회에') + '</span>' + scene + (ok ? logo(A, 'l').replace('class="lg l', 'class="lg l lightup') : logo(A, 'l')) +
+  $('today').innerHTML = todayInfo() + '<div class="over"><span class="lv">오늘의 회사 #' + TPZ.no + ' · ' + (ok ? '성공' : '다음 기회에') + '</span>' + scene + vsScene('today', x) + (ok ? logo(A, 'l').replace('class="lg l', 'class="lg l lightup') : logo(A, 'l')) +
     '<div class="ttl"><b>' + esc(A.n) + '</b></div><div class="big">' + tries + '<small> 단서</small></div>' +
     '<p>' + (ok ? '단서 ' + R.open + '개 보고 ' + (R.wrong.length ? R.wrong.length + '번 틀린 뒤 ' : '한 번에 ') + '맞혔어요. ' + man(x.score) + '점 · ' : '3번 다 틀렸어요. 0점 · ') +
     (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>이에요.' : esc(x.err || '')) + '</p>' +
     clueList(PC.todayClues(TPZ, ctx), PC.TODAY_CLUES, -1) + '<div class="cands done" aria-label="오늘의 후보 8곳">' + cards + '</div>' +
     '<div class="row"><a class="btn ghost sm" href="' + link(A) + '" target="_blank" rel="noopener">직급별 연봉 보기</a><a class="btn ghost sm" href="' + coLink(A) + '" target="_blank" rel="noopener">이 회사 가도 될까?</a></div>' +
-    shareBox('shT') + '<div class="row">' + againBtn('today', function () { TSEL = ''; renderToday(); }) + '</div></div><div id="lbT"></div>';
+    vsBox('today', x) + shareBox('shT') + '<div class="row">' + againBtn('today', function () { TSEL = ''; renderToday(); }) + '</div></div><div id="lbT"></div>';
   wireShare('shT', text, { title: '오늘의 회사 #' + TPZ.no, big: tries, sub: (ok ? man(x.score) + '점' : '아쉽게 실패') + ' · 정답은 비밀\n🔥 ' + streak() + '일 연속', lines: lines,
     px: { mood: ok ? 'happy' : 'sad', hat: 1, co: A, o: { blind: 1, neutral: 1, w: 11, all: ok ? 1 : 0, off: ok ? 0 : 1 } } });   // 공유 그림엔 정답을 흘리지 않는 빌딩
   miniLb('lbT', 'today');
@@ -1422,7 +1490,7 @@ function drawSniper(p) {
   var cur = done ? p.v[i] : (SST && SST.i === i ? SST.v : 7000);
   var sc = PC.scoreSniper(SPZ, p.v, ctx);
   var h = '<div class="gbar"><span class="lv">' + (i + 1) + ' / 5 문제</span><span class="stat"><span>점수 <b>' + sc.score + '</b></span></span></div>' +
-    '<div class="snq"><div class="who">' + logo(c, 'l') + '<span class="nm">' + esc(c.n) + '</span><span class="rk">' + RK[q.ri] + '</span></div>' + snBld(c, q, done) +
+    '<div class="snq"><div class="who">' + logo(c, 'l') + '<span class="nm">' + esc(c.n) + bossMark(c) + '</span><span class="rk">' + RK[q.ri] + '</span></div>' + snBld(c, q, done) +
     '<p class="qsub" style="margin:0">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + ' — ' + RK[q.ri] + ' 연봉은 얼마일까요?</p>' +
     '<div class="snv" aria-live="polite"><span id="snV">' + man(cur) + '</span><small>만원</small></div>' +
     scopeHtml(cur, done, truth) + '<div class="sntrack">' + (done ? '<span class="truth" style="left:' + pctX(truth) + '%"><span>정답 ' + man(truth) + '</span></span>' : '') +
@@ -1456,9 +1524,9 @@ function resultSniper(x) {
   var tb = '<div class="tw"><table class="tbl"><thead><tr><th>회사 · 직급</th><th>내 값</th><th>정답</th><th>오차</th><th>점수</th><th>사람들 평균 오차</th></tr></thead><tbody>' +
     SPZ.qs.map(function (q, i) { var c = BYN[q.n], e = S.errs[i];
       return '<tr><td>' + esc(c.n) + ' ' + RK[q.ri] + (q.tw ? ' <span class="tag">반전</span>' : '') + '</td><td>' + (x.ans[i] ? man(x.ans[i]) : '-') + '</td><td>' + man(c.rk[q.ri]) + '</td><td class="' + (e > 0 ? 'up' : 'dn') + '">' + (e == null ? '-' : (e > 0 ? '+' : '') + e + '%') + '</td><td>' + S.per[i] + '</td><td class="crowd' + i + '">…</td></tr>'; }).join('') + '</tbody></table></div>';
-  $('sniper').innerHTML = '<div class="over"><span class="lv">연봉 스나이퍼 · ' + mmdd(TODAY) + '</span><div class="big">' + x.score + '<small>점 / 500</small></div><div class="ttl"><b>' + emo + '</b></div>' +
+  $('sniper').innerHTML = '<div class="over"><span class="lv">연봉 스나이퍼 · ' + mmdd(TODAY) + '</span>' + vsScene('sniper', x) + '<div class="big">' + x.score + '<small>점 / 500</small></div><div class="ttl"><b>' + emo + '</b></div>' +
     '<p>' + (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>이에요.' : esc(x.err || '')) + '</p>' + tb + '<p class="crowd" id="snCrowd" hidden></p>' +
-    shareBox('shS') + '<div class="row">' + againBtn('sniper', renderSniper) + '</div></div><div id="lbS"></div>';
+    vsBox('sniper', x) + shareBox('shS') + '<div class="row">' + againBtn('sniper', renderSniper) + '</div></div><div id="lbS"></div>';
   wireShare('shS', text, { title: '연봉 스나이퍼', big: x.score + '점', sub: '500점 만점 · ' + mmdd(TODAY), lines: [emo],
     px: { mood: moodOf(x.score / 500), co: BYN[(SPZ.qs.filter(function (q) { return q.tw; })[0] || SPZ.qs[0]).n], o: { blind: 1, neutral: 1, w: 11 } } });   // 반전 회사 빌딩(숫자 없는 모양)
   getTop('sniper').then(function (t) {
@@ -1595,7 +1663,7 @@ function drawRoad(p) {
 function roadLog(R, upto) {
   if (upto < 0) return '';
   return '<ul class="rlog">' + R.log.slice(0, upto + 1).map(function (L) {
-    return '<li>' + (L.x + 1) + '~' + (L.x + 2) + '년 차 · <b>' + esc(L.co) + '</b> ' + man(L.start) + ' → ' + man(L.y2 + L.bonus) + '만원' + (L.failed ? ' · 이직 실패' : L.moved && (L.k || RPZ.home) ? ' · 이직' : '') +
+    return '<li>' + (L.x + 1) + '~' + (L.x + 2) + '년 차 · <b>' + esc(L.co) + '</b>' + bossMark(BYN[L.co]) + ' ' + man(L.start) + ' → ' + man(L.y2 + L.bonus) + '만원' + (L.failed ? ' · 이직 실패' : L.moved && (L.k || RPZ.home) ? ' · 이직' : '') +
       (L.ev === 'cut' ? ' · 구조조정' : L.ev === 'jump' ? ' · 성과급 큰 해' : L.ev === 'stock' ? ' · 스톡옵션' : L.ev === 'star' ? ' · 고과 S' : '') + '</li>'; }).join('') + '</ul>';
 }
 function finishRoad(p) {
@@ -1645,11 +1713,11 @@ function resultRoad(x, fresh) {
   var text = '연봉 놀이터 · 이직 로드 10년 ' + mmdd(TODAY) + ' (' + scn + ')\n' + path + '\n엔딩: ' + EN.lb + '\n10년 누적 ' + eokS(R.total) + (R.eok ? ' · 1억 ' + (R.eok + (RPZ.x0 || 0)) + '년 차' : ' · 1억 못 찍음') + '\n' + SITE_S;
   var scene = '<div class="ending">' + stage('<div class="pxrow">' + zorro(T[3], T[2], 5, T[2] === 'happy' ? 'jump' : 'idle') + icon(T[0], 5, 'evi') + bld(fin, bS(true), null, 'grow') + '</div>' + (T[2] === 'happy' ? confetti() : ''), '', '엔딩: ' + EN.lb) +
     '<span class="lv">ENDING · ' + esc(scn) + (isNew ? ' · NEW!' : '') + '</span><div class="endnm"><b>' + esc(EN.lb) + '</b></div><p>' + T[1] + '</p></div>';
-  $('road').innerHTML = '<div class="over"><span class="lv">이직 로드 10년 · ' + mmdd(TODAY) + '</span>' + scene + '<div class="big" style="font-size:clamp(44px,8vw,90px)">' + eokS(R.total) + '</div>' +
+  $('road').innerHTML = '<div class="over"><span class="lv">이직 로드 10년 · ' + mmdd(TODAY) + '</span>' + scene + vsScene('road', x) + '<div class="big" style="font-size:clamp(44px,8vw,90px)">' + eokS(R.total) + '</div>' +
     '<div class="ttl"><b>' + (R.eok ? '연봉 1억, ' + (R.eok + (RPZ.x0 || 0)) + '년 차에 찍었어요' : '10년 안에 1억은 못 찍었어요') + '</b></div><p>' + path + ' · ' + (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>' : esc(x.err || '')) + '</p>' +
     '<div id="rChart" style="width:100%">' + roadChart(R.years, null, RPZ.x0) + '</div>' +
     '<div class="zorro"><div class="who"><i></i>조로의 한마디</div><p>' + esc(roadZorro(R)) + '</p></div>' + roadLog(R, 4).replace('class="rlog"', 'class="rlog" style="width:100%;text-align:left"') +
-    endDogam(EN.id) + shareBox('shR') + '<div class="row">' + againBtn('road', function () { RREV = false; renderRoad(); }) + '</div></div><div id="lbR"></div>';
+    endDogam(EN.id) + vsBox('road', x) + shareBox('shR') + '<div class="row">' + againBtn('road', function () { RREV = false; renderRoad(); }) + '</div></div><div id="lbR"></div>';
   if (fresh && isNew) toast('새 엔딩을 모았어요: ' + EN.lb);
   wireShare('shR', text, { title: '이직 로드 10년 · ' + scn, big: eokS(R.total), sub: '엔딩: ' + EN.lb + '\n' + (R.eok ? '1억 ' + (R.eok + (RPZ.x0 || 0)) + '년 차' : '1억 못 찍음') + ' · ' + mmdd(TODAY), lines: [path],
     px: { mood: T[2], rk: T[3], co: fin, icon: T[0] } });
@@ -1703,7 +1771,7 @@ function cupDraw() {
   if (CUP.last) { var rt = rate(CUP.last.n); pr = rt == null ? esc(CUP.last.n) + '는 아직 고른 사람이 적은 회사예요.' : '전국 <b>' + Math.round(rt * 100) + '%</b>가 ' + esc(CUP.last.n) + '를 골랐어요.' + mockTag(); }
   $('cup').innerHTML = themeBar() + '<div class="cupbar"><span class="lv">' + PC.THEMES[CUP.theme] + ' · ' + lv + '</span><span class="pg">' + (CUP.i / 2 + 1) + ' / ' + n / 2 + '</span><span class="dots">' + dots + '</span></div>' +
     cupBrk() + '<p class="qline">어디로 <b>가고 싶어요?</b></p><p class="qsub">연봉은 아직 비밀이에요.</p>' +
-    '<div class="duel">' + [a, b].map(function (c, j) { return '<button class="pick" type="button" data-j="' + j + '">' + bld(c, 3, { blind: 1 }, 'pb') + logo(c) + '<span class="nm">' + esc(c.n) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + '</span><span class="amt q">?</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
+    '<div class="duel">' + [a, b].map(function (c, j) { return '<button class="pick" type="button" data-j="' + j + '">' + bld(c, 3, { blind: 1 }, 'pb') + logo(c) + '<span class="nm">' + esc(c.n) + bossMark(c) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + '</span><span class="amt q">?</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
     '<p class="prate" aria-live="polite">' + pr + '</p>';
   wireTheme();
   document.querySelectorAll('#cup .pick').forEach(function (el) { el.onclick = function () {
@@ -1745,6 +1813,130 @@ function cupReport(w, theme, all, picks) {
   wireTheme();
   wireShare('shC', text, { title: '드림 컴퍼니 월드컵', big: '🏆', sub: w.n + '\n대리 연봉 ' + N + '곳 중 ' + r + '위 · ' + PC.THEMES[theme], px: { mood: 'happy', co: w, icon: 'trophy' } });
   $('cupAgain').onclick = newCup;
+}
+
+// ── 4차 (2026-10-28): 소품 꾸미기 · 이번 주 보스 회사 · 친구 대결 도전장. 모두 이 기기 저장(localStorage, store 가 try/catch)
+
+// ── 소품 12개: [아이디, 칸(hat 모자·hand 손·acc 액세서리), 이름, 얻는 법, 조건]. 한 번 얻으면 'slp-items' 에 남음
+function endHas(ids) { var B = endBook(); return ids.some(function (i) { return B[i]; }); }
+function bossCount() { return Object.keys(store.getJ('slp-boss', {}) || {}).length; }
+var ITEMS = [
+  ['crown', 'hat', '왕관', '칭호 3개 이상 또는 \'퍼펙트 데이\'', function () { var b = badges(); return Object.keys(b).length >= 3 || !!b.perfect; }],
+  ['headset', 'hat', '헤드셋', '칭호 1개 이상', function () { return Object.keys(badges()).length >= 1; }],
+  ['beanie', 'hat', '비니', '연속 출석 7일 또는 보스 조우 3주', function () { return streak() >= 7 || bossCount() >= 3; }],
+  ['coffee', 'hand', '커피', '오늘의 회사 한 번 풀기', function () { return !!(store.getJ('slp-streak', {}) || {}).last; }],
+  ['bag', 'hand', '서류가방', '엔딩 도감 3개 이상', function () { var B = endBook(); return Object.keys(B).length >= 3; }],
+  ['laptop', 'hand', '노트북', '엔딩 \'이직의 신\' 또는 \'스타트업 대박\'', function () { return endHas(['hopper', 'startup']); }],
+  ['umbrella', 'hand', '우산', '엔딩 \'구조조정 생존자\'', function () { return endHas(['survivor']); }],
+  ['plant', 'hand', '화분', '엔딩 \'대기업 정년각\'', function () { return endHas(['lifer']); }],
+  ['idcard', 'acc', '사원증', '조로 대리 되기', function () { return myRank() >= 1; }],
+  ['glasses', 'acc', '안경', '조로 과장 되기', function () { return myRank() >= 2; }],
+  ['goldtie', 'acc', '금넥타이', '조로 부장 되기', function () { return myRank() >= 4; }],
+  ['shades', 'acc', '선글라스', '이번 주 보스 회사를 게임에서 만나기', function () { return bossCount() >= 1; }]];
+var SLOT_LB = { hat: '모자', hand: '손에 들기', acc: '액세서리' };
+function itemsOwned() { return store.getJ('slp-items', {}) || {}; }
+// 새로 얻은 소품 확인 (판이 끝날 때·처음 열 때). quiet = 알림 없이
+function itemCheck(quiet) {
+  var own = itemsOwned(), got = [];
+  ITEMS.forEach(function (it) { var ok = false; try { ok = it[4](); } catch (e) {} if (ok && !own[it[0]]) { own[it[0]] = TODAY; got.push(it[2]); } });
+  if (got.length) { store.setJ('slp-items', own); if (!quiet) toast('새 소품을 얻었어요: ' + got.join(', ') + ' · 도구 탭에서 입혀 보세요'); }
+  return got;
+}
+// 입은 모습 정리: 없는 소품·잘못된 칸이면 뺌 (저장이 지워진 기기 등)
+function cleanLook() {
+  var own = itemsOwned(), L = {};
+  ITEMS.forEach(function (it) { if (LOOK && LOOK[it[1]] === it[0] && own[it[0]]) L[it[1]] = it[0]; });
+  LOOK = L;
+}
+function lookPanel() {
+  var own = itemsOwned(), r = myRank();
+  var h = '<p class="big1" style="font-size:clamp(20px,2.6vw,28px)">내 조로 <b>꾸미기</b></p>' +
+    '<p class="src" style="margin:0 0 12px">모자 하나 · 손에 하나 · 액세서리 하나. 꾸민 모습은 놀이터 어디서나, 공유 그림에도 나와요. 소품은 직급·칭호·엔딩 도감·보스 조우·출석으로 얻어요(이 기기에 저장).</p>' +
+    '<div class="lookp">' + (PX.ok ? stage(zorro(r, 'happy', 6, 'idle'), 'resst lookpv', '지금 내 조로') : '') + '<div class="lookslots">';
+  ['hat', 'hand', 'acc'].forEach(function (slot) {
+    h += '<p class="h3" style="margin:6px 0 6px;font-size:17px">' + SLOT_LB[slot] + '</p><div class="items" role="group" aria-label="' + SLOT_LB[slot] + '">' +
+      '<button type="button" class="itemb" data-slot="' + slot + '" data-id="" aria-pressed="' + !LOOK[slot] + '"><span class="iname">없음</span></button>' +
+      ITEMS.filter(function (it) { return it[1] === slot; }).map(function (it) {
+        var have = !!own[it[0]], look = {}; look[slot] = it[0];
+        return '<button type="button" class="itemb' + (have ? '' : ' locked') + '" data-slot="' + slot + '" data-id="' + it[0] + '"' + (have ? ' aria-pressed="' + (LOOK[slot] === it[0]) + '"' : ' disabled') + '>' +
+          (have ? zorro(r, 'normal', 2, '', { look: look }) : icon('lock', 3)) + '<span class="iname">' + esc(it[2]) + '</span>' + (have ? '' : '<small>' + esc(it[3]) + '</small>') + '</button>';
+      }).join('') + '</div>';
+  });
+  $('tool-look').innerHTML = h + '</div></div><p class="src">모은 소품 ' + Object.keys(own).length + ' / ' + ITEMS.length + '</p>';
+  $('tool-look').querySelectorAll('.itemb:not([disabled])').forEach(function (b) { b.onclick = function () {
+    LOOK[b.dataset.slot] = b.dataset.id; if (!b.dataset.id) delete LOOK[b.dataset.slot];
+    store.setJ('slp-look', LOOK); sfx('coin'); lookPanel(); renderMe();
+  }; });
+}
+
+// ── 이번 주 보스 회사: PC.bossOf(오늘) — 모두에게 같은 회사. 점수 보너스 없음(꾸밈). 게임에서 만나면 'slp-boss' {주: 처음 만난 날}
+var BOSS = BYN[PC.bossOf(TODAY, ctx)] || null, BWEEK = PC.isoWeek(TODAY);
+function bossMet() { return !!(store.getJ('slp-boss', {}) || {})[BWEEK]; }
+function meetBoss() {
+  var B = store.getJ('slp-boss', {}) || {}; if (B[BWEEK]) return;
+  B[BWEEK] = TODAY; store.setJ('slp-boss', B);
+  setTimeout(function () { toast('이번 주 보스 ' + BOSS.n + '를 만났어요! 보스 조우 ' + bossCount() + '번째'); sfx('combo'); renderBoss(); itemCheck(); }, 50);
+}
+// 회사 이름 옆 보스 배지 (보이는 순간 조우로 침)
+function bossMark(c) { if (!BOSS || !c || c.n !== BOSS.n) return ''; meetBoss(); return '<span class="bossb">' + icon('horns', 1.5) + 'BOSS</span>'; }
+function renderBoss() {
+  var el = $('boss'); if (!el || !BOSS) return;
+  var sun = PC.dow(TODAY) === 0, B = BOSS, met = bossMet();
+  var art = PX.ok ? '<div class="bossart" aria-hidden="true">' + icon('crown', 3) + icon('horns', 3) + bld(B, 4, sun ? null : { sil: 1, blind: 1 }) + '</div>' : '';
+  var head = '<p class="bk">이번 주 보스 회사 · ' + esc(BWEEK.replace('-W', '년 ')) + '주' + (met ? ' · <b>조우 ✓</b>' : '') + '</p><p class="bnm">' + logo(B, 's') + esc(B.n) + '</p>';
+  el.innerHTML = '<div class="bossbn' + (sun ? ' sun' : '') + '">' + art + '<div class="bossi">' + head + (sun
+    ? '<p class="bt">일요일 정체 공개! 이번 주 보스의 직급별 연봉이에요.</p><div class="bstats">' + RK.map(function (n, i) { return '<div><small>' + n + '</small><b>' + man(B.rk[i]) + '</b></div>'; }).join('') +
+      '<div><small>평점</small><b>' + (B.rt ? '★ ' + B.rt.toFixed(1) : '-') + '</b></div><div><small>직원</small><b>' + man(B.m) + '명</b></div></div>' +
+      '<p class="bt"><a href="' + link(B) + '" target="_blank" rel="noopener">' + esc(B.n) + ' 직급별 연봉 자세히 보기 →</a> <span class="src">(만원, 연봉 연구소 추정)</span></p>'
+    : '<p class="bt">게임에서 이 회사를 만나면 <b>BOSS</b> 배지가 붙어요. 일요일에 연봉 정체를 공개해요. 점수 보너스는 없어요.</p>') + '</div></div>';
+}
+
+// ── 친구 대결 도전장: 결과 화면 '친구에게 도전장 보내기' → job.jobzorro.kr/play/?vs=<도전장>#<게임>
+//    도전장은 서버가 서명해서 점수 낼 때 돌려줌(x.vs, 기기 번호 없음). 받은 사람은 같은 날이면 같은 문제로, 끝나면 둘이 나란히
+var VS = null;
+function fmtVs(game, s) { return game === 'road' ? eokS(s) : man(s) + '점'; }
+function vsLink(game, code) { return SITE + '?vs=' + encodeURIComponent(code) + '#' + game; }
+function vsBox(game, x) {
+  if (!x || !x.vs) return '';
+  return '<div class="vsbox"><button class="btn" type="button" data-vs="' + game + '">⚔ 친구에게 도전장 보내기</button><p class="msg2" aria-live="polite"></p><input class="vslink" readonly hidden aria-label="도전장 주소"></div>';
+}
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-vs]'); if (!b) return;
+  var g = b.dataset.vs, x = rec(TODAY, g); if (!x || !x.vs) return;
+  var box = b.parentNode, url = vsLink(g, x.vs), text = '연봉 놀이터 도전장 ⚔ 나는 오늘 ' + GNAME[g] + ' ' + fmtVs(g, x.score) + '. 같은 문제로 이겨 봐!';
+  var m = box.querySelector('.msg2'), inp = box.querySelector('.vslink');
+  var fb = function () { inp.value = url; inp.hidden = false; inp.focus(); inp.select(); m.textContent = '아래 주소를 길게 눌러 복사해 보내세요.'; };
+  var copy = function () { try { navigator.clipboard.writeText(text + '\n' + url).then(function () { m.textContent = '도전장 주소를 복사했어요. 친구에게 붙여 넣어 보내세요.'; }, fb); } catch (er) { fb(); } };
+  try { if (navigator.share) { navigator.share({ title: '연봉 놀이터 도전장', text: text, url: url }).then(function () { m.textContent = '도전장을 보냈어요.'; }, copy); return; } } catch (er) {}
+  copy();
+});
+function vsLoad() {
+  var m = /[?&]vs=([^&#]+)/.exec(location.search || ''); if (!m) return;
+  var code = decodeURIComponent(m[1]);
+  call('/play/vs?c=' + encodeURIComponent(code)).then(function (j) {
+    if (!j || PC.DAILY.indexOf(j.game) < 0) throw j;
+    VS = j; renderVs();
+    if (!location.hash) show(j.game, true);
+  }).catch(function () { VS = { bad: 1 }; renderVs(); });   // 모양이 틀리거나 없는 도전장 · 연결 실패
+}
+function renderVs() {
+  var el = $('vsbar'); if (!el || !VS) return;
+  if (VS.bad) { el.innerHTML = '<div class="vsbn"><p>도전장을 찾을 수 없어요. 주소가 잘렸거나 60일이 지난 도전장일 수 있어요. 오늘 문제는 그대로 할 수 있어요.</p></div>'; return; }
+  var same = VS.day === TODAY;
+  el.innerHTML = '<div class="vsbn">' + zorro(1, 'normal', 2, 'idle', { plain: 1 }) + '<p><b>' + esc(VS.nick) + '님의 도전장</b> · ' + GNAME[VS.game] + ' ' +
+    (same ? '오늘 <b>' + fmtVs(VS.game, VS.score) + '</b>. 같은 문제로 이겨 보세요!' : mmdd(VS.day) + ' 문제(' + fmtVs(VS.game, VS.score) + ')였어요. 지난 문제는 다시 풀 수 없어서, 대신 오늘 문제로 도전해 보세요.') + '</p>' +
+    '<button class="btn" type="button" id="vsGo">' + (same ? '도전하기' : '오늘 문제 하기') + '</button></div>';
+  $('vsGo').onclick = function () { show(VS.game, true); var p = $('p-' + VS.game); if (p) p.scrollIntoView({ block: 'start' }); };
+}
+// 결과 화면 대결 장면: 같은 날·같은 게임 도전장이 있을 때만. 왼쪽 나(꾸민 조로), 오른쪽 친구(기본 조로)
+function vsScene(game, x) {
+  if (!VS || VS.bad || VS.game !== game || VS.day !== TODAY || !x || !PX.ok) return '';
+  var me = x.score, th = VS.score, r = me > th ? 'win' : me < th ? 'lose' : 'draw';
+  var who = function (z, nm, sc) { return '<div class="vsw">' + z + '<b>' + nm + '</b><small>' + sc + '</small></div>'; };
+  return stage('<span class="pxbanner">' + (r === 'win' ? '승리!' : r === 'lose' ? '패배…' : '무승부') + '</span><div class="pxrow vsrow">' +
+    who(zorro(myRank(), r === 'win' ? 'happy' : r === 'lose' ? 'sad' : 'normal', 4, r === 'win' ? 'jump' : 'idle'), '나', fmtVs(game, me)) + '<span class="pxvs">VS</span>' +
+    who(zorro(1, r === 'lose' ? 'happy' : r === 'win' ? 'sad' : 'normal', 4, r === 'lose' ? 'jump' : 'idle', { plain: 1 }), esc(VS.nick), fmtVs(game, th)) + '</div>' + (r === 'win' ? confetti() : ''),
+    'promo vsst', esc(VS.nick) + '님과 대결: ' + (r === 'win' ? '승리' : r === 'lose' ? '패배' : '무승부'));
 }
 
 
@@ -1820,13 +2012,14 @@ $('lvIn').addEventListener('blur', function () { setTimeout(function () { $('lvI
 var TOOL = 'rank';
 document.querySelectorAll('#toolSeg button').forEach(function (b) { b.onclick = function () {
   document.querySelectorAll('#toolSeg button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
-  TOOL = b.dataset.v; $('tool-rank').hidden = TOOL !== 'rank'; $('tool-live').hidden = TOOL !== 'live';
-  TOOL === 'live' ? liveStart() : rankTool();
+  TOOL = b.dataset.v; $('tool-rank').hidden = TOOL !== 'rank'; $('tool-live').hidden = TOOL !== 'live'; $('tool-look').hidden = TOOL !== 'look';
+  toolRender();
 }; });
 
 // ── 탭 (#higher #today #sniper #road #cup #hall #tools 로 바로 열림)
 var KEYS = ['higher', 'today', 'sniper', 'road', 'cup', 'hall', 'tools'];
-var RENDER = { higher: renderHigher, today: renderToday, sniper: renderSniper, road: renderRoad, cup: renderCup, hall: renderHall, tools: function () { TOOL === 'live' ? liveStart() : rankTool(); } };
+var RENDER = { higher: renderHigher, today: renderToday, sniper: renderSniper, road: renderRoad, cup: renderCup, hall: renderHall, tools: function () { toolRender(); } };
+function toolRender() { TOOL === 'live' ? liveStart() : TOOL === 'look' ? lookPanel() : rankTool(); }
 function show(k, push) {
   if (KEYS.indexOf(k) < 0) k = 'higher';
   KEYS.forEach(function (j) { $('t-' + j).setAttribute('aria-selected', j === k); $('p-' + j).hidden = j !== k; });
@@ -1838,10 +2031,13 @@ document.addEventListener('click', function (e) { var a = e.target.closest && e.
 window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
 
 promoCheck();   // 처음 온 기기는 지금 직급을 '본 직급'으로 적어 둠
+itemCheck(true); cleanLook();   // 이미 조건을 채운 소품은 조용히 넣고, 없는 소품을 입고 있으면 벗김
+renderBoss();
 renderMe();
 renderBoard(null);
 getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); } });
 show(location.hash.slice(1) || 'higher');
+vsLoad();   // ?vs=도전장 으로 왔으면 도전장 띠 + 그 게임으로
 }
 
 main(D, PC);

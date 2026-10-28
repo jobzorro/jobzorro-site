@@ -408,6 +408,13 @@ function cupCheck(ctx, theme, picks) {
   return { champ, agg };
 }
 
+// ── 이번 주 보스 회사 (4차, 2026-10-28): ISO 주로만 정함 → 누구나 같은 보스. 쉬운 급(이름난 120곳)을 해마다 섞어 주 번호 순서로 → 한 해 안엔 겹치지 않음
+// 점수와는 상관없는 꾸밈 (순위 공정)
+function bossOf(day, ctx) {
+  const wk = isoWeek(day), y = wk.slice(0, 4), n = +wk.slice(6), L = shuffleR(rng('boss|' + y), ctx.H.filter(c => c.tier === 0));
+  return L[(n - 1) % L.length].n;
+}
+
 // ── 닉네임: 2~10자 한글·영문·숫자, 금칙어 거르기. 자동 짓기는 '판교불주먹' 같은 [동네·회사생활] + [별명]
 const NICK_A = ['판교', '여의도', '강남', '광화문', '을지로', '성수', '마곡', '송도', '구로', '상암', '가산', '테헤란', '칼퇴', '야근', '월급', '연봉', '출근', '퇴근', '이직', '승진', '성과급', '연차', '점심', '회식', '법카', '사원증', '탕비실', '월요일', '금요일', '반차'];
 const NICK_B = ['불주먹', '요정', '도사', '장인', '사냥꾼', '감별사', '대장', '고수', '막내', '부장', '요원', '마법사', '탐정', '기사', '총잡이', '여왕', '왕자', '다람쥐', '호랑이', '펭귄', '곰돌이', '감자', '고양이', '수달', '빌런', '천재', '전설', '박사'];
@@ -427,4 +434,4 @@ function nickCheck(s) {   // '' = 괜찮음, 아니면 고칠 점
 function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : game === 'today' ? genToday(day, ctx) : game === 'sniper' ? genSniper(day, ctx) : game === 'road' ? genRoad(day, ctx) : null; }
 function score(game, pz, ans, ctx) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : null; }
 
-export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, THEMES, cupPool, cupSize, cupCheck, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
+export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, THEMES, cupPool, cupSize, cupCheck, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
