@@ -351,7 +351,7 @@ TABBAR_CSS = """.zb { display:none; }
   body { padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom,0px)); }
   .zb { display:grid; grid-template-columns:repeat(6,1fr); position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--paper, var(--bg, #fff)); border-top:1px solid var(--hairline, var(--line, #e5e5e5));
     padding:6px max(4px, env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(4px, env(safe-area-inset-right,0px)); transition:transform .25s ease; }
-  .zb.hide { transform:translateY(110%); }
+  html { scroll-behavior:auto !important; }   /* 2026-10-28: 폰에선 부드러운 스크롤 끔 (삼성 인터넷이 뉴스에서 아래 바를 도구 막대 뒤로 숨김) */
   .zb a { position:relative; display:grid; justify-items:center; gap:2px; padding:4px 0; color:var(--muted, #777); text-decoration:none; font-family:"Noto Sans KR",sans-serif; font-size:11px; font-weight:700; -webkit-tap-highlight-color:transparent; }
   .zb a svg { width:23px; height:23px; }
   .zb a.on { color:var(--ink, #0b0b0b); }
@@ -586,6 +586,11 @@ def nav_html(active: str, root: str, logo: str) -> str:
             f'<a href="{root}{href}"{" class=\"on\" aria-current=\"page\"" if href == active else ""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{TAB_ICON[href]}</svg>'
             f'<span>{TAB_SHORT[href]}</span>{"<i class=\"dot\"></i>" if href == "play/index.html" else ""}</a>' for href, _ in TABS) + '</nav>'
         # 2026-10-28: 스크롤하면 탭바를 숨기던 기능은 뺌 (사용자: 뉴스에서 아래 바가 사라지는 버그로 보임) — 탭바는 항상 보인다
+        # 2026-10-28 삼성 인터넷: 긴 페이지(뉴스)에서 브라우저 아래 도구 막대가 화면 위에 겹쳐 탭바를 가린다 →
+        # 실제로 보이는 화면(visualViewport) 아래 끝에 맞춰 탭바를 그만큼 올린다 (가리는 게 없으면 0이라 다른 브라우저는 그대로)
+        "<script>(function(){var b=document.currentScript.previousElementSibling,v=window.visualViewport;if(!v||!b)return;"
+        "var f=function(){var g=Math.round(innerHeight-v.height-v.offsetTop);b.style.bottom=(g>0&&g<200&&Math.abs(v.scale-1)<.01?g:0)+'px'};"
+        "v.addEventListener('resize',f);v.addEventListener('scroll',f);addEventListener('scroll',f,{passive:true});f()})();</script>"
     )
 
 
