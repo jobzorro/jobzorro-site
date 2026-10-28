@@ -757,6 +757,41 @@ html.lk-open, html.lk-open body { overflow:hidden; }
 .mylk { display:inline-flex; align-items:center; gap:8px 14px; border:0; background:transparent; padding:0 6px 0 0; min-height:44px; border-radius:10px; text-align:left; }
 .mylk:hover .nick { text-decoration:underline; }
 @media (max-width:640px) { .drawer { width:100vw; border-left:0; } }
+/* ── 꾸미기 확장 (2026-10-28e): 기본 모습 고르기 · 등급 테두리 · 결과 화면 선물 상자 · 다음 소품 · 로비 🎁 */
+.opts { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 6px; }
+.opt { display:grid; justify-items:center; align-content:end; gap:3px; min-width:76px; min-height:76px; padding:8px 10px; border:1.5px solid var(--line2); border-radius:12px; background:var(--card); color:var(--ink); font-size:13px; font-weight:800; }
+.opts.big .opt { min-width:120px; min-height:104px; }
+.opt[aria-pressed="true"] { border-color:var(--ink); background:var(--acc); color:var(--acc-ink); box-shadow:inset 0 -4px 0 var(--acc-ink); }
+.itemb.r-r { border-color:#4f7dff; }
+.itemb.r-l { border-color:#e0a800; box-shadow:0 0 0 2px rgba(255,207,61,.35); position:relative; overflow:hidden; }
+.itemb.r-l::after { content:""; position:absolute; top:0; bottom:0; width:30%; left:-40%; background:linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); animation:lgShine 2.4s steps(6) infinite; pointer-events:none; }
+@keyframes lgShine { 0% { left:-40%; } 40%, 100% { left:120%; } }
+.itemb.locked.r-r, .itemb.locked.r-l { border-style:dashed; }
+.itemb .rar { font-size:10.5px; font-weight:800; border-radius:999px; padding:0 6px; background:var(--fill); color:var(--soft); }
+.itemb.r-r .rar { color:#4f7dff; }
+.itemb.r-l .rar { color:#b07f00; background:#fff3b0; }
+.gotbox { width:100%; max-width:440px; border:2px solid var(--ink); border-radius:16px; padding:12px; background:linear-gradient(var(--px-sky), var(--px-sky2)); display:grid; gap:8px; }
+.gotbox .gtl { margin:0; font-family:var(--display); font-weight:900; font-size:18px; letter-spacing:-.02em; }
+.gotbox .gtl b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
+.gotl { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; }
+.goti { display:grid; justify-items:center; gap:3px; text-align:center; background:var(--card); border:1.5px solid var(--line2); border-radius:12px; padding:8px 8px 10px; min-width:0; }
+.goti.r-r { border-color:#4f7dff; } .goti.r-l { border-color:#e0a800; }
+.goti b { font-size:15px; }
+.goti small { font-size:11.5px; color:var(--muted); line-height:1.35; }
+.goti .btn.sm { min-height:40px; margin-top:2px; }
+.gotart { position:relative; display:grid; place-items:center; min-height:70px; }
+.gotart > * { grid-area:1 / 1; }
+.boxani { animation:boxOpen .9s steps(6) forwards; }
+.gotz { animation:pxPop .5s steps(5) .75s both; }
+@keyframes boxOpen { 0% { transform:translateY(0); } 20% { transform:translateY(-4px) rotate(-6deg); } 40% { transform:translateY(0) rotate(6deg); } 60% { transform:scale(1.2); opacity:1; } 100% { transform:scale(1.4); opacity:0; } }
+.nxitem { width:100%; max-width:440px; display:grid; grid-template-columns:auto minmax(0,1fr); gap:2px 10px; align-items:center; text-align:left; border:1.5px dashed var(--line2); border-radius:12px; padding:8px 12px; font-size:13px; }
+.nxitem .nl { grid-row:span 2; font-family:var(--px-font); font-size:12px; color:var(--muted); }
+.nxitem b { font-size:14px; }
+.nxitem small { color:var(--muted); grid-column:2; }
+.nxitem .xpbar { grid-column:1 / -1; height:8px; max-width:none; margin-top:4px; display:block; }
+.gft { white-space:nowrap; font-weight:700; }
+.gc.feat .gft { opacity:1; }
+@media (prefers-reduced-motion: reduce) { .boxani { display:none; } .gotz { animation:none; } .itemb.r-l::after { display:none; } }
 @media (prefers-reduced-motion: reduce) { .band { overflow-x:auto; } .band .tr { animation:none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; animation:none !important; } .pick:hover:not(:disabled), .offer:hover:not(:disabled) { transform:none; } }
 </style>
@@ -898,7 +933,7 @@ var store = {
   setJ: function (k, v) { store.set(k, JSON.stringify(v)); }
 };
 var REDUCE = false; try { REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-function toast(msg) { var t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, 2800); }
+function toast(msg) { var t = $('toast'); if (!t) return; t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, 2800); }
 if ($('ym')) $('ym').textContent = D.ym.replace('-', '년 ') + '월';
 
 // ── 기기 번호(무작위)·닉네임: 로그인 없음
@@ -939,6 +974,7 @@ function bumpStreak(day) {
   var s = store.getJ('slp-streak', { last: '', n: 0 });
   if (s.last === day) return;
   s.n = s.last === PC.addDays(day, -1) ? s.n + 1 : 1; s.last = day; store.setJ('slp-streak', s);
+  if (s.n > +(store.get('slp-streakmax') || 0)) store.set('slp-streakmax', s.n);   // 소품(연속 출석 배경)용 최고 기록
   if (s.n >= 7) award('att7');
 }
 
@@ -996,7 +1032,7 @@ var PX = (function () {
 }());
 
 // ── 조로 사원 (12×16, 테두리 넣으면 14×18). 직급 5단계(사원→부장) · 표정 4개(normal·happy·sad·shock)
-// h 머리 s 피부 E 눈 g 안경 M 입 w 셔츠 t 넥타이 J 재킷 p 바지 b 신발 T 눈물 r 볼터치 k 탐정 모자 c 사원증
+// h 머리 s 피부 E 눈 g 안경 M 입 w 셔츠 t 넥타이(여자 조로는 리본) J 재킷 p 바지·치마 b 신발 T 눈물 r 볼터치 k 탐정 모자 c 사원증
 var Z_BODY = ['....hhhh....', '...hhhhhh...', '..hhhhhhhh..', '..hssssssh..', '..sEEssEEs..', '..ssssssss..',
   '...sMMMMs...', '....ssss....', '..JwwttwwJ..', '.JJwwttwwJJ.', '.sJwwttwwJs.', '.sJwwttwwJs.',
   '..pppppppp..', '..ppp..ppp..', '..ppp..ppp..', '..bbb..bbb..'];
@@ -1006,12 +1042,21 @@ var Z_RANK = [
   { h: '#2b2b2b', jk: '#3b4a6b', tie: '#c0392b', gl: 1 },         // 과장: 안경 + 빨간 넥타이
   { h: '#6a6a6a', jk: '#2b2f3a', tie: '#c0392b', gl: 1 },         // 차장: 희끗한 머리
   { h: '#c9c9c9', jk: '#1d1f26', tie: '#ffcf3d', gl: 1 }];        // 부장: 흰머리 + 금 넥타이
-// ── 소품 꾸미기 (4차): 격자를 좌우 2칸씩 넓혀 16칸 → 손에 든 소품은 오른쪽 빈칸에. 입은 모습 LOOK = {hat, hand, acc}
-//    o.plain = 꾸밈 없는 기본 조로(친구 대결 상대), o.look = 이 모습으로(꾸미기 미리보기)
+// ── 기본 모습 (꾸미기 확장, 2026-10-28e): 남자 조로(m) / 여자 조로(f), 머리 모양, 여자 조로는 바지·치마. 처음부터 무료, 잠금 없음
+//    LOOK = { base, hair, bottom, hat, hand, acc, bg } — 예전 기록 {hat, hand, acc} 는 그대로 남자 조로 기본 머리로 읽힘
+var BASES = { m: '남자 조로', f: '여자 조로' };
+var HAIRS = { m: [['basic', '기본'], ['short', '짧은 머리'], ['part', '가르마']], f: [['long', '긴 머리'], ['bob', '단발'], ['pony', '포니테일']] };
+var BOTTOMS = [['pants', '바지'], ['skirt', '치마']];
+// ── 소품 꾸미기: 격자를 좌우 2칸씩 넓혀 16칸 → 손에 든 소품은 오른쪽 빈칸에
+//    o.plain = 꾸밈 없는 기본 조로(친구 대결 상대), o.look = 이 모습으로(꾸미기 미리보기), o.bg = 배경 판까지(프로필·내 조로·공유 그림), o.sil = 실루엣(못 얻은 소품)
 var LOOK = store.getJ('slp-look', {}) || {};
+if (typeof LOOK !== 'object' || Array.isArray(LOOK)) LOOK = {};
 function lookOf(o) { return o && o.plain ? {} : o && o.look ? o.look : LOOK; }
-function lookKey(L) { return (L.hat || '') + '.' + (L.hand || '') + '.' + (L.acc || ''); }
+function baseOf(L) { return L && L.base === 'f' ? 'f' : 'm'; }
+function hairOf(L) { var b = baseOf(L), H = HAIRS[b]; return H.some(function (x) { return x[0] === (L && L.hair); }) ? L.hair : H[0][0]; }
+function lookKey(L, o) { return baseOf(L) + hairOf(L) + (L.bottom === 'skirt' ? 'S' : '') + '.' + (L.hat || '') + '.' + (L.hand || '') + '.' + (L.acc || '') + (o && o.bg ? '.' + (L.bg || '') : '') + (o && o.sil ? '.sil' : ''); }
 function setCh(r, y, x, t) { r[y] = r[y].slice(0, x) + t + r[y].slice(x + t.length); }
+// 새 팔레트 글자: V 보라 N 분홍 D 남색 A 주황 Z 은색 H 후광 노랑 U 청록 X 반창고 살구
 var ITEM_DRAW = {
   crown: function (r) { r[0] = '.....Y.YY.Y.....'; r[1] = '.....YYYYYY.....'; },
   headset: function (r) { r[1] = '.....KKKKKK.....'; [3, 4, 5].forEach(function (y) { setCh(r, y, 3, 'K'); setCh(r, y, 12, 'K'); }); setCh(r, 6, 11, 'K'); },
@@ -1022,41 +1067,107 @@ var ITEM_DRAW = {
   umbrella: function (r) { setCh(r, 2, 13, 'RRR'); setCh(r, 3, 12, 'RRRR'); for (var y = 4; y <= 10; y++) setCh(r, y, 14, 'K'); setCh(r, 11, 13, 'K'); },
   plant: function (r) { setCh(r, 8, 14, 'G'); setCh(r, 9, 13, 'GGG'); setCh(r, 10, 13, 'PPP'); setCh(r, 11, 14, 'P'); },
   idcard: function (r) { setCh(r, 8, 6, 'c'); setCh(r, 9, 6, 'c'); setCh(r, 10, 6, 'c'); setCh(r, 11, 5, 'CC'); },
-  glasses: function (r) { r[4] = '....gEEggEEg....'; },
-  shades: function (r) { r[4] = '....qqqqqqqq....'; },
-  goldtie: function () {}   // 넥타이 색만 바뀜 (zPal)
+  glasses: function (r) { r[4] = r[4].slice(0, 4) + 'gEEggEEg' + r[4].slice(12); },
+  shades: function (r) { r[4] = r[4].slice(0, 4) + 'qqqqqqqq' + r[4].slice(12); },
+  goldtie: function () {},   // 넥타이(리본) 색만 바뀜 (zPal)
+  // ── 2026-10-28e 새 소품 (모자)
+  cap: function (r) { r[0] = '......RRRR......'; r[1] = '.....RRRRRR.....'; r[2] = '....RRRRRRRRRR..'; setCh(r, 1, 7, 'W'); },
+  band: function (r) { r[2] = r[2].slice(0, 4) + 'BBBBBBBB' + r[2].slice(12); setCh(r, 1, 12, 'B'); setCh(r, 2, 12, 'BB'); setCh(r, 3, 13, 'B'); },
+  beret: function (r) { r[0] = '.......V........'; r[1] = '....VVVVVVV.....'; r[2] = '...VVVVVVVVV....'; },
+  visor: function (r) { r[2] = r[2].slice(0, 4) + 'LLLLLLLL' + r[2].slice(12); setCh(r, 3, 10, 'LLLL'); },
+  helmet: function (r) { r[0] = '......YYYY......'; r[1] = '....YYWYYYYY....'; r[2] = '...YYYYYYYYYY...'; },
+  halo: function (r) { r[0] = '....HHHHHHHH....'; setCh(r, 1, 3, 'H'); setCh(r, 1, 12, 'H'); },
+  fedora: function (r) { r[0] = '.....DDDDDD.....'; r[1] = '.....DBBBBD.....'; r[2] = '..DDDDDDDDDDDD..'; },
+  laurel: function (r) { setCh(r, 1, 4, 'GG'); setCh(r, 1, 10, 'GG'); setCh(r, 2, 3, 'G'); setCh(r, 2, 12, 'G'); setCh(r, 3, 3, 'G'); setCh(r, 3, 12, 'G'); setCh(r, 1, 7, 'YY'); },
+  horns: function (r) { setCh(r, 0, 4, 'B'); setCh(r, 0, 11, 'B'); setCh(r, 1, 4, 'BB'); setCh(r, 1, 10, 'BB'); r[2] = r[2].slice(0, 4) + 'KKKKKKKK' + r[2].slice(12); },
+  // (손)
+  calc: function (r) { setCh(r, 9, 13, 'KKK'); setCh(r, 10, 13, 'LLL'); setCh(r, 11, 13, 'WKW'); setCh(r, 12, 13, 'KWK'); },
+  phone: function (r) { setCh(r, 8, 13, 'YY'); setCh(r, 9, 13, 'LL'); setCh(r, 10, 13, 'LL'); setCh(r, 11, 13, 'YY'); },
+  magglass: function (r) { setCh(r, 7, 13, 'KKK'); setCh(r, 8, 13, 'KLK'); setCh(r, 9, 13, 'KKK'); setCh(r, 10, 14, 'O'); setCh(r, 11, 15, 'O'); },
+  dart: function (r) { setCh(r, 10, 12, 'ZZZR'); setCh(r, 9, 15, 'R'); setCh(r, 11, 15, 'R'); },
+  stock: function (r) { setCh(r, 6, 12, 'WWWG'); setCh(r, 7, 12, 'WWGW'); setCh(r, 8, 12, 'WGWW'); setCh(r, 9, 12, 'GWWW'); setCh(r, 10, 13, 'O'); setCh(r, 11, 13, 'O'); setCh(r, 12, 13, 'O'); },
+  wand: function (r) { setCh(r, 6, 14, 'H'); setCh(r, 7, 13, 'HYH'); setCh(r, 8, 14, 'H'); setCh(r, 9, 14, 'N'); setCh(r, 10, 13, 'N'); setCh(r, 11, 13, 'N'); },
+  lunchbox: function (r) { setCh(r, 11, 12, 'BBBB'); setCh(r, 12, 12, 'BWWB'); setCh(r, 13, 12, 'BBBB'); },
+  flag: function (r) { for (var y = 4; y <= 12; y++) setCh(r, y, 15, 'K'); setCh(r, 4, 12, 'BBB'); setCh(r, 5, 12, 'BWB'); setCh(r, 6, 12, 'BBB'); },
+  plane: function (r) { setCh(r, 7, 13, 'W'); setCh(r, 8, 12, 'WWW'); setCh(r, 9, 13, 'WLW'); setCh(r, 10, 14, 'W'); },
+  pen: function (r) { setCh(r, 8, 14, 'Y'); setCh(r, 9, 14, 'D'); setCh(r, 10, 14, 'D'); setCh(r, 11, 14, 'Z'); },
+  // (얼굴·목)
+  monocle: function (r) { setCh(r, 3, 9, 'YY'); setCh(r, 4, 8, 'Y'); setCh(r, 4, 11, 'Y'); setCh(r, 5, 9, 'YY'); setCh(r, 6, 11, 'Y'); setCh(r, 7, 11, 'Y'); },
+  bandage: function (r) { setCh(r, 5, 9, 'XXX'); },
+  starpin: function (r) { setCh(r, 9, 5, 'Y'); setCh(r, 10, 4, 'YYY'); setCh(r, 11, 5, 'Y'); },
+  goggles: function (r) { r[4] = r[4].slice(0, 4) + 'KLLKKLLK' + r[4].slice(12); setCh(r, 3, 4, 'K'); setCh(r, 3, 11, 'K'); },
+  eyepatch: function (r) { setCh(r, 4, 9, 'qq'); setCh(r, 3, 5, 'qqqq'); setCh(r, 3, 9, 'q'); },
+  pin: function (r) { setCh(r, 9, 10, 'YY'); setCh(r, 10, 10, 'YB'); },
+  scarf: function (r) { setCh(r, 7, 5, 'VVVVVV'); setCh(r, 8, 10, 'V'); setCh(r, 9, 10, 'V'); setCh(r, 10, 10, 'V'); },
+  pillow: function (r) { setCh(r, 7, 4, 'XXX'); setCh(r, 7, 9, 'XXX'); setCh(r, 6, 4, 'X'); setCh(r, 6, 11, 'X'); },
+  rosette: function (r) { setCh(r, 8, 4, 'BBB'); setCh(r, 9, 4, 'BYB'); setCh(r, 10, 4, 'BBB'); setCh(r, 11, 4, 'B.B'); },
+  medal: function (r) { setCh(r, 8, 6, 'B'); setCh(r, 8, 9, 'B'); setCh(r, 9, 7, 'BB'); setCh(r, 10, 7, 'YY'); setCh(r, 11, 7, 'YY'); }
 };
+// 배경 판 (bg 칸): 조로 뒤 빈칸을 무늬로 채움. f(x, y, 폭, 높이) → 팔레트 글자 1~4
+var BG_DRAW = {
+  office: { p: { 1: '#dfe6ee', 2: '#b9c4d1', 3: '#9aa7b8' }, f: function (x, y, w, h) { return y >= h - 3 ? '3' : x % 5 === 0 || y % 5 === 0 ? '2' : '1'; } },
+  dawn: { p: { 1: '#ffb3c7', 2: '#ffd2a8', 3: '#fff0b3' }, f: function (x, y, w, h) { return y < h * .35 ? '1' : y < h * .7 ? '2' : '3'; } },
+  night: { p: { 1: '#1d2547', 2: '#ffffff', 3: '#2b3566' }, f: function (x, y) { return (x * 7 + y * 13) % 23 === 0 ? '2' : y % 6 === 5 ? '3' : '1'; } },
+  spot: { p: { 1: '#2b2b33', 2: '#fff3b0' }, f: function (x, y, w) { return Math.abs(x - (w - 1) / 2) <= y / 2.2 ? '2' : '1'; } },
+  bossbg: { p: { 1: '#7a1f2b', 2: '#3a0d14', 3: '#ffcf3d' }, f: function (x, y, w, h) { var top = h - 4 - (x * 7 % 5) * 2; return y >= top ? ((x + y) % 4 === 0 && y < h - 1 ? '3' : '2') : '1'; } },
+  gold: { p: { 1: '#ffcf3d', 2: '#ffe27a', 3: '#e0a800' }, f: function (x, y) { var d = (x + y) % 6; return d < 2 ? '2' : d < 4 ? '1' : '3'; } },
+  hof: { p: { 1: '#15160f', 2: '#ffcf3d', 3: '#c6ff3d' }, f: function (x, y, w, h) { return x === 0 || y === 0 || x === w - 1 || y === h - 1 ? '2' : (x * 5 + y * 3) % 19 === 0 ? '3' : '1'; } }
+};
+// 여자 조로·머리 모양: 남자 조로 격자에서 옆머리·윗머리를 채우고, 블라우스(리본)·치마로 바꿈
+function zHair(rows, L, o) {
+  var b = baseOf(L), hr = hairOf(L), set = function (y, x, ch) { var r = rows[y]; if (r[x] === '.') rows[y] = r.slice(0, x) + ch + r.slice(x + 1); };
+  if (b === 'm') {
+    if (hr === 'short') { rows[0] = '............'; }
+    if (hr === 'part') { rows[1] = '...hhshhh...'; if (rows[3] === '..hssssssh..') rows[3] = '..hhhssssh..'; }
+    return;
+  }
+  // 여자 조로: 윗머리 한 칸씩 더 넓게, 속눈썹 1칸, 옆머리(긴 머리 = 어깨까지 · 단발 = 턱까지 · 포니테일 = 귀 옆만)
+  rows[0] = '...hhhhhh...'; rows[1] = '..hhhhhhhh..'; rows[2] = '.hhhhhhhhhh.';
+  if (rows[3] === '..hssssssh..') rows[3] = '..hEssssEh..';
+  var last = hr === 'long' ? 8 : hr === 'bob' ? 6 : 4;
+  for (var y = 3; y <= last; y++) { set(y, 1, 'h'); set(y, 10, 'h'); if (y >= 6 || hr === 'long') { set(y, 2, 'h'); set(y, 9, 'h'); } }
+}
 function zRows(rk, mood, o) {
   o = o || {};
-  var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], rows = Z_BODY.slice();
+  var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], rows = Z_BODY.slice(), L = lookOf(o), fem = baseOf(L) === 'f';
   rows[4] = mood === 'shock' ? (R.gl ? '..gwEggwEg..' : '..swEsswEs..') : R.gl ? '..gEEggEEg..' : '..sEEssEEs..';   // 놀람: 흰자 보이는 큰 눈
   rows[6] = mood === 'happy' ? '..sMMMMMMs..' : mood === 'sad' ? '...ssMMss...' : mood === 'shock' ? '....sMMs....' : '...sMMMMs...';
   if (mood === 'sad') rows[5] = '..sTssssTs..';
   if (mood === 'happy') rows[5] = '..rssssssr..';
   if (mood === 'shock') rows[3] = '..hEssssEh..';           // 놀라서 눈썹이 올라감
-  if (R.id) { rows[9] = '.JJwcttwwJJ.'; rows[10] = '.sJwcttwwJs.'; }   // 사원증 끈
-  if (mood === 'happy') { rows[8] = 's.JwwttwwJ.s'; rows[9] = 'sJJwwttwwJJs'; rows[10] = '..JwwttwwJ..'; rows[11] = '..JwwttwwJ..'; }   // 만세
+  if (fem) { rows[8] = '..JwttttwJ..'; rows[10] = '.sJwwwwwwJs.'; rows[11] = '.sJwwwwwwJs.'; }   // 블라우스 + 리본(직급 색)
+  if (R.id) { rows[9] = '.JJwcttwwJJ.'; rows[10] = fem ? '.sJwcwwwwJs.' : '.sJwcttwwJs.'; }   // 사원증 끈
+  if (mood === 'happy') { rows[8] = fem ? 's.JwttttwJ.s' : 's.JwwttwwJ.s'; rows[9] = 'sJJwwttwwJJs'; rows[10] = fem ? '..JwwwwwwJ..' : '..JwwttwwJ..'; rows[11] = rows[10]; }   // 만세
+  if (fem && L.bottom === 'skirt') { rows[13] = '.pppppppppp.'; rows[14] = '...ss..ss...'; }
+  zHair(rows, L, o);
   if (o.hat) { rows[0] = '...kkkkkk...'; rows[1] = '..kkkkkkkk..'; rows[2] = '.kkkkkkkkkk.'; }
   rows = rows.map(function (r) { return '..' + r + '..'; });
-  var L = lookOf(o);
+  if (fem && hairOf(L) === 'pony' && !o.hat) { setCh(rows, 2, 12, 'hh'); setCh(rows, 3, 13, 'h'); setCh(rows, 4, 13, 'h'); setCh(rows, 5, 13, 'h'); setCh(rows, 6, 12, 'h'); }   // 뒤로 묶은 머리
   ['acc', 'hand', 'hat'].forEach(function (slot) { var f = ITEM_DRAW[L[slot]]; if (f && !(slot === 'hat' && o.hat)) f(rows); });   // 탐정 모자가 있으면 모자 소품은 빼기
   return rows;
 }
 function zPal(rk, mood, o) {
   var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], L = lookOf(o);
-  return { h: R.h, s: '#f2c79b', E: '#111', g: '#9fd3ff', M: mood === 'happy' ? '#7a1f1f' : '#5a2a2a', w: '#f4f4f4', t: L.acc === 'goldtie' ? '#ffcf3d' : R.tie, J: R.jk || '#f4f4f4',
+  var p = { h: R.h, s: '#f2c79b', E: '#111', g: '#9fd3ff', M: mood === 'happy' ? '#7a1f1f' : '#5a2a2a', w: '#f4f4f4', t: L.acc === 'goldtie' ? '#ffcf3d' : R.tie, J: R.jk || '#f4f4f4',
     p: '#2a2f45', b: '#111', T: '#6fb6ff', r: '#ff9b9b', k: '#6b4a2b', c: '#ffcf3d',
-    Y: '#ffcf3d', K: '#3a3f4a', B: '#e8412c', W: '#f4f4f4', O: '#8a5a1c', L: '#9fd3ff', m: '#6a6f7c', R: '#5b7cff', G: '#3f9a4a', P: '#c0602b', C: '#ffffff', q: '#111' };
+    Y: '#ffcf3d', K: '#3a3f4a', B: '#e8412c', W: '#f4f4f4', O: '#8a5a1c', L: '#9fd3ff', m: '#6a6f7c', R: '#5b7cff', G: '#3f9a4a', P: '#c0602b', C: '#ffffff', q: '#111',
+    V: '#8e5bd6', N: '#ff8fc7', D: '#2b2f45', A: '#ff9a1f', Z: '#c9ced6', H: '#fff3a0', U: '#36b5a5', X: '#f0c6a0' };
+  var G = o && o.bg && BG_DRAW[L.bg];
+  if (G) for (var k in G.p) p[k] = G.p[k];
+  if (o && o.sil) for (var k2 in p) p[k2] = '#9a9d92';   // 못 얻은 소품 미리보기: 회색 실루엣
+  return p;
 }
-// 숨쉬기 2장: 2장째는 몸이 1칸 내려앉음 (다리는 그대로)
+// 숨쉬기 2장: 2장째는 몸이 1칸 내려앉음 (다리는 그대로). o.bg 면 테두리 바깥 빈칸을 배경 무늬로
 function zFrames(rk, mood, o) {
-  var r = zRows(rk, mood, o), b = '................';
-  return [PX.outline([b].concat(r)), PX.outline([b, b].concat(r.slice(0, 12), r.slice(13)))];
+  var r = zRows(rk, mood, o), b = '................', L = lookOf(o), G = o && o.bg && BG_DRAW[L.bg];
+  var F = [PX.outline([b].concat(r)), PX.outline([b, b].concat(r.slice(0, 12), r.slice(13)))];
+  if (!G) return F;
+  return F.map(function (rows) { var h = rows.length, w = rows[0].length; return rows.map(function (row, y) { return row.replace(/\./g, function (m, x) { return G.f(x, y, w, h); }); }); });
 }
 // 조로 그림 글: anim = 'idle'(숨쉬기) | 'jump' | '' , s = 한 칸 크기(px)
 function zorro(rk, mood, s, anim, o) {
   mood = mood || 'normal';
-  var name = 'z' + rk + mood + (o && o.hat ? 'h' : '') + '|' + lookKey(lookOf(o)), pal = zPal(rk, mood, o);
+  var name = 'z' + rk + mood + (o && o.hat ? 'h' : '') + '|' + lookKey(lookOf(o), o), pal = zPal(rk, mood, o);
   if (anim === 'idle' || anim === 'jump') return PX.sheet(name + 'S', zFrames(rk, mood, o), pal, s, 'zr ' + anim);
   return PX.img(name, zFrames(rk, mood, o)[0], pal, s, 'zr');
 }
@@ -1298,12 +1409,17 @@ function startDaily(game) {
 }
 function submitDaily(game, ans, S, extra) {
   var p = prog(game) || {}, body = { game: game, tok: p.tok || '', dev: DEV, nick: NICK, ans: ans, ver: ctx.ver };
-  var save = function (x) { x = Object.assign({ nick: NICK, ans: ans }, extra || {}, x); setRec(TODAY, game, x); setProg(game, null); setTimeout(function () { promoCheck(); itemCheck(); }, 900); return x; };   // 판이 끝나면 경험치 +1 → 승진 확인
+  var save = function (x) { x = Object.assign({ nick: NICK, ans: ans }, extra || {}, x); setRec(TODAY, game, x); setProg(game, null); setTimeout(function () { promoCheck(); }, 900); return x; };   // 판이 끝나면 경험치 +1 → 승진 확인. 새 소품은 결과 화면(gotBox)이 바로 확인해서 상자로 보여 줌
   return call('/play/score', body).then(function (j) {
     return save({ score: j.score != null ? j.score : S.score, aux: j.aux != null ? j.aux : S.aux, rank: j.rank, total: j.total, sent: 1, vs: j.vs || '' });
   }, function (err) { return save({ score: S.score, aux: S.aux, sent: 0, err: (err && err.error) || '점수를 보내지 못했어요' }); });
 }
-function getTop(game, d) { return call('/play/top?game=' + game + '&d=' + (d || TODAY)).catch(function () { return null; }); }
+function getTop(game, d) {
+  return call('/play/top?game=' + game + '&d=' + (d || TODAY)).then(function (t) {   // 명예의 전당에 내 이름이 있으면 '명예의 전당 배경' 조건
+    try { if (t && t.hall && t.hall.some(function (r) { return r[1] === NICK; }) && store.get('slp-hof') !== '1') { store.set('slp-hof', '1'); itemCheck(); } } catch (e) {}
+    return t;
+  }).catch(function () { return null; });
+}
 
 // ── 내 정보 줄 (로비 게임 카드 위 얇은 한 줄, 1차 UX 2026-10-28c): 조로 직급 · 닉네임 · 칭호 · 불꽃 · 닉네임 바꾸기 · 효과음
 //    '다음 문제까지' 시계는 위쪽 숫자 기둥(#cd)으로 옮김
@@ -1312,7 +1428,7 @@ function renderMe(edit) {
   var b = topBadge(), s = streak();
   var r = myRank(), nx = nextXP();
   // 2차 UX: 조로 그림·닉네임을 누르면 '내 조로' 옆 서랍이 열림
-  var h = '<button type="button" class="mylk" data-go="look" aria-label="내 조로 열기 · ' + esc(NICK) + ', 조로 ' + RK[r] + '">' + (PX.ok ? '<span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + zorro(r, 'normal', 2) + '조로 ' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span>' : '') +
+  var h = '<button type="button" class="mylk" data-go="look" aria-label="내 조로 열기 · ' + esc(NICK) + ', 조로 ' + RK[r] + '">' + (PX.ok ? '<span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + zorro(r, 'normal', 2, '', { bg: 1 }) + '조로 ' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span>' : '') +
     '<span class="nick">' + esc(NICK) + '</span></button>' + (b ? '<span class="badge1">' + esc(b) + '</span>' : '') +
     '<span class="fire" title="오늘의 회사를 이어서 푼 날">' + (s ? '🔥 ' + s + '일 연속' : '🔥 0일') + '</span><span class="sp"></span>' +
     '<button class="lnk" id="nickEd" type="button" aria-label="닉네임 바꾸기"><span class="pc">닉네임 바꾸기</span><span class="ph" aria-hidden="true">✎</span></button>' + sndBtn('sndM');
@@ -1420,7 +1536,7 @@ function drawCard(card, box) {
       g.fillStyle = tk('--line2'); g.fillRect(600, 500, 530, 8);
       if (P.co) { var bw = bldSize(P.co, P.o)[0] * 7;   // 빌딩 폭을 먼저 재서 오른쪽 끝에 맞춤
         var bh = pxDraw(g, 'bld', P.co, x1 - bw, 500, 7, P.o)[1]; if (P.icon) pxDraw(g, 'icon', P.icon, x1 - bw / 2 - 44, 500 - bh - 8, 8); x1 -= bw + 26; }
-      var zo = P.hat ? { hat: 1 } : null, zw = zFrames(0, 'normal', zo)[0][0].length * 8;   // 꾸민 조로(소품 포함) 폭
+      var zo = { hat: P.hat ? 1 : 0, bg: 1 }, zw = zFrames(0, 'normal', zo)[0][0].length * 8;   // 꾸민 조로(소품 포함) 폭
       pxDraw(g, 'zorro', { rk: P.rk == null ? myRank() : P.rk, mood: P.mood || 'normal' }, x1 - zw, 500, 8, zo);
     } catch (e) {}
   }
@@ -1615,7 +1731,7 @@ function resultHigher(x) {
   var text = '연봉 놀이터 · 어디가 더 많이 줄까? ' + mmdd(TODAY) + '\n' + per.map(function (v) { return v ? '🟩' : '🟥'; }).join('') + '\n' + man(x.score) + '점 (' + x.aux + '/10)\n' + SITE_S;
   $('higher').innerHTML = '<div class="over"><span class="lv">오늘의 도전 · ' + mmdd(TODAY) + '</span>' + scene + vsScene('higher', x) + '<div class="big">' + man(x.score) + '<small>점</small></div>' +
     '<div class="ttl"><b>10문제 중 ' + x.aux + '개</b> 맞혔어요</div>' +
-    rankBox('higher', x) + shareBox('shH', vsBox('higher', x)) + nextBtn('higher') + week7('higher') +   // 2차 UX: 점수 → 순위 → 공유·도전장 → 다음 게임 → 이번 주
+    rankBox('higher', x) + gotBox('higher') + shareBox('shH', vsBox('higher', x)) + nextBtn('higher') + week7('higher') +   // 2차 UX: 점수 → 순위 → 공유·도전장 → 다음 게임 → 이번 주
     '<details class="more"><summary>문제 다시 보기 · 틀린 ' + per.filter(function (v) { return !v; }).length + '개</summary><ol class="rv">' + HPZ.qs.map(function (q, i) {
       return '<li class="' + (per[i] ? 'ok' : 'no') + '"><b>' + (per[i] ? '⭕' : '❌') + '</b> ' + gapMsg(q, PC.higherWin(q, ctx)) + '</li>'; }).join('') + '</ol></details>' +
     '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbH"></div></details>' +
@@ -1668,7 +1784,7 @@ function overE() {
   var t = ETITLES.filter(function (x) { return E.score >= x[0]; }).pop();
   var text = '연봉 놀이터 · 무한 모드 ' + E.score + '개 맞힘 · ' + t[1] + '\n나보다 잘 맞힐 자신 있으면 → ' + SITE_S;
   $('higher').innerHTML = '<div class="over"><span class="lv">GAME OVER · 내 최고 ' + best + '개</span><div class="big">' + E.score + '<small>개 맞힘</small></div><div class="ttl"><b>' + t[1] + '</b></div><p>' + t[2] + '</p>' +
-    shareBox('shE') + '<div class="nxrow"><button class="btn lime nx" id="eAgain" type="button">다시 하기 ▶</button></div>' + nextBtn('higher').replace('btn lime nx', 'btn ghost nx') +
+    gotBox('higher') + shareBox('shE') + '<div class="nxrow"><button class="btn lime nx" id="eAgain" type="button">다시 하기 ▶</button></div>' + nextBtn('higher').replace('btn lime nx', 'btn ghost nx') +
     (E.miss.length ? '<details class="more"><summary>틀린 문제 다시 보기 · ' + E.miss.length + '개</summary><ul class="miss">' + E.miss.map(function (q) { var w = BYN[q[PC.higherWin(q, ctx)]]; return '<li>' + gapMsg(q, PC.higherWin(q, ctx)) + ' <a href="' + link(w) + '" target="_blank" rel="noopener">' + esc(w.n) + ' 직급별 연봉 →</a></li>'; }).join('') + '</ul></details>' : '') + '</div>';
   wireShare('shE', text, { title: '무한 모드', big: E.score + '개', sub: t[1] + ' · 내 최고 ' + best + '개', px: { mood: moodOf(Math.min(1, E.score / 15)) } });
   $('eAgain').onclick = newE;
@@ -1769,7 +1885,7 @@ function resultToday(x) {
   $('today').innerHTML = todayInfo() + '<div class="over"><span class="lv">오늘의 회사 #' + TPZ.no + ' · ' + (ok ? '성공' : '다음 기회에') + '</span>' + scene + vsScene('today', x) + (ok ? logo(A, 'l').replace('class="lg l', 'class="lg l lightup') : logo(A, 'l')) +
     '<div class="ttl"><b>' + esc(A.n) + '</b></div><div class="big">' + tries + '<small> 단서</small></div>' +
     '<p>' + (ok ? '단서 ' + R.open + '개 보고 ' + (R.wrong.length ? R.wrong.length + '번 틀린 뒤 ' : '한 번에 ') + '맞혔어요. ' + man(x.score) + '점' : '3번 다 틀렸어요. 0점') +
-    '</p>' + rankBox('today', x) + shareBox('shT', vsBox('today', x)) + nextBtn('today') + week7('today') +
+    '</p>' + rankBox('today', x) + gotBox('today') + shareBox('shT', vsBox('today', x)) + nextBtn('today') + week7('today') +
     '<details class="more"><summary>단서 · 후보 8곳 다시 보기</summary>' + clueList(PC.todayClues(TPZ, ctx), PC.TODAY_CLUES, -1) + '<div class="cands done" aria-label="오늘의 후보 8곳">' + cards + '</div>' +
     '<div class="row"><a class="btn ghost sm" href="' + link(A) + '" target="_blank" rel="noopener">직급별 연봉 보기</a><a class="btn ghost sm" href="' + coLink(A) + '" target="_blank" rel="noopener">이 회사 가도 될까?</a></div></details>' +
     '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbT"></div></details><div class="row">' + againBtn('today', function () { TSEL = ''; renderToday(); }) + '</div></div>';
@@ -1853,7 +1969,7 @@ function resultSniper(x) {
     SPZ.qs.map(function (q, i) { var c = BYN[q.n], e = S.errs[i];
       return '<tr><td>' + esc(c.n) + ' ' + RK[q.ri] + (q.tw ? ' <span class="tag">반전</span>' : '') + '</td><td>' + (x.ans[i] ? man(x.ans[i]) : '-') + '</td><td>' + man(c.rk[q.ri]) + '</td><td class="' + (e > 0 ? 'up' : 'dn') + '">' + (e == null ? '-' : (e > 0 ? '+' : '') + e + '%') + '</td><td>' + S.per[i] + '</td><td class="crowd' + i + '">…</td></tr>'; }).join('') + '</tbody></table></div>';
   $('sniper').innerHTML = '<div class="over"><span class="lv">연봉 스나이퍼 · ' + mmdd(TODAY) + '</span>' + vsScene('sniper', x) + '<div class="big">' + x.score + '<small>점 / 500</small></div><div class="ttl"><b>' + emo + '</b></div>' +
-    rankBox('sniper', x) + shareBox('shS', vsBox('sniper', x)) + nextBtn('sniper') + week7('sniper') +
+    rankBox('sniper', x) + gotBox('sniper') + shareBox('shS', vsBox('sniper', x)) + nextBtn('sniper') + week7('sniper') +
     '<details class="more"><summary>문제별 결과 다시 보기</summary>' + tb + '<p class="crowd" id="snCrowd" hidden></p></details>' +
     '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbS"></div></details><div class="row">' + againBtn('sniper', renderSniper) + '</div></div>';
   wireShare('shS', text, { title: '연봉 스나이퍼', big: x.score + '점', sub: '500점 만점 · ' + mmdd(TODAY), lines: [emo],
@@ -2046,7 +2162,7 @@ function resultRoad(x, fresh) {
   $('road').innerHTML = '<div class="over"><span class="lv">이직 로드 10년 · ' + mmdd(TODAY) + '</span>' + scene + vsScene('road', x) + '<div class="big" style="font-size:clamp(44px,8vw,90px)">' + eokS(R.total) + '</div>' +
     '<div class="ttl"><b>' + (R.eok ? '연봉 1억, ' + (R.eok + (RPZ.x0 || 0)) + '년 차에 찍었어요' : '10년 안에 1억은 못 찍었어요') + '</b></div><p>' + path + '</p>' + rankBox('road', x) +
     '<div class="zorro"><div class="who"><i></i>조로의 한마디</div><p>' + esc(roadZorro(R)) + '</p></div>' +
-    shareBox('shR', vsBox('road', x)) + nextBtn('road') + week7('road') +
+    gotBox('road') + shareBox('shR', vsBox('road', x)) + nextBtn('road') + week7('road') +
     '<details class="more"><summary>10년 그래프 · 2년마다 기록</summary><div id="rChart" style="width:100%">' + roadChart(R.years, null, RPZ.x0) + '</div>' + roadLog(R, 4).replace('class="rlog"', 'class="rlog" style="width:100%;text-align:left"') + '</details>' +
     '<details class="more"><summary>엔딩 도감 · ' + PC.ENDINGS.filter(function (e) { return endBook()[e[0]]; }).length + ' / 7</summary>' + endDogam(EN.id) + '</details>' +
     '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbR"></div></details><div class="row">' + againBtn('road', function () { RREV = false; renderRoad(); }) + '</div></div>';
@@ -2117,11 +2233,13 @@ function cupDraw() {
 }
 function cupEnd(w) {
   var theme = CUP.theme, all = CUP.all, picks = CUP.picks;
-  store.set('slp-cupw-' + TODAY, w.n);   // 1차 UX: 로비 카드에 '오늘 우승: 회사' 표시용 (이 기기)
+  store.set('slp-cupw-' + TODAY, w.n);
+  var CW = cupWins(); CW[w.n] = (CW[w.n] || 0) + 1; store.setJ('slp-cupwins', CW);   // 소품 '응원 깃발'·'리본 훈장'   // 1차 UX: 로비 카드에 '오늘 우승: 회사' 표시용 (이 기기)
   call('/play/cup', { dev: DEV, theme: theme, picks: picks }).catch(function () {}).then(function () { return loadCupStat(); }).then(function () { cupReport(w, theme, all, picks); sfx('fanfare'); });
   CUP = null;
 }
 function cupReport(w, theme, all, picks) {
+  if (picks && rate(w.n) != null && rate(w.n) < .3) store.set('slp-cupminor', '1');   // 소품 '중절모': 선택률 30% 미만 회사로 우승
   var by = all.slice().sort(function (x, y) { return y.rk[1] - x.rk[1]; }), r = by.indexOf(w) + 1, top = by[0], N = all.length;
   var pool = PC.cupPool(ctx, theme), wins = function (c) { var s = CSTAT[c.n]; return s ? s[2] : 0; };
   var want = pool.slice().sort(function (x, y) { return wins(y) - wins(x) || (rate(y.n) || 0) - (rate(x.n) || 0); }).slice(0, 10);
@@ -2137,7 +2255,7 @@ function cupReport(w, theme, all, picks) {
     '<div class="stats"><div><small>신입 기준 연봉</small><b>' + (w.s0 ? man(w.s0) + '만' : '-') + '</b></div><div><small>대리</small><b>' + man(w.rk[1]) + '만</b></div><div><small>부장</small><b>' + eokS(w.rk[4]) + '</b></div>' +
     '<div><small>1년 퇴사율</small><b>' + pctS(w.to) + '</b></div><div><small>평균 근속</small><b>' + (w.tt ? w.tt.toFixed(1) + '년' : '-') + '</b></div><div><small>직원</small><b>' + man(w.m) + '명</b></div></div>' +
     '<p class="twist">' + tw + '</p>' +
-    shareBox('shC') + nextBtn('cup') + '<div class="row"><button class="btn ghost" id="cupAgain" type="button">새 ' + N + '강 하기</button></div>' + week7('cup') +   // 2차 UX: 공유 → 다음 게임 → 이번 주, 긴 표는 접기
+    gotBox('cup') + shareBox('shC') + nextBtn('cup') + '<div class="row"><button class="btn ghost" id="cupAgain" type="button">새 ' + N + '강 하기</button></div>' + week7('cup') +   // 2차 UX: 공유 → 다음 게임 → 이번 주, 긴 표는 접기
     '<div class="row"><a class="btn ghost sm" href="' + coLink(w) + '" target="_blank" rel="noopener">이 회사 가도 될까? 판단 보기</a><a class="btn ghost sm" href="' + link(w) + '" target="_blank" rel="noopener">직급별 연봉 보기</a></div>' +
     '<details class="more"><summary>가고 싶은 회사 vs 연봉 높은 회사 · 대진표</summary>' +
     '<p class="h3" style="margin-top:6px">가고 싶은 회사 vs 연봉 높은 회사 · ' + PC.THEMES[theme] + mockTag() + '</p>' +
@@ -2152,36 +2270,129 @@ function cupReport(w, theme, all, picks) {
 
 // ── 4차 (2026-10-28): 소품 꾸미기 · 이번 주 보스 회사 · 친구 대결 도전장. 모두 이 기기 저장(localStorage, store 가 try/catch)
 
-// ── 소품 12개: [아이디, 칸(hat 모자·hand 손·acc 액세서리), 이름, 얻는 법, 조건]. 한 번 얻으면 'slp-items' 에 남음
+// ── 소품 48개 (2026-10-28e 확장): [아이디, 칸(hat 모자·hand 손·acc 얼굴·목·bg 배경), 이름, 얻는 법, 조건, 게임, 등급(c 일반·r 희귀·l 전설), 진행(→ [지금, 목표]), 한 줄]
+//    한 번 얻으면 'slp-items' 에 남음(예전 12개 아이디·조건 그대로). 조건은 이 기기 기록(slp-r-날-게임 등)에서 다시 계산 → 같은 소품은 딱 한 번만 들어옴
+//    소품은 꾸밈뿐: 점수·순위·서버(play_core.js)와 상관없음
 function endHas(ids) { var B = endBook(); return ids.some(function (i) { return B[i]; }); }
 function bossCount() { return Object.keys(store.getJ('slp-boss', {}) || {}).length; }
+// 이 기기의 지난 기록 모두: [{day, x}] (오래된 날 → 최근)
+function recsOf(game) {
+  var out = [], re = new RegExp('^slp-r-(\\d{4}-\\d{2}-\\d{2})-' + game + '$');
+  try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i), m = k && re.exec(k); if (m) { var x = store.getJ(k, null); if (x && typeof x === 'object') out.push({ day: m[1], x: x }); } } } catch (e) {}
+  return out.sort(function (a, b) { return a.day < b.day ? -1 : 1; });
+}
+function bestOf(game, f) { var b = 0; recsOf(game).forEach(function (r) { var v = +f(r.x) || 0; if (v > b) b = v; }); return b; }
+function anyOf(game, f) { return recsOf(game).some(function (r) { try { return !!f(r.x); } catch (e) { return false; } }); }
+// 오늘의 회사 연속 정답 일수(가장 길었던 줄)
+function solvedRun() {
+  var best = 0, run = 0, prev = '';
+  recsOf('today').forEach(function (r) { if (r.x.aux > 0) { run = prev && PC.addDays(prev, 1) === r.day ? run + 1 : 1; prev = r.day; if (run > best) best = run; } else { run = 0; prev = ''; } });
+  return best;
+}
+function streakMax() { return Math.max(streak(), +(store.get('slp-streakmax') || 0)); }
+function cupWins() { var w = store.getJ('slp-cupwins', {}); return w && typeof w === 'object' ? w : {}; }
+function vsWins() { var w = store.getJ('slp-vswins', {}); return w && typeof w === 'object' ? Object.keys(w).length : 0; }
+function errsOf(x) { return Array.isArray(x.errs) ? x.errs.filter(function (e) { return e != null; }) : []; }
+var DLY = ['higher', 'today', 'sniper', 'road'];
 var ITEMS = [
-  ['crown', 'hat', '왕관', '칭호 3개 이상 또는 \'퍼펙트 데이\'', function () { var b = badges(); return Object.keys(b).length >= 3 || !!b.perfect; }],
-  ['headset', 'hat', '헤드셋', '칭호 1개 이상', function () { return Object.keys(badges()).length >= 1; }],
-  ['beanie', 'hat', '비니', '연속 출석 7일 또는 보스 조우 3주', function () { return streak() >= 7 || bossCount() >= 3; }],
-  ['coffee', 'hand', '커피', '오늘의 회사 한 번 풀기', function () { return !!(store.getJ('slp-streak', {}) || {}).last; }],
-  ['bag', 'hand', '서류가방', '엔딩 도감 3개 이상', function () { var B = endBook(); return Object.keys(B).length >= 3; }],
-  ['laptop', 'hand', '노트북', '엔딩 \'이직의 신\' 또는 \'스타트업 대박\'', function () { return endHas(['hopper', 'startup']); }],
-  ['umbrella', 'hand', '우산', '엔딩 \'구조조정 생존자\'', function () { return endHas(['survivor']); }],
-  ['plant', 'hand', '화분', '엔딩 \'대기업 정년각\'', function () { return endHas(['lifer']); }],
-  ['idcard', 'acc', '사원증', '조로 대리 되기', function () { return myRank() >= 1; }],
-  ['glasses', 'acc', '안경', '조로 과장 되기', function () { return myRank() >= 2; }],
-  ['goldtie', 'acc', '금넥타이', '조로 부장 되기', function () { return myRank() >= 4; }],
-  ['shades', 'acc', '선글라스', '이번 주 보스 회사를 게임에서 만나기', function () { return bossCount() >= 1; }]];
-var SLOT_LB = { hat: '모자', hand: '손에 들기', acc: '액세서리' };
-function itemsOwned() { return store.getJ('slp-items', {}) || {}; }
-// 새로 얻은 소품 확인 (판이 끝날 때·처음 열 때). quiet = 알림 없이
+  // 예전 12개 (아이디·조건 그대로)
+  ['crown', 'hat', '왕관', '칭호 3개 이상 또는 \'퍼펙트 데이\'', function () { var b = badges(); return Object.keys(b).length >= 3 || !!b.perfect; }, 'etc', 'r', function () { return [Object.keys(badges()).length, 3]; }, '머리 위가 좀 무거워요'],
+  ['headset', 'hat', '헤드셋', '칭호 1개 이상', function () { return Object.keys(badges()).length >= 1; }, 'etc', 'c', null, '회의 중이라 못 들었어요'],
+  ['beanie', 'hat', '비니', '연속 출석 7일 또는 보스 조우 3주', function () { return streak() >= 7 || bossCount() >= 3; }, 'etc', 'c', function () { return [streakMax(), 7]; }, '출근길 칼바람 대비'],
+  ['coffee', 'hand', '커피', '오늘의 회사 한 번 풀기', function () { return !!(store.getJ('slp-streak', {}) || {}).last; }, 'today', 'c', null, '수사는 카페인으로'],
+  ['bag', 'hand', '서류가방', '엔딩 도감 3개 이상', function () { var B = endBook(); return Object.keys(B).length >= 3; }, 'road', 'c', function () { return [Object.keys(endBook()).length, 3]; }, '안엔 이력서 세 장'],
+  ['laptop', 'hand', '노트북', '엔딩 \'이직의 신\' 또는 \'스타트업 대박\'', function () { return endHas(['hopper', 'startup']); }, 'road', 'r', null, '어디서든 일할 수 있는 사람'],
+  ['umbrella', 'hand', '우산', '엔딩 \'구조조정 생존자\'', function () { return endHas(['survivor']); }, 'road', 'c', null, '비 오는 날에도 출근'],
+  ['plant', 'hand', '화분', '엔딩 \'대기업 정년각\'', function () { return endHas(['lifer']); }, 'road', 'c', null, '이 자리에 뿌리내렸어요'],
+  ['idcard', 'acc', '사원증', '조로 대리 되기', function () { return myRank() >= 1; }, 'etc', 'c', function () { return [myXP(), RANK_XP[1]]; }, '출입문이 열리는 소리'],
+  ['glasses', 'acc', '안경', '조로 과장 되기', function () { return myRank() >= 2; }, 'etc', 'c', function () { return [myXP(), RANK_XP[2]]; }, '엑셀 셀이 잘 보여요'],
+  ['goldtie', 'acc', '금넥타이', '조로 부장 되기', function () { return myRank() >= 4; }, 'etc', 'r', function () { return [myXP(), RANK_XP[4]]; }, '결재판이 반짝여요'],
+  ['shades', 'acc', '선글라스', '이번 주 보스 회사를 게임에서 만나기', function () { return bossCount() >= 1; }, 'etc', 'c', null, '보스 눈빛 차단'],
+  // 어디가 더 많이 줄까
+  ['cap', 'hat', '야구모자', '어디가 더 많이 줄까 첫 판 끝내기', function () { return recsOf('higher').length > 0; }, 'higher', 'c', null, '출근 첫날은 모자부터'],
+  ['calc', 'hand', '계산기', '오늘의 도전 8개 이상 맞히기', function () { return bestOf('higher', function (x) { return x.aux; }) >= 8; }, 'higher', 'c', function () { return [bestOf('higher', function (x) { return x.aux; }), 8]; }, '실수령액부터 두드려 봐요'],
+  ['monocle', 'acc', '외눈 안경', '오늘의 도전 10문제 다 맞히기', function () { return bestOf('higher', function (x) { return x.aux; }) >= 10; }, 'higher', 'r', function () { return [bestOf('higher', function (x) { return x.aux; }), 10]; }, '연봉표를 꿰뚫는 한쪽 눈'],
+  ['band', 'hat', '집중 머리띠', '무한 모드 10개 맞히기', function () { return +(store.get('slp-best') || 0) >= 10; }, 'higher', 'c', function () { return [+(store.get('slp-best') || 0), 10]; }, '이마에 필승 두 글자'],
+  ['phone', 'hand', '황금 폰', '무한 모드 25개 맞히기', function () { return +(store.get('slp-best') || 0) >= 25; }, 'higher', 'r', function () { return [+(store.get('slp-best') || 0), 25]; }, '연봉 비교는 이걸로만'],
+  // 오늘의 회사
+  ['beret', 'hat', '탐정 베레모', '오늘의 회사 처음 맞히기', function () { return anyOf('today', function (x) { return x.aux > 0; }); }, 'today', 'c', null, '범인은 이 8곳 안에 있다'],
+  ['magglass', 'hand', '명탐정 돋보기', '오늘의 회사 단서 1개로 맞히기', function () { return anyOf('today', function (x) { return x.aux === 1; }); }, 'today', 'r', null, '업종만 보고 알아챈 사람'],
+  ['bandage', 'acc', '반창고', '오늘의 회사 3번 다 틀려도 끝까지 하기', function () { return anyOf('today', function (x) { return x.aux === 0; }); }, 'today', 'c', null, '틀려도 출근은 해요'],
+  ['starpin', 'acc', '보안관 배지', '오늘의 회사 3일 연속 맞히기', function () { return solvedRun() >= 3; }, 'today', 'r', function () { return [solvedRun(), 3]; }, '이 동네 연봉 치안 담당'],
+  // 연봉 스나이퍼
+  ['visor', 'hat', '선캡', '연봉 스나이퍼 첫 판 끝내기', function () { return recsOf('sniper').length > 0; }, 'sniper', 'c', null, '햇빛 가리고 조준'],
+  ['dart', 'hand', '다트', '한 문제를 오차 3% 안으로 맞히기', function () { return anyOf('sniper', function (x) { return errsOf(x).some(function (e) { return Math.abs(e) <= 3; }); }); }, 'sniper', 'c', null, '한가운데 꽂히는 맛'],
+  ['goggles', 'acc', '조준 고글', '연봉 스나이퍼 450점 이상', function () { return bestOf('sniper', function (x) { return x.score; }) >= 450; }, 'sniper', 'r', function () { return [bestOf('sniper', function (x) { return x.score; }), 450]; }, '흔들림 없는 시야'],
+  ['eyepatch', 'acc', '매의 눈 안대', '5문제 모두 오차 10% 안', function () { return anyOf('sniper', function (x) { var e = errsOf(x); return e.length >= PC.SNIPER_N && e.every(function (v) { return Math.abs(v) <= 10; }); }); }, 'sniper', 'l', null, '한쪽 눈으로도 다 보여요'],
+  // 이직 로드: 엔딩마다 하나 + 도감 전부
+  ['stock', 'hand', '상승 차트 피켓', '엔딩 \'스타트업 대박\'', function () { return endHas(['startup']); }, 'road', 'c', null, '오른쪽 위로만 가는 그래프'],
+  ['scarf', 'acc', '실크 머플러', '엔딩 \'억대 연봉 부장\'', function () { return endHas(['boss']); }, 'road', 'r', null, '부장님 출근룩 완성'],
+  ['wand', 'hand', '요정 지팡이', '엔딩 \'이직의 신\'', function () { return endHas(['hopper']); }, 'road', 'c', null, '헤드헌터 요정이 두고 간 것'],
+  ['pin', 'acc', '근속 배지', '엔딩 \'대기업 정년각\'', function () { return endHas(['lifer']); }, 'road', 'c', null, '10년 개근의 증표'],
+  ['helmet', 'hat', '안전모', '엔딩 \'구조조정 생존자\'', function () { return endHas(['survivor']); }, 'road', 'c', null, '떨어지는 공문 조심'],
+  ['pillow', 'acc', '목베개', '엔딩 \'번아웃 퇴사\'', function () { return endHas(['burnout']); }, 'road', 'c', null, '일단 자고 생각해요'],
+  ['lunchbox', 'hand', '도시락', '엔딩 \'무난한 직장인\'', function () { return endHas(['normal']); }, 'road', 'c', null, '점심 메뉴 고민 끝'],
+  ['halo', 'hat', '후광', '엔딩 도감 7종 모두 모으기', function () { var B = endBook(); return PC.ENDINGS.every(function (e) { return B[e[0]]; }); }, 'road', 'l', function () { var B = endBook(); return [PC.ENDINGS.filter(function (e) { return B[e[0]]; }).length, 7]; }, '모든 길을 다 가 본 사람'],
+  // 드림 컴퍼니 월드컵
+  ['flag', 'hand', '응원 깃발', '월드컵 처음 우승 보기', function () { return Object.keys(cupWins()).length > 0; }, 'cup', 'c', null, '내 드림 컴퍼니 화이팅'],
+  ['rosette', 'acc', '리본 훈장', '서로 다른 우승 회사 5곳', function () { return Object.keys(cupWins()).length >= 5; }, 'cup', 'c', function () { return [Object.keys(cupWins()).length, 5]; }, '취향이 넓은 편'],
+  ['fedora', 'hat', '중절모', '전국 선택률 30% 미만 회사로 우승', function () { return store.get('slp-cupminor') === '1'; }, 'cup', 'r', null, '남들 안 가는 길 전문'],
+  // 친구 도전장
+  ['plane', 'hand', '종이비행기', '도전장 처음 보내기', function () { return store.get('slp-vssent') === '1'; }, 'etc', 'c', null, '결투 신청서 발송 완료'],
+  ['medal', 'acc', '승리 메달', '도전장 대결에서 이기기', function () { return vsWins() >= 1; }, 'etc', 'c', null, '친구보다 1점이라도'],
+  ['laurel', 'hat', '월계관', '도전장 대결 3번 이기기', function () { return vsWins() >= 3; }, 'etc', 'r', function () { return [vsWins(), 3]; }, '단톡방 공식 챔피언'],
+  // 이번 주 보스
+  ['horns', 'hat', '악마 뿔', '이번 주 보스를 4주 만나기', function () { return bossCount() >= 4; }, 'etc', 'r', function () { return [bossCount(), 4]; }, '보스를 너무 자주 봤더니'],
+  ['bossbg', 'bg', '보스 빌딩 배경', '일요일에 보스 정체 공개 보기', function () { return store.get('slp-bosssun') === '1'; }, 'etc', 'r', null, '그 빌딩 앞에서 인증샷'],
+  // 출석 · 직급 · 순위
+  ['office', 'bg', '사무실 배경', '오늘의 도전 아무거나 한 판 끝내기', function () { return DLY.some(function (g) { return recsOf(g).length > 0; }); }, 'etc', 'c', null, '자리 배치 끝'],
+  ['dawn', 'bg', '새벽 배경', '연속 출석 3일', function () { return streakMax() >= 3; }, 'etc', 'c', function () { return [streakMax(), 3]; }, '출근 전에 한 판'],
+  ['night', 'bg', '별밤 배경', '연속 출석 14일', function () { return streakMax() >= 14; }, 'etc', 'r', function () { return [streakMax(), 14]; }, '퇴근하고 또 한 판'],
+  ['gold', 'bg', '황금 배경', '연속 출석 30일', function () { return streakMax() >= 30; }, 'etc', 'l', function () { return [streakMax(), 30]; }, '한 달 개근의 빛'],
+  ['pen', 'hand', '만년필', '조로 차장 되기', function () { return myRank() >= 3; }, 'etc', 'c', function () { return [myXP(), RANK_XP[3]]; }, '결재 서명 전용'],
+  ['spot', 'bg', '스포트라이트 배경', '오늘 순위 TOP 10 들기', function () { return DLY.some(function (g) { return anyOf(g, function (x) { return x.sent && x.rank && x.rank <= 10; }); }); }, 'etc', 'r', null, '오늘의 주인공'],
+  ['hof', 'bg', '명예의 전당 배경', '주간 1위로 명예의 전당에 오르기', function () { return store.get('slp-hof') === '1'; }, 'etc', 'l', null, '이름이 박제됐어요']];
+var ITEM_BY = {}; ITEMS.forEach(function (it) { ITEM_BY[it[0]] = it; });
+// 진행 표시 단위 (다음 소품: '450점까지 32점')
+var PUNIT = { crown: '개', beanie: '일', bag: '개', idcard: '', glasses: '', goldtie: '', pen: '', calc: '개', monocle: '개', band: '개', phone: '개', starpin: '일', goggles: '점', halo: '종', rosette: '곳', laurel: '번', horns: '주', dawn: '일', night: '일', gold: '일' };
+var SLOT_LB = { hat: '모자', hand: '손에 들기', acc: '얼굴 · 목', bg: '배경' };
+var RAR_LB = { c: '일반', r: '희귀', l: '전설' };
+function itemsOwned() { var o = store.getJ('slp-items', {}); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; }
+function gameItems(g) { return ITEMS.filter(function (it) { return it[5] === g; }); }
+// 오늘의 선물 상자: 오늘 5게임(오늘의 도전 4개 + 월드컵 우승 1번)을 다 하면 아직 없는 일반·희귀 소품 하나. 날짜 + 기기 번호 해시로 골라서 새로 고침해도 같음
+function allDoneToday() { return DLY.every(function (g) { return rec(TODAY, g); }) && !!store.get('slp-cupw-' + TODAY); }
+function giftPick(own, day) {
+  var pool = ITEMS.filter(function (it) { return it[6] !== 'l' && !own[it[0]]; }).map(function (it) { return it[0]; }).sort();
+  return pool.length ? pool[PC.hash32(day + '|' + DEV + '|gift') % pool.length] : '';
+}
+// 새로 얻은 소품 확인 (판이 끝날 때·처음 열 때). quiet = 알림 없이. 돌려주는 값 = 새 아이디 목록 (선물은 'gift:아이디')
 function itemCheck(quiet) {
   var own = itemsOwned(), got = [];
-  ITEMS.forEach(function (it) { var ok = false; try { ok = it[4](); } catch (e) {} if (ok && !own[it[0]]) { own[it[0]] = TODAY; got.push(it[2]); } });
-  if (got.length) { store.setJ('slp-items', own); if (!quiet) toast('새 소품을 얻었어요: ' + got.join(', ') + ' · 내 조로에서 입혀 보세요'); }
+  ITEMS.forEach(function (it) { var ok = false; try { ok = it[4](); } catch (e) {} if (ok && !own[it[0]]) { own[it[0]] = TODAY; got.push(it[0]); } });
+  var G = store.getJ('slp-gift', {}); if (!G || typeof G !== 'object') G = {};
+  if (!G[TODAY] && allDoneToday()) { var g = giftPick(own, TODAY); G[TODAY] = g || '-'; store.setJ('slp-gift', G); if (g) { own[g] = TODAY; got.push('gift:' + g); } }
+  if (got.length) { store.setJ('slp-items', own); if (!quiet) toast('새 소품을 얻었어요: ' + got.map(function (id) { return ITEM_BY[id.replace('gift:', '')][2]; }).join(', ') + ' · 내 조로에서 입혀 보세요'); }
   return got;
 }
-// 입은 모습 정리: 없는 소품·잘못된 칸이면 뺌 (저장이 지워진 기기 등)
+// 입은 모습 정리: 없는 소품·잘못된 칸이면 뺌 (저장이 지워진 기기 등). 기본 모습(base·hair·bottom)은 무료라 값만 맞으면 그대로
 function cleanLook() {
-  var own = itemsOwned(), L = {};
-  ITEMS.forEach(function (it) { if (LOOK && LOOK[it[1]] === it[0] && own[it[0]]) L[it[1]] = it[0]; });
+  var own = itemsOwned(), L = {}, src = LOOK && typeof LOOK === 'object' ? LOOK : {};
+  if (src.base === 'f') L.base = 'f';
+  if (HAIRS[baseOf(L)].some(function (h) { return h[0] === src.hair; })) L.hair = src.hair;
+  if (L.base === 'f' && src.bottom === 'skirt') L.bottom = 'skirt';
+  ITEMS.forEach(function (it) { if (src[it[1]] === it[0] && own[it[0]]) L[it[1]] = it[0]; });
   LOOK = L;
+}
+// 다음에 가까운 소품: 그 게임(없으면 공통) 소품 중 아직 없는 것, 진행률이 가장 높은 것 하나
+function nextItem(game) {
+  var own = itemsOwned(), best = null;
+  gameItems(game).concat(gameItems('etc')).forEach(function (it) {
+    if (own[it[0]]) return;
+    var pr = null; try { pr = it[7] ? it[7]() : null; } catch (e) {}
+    var ratio = pr ? Math.min(.99, pr[0] / pr[1]) : 0, bonus = it[5] === game ? (pr ? 1 : .5) : 0;   // 그 게임 소품(진행 표시 있는 것)을 먼저
+    if (!best || ratio + bonus > best.r) best = { it: it, pr: pr, r: ratio + bonus };
+  });
+  return best;
 }
 function lookPanel() { renderLook(); }   // 2차 UX: 꾸미기는 '내 조로' 화면(#look, page/08c_result.js)으로 옮김
 
@@ -2198,7 +2409,8 @@ function bossMark(c) { if (!BOSS || !c || c.n !== BOSS.n) return ''; meetBoss();
 function renderBoss() {
   var el = $('boss'); if (!el || !BOSS) return;
   var sun = PC.dow(TODAY) === 0, B = BOSS, met = bossMet();
-  el.hidden = !(sun || BOSS_OPEN);   // 1차 UX: 보스 카드는 일요일(정체 공개)에만 로비에 펼쳐 두고, 다른 날은 검은 띠의 보스 이름을 누르면 열림
+  el.hidden = !(sun || BOSS_OPEN);
+  if (sun && store.get('slp-bosssun') !== '1') { store.set('slp-bosssun', '1'); setTimeout(function () { itemCheck(); }, 600); }   // 소품 '보스 빌딩 배경'   // 1차 UX: 보스 카드는 일요일(정체 공개)에만 로비에 펼쳐 두고, 다른 날은 검은 띠의 보스 이름을 누르면 열림
   var art = PX.ok ? '<div class="bossart" aria-hidden="true">' + icon('crown', 3) + icon('horns', 3) + bld(B, 4, sun ? null : { sil: 1, blind: 1 }) + '</div>' : '';
   var head = '<p class="bk">이번 주 보스 회사 · ' + esc(BWEEK.replace('-W', '년 ')) + '주' + (met ? ' · <b>조우 ✓</b>' : '') + '</p><p class="bnm">' + logo(B, 's') + esc(B.n) + '</p>';
   el.innerHTML = '<div class="bossbn' + (sun ? ' sun' : '') + '">' + art + '<div class="bossi">' + head + (sun
@@ -2219,6 +2431,7 @@ function vsBox(game, x) {
 }
 document.addEventListener('click', function (e) {
   var b = e.target.closest && e.target.closest('[data-vs]'); if (!b) return;
+  if (store.get('slp-vssent') !== '1') { store.set('slp-vssent', '1'); setTimeout(function () { itemCheck(); }, 1200); }   // 소품 '종이비행기'
   var g = b.dataset.vs, x = rec(TODAY, g); if (!x || !x.vs) return;
   var box = b.parentNode, url = vsLink(g, x.vs), text = '연봉 놀이터 도전장 ⚔ 나는 오늘 ' + GNAME[g] + ' ' + fmtVs(g, x.score) + '. 같은 문제로 이겨 봐!';
   var m = box.querySelector('.msg2'), inp = box.querySelector('.vslink');
@@ -2250,6 +2463,7 @@ function renderVs() {
 function vsScene(game, x) {
   if (!VS || VS.bad || VS.game !== game || VS.day !== TODAY || !x || !PX.ok) return '';
   var me = x.score, th = VS.score, r = me > th ? 'win' : me < th ? 'lose' : 'draw';
+  if (r === 'win') { var W = store.getJ('slp-vswins', {}); if (!W || typeof W !== 'object') W = {}; W[TODAY + '|' + game] = 1; store.setJ('slp-vswins', W); }   // 소품 '승리 메달'·'월계관'
   var who = function (z, nm, sc) { return '<div class="vsw">' + z + '<b>' + nm + '</b><small>' + sc + '</small></div>'; };
   return stage('<span class="pxbanner">' + (r === 'win' ? '승리!' : r === 'lose' ? '패배…' : '무승부') + '</span><div class="pxrow vsrow">' +
     who(zorro(myRank(), r === 'win' ? 'happy' : r === 'lose' ? 'sad' : 'normal', 4, r === 'win' ? 'jump' : 'idle'), '나', fmtVs(game, me)) + '<span class="pxvs">VS</span>' +
@@ -2311,25 +2525,44 @@ function weekRows() {
 
 // ── 내 조로 화면 (#look): 큰 조로 + 직급·경험치 → (다음: 기본 모습 고르기 자리) → 소품 꾸미기 → 칭호 → 엔딩 도감
 //    칸(SLOTS)·섹션(LOOK_SECS)을 배열로 둬서 나중에 성별·머리·배경 칸·소품 40개를 넣을 때 여기만 늘리면 되게
-var SLOTS = ['hat', 'hand', 'acc'];
+var SLOTS = ['hat', 'hand', 'acc', 'bg'];
+function lookWith(k, v) { var L = {}; for (var x in LOOK) L[x] = LOOK[x]; if (v) L[k] = v; else delete L[k]; return L; }
+function saveLook() { store.setJ('slp-look', LOOK); }
 function lookTop() {
   var r = myRank(), x = myXP(), nx = nextXP(), lo = RANK_XP[r], hi = RANK_XP[Math.min(4, r + 1)], pct = r >= 4 ? 100 : Math.round((x - lo) / Math.max(1, hi - lo) * 100);
-  return '<div class="lktop">' + (PX.ok ? stage(zorro(r, 'happy', 8, 'idle'), 'resst lkst', '지금 내 조로: 조로 ' + RK[r]) : '') +
+  return '<div class="lktop">' + (PX.ok ? stage(zorro(r, 'happy', 8, 'idle', { bg: 1 }), 'resst lkst', '지금 내 조로: ' + BASES[baseOf(LOOK)] + ', 조로 ' + RK[r]) : '') +
     '<div class="lkme"><p class="lknm">' + esc(NICK) + (topBadge() ? ' <span class="badge1">' + esc(topBadge()) + '</span>' : '') + '</p>' +
     '<p class="lkrk">조로 <b>' + RK[r] + '</b> · 경험치 ' + x + (r >= 4 ? ' · 만렙' : ' · ' + RK[r + 1] + ' 승진까지 ' + nx + '판') + '</p>' +
     '<div class="xpbar" role="progressbar" aria-label="다음 직급까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' +
     '<p class="src" style="margin:4px 0 0">오늘의 도전을 끝낼 때마다 경험치 +1, 칭호마다 +3. 10문제 다 맞히면 특진.</p></div></div>';
 }
+// 기본 모습: 남자/여자 조로 · 머리 모양 · (여자 조로) 바지/치마 — 모두 무료
+function lookBase() {
+  var r = myRank(), b = baseOf(LOOK), hr = hairOf(LOOK), opt = function (attr, v, on, inner, label) {
+    return '<button type="button" class="opt" data-' + attr + '="' + v + '" aria-pressed="' + on + '"' + (label ? ' aria-label="' + esc(label) + '"' : '') + '>' + inner + '</button>'; };
+  var h = '<div class="opts big" role="group" aria-label="기본 모습">' + ['m', 'f'].map(function (k) {
+    var L = { base: k, hair: k === b ? hr : HAIRS[k][0][0], bottom: LOOK.bottom, hat: LOOK.hat, hand: LOOK.hand, acc: LOOK.acc };
+    return opt('base', k, k === b, (PX.ok ? zorro(r, 'normal', 3, '', { look: L }) : '') + '<span>' + BASES[k] + '</span>');
+  }).join('') + '</div><p class="lkh4">머리 모양</p><div class="opts" role="group" aria-label="머리 모양">' + HAIRS[b].map(function (x) {
+    return opt('hair', x[0], x[0] === hr, (PX.ok ? zorro(r, 'normal', 2, '', { look: { base: b, hair: x[0] } }) : '') + '<span>' + x[1] + '</span>');
+  }).join('') + '</div>';
+  if (b === 'f') h += '<p class="lkh4">아래옷</p><div class="opts" role="group" aria-label="아래옷">' + BOTTOMS.map(function (x) {
+    var on = (LOOK.bottom === 'skirt' ? 'skirt' : 'pants') === x[0];
+    return opt('bottom', x[0], on, (PX.ok ? zorro(r, 'normal', 2, '', { look: { base: 'f', hair: hr, bottom: x[0] } }) : '') + '<span>' + x[1] + '</span>');
+  }).join('') + '</div>';
+  return h;
+}
 function lookItems() {
   var own = itemsOwned(), r = myRank();
   return SLOTS.map(function (slot) {
     var L = ITEMS.filter(function (it) { return it[1] === slot; });
-    return '<div class="lkslot"><p class="lkh4">' + SLOT_LB[slot] + ' <small>' + L.filter(function (it) { return own[it[0]]; }).length + ' / ' + L.length + '</small></p><div class="items" role="group" aria-label="' + SLOT_LB[slot] + '">' +
+    return '<div class="lkslot" id="slot-' + slot + '"><p class="lkh4">' + SLOT_LB[slot] + ' <small>' + L.filter(function (it) { return own[it[0]]; }).length + ' / ' + L.length + '</small></p><div class="items" role="group" aria-label="' + SLOT_LB[slot] + '">' +
       '<button type="button" class="itemb" data-slot="' + slot + '" data-id="" aria-pressed="' + !LOOK[slot] + '"><span class="iname">없음</span></button>' +
       L.map(function (it) {
-        var have = !!own[it[0]], look = {}; look[slot] = it[0];
-        return '<button type="button" class="itemb' + (have ? '' : ' locked') + '" data-slot="' + slot + '" data-id="' + it[0] + '"' + (have ? ' aria-pressed="' + (LOOK[slot] === it[0]) + '"' : ' disabled') + '>' +
-          (have ? zorro(r, 'normal', 2, '', { look: look }) : icon('lock', 3)) + '<span class="iname">' + esc(it[2]) + '</span>' + (have ? '' : '<small>' + esc(it[3]) + '</small>') + '</button>';
+        var have = !!own[it[0]], look = lookWith(slot, it[0]);
+        return '<button type="button" class="itemb r-' + it[6] + (have ? '' : ' locked') + '" data-slot="' + slot + '" data-id="' + it[0] + '" title="' + esc(it[8]) + '"' + (have ? ' aria-pressed="' + (LOOK[slot] === it[0]) + '"' : ' disabled') + '>' +
+          (PX.ok ? zorro(r, 'normal', 2, '', { look: look, sil: !have, bg: slot === 'bg' }) : '') + '<span class="iname">' + esc(it[2]) + '</span>' +
+          (it[6] !== 'c' ? '<span class="rar">' + RAR_LB[it[6]] + '</span>' : '') + (have ? '' : '<small>' + esc(it[3]) + '</small>') + '</button>';
       }).join('') + '</div></div>';
   }).join('');
 }
@@ -2340,20 +2573,59 @@ function lookBadges() {
   }).join('') + '</div>';
 }
 var LOOK_SECS = [
-  ['lkItems', '소품 <b>꾸미기</b>', function () { return '<p class="src" style="margin:0 0 10px">칸마다 하나씩. 꾸민 모습은 로비·게임·공유 그림에도 나와요. 모은 소품 ' + Object.keys(itemsOwned()).length + ' / ' + ITEMS.length + ' (이 기기에 저장)</p>' + lookItems(); }],
+  ['lkBase', '기본 <b>모습</b>', function () { return '<p class="src" style="margin:0 0 10px">처음부터 무료예요. 직급(재킷·안경·머리색)은 남녀 똑같이 따라가요.</p>' + lookBase(); }],
+  ['lkItems', '소품 <b>꾸미기</b>', function () { var n = Object.keys(itemsOwned()).filter(function (k) { return ITEM_BY[k]; }).length;
+    return '<p class="src" style="margin:0 0 10px">모은 소품 <b>' + n + ' / ' + ITEMS.length + '</b> · 칸마다 하나씩. 게임마다 얻는 소품이 따로 있고, 하루 5게임을 다 하면 선물 상자가 열려요(이 기기에 저장, 점수와는 상관없어요).</p>' + lookItems(); }],
   ['lkBadges', '<b>칭호</b>', function () { return '<p class="src" style="margin:0 0 10px">닉네임 옆엔 가장 최근 칭호가 보여요. 연속 출석 🔥 ' + streak() + '일.</p>' + lookBadges(); }],
   ['lkEnd', '엔딩 <b>도감</b>', function () { return '<p class="src" style="margin:0 0 6px">이직 로드 10년에서 본 엔딩이 모여요.</p>' + endDogam(null).replace(/<p class="h3"[^>]*>[^<]*<\/p>/, ''); }]
 ];
 function renderLook() {
   var el = $('look'); if (!el) return;
-  el.innerHTML = lookTop() + '<div id="lkBase"></div>' +   // 다음 차례: 남/여 기본 모습 · 머리 모양 고르기 자리
-    LOOK_SECS.map(function (s) { return '<section class="lksec" id="' + s[0] + '"><h3 class="lkh">' + s[1] + '</h3>' + s[2]() + '</section>'; }).join('');
+  var sc = el.parentNode ? el.parentNode.scrollTop : 0;
+  el.innerHTML = lookTop() + LOOK_SECS.map(function (s) { return '<section class="lksec" id="' + s[0] + '"><h3 class="lkh">' + s[1] + '</h3>' + s[2]() + '</section>'; }).join('');
+  if (el.parentNode) el.parentNode.scrollTop = sc;
+  var after = function (sel) { renderLook(); renderMe(); var f = $('look').querySelector(sel); if (f) f.focus({ preventScroll: true }); };
   el.querySelectorAll('.itemb:not([disabled])').forEach(function (b) { b.onclick = function () {
     LOOK[b.dataset.slot] = b.dataset.id; if (!b.dataset.id) delete LOOK[b.dataset.slot];
-    store.setJ('slp-look', LOOK); sfx('coin'); renderLook(); renderMe();
-    var f = $('look').querySelector('.itemb[data-slot="' + b.dataset.slot + '"][data-id="' + b.dataset.id + '"]'); if (f) f.focus({ preventScroll: true });
+    saveLook(); sfx('coin'); after('.itemb[data-slot="' + b.dataset.slot + '"][data-id="' + b.dataset.id + '"]');
+  }; });
+  el.querySelectorAll('.opt').forEach(function (b) { b.onclick = function () {
+    var d = b.dataset;
+    if (d.base) { if (d.base === 'f') LOOK.base = 'f'; else delete LOOK.base; delete LOOK.hair; if (d.base !== 'f') delete LOOK.bottom; }
+    if (d.hair) LOOK.hair = d.hair;
+    if (d.bottom) { if (d.bottom === 'skirt') LOOK.bottom = 'skirt'; else delete LOOK.bottom; }
+    saveLook(); sfx('coin'); after(d.base ? '.opt[data-base="' + d.base + '"]' : d.hair ? '.opt[data-hair="' + d.hair + '"]' : '.opt[data-bottom="' + d.bottom + '"]');
   }; });
 }
+// ── 결과 화면: 새로 얻은 소품(상자 열리는 도트 장면 + '입어 보기') · 다음에 가까운 소품 진행
+function gotBox(game) {
+  var got = itemCheck(true), nx = nextItem(game), h = '', gift = got.some(function (g) { return g.indexOf('gift:') === 0; });
+  if (got.length) {
+    h += '<div class="gotbox" role="status"><p class="gtl">' + (gift ? '오늘의 <b>선물 상자</b>가 열렸어요!' : '새 <b>소품</b>을 얻었어요!') + '</p><div class="gotl">' + got.map(function (g) {
+      var id = g.replace('gift:', ''), it = ITEM_BY[id];
+      return '<div class="goti r-' + it[6] + '">' + (PX.ok ? '<span class="gotart"><span class="boxani" aria-hidden="true">' + icon('chest', 4) + '</span><span class="gotz">' + zorro(myRank(), 'happy', 3, '', { look: lookWith(it[1], id), bg: it[1] === 'bg' }) + '</span></span>' : '') +
+        '<b>' + esc(it[2]) + '</b><small>' + RAR_LB[it[6]] + (g !== id ? ' · 오늘의 선물' : '') + ' · ' + esc(it[8]) + '</small>' +
+        '<button type="button" class="btn sm" data-try="' + id + '">입어 보기</button></div>';
+    }).join('') + '</div></div>';
+    sfx('fanfare');
+  }
+  if (nx) {
+    var it = nx.it, pr = nx.pr, pct = pr ? Math.round(Math.min(1, pr[0] / pr[1]) * 100) : 0;
+    var u = PUNIT[it[0]] != null ? PUNIT[it[0]] : '', left = pr ? Math.max(0, pr[1] - pr[0]) : 0;
+    h += '<div class="nxitem"><span class="nl">다음 소품</span><b>' + esc(it[2]) + '</b><small>' + esc(it[3]) + (pr ? ' · ' + (u ? man(pr[1]) + u + '까지 ' + man(left) + u : '경험치 ' + man(left) + ' 남음') : '') + '</small>' +
+      (pr ? '<span class="xpbar" aria-hidden="true"><i style="width:' + pct + '%"></i></span>' : '') + '</div>';
+  }
+  return h;
+}
+// '입어 보기': 그 칸에 입히고 내 조로 서랍을 그 칸으로 열기
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-try]'); if (!b) return;
+  var it = ITEM_BY[b.dataset.try]; if (!it || !itemsOwned()[it[0]]) return;
+  LOOK[it[1]] = it[0]; saveLook(); renderMe(); lkOpen(true);
+  setTimeout(function () { var f = $('look').querySelector('.itemb[data-id="' + it[0] + '"]'); if (f) { f.scrollIntoView({ block: 'center' }); f.focus({ preventScroll: true }); } }, 60);
+});
+// 로비 게임 카드: 🎁 이 게임 소품 n/m
+function giftTag(g) { var L = gameItems(g), own = itemsOwned(); return L.length ? '<span class="gft" title="이 게임에서 얻는 소품">🎁 ' + L.filter(function (it) { return own[it[0]]; }).length + '/' + L.length + '</span>' : ''; }
 
 // ── 내 조로 = 오른쪽에서 밀려 나오는 서랍 (2026-10-28 사용자 요청). 폰은 꽉 찬 폭, PC 는 460px + 어두운 뒤판
 //    열기: 탭바/칸 '내 조로' · 프로필 줄 조로·닉네임 · 주소 #look · 폰에서 화면 오른쪽 끝(24px 안)에서 왼쪽으로 밀기
@@ -2541,7 +2813,7 @@ function renderLobby() {
     return '<button type="button" class="gc' + (f ? ' feat' : '') + (S && S.done ? ' done' : '') + '" id="t-' + k + '" data-go="' + k + '">' +
       '<span class="no" aria-hidden="true">0' + (G5.indexOf(k) + 1) + '</span>' + (PX.ok ? '<span class="gi">' + icon(I[0], f ? (ph ? 4 : 6) : (ph ? 2.5 : 3)) + '</span>' : '') +
       (f ? '<span class="ft">' + (nDone ? '추천 · 아직 안 한 게임' : '오늘의 추천') + '</span>' : '') +
-      '<b class="gn">' + esc(nm) + '</b><span class="d">' + esc(I[1]) + '</span><span class="meta">' + meta + '</span>' +
+      '<b class="gn">' + esc(nm) + '</b><span class="d">' + esc(I[1]) + '</span><span class="meta">' + meta + ' ' + giftTag(k) + '</span>' +
       '<span class="go" aria-hidden="true">' + (S ? S.go : '시작하기 ▶') + '</span></button>';
   }).join('');
   $('lobbyN').innerHTML = '5개 중 ' + nDone + '개 했어요<span class="pc"> · 순위는 매일 첫 판만</span>';
@@ -2648,6 +2920,7 @@ renderMe();
 renderBoard(null);
 getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); } });
 route();   // 주소 #게임 · #look 으로 바로 열림
+if (!API_BASE) window.__slp = { zRows: zRows, zorro: zorro, ITEMS: ITEMS, itemCheck: itemCheck, giftPick: giftPick, allDoneToday: allDoneToday, cleanLook: cleanLook, getLook: function () { return LOOK; }, DEV: DEV, TODAY: TODAY, HAIRS: HAIRS, ITEM_DRAW: ITEM_DRAW, BG_DRAW: BG_DRAW };   // 미리보기 시험용 (실제 사이트엔 없음)
 vsLoad();   // ?vs=도전장 으로 왔으면 도전장 띠 + 그 게임으로
 }
 
