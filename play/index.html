@@ -12,7 +12,7 @@
   --logo-dk:#1d1f22; --on-dark:#ffffff; --t-eq:#5fae3a; --t-near:#e2b93b; --t-far:#d76a5c; --t-diff:#e4e6df; --t-ink:#ffffff; --truth:#d1392b; --best:#6a5acd; --shadow:rgba(11,11,11,.12);
   --m1:#3d6b8f; --m2:#8f5a3d; --m3:#4f7d3a; --m4:#7a4f8f; --m5:#8f3d5a; --m6:#3d8f80;
   --display:"Archivo","Noto Sans KR",system-ui,sans-serif; --font:"Noto Sans KR",system-ui,sans-serif;
-  --px-font:"DotGothic16","Noto Sans KR",monospace; --px-ol:#1b1d18; --px-sil:#3b3f4a; --px-sky:#eef4fb; --px-sky2:#f7f9f2; --px-ground:#b9bcae; --px-ground2:#a4a796; --px-hi:#ffcf3d; }
+  --px-font:"DotGothic16","Noto Sans KR",monospace; --px-ol:#1b1d18; --px-sil:#3b3f4a; --px-sky:#eef4fb; --px-sky2:#f7f9f2; --px-ground:#b9bcae; --px-ground2:#a4a796; --px-hi:#ffcf3d; --px-arc:#0d0f0a; --px-arc-ink:#f2f3ee; --px-arc-acc:#c6ff3d; --px-arc-y:#ffcf3d; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#9a9d92; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; --good:#c6ff3d; --card:#111209;
   --t-eq:#4c9a2a; --t-near:#c9a227; --t-far:#c0564a; --t-diff:#2c2e25; --truth:#ff6b5b; --best:#a79bff; --shadow:rgba(0,0,0,.5); --px-ol:#d5d8cc; --px-sil:#5a5f6c; --px-sky:#121826; --px-sky2:#16170f; --px-ground:#3a3c33; --px-ground2:#2c2e25; color-scheme:dark } }
 :root[data-theme="dark"] { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#9a9d92; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; --good:#c6ff3d; --card:#111209;
@@ -423,6 +423,47 @@ img.px, .pxs { image-rendering:crisp-edges; image-rendering:pixelated; display:b
 .week7 { display:flex; flex-wrap:wrap; gap:6px; margin:0; padding:0; list-style:none; font-size:12.5px; }
 .week7 li { border:1px solid var(--line2); border-radius:999px; padding:2px 10px; color:var(--soft); }
 .week7 li.on { border-color:var(--ink); background:var(--acc); color:var(--acc-ink); font-weight:800; }
+/* 연봉 스나이퍼 조준경 */
+.scope { position:relative; height:64px; margin:4px 0 0; border:1.5px solid var(--ink); border-radius:12px; background:repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), var(--line) calc(10% - 1px) 10%), linear-gradient(var(--px-sky), var(--px-sky2)); overflow:hidden; }
+.scope .xh { position:absolute; top:50%; width:44px; height:44px; transform:translate(-50%,-50%); border:3px solid var(--ink); border-radius:50%; }
+.scope .xh::before, .scope .xh::after { content:""; position:absolute; background:var(--ink); }
+.scope .xh::before { left:50%; top:-10px; bottom:-10px; width:3px; transform:translateX(-50%); }
+.scope .xh::after { top:50%; left:-10px; right:-10px; height:3px; transform:translateY(-50%); }
+.scope .tg { position:absolute; top:50%; transform:translate(-50%,-50%); }
+.scope .hit { position:absolute; top:50%; transform:translate(-50%,-50%); animation:pxPop .4s steps(4) both; }
+.scope .hit i { display:block; width:12px; height:12px; background:var(--truth); box-shadow:0 0 0 2px var(--bg); }
+.hs { font-family:var(--px-font); font-size:clamp(18px,3vw,26px); color:#0b0b0b; background:var(--px-hi); border:2px solid var(--ink); padding:0 10px; border-radius:4px; justify-self:start; animation:pxPop .5s steps(5) both; }
+.snb { display:flex; align-items:flex-end; gap:12px; }
+.snb .morph { animation:pxFlick 1.2s steps(6) both; }
+/* 월드컵 대진 · 트로피 */
+.brk8 { display:flex; flex-wrap:wrap; gap:4px; align-items:flex-end; justify-content:center; padding:8px; margin:0 0 12px; border:1.5px dashed var(--line2); border-radius:12px; }
+.brk8 .px { opacity:1; }
+.brk8 .gone { opacity:.25; filter:grayscale(1); }
+.brk8 .now { outline:2px solid var(--ink); outline-offset:2px; }
+.champ { display:grid; justify-items:center; gap:2px; }
+.champ .ico { animation:pxPop .7s steps(6) both; }
+.pick .pb { margin:2px 0 4px; }
+.bkt { display:grid; gap:6px; width:100%; }
+.bkt .rnd { display:flex; justify-content:center; align-items:flex-end; gap:4px; flex-wrap:wrap; }
+.bkt .rl { font-family:var(--px-font); font-size:11px; color:var(--muted); text-align:center; }
+/* 명예의 전당 · 오락실 HI-SCORE 틀 (이 탭에서만) */
+.arcade { background:var(--px-arc); color:var(--px-arc-ink); border:3px solid var(--px-arc-acc); border-radius:6px; box-shadow:0 0 0 3px var(--px-arc), 0 0 0 5px var(--px-arc-y); padding:16px 14px 12px; margin-top:16px; font-family:var(--px-font); }
+.arcade .ahd { text-align:center; color:var(--px-arc-y); font-size:clamp(18px,3vw,24px); letter-spacing:.08em; margin:0 0 2px; }
+.arcade .ahd2 { text-align:center; color:var(--px-arc-acc); font-size:12px; letter-spacing:.2em; margin:0 0 10px; animation:pxBlink 1.2s steps(2) infinite; }
+.arcade .ahd2.g { animation:none; color:var(--px-arc-ink); letter-spacing:.04em; font-size:14px; margin-bottom:2px; }
+.arcade .lb { margin-top:6px; }
+.arcade .lbc { border-top:2px dashed var(--px-arc-acc); }
+.arcade .lbc h4 { color:var(--px-arc-y); font-family:var(--px-font); font-weight:400; }
+.arcade .lbc .sub, .arcade .lbc .empty { color:#9a9d92; }
+.arcade .lbc li { border-bottom:1px dotted #2c3022; font-variant-numeric:tabular-nums; }
+.arcade .lbc li .r, .arcade .lbc li .s { font-family:var(--px-font); font-weight:400; color:var(--px-arc-ink); }
+.arcade .lbc li:first-child .r, .arcade .lbc li:first-child .s { color:var(--px-arc-acc); }
+.arcade .lbc li.mine { background:#1f2318; }
+.arcade .lbc li.mine .n::after { color:#9a9d92; }
+.arcade .tag { background:#1f2318; color:#9a9d92; border-color:#3a3c33; }
+/* 효과음 켜기 */
+.sndb { border:1px solid var(--line2); background:transparent; border-radius:999px; padding:0 14px; min-height:44px; font-size:13px; font-weight:700; color:var(--soft); }
+.sndb[aria-pressed="true"] { border-color:var(--ink); color:var(--ink); }
 .myrk { display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:13.5px; }
 .myrk small { color:var(--muted); font-weight:500; }
 @media (prefers-reduced-motion: reduce) { .pxmag, .conf { display:none; } }
@@ -746,6 +787,7 @@ var ICON = {
   puff: [['.dddd.', 'dddddd', 'dddddd', '.dd.d.'], { d: '#cfcfc8' }],
   quest: [['.yyyy.', 'yy..yy', '....yy', '...yy.', '..yy..', '......', '..yy..'], { y: '#ffcf3d' }],
   crown: [['y..y..y', 'yy.y.yy', 'yyyyyyy', 'yrybyry', 'yyyyyyy'], { y: '#ffcf3d', r: '#e8412c', b: '#4f7dff' }],
+  target: [['..rrr..', '.rwwwr.', 'rwrrrwr', 'rwrkrwr', 'rwrrrwr', '.rwwwr.', '..rrr..'], { r: '#e8412c', w: '#ffffff', k: '#2b2b2b' }],   // 과녁(진짜 연봉)
   boss: [['.kkkkk.', 'kyyyyyk', 'kyykyyk', 'kyyyyyk', '.kkkkk.'], { k: '#8a5a1c', y: '#ffcf3d' }]   // 금 명패
 };
 function icon(name, s, cls, alt) { var d = ICON[name]; return d ? PX.img('i|' + name, PX.outline(d[0]), d[1], s, 'ico ' + (cls || ''), alt) : ''; }
@@ -779,7 +821,7 @@ function promoCheck() {
 }
 
 // ── 8비트 효과음 (WebAudio 네모파, 기본 꺼짐 · 켜고 끈 상태는 이 기기에 저장)
-var SND_UI = false;   // 3차에서 켬: 효과음 켜기 버튼. 그 전엔 버튼이 없고 sfx() 는 아무 소리도 안 냄
+var SND_UI = true;    // 효과음 켜기 버튼 (3차, 2026-10-28). 기본은 꺼짐 — 켜면 이 기기에 기억
 var SND = { on: SND_UI && store.get('slp-sound') === '1', ac: null };
 function sfx(name) {
   if (!SND.on) return;
@@ -1346,6 +1388,18 @@ function resultToday(x) {
 var SPZ = null, SST = null;
 function snEmo(p) { return p >= 90 ? '🎯' : p >= 60 ? '🟩' : p >= 30 ? '🟨' : '🟥'; }
 function pctX(v) { return (v - PC.SN_LO) / (PC.SN_HI - PC.SN_LO) * 100; }
+// 조준경 (3차): 막대 위에 조준선이 따라 움직이고, 쏘면 탄착점(빨간 점)과 과녁(진짜 연봉)이 함께 찍힘. 위치 = 막대 양 끝 2,000~22,000만원 사이 비율
+function scopeAt(v) { return 'left:calc(22px + (100% - 44px) * ' + Math.max(0, Math.min(1, pctX(v) / 100)).toFixed(4) + ')'; }
+function scopeHtml(cur, done, truth) {
+  if (!PX.ok) return '';
+  return '<div class="scope" aria-hidden="true">' + (done ? '<span class="tg" style="' + scopeAt(truth) + '">' + icon('target', 3) + '</span><span class="hit" style="' + scopeAt(cur) + '"><i></i></span>' : '') +
+    '<span class="xh" id="snXh" style="' + scopeAt(cur) + '"></span></div>';
+}
+// 회사 빌딩: 쏘기 전엔 숫자 없는 빌딩(답을 흘리지 않음), 쏜 뒤엔 진짜 빌딩. 반전 회사는 깜빡이며 변신
+function snBld(c, q, done) {
+  if (!PX.ok) return '';
+  return '<div class="snb" aria-hidden="true">' + bld(c, 3, done ? null : { blind: 1 }, done ? (q.tw ? 'morph' : 'grow') : '') + (done && q.tw ? '<span class="pxcombo c2 burst">반전 회사!</span>' : '') + '</div>';
+}
 function renderSniper() {
   SPZ = SPZ || PC.genSniper(TODAY, ctx);
   var x = rec(TODAY, 'sniper'), p = prog('sniper');
@@ -1368,25 +1422,28 @@ function drawSniper(p) {
   var cur = done ? p.v[i] : (SST && SST.i === i ? SST.v : 7000);
   var sc = PC.scoreSniper(SPZ, p.v, ctx);
   var h = '<div class="gbar"><span class="lv">' + (i + 1) + ' / 5 문제</span><span class="stat"><span>점수 <b>' + sc.score + '</b></span></span></div>' +
-    '<div class="snq"><div class="who">' + logo(c, 'l') + '<span class="nm">' + esc(c.n) + '</span><span class="rk">' + RK[q.ri] + '</span></div>' +
+    '<div class="snq"><div class="who">' + logo(c, 'l') + '<span class="nm">' + esc(c.n) + '</span><span class="rk">' + RK[q.ri] + '</span></div>' + snBld(c, q, done) +
     '<p class="qsub" style="margin:0">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + ' — ' + RK[q.ri] + ' 연봉은 얼마일까요?</p>' +
     '<div class="snv" aria-live="polite"><span id="snV">' + man(cur) + '</span><small>만원</small></div>' +
-    '<div class="sntrack">' + (done ? '<span class="truth" style="left:' + pctX(truth) + '%"><span>정답 ' + man(truth) + '</span></span>' : '') +
+    scopeHtml(cur, done, truth) + '<div class="sntrack">' + (done ? '<span class="truth" style="left:' + pctX(truth) + '%"><span>정답 ' + man(truth) + '</span></span>' : '') +
     '<input type="range" id="snR" min="' + PC.SN_LO + '" max="' + PC.SN_HI + '" step="' + PC.SN_STEP + '" value="' + cur + '" aria-label="' + RK[q.ri] + ' 연봉 (만원)"' + (done ? ' disabled' : '') + '></div>' +
     '<div class="snax"><span>' + man(PC.SN_LO) + '</span><span>' + man((PC.SN_LO + PC.SN_HI) / 2) + '</span><span>' + man(PC.SN_HI) + '</span></div>';
   if (done) {
     var e = PC.sniperErr(truth, p.v[i]), pts = PC.sniperPts(e);
-    h += '<div class="res"><p class="msg"><b class="' + (pts >= 60 ? 'ok' : 'no') + '">' + pts + '점</b> 정답 ' + man(truth) + '만원 · 오차 ' + (e > 0 ? '+' : '') + e + '%' +
+    h += '<div class="res">' + (Math.abs(e) <= 3 && PX.ok ? '<span class="hs">HEADSHOT!</span>' : '') + '<p class="msg"><b class="' + (pts >= 60 ? 'ok' : 'no') + '">' + pts + '점</b> 정답 ' + man(truth) + '만원 · 오차 ' + (e > 0 ? '+' : '') + e + '%' +
       (q.tw ? ' · <b>반전 회사</b>였어요. ' + esc(c.grp) + ' 과장 중간값보다 ' + (c.twist > 1 ? Math.round((c.twist - 1) * 100) + '% 많이' : Math.round((1 - c.twist) * 100) + '% 적게') + ' 받아요.' : '') + '</p>' +
       '<button class="btn" id="sNx" type="button">' + (i + 1 < PC.SNIPER_N ? '다음 문제' : '결과 보기') + '</button></div>';
   } else h += '<div class="row" style="justify-content:flex-start"><button class="btn ghost sm" type="button" data-d="-500">−500</button><button class="btn ghost sm" type="button" data-d="-50">−50</button><button class="btn ghost sm" type="button" data-d="50">+50</button><button class="btn ghost sm" type="button" data-d="500">+500</button><button class="btn" id="sShot" type="button">이 값으로 쏘기</button></div>';
   $('sniper').innerHTML = h + '</div>';
   if (done) { $('sNx').onclick = function () { SST = null; drawSniper(p); }; $('sNx').focus({ preventScroll: true }); return; }
   SST = { i: i, v: cur, done: false };
-  var set = function (v) { v = PC.sniperVal(v); SST.v = v; $('snR').value = v; $('snV').textContent = man(v); };
+  var set = function (v) { v = PC.sniperVal(v); SST.v = v; $('snR').value = v; $('snV').textContent = man(v); if ($('snXh')) $('snXh').style.cssText = scopeAt(v); };
   $('snR').oninput = function () { set(this.value); };
   document.querySelectorAll('#sniper [data-d]').forEach(function (b) { b.onclick = function () { set(SST.v + +b.dataset.d); }; });
-  $('sShot').onclick = function () { p.v[i] = SST.v; setProg('sniper', p); SST.done = true; drawSniper(p); };
+  $('sShot').onclick = function () {
+    p.v[i] = SST.v; setProg('sniper', p); SST.done = true; drawSniper(p);
+    var e = PC.sniperErr(truth, p.v[i]); sfx(Math.abs(e) <= 3 ? 'combo' : PC.sniperPts(e) >= 60 ? 'coin' : 'wrong');   // 헤드샷 = 콤보 소리
+  };
 }
 function finishSniper(p) {
   var S = PC.scoreSniper(SPZ, p.v, ctx);
@@ -1625,19 +1682,33 @@ function newCup() {
   CUP = { theme: CTHEME, all: L, round: L, next: [], i: 0, picks: [], last: null, started: false };
   cupDraw();
 }
+// 도트 대진표 (3차): 고르는 동안엔 숫자 없는 빌딩(연봉은 비밀), 떨어진 회사는 흐리게, 지금 대결은 테두리
+function cupBrk() {
+  if (!PX.ok) return '';
+  var lost = {}, a = CUP.round[CUP.i], b = CUP.round[CUP.i + 1];
+  CUP.picks.forEach(function (p) { lost[p[1]] = 1; });
+  return '<div class="brk8" aria-hidden="true">' + CUP.all.map(function (c) { return bld(c, 2, { blind: 1 }, lost[c.n] ? 'gone' : c === a || c === b ? 'now' : ''); }).join('') + '</div>';
+}
+// 끝난 뒤 대진표: 16강(또는 8강) → … → 우승, 진짜 빌딩으로 (picks 앞에서부터 판마다 [이긴 회사, 진 회사])
+function cupBkt(all, picks) {
+  if (!PX.ok) return '';
+  var rows = [[all.length + '강', all]], i = 0, m = all.length / 2;
+  while (m >= 1) { rows.push([m === 1 ? '우승' : m + '강', picks.slice(i, i + m).map(function (p) { return BYN[p[0]]; })]); i += m; m /= 2; }
+  return '<div class="bkt" aria-hidden="true">' + rows.map(function (r) { return '<div class="rl">' + r[0] + '</div><div class="rnd">' + r[1].map(function (c) { return bld(c, 2); }).join('') + '</div>'; }).join('') + '</div>';
+}
 function cupDraw() {
   var R = CUP.round, n = R.length, lv = n === 2 ? '결승' : n + '강', a = R[CUP.i], b = R[CUP.i + 1], dots = '';
   for (var k = 0; k < n / 2; k++) dots += '<i class="' + (k < CUP.i / 2 ? 'on' : '') + '"></i>';
   var pr = '';
   if (CUP.last) { var rt = rate(CUP.last.n); pr = rt == null ? esc(CUP.last.n) + '는 아직 고른 사람이 적은 회사예요.' : '전국 <b>' + Math.round(rt * 100) + '%</b>가 ' + esc(CUP.last.n) + '를 골랐어요.' + mockTag(); }
   $('cup').innerHTML = themeBar() + '<div class="cupbar"><span class="lv">' + PC.THEMES[CUP.theme] + ' · ' + lv + '</span><span class="pg">' + (CUP.i / 2 + 1) + ' / ' + n / 2 + '</span><span class="dots">' + dots + '</span></div>' +
-    '<p class="qline">어디로 <b>가고 싶어요?</b></p><p class="qsub">연봉은 아직 비밀이에요.</p>' +
-    '<div class="duel">' + [a, b].map(function (c, j) { return '<button class="pick" type="button" data-j="' + j + '">' + logo(c) + '<span class="nm">' + esc(c.n) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + '</span><span class="amt q">?</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
+    cupBrk() + '<p class="qline">어디로 <b>가고 싶어요?</b></p><p class="qsub">연봉은 아직 비밀이에요.</p>' +
+    '<div class="duel">' + [a, b].map(function (c, j) { return '<button class="pick" type="button" data-j="' + j + '">' + bld(c, 3, { blind: 1 }, 'pb') + logo(c) + '<span class="nm">' + esc(c.n) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + '</span><span class="amt q">?</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
     '<p class="prate" aria-live="polite">' + pr + '</p>';
   wireTheme();
   document.querySelectorAll('#cup .pick').forEach(function (el) { el.onclick = function () {
     if (!CUP.started) { CUP.started = true; call('/play/start', { game: 'cup', dev: DEV }).catch(function () {}); }
-    var w = +el.dataset.j ? b : a, l = w === a ? b : a;
+    var w = +el.dataset.j ? b : a, l = w === a ? b : a; sfx('coin');
     CUP.picks.push([w.n, l.n]); CUP.next.push(w); CUP.last = w; CUP.i += 2;
     if (CUP.i >= n) { CUP.round = CUP.next; CUP.next = []; CUP.i = 0; }
     CUP.round.length === 1 ? cupEnd(CUP.round[0]) : cupDraw();
@@ -1645,10 +1716,10 @@ function cupDraw() {
 }
 function cupEnd(w) {
   var theme = CUP.theme, all = CUP.all, picks = CUP.picks;
-  call('/play/cup', { dev: DEV, theme: theme, picks: picks }).catch(function () {}).then(function () { return loadCupStat(); }).then(function () { cupReport(w, theme, all); });
+  call('/play/cup', { dev: DEV, theme: theme, picks: picks }).catch(function () {}).then(function () { return loadCupStat(); }).then(function () { cupReport(w, theme, all, picks); sfx('fanfare'); });
   CUP = null;
 }
-function cupReport(w, theme, all) {
+function cupReport(w, theme, all, picks) {
   var by = all.slice().sort(function (x, y) { return y.rk[1] - x.rk[1]; }), r = by.indexOf(w) + 1, top = by[0], N = all.length;
   var pool = PC.cupPool(ctx, theme), wins = function (c) { var s = CSTAT[c.n]; return s ? s[2] : 0; };
   var want = pool.slice().sort(function (x, y) { return wins(y) - wins(x) || (rate(y.n) || 0) - (rate(x.n) || 0); }).slice(0, 10);
@@ -1658,7 +1729,8 @@ function cupReport(w, theme, all) {
     : r <= 4 ? '대리 연봉도 ' + N + '곳 중 ' + r + '위, 상위권이에요. 마음과 지갑이 같은 방향이네요.'
     : '대리 연봉은 ' + N + '곳 중 ' + r + '위예요. 연봉 1등은 ' + esc(top.n) + '(' + man(top.rk[1] - w.rk[1]) + '만원 더)였어요.';
   var text = '연봉 놀이터 · 드림 컴퍼니 월드컵 (' + PC.THEMES[theme] + ')\n🏆 ' + w.n + ' (대리 연봉 ' + N + '곳 중 ' + r + '위)\n' + SITE_S;
-  $('cup').innerHTML = themeBar() + '<div class="rep"><span class="crown">WINNER · 내 드림 컴퍼니 · ' + PC.THEMES[theme] + '</span>' + logo(w, 'l') + '<span class="nm"><b>' + esc(w.n) + '</b></span>' +
+  $('cup').innerHTML = themeBar() + '<div class="rep"><span class="crown">WINNER · 내 드림 컴퍼니 · ' + PC.THEMES[theme] + '</span>' +
+    stage('<div class="pxrow">' + zorro(myRank(), 'happy', 4, 'jump') + '<div class="champ">' + icon('trophy', 4) + bld(w, bS(true), null, 'grow') + '</div></div>' + confetti(), 'resst', '우승 ' + w.n + ' 빌딩 위에 트로피') + logo(w, 'l') + '<span class="nm"><b>' + esc(w.n) + '</b></span>' +
     '<p class="twist" style="background:none;padding:0">전국 우승 순위 <b>' + wr + '위</b> (' + PC.THEMES[theme] + ' ' + pool.length + '곳 중, 우승 ' + man(wins(w)) + '번)' + mockTag() + '</p>' +
     '<div class="stats"><div><small>신입 기준 연봉</small><b>' + (w.s0 ? man(w.s0) + '만' : '-') + '</b></div><div><small>대리</small><b>' + man(w.rk[1]) + '만</b></div><div><small>부장</small><b>' + eokS(w.rk[4]) + '</b></div>' +
     '<div><small>1년 퇴사율</small><b>' + pctS(w.to) + '</b></div><div><small>평균 근속</small><b>' + (w.tt ? w.tt.toFixed(1) + '년' : '-') + '</b></div><div><small>직원</small><b>' + man(w.m) + '명</b></div></div>' +
@@ -1669,9 +1741,9 @@ function cupReport(w, theme, all) {
     '<div class="vs2"><div><b>가고 싶은 TOP 10</b> <small class="src">(전국 우승 횟수)</small><ol>' + want.map(function (c) { return '<li class="' + (payN.indexOf(c.n) < 0 ? 'off' : '') + '">' + esc(c.n) + ' <small>· 과장 ' + man(c.rk[2]) + '</small></li>'; }).join('') + '</ol></div>' +
     '<div><b>연봉 TOP 10</b> <small class="src">(과장 연봉)</small><ol>' + pay.map(function (c) { return '<li>' + esc(c.n) + ' <small>· ' + man(c.rk[2]) + '만원</small></li>'; }).join('') + '</ol></div></div>' +
     '<p class="src">빨간 이름: 인기는 TOP 10인데 연봉은 TOP 10 밖인 곳이에요.</p>' +
-    '<details class="brk"><summary>이번 ' + N + '곳 대리 연봉 순위 보기</summary><ol>' + by.map(function (c) { return '<li>' + (c === w ? '<b>' + esc(c.n) + '</b>' : esc(c.n)) + ' · ' + man(c.rk[1]) + '만원</li>'; }).join('') + '</ol></details></div>';
+    (picks ? cupBkt(all, picks) : '') + '<details class="brk"><summary>이번 ' + N + '곳 대리 연봉 순위 보기</summary><ol>' + by.map(function (c) { return '<li>' + (c === w ? '<b>' + esc(c.n) + '</b>' : esc(c.n)) + ' · ' + man(c.rk[1]) + '만원</li>'; }).join('') + '</ol></details></div>';
   wireTheme();
-  wireShare('shC', text, { title: '드림 컴퍼니 월드컵', big: '🏆', sub: w.n + '\n대리 연봉 ' + N + '곳 중 ' + r + '위 · ' + PC.THEMES[theme] });
+  wireShare('shC', text, { title: '드림 컴퍼니 월드컵', big: '🏆', sub: w.n + '\n대리 연봉 ' + N + '곳 중 ' + r + '위 · ' + PC.THEMES[theme], px: { mood: 'happy', co: w, icon: 'trophy' } });
   $('cupAgain').onclick = newCup;
 }
 
@@ -1681,7 +1753,8 @@ var HG = 'higher';
 function renderHall() {
   var b = badges();
   $('hall').innerHTML = '<div class="toolbar"><div class="seg" id="hallSeg">' + PC.DAILY.map(function (g) { return '<button type="button" data-v="' + g + '" aria-pressed="' + (g === HG) + '">' + GNAME[g] + '</button>'; }).join('') + '</div></div>' +
-    '<div id="hallLb"><p class="src">순위를 불러오는 중이에요…</p></div>' +
+    '<div class="arcade"><p class="ahd">★ HI-SCORE ★</p><p class="ahd2 g">' + esc(GNAME[HG]) + '</p><p class="ahd2">INSERT COIN</p>' +   // 오락실 틀은 이 탭에서만 (3차)
+    '<div id="hallLb"><p class="src">순위를 불러오는 중이에요…</p></div></div>' +
     '<p class="h3">내 칭호</p><p class="src" style="margin:0">이 기기에만 저장되고, 닉네임 옆에 가장 최근 칭호가 보여요. 연속 출석 🔥 ' + streak() + '일.</p>' +
     '<div class="badges">' + BADGES.map(function (x) { return '<div class="bdg' + (b[x[0]] ? ' on' : '') + '"><b>' + x[1] + '</b>' + x[2] + (b[x[0]] ? ' · ' + mmdd(b[x[0]]) : '') + '</div>'; }).join('') + '</div>' +
     '<p class="h3">이번 주 내 기록</p><div class="tw"><table class="tbl"><thead><tr><th>게임</th>' + PC.weekDays(TODAY).map(function (d) { return '<th>' + mmdd(d) + '</th>'; }).join('') + '</tr></thead><tbody>' +
