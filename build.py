@@ -585,9 +585,7 @@ def nav_html(active: str, root: str, logo: str) -> str:
         + '<nav class="zb" aria-label="사이트 탭">' + "".join(
             f'<a href="{root}{href}"{" class=\"on\" aria-current=\"page\"" if href == active else ""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{TAB_ICON[href]}</svg>'
             f'<span>{TAB_SHORT[href]}</span>{"<i class=\"dot\"></i>" if href == "play/index.html" else ""}</a>' for href, _ in TABS) + '</nav>'
-        # 아래로 스크롤하면 탭바를 살짝 숨기고, 올리면 다시 (읽는 공간 확보)
-        "<script>(function(){var b=document.currentScript.previousElementSibling,y=scrollY;addEventListener('scroll',function(){var n=scrollY;if(Math.abs(n-y)<8)return;"
-        "b.classList.toggle('hide',n>y&&n>120);y=n},{passive:true})})();</script>"
+        # 2026-10-28: 스크롤하면 탭바를 숨기던 기능은 뺌 (사용자: 뉴스에서 아래 바가 사라지는 버그로 보임) — 탭바는 항상 보인다
     )
 
 

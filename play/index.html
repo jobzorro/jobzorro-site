@@ -566,6 +566,8 @@ h1 .thin { margin-bottom:8px; }
 /* 게임 중: 위에 검은 막대 하나(← 게임 고르기 · 이름 · 진행 · 효과음) + 얇은 진행 바 */
 .playbar { position:sticky; top:0; z-index:15; background:var(--ink); color:var(--bg); margin:0 calc(-1 * max(16px, env(safe-area-inset-left,0px))); }
 body:has(> .zn) .playbar { top:calc(54px + env(safe-area-inset-top,0px)); }
+/* 2026-10-28 사이트 공용 위 바(TEAMZORRO)는 본문 옆 여백 밖까지 화면 끝에서 끝으로 (여백 안에 있으면 스크롤할 때 양옆이 비쳐 잘려 보임) */
+body > .zn { margin-left:calc(-1 * max(16px, env(safe-area-inset-left,0px))); margin-right:calc(-1 * max(16px, env(safe-area-inset-right,0px))); }
 .pb-in { max-width:1212px; margin:0 auto; display:flex; align-items:center; gap:8px 14px; min-height:52px; padding:4px max(16px, env(safe-area-inset-left,0px)); }
 .pb-back { border:0; background:transparent; color:inherit; font-weight:900; font-size:15px; min-height:44px; min-width:44px; padding:0 8px 0 0; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .pb-name { flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--display); font-weight:900; font-size:16px; letter-spacing:-.02em; }
