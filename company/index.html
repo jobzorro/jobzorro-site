@@ -206,7 +206,10 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .pulse .top button i { font-style:normal; font-family:var(--display); color:var(--muted); margin-right:5px; }
 .pulse .top button:hover { border-color:var(--ink); }
 .picks .pill i { font-style:normal; font-family:var(--display); color:var(--muted); margin-right:5px; }
-.series { width:100%; max-width:960px; text-align:left; margin-top:10px; }
+.series { width:100%; max-width:960px; min-width:0; text-align:left; margin-top:10px; }
+/* 2026-10-28: 시리즈 카드 줄이 길어 감싼 칸까지 넓어지며 첫 화면이 오른쪽으로 밀리던 것 → 칸을 화면 폭에 묶는다 */
+.intro { grid-template-columns:minmax(0, 1fr); }
+.pulse { width:100%; min-width:0; grid-template-columns:minmax(0, 1fr); }
 .ser-h { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
 .ser-nav button { font:inherit; font-size:18px; line-height:1; width:34px; height:34px; border-radius:999px; border:1px solid var(--hairline-2); background:var(--paper); color:var(--ink); cursor:pointer; margin-left:6px; }
 .ser-nav button:hover { border-color:var(--ink); }
@@ -1776,7 +1779,8 @@ topP.then(d => heroTop(d?.top)).catch(() => heroTop(null));
 topP.then(d => { if (d) { $("#stPeople").innerHTML = (d.total ?? d.today).toLocaleString("ko-KR") + "<small>명</small>"; TK.people = d.total ?? d.today; TK.vs = d.vs?.[0]; tick(); } }).catch(() => {});
 // 첫 화면 시리즈 (2026-10-28 사용자: 옆으로 넘기는 시리즈물 5개): ① 이번 주 많이 본 TOP 10 ② 무조건 가세요 ③ 가세요 ④ 워라밸 ⑤ 숨은 알짜 중견
 // 화면에 보이는 이름은 검색 별칭 첫 번째(에이치디현대중공업 → HD현대중공업)가 있으면 그걸로
-const serName = n => (IDX.find(r => r[0] === n)?.[3] || "").split(" · ")[0] || n;
+//   '삼전'·'현대차' 같은 줄임말은 안 쓰고, 영문이 들어간 정식 표기(SK하이닉스·LG유플러스)일 때만
+const serName = n => (IDX.find(r => r[0] === n)?.[3] || "").split(" · ").find(a => /[A-Za-z]/.test(a)) || n;
 function seriesHtml(top) {
   const all = [...(top.length >= 3 ? [{ k: "hot", t: "이번 주 많이 본 회사 TOP 10", d: "최근 7일 사람들이 가장 많이 찾아본 회사", r: top.slice(0, 10).map(([n, v]) => [n, `이번 주 ${v.toLocaleString("ko-KR")}번 봤어요`]) }] : []),
     ...SERIES.filter(x => x.r.length >= 3)];
@@ -2312,7 +2316,8 @@ const meEl = id => document.getElementById(id);
 function meFill(sel, list, v) { sel.innerHTML = list.map(x => `<option>${esc(x)}</option>`).join(""); if (v) sel.value = v; }
 // 맨 앞 '모름' = 비워 두기 → 회사 정보로 채움 (사람이 고른 값이 늘 먼저)
 const ME_UNK = "모름";
-meFill(meEl("me_size"), [ME_UNK, ...ME_SIZES]); meFill(meEl("me_ind"), [ME_UNK, ...ME_INDS.filter(x => x !== "게임" || GAME_CO.size)]);   // '게임'은 게임사 목록을 켰을 때만 meFill(meEl("me_wlb"), [ME_UNK, ...ME_WLB]);
+meFill(meEl("me_size"), [ME_UNK, ...ME_SIZES]); meFill(meEl("me_ind"), [ME_UNK, ...ME_INDS.filter(x => x !== "게임" || GAME_CO.size)]);   // '게임'은 게임사 목록을 켰을 때만
+meFill(meEl("me_wlb"), [ME_UNK, ...ME_WLB]);   // 2026-10-28: 위 주석 뒤에 붙어 실행이 안 되던 줄 (워라밸 칸이 비어 있었음)
 meFill(meEl("me_place"), [ME_UNK, ...ME_PLACES]);
 let meLast = null;
 function meOpen() {
