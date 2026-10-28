@@ -651,6 +651,112 @@ body:has(> .zn) .playbar { top:calc(54px + env(safe-area-inset-top,0px)); }
   .btn.big { justify-self:stretch; width:100%; }
   .seg button { min-height:44px; }
 }
+/* ── 2차 UX (2026-10-28d): 결과 화면 순서 · 순위 탭 7칸 점 · 내 조로 화면 */
+.rkbox { width:100%; max-width:440px; display:grid; gap:6px; }
+.rkbox .rkl { margin:0; font-size:15px; color:var(--soft); }
+.rkbox .rkl b { font-family:var(--display); font-size:22px; font-weight:900; color:var(--ink); letter-spacing:-.02em; }
+.nb { list-style:none; margin:0; padding:0; display:grid; gap:2px; text-align:left; }
+.nb li { display:grid; grid-template-columns:2.6em minmax(0,1fr) auto; gap:8px; align-items:baseline; padding:6px 10px; border-bottom:1px solid var(--line); font-size:14px; font-variant-numeric:tabular-nums; }
+.nb li .r { font-family:var(--display); font-weight:900; color:var(--muted); }
+.nb li .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+.nb li .n small { font-weight:500; }
+.nb li .s { font-family:var(--display); font-weight:900; white-space:nowrap; }
+.nb li.me { background:var(--acc); color:var(--acc-ink); border:0; border-radius:10px; }
+.nb li.me .r { color:var(--acc-ink); }
+.share .acts { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; width:100%; max-width:440px; align-items:start; }
+.share .msg2:empty, .share .imgout:empty { display:none; }
+.share { gap:8px; }
+.share .acts.two { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+.share .acts > .btn, .share .acts .vsbox > .btn { width:100%; min-height:48px; border:1.5px solid var(--ink); }
+.share .acts > .btn { background:var(--card); color:var(--ink); }
+.share .acts .vsbox { align-content:start; }
+.share .acts .vsbox .btn { font-size:14px; padding-inline:10px; }
+.nxrow { width:100%; max-width:440px; display:grid; }
+.btn.lime { background:var(--acc); color:var(--acc-ink); border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink); font-weight:900; min-height:52px; }
+.nxrow .btn.lime.nx { justify-self:stretch; width:100%; font-size:17px; padding:13px 18px; }
+.nxrow .btn.ghost.nx { width:100%; min-height:48px; }
+details.more { width:100%; max-width:640px; text-align:left; border-top:1px solid var(--line); font-size:14px; }
+details.more > summary { cursor:pointer; font-weight:800; color:var(--ink); min-height:44px; display:flex; align-items:center; list-style:none; }
+details.more > summary::-webkit-details-marker { display:none; }
+details.more > summary::before { content:"▸"; margin-right:8px; }
+details.more[open] > summary::before { content:"▾"; }
+details.more.sm { max-width:440px; border-top:0; font-size:13px; }
+details.more.sm > summary { font-weight:700; color:var(--soft); justify-content:center; }
+.rv { margin:0 0 10px; padding-left:0; list-style:none; display:grid; gap:6px; }
+.rv li { background:var(--fill); border-radius:10px; padding:8px 12px; }
+.rv li.no { box-shadow:inset 3px 0 0 var(--warn); }
+/* 이번 주 7칸 점 */
+.wk7 { display:flex; align-items:center; gap:8px 14px; flex-wrap:wrap; justify-content:center; font-size:13px; color:var(--soft); }
+.wk7 .wl b { color:var(--ink); }
+.d7 { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
+.d7 li { display:grid; justify-items:center; gap:1px; min-width:0; }
+.d7 i { display:block; width:22px; height:22px; border-radius:6px; background:var(--fill); border:1.5px solid var(--line2); }
+.d7 li.on i { background:var(--acc); border-color:var(--ink); }
+.d7 li.td i { border:2px dashed var(--ink); }
+.d7 li.fu i { opacity:.45; }
+.d7 small { font-size:10.5px; color:var(--muted); line-height:1.2; }
+.wk7 .d7 { width:min(100%, 230px); }
+.wkrows { display:grid; gap:4px; }
+.wkr { display:grid; grid-template-columns:minmax(0,11em) minmax(0,1fr) auto; gap:6px 14px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); }
+.wkr .wn { font-weight:800; font-size:14px; min-width:0; }
+.wkr .ws { font-family:var(--display); font-weight:900; font-size:15px; font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right; min-width:5.5em; }
+.wkr .d7 { max-width:300px; }
+/* 순위 탭: 게임 고르기 가로 한 줄 (넘치면 옆으로 밀기) */
+.seg.segx { display:flex; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; max-width:100%; }
+.seg.segx::-webkit-scrollbar { display:none; }
+.seg.segx button { flex:none; }
+/* 내 조로 */
+.lktop { display:grid; grid-template-columns:minmax(0,300px) minmax(0,1fr); gap:16px 24px; align-items:center; margin-top:4px; }
+.lkst { min-height:200px; justify-content:center; margin:0; }
+.lkme { min-width:0; display:grid; gap:6px; }
+.lknm { margin:0; font-family:var(--display); font-weight:900; font-size:clamp(24px,3vw,34px); letter-spacing:-.03em; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.lknm .badge1 { font-size:12px; font-weight:800; border-radius:999px; padding:1px 9px; background:var(--acc); color:var(--acc-ink); letter-spacing:0; }
+.lkrk { margin:0; font-size:15px; color:var(--soft); }
+.lkrk b { color:var(--ink); }
+.xpbar { height:12px; border:1.5px solid var(--ink); border-radius:6px; background:var(--fill); overflow:hidden; max-width:420px; }
+.xpbar i { display:block; height:100%; background:var(--acc); }
+.lksec { margin-top:26px; padding-top:14px; border-top:2px solid var(--ink); }
+.lkh { margin:0 0 6px; font-family:var(--display); font-weight:900; font-size:22px; letter-spacing:-.03em; }
+.lkh b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
+.lkslot { margin-top:10px; }
+.lkh4 { margin:0 0 6px; font-weight:800; font-size:15px; }
+.lkh4 small { color:var(--muted); font-weight:700; margin-left:4px; }
+.bgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+.bgrid .bg { border:1.5px dashed var(--line2); border-radius:12px; padding:8px 10px; display:grid; grid-template-columns:auto minmax(0,1fr); gap:0 8px; align-items:center; color:var(--muted); font-size:12px; min-width:0; }
+.bgrid .bg .px { grid-row:span 2; }
+.bgrid .bg b { font-size:14px; overflow-wrap:anywhere; }
+.bgrid .bg small { line-height:1.35; }
+.bgrid .bg.on { border:1.5px solid var(--ink); color:var(--soft); background:var(--card); }
+.bgrid .bg.on b { color:var(--ink); }
+@media (max-width:640px) {
+  .lktop { grid-template-columns:minmax(0,1fr); }
+  .lkst { min-height:170px; }
+  .wkr { grid-template-columns:minmax(0,1fr) auto; }
+  .wkr .d7 { grid-column:1 / -1; grid-row:2; max-width:none; }
+  .d7 i { width:100%; max-width:30px; height:24px; }
+  .bgrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+/* 내 조로 서랍 (오른쪽에서 밀려 나옴). 줄어든 움직임이면 맨 아래 규칙이 transition 을 끔 */
+.lkback { position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.45); opacity:0; transition:opacity .28s; }
+.lkback.on { opacity:1; }
+.drawer { position:fixed; top:0; right:0; bottom:0; z-index:41; width:min(460px, 100vw); background:var(--bg); color:var(--ink); box-shadow:-10px 0 30px var(--shadow); border-left:1.5px solid var(--ink);
+  display:flex; flex-direction:column; transform:translateX(100%); transition:transform .28s cubic-bezier(.2,.8,.2,1); padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+.drawer.open { transform:translateX(0); }
+.drawer.drag { transition:none; }
+.dw-head { display:flex; align-items:center; gap:10px; padding:6px 8px 6px 18px; border-bottom:2px solid var(--ink); }
+.dw-head h2 { flex:1 1 0; margin:0; font-family:var(--display); font-weight:900; font-size:22px; letter-spacing:-.03em; }
+.dw-head h2 b { background:linear-gradient(transparent 60%, var(--mark) 60%); }
+.dw-x { min-width:44px; min-height:44px; border:0; background:transparent; font-size:20px; font-weight:900; border-radius:10px; }
+.dw-x:hover { background:var(--fill); }
+.dw-body { flex:1 1 0; overflow-y:auto; overscroll-behavior:contain; touch-action:pan-y; padding:12px max(18px, env(safe-area-inset-right,0px)) 32px 18px; }
+html.lk-open, html.lk-open body { overflow:hidden; }
+.drawer .lktop { grid-template-columns:minmax(0,1fr); }
+.drawer .lkst { min-height:180px; }
+.drawer .bgrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.drawer .items { grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); }
+.mylk { display:inline-flex; align-items:center; gap:8px 14px; border:0; background:transparent; padding:0 6px 0 0; min-height:44px; border-radius:10px; text-align:left; }
+.mylk:hover .nick { text-decoration:underline; }
+@media (max-width:640px) { .drawer { width:100vw; border-left:0; } }
 @media (prefers-reduced-motion: reduce) { .band { overflow-x:auto; } .band .tr { animation:none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; animation:none !important; } .pick:hover:not(:disabled), .offer:hover:not(:disabled) { transform:none; } }
 </style>
@@ -733,14 +839,13 @@ body:has(> .zn) .playbar { top:calc(54px + env(safe-area-inset-top,0px)); }
 </div></section>
 
 <section class="sec" id="p-tools" aria-label="연봉 도구" hidden><div class="in">
-  <div class="sec-head"><span class="num">⚙</span><h2>연봉 <b>도구</b></h2><p>게임은 아니지만 자주 쓰는 계산 두 가지, 그리고 내 조로 꾸미기예요. 넣은 숫자는 이 화면에서만 쓰고 어디에도 보내지 않아요.</p></div>
-  <div class="toolbar"><div class="seg" id="toolSeg"><button data-v="rank" aria-pressed="true">직급 환산기</button><button data-v="live" aria-pressed="false">실시간 월급</button><button data-v="look" aria-pressed="false">내 조로 꾸미기</button></div></div>
+  <div class="sec-head"><span class="num">⚙</span><h2>연봉 <b>도구</b></h2><p>게임은 아니지만 자주 쓰는 계산 두 가지예요. 넣은 숫자는 이 화면에서만 쓰고 어디에도 보내지 않아요.</p></div>
+  <div class="toolbar"><div class="seg" id="toolSeg"><button data-v="rank" aria-pressed="true">직급 환산기</button><button data-v="live" aria-pressed="false">실시간 월급</button></div></div>
   <div id="tool-rank">
     <p class="big1" style="font-size:clamp(20px,2.6vw,28px)">내 연봉, 저 회사에선 <b>무슨 직급?</b></p>
     <div class="bar1"><div class="fld"><label for="rkPay">내 연봉 (만원)</label><input type="number" id="rkPay" inputmode="numeric" value="5000"></div></div>
     <div id="rkOut"></div>
   </div>
-  <div id="tool-look" hidden></div>
   <div id="tool-live" hidden>
     <p class="big1" style="font-size:clamp(20px,2.6vw,28px)">지금 이 순간에도 <b>통장에 쌓이는 돈</b></p>
     <div class="bar1"><div class="fld"><label for="lvPay">내 연봉 (만원)</label><input type="number" id="lvPay" inputmode="numeric" value="4000"></div>
@@ -750,6 +855,11 @@ body:has(> .zn) .playbar { top:calc(54px + env(safe-area-inset-top,0px)); }
   </div>
 </div></section>
 </main>
+<div class="lkback" id="lkBack" hidden></div>
+<aside class="drawer" id="lkDrawer" role="dialog" aria-modal="true" aria-labelledby="lkTitle" hidden>
+  <div class="dw-head"><h2 id="lkTitle">내 <b>조로</b></h2><button type="button" class="dw-x" id="lkClose" aria-label="내 조로 닫기">✕</button></div>
+  <div class="dw-body"><div id="look"></div></div>
+</aside>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module">
 import * as PC from './play_core.js';
@@ -1201,8 +1311,9 @@ var NEW_DAY = false;
 function renderMe(edit) {
   var b = topBadge(), s = streak();
   var r = myRank(), nx = nextXP();
-  var h = (PX.ok ? '<span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + zorro(r, 'normal', 2) + '조로 ' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span>' : '') +
-    '<span class="nick">' + esc(NICK) + '</span>' + (b ? '<span class="badge1">' + esc(b) + '</span>' : '') +
+  // 2차 UX: 조로 그림·닉네임을 누르면 '내 조로' 옆 서랍이 열림
+  var h = '<button type="button" class="mylk" data-go="look" aria-label="내 조로 열기 · ' + esc(NICK) + ', 조로 ' + RK[r] + '">' + (PX.ok ? '<span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + zorro(r, 'normal', 2) + '조로 ' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span>' : '') +
+    '<span class="nick">' + esc(NICK) + '</span></button>' + (b ? '<span class="badge1">' + esc(b) + '</span>' : '') +
     '<span class="fire" title="오늘의 회사를 이어서 푼 날">' + (s ? '🔥 ' + s + '일 연속' : '🔥 0일') + '</span><span class="sp"></span>' +
     '<button class="lnk" id="nickEd" type="button" aria-label="닉네임 바꾸기"><span class="pc">닉네임 바꾸기</span><span class="ph" aria-hidden="true">✎</span></button>' + sndBtn('sndM');
   if (edit) h += '<div class="nickf" style="width:100%"><label for="nickIn" style="font-size:13px;font-weight:700">닉네임</label><input id="nickIn" maxlength="10" value="' + esc(NICK) + '" autocomplete="off">' +
@@ -1270,9 +1381,12 @@ document.addEventListener('click', function (e) {
 });
 
 // ── 결과 카드: 이모지 글 복사 + 그림(canvas) 만들기
-function shareBox(id) {
-  return '<div class="share" id="' + id + '"><pre></pre><div class="row"><button class="btn" type="button" data-copy>결과 복사</button><button class="btn ghost" type="button" data-img>그림으로 만들기</button></div>' +
-    '<p class="msg2" aria-live="polite"></p><textarea readonly hidden aria-label="복사할 결과"></textarea><div class="imgout"></div></div>';
+// 2차 UX: [카드 공유] [⚔ 도전장] 두 버튼을 나란히 (extra = vsBox). 글 복사는 작은 버튼, 공유 글 미리 보기는 접기
+function shareBox(id, extra) {
+  return '<div class="share" id="' + id + '"><div class="acts' + (extra ? ' two' : '') + '"><button class="btn" type="button" data-img>카드 공유</button>' + (extra || '') + '</div>' +
+    '<div class="row"><button class="btn ghost sm" type="button" data-copy>결과 글 복사</button></div>' +
+    '<p class="msg2" aria-live="polite"></p><textarea readonly hidden aria-label="복사할 결과"></textarea><div class="imgout"></div>' +
+    '<details class="more sm"><summary>공유 글 미리 보기</summary><pre></pre></details></div>';
 }
 function wireShare(id, text, card) {
   var box = $(id); if (!box) return;
@@ -1339,7 +1453,7 @@ function lbAll(t, game) {
     lbCol('이번 주', t.week.replace('-W', '년 ') + '주 · 7일 합계, 빠진 날 0점', t.weekTop, game, wkMine) + hallCol(t.hall, game) + '</div>';
 }
 function miniLb(elId, game) {
-  getTop(game).then(function (t) { var el = $(elId); if (!el || !t) return; el.innerHTML = lbAll(t, game) + '<p class="src"><a href="#hall">순위 · 명예의 전당 전체 보기 →</a></p>'; });
+  getTop(game).then(function (t) { fillNb(game, t); var el = $(elId); if (!el || !t) return; el.innerHTML = lbAll(t, game) + '<p class="src"><a href="#hall">순위 · 명예의 전당 전체 보기 →</a></p>'; });
 }
 // 미리보기 전용: 오늘 기록 지우고 다시 하기 (실서비스에선 안 보임 — 서버가 기기당 하루 한 번만 받음)
 function againBtn(game, fn) {
@@ -1501,8 +1615,11 @@ function resultHigher(x) {
   var text = '연봉 놀이터 · 어디가 더 많이 줄까? ' + mmdd(TODAY) + '\n' + per.map(function (v) { return v ? '🟩' : '🟥'; }).join('') + '\n' + man(x.score) + '점 (' + x.aux + '/10)\n' + SITE_S;
   $('higher').innerHTML = '<div class="over"><span class="lv">오늘의 도전 · ' + mmdd(TODAY) + '</span>' + scene + vsScene('higher', x) + '<div class="big">' + man(x.score) + '<small>점</small></div>' +
     '<div class="ttl"><b>10문제 중 ' + x.aux + '개</b> 맞혔어요</div>' +
-    '<p>' + (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>이에요.' : esc(x.err || '')) + ' 내일 0시에 새 문제가 나와요.</p>' +
-    vsBox('higher', x) + shareBox('shH') + '<div class="row"><button class="btn ghost" type="button" id="toE">무한 모드 하러 가기</button>' + againBtn('higher', dailyHigher) + '</div></div><div id="lbH"></div>';
+    rankBox('higher', x) + shareBox('shH', vsBox('higher', x)) + nextBtn('higher') + week7('higher') +   // 2차 UX: 점수 → 순위 → 공유·도전장 → 다음 게임 → 이번 주
+    '<details class="more"><summary>문제 다시 보기 · 틀린 ' + per.filter(function (v) { return !v; }).length + '개</summary><ol class="rv">' + HPZ.qs.map(function (q, i) {
+      return '<li class="' + (per[i] ? 'ok' : 'no') + '"><b>' + (per[i] ? '⭕' : '❌') + '</b> ' + gapMsg(q, PC.higherWin(q, ctx)) + '</li>'; }).join('') + '</ol></details>' +
+    '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbH"></div></details>' +
+    '<p class="src" style="margin:0">내일 0시에 새 문제가 나와요.</p><div class="row"><button class="btn ghost sm" type="button" id="toE">무한 모드 하러 가기</button>' + againBtn('higher', dailyHigher) + '</div></div>';
   wireShare('shH', text, { title: '어디가 더 많이 줄까?', big: man(x.score) + '점', sub: '10문제 중 ' + x.aux + '개 · ' + mmdd(TODAY), lines: [per.slice(0, 5).map(function (v) { return v ? '🟩' : '🟥'; }).join(''), per.slice(5).map(function (v) { return v ? '🟩' : '🟥'; }).join('')],
     px: { mood: moodOf(x.aux / 10), co: top, icon: x.aux === 10 ? 'crown' : '' } });
   $('toE').onclick = function () { document.querySelector('#hMode button[data-v="endless"]').click(); };
@@ -1551,8 +1668,8 @@ function overE() {
   var t = ETITLES.filter(function (x) { return E.score >= x[0]; }).pop();
   var text = '연봉 놀이터 · 무한 모드 ' + E.score + '개 맞힘 · ' + t[1] + '\n나보다 잘 맞힐 자신 있으면 → ' + SITE_S;
   $('higher').innerHTML = '<div class="over"><span class="lv">GAME OVER · 내 최고 ' + best + '개</span><div class="big">' + E.score + '<small>개 맞힘</small></div><div class="ttl"><b>' + t[1] + '</b></div><p>' + t[2] + '</p>' +
-    '<ul class="miss">' + E.miss.map(function (q) { var w = BYN[q[PC.higherWin(q, ctx)]]; return '<li>' + gapMsg(q, PC.higherWin(q, ctx)) + ' <a href="' + link(w) + '" target="_blank" rel="noopener">' + esc(w.n) + ' 직급별 연봉 →</a></li>'; }).join('') + '</ul>' +
-    shareBox('shE') + '<div class="row"><button class="btn" id="eAgain" type="button">다시 하기</button></div></div>';
+    shareBox('shE') + '<div class="nxrow"><button class="btn lime nx" id="eAgain" type="button">다시 하기 ▶</button></div>' + nextBtn('higher').replace('btn lime nx', 'btn ghost nx') +
+    (E.miss.length ? '<details class="more"><summary>틀린 문제 다시 보기 · ' + E.miss.length + '개</summary><ul class="miss">' + E.miss.map(function (q) { var w = BYN[q[PC.higherWin(q, ctx)]]; return '<li>' + gapMsg(q, PC.higherWin(q, ctx)) + ' <a href="' + link(w) + '" target="_blank" rel="noopener">' + esc(w.n) + ' 직급별 연봉 →</a></li>'; }).join('') + '</ul></details>' : '') + '</div>';
   wireShare('shE', text, { title: '무한 모드', big: E.score + '개', sub: t[1] + ' · 내 최고 ' + best + '개', px: { mood: moodOf(Math.min(1, E.score / 15)) } });
   $('eAgain').onclick = newE;
   E = null;
@@ -1651,11 +1768,11 @@ function resultToday(x) {
     : stage('<div class="pxrow">' + zorro(myRank(), 'shock', 4, 'idle', det) + '<span class="fleetx">범인 도주!</span><div class="runaway" style="position:relative">' + icon('puff', 3, 'puff') + bld(A, 4, { sil: 1 }) + '</div></div>', 'resst flee', '숨은 회사가 도망갔어요');
   $('today').innerHTML = todayInfo() + '<div class="over"><span class="lv">오늘의 회사 #' + TPZ.no + ' · ' + (ok ? '성공' : '다음 기회에') + '</span>' + scene + vsScene('today', x) + (ok ? logo(A, 'l').replace('class="lg l', 'class="lg l lightup') : logo(A, 'l')) +
     '<div class="ttl"><b>' + esc(A.n) + '</b></div><div class="big">' + tries + '<small> 단서</small></div>' +
-    '<p>' + (ok ? '단서 ' + R.open + '개 보고 ' + (R.wrong.length ? R.wrong.length + '번 틀린 뒤 ' : '한 번에 ') + '맞혔어요. ' + man(x.score) + '점 · ' : '3번 다 틀렸어요. 0점 · ') +
-    (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>이에요.' : esc(x.err || '')) + '</p>' +
-    clueList(PC.todayClues(TPZ, ctx), PC.TODAY_CLUES, -1) + '<div class="cands done" aria-label="오늘의 후보 8곳">' + cards + '</div>' +
-    '<div class="row"><a class="btn ghost sm" href="' + link(A) + '" target="_blank" rel="noopener">직급별 연봉 보기</a><a class="btn ghost sm" href="' + coLink(A) + '" target="_blank" rel="noopener">이 회사 가도 될까?</a></div>' +
-    vsBox('today', x) + shareBox('shT') + '<div class="row">' + againBtn('today', function () { TSEL = ''; renderToday(); }) + '</div></div><div id="lbT"></div>';
+    '<p>' + (ok ? '단서 ' + R.open + '개 보고 ' + (R.wrong.length ? R.wrong.length + '번 틀린 뒤 ' : '한 번에 ') + '맞혔어요. ' + man(x.score) + '점' : '3번 다 틀렸어요. 0점') +
+    '</p>' + rankBox('today', x) + shareBox('shT', vsBox('today', x)) + nextBtn('today') + week7('today') +
+    '<details class="more"><summary>단서 · 후보 8곳 다시 보기</summary>' + clueList(PC.todayClues(TPZ, ctx), PC.TODAY_CLUES, -1) + '<div class="cands done" aria-label="오늘의 후보 8곳">' + cards + '</div>' +
+    '<div class="row"><a class="btn ghost sm" href="' + link(A) + '" target="_blank" rel="noopener">직급별 연봉 보기</a><a class="btn ghost sm" href="' + coLink(A) + '" target="_blank" rel="noopener">이 회사 가도 될까?</a></div></details>' +
+    '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbT"></div></details><div class="row">' + againBtn('today', function () { TSEL = ''; renderToday(); }) + '</div></div>';
   wireShare('shT', text, { title: '오늘의 회사 #' + TPZ.no, big: tries, sub: (ok ? man(x.score) + '점' : '아쉽게 실패') + ' · 정답은 비밀\n🔥 ' + streak() + '일 연속', lines: lines,
     px: { mood: ok ? 'happy' : 'sad', hat: 1, co: A, o: { blind: 1, neutral: 1, w: 11, all: ok ? 1 : 0, off: ok ? 0 : 1 } } });   // 공유 그림엔 정답을 흘리지 않는 빌딩
   miniLb('lbT', 'today');
@@ -1736,11 +1853,13 @@ function resultSniper(x) {
     SPZ.qs.map(function (q, i) { var c = BYN[q.n], e = S.errs[i];
       return '<tr><td>' + esc(c.n) + ' ' + RK[q.ri] + (q.tw ? ' <span class="tag">반전</span>' : '') + '</td><td>' + (x.ans[i] ? man(x.ans[i]) : '-') + '</td><td>' + man(c.rk[q.ri]) + '</td><td class="' + (e > 0 ? 'up' : 'dn') + '">' + (e == null ? '-' : (e > 0 ? '+' : '') + e + '%') + '</td><td>' + S.per[i] + '</td><td class="crowd' + i + '">…</td></tr>'; }).join('') + '</tbody></table></div>';
   $('sniper').innerHTML = '<div class="over"><span class="lv">연봉 스나이퍼 · ' + mmdd(TODAY) + '</span>' + vsScene('sniper', x) + '<div class="big">' + x.score + '<small>점 / 500</small></div><div class="ttl"><b>' + emo + '</b></div>' +
-    '<p>' + (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>이에요.' : esc(x.err || '')) + '</p>' + tb + '<p class="crowd" id="snCrowd" hidden></p>' +
-    vsBox('sniper', x) + shareBox('shS') + '<div class="row">' + againBtn('sniper', renderSniper) + '</div></div><div id="lbS"></div>';
+    rankBox('sniper', x) + shareBox('shS', vsBox('sniper', x)) + nextBtn('sniper') + week7('sniper') +
+    '<details class="more"><summary>문제별 결과 다시 보기</summary>' + tb + '<p class="crowd" id="snCrowd" hidden></p></details>' +
+    '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbS"></div></details><div class="row">' + againBtn('sniper', renderSniper) + '</div></div>';
   wireShare('shS', text, { title: '연봉 스나이퍼', big: x.score + '점', sub: '500점 만점 · ' + mmdd(TODAY), lines: [emo],
     px: { mood: moodOf(x.score / 500), co: BYN[(SPZ.qs.filter(function (q) { return q.tw; })[0] || SPZ.qs[0]).n], o: { blind: 1, neutral: 1, w: 11 } } });   // 반전 회사 빌딩(숫자 없는 모양)
   getTop('sniper').then(function (t) {
+    fillNb('sniper', t);
     if (!t || !t.stat.err) return;
     var best = -1, mx = 0;
     t.stat.err.forEach(function (e, i) { var cell = document.querySelector('#sniper .crowd' + i); if (cell) cell.textContent = e == null ? '-' : (e > 0 ? '+' : '') + e + '%'; if (e != null && Math.abs(e) > mx) { mx = Math.abs(e); best = i; } });
@@ -1925,14 +2044,17 @@ function resultRoad(x, fresh) {
   var scene = '<div class="ending">' + stage('<div class="pxrow">' + zorro(T[3], T[2], 5, T[2] === 'happy' ? 'jump' : 'idle') + icon(T[0], 5, 'evi') + bld(fin, bS(true), null, 'grow') + '</div>' + (T[2] === 'happy' ? confetti() : ''), '', '엔딩: ' + EN.lb) +
     '<span class="lv">ENDING · ' + esc(scn) + (isNew ? ' · NEW!' : '') + '</span><div class="endnm"><b>' + esc(EN.lb) + '</b></div><p>' + T[1] + '</p></div>';
   $('road').innerHTML = '<div class="over"><span class="lv">이직 로드 10년 · ' + mmdd(TODAY) + '</span>' + scene + vsScene('road', x) + '<div class="big" style="font-size:clamp(44px,8vw,90px)">' + eokS(R.total) + '</div>' +
-    '<div class="ttl"><b>' + (R.eok ? '연봉 1억, ' + (R.eok + (RPZ.x0 || 0)) + '년 차에 찍었어요' : '10년 안에 1억은 못 찍었어요') + '</b></div><p>' + path + ' · ' + (x.sent ? '오늘 ' + man(x.total) + '명 중 <b>' + x.rank + '등</b>' : esc(x.err || '')) + '</p>' +
-    '<div id="rChart" style="width:100%">' + roadChart(R.years, null, RPZ.x0) + '</div>' +
-    '<div class="zorro"><div class="who"><i></i>조로의 한마디</div><p>' + esc(roadZorro(R)) + '</p></div>' + roadLog(R, 4).replace('class="rlog"', 'class="rlog" style="width:100%;text-align:left"') +
-    endDogam(EN.id) + vsBox('road', x) + shareBox('shR') + '<div class="row">' + againBtn('road', function () { RREV = false; renderRoad(); }) + '</div></div><div id="lbR"></div>';
+    '<div class="ttl"><b>' + (R.eok ? '연봉 1억, ' + (R.eok + (RPZ.x0 || 0)) + '년 차에 찍었어요' : '10년 안에 1억은 못 찍었어요') + '</b></div><p>' + path + '</p>' + rankBox('road', x) +
+    '<div class="zorro"><div class="who"><i></i>조로의 한마디</div><p>' + esc(roadZorro(R)) + '</p></div>' +
+    shareBox('shR', vsBox('road', x)) + nextBtn('road') + week7('road') +
+    '<details class="more"><summary>10년 그래프 · 2년마다 기록</summary><div id="rChart" style="width:100%">' + roadChart(R.years, null, RPZ.x0) + '</div>' + roadLog(R, 4).replace('class="rlog"', 'class="rlog" style="width:100%;text-align:left"') + '</details>' +
+    '<details class="more"><summary>엔딩 도감 · ' + PC.ENDINGS.filter(function (e) { return endBook()[e[0]]; }).length + ' / 7</summary>' + endDogam(EN.id) + '</details>' +
+    '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbR"></div></details><div class="row">' + againBtn('road', function () { RREV = false; renderRoad(); }) + '</div></div>';
   if (fresh && isNew) toast('새 엔딩을 모았어요: ' + EN.lb);
   wireShare('shR', text, { title: '이직 로드 10년 · ' + scn, big: eokS(R.total), sub: '엔딩: ' + EN.lb + '\n' + (R.eok ? '1억 ' + (R.eok + (RPZ.x0 || 0)) + '년 차' : '1억 못 찍음') + ' · ' + mmdd(TODAY), lines: [path],
     px: { mood: T[2], rk: T[3], co: fin, icon: T[0] } });
   getTop('road').then(function (t) {
+    fillNb('road', t);
     if (!t) return;
     var b = t.stat.best;
     if (b && b.picks && b.picks.length === 5) { var B2 = PC.simRoad(RPZ, ctx, b.picks); $('rChart').innerHTML = roadChart(R.years, B2.years, RPZ.x0) + '<p class="src">오늘 1위 ' + esc(b.nick) + ': ' + B2.log.map(function (l) { return l.co; }).filter(function (n, i, a) { return a.indexOf(n) === i; }).map(esc).join(' → ') + ' · ' + eokS(B2.total) + mockTag() + '</p>'; }
@@ -2015,13 +2137,14 @@ function cupReport(w, theme, all, picks) {
     '<div class="stats"><div><small>신입 기준 연봉</small><b>' + (w.s0 ? man(w.s0) + '만' : '-') + '</b></div><div><small>대리</small><b>' + man(w.rk[1]) + '만</b></div><div><small>부장</small><b>' + eokS(w.rk[4]) + '</b></div>' +
     '<div><small>1년 퇴사율</small><b>' + pctS(w.to) + '</b></div><div><small>평균 근속</small><b>' + (w.tt ? w.tt.toFixed(1) + '년' : '-') + '</b></div><div><small>직원</small><b>' + man(w.m) + '명</b></div></div>' +
     '<p class="twist">' + tw + '</p>' +
-    '<div class="row"><a class="btn" href="' + coLink(w) + '" target="_blank" rel="noopener">이 회사 가도 될까? 판단 보기</a><a class="btn ghost" href="' + link(w) + '" target="_blank" rel="noopener">직급별 연봉 보기</a></div>' +
-    shareBox('shC') + '<div class="row"><button class="btn ghost" id="cupAgain" type="button">새 ' + N + '강 하기</button></div>' +
+    shareBox('shC') + nextBtn('cup') + '<div class="row"><button class="btn ghost" id="cupAgain" type="button">새 ' + N + '강 하기</button></div>' + week7('cup') +   // 2차 UX: 공유 → 다음 게임 → 이번 주, 긴 표는 접기
+    '<div class="row"><a class="btn ghost sm" href="' + coLink(w) + '" target="_blank" rel="noopener">이 회사 가도 될까? 판단 보기</a><a class="btn ghost sm" href="' + link(w) + '" target="_blank" rel="noopener">직급별 연봉 보기</a></div>' +
+    '<details class="more"><summary>가고 싶은 회사 vs 연봉 높은 회사 · 대진표</summary>' +
     '<p class="h3" style="margin-top:6px">가고 싶은 회사 vs 연봉 높은 회사 · ' + PC.THEMES[theme] + mockTag() + '</p>' +
     '<div class="vs2"><div><b>가고 싶은 TOP 10</b> <small class="src">(전국 우승 횟수)</small><ol>' + want.map(function (c) { return '<li class="' + (payN.indexOf(c.n) < 0 ? 'off' : '') + '">' + esc(c.n) + ' <small>· 과장 ' + man(c.rk[2]) + '</small></li>'; }).join('') + '</ol></div>' +
     '<div><b>연봉 TOP 10</b> <small class="src">(과장 연봉)</small><ol>' + pay.map(function (c) { return '<li>' + esc(c.n) + ' <small>· ' + man(c.rk[2]) + '만원</small></li>'; }).join('') + '</ol></div></div>' +
     '<p class="src">빨간 이름: 인기는 TOP 10인데 연봉은 TOP 10 밖인 곳이에요.</p>' +
-    (picks ? cupBkt(all, picks) : '') + '<details class="brk"><summary>이번 ' + N + '곳 대리 연봉 순위 보기</summary><ol>' + by.map(function (c) { return '<li>' + (c === w ? '<b>' + esc(c.n) + '</b>' : esc(c.n)) + ' · ' + man(c.rk[1]) + '만원</li>'; }).join('') + '</ol></details></div>';
+    (picks ? cupBkt(all, picks) : '') + '<details class="brk"><summary>이번 ' + N + '곳 대리 연봉 순위 보기</summary><ol>' + by.map(function (c) { return '<li>' + (c === w ? '<b>' + esc(c.n) + '</b>' : esc(c.n)) + ' · ' + man(c.rk[1]) + '만원</li>'; }).join('') + '</ol></details></details></div>';
   wireTheme();
   wireShare('shC', text, { title: '드림 컴퍼니 월드컵', big: '🏆', sub: w.n + '\n대리 연봉 ' + N + '곳 중 ' + r + '위 · ' + PC.THEMES[theme], px: { mood: 'happy', co: w, icon: 'trophy' } });
   $('cupAgain').onclick = newCup;
@@ -2060,26 +2183,7 @@ function cleanLook() {
   ITEMS.forEach(function (it) { if (LOOK && LOOK[it[1]] === it[0] && own[it[0]]) L[it[1]] = it[0]; });
   LOOK = L;
 }
-function lookPanel() {
-  var own = itemsOwned(), r = myRank();
-  var h = '<p class="big1" style="font-size:clamp(20px,2.6vw,28px)">내 조로 <b>꾸미기</b></p>' +
-    '<p class="src" style="margin:0 0 12px">모자 하나 · 손에 하나 · 액세서리 하나. 꾸민 모습은 놀이터 어디서나, 공유 그림에도 나와요. 소품은 직급·칭호·엔딩 도감·보스 조우·출석으로 얻어요(이 기기에 저장).</p>' +
-    '<div class="lookp">' + (PX.ok ? stage(zorro(r, 'happy', 6, 'idle'), 'resst lookpv', '지금 내 조로') : '') + '<div class="lookslots">';
-  ['hat', 'hand', 'acc'].forEach(function (slot) {
-    h += '<p class="h3" style="margin:6px 0 6px;font-size:17px">' + SLOT_LB[slot] + '</p><div class="items" role="group" aria-label="' + SLOT_LB[slot] + '">' +
-      '<button type="button" class="itemb" data-slot="' + slot + '" data-id="" aria-pressed="' + !LOOK[slot] + '"><span class="iname">없음</span></button>' +
-      ITEMS.filter(function (it) { return it[1] === slot; }).map(function (it) {
-        var have = !!own[it[0]], look = {}; look[slot] = it[0];
-        return '<button type="button" class="itemb' + (have ? '' : ' locked') + '" data-slot="' + slot + '" data-id="' + it[0] + '"' + (have ? ' aria-pressed="' + (LOOK[slot] === it[0]) + '"' : ' disabled') + '>' +
-          (have ? zorro(r, 'normal', 2, '', { look: look }) : icon('lock', 3)) + '<span class="iname">' + esc(it[2]) + '</span>' + (have ? '' : '<small>' + esc(it[3]) + '</small>') + '</button>';
-      }).join('') + '</div>';
-  });
-  $('tool-look').innerHTML = h + '</div></div><p class="src">모은 소품 ' + Object.keys(own).length + ' / ' + ITEMS.length + '</p>';
-  $('tool-look').querySelectorAll('.itemb:not([disabled])').forEach(function (b) { b.onclick = function () {
-    LOOK[b.dataset.slot] = b.dataset.id; if (!b.dataset.id) delete LOOK[b.dataset.slot];
-    store.setJ('slp-look', LOOK); sfx('coin'); lookPanel(); renderMe();
-  }; });
-}
+function lookPanel() { renderLook(); }   // 2차 UX: 꾸미기는 '내 조로' 화면(#look, page/08c_result.js)으로 옮김
 
 // ── 이번 주 보스 회사: PC.bossOf(오늘) — 모두에게 같은 회사. 점수 보너스 없음(꾸밈). 게임에서 만나면 'slp-boss' {주: 처음 만난 날}
 var BOSS = BYN[PC.bossOf(TODAY, ctx)] || null, BWEEK = PC.isoWeek(TODAY);
@@ -2111,7 +2215,7 @@ function fmtVs(game, s) { return game === 'road' ? eokS(s) : man(s) + '점'; }
 function vsLink(game, code) { return SITE + '?vs=' + encodeURIComponent(code) + '#' + game; }
 function vsBox(game, x) {
   if (!x || !x.vs) return '';
-  return '<div class="vsbox"><button class="btn" type="button" data-vs="' + game + '">⚔ 친구에게 도전장 보내기</button><p class="msg2" aria-live="polite"></p><input class="vslink" readonly hidden aria-label="도전장 주소"></div>';
+  return '<div class="vsbox"><button class="btn" type="button" data-vs="' + game + '">⚔ 도전장 보내기</button><p class="msg2" aria-live="polite"></p><input class="vslink" readonly hidden aria-label="도전장 주소"></div>';
 }
 document.addEventListener('click', function (e) {
   var b = e.target.closest && e.target.closest('[data-vs]'); if (!b) return;
@@ -2153,19 +2257,192 @@ function vsScene(game, x) {
     'promo vsst', esc(VS.nick) + '님과 대결: ' + (r === 'win' ? '승리' : r === 'lose' ? '패배' : '무승부'));
 }
 
+// ── 2차 UX (2026-10-28d): 결과 화면 공통 조각 + 이번 주 7칸 점 + 내 조로 화면
+//    결과 순서: 큰 점수 → 오늘 N위 / M명 + 내 앞뒤 순위 → 카드 공유 · ⚔ 도전장 → 다음 게임 ▶ → 이번 주 7칸 → (접기) 다시 보기·전체 순위
+
+// 오늘 순위 상자: 위 한 줄 + 내 앞·나·뒤 (순위표는 getTop 이 오면 fillNb 가 채움. TOP 10 밖이면 내 줄만)
+function rankBox(game, x) {
+  if (!x) return '';
+  if (!x.sent) return '<div class="rkbox"><p class="rkl">' + esc(x.err || '점수를 보내지 못했어요') + '</p></div>';
+  return '<div class="rkbox" data-rk="' + game + '"><p class="rkl">오늘 <b>' + man(x.rank) + '위</b> / ' + man(x.total) + '명</p>' +
+    '<ol class="nb" aria-label="내 앞뒤 순위">' + nbRow(x.rank, NICK, x.score, game, 1) + '</ol></div>';
+}
+function nbRow(r, nick, s, game, me) {
+  return '<li class="' + (me ? 'me' : '') + '"><span class="r">' + man(r) + '</span><span class="n">' + esc(nick) + (me ? ' <small>(나)</small>' : '') + '</span><span class="s">' + fmtScore(game, s) + '</span></li>';
+}
+// t.today = 오늘 TOP 10 [[닉, 점수, …]]. 내가 r 위면 r-1 위와 r+1 위를 그 표에서 찾음 (없으면 그 줄은 빼고)
+function fillNb(game, t) {
+  var x = rec(TODAY, game), box = document.querySelector('.rkbox[data-rk="' + game + '"] .nb');
+  if (!box || !t || !x || !x.sent || !x.rank) return;
+  var L = t.today || [], r = x.rank, h = '';
+  if (r >= 2 && L[r - 2]) h += nbRow(r - 1, L[r - 2][0], L[r - 2][1], game);
+  h += nbRow(r, NICK, x.score, game, 1);
+  if (L[r] && r <= L.length - 1) h += nbRow(r + 1, L[r][0], L[r][1], game);
+  box.innerHTML = h;
+}
+// 다음 게임: 오늘 아직 안 끝낸 게임 중 이 게임 다음 차례부터. 다 했으면 로비로
+function nextBtn(game) {
+  var order = G5.slice(G5.indexOf(game) + 1).concat(G5.slice(0, G5.indexOf(game) + 1)), nx = '';
+  order.forEach(function (k) { if (!nx && k !== game) { var S = gState(k); if (!S || !S.done) nx = k; } });
+  return '<div class="nxrow">' + (nx ? '<button type="button" class="btn lime nx" data-go="' + nx + '">다음 게임: ' + esc(nx === 'today' ? '오늘의 회사' : PNAME[nx]) + ' ▶</button>'
+    : '<button type="button" class="btn lime nx" data-go="lobby">오늘 5개 다 했어요 · 게임 고르기로</button>') + '</div>';
+}
+// 이번 주 7칸: 한 날 = 라임 채움, 오늘 = 점선 테두리, 아직 안 온 날 = 흐리게
+var DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
+function playedOn(d, game) { return game === 'cup' ? store.get('slp-cupw-' + d) : rec(d, game); }
+function dots7(game) {
+  return '<ol class="d7">' + PC.weekDays(TODAY).map(function (d) {
+    var x = playedOn(d, game), sc = x && game !== 'cup' ? fmtScore(game, x.score) : x ? '우승 ' + x : '';
+    return '<li class="' + (x ? 'on' : '') + (d === TODAY ? ' td' : '') + (d > TODAY ? ' fu' : '') + '" title="' + mmdd(d) + (sc ? ' ' + esc(sc) : '') + '"><i aria-hidden="true"></i><small>' + DOW_KO[PC.dow(d)] + '</small>' +
+      '<span class="sr-only">' + mmdd(d) + ' ' + (x ? '함 ' + esc(sc) : d > TODAY ? '아직' : '안 함') + '</span></li>';
+  }).join('') + '</ol>';
+}
+function week7(game) {
+  var n = PC.weekDays(TODAY).filter(function (d) { return playedOn(d, game); }).length;
+  return '<div class="wk7"><span class="wl">이번 주 <b>' + n + '/7</b></span>' + dots7(game) + '</div>';
+}
+// 순위 탭 '이번 주 내 기록': 게임마다 한 줄 = 이름 · 7칸 점 · 합계 (390px 에서도 안 깨짐)
+function weekRows() {
+  return '<div class="wkrows">' + PC.DAILY.map(function (g) {
+    var s = myWeek(g, PC.weekDays(TODAY).filter(function (d) { return d <= TODAY; }));
+    return '<div class="wkr"><span class="wn">' + GNAME[g] + '</span>' + dots7(g) + '<b class="ws">' + (s == null ? '-' : fmtScore(g, s)) + '</b></div>';
+  }).join('') + '</div>';
+}
+
+// ── 내 조로 화면 (#look): 큰 조로 + 직급·경험치 → (다음: 기본 모습 고르기 자리) → 소품 꾸미기 → 칭호 → 엔딩 도감
+//    칸(SLOTS)·섹션(LOOK_SECS)을 배열로 둬서 나중에 성별·머리·배경 칸·소품 40개를 넣을 때 여기만 늘리면 되게
+var SLOTS = ['hat', 'hand', 'acc'];
+function lookTop() {
+  var r = myRank(), x = myXP(), nx = nextXP(), lo = RANK_XP[r], hi = RANK_XP[Math.min(4, r + 1)], pct = r >= 4 ? 100 : Math.round((x - lo) / Math.max(1, hi - lo) * 100);
+  return '<div class="lktop">' + (PX.ok ? stage(zorro(r, 'happy', 8, 'idle'), 'resst lkst', '지금 내 조로: 조로 ' + RK[r]) : '') +
+    '<div class="lkme"><p class="lknm">' + esc(NICK) + (topBadge() ? ' <span class="badge1">' + esc(topBadge()) + '</span>' : '') + '</p>' +
+    '<p class="lkrk">조로 <b>' + RK[r] + '</b> · 경험치 ' + x + (r >= 4 ? ' · 만렙' : ' · ' + RK[r + 1] + ' 승진까지 ' + nx + '판') + '</p>' +
+    '<div class="xpbar" role="progressbar" aria-label="다음 직급까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' +
+    '<p class="src" style="margin:4px 0 0">오늘의 도전을 끝낼 때마다 경험치 +1, 칭호마다 +3. 10문제 다 맞히면 특진.</p></div></div>';
+}
+function lookItems() {
+  var own = itemsOwned(), r = myRank();
+  return SLOTS.map(function (slot) {
+    var L = ITEMS.filter(function (it) { return it[1] === slot; });
+    return '<div class="lkslot"><p class="lkh4">' + SLOT_LB[slot] + ' <small>' + L.filter(function (it) { return own[it[0]]; }).length + ' / ' + L.length + '</small></p><div class="items" role="group" aria-label="' + SLOT_LB[slot] + '">' +
+      '<button type="button" class="itemb" data-slot="' + slot + '" data-id="" aria-pressed="' + !LOOK[slot] + '"><span class="iname">없음</span></button>' +
+      L.map(function (it) {
+        var have = !!own[it[0]], look = {}; look[slot] = it[0];
+        return '<button type="button" class="itemb' + (have ? '' : ' locked') + '" data-slot="' + slot + '" data-id="' + it[0] + '"' + (have ? ' aria-pressed="' + (LOOK[slot] === it[0]) + '"' : ' disabled') + '>' +
+          (have ? zorro(r, 'normal', 2, '', { look: look }) : icon('lock', 3)) + '<span class="iname">' + esc(it[2]) + '</span>' + (have ? '' : '<small>' + esc(it[3]) + '</small>') + '</button>';
+      }).join('') + '</div></div>';
+  }).join('');
+}
+function lookBadges() {
+  var b = badges();
+  return '<div class="bgrid">' + BADGES.map(function (x) {
+    return '<div class="bg' + (b[x[0]] ? ' on' : '') + '" title="' + esc(x[2]) + '">' + (PX.ok ? icon(b[x[0]] ? 'star' : 'lock', 2) : '') + '<b>' + esc(x[1]) + '</b><small>' + (b[x[0]] ? mmdd(b[x[0]]) + ' 얻음' : esc(x[2])) + '</small></div>';
+  }).join('') + '</div>';
+}
+var LOOK_SECS = [
+  ['lkItems', '소품 <b>꾸미기</b>', function () { return '<p class="src" style="margin:0 0 10px">칸마다 하나씩. 꾸민 모습은 로비·게임·공유 그림에도 나와요. 모은 소품 ' + Object.keys(itemsOwned()).length + ' / ' + ITEMS.length + ' (이 기기에 저장)</p>' + lookItems(); }],
+  ['lkBadges', '<b>칭호</b>', function () { return '<p class="src" style="margin:0 0 10px">닉네임 옆엔 가장 최근 칭호가 보여요. 연속 출석 🔥 ' + streak() + '일.</p>' + lookBadges(); }],
+  ['lkEnd', '엔딩 <b>도감</b>', function () { return '<p class="src" style="margin:0 0 6px">이직 로드 10년에서 본 엔딩이 모여요.</p>' + endDogam(null).replace(/<p class="h3"[^>]*>[^<]*<\/p>/, ''); }]
+];
+function renderLook() {
+  var el = $('look'); if (!el) return;
+  el.innerHTML = lookTop() + '<div id="lkBase"></div>' +   // 다음 차례: 남/여 기본 모습 · 머리 모양 고르기 자리
+    LOOK_SECS.map(function (s) { return '<section class="lksec" id="' + s[0] + '"><h3 class="lkh">' + s[1] + '</h3>' + s[2]() + '</section>'; }).join('');
+  el.querySelectorAll('.itemb:not([disabled])').forEach(function (b) { b.onclick = function () {
+    LOOK[b.dataset.slot] = b.dataset.id; if (!b.dataset.id) delete LOOK[b.dataset.slot];
+    store.setJ('slp-look', LOOK); sfx('coin'); renderLook(); renderMe();
+    var f = $('look').querySelector('.itemb[data-slot="' + b.dataset.slot + '"][data-id="' + b.dataset.id + '"]'); if (f) f.focus({ preventScroll: true });
+  }; });
+}
+
+// ── 내 조로 = 오른쪽에서 밀려 나오는 서랍 (2026-10-28 사용자 요청). 폰은 꽉 찬 폭, PC 는 460px + 어두운 뒤판
+//    열기: 탭바/칸 '내 조로' · 프로필 줄 조로·닉네임 · 주소 #look · 폰에서 화면 오른쪽 끝(24px 안)에서 왼쪽으로 밀기
+//    닫기: 서랍을 오른쪽으로 밀기 · 뒤판 누르기 · ✕ · Esc · 브라우저 뒤로 (열 때 history 한 칸)
+var LK = { open: false, last: null, t: 0 };
+function lkIsOpen() { return LK.open; }
+function lkEls() { return { d: $('lkDrawer'), b: $('lkBack') }; }
+function lkOpen(push) {
+  var E = lkEls(); if (!E.d) return;
+  renderLook();
+  if (!LK.open) {
+    LK.open = true; LK.last = document.activeElement;
+    clearTimeout(LK.t); E.d.hidden = false; E.b.hidden = false; E.d.style.transform = ''; E.b.style.opacity = '';
+    void E.d.offsetWidth;   // 처음 위치(화면 밖)를 잡은 뒤 미끄러지게
+    E.d.classList.add('open'); E.b.classList.add('on'); document.documentElement.classList.add('lk-open');
+    $('lkClose').focus({ preventScroll: true });
+    if (push) { try { history.pushState({ lk: 1 }, '', '#look'); } catch (e) {} }
+  }
+  dockSync();
+}
+function lkClose(fromHist) {
+  var E = lkEls(); if (!LK.open || !E.d) return;
+  if (!fromHist && history.state && history.state.lk) { try { history.back(); return; } catch (e) {} }   // popstate → route → lkClose(true)
+  LK.open = false;
+  E.d.classList.remove('open', 'drag'); E.b.classList.remove('on'); E.d.style.transform = ''; E.b.style.opacity = '';
+  document.documentElement.classList.remove('lk-open');
+  LK.t = setTimeout(function () { if (!LK.open) { E.d.hidden = true; E.b.hidden = true; } }, REDUCE ? 0 : 300);
+  if (!fromHist && location.hash === '#look') { try { history.replaceState(history.state, '', !CUR || CUR === 'lobby' ? location.pathname + location.search : '#' + CUR); } catch (e) {} }
+  if (LK.last && LK.last.focus && document.contains(LK.last)) LK.last.focus({ preventScroll: true });
+  dockSync();
+}
+// 서랍 안 Tab 은 서랍 안에서만 돌고, Esc 는 닫기
+document.addEventListener('keydown', function (e) {
+  if (!LK.open) return;
+  if (e.key === 'Escape') { e.preventDefault(); lkClose(); return; }
+  if (e.key !== 'Tab') return;
+  var f = [].filter.call($('lkDrawer').querySelectorAll('button:not([disabled]), a[href], summary, [tabindex]:not([tabindex="-1"])'), function (x) { return x.offsetParent || x === document.activeElement; });
+  if (!f.length) return;
+  var a = f[0], z = f[f.length - 1];
+  if (e.shiftKey && (document.activeElement === a || !$('lkDrawer').contains(document.activeElement))) { e.preventDefault(); z.focus(); }
+  else if (!e.shiftKey && (document.activeElement === z || !$('lkDrawer').contains(document.activeElement))) { e.preventDefault(); a.focus(); }
+});
+// 손가락 밀기: 열기는 오른쪽 끝에서 시작한 가로 밀기만(게임 안 가로 막대·가로 스크롤은 건드리지 않음), 닫기는 서랍 위의 '확실한 가로' 오른쪽 밀기만
+(function () {
+  var S = null, EDGE = 24, GO = 60;
+  function W() { return $('lkDrawer').getBoundingClientRect().width || innerWidth; }
+  function setX(x, w) { var E = lkEls(); E.d.style.transform = 'translateX(' + Math.max(0, Math.min(w, x)) + 'px)'; E.b.style.opacity = String(1 - Math.max(0, Math.min(w, x)) / w); }
+  document.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) { S = null; return; }
+    var t = e.touches[0], E = lkEls();
+    if (!LK.open && innerWidth <= 640 && t.clientX >= innerWidth - EDGE) S = { mode: 'open', x0: t.clientX, y0: t.clientY, dx: 0, axis: '' };
+    else if (LK.open && E.d.contains(e.target) && !(e.target.closest && e.target.closest('input, textarea, .segx'))) S = { mode: 'close', x0: t.clientX, y0: t.clientY, dx: 0, axis: '' };
+    else S = null;
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (!S) return;
+    var t = e.touches[0], dx = t.clientX - S.x0, dy = t.clientY - S.y0, E = lkEls(), w;
+    if (!S.axis) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; S.axis = Math.abs(dx) > Math.abs(dy) * 1.5 ? 'x' : 'y'; if (S.axis === 'y') { S = null; return; } }
+    S.dx = dx;
+    if (S.mode === 'open') {
+      if (!S.on) { S.on = true; E.d.hidden = false; E.b.hidden = false; renderLook(); E.d.classList.add('drag'); E.b.classList.add('on'); }
+      w = W(); setX(w + dx, w);
+    } else { if (!S.on) { S.on = true; E.d.classList.add('drag'); } w = W(); setX(dx, w); }
+  }, { passive: true });
+  function end() {
+    if (!S) return;
+    var s = S, E = lkEls(); S = null;
+    if (!s.on) return;
+    E.d.classList.remove('drag');
+    if (s.mode === 'open') {
+      if (-s.dx > GO) { E.d.style.transform = ''; E.b.style.opacity = ''; lkOpen(true); }
+      else { E.d.style.transform = ''; E.b.classList.remove('on'); E.b.style.opacity = ''; LK.t = setTimeout(function () { if (!LK.open) { E.d.hidden = true; E.b.hidden = true; } }, REDUCE ? 0 : 300); }
+    } else {
+      if (s.dx > GO) lkClose(); else { E.d.style.transform = ''; E.b.style.opacity = ''; }
+    }
+  }
+  document.addEventListener('touchend', end, { passive: true });
+  document.addEventListener('touchcancel', end, { passive: true });
+}());
+
 
 // ── 순위 · 명예의 전당 탭
 var HG = 'higher';
-function renderHall() {
-  var b = badges();
-  $('hall').innerHTML = '<div class="toolbar"><div class="seg" id="hallSeg">' + PC.DAILY.map(function (g) { return '<button type="button" data-v="' + g + '" aria-pressed="' + (g === HG) + '">' + GNAME[g] + '</button>'; }).join('') + '</div></div>' +
+function renderHall() {   // 2차 UX: 게임 고르기는 가로 한 줄(넘치면 옆으로 밀기), 칭호는 내 조로로, 이번 주 기록은 게임별 7칸 점
+  $('hall').innerHTML = '<div class="toolbar"><div class="seg segx" id="hallSeg" role="group" aria-label="게임 고르기">' + PC.DAILY.map(function (g) { return '<button type="button" data-v="' + g + '" aria-pressed="' + (g === HG) + '">' + GNAME[g] + '</button>'; }).join('') + '</div></div>' +
     '<div class="arcade"><p class="ahd">★ HI-SCORE ★</p><p class="ahd2 g">' + esc(GNAME[HG]) + '</p><p class="ahd2">INSERT COIN</p>' +   // 오락실 틀은 이 탭에서만 (3차)
     '<div id="hallLb"><p class="src">순위를 불러오는 중이에요…</p></div></div>' +
-    '<p class="h3">내 칭호</p><p class="src" style="margin:0">이 기기에만 저장되고, 닉네임 옆에 가장 최근 칭호가 보여요. 연속 출석 🔥 ' + streak() + '일.</p>' +
-    '<div class="badges">' + BADGES.map(function (x) { return '<div class="bdg' + (b[x[0]] ? ' on' : '') + '"><b>' + x[1] + '</b>' + x[2] + (b[x[0]] ? ' · ' + mmdd(b[x[0]]) : '') + '</div>'; }).join('') + '</div>' +
-    '<p class="h3">이번 주 내 기록</p><div class="tw"><table class="tbl"><thead><tr><th>게임</th>' + PC.weekDays(TODAY).map(function (d) { return '<th>' + mmdd(d) + '</th>'; }).join('') + '</tr></thead><tbody>' +
-    PC.DAILY.map(function (g) { return '<tr><td>' + GNAME[g] + '</td>' + PC.weekDays(TODAY).map(function (d) { var x = rec(d, g); return '<td>' + (x ? (g === 'road' ? eokS(x.score) : man(x.score)) : d > TODAY ? '' : '0') + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
-  document.querySelectorAll('#hallSeg button').forEach(function (bt) { bt.onclick = function () { HG = bt.dataset.v; renderHall(); }; });
+    '<p class="h3">이번 주 내 기록</p><p class="src" style="margin:0 0 8px">라임 칸 = 한 날, 점선 = 오늘. 오른쪽은 이번 주 합계(빠진 날 0점). 칭호는 <a href="#look">내 조로</a>에 모여 있어요.</p>' + weekRows();
+  document.querySelectorAll('#hallSeg button').forEach(function (bt) { bt.onclick = function () { HG = bt.dataset.v; renderHall(); var f = document.querySelector('#hallSeg button[data-v="' + HG + '"]'); if (f) { f.focus({ preventScroll: true }); f.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } }; });
   getTop(HG).then(function (t) { var el = $('hallLb'); if (el) el.innerHTML = t ? lbAll(t, HG) : '<p class="src">순위를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</p>'; });
 }
 
@@ -2229,14 +2506,14 @@ var TOOL = 'rank';
 function setTool(v) {
   TOOL = v;
   document.querySelectorAll('#toolSeg button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v); });
-  $('tool-rank').hidden = v !== 'rank'; $('tool-live').hidden = v !== 'live'; $('tool-look').hidden = v !== 'look';
+  $('tool-rank').hidden = v !== 'rank'; $('tool-live').hidden = v !== 'live';
 }
 document.querySelectorAll('#toolSeg button').forEach(function (b) { b.onclick = function () { setTool(b.dataset.v); toolRender(); dockSync(); gbSync(); }; });
 
 var KEYS = ['higher', 'today', 'sniper', 'road', 'cup', 'hall', 'tools'], G5 = KEYS.slice(0, 5);
 var RENDER = { higher: renderHigher, today: renderToday, sniper: renderSniper, road: renderRoad, cup: renderCup, hall: renderHall, tools: function () { toolRender(); } };
-function toolRender() { TOOL === 'live' ? liveStart() : TOOL === 'look' ? lookPanel() : rankTool(); }
-var PNAME = { higher: GNAME.higher, today: '오늘의 회사', sniper: GNAME.sniper, road: GNAME.road, cup: '드림 컴퍼니 월드컵', hall: '순위 · 명예의 전당', tools: '연봉 도구' };
+function toolRender() { TOOL === 'live' ? liveStart() : rankTool(); }
+var PNAME = { higher: GNAME.higher, today: '오늘의 회사', sniper: GNAME.sniper, road: GNAME.road, cup: '드림 컴퍼니 월드컵', hall: '순위 · 명예의 전당', look: '내 조로', tools: '연봉 도구' };
 // 게임 카드: [도트 아이콘, 한 줄 설명, 걸리는 시간]
 var GINFO = {
   higher: ['money', '두 회사 중 더 많이 주는 쪽을 골라요. 문제마다 비교 기준이 바뀌어요.', '10문제 · 문제당 15초'],
@@ -2278,7 +2555,7 @@ function dockSubs() {
   if (PX.ok) document.querySelectorAll('#dock .di[data-ic]').forEach(function (el) { var n = el.dataset.ic; el.innerHTML = n === 'zorro' ? zorro(myRank(), 'normal', 1.5) : icon(n, 2); });
 }
 function dockSync() {
-  var a = CUR === 'tools' ? (TOOL === 'look' ? 'look' : 'tools') : CUR;
+  var a = LK.open ? 'look' : CUR;
   document.querySelectorAll('#dock .dk').forEach(function (b) { if (b.dataset.go === a) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
 }
 // 도전장 띠: 로비에선 게임 카드 위, 게임 화면에선 검은 막대 바로 아래 (그 게임일 때만)
@@ -2292,7 +2569,7 @@ function placeVs() {
 function gbSync() {
   if (!CUR || CUR === 'lobby') return;
   var k = CUR, t = '', f = null, p;
-  $('gbName').textContent = k === 'tools' && TOOL === 'look' ? '내 조로 꾸미기' : PNAME[k] + (k === 'today' && TPZ ? ' #' + TPZ.no : '') + (k === 'higher' && HM === 'endless' ? ' · 무한 모드' : '');
+  $('gbName').textContent = PNAME[k] + (k === 'today' && TPZ ? ' #' + TPZ.no : '') + (k === 'higher' && HM === 'endless' ? ' · 무한 모드' : '');
   try {
     if (k === 'higher') {
       if (HM === 'endless') { if (E) t = 'ROUND ' + E.round; }
@@ -2342,19 +2619,26 @@ function show(k, how) {
 }
 function toLobby() { if (history.state && history.state.pl) { try { history.back(); return; } catch (e) {} } show('lobby', true); }
 function go(k) {
+  if (k === 'look') return lkOpen(true);   // 내 조로 = 옆 서랍 (page/08c_result.js)
+  if (lkIsOpen()) lkClose(true);
   if (k === 'lobby') return toLobby();
-  if (k === 'look') { setTool('look'); k = 'tools'; } else if (k === 'tools' && TOOL === 'look') setTool('rank');
   if (k === CUR) { RENDER[k](); dockSync(); gbSync(); return; }
   show(k, CUR === 'lobby' ? 'push' : true);
 }
-function route() { var k = location.hash.slice(1) || 'lobby'; if (k !== CUR) show(k); }
+function route() {
+  var k = location.hash.slice(1) || 'lobby';
+  if (k === 'look') { if (!CUR) show('lobby'); if (!lkIsOpen()) lkOpen(false); return; }   // #look = 지금 화면 위에 서랍
+  if (lkIsOpen()) lkClose(true);
+  if (k !== CUR) show(k);
+}
 window.addEventListener('hashchange', route);
 window.addEventListener('popstate', route);
 document.addEventListener('click', function (e) {
   var t = e.target.closest && e.target.closest('[data-go]'); if (t) { go(t.dataset.go); return; }
-  var a = e.target.closest && e.target.closest('a[href^="#"]'); if (a && KEYS.indexOf(a.getAttribute('href').slice(1)) >= 0) { e.preventDefault(); go(a.getAttribute('href').slice(1)); }
+  var a = e.target.closest && e.target.closest('a[href^="#"]'); if (a && (KEYS.indexOf(a.getAttribute('href').slice(1)) >= 0 || a.getAttribute('href') === '#look')) { e.preventDefault(); go(a.getAttribute('href').slice(1)); }
 });
 $('gbBack').onclick = toLobby;
+$('lkClose').onclick = function () { lkClose(); }; $('lkBack').onclick = function () { lkClose(); };
 if ($('gbSnd')) $('gbSnd').outerHTML = sndBtn('sndT');
 
 promoCheck();   // 처음 온 기기는 지금 직급을 '본 직급'으로 적어 둠
@@ -2363,7 +2647,7 @@ renderBoss();
 renderMe();
 renderBoard(null);
 getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); } });
-show(location.hash.slice(1) || 'lobby');
+route();   // 주소 #게임 · #look 으로 바로 열림
 vsLoad();   // ?vs=도전장 으로 왔으면 도전장 띠 + 그 게임으로
 }
 
