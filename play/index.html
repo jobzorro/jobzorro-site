@@ -903,6 +903,17 @@ html.lk-open, html.lk-open body { overflow:hidden; }
 .gotz { display:flex; align-items:flex-end; gap:6px; }
 .dk .di { min-height:24px; height:auto; }
 .drawer .lksec { content-visibility:auto; contain-intrinsic-size:auto 640px; }   /* 서랍 아래쪽 칸은 보일 때 그림 (느린 폰) */
+/* 내 조로 서랍 넓게 (2026-10-30 사용자: 너무 얇다) — 넓은 화면은 820px, 미리보기·정보 2단, 소품 칸 크게 */
+@media (min-width:900px) {
+  .drawer { width:min(820px, 92vw); }
+  .drawer .lktop { grid-template-columns:minmax(0,320px) minmax(0,1fr); }
+  .drawer .lkst { min-height:240px; }
+  .drawer .bgrid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); }
+  .drawer .items { grid-template-columns:repeat(auto-fill,minmax(136px,1fr)); gap:10px; }
+  .drawer .itemb { min-height:136px; }
+  .drawer .opts.big .opt { min-width:140px; min-height:120px; }
+}
+.drawer .itemb { min-height:124px; }
 .mylk .myrk { gap:8px; }
 .me .myrk .px { margin:-4px 0; }
 /* 2026-10-29 손맛: 누르면 살짝 눌리는 버튼 · 정답/오답 반응 · 게임 들어갈 때 미끄러짐 · 스나이퍼 큰 손잡이 */
@@ -4531,7 +4542,7 @@ function renderLobby() {
 function dockSubs() {
   var hk = PC.DAILY.filter(function (k) { var x = rec(TODAY, k); return x && x.sent && x.rank; })[0], B = endBook();
   $('dkHall').textContent = hk ? '오늘 ' + PNAME[hk] + ' ' + man(rec(TODAY, hk).rank) + '위' : '오늘의 도전 순위 · 명예의 전당';
-  $('dkLook').textContent = '칭호 ' + Object.keys(badges()).length + '개 · 소품 ' + Object.keys(itemsOwned()).length + '개 · 엔딩 ' + PC.ENDINGS.filter(function (e) { return B[e[0]]; }).length + '/7';
+  $('dkLook').textContent = '칭호 ' + Object.keys(badges()).length + '개 · 소품 ' + Object.keys(itemsOwned()).length + '개 · 엔딩 ' + PC.ENDINGS.filter(function (e) { return B[e[0]]; }).length + '/' + PC.ENDINGS.length;
   if (PX.ok) document.querySelectorAll('#dock .di[data-ic]').forEach(function (el) { var n = el.dataset.ic; el.innerHTML = n === 'zorro' ? zorro(myRank(), 'normal', 1, '', { head: 1 }) : icon(n, 2); });
 }
 function dockSync() {
