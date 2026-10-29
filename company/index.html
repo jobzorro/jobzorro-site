@@ -63,7 +63,9 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .hero h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--ink-soft); margin-bottom:12px; line-height:1.15; }
 .hero h1 mark { background:linear-gradient(transparent 62%, var(--mark) 62%); color:inherit; padding:0 .04em; }
 .hero .lead { margin:22px 0 0; max-width:58ch; color:var(--ink-soft); font-size:16px; line-height:1.7; }
-.search { margin-top:30px; display:flex; align-items:center; gap:12px; border-bottom:2px solid var(--ink); padding:4px 0 10px; }
+.search { margin-top:30px; display:flex; align-items:center; gap:12px; border:2px solid var(--ink); border-radius:18px; padding:8px 8px 8px 18px; background:var(--paper); box-shadow:5px 5px 0 var(--acc); transition:box-shadow .15s ease; margin-right:5px; }   /* 2026-10-29 사용자: 검색창 더 눈에 띄게 */
+.search:focus-within { box-shadow:5px 5px 0 var(--acc), 0 0 0 4px color-mix(in srgb, var(--acc) 40%, transparent); }
+@media (max-width:520px) { .search { padding-left:14px; gap:8px; } .search input { font-size:18px; } .search button { padding:0 14px; } }
 .search svg { width:26px; height:26px; flex:none; }
 .search input { flex:1; min-width:0; border:0; background:transparent; color:var(--ink); font-family:var(--display); font-weight:700; font-size:clamp(20px,2.2vw,28px); letter-spacing:-.03em; outline:none; padding:4px 0; }
 .search input::placeholder { color:var(--muted); font-weight:500; }
@@ -251,7 +253,7 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .ser li button { all:unset; box-sizing:border-box; width:100%; display:flex; gap:10px; align-items:baseline; padding:7px 0; border-top:1px solid var(--hairline-2); cursor:pointer; }
 .ser li:first-child button { border-top:0; }
 .ser li button:hover span { text-decoration:underline; }
-.ser li b { font-family:var(--display); font-size:14px; width:18px; color:var(--muted); }
+.ser li b { font-family:var(--display); font-size:14px; flex:none; min-width:20px; color:var(--muted); white-space:nowrap; }   /* 10이 두 줄로 쪼개지던 것 */
 .ser li span { font-size:15px; font-weight:700; display:flex; flex-direction:column; }
 .ser li small { font-size:12px; font-weight:500; color:var(--muted); letter-spacing:0; }
 .ser-must { background:#c6ff3d; color:#0b0b0b; border-color:#0b0b0b; }
@@ -274,7 +276,23 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .fixbox button { justify-self:start; height:40px; padding:0 18px; border-radius:999px; border:0; background:var(--ink); color:var(--paper); font:inherit; font-size:13.5px; font-weight:800; cursor:pointer; }
 
 /* 첫 화면: 결과 대신 검색 안내 */
-.intro { display:grid; justify-items:center; gap:6px; text-align:center; padding:56px 16px 40px; color:var(--muted); }
+.intro { display:grid; justify-items:center; gap:6px; text-align:center; padding:28px 16px 40px; color:var(--muted); }
+/* 2026-10-29 첫 화면 두 카드 (대결 · 판정 분포) — 같은 높이로 나란히, 폰은 위아래 */
+.hi2 { width:min(960px,100%); display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; text-align:left; }
+.hi2.one { grid-template-columns:minmax(0,1fr); width:min(640px,100%); }
+.hi2 .mu { width:auto; margin:0; align-content:start; }
+@media (max-width:760px) { .hi2 { grid-template-columns:minmax(0,1fr); } }
+.fun { border:1.5px solid var(--ink); border-radius:16px; padding:16px 20px; display:grid; gap:8px; align-content:start; }
+.fun > small { font-size:11px; letter-spacing:.14em; color:var(--muted); font-weight:700; }
+.fun .big { font-size:clamp(19px,3vw,24px); font-weight:900; letter-spacing:-.02em; color:var(--ink); }
+.fun .big mark { background:var(--acc); color:var(--acc-ink); padding:0 6px; border-radius:6px; }
+.fun ol { list-style:none; margin:2px 0 0; padding:0; display:grid; gap:5px; }
+.fun li { display:grid; grid-template-columns:10.5em minmax(0,1fr) 3.6em; gap:8px; align-items:center; font-size:12.5px; color:var(--ink-soft); }
+.fun li i { display:block; height:9px; border-radius:2px; background:var(--ink); }
+.fun li.s i { background:var(--acc); box-shadow:inset 0 0 0 1px var(--ink); }
+.fun li em { font-style:normal; text-align:right; font-family:var(--display); font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums; }
+.fun .roll { justify-self:start; margin-top:4px; font:inherit; font-size:13px; font-weight:800; padding:8px 14px; border-radius:999px; border:1.5px solid var(--ink); background:var(--ink); color:var(--paper); cursor:pointer; }
+.fun .roll:hover { background:var(--acc); color:var(--acc-ink); }
 .intro .arrow { font-family:var(--display); font-size:22px; font-weight:900; color:var(--ink); line-height:1; }
 .intro b { font-size:17px; font-weight:900; color:var(--ink); letter-spacing:-.02em; }
 .intro p { font-size:13.5px; max-width:440px; }
@@ -530,6 +548,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 .mu .vs1:hover span { text-decoration:underline; }
 .mu p { margin:0; font-size:13px; }
 .mu ol { list-style:none; margin:4px 0 0; padding:0; }
+.mu .mu-s { margin-top:8px; font-size:11px; letter-spacing:.14em; color:var(--muted); font-weight:700; }
 .mu ol button { width:100%; display:flex; justify-content:space-between; gap:10px; font:inherit; font-size:13.5px; font-weight:700; color:var(--ink); background:none; border:0; border-top:1px solid var(--hairline); padding:9px 0; cursor:pointer; text-align:left; }
 .mu ol button b { color:var(--muted); margin-right:8px; font-family:var(--display); }
 .mu ol button span:last-child { color:var(--muted); font-weight:500; white-space:nowrap; }
@@ -641,7 +660,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   <p class="lead">현직자 평점 세 곳, 직급별 연봉, DART 5개년 재무를 한 화면에 모았어요. 판단은 S부터 F까지 7단계로 짧게, 마지막 정리는 Zorro가 해 드립니다.</p>
   <form class="search" id="f" autocomplete="off">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
-    <div class="qbox"><input id="q" placeholder="회사 이름을 입력하세요 (예: 펄어비스)" aria-label="회사 이름" role="combobox" aria-expanded="false" aria-controls="sug">
+    <div class="qbox"><input id="q" placeholder="회사 이름 (예: 펄어비스)" aria-label="회사 이름" role="combobox" aria-expanded="false" aria-controls="sug">
     <ul id="sug" class="sug" role="listbox" hidden></ul></div>
     <button>판단해 보기</button>
   </form>
@@ -1269,6 +1288,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 // 회사 데이터는 data/index.json(검색용 이름 목록) + data/co/NNN.json(회사 상세 128조각)으로 나눠 필요할 때만 읽는다
 const SHARDS = 128;
 const PICKS = ["펄어비스", "유풍", "오뚜기", "삼성전자", "현대자동차"];   // 많이 본 회사(/top)를 못 받을 때만 쓰는 기본 5곳
+const VDIST = {"조건 보고 가세요": 5404, "다시 생각해요": 11479, "가세요": 5545, "비추예요": 727, "중립기어": 562, "스펙 보고 결정하세요": 1248, "무조건 가세요": 250};   // 판정별 회사 수 (build.py, 2026-10-29 첫 화면 판정 분포 카드)
 const SERIES = [{"k": "must", "t": "무조건 가세요", "d": "붙으면 고민 말고 가라고 한 회사", "r": [["기아", "직원 31,366명 · 연봉 업계 상위 1%"], ["케이티", "직원 13,817명 · 연봉 업계 상위 1%"], ["엘지유플러스", "직원 9,321명 · 연봉 업계 상위 1%"], ["네이버", "직원 5,183명 · 연봉 업계 상위 1%"], ["한화시스템", "직원 5,083명 · 연봉 업계 상위 1%"], ["케이티앤지", "직원 4,009명 · 연봉 업계 상위 1%"], ["카카오", "직원 3,788명 · 연봉 업계 상위 1%"], ["셀트리온", "직원 3,106명 · 연봉 업계 상위 1%"], ["하이트 진로", "직원 2,757명"], ["코닝정밀소재", "직원 2,467명 · 연봉 업계 상위 3%"]]}, {"k": "go", "t": "가세요", "d": "재무·평점·연봉이 고르게 괜찮은 회사", "r": [["에이치디현대중공업", "직원 17,172명 · 연봉 업계 상위 4%"], ["포스코", "직원 16,794명 · 연봉 업계 상위 1%"], ["우리은행", "직원 13,023명 · 연봉 업계 상위 10%"], ["삼성SDI", "직원 12,426명 · 연봉 업계 상위 3%"], ["엘지화학", "직원 12,231명 · 연봉 업계 상위 1%"], ["서울아산병원", "직원 9,267명 · 연봉 업계 상위 1%"], ["한화에어로스페이스", "직원 8,023명 · 연봉 업계 상위 1%"], ["코스트코코리아", "직원 7,592명 · 연봉 업계 상위 35%"], ["근로복지공단", "직원 6,210명 · 연봉 업계 상위 17%"], ["한국타이어앤테크놀로지", "직원 6,117명 · 연봉 업계 상위 2%"]]}, {"k": "wlb", "t": "워라밸 좋은 회사", "d": "잡플래닛 워라밸 3.8점 넘고 판정도 '가세요' 이상", "r": [["한국중부발전", "워라밸 4.5점 · 리뷰 395개"], ["지엠테크니컬센터코리아", "워라밸 4.5점 · 리뷰 104개"], ["한국전력기술", "워라밸 4.4점 · 리뷰 608개"], ["한국도로교통공단", "워라밸 4.3점 · 리뷰 695개"], ["한국남동발전", "워라밸 4.3점 · 리뷰 407개"], ["한국지엠", "워라밸 4.3점 · 리뷰 665개"], ["서울도시가스", "워라밸 4.3점 · 리뷰 51개"], ["구글코리아", "워라밸 4.3점 · 리뷰 286개"], ["로버트보쉬코리아", "워라밸 4.2점 · 리뷰 428개"], ["코스콤", "워라밸 4.2점 · 리뷰 153개"]]}, {"k": "hidden", "t": "숨은 알짜 중견", "d": "직원 300~1천 명인데 연봉은 업계 상위 10% 안", "r": [["티케이지태광", "직원 918명 · 연봉 업계 상위 1%"], ["한국필립모리스", "직원 902명 · 연봉 업계 상위 1%"], ["연합뉴스", "직원 750명 · 연봉 업계 상위 1%"], ["신영증권", "직원 668명 · 연봉 업계 상위 1%"], ["한화파워", "직원 666명 · 연봉 업계 상위 1%"], ["에스케이플래닛（주）", "직원 606명 · 연봉 업계 상위 1%"], ["에코플라스틱", "직원 603명 · 연봉 업계 상위 1%"], ["삼성전자로지텍", "직원 551명 · 연봉 업계 상위 1%"], ["LX인터내셔널", "직원 504명 · 연봉 업계 상위 1%"], ["서울도시가스", "직원 479명 · 연봉 업계 상위 1%"]]}, {"k": "newbie", "t": "신입 초봉 높은 회사", "d": "신입 추정 연봉이 높은 순, 판정도 '가세요' 이상", "r": [["LS증권", "신입 추정 7,485만 원"], ["코오롱제약", "신입 추정 7,426만 원"], ["한국휴렛팩커드", "신입 추정 7,352만 원"], ["신한라이프생명보험", "신입 추정 7,262만 원"], ["경신", "신입 추정 7,240만 원"], ["현대엘리베이터", "신입 추정 7,177만 원"], ["화신", "신입 추정 7,157만 원"], ["에어메드텍코리아", "신입 추정 7,073만 원"], ["코오롱인더스트리（주）", "신입 추정 7,003만 원"], ["（주）신세계프라퍼티", "신입 추정 6,991만 원"]]}, {"k": "stay", "t": "오래 다니는 회사", "d": "평균 근속 15년 넘고 퇴사율은 낮은 곳", "r": [["대성에너지", "평균 근속 20.7년 · 한 해 퇴사 6%"], ["한국씨티은행", "평균 근속 19.4년 · 한 해 퇴사 10%"], ["디와이파워（주）", "평균 근속 18.6년 · 한 해 퇴사 9%"], ["케이티앤지", "평균 근속 18.2년 · 한 해 퇴사 9%"], ["미래에셋생명보험", "평균 근속 17.5년 · 한 해 퇴사 4%"], ["삼천리", "평균 근속 16.8년 · 한 해 퇴사 6%"], ["롯데정밀화학", "평균 근속 16.8년 · 한 해 퇴사 7%"], ["지엠비코리아", "평균 근속 16.1년 · 한 해 퇴사 8%"], ["한화오션", "평균 근속 15.9년 · 한 해 퇴사 9%"], ["신한라이프생명보험", "평균 근속 15.5년 · 한 해 퇴사 8%"]]}, {"k": "grow", "t": "요즘 크는 회사", "d": "매출이 연평균 15% 넘게 크고 성장성 등급 A+ 이상", "r": [["케이씨에이서비스", "매출 연평균 +461% · 직원 425명"], ["포티투닷", "매출 연평균 +164% · 직원 799명"], ["에스케이온", "매출 연평균 +110% · 직원 3,180명"], ["한화에어로스페이스", "매출 연평균 +67% · 직원 8,023명"], ["한화생명금융서비스", "매출 연평균 +65% · 직원 1,420명"], ["제주항공", "매출 연평균 +53% · 직원 2,739명"], ["에스피엠텍", "매출 연평균 +50% · 직원 1,010명"], ["케이엘에이텐코코리아", "매출 연평균 +43% · 직원 901명"], ["클래시스", "매출 연평균 +35% · 직원 551명"], ["인카금융서비스", "매출 연평균 +35% · 직원 475명"]]}];  // 첫 화면 시리즈 4개 (build.py series, 주마다 바뀜) — 맨 앞 '많이 본 TOP 10'은 /top 으로
 const TS_KEY = "0x4AAAAAAFpHJtrOG8cQcwBZ";   // Cloudflare Turnstile 사이트 키 (공개값, config turnstile_sitekey). 하루 많이 본 사람에게만 봇 확인 (2026-10-28)
 const API = "https://company-api.jobzorro.workers.dev";  // 비어 있지 않으면 회사 상세는 API에서 한 곳씩 (조각 파일은 사이트에 안 올림)
@@ -2096,16 +2116,38 @@ function seriesWire(el) {
     if (seen && !document.hidden && Date.now() > pause) go(1);
   }, 4000);
 }
+// 첫 화면 두 번째 카드: 판정 분포 + '무조건 가세요' 회사 하나 뽑기 (2026-10-29 사용자: 대결 말고 재밌는 것 하나 더) — 검색 목록(IDX)이 오면 채운다
+// 판정별 회사 수는 빌드가 넣는다(VDIST, 숫자만), 뽑기는 이번 주 '무조건 가세요' 시리즈 10곳에서
+const FUN_ORDER = ["무조건 가세요", "가세요", "조건 보고 가세요", "중립기어", "스펙 보고 결정하세요", "다시 생각해요", "비추예요"];
+function funFill() {
+  const el = document.getElementById("fun"); if (!el) return;
+  const c = VDIST, tot = FUN_ORDER.reduce((a, k) => a + (c[k] || 0), 0); if (!tot) { el.remove(); document.querySelector(".hi2")?.classList.add("one"); return; }
+  const mx = Math.max(...FUN_ORDER.map(k => c[k] || 0), 1), best = (SERIES.find(x => x.k === "must")?.r || []).map(x => x[0]);
+  el.innerHTML = `<small>판정 받은 ${tot.toLocaleString("ko-KR")}곳 중</small><p class="big" style="margin:0"><mark>무조건 가세요</mark>는 단 ${(c["무조건 가세요"] || 0).toLocaleString("ko-KR")}곳</p>
+    <ol>${FUN_ORDER.map(k => `<li class="${k === "무조건 가세요" ? "s" : ""}"><span>${esc(k)}</span><span><i style="width:${Math.max(2, (c[k] || 0) / mx * 100).toFixed(1)}%"></i></span><em>${(c[k] || 0).toLocaleString("ko-KR")}</em></li>`).join("")}</ol>
+    ${best.length ? `<button class="roll" type="button">무조건 가세요 회사 하나 뽑기</button>` : ""}`;
+  const b = el.querySelector(".roll"); if (b) b.onclick = () => pick(best[Math.floor(Math.random() * best.length)]);
+}
+// 대결이 4개보다 적으면 이번 주 많이 본 회사끼리 붙여 보기를 채운다 (2026-10-29: 옆 카드와 높이 맞추기)
+function sugVs(vs, top) {
+  const have = new Set(vs.map(x => [x[0], x[1]].sort().join("~"))), out = [];
+  for (let i = 0; i + 1 < top.length && vs.length + out.length < 5; i++) {
+    const a = top[i][0], b = top[i + 1][0];
+    if (!have.has([a, b].sort().join("~"))) { out.push([a, b]); have.add([a, b].sort().join("~")); i++; }
+  }
+  return out.length ? `<small class="mu-s">이런 대결도 붙여 보세요</small><ol>${out.map(([a, b]) => `<li><button type="button" data-a="${esc(a)}" data-b="${esc(b)}"><span>${esc(serName(a))} vs ${esc(serName(b))}</span><span>비교 →</span></button></li>`).join("")}</ol>` : "";
+}
 // 첫 화면은 비워 두고 검색을 유도한다 (주소에 #회사명 이 있을 때만 바로 보여 줌)
-const intro = () => { document.body.classList.remove("has-co"); document.getElementById("codock")?.classList.remove("on"); $("#out").innerHTML = `<div class="intro"><span class="arrow">↑</span><b>합격한 회사 이름을 검색해 보세요</b><div class="pulse" id="pulse"></div></div>`;
+const intro = () => { document.body.classList.remove("has-co"); document.getElementById("codock")?.classList.remove("on"); $("#out").innerHTML = `<div class="intro"><div class="pulse" id="pulse"></div></div>`;
   if (!API) { const el = $("#pulse"); if (el) { el.innerHTML = seriesHtml([]); seriesWire(el); el.querySelectorAll("button[data-n]").forEach(b => b.onclick = () => pick(b.dataset.n)); } return; }
   topP.then(d => { const el = $("#pulse"); if (!d || !el) return;
     const vs = d.vs || [], go = (a, b) => { location.hash = encodeURIComponent(a) + "~" + encodeURIComponent(b); };
     const mu = vs.length ? `<div class="mu"><small>최근 7일 가장 많이 붙은 대결</small>
       <button class="vs1" type="button" data-a="${esc(vs[0][0])}" data-b="${esc(vs[0][1])}"><span>${esc(vs[0][0])}</span><i>VS</i><span>${esc(vs[0][1])}</span></button>
       <p>최근 7일 동안 <b>${vs[0][2].toLocaleString("ko-KR")}명</b>이 이 두 회사를 놓고 고민했어요. 눌러서 바로 비교해 보세요.</p>
-      ${vs.length > 1 ? `<ol>${vs.slice(1).map((x, i) => `<li><button type="button" data-a="${esc(x[0])}" data-b="${esc(x[1])}"><span><b>${i + 2}</b>${esc(x[0])} vs ${esc(x[1])}</span><span>${x[2].toLocaleString("ko-KR")}명</span></button></li>`).join("")}</ol>` : ""}</div>` : "";
-    el.innerHTML = mu + seriesHtml(d.top || []);
+      ${vs.length > 1 ? `<ol>${vs.slice(1).map((x, i) => `<li><button type="button" data-a="${esc(x[0])}" data-b="${esc(x[1])}"><span><b>${i + 2}</b>${esc(x[0])} vs ${esc(x[1])}</span><span>${x[2].toLocaleString("ko-KR")}명</span></button></li>`).join("")}</ol>` : ""}${sugVs(vs, d.top || [])}</div>` : "";
+    el.innerHTML = `<div class="hi2${mu ? "" : " one"}">${mu}<div class="fun" id="fun"></div></div>` + seriesHtml(d.top || []);
+    funFill();
     seriesWire(el);
     el.querySelectorAll("button[data-n]").forEach(b => b.onclick = () => pick(b.dataset.n));
     el.querySelectorAll("button[data-a]").forEach(b => b.onclick = () => go(b.dataset.a, b.dataset.b)); }).catch(() => {}); };

@@ -362,12 +362,11 @@ TABBAR_CSS = """.zb { display:none; }
   .zb { display:grid; grid-template-columns:repeat(6,1fr); position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--paper, var(--bg, #fff)); border-top:1px solid var(--hairline, var(--line, #e5e5e5));
     padding:6px max(4px, env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(4px, env(safe-area-inset-right,0px)); transition:transform .25s ease; }
   html { scroll-behavior:auto !important; }   /* 2026-10-28: 폰에선 부드러운 스크롤 끔 (삼성 인터넷이 뉴스에서 아래 바를 도구 막대 뒤로 숨김) */
-  .zb a { position:relative; display:grid; justify-items:center; gap:2px; padding:4px 0; color:var(--muted, #777); text-decoration:none; font-family:"Noto Sans KR",sans-serif; font-size:11px; font-weight:700; -webkit-tap-highlight-color:transparent; }
-  .zb a svg { width:23px; height:23px; }
-  .zb a.on { color:var(--ink, #0b0b0b); }
-  .zb a.on svg { stroke-width:2.4; }
-  .zb a.on::before { content:""; position:absolute; top:-7px; width:26px; height:3px; border-radius:0 0 3px 3px; background:var(--ink, #0b0b0b); }
-  .zb .dot { position:absolute; top:3px; right:calc(50% - 16px); width:7px; height:7px; border-radius:50%; background:#c6ff3d; border:1px solid var(--ink, #0b0b0b); }
+  .zb a { position:relative; display:grid; justify-items:center; gap:2px; padding:2px 0; color:var(--muted, #777); text-decoration:none; font-family:"Noto Sans KR",sans-serif; font-size:11px; font-weight:700; -webkit-tap-highlight-color:transparent; }
+  .zb a svg { width:23px; height:23px; box-sizing:content-box; padding:3px 14px; border-radius:999px; transition:background .15s ease; }
+  .zb a.on { color:var(--ink, #0b0b0b); font-weight:900; }   /* 2026-10-29 사용자: 눌린 탭이 확실히 보이게 — 밝은·어두운 모드 모두 형광 알약 + 검은 아이콘 */
+  .zb a.on svg { background:#c6ff3d; color:#0b0b0b; stroke-width:2.3; }
+  .zb .dot { position:absolute; top:3px; right:calc(50% - 20px); width:7px; height:7px; border-radius:50%; background:#c6ff3d; border:1px solid var(--ink, #0b0b0b); }
 }
 @media (prefers-reduced-motion: reduce) { .zb { transition:none; } }
 """
