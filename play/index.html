@@ -1502,9 +1502,12 @@ function zBody(g, R, fem, skirt, pose) {
   if (R.jk) { zp(g, 12, 25, 'd'); zp(g, 19, 25, 'd'); zp(g, 13, 26, 'Y'); zp(g, 13, 27, 'Y'); }   // 단추
   if (R.id) zs(g, 11, 21, ['  c', ' c ', ' c ', 'cccc', 'cRRc', 'cCmc', 'cccc']);   // 사원증 + 끈
   // 팔·손
-  if (pose === 'up') {
-    zs(g, 3, 9, [' sss', 'ssss', 'sssf', ' ' + jk + jk + sh, ' ' + jk + jk + sh, jk + jk + sh + ' ', jk + jk + sh + ' ', jk + jk + sh + ' ', jk + jk + sh + ' ', jk + jk + sh + ' ', ' ' + jk + jk + sh, ' ' + jk + jk + jk + jk + jk, '  ' + jk + jk + jk + jk]);
-    zs(g, 24, 9, ['sss ', 'ssss', 'fsss', jk + jk + sh + ' ', jk + jk + sh + ' ', ' ' + jk + jk + sh, ' ' + jk + jk + sh, ' ' + jk + jk + sh, ' ' + jk + jk + sh, ' ' + jk + jk + sh, jk + jk + sh + ' ', jk + jk + jk + jk + ' ', jk + jk + jk + '  ']);
+  if (pose === 'up') {   // 만세 (2026-10-30 다시 그림): 손은 머리 양옆, 팔은 어깨에서 비스듬히 올라가 좌우 대칭 · 손목엔 셔츠 소매
+    var cuf = R.jk ? 'w' : 'x', A3 = jk + jk + sh;
+    // [줄, 왼팔 시작 x] — 오른팔은 좌우 거울(x → 31 - x)
+    var ARM = [[12, 3, cuf + cuf + cuf], [13, 3, A3], [14, 3, A3], [15, 3, A3], [16, 4, A3], [17, 4, A3], [18, 5, A3], [19, 5, A3], [20, 6, A3], [21, 7, jk + jk], [22, 8, jk]];
+    zs(g, 3, 9, [' sss', 'ssss', 'sssf']); zs(g, 25, 9, ['sss ', 'ssss', 'fsss']);
+    ARM.forEach(function (a) { zs(g, a[1], a[0], [a[2]]); for (var i = 0; i < a[2].length; i++) zp(g, 31 - a[1] - i, a[0], a[2][a[2].length - 1 - i] === sh ? sh : a[2][a[2].length - 1 - i]); });
   } else {
     zs(g, 6, 21, [' ' + jk + jk, jk + jk + jk, sh + jk + jk, sh + jk + jk, sh + jk + jk, sh + jk + jk, 'xxx', 'sss', ' sf']);
     zs(g, 23, 21, [jk + jk + ' ', jk + jk + sh, jk + jk + sh, jk + jk + sh, jk + jk + sh, jk + jk + sh, 'xxx', 'ssf', 'sf ']);
@@ -1549,7 +1552,7 @@ function zGlasses(g, lens) {
   zr(g, 14, 12, 17, 12, 'K');
 }
 // ── 소품 (2배 그림). 손 소품은 자세마다 손 위치(A.hx, A.hy)에 맞춰 그림 · 'alone' 은 소품만 따로 크게 그릴 때(진열 칸)
-var Z_HAND = { stand: [24, 28], up: [26, 10] };
+var Z_HAND = { stand: [24, 28], up: [27, 10] };   // 만세 오른손 (2026-10-30 대칭으로 한 칸 옮김)
 function hand(f) { return function (g, A) { f(g, A.hx, A.hy, A); }; }
 var ITEM_DRAW = {
   // 모자
