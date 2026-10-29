@@ -1030,7 +1030,7 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module">
-import * as PC from './play_core.js?v=2cfb97ff70';
+import * as PC from './play_core.js?v=804298d970';
 const D = await (await fetch('data/play.json', { cache: 'no-cache' })).json();
 // 연봉 놀이터 v2 화면. make.py 가 page/*.js 를 이름순으로 이어 붙여 function main(D, PC) 하나로 만든다.
 // D = 회사 자료(make.py), PC = play_core.js (서버와 같은 규칙). 점수는 항상 PC.score* 로만 계산한다.
@@ -1682,7 +1682,7 @@ function mock(path, b) {
     var g = q.game, d = q.d || TODAY, days = PC.weekDays(d).filter(function (x) { return x <= TODAY; }), R = dayRows(d, g), hall = [], meHall = [];
     for (var w = 1; w <= 8; w++) {
       var mon = PC.addDays(PC.weekDays(d)[0], -7 * w), ws = weekSum(PC.weekDays(mon), g)[0];
-      if (ws) { hall.push([PC.isoWeek(mon), ws.nick, ws.s, ws.lk || '']); if (ws.me) meHall.push([PC.isoWeek(mon), g]); }
+      if (ws && !PC.weekOff(g, mon)) { hall.push([PC.isoWeek(mon), ws.nick, ws.s, ws.lk || '']); if (ws.me) meHall.push([PC.isoWeek(mon), g]); }
     }
     var T = dayRows(d, 'today'), Y = dayRows(PC.addDays(d, -1), 'today'), okT = T.filter(function (r) { return r.aux > 0; });
     var mp = mockPlays(), di = PC.dayIndex(d), hr = new Date(Date.now() + 9 * 3600e3).getUTCHours();
@@ -1891,7 +1891,8 @@ function lbAll(t, game) {
   var x = rec(TODAY, game), mine = x && x.sent ? { rank: x.rank, score: x.score } : null, wk = myWeek(game, PC.weekDays(TODAY).filter(function (d) { return d <= TODAY; }));
   var wkMine = null; if (wk != null) { var pos = t.weekTop.findIndex(function (r) { return r[0] === NICK && r[1] === wk; }); wkMine = pos >= 0 ? { rank: pos + 1, score: wk } : null; }
   return '<div class="lb">' + lbCol('오늘', mmdd(TODAY) + ' · ' + GNAME[game] + ' TOP 10', t.today, game, mine, 3) +
-    lbCol('이번 주', t.week.replace('-W', '년 ') + '주 · 7일 합계, 빠진 날 0점', t.weekTop, game, wkMine, 2) + hallCol(t.hall, game) + '</div>';
+    (PC.weekOff(game, TODAY) ? '<div class="lbc"><h4>이번 주</h4><p class="empty">이번 주는 이직 로드 10년 → 커리어 로드 20년 개편 주라 점수 단위가 달라 주간 순위와 명예의 전당을 쉬어요. 다음 주 월요일부터 다시 열려요.</p></div>'
+      : lbCol('이번 주', t.week.replace('-W', '년 ') + '주 · 7일 합계, 빠진 날 0점', t.weekTop, game, wkMine, 2)) + hallCol(t.hall, game) + '</div>';
 }
 function miniLb(elId, game) {
   getTop(game).then(function (t) { fillNb(game, t); var el = $(elId); if (!el || !t) return; el.innerHTML = lbAll(t, game) + '<p class="src"><a href="#hall">순위 · 명예의 전당 전체 보기 →</a></p>'; });
