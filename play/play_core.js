@@ -3,7 +3,7 @@
 // 점수는 (문제, 답) → 점수 함수로만 계산하고, 서버는 브라우저가 보낸 답으로 다시 계산한다.
 // 주의: 'export { ... };' 줄은 파일 맨 끝 한 줄로만 둔다 (make.py 가 미리보기에서 이 줄을 전역 변수로 바꿈).
 
-const RULES = 4;                 // 규칙 판: 점수 규칙을 바꾸면 올린다 (2 = 2026-10-28 오늘의 회사 8지선다, 3 = 이직 로드 요일별 시나리오 팩·엔딩, 4 = 커리어 로드 20년 2026-10-31~)
+const RULES = 4;                 // 규칙 판: 점수 규칙을 바꾸면 올린다 (2 = 2026-10-28 오늘의 회사 8지선다, 3 = 이직 로드 요일별 시나리오 팩·엔딩, 4 = 커리어 로드 20년 2026-10-30~)
 const EPOCH = '2026-10-01';      // 오늘의 회사 #1 날짜 (바꾸면 모든 날의 문제가 바뀜)
 const RK = ['사원', '대리', '과장', '차장', '부장'];
 const DAILY = ['higher', 'today', 'sniper', 'road', 'run'];   // 순위표가 있는 오늘의 도전 (2026-10-29 조로 출근길 추가)
@@ -387,7 +387,7 @@ function roadEnding1(pz, ctx, picks) {
 //   갈림길 종류: job(이직 갈림길 5번, 회사 제안은 10년 판과 같은 방식) · work(회사 사건) · life(개인사)
 //   게이지 3개: hp 체력 · cr 커리어 · hap 행복(개인사). 종합점수 = 20년 누적 연봉 점수 + 게이지 점수
 //   같은 날 같은 성별·같은 선택이면 누구나 같은 사건·같은 결과(씨앗). 서버도 이 함수로 다시 계산한다.
-const ROAD2_FROM = '2026-10-31';   // 이 날부터 20년 판 (그 전 날짜는 10년 판 그대로)
+const ROAD2_FROM = '2026-10-30';   // 이 날부터 20년 판 (그 전 날짜는 10년 판 그대로)
 function roadV(day) { return day >= ROAD2_FROM ? 2 : 1; }
 // 주간 순위·명예의 전당을 쉬는 주 (2026-10-30 사용자: 10년 → 20년 개편 주는 점수 단위가 섞여 이직 로드 주간 순위 제외)
 const WEEK_OFF = { road: ['2026-W44'] };
@@ -730,12 +730,12 @@ const ENDINGS2 = [['exec', '임원의 길'], ['startup', '스타트업 대박'],
 function roadEnding2(pz, ctx, picks) {
   const R = simRoad2(pz, ctx, picks), S = R.S, Y = R.years;
   const a5 = Y.slice(0, 5).reduce((a, b) => a + b, 0) / 5, z5 = Y.slice(15).reduce((a, b) => a + b, 0) / 5;
-  const id = S.exec ? 'exec' : S.suWin ? 'startup' : S.eokY && S.eokY <= 10 ? 'boss'
-    : S.track === 'exp' && S.cr >= 85 ? 'expert' : (S.back || S.burn >= 1) && S.cr >= 55 && S.hp >= 40 ? 'returner'
+  const id = S.exec ? 'exec' : S.suWin ? 'startup' : S.eokY && S.eokY <= 9 ? 'boss'
+    : S.track === 'exp' && S.cr >= 88 ? 'expert' : (S.back || S.burn >= 1) && S.cr >= 58 && S.hp >= 42 ? 'returner'
     : S.retired ? 'second' : S.kids && S.hap >= 70 ? 'family' : S.moves >= 4 ? 'hopper'
     : S.moves === 0 && !S.fails && ctx.by[S.firstCo] && ctx.by[S.firstCo].m >= 5000 ? 'lifer'
     : S.hp >= 60 && S.hap >= 65 ? 'balance' : !S.married && S.hap >= 70 ? 'solo'
-    : z5 >= a5 * 2.6 ? 'late' : S.cuts >= 2 ? 'survivor' : S.burn >= 1 || S.hp < 25 ? 'burnout' : 'normal';
+    : z5 >= a5 * 2.6 ? 'late' : S.cuts >= 2 ? 'survivor' : S.burn >= 2 || (S.burn >= 1 && S.hp < 30) || S.hp < 15 ? 'burnout' : 'normal';   // 2026-10-30 무난한 직장인이 너무 드물어 boss·expert·returner·burnout 문턱을 올림
   return { id, lb: ENDINGS2.find(e => e[0] === id)[1], R };
 }
 

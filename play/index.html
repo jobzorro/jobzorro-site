@@ -1030,7 +1030,7 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module">
-import * as PC from './play_core.js?v=804298d970';
+import * as PC from './play_core.js?v=425d17c201';
 const D = await (await fetch('data/play.json', { cache: 'no-cache' })).json();
 // 연봉 놀이터 v2 화면. make.py 가 page/*.js 를 이름순으로 이어 붙여 function main(D, PC) 하나로 만든다.
 // D = 회사 자료(make.py), PC = play_core.js (서버와 같은 규칙). 점수는 항상 PC.score* 로만 계산한다.
@@ -2522,7 +2522,7 @@ var GAUGE = [['hp', '체력'], ['cr', '커리어'], ['hap', '행복']];
 Object.assign(END_TXT, {
   exec: ['crown', '임원 명패를 받았어요. 1년 계약이라는 무게도 함께요.', 'happy', 4],
   startup: ['rocket', '동료의 회사에 걸었던 시간이 지분으로 돌아왔어요.', 'happy', 3],
-  boss: ['money', '10년 안에 연봉 1억. 숫자로는 누구보다 빨랐어요.', 'happy', 4],
+  boss: ['money', '9년 안에 연봉 1억. 숫자로는 누구보다 빨랐어요.', 'happy', 4],
   expert: ['magnifier', '관리자 대신 전문가. 이 분야에서 이름으로 찾는 사람이 됐어요.', 'happy', 3],
   returner: ['flame', '멈췄던 시간이 있었지만, 다시 일어나 더 단단해졌어요.', 'happy', 3],
   second: ['sign', '정년보다 먼저 문을 열고 나왔어요. 2막은 조금 느리고 더 내 것이에요.', 'happy', 3],
@@ -2585,8 +2585,10 @@ function r2Chapter(S, ch) {
   return L;
 }
 function PARTNER2() { return '배우자'; }
+// 20년 판 기록인지 (2026-10-30 당일 전환: 그날 아침 10년 판으로 낸 기록은 없는 셈 치고 새로 하게)
+function r2Rec() { var x = rec(TODAY, 'road'); return x && x.picks && x.picks.length >= PC.R2_N ? x : null; }
 function renderRoad2() {
-  var x = rec(TODAY, 'road'), p = r2Prog();
+  var x = r2Rec(), p = r2Prog();
   if (x) return resultRoad2(x);
   if (!p) {
     $('road').innerHTML = '<div class="intro r2in"><h3>커리어 로드 20년 · ' + mmdd(TODAY) + '</h3>' +
@@ -4526,7 +4528,7 @@ function gbSync() {
       else if (p && p.v) { var i = SST && SST.done ? SST.i : p.v.length; t = Math.min(i + 1, PC.SNIPER_N) + ' / ' + PC.SNIPER_N; f = p.v.length / PC.SNIPER_N; }
     } else if (k === 'road') {
       p = prog('road');
-      if (rec(TODAY, 'road')) t = '끝';
+      if (RPZ && RPZ.v === 2 ? r2Rec() : rec(TODAY, 'road')) t = '끝';
       else if (p && p.picks) { var NR = p.v2 ? PC.R2_SLOTS.length : 5, dn = p.v2 ? p.picks.length - 1 : p.picks.length; t = Math.min(dn + 1, NR) + ' / ' + NR; f = dn / NR; }
     } else if (k === 'run') {
       if (RUN && RUN.on) { t = hhmm(runClock(RUN)); f = (RUN.seg + Math.min(1, RUN.dist / RMAP[RUN.key].len)) / R_SLOTS.length; }
