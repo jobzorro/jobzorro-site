@@ -365,6 +365,7 @@ body.v2 .card .tags { margin-bottom:14px; }
 body.v2 .card .card-foot { margin-top:auto; padding-top:12px; border-top:1px solid var(--v-line); font-family:var(--v-display); font-size:12px; letter-spacing:.04em; }
 body.v2 .card .card-foot .pay b { font-size:14px; }
 body.v2 .badge { font-family:var(--v-display); font-size:11px; letter-spacing:.06em; text-transform:uppercase; border-radius:999px; background:var(--v-ink); color:var(--v-bg); padding:4px 9px; }
+body.v2 .card .card-foot .badge { padding-top:2px; padding-bottom:2px; }   /* 배지가 가격 글씨보다 높아 카드가 커지지 않게 */
 body.v2 .badge.gray { background:transparent; color:var(--v-muted); border:1px solid var(--v-line-2); }
 body.v2 .empty { padding:80px 20px; }
 body.v2 .empty b { font-family:var(--v-display); font-size:28px; }
@@ -849,11 +850,12 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
     return '<article class="card" data-id="' + j.id + '" tabindex="0" role="button" aria-label="' + esc(j.name) + ' 자세히 보기">' +
       (V2 ? art(j) : '') +
       '<button class="fav' + (favHas(j.id) ? ' on' : '') + '" type="button" data-fav="' + j.id + '" aria-pressed="' + (favHas(j.id) ? 'true' : 'false') + '" aria-label="' + esc(j.name) + ' 저장">★</button>' +
-      '<div class="card-top"><span class="group">' + esc(gname(j.group)) + (j.parent ? '<span class="subof">세부</span>' : '') + (j.mj ? '<span class="mjc ' + j.mj.lv + '">' + esc(j.mj.card) + '</span>' : '') + '</span></div>' +   // 2026-10-29 카드에서 AI 영향·현직자 자료 배지는 뺐다 (상세 페이지에만)
+      '<div class="card-top"><span class="group">' + esc(gname(j.group)) + (j.parent ? '<span class="subof">세부</span>' : '') + (j.mj ? '<span class="mjc ' + j.mj.lv + '">' + esc(j.mj.card) + '</span>' : '') + '</span>' +
+      '<span class="ai l' + j.ai.level + '" title="AI ' + AI_LABEL[j.ai.level] + '"><i><b></b><b></b><b></b></i>AI ' + AI_LABEL[j.ai.level] + '</span></div>' +
       '<h3><a href="jobs/' + j.id + '/">' + nameHtml(j.name) + '</a></h3><p class="en">' + esc(j.en) + '</p>' +
       '<p class="tagline">' + esc(j.tagline) + '</p>' +
       '<ul class="tags">' + j.skills.hard.slice(0, 3).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
-      '<div class="card-foot"><span class="pay">신입 <b>' + range(j.salary.junior) + '</b>만원</span></div>' +
+      '<div class="card-foot">' + evBadge(j) + '<span class="pay">신입 <b>' + range(j.salary.junior) + '</b>만원</span></div>' +
       '</article>';
   }
   function emptyHtml() {
