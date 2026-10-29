@@ -137,19 +137,20 @@ def slim_job(j: dict) -> dict:
         "mj": j["mj"], "mf": (j.get("major") or {}).get("fields", []), "deg": (j.get("major") or {}).get("degree", ""),   # 전공 단계 표시 · 진단 매칭
         "mm": (j.get("major") or {}).get("majors", []),                         # 진단: 꼭 맞는 학과 키 (data/majors.json)
         "sources": {"count": s.get("count", 0), "public": s.get("public", 0), "industries": s.get("industries", [])},  # 근거 배지·필터·업종 검색
+        "parent": j.get("parent"), "io": j.get("industryOnly"), "ind": j.get("ind", []),   # v2: 상위 직무 · 산업 전용 · 산업 필터
         "gc": _gc(j["group"]),                                                   # 웹 카드 그림 색 [액센트, 배경] (공유 이미지는 카톡 전용)
     }
 
 
 # 뉴스 태그(ai_tags) → 직무 id. 최근 45일 아카이브에서 직무별 최신 3건을 jobs.json 에 news 로 붙인다 (상세 패널·직무 페이지에 표시)
 NEWS_TAG_MAP = {
-    "인사": ["hr", "recruiter", "general-affairs"],
-    "영업": ["b2b-sales", "overseas-sales", "sales-management", "ecommerce-sales", "pharma-sales", "saas-sales", "technical-sales", "trading"],
-    "재무": ["finance", "accounting", "corporate-finance", "bank", "risk-management", "policy-finance", "fund-ops"],
+    "인사": ["hr", "hrd-culture", "cnb", "labor", "recruiter", "general-affairs"],
+    "영업": ["b2b-sales", "overseas-sales", "sales-management", "ecommerce-sales", "pharma-sales", "saas-sales", "technical-sales", "trading", "bid-sales", "channel-kam", "store-sv"],
+    "재무": ["finance", "ir", "accounting", "tax", "cost-accounting", "aml", "corporate-finance", "bank", "risk-management", "policy-finance", "fund-ops"],
     "기획": ["strategy", "biz-planning", "sales-planning", "consulting", "bd", "esg"],
     "PM": ["service-planning", "it-planning", "cx"],
     "MD": ["md", "online-md"],
-    "구매": ["purchasing", "scm", "forwarding"],
+    "구매": ["purchasing", "purchasing-planning", "scm", "forwarding"],
     "마케팅": ["brand-marketer", "performance-marketer", "content-marketer", "pr", "ad-planner"],
     "개발": ["sw-dev", "backend", "frontend", "embedded-sw", "ai-engineer", "data-engineer", "data-analyst", "qa", "erp-sap"],
     "디자인": ["ux-designer"],
@@ -674,6 +675,31 @@ def attach_major(data: dict) -> None:
         j["nonmajorOk"] = lv == "open"
 
 
+def attach_industries(data: dict) -> None:
+    """v2 산업 축 (data/industries.json). 직무마다 j["ind"] = 산업 id 목록을 붙인다 (목록 필터·산업 허브용).
+    근거 업종 문구(sources.industries)에 산업 키워드가 들어 있거나, 산업별 차이(byIndustry)·산업 전용(industryOnly)에 있으면 그 산업.
+    상위 직무에는 j["children"] = 세부 직무 id 목록을 붙인다."""
+    p = BASE / "data" / "industries.json"
+    if not p.exists():
+        return
+    inds = json.loads(p.read_text(encoding="utf-8"))["industries"]
+    data["meta"]["industries"] = [{"id": i["id"], "name": i["name"], "desc": i["desc"]} for i in inds]
+    for j in data["jobs"]:
+        txt = " ".join((j.get("sources") or {}).get("industries", []))
+        got = {i["id"] for i in inds if any(k in txt for k in i["kw"])}
+        got |= {r["ind"] for r in j.get("byIndustry", [])}
+        if j.get("industryOnly"):
+            got = {j["industryOnly"]}
+        j["ind"] = [i["id"] for i in inds if i["id"] in got]
+    kids = {}
+    for j in data["jobs"]:
+        if j.get("parent"):
+            kids.setdefault(j["parent"], []).append(j["id"])
+    for j in data["jobs"]:
+        if j["id"] in kids:
+            j["children"] = kids[j["id"]]
+
+
 def audit_links(data: dict, share_dir: Path) -> None:
     """직무가 늘어날 때 빠지기 쉬운 연결을 빌드마다 점검해 경고로 보여 준다 (빌드는 멈추지 않음).
     - 직무 진단: major(level·fields·prep), 직군의 fit 가중치
@@ -708,6 +734,12 @@ def audit_links(data: dict, share_dir: Path) -> None:
                 warn.append(f"{jid}: 전공 필수인데 관련 전공 계열이 비어 있음")
             if m["level"] == "prep" and not m.get("prep"):
                 warn.append(f"{jid}: 준비 필요 직무인데 '준비할 것' 문구 없음")
+        if j.get("parent") and j["parent"] not in {x["id"] for x in data["jobs"]}:
+            warn.append(f"{jid}: 상위 직무 {j['parent']} 가 없음")
+        ind_ids = {i["id"] for i in data["meta"].get("industries", [])}
+        bad_ind = [r.get("ind") for r in j.get("byIndustry", []) if r.get("ind") not in ind_ids]
+        if bad_ind:
+            warn.append(f"{jid}: 모르는 산업 id {bad_ind} (data/industries.json)")
         if jid not in listed:
             auto_news.append(jid)
         if any(not isinstance(v, dict) or "quote" not in v for v in j.get("voices", [])):
@@ -760,6 +792,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     attach_terms(data, GLOSS, picked=json.loads(jt.read_text(encoding="utf-8")) if jt.exists() else None)
     attach_client_salary(data)   # 취업조로 이직자 연봉(직군별 집계, 5명 이상만) — salary-lab/job_link_stats.py 가 만든다
     attach_news(data)
+    attach_industries(data)
     # 로고는 data URI 로 페이지마다 박지 않고 site/assets/ 의 파일을 참조한다 (nav_html/footer_html 이 root 를 붙여 깊이별 상대경로로 만든다)
     logo = "assets/jobzorro_logo.png"            # 푸터: 취업조로
     logo_nav = "assets/teamzorro_logo_halo.png"  # 맨 위 탭바만 TEAM ZORRO CI — 흰 테두리를 그림에 넣은 판 (폰 '웹사이트 어둡게'는 그림만 안 바꿔 검은 로고가 묻힘, 2026-10-22)

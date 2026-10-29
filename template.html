@@ -159,6 +159,24 @@
 .sal-axis div span { position: absolute; transform: translateX(-50%); white-space: nowrap; }   /* 눈금 숫자만 (칸 나누는 빈 span 은 제외) */
 .note { margin-top: 12px; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; }
 .trans { display: flex; flex-wrap: wrap; gap: 8px; }
+/* v2 상위·세부 직무, 산업별 차이, 산업 필터 */
+.parent-link { margin-top: 12px; font-size: 13.5px; color: var(--ink-soft); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.parent-link button, .parent-link a { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; color: var(--black); background: var(--surface); font-size: 13px; text-decoration: none; }
+.subof { margin-left: 6px; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--surface-2); color: var(--ink-soft); }
+.indtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.indtabs button { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
+.indtabs button[aria-selected="true"] { background: var(--fill); border-color: var(--fill); color: var(--fillfg); }
+.indpane { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; padding: 16px; background: var(--surface-2); border-radius: 10px; margin: 0; }
+.indpane > div { min-width: 0; }
+.indpane .full { grid-column: 1 / -1; }
+.indpane dt { font-size: 12px; font-weight: 700; color: var(--red); }
+.indpane dd { margin: 3px 0 0; font-size: 14px; line-height: 1.6; color: var(--ink); }
+.indpane .basis { grid-column: 1 / -1; font-size: 12px; color: var(--ink-soft); margin: 0; }
+.indgrid { display: grid; gap: 12px; }
+.indgrid h3 { font-size: 15px; margin: 0 0 8px; }
+.ind-sel { font: inherit; font-size: 13px; padding: 7px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); max-width: 100%; }
+.ind-sel.on { border-color: var(--fill); background: var(--fill); color: var(--fillfg); }
+@media (max-width: 640px) { .indpane { grid-template-columns: 1fr; } }
 .trans button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 13.5px; color: var(--black); background: var(--surface); }
 .trans button:hover { border-color: var(--fill); background: var(--fill); color: var(--fillfg); }
 .trans button svg { width: 14px; height: 14px; }
@@ -561,6 +579,7 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
       <button class="toggle" id="tAiLow" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>AI 영향 낮음</button>
       <button class="toggle" id="tSourced" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>인터뷰 있는 직무만</button>
       <button class="toggle fav-toggle" id="tFav" aria-pressed="false"><span class="star">★</span>저장한 직무 <b id="favN">0</b></button>
+      <select class="ind-sel" id="indSel" aria-label="산업으로 보기"><option value="">산업 전체</option></select>
     </div>
   </div>
 </div>
@@ -663,7 +682,7 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
   function fmt(n) { return n.toLocaleString('ko-KR'); }
   function range(r) { return fmt(r[0]) + '~' + fmt(r[1]); }
 
-  var state = { q: '', track: '전체', group: '전체', nonmajor: false, aiLow: false, sourced: false, fav: false };
+  var state = { q: '', track: '전체', group: '전체', nonmajor: false, aiLow: false, sourced: false, fav: false, ind: '' };
   // 저장한 직무(북마크): 이 브라우저에만
   function favGet() { try { return JSON.parse(localStorage.getItem('jz_fav') || '[]'); } catch (e) { return []; } }
   function favList() { return favGet().filter(function (x) { return byId[x]; }); }
@@ -722,7 +741,18 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
       if (!$('empty').hidden && innerWidth < 760) $('empty').scrollIntoView({ behavior: 'smooth', block: 'center' }); });
   }
   bindToggle('tNonmajor', 'nonmajor'); bindToggle('tAiLow', 'aiLow'); bindToggle('tSourced', 'sourced'); bindToggle('tFav', 'fav');
+  // 산업 필터 (v2): 직무마다 build.py 가 붙인 ind(산업 id 목록)로 거른다. ?ind=semiconductor 로 바로 열 수 있다
+  (function () {
+    var sel = $('indSel'), INDS = META.industries || [];
+    INDS.forEach(function (i) {
+      var n = JOBS.filter(function (j) { return (j.ind || []).indexOf(i.id) >= 0; }).length;
+      if (n) { var o = document.createElement('option'); o.value = i.id; o.textContent = i.name + ' (' + n + ')'; sel.appendChild(o); }
+    });
+    try { var q = new URLSearchParams(location.search).get('ind'); if (q && INDS.some(function (i) { return i.id === q; })) { state.ind = q; sel.value = q; sel.classList.add('on'); } } catch (e) {}
+    sel.addEventListener('change', function () { state.ind = sel.value; sel.classList.toggle('on', !!sel.value); renderGrid(); });
+  })();
   function resetFilters() {   // 빈 화면의 "필터 모두 풀기"
+    state.ind = ''; $('indSel').value = ''; $('indSel').classList.remove('on');
     state.track = '전체'; state.group = '전체'; state.nonmajor = state.aiLow = state.sourced = state.fav = false;
     state.q = ''; $('q').value = ''; $('clearQ').hidden = true;
     ['tNonmajor', 'tAiLow', 'tSourced', 'tFav'].forEach(function (id) { $(id).setAttribute('aria-pressed', 'false'); });
@@ -768,6 +798,7 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
       if (state.aiLow && j.ai.level > 1) return false;
       if (state.sourced && srcCount(j) === 0) return false;
       if (state.fav && !favHas(j.id)) return false;
+      if (state.ind && (j.ind || []).indexOf(state.ind) < 0) return false;
       return true;
     });
     if (!q) return base;
@@ -818,7 +849,7 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
     return '<article class="card" data-id="' + j.id + '" tabindex="0" role="button" aria-label="' + esc(j.name) + ' 자세히 보기">' +
       (V2 ? art(j) : '') +
       '<button class="fav' + (favHas(j.id) ? ' on' : '') + '" type="button" data-fav="' + j.id + '" aria-pressed="' + (favHas(j.id) ? 'true' : 'false') + '" aria-label="' + esc(j.name) + ' 저장">★</button>' +
-      '<div class="card-top"><span class="group">' + esc(gname(j.group)) + (j.mj ? '<span class="mjc ' + j.mj.lv + '">' + esc(j.mj.card) + '</span>' : '') + '</span></div>' +   // 2026-10-29 카드에서 AI 영향·현직자 자료 배지는 뺐다 (상세 페이지에만)
+      '<div class="card-top"><span class="group">' + esc(gname(j.group)) + (j.parent ? '<span class="subof">세부</span>' : '') + (j.mj ? '<span class="mjc ' + j.mj.lv + '">' + esc(j.mj.card) + '</span>' : '') + '</span></div>' +   // 2026-10-29 카드에서 AI 영향·현직자 자료 배지는 뺐다 (상세 페이지에만)
       '<h3><a href="jobs/' + j.id + '/">' + nameHtml(j.name) + '</a></h3><p class="en">' + esc(j.en) + '</p>' +
       '<p class="tagline">' + esc(j.tagline) + '</p>' +
       '<ul class="tags">' + j.skills.hard.slice(0, 3).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
@@ -889,6 +920,20 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
   function li(arr, cls) { return '<ul class="list ' + (cls || '') + '">' + arr.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>'; }
   function tags(arr, cls) { return '<ul class="tags ' + (cls || '') + '">' + arr.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>'; }
 
+  // 산업별 차이 탭: 첫 산업만 보이고 나머지는 hidden (seo.py 직무 페이지는 전부 펼쳐 보여 준다)
+  function indTabs(j) {
+    var rows = j.byIndustry;
+    return '<div class="indtabs" role="tablist" aria-label="산업 선택">' + rows.map(function (r, i) {
+      return '<button type="button" role="tab" data-indtab="' + i + '" aria-selected="' + (i ? 'false' : 'true') + '">' + esc(r.label || r.ind) + '</button>';
+    }).join('') + '</div>' + rows.map(function (r, i) {
+      return '<dl class="indpane" role="tabpanel" data-indpane="' + i + '"' + (i ? ' hidden' : '') + '>' +
+        '<div><dt>주로 만나는 고객</dt><dd>' + esc(r.customer) + '</dd></div>' +
+        '<div><dt>입사 전 준비</dt><dd>' + esc(r.prep) + '</dd></div>' +
+        '<div class="full"><dt>이 산업에서는</dt><dd>' + esc(r.work) + '</dd></div>' +
+        '<div class="full"><dt>자주 쓰는 말</dt><dd>' + esc((r.keywords || []).join(' · ')) + '</dd></div>' +
+        '<p class="basis">근거: 이 산업 현직자 인터뷰 ' + (r.basis || 0) + '건</p></dl>';
+    }).join('');
+  }
   var lastFocus = null, current = null;
   function detail(j) {
     var h = '';
@@ -898,9 +943,14 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
       '<div><dt>전공</dt><dd>' + majorDd(j) + '</dd></div>' +
       '<div><dt>AI 영향</dt><dd>' + AI_LABEL[j.ai.level] + '</dd></div>' +
       '<div><dt>근거 자료</dt><dd>' + (evidence(j) ? evidence(j) + '건' : '초안') + '</dd></div></dl>';
+    if (j.parent && byId[j.parent]) h += '<p class="parent-link">' + esc(byId[j.parent].name) + '의 세부 직무 <button type="button" data-open="' + j.parent + '">전체 개요 보기 →</button></p>';
     h += '<div class="sum-wrap clamp"><p class="summary">' + esc(j.summary) + '</p><button type="button" class="more" data-more>더 읽기 ↓</button></div>';
+    if (j.children && j.children.length) h += sec('trans', '세부 직무로 더 깊게', '<div class="trans">' + j.children.filter(function (id) { return byId[id]; }).map(function (id) {
+      return '<button type="button" data-open="' + id + '">' + esc(byId[id].name) + I.arrow + '</button>';
+    }).join('') + '</div>', '채용공고가 따로 뜨는 단위');
     if (j.dayInLife) h += '<div class="day"><b>하루는 이렇게 흘러갑니다</b>' + esc(j.dayInLife) + '</div>';
     h += sec('tasks', '하는 일', li(j.tasks));
+    if (j.byIndustry && j.byIndustry.length) h += sec('path', '산업별로 이렇게 달라요', indTabs(j), '같은 직무, 다른 산업');
     if (j.realities && j.realities.length) h += sec('interview', '현직자가 말하는 현실', li(j.realities, 'mark'));
     if (j.voices && j.voices.length) h += sec('quote', '현직자의 말', '<div class="voices">' + j.voices.map(function (v) {
       var tag = v.source === 'public' ? '<span class="badge gray">공개 인터뷰</span>' : '<span class="badge soft">취업조로 인터뷰</span>';
@@ -1016,6 +1066,12 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && current) closeDrawer(); });
   $('dBody').addEventListener('click', function (e) {
     var o = e.target.closest('[data-open]'); if (o) { openJob(o.getAttribute('data-open')); return; }   // 옮겨갈 수 있는 직무 · 다시 시도
+    var it = e.target.closest('[data-indtab]'); if (it) {   // 산업별 차이 탭 전환
+      var box = it.closest('.sec'), k = it.getAttribute('data-indtab');
+      box.querySelectorAll('[data-indtab]').forEach(function (b) { b.setAttribute('aria-selected', String(b === it)); });
+      box.querySelectorAll('[data-indpane]').forEach(function (d) { d.hidden = d.getAttribute('data-indpane') !== k; });
+      return;
+    }
     if (e.target.closest('[data-reload]')) { location.reload(); return; }
     var mo = e.target.closest('[data-more]'); if (mo) { mo.parentNode.classList.remove('clamp'); mo.remove(); return; }
     if (e.target.closest('[data-cmp]')) { cmpAdd(current); return; }

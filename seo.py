@@ -216,7 +216,9 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     pub_n = j["sources"].get("public", 0) or 0
     ev = src_n + pub_n
     h = []
-    h.append(f'<nav class="crumbs" aria-label="경로"><a href="../../">직무사전</a> › <a href="../../?group={e(j["group"])}">{e(group_name)}</a> › <span>{e(j["name"])}</span></nav>')
+    par = by_id.get(j.get("parent") or "")
+    h.append(f'<nav class="crumbs" aria-label="경로"><a href="../../">직무사전</a> › <a href="../../?group={e(j["group"])}">{e(group_name)}</a> › '
+             + (f'<a href="../{e(par["id"])}/">{e(par["name"])}</a> › ' if par else "") + f'<span>{e(j["name"])}</span></nav>')
     _m = re.match(r"^(.*?)\s*\(([^()]+)\)\s*$", j["name"])
     _nm = f'{e(_m.group(1))}<span class="paren">{e(_m.group(2))}</span>' if _m else e(j["name"])
     h.append(f'<h1 class="name">{_nm}</h1><p class="en">{e(j.get("en", ""))}</p>')
@@ -228,9 +230,22 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
              f'<div><dt>전공</dt><dd>{major_dd(j)}</dd></div>'
              f'<div><dt>AI 영향</dt><dd>{AI_LABEL.get(j["ai"]["level"], "보통")}</dd></div>'
              f'<div><dt>근거 자료</dt><dd>{str(ev) + "건" if ev else "초안"}</dd></div></dl>')
+    if par:
+        h.append(f'<p class="parent-link">{e(par["name"])}의 세부 직무 <a href="../{e(par["id"])}/">전체 개요 보기 →</a></p>')
+    kids = [k for k in j.get("children", []) if k in by_id]
+    if kids:
+        h.append(sec("세부 직무로 더 깊게", '<div class="trans">' + "".join(f'<a class="btn-link" href="../{k}/">{e(by_id[k]["name"])} →</a>' for k in kids) + "</div>", "채용공고가 따로 뜨는 단위"))
     if j.get("dayInLife"):
         h.append(f'<div class="day"><b>하루는 이렇게 흘러갑니다</b>{e(j["dayInLife"])}</div>')
     h.append(sec("하는 일", li(j["tasks"])))
+    if j.get("byIndustry"):
+        h.append(sec("산업별로 이렇게 달라요", '<div class="indgrid">' + "".join(
+            f'<div><h3>{e(r.get("label") or r["ind"])}</h3><dl class="indpane">'
+            f'<div><dt>주로 만나는 고객</dt><dd>{e(r["customer"])}</dd></div>'
+            f'<div><dt>입사 전 준비</dt><dd>{e(r["prep"])}</dd></div>'
+            f'<div class="full"><dt>이 산업에서는</dt><dd>{e(r["work"])}</dd></div>'
+            f'<div class="full"><dt>자주 쓰는 말</dt><dd>{e(" · ".join(r.get("keywords", [])))}</dd></div>'
+            f'<p class="basis">근거: 이 산업 현직자 인터뷰 {r.get("basis", 0)}건</p></dl></div>' for r in j["byIndustry"]) + "</div>", "같은 직무, 다른 산업"))
     if j.get("realities"):
         h.append(sec("현직자가 말하는 현실", li(j["realities"], "mark")))
     if j.get("voices"):

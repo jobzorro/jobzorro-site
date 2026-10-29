@@ -21,14 +21,32 @@
           "en": "B2B Sales / Account Manager"
         },
         {
+          "id": "bid-sales",
+          "name": "수주·입찰 영업",
+          "en": "Bid / Project Sales",
+          "parent": "b2b-sales"
+        },
+        {
           "id": "overseas-sales",
           "name": "해외영업·상사",
           "en": "Overseas Sales / Trading"
         },
         {
           "id": "sales-management",
-          "name": "영업관리 (유통·소비재)",
+          "name": "영업관리 (대리점·소비재)",
           "en": "Sales Management / Channel Sales"
+        },
+        {
+          "id": "channel-kam",
+          "name": "유통 채널 영업 (KAM)",
+          "en": "Key Account Manager (Retail Channel)",
+          "parent": "sales-management"
+        },
+        {
+          "id": "store-sv",
+          "name": "점포 운영·SV (슈퍼바이저)",
+          "en": "Store Operations / Supervisor",
+          "parent": "sales-management"
         },
         {
           "id": "ecommerce-sales",
@@ -48,7 +66,8 @@
         {
           "id": "technical-sales",
           "name": "기술영업·FAE (세일즈 엔지니어)",
-          "en": "Technical Sales / Field Application Engineer"
+          "en": "Technical Sales / Field Application Engineer",
+          "parent": "b2b-sales"
         },
         {
           "id": "trading",
@@ -133,13 +152,32 @@
       "jobs": [
         {
           "id": "hr",
-          "name": "인사 (HR)",
-          "en": "Human Resources"
+          "name": "인사 (HR)·인사기획",
+          "en": "HR / HR Planning"
+        },
+        {
+          "id": "hrd-culture",
+          "name": "HRD·조직문화",
+          "en": "HRD / Organizational Culture",
+          "parent": "hr"
+        },
+        {
+          "id": "cnb",
+          "name": "급여·C&B (보상)",
+          "en": "Payroll / Compensation & Benefits",
+          "parent": "hr"
+        },
+        {
+          "id": "labor",
+          "name": "노무 (노사관계)",
+          "en": "Labor Relations",
+          "parent": "hr"
         },
         {
           "id": "recruiter",
           "name": "채용 담당 (리크루터)",
-          "en": "Recruiter / Talent Acquisition"
+          "en": "Recruiter / Talent Acquisition",
+          "parent": "hr"
         },
         {
           "id": "general-affairs",
@@ -152,14 +190,38 @@
           "en": "Finance / Treasury"
         },
         {
+          "id": "ir",
+          "name": "IR·공시",
+          "en": "Investor Relations / Disclosure",
+          "parent": "finance"
+        },
+        {
           "id": "accounting",
-          "name": "회계·결산·세무",
-          "en": "Accounting / Tax"
+          "name": "회계·결산",
+          "en": "Accounting / Closing"
+        },
+        {
+          "id": "tax",
+          "name": "세무",
+          "en": "Corporate Tax",
+          "parent": "accounting"
+        },
+        {
+          "id": "cost-accounting",
+          "name": "원가·관리회계",
+          "en": "Cost / Management Accounting",
+          "parent": "accounting"
         },
         {
           "id": "purchasing",
-          "name": "구매",
+          "name": "구매 (원자재·부품)",
           "en": "Procurement / Sourcing"
+        },
+        {
+          "id": "purchasing-planning",
+          "name": "구매기획·간접구매",
+          "en": "Procurement Planning / Indirect Purchasing",
+          "parent": "purchasing"
         },
         {
           "id": "legal",
@@ -197,6 +259,12 @@
           "id": "risk-management",
           "name": "리스크관리",
           "en": "Risk Management"
+        },
+        {
+          "id": "aml",
+          "name": "AML (자금세탁방지)",
+          "en": "Anti-Money Laundering / AML Compliance",
+          "industryOnly": "finance"
         },
         {
           "id": "underwriting",
