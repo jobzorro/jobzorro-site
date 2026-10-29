@@ -59,6 +59,18 @@
           "en": "Pharmaceutical Sales"
         },
         {
+          "id": "medical-device-sales",
+          "name": "의료기기 영업",
+          "en": "Medical Device Sales",
+          "industryOnly": "bio"
+        },
+        {
+          "id": "insurance-sales-mgmt",
+          "name": "보험 영업관리 (GA·FC 지점)",
+          "en": "Insurance Sales Management",
+          "industryOnly": "finance"
+        },
+        {
           "id": "saas-sales",
           "name": "SaaS·IT 솔루션 영업",
           "en": "SaaS / Solution Sales"
@@ -85,6 +97,11 @@
           "id": "brand-marketer",
           "name": "브랜드 마케팅",
           "en": "Brand Marketing"
+        },
+        {
+          "id": "product-planning",
+          "name": "상품기획 (가전·자동차·IT기기)",
+          "en": "Product Planning (Hardware)"
         },
         {
           "id": "performance-marketer",
@@ -251,9 +268,27 @@
           "en": "Bank Clerk / Retail Banking"
         },
         {
+          "id": "wm-pb",
+          "name": "WM·PB (자산관리)",
+          "en": "Wealth Management / Private Banker",
+          "industryOnly": "finance"
+        },
+        {
           "id": "corporate-finance",
           "name": "기업금융·여신",
           "en": "Corporate Banking / Credit"
+        },
+        {
+          "id": "ib",
+          "name": "증권 IB (ECM·DCM·인수금융)",
+          "en": "Investment Banking",
+          "industryOnly": "finance"
+        },
+        {
+          "id": "analyst",
+          "name": "리서치 애널리스트",
+          "en": "Equity Research Analyst",
+          "industryOnly": "finance"
         },
         {
           "id": "risk-management",
@@ -272,14 +307,61 @@
           "en": "Underwriting"
         },
         {
+          "id": "actuary",
+          "name": "보험계리",
+          "en": "Actuary",
+          "industryOnly": "finance"
+        },
+        {
+          "id": "claims",
+          "name": "손해사정·보상",
+          "en": "Claims Adjusting",
+          "industryOnly": "finance"
+        },
+        {
           "id": "fund-ops",
           "name": "자산운용 백오피스·펀드회계",
           "en": "Fund Operations"
         },
         {
+          "id": "fund-manager",
+          "name": "운용역 (펀드매니저·대체투자)",
+          "en": "Fund Manager / Alternative Investment",
+          "industryOnly": "finance"
+        },
+        {
           "id": "real-estate",
-          "name": "부동산 개발·부동산금융",
-          "en": "Real Estate Development / Finance"
+          "name": "부동산 개발·금융 (시행·신탁)",
+          "en": "Real Estate Development / Finance",
+          "industryOnly": "realestate"
+        },
+        {
+          "id": "re-am",
+          "name": "부동산 AM (자산운용)",
+          "en": "Real Estate Asset Management",
+          "parent": "real-estate",
+          "industryOnly": "realestate"
+        },
+        {
+          "id": "re-lm",
+          "name": "LM (임대 영업·리싱)",
+          "en": "Leasing Management",
+          "parent": "real-estate",
+          "industryOnly": "realestate"
+        },
+        {
+          "id": "re-pm",
+          "name": "PM (프로퍼티 매니지먼트)",
+          "en": "Property Management",
+          "parent": "real-estate",
+          "industryOnly": "realestate"
+        },
+        {
+          "id": "re-fm",
+          "name": "FM (시설관리 엔지니어)",
+          "en": "Facility Management",
+          "parent": "real-estate",
+          "industryOnly": "realestate"
         },
         {
           "id": "policy-finance",
@@ -299,9 +381,21 @@
           "en": "Freight Forwarding"
         },
         {
+          "id": "shipping",
+          "name": "해운 영업·선박 운항",
+          "en": "Shipping / Chartering",
+          "industryOnly": "logistics"
+        },
+        {
           "id": "scm",
           "name": "SCM·수요관리·물류기획",
           "en": "Supply Chain Management"
+        },
+        {
+          "id": "fulfillment",
+          "name": "물류센터 운영·풀필먼트",
+          "en": "Fulfillment / Warehouse Operations",
+          "industryOnly": "logistics"
         },
         {
           "id": "md",
@@ -312,6 +406,11 @@
           "id": "online-md",
           "name": "온라인 MD (이커머스·홈쇼핑)",
           "en": "E-commerce Merchandiser"
+        },
+        {
+          "id": "vmd",
+          "name": "VMD (비주얼 머천다이저)",
+          "en": "Visual Merchandiser"
         }
       ]
     },
@@ -334,6 +433,12 @@
           "id": "service-planning",
           "name": "서비스 기획 (PM/PO)",
           "en": "Product Manager / Service Planner"
+        },
+        {
+          "id": "game-planning",
+          "name": "게임 기획",
+          "en": "Game Designer / Planner",
+          "industryOnly": "it"
         },
         {
           "id": "sw-dev",
@@ -371,6 +476,12 @@
           "en": "QA / Test Engineer"
         },
         {
+          "id": "network-eng",
+          "name": "통신 네트워크 엔지니어",
+          "en": "Telecom Network Engineer",
+          "industryOnly": "media"
+        },
+        {
           "id": "ux-designer",
           "name": "UX/UI 디자이너",
           "en": "Product Designer"
@@ -393,6 +504,12 @@
           "en": "Chemical / Materials R&D"
         },
         {
+          "id": "cosmetic-rnd",
+          "name": "화장품 제형·처방 연구",
+          "en": "Cosmetic Formulation R&D",
+          "industryOnly": "beauty-fashion"
+        },
+        {
           "id": "battery-dev",
           "name": "배터리 셀·소재 개발",
           "en": "Battery Development Engineer"
@@ -406,6 +523,12 @@
           "id": "product-dev",
           "name": "제품개발·하드웨어 R&D (가전·전자)",
           "en": "Product Development Engineer"
+        },
+        {
+          "id": "vehicle-test",
+          "name": "자동차 차량개발·시험평가",
+          "en": "Vehicle Development / Testing",
+          "industryOnly": "auto"
         },
         {
           "id": "rnd-food",
@@ -423,6 +546,18 @@
           "id": "mechanical-design",
           "name": "기계 설계",
           "en": "Mechanical Design Engineer"
+        },
+        {
+          "id": "naval-design",
+          "name": "선박 설계 (조선)",
+          "en": "Naval Architecture / Ship Design",
+          "industryOnly": "heavy"
+        },
+        {
+          "id": "system-eng",
+          "name": "방산·항공 체계 엔지니어",
+          "en": "Defense / Aerospace Systems Engineer",
+          "industryOnly": "heavy"
         },
         {
           "id": "electrical-design",
@@ -480,6 +615,12 @@
           "id": "equipment-eng",
           "name": "설비·장비 엔지니어",
           "en": "Equipment Engineer"
+        },
+        {
+          "id": "power-plant-ops",
+          "name": "발전설비 운영·정비",
+          "en": "Power Plant Operations / Maintenance",
+          "industryOnly": "energy"
         }
       ]
     },
@@ -536,9 +677,21 @@
           "en": "Clinical Research Associate"
         },
         {
+          "id": "pv",
+          "name": "약물감시 (PV)",
+          "en": "Pharmacovigilance",
+          "industryOnly": "bio"
+        },
+        {
           "id": "ra",
           "name": "인허가 (RA)",
           "en": "Regulatory Affairs"
+        },
+        {
+          "id": "pharma-pm",
+          "name": "제약 마케팅 PM",
+          "en": "Pharmaceutical Product Manager",
+          "industryOnly": "bio"
         }
       ]
     },

@@ -176,6 +176,14 @@
 .indgrid h3 { font-size: 15px; margin: 0 0 8px; }
 .ind-sel { font: inherit; font-size: 13px; padding: 7px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); max-width: 100%; }
 .ind-sel.on { border-color: var(--fill); background: var(--fill); color: var(--fillfg); }
+.ind-hub { align-self: center; font-size: 13px; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
+.indcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.indcard { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); color: var(--ink); text-decoration: none; min-width: 0; }
+.indcard:hover { border-color: var(--fill); }
+.indcard b { font-size: 15px; color: var(--black); }
+.indcard span { font-size: 13px; color: var(--fg-soft); line-height: 1.5; }
+.indcard small { font-size: 12px; color: var(--ink-soft); margin-top: auto; }
+.indgrid h3 a { color: inherit; }
 @media (max-width: 640px) { .indpane { grid-template-columns: 1fr; } }
 .trans button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 13.5px; color: var(--black); background: var(--surface); }
 .trans button:hover { border-color: var(--fill); background: var(--fill); color: var(--fillfg); }
@@ -581,6 +589,7 @@ body.v2 .fav-toggle[aria-pressed="true"] { background:var(--acc); color:var(--ac
       <button class="toggle" id="tSourced" aria-pressed="false"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>인터뷰 있는 직무만</button>
       <button class="toggle fav-toggle" id="tFav" aria-pressed="false"><span class="star">★</span>저장한 직무 <b id="favN">0</b></button>
       <select class="ind-sel" id="indSel" aria-label="산업으로 보기"><option value="">산업 전체</option></select>
+      <a class="ind-hub" href="industry/">산업별 직무 지도</a>
     </div>
   </div>
 </div>

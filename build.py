@@ -14,6 +14,7 @@
 """
 
 import argparse
+PREVIEW = False   # --preview: 연봉·회사·놀이터 폴더 복사 생략 (직무사전 미리보기를 빨리 만들 때)
 import base64
 import datetime
 import hashlib
@@ -128,7 +129,7 @@ def slim_job(j: dict) -> dict:
     s = j.get("sources") or {}
     return {
         "id": j["id"], "name": j["name"], "en": j["en"], "group": j["group"], "tagline": j["tagline"],
-        "summary": j["summary"],                                                 # 검색(haystack)용
+        "summary": j["summary"][:120],                                           # 검색(haystack)용. 직무 116개(v2)부터 앞 120자만 — 상세는 전체 JSON
         "skills": {"hard": j["skills"]["hard"], "soft": j["skills"]["soft"]},   # 카드는 hard 앞 3개, 검색은 전부
         "tools": j["tools"], "certs": j["certs"],                                # 검색용
         "salary": {"junior": j["salary"]["junior"]},                             # 카드 하단 신입 연봉대
@@ -684,6 +685,7 @@ def attach_industries(data: dict) -> None:
         return
     inds = json.loads(p.read_text(encoding="utf-8"))["industries"]
     data["meta"]["industries"] = [{"id": i["id"], "name": i["name"], "desc": i["desc"]} for i in inds]
+    seo.IND_NAMES = {i["id"]: i["name"] for i in inds}
     for j in data["jobs"]:
         txt = " ".join((j.get("sources") or {}).get("industries", []))
         got = {i["id"] for i in inds if any(k in txt for k in i["kw"])}
@@ -1021,6 +1023,29 @@ def build(out_dir: Path, with_news: bool) -> None:
         + footer_html("../", logo, "") + seo.INTERVIEW_ALL_JS + "\n</body>\n</html>\n", encoding="utf-8")
     print(f"면접 질문 페이지: 공통 {len(ic['top'])}개 + 직무 {len(iqj)}개 -> {out_dir / 'interview' / 'index.html'}")
     entries.append(("interview/", updated, "weekly", "0.8"))
+    # 산업 허브 (v2 2단계): /industry/ 목록 + /industry/<id>/ 산업별 직무 지도
+    inds = data["meta"].get("industries", [])
+    if inds:
+        def ind_page(root, path, title, desc, crumbs, body):
+            head = seo.seo_head(base_url, title, desc, path, og_main, [seo.breadcrumb_ld(base_url, crumbs)])
+            return ("<!doctype html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n"
+                    + head + "\n" + fonts + "<style>" + css + "</style>\n</head>\n<body>\n" + nav_html("index.html", root, logo_nav)
+                    + "<main class=\"jobpage\"><div class=\"d-body\">" + body + "</div></main>\n" + footer_html(root, logo, "") + fab_html(root) + "\n</body>\n</html>\n")
+        (out_dir / "industry").mkdir(exist_ok=True)
+        (out_dir / "industry" / "index.html").write_text(ind_page("../", "industry/", f"산업별 직무 지도 — 산업 {len(inds)}개, 어떤 직무가 있고 무엇이 다른가 | 취업조로 직무사전",
+            "반도체·금융·부동산·식품 등 산업마다 어떤 직무가 있고, 같은 직무가 산업에 따라 어떻게 다른지 현직자 인터뷰로 정리했습니다.",
+            [("직무사전", ""), ("산업별 직무", "industry/")], seo.render_industry_index(inds, data["jobs"])), encoding="utf-8")
+        entries.append(("industry/", updated, "weekly", "0.7"))
+        for i in inds:
+            d = out_dir / "industry" / i["id"]
+            d.mkdir(parents=True, exist_ok=True)
+            n = sum(1 for j in data["jobs"] if i["id"] in j.get("ind", []))
+            d.joinpath("index.html").write_text(ind_page("../../", f"industry/{i['id']}/", f"{i['name']} 산업 직무 {n}개 — 하는 일·전용 직무·산업별 차이 | 취업조로 직무사전",
+                f"{i['name']}({i['desc']}) 산업에서 뽑는 직무 {n}개. 이 산업에만 있는 직무와, 같은 직무가 이 산업에서 어떻게 다른지 현직자 인터뷰로 정리했습니다.",
+                [("직무사전", ""), ("산업별 직무", "industry/"), (i["name"], f"industry/{i['id']}/")],
+                seo.render_industry_page(i, data["jobs"], gname, data["meta"]["groups"])), encoding="utf-8")
+            entries.append((f"industry/{i['id']}/", updated, "weekly", "0.7"))
+        print(f"산업 허브: {len(inds)}개 -> {out_dir / 'industry'}")
     # 관리 화면은 이메일 로그인 어드민으로 옮김 (2026-10-21). 원본 template_admin.html 은
     # company-check/admin/build_jobs_page.py 가 읽어 어드민 안 /jobs 로 만든다. 여기엔 옮긴 곳 안내만.
     (out_dir / "admin").mkdir(exist_ok=True)
@@ -1124,7 +1149,7 @@ def build(out_dir: Path, with_news: bool) -> None:
             shutil.rmtree(news_src.parent, ignore_errors=True)
 
     # ---- 연봉 연구소 (/salary/): salary-lab/publish_to_site.py 가 만든 salary/ 를 복사하고 상단 메뉴를 붙인다
-    sal = BASE / "salary"
+    sal = BASE / ("_skip" if PREVIEW else "salary")
     if sal.exists():
         dst = out_dir / "salary"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(sal, dst)
         zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
@@ -1168,7 +1193,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     COMPANY_NOTE = ("해당사항은 회사의 공식 입장과 사실확정은 아니며, 항목마다 출처와 기준일을 표기합니다. "   # 2026-10-29 사용자 문구로 줄임
                     "사실과 다른 내용은 회사 화면 아래 '정정 요청하기'로 알려주시면 확인 후 고치거나 내려드리겠습니다.")
     # ---- 회사 판단 연구소 (/company/): company-check/publish_to_site.py 가 만든 company/ 를 복사하고 상단 메뉴를 붙인다
-    comp = BASE / "company"
+    comp = BASE / ("_skip" if PREVIEW else "company")
     if comp.exists():
         dst = out_dir / "company"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(comp, dst)
         # 이 페이지는 자체 토큰(--paper·--hairline·--logo-filter)을 이미 갖고 있어 공용 .zn(메뉴)·.zf(푸터) 규칙만 더한다
@@ -1204,7 +1229,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         co_dir = dst / "data" / "co"  # API 모드면 조각 파일이 없음 (회사 상세는 Cloudflare Worker가 줌)
         print(f"회사 판단 연구소: /company/ (" + (f"데이터 조각 {len(list(co_dir.iterdir()))}개" if co_dir.exists() else "회사 상세는 API") + ")")
     # ---- 연봉 놀이터 (/play/): salary-lab/play/publish_to_site.py 가 만든 play/ 를 복사하고 상단 메뉴를 붙인다 (순위표는 play-api Worker)
-    play = BASE / "play"
+    play = BASE / ("_skip" if PREVIEW else "play")
     if (play / "index.html").exists():
         dst = out_dir / "play"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(play, dst)
         zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
@@ -1302,5 +1327,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=BASE / "site", type=Path)
     ap.add_argument("--no-news", action="store_true")
+    ap.add_argument("--preview", action="store_true", help="미리보기용: 연봉·회사·놀이터 폴더 복사를 건너뛴다 (배포 빌드에는 쓰지 않음)")
     a = ap.parse_args()
+    PREVIEW = a.preview
     build(a.out, not a.no_news)

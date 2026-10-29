@@ -14,7 +14,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 BASE = Path(__file__).parent
 D = BASE / "data"
-S4 = BASE / "corpus" / "synth4"
+S4 = BASE / "corpus" / (sys.argv[1] if len(sys.argv) > 1 else "synth4")   # 2단계부터: python apply_phase4.py synth5
 
 
 def load(p):
@@ -60,6 +60,11 @@ def main():
             print(f"건너뜀: {jid} 는 taxonomy 에 없음")
             continue
         major, q, tm = obj.pop("_major", None), obj.pop("_iq", None), obj.pop("_terms", None)
+        # 산업별 차이는 근거 인터뷰 2건 이상인 산업만 (공개 자료만으로 쓴 산업 탭은 '인터뷰 0건'으로 보이므로 뺀다)
+        if "byIndustry" in obj:
+            obj["byIndustry"] = [r for r in obj["byIndustry"] if r.get("ind") in inds and (r.get("basis") or 0) >= 2]
+            if not obj["byIndustry"]:
+                obj.pop("byIndustry")
         old = by_id.get(jid)
         if old and old.get("news"):
             obj["news"] = old["news"]

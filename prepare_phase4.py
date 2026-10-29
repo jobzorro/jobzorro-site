@@ -27,14 +27,14 @@ NEW = {
 }
 
 
-def main():
+def main(new=NEW, out_name="batches4"):
     clusters = json.loads((BASE / "corpus" / "clusters.json").read_text(encoding="utf-8"))
     idx2job = {x["idx"]: jid for jid, xs in clusters.items() for x in xs}
     files = {p.stem: p for p in TXT.glob("*.txt") if p.stat().st_size > 400}
     texts = {k: p.read_text(encoding="utf-8", errors="ignore") for k, p in files.items()}
-    out = BASE / "corpus" / "batches4"
+    out = BASE / "corpus" / out_name
     out.mkdir(exist_ok=True)
-    for jid, (src, kws) in NEW.items():
+    for jid, (src, kws) in new.items():
         scored = []
         for k, t in texts.items():
             hits = {w: len(re.findall(re.escape(w), t)) for w in kws}

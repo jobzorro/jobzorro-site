@@ -16,6 +16,7 @@ from pathlib import Path
 BASE = Path(__file__).parent
 ASSETS = BASE / "assets"
 AI_LABEL = {1: "낮음", 2: "보통", 3: "큼"}
+IND_NAMES = {}   # 산업 id → 이름. build.py 가 data/industries.json 으로 채운다 (직무 페이지 '이 직무가 있는 산업' 링크)
 VERIFY = {}   # build.py 가 site.json 의 verification 값을 넣는다 (google / naver)
 
 
@@ -285,6 +286,9 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     # 자주 묻는 질문 (FAQ 구조화 데이터와 동일 내용)
     faq = "".join(f'<details class="faq"><summary>{e(q)}</summary><p>{e(a)}</p></details>' for q, a in job_faq(j, by_id))
     h.append(sec("자주 묻는 질문", f'<div class="faqs">{faq}</div>'))
+    if [i for i in j.get("ind", []) if i in IND_NAMES]:
+        h.append(sec("이 직무가 있는 산업", '<div class="trans">' + "".join(
+            f'<a class="btn-link" href="../../industry/{e(i)}/">{e(IND_NAMES[i])} →</a>' for i in j["ind"] if i in IND_NAMES) + "</div>", "산업별 직무 지도"))
     inds = (j["sources"].get("industries") or [])[:12]
     ws = j.get("webSources") or []
     if j.get("news"):
@@ -576,6 +580,57 @@ def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조
 
 
 # ───────────────────────── sitemap / robots / llms.txt ─────────────────────────
+
+def render_industry_page(ind: dict, jobs, gname: dict, groups) -> str:
+    """산업 허브 /industry/<id>/ 본문. 이 산업 전용 직무 → 이 산업에서 달라지는 점(byIndustry) → 직군별 직무 목록 순서."""
+    iid = ind["id"]
+    mine = [j for j in jobs if iid in j.get("ind", [])]
+    only = [j for j in mine if j.get("industryOnly") == iid]
+    diffs = [(j, r) for j in mine for r in j.get("byIndustry", []) if r.get("ind") == iid]
+
+    def card(j):
+        return (f'<a class="indcard" href="../../jobs/{e(j["id"])}/"><b>{e(j["name"])}</b><span>{e(j["tagline"])}</span>'
+                f'<small>{e(gname.get(j["group"], ""))} · 신입 {rng(j["salary"]["junior"])}만원</small></a>')
+
+    h = [f'<nav class="crumbs" aria-label="경로"><a href="../../">직무사전</a> › <a href="../">산업별 직무</a> › <span>{e(ind["name"])}</span></nav>',
+         f'<h1 class="name">{e(ind["name"])} 산업 직무 지도</h1><p class="en">{e(ind["desc"])}</p>',
+         f'<p class="summary"><b>{e(ind["name"])}</b> 산업에서 일하는 직무 {len(mine)}개를 모았습니다. '
+         + (f'이 산업에만 있는 직무 {len(only)}개, ' if only else "")
+         + (f'같은 직무라도 이 산업에서는 어떻게 다른지 {len(diffs)}가지를 현직자 인터뷰로 정리했습니다.' if diffs else '직무를 누르면 하는 일·연봉·들어가는 길을 볼 수 있습니다.')
+         + '</p>',
+         f'<p class="parent-link"><a href="../../?ind={e(iid)}">목록에서 이 산업만 걸러 보기 →</a></p>']
+    if only:
+        h.append(f'<section class="sec"><div class="sec-h"><span class="ic"></span><h2>이 산업에만 있는 직무</h2></div><div class="indcards">{"".join(card(j) for j in only)}</div></section>')
+    if diffs:
+        h.append('<section class="sec"><div class="sec-h"><span class="ic"></span><h2>같은 직무, 이 산업에서는 이렇게 다릅니다</h2><span class="hint">현직자 인터뷰 기준</span></div><div class="indgrid">' + "".join(
+            f'<div><h3><a href="../../jobs/{e(j["id"])}/">{e(j["name"])}</a> · {e(r.get("label") or ind["name"])}</h3><dl class="indpane">'
+            f'<div><dt>주로 만나는 고객</dt><dd>{e(r["customer"])}</dd></div><div><dt>입사 전 준비</dt><dd>{e(r["prep"])}</dd></div>'
+            f'<div class="full"><dt>이 산업에서는</dt><dd>{e(r["work"])}</dd></div>'
+            f'<p class="basis">근거: 이 산업 현직자 인터뷰 {r.get("basis", 0)}건</p></dl></div>' for j, r in diffs) + '</div></section>')
+    rest = [j for j in mine if j not in only]
+    for g in groups:
+        gj = [j for j in rest if j["group"] == g["id"]]
+        if gj:
+            h.append(f'<section class="sec"><div class="sec-h"><span class="ic"></span><h2>{e(g["name"])}</h2><span class="hint">{len(gj)}개</span></div><div class="indcards">{"".join(card(j) for j in gj)}</div></section>')
+    others = [i for i in IND_NAMES if i != iid]
+    h.append('<section class="sec"><div class="sec-h"><span class="ic"></span><h2>다른 산업 보기</h2></div><div class="trans">'
+             + "".join(f'<a class="btn-link" href="../{e(i)}/">{e(IND_NAMES[i])}</a>' for i in others) + '</div></section>')
+    return "".join(h)
+
+
+def render_industry_index(inds, jobs) -> str:
+    """산업 허브 목록 /industry/"""
+    h = ['<nav class="crumbs" aria-label="경로"><a href="../">직무사전</a> › <span>산업별 직무</span></nav>',
+         '<h1 class="name">산업별 직무 지도</h1><p class="en">같은 직무도 산업에 따라 하는 일이 달라집니다</p>',
+         f'<p class="summary">산업 {len(inds)}개마다 어떤 직무가 있는지, 그 산업에만 있는 직무는 무엇인지 모았습니다.</p><div class="indcards">']
+    for i in inds:
+        mine = [j for j in jobs if i["id"] in j.get("ind", [])]
+        only = [j["name"] for j in mine if j.get("industryOnly") == i["id"]]
+        h.append(f'<a class="indcard" href="{e(i["id"])}/"><b>{e(i["name"])}</b><span>{e(i["desc"])}</span>'
+                 f'<small>직무 {len(mine)}개' + (f' · 전용 {e(", ".join(only[:3]))}' + (" 외" if len(only) > 3 else "") if only else "") + '</small></a>')
+    h.append('</div>')
+    return "".join(h)
+
 
 def write_sitemap(out_dir: Path, base: str, entries) -> None:
     """entries: [(path, lastmod, changefreq, priority)]"""
