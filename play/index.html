@@ -1493,11 +1493,31 @@ var ITEM_DRAW = {
   moneybag: hand(function (g, x, y) { zs(g, x - 2, y - 1, [' K K  ', '  K   ', ' eeee ', 'eeYYee', 'eYeeee', 'eeYYee', 'eeeeYe', 'eYYYee', ' eeee ']); }),
   mask: function (g) { zs(g, 10, 14, ['WWWWWWWWWWWW', 'WWWZWWWWZWWW', 'WWWWWWWWWWWW', ' WWWWWWWWWW ']); zp(g, 9, 14, 'Z'); zp(g, 22, 14, 'Z'); },
   sweat: function (g) { zs(g, 22, 7, [' L', 'LL', 'LL', '  ', ' L', 'LL']); zs(g, 8, 9, ['L', 'L']); },
-  clockpin: function (g) { zs(g, 18, 22, [' YYY ', 'YWKWY', 'YWKKY', 'YWWWY', ' YYY ']); }
+  clockpin: function (g) { zs(g, 18, 22, [' YYY ', 'YWKWY', 'YWKKY', 'YWWWY', ' YYY ']); },
+  // 커리어 로드 20년 소품 (2026-10-30)
+  nameplate: hand(function (g, x, y) { zs(g, x - 3, y - 5, ['DDDDDDDD', 'DYYYYYYD', 'DYqqqqYD', 'DYYYYYYD', 'DDDDDDDD', ' FF  FF ']); }),
+  book: hand(function (g, x, y) { zs(g, x - 1, y - 7, ['IRRRRR', 'IRWWWR', 'IRYYWR', 'IRWWWR', 'IRYYYR', 'IRWWWR', 'IRRRRR']); }),
+  flamepin: function (g) { zs(g, 18, 21, ['  A  ', ' AYA ', 'AYHYA', 'ABYBA', ' AAA ']); },
+  strawhat: function (g) { zs(g, 9, 1, ['    XXXXXX    ', '  XXXXXXXXXX  ', '  XXXeXXXXXX  ', '  BBBBBBBBBB  ']); zs(g, 5, 5, [' XXXXXXXXXXXXXXXXXXXX ', 'XXXeXXXXXXXXXXXXXeXXXX', ' eeeeeeeeeeeeeeeeeeee ']); },
+  photo: hand(function (g, x, y) { zs(g, x - 3, y - 6, ['OOOOOOO', 'OLLLLLO', 'OLsLsLO', 'OLsLsLO', 'OGGGGGO', 'OOOOOOO']); }),
+  dumbbell: hand(function (g, x, y) { zs(g, x - 3, y - 1, ['KK   KK', 'KKmmmKK', 'KK   KK']); }),
+  cat: hand(function (g, x, y) { zs(g, x - 3, y - 6, ['A   A  ', 'AA AA  ', 'AAAAA  ', 'AqAqA  ', 'AANAA A', 'AAAAAAA', ' A A A ']); }),
+  sprout: function (g) { zs(g, 15, 0, [' G  G', 'GGSGG', '  S  ', '  S  ']); },
+  bouquet: hand(function (g, x, y) { zs(g, x - 2, y - 8, ['N W N', 'WNWNW', 'NWNWN', ' GSG ', '  S  ', '  S  ']); }),
+  triple: function (g) { zs(g, 10, 22, ['B   R   G', 'BB  RR  GG', 'Y   Y   Y']); }
 };
 // 배경 판 (bg 칸): 테두리 바깥 빈칸을 작은 장면으로 채움. f(x, y, 폭, 높이) → 팔레트 글자 1~9
 function zCirc(x, y, cx, cy, r) { return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r; }
 var BG_DRAW = {
+  forkbg: { p: { 1: '#dff1ff', 2: '#a7d58a', 3: '#ead9ab', 4: '#ffffff', 5: '#8cc06f' }, f: function (x, y, w, h) {   // 두 갈래 길 (커리어 로드 여·남)
+    var top = Math.floor(h * .42), cx = (w - 1) / 2;
+    if (y < top) return ((x + 3) % 9 < 4 && (y === 4 || y === 5)) || ((x + 7) % 13 < 5 && y === 9) ? '4' : '1';
+    var t = (y - top) / (h - top), d = Math.abs(Math.abs(x - cx) - t * w * .32);
+    return d <= .8 + t * 1.6 ? '3' : (x * 3 + y) % 11 === 0 ? '5' : '2'; } },
+  seasons: { p: { 1: '#ffd6e8', 2: '#c9f2a0', 3: '#ffcf9a', 4: '#dbe8ff', 5: '#ff8fc7', 6: '#3f9a4a', 7: '#e0761f', 8: '#ffffff', 9: '#b9bcae' }, f: function (x, y, w, h) {   // 사계절 (커리어 로드 1,000점)
+    if (y >= h - 4) return '9';
+    var q = Math.min(3, Math.floor(x / (w / 4))), dot = (x * 7 + y * 5) % 13 === 0;
+    return dot ? ['5', '6', '7', '8'][q] : String(q + 1); } },
   office: { p: { 1: '#e9edf2', 2: '#9aa7b8', 3: '#bfe3ff', 4: '#d6eefe', 5: '#3f9a4a', 6: '#c0602b', 7: '#b8916a', 8: '#9c7652' }, f: function (x, y, w, h) {
     if (y >= h - 6) return (x + (y % 2) * 3) % 7 === 0 ? '8' : '7';   // 나무 바닥
     if (x >= 1 && x <= 4 && y >= h - 13) return y >= h - 9 ? (x === 1 || x === 4 ? '.' : '6') : ((x + y) % 2 ? '5' : '5');   // 화분
@@ -2586,6 +2606,9 @@ function r2Chapter(S, ch) {
 }
 function PARTNER2() { return '배우자'; }
 // 20년 판 기록인지 (2026-10-30 당일 전환: 그날 아침 10년 판으로 낸 기록은 없는 셈 치고 새로 하게)
+// 이 기기 커리어 로드 통계 (소품 조건): g0·g1 해 본 성별, best 최고 종합점수, tri 세 게이지 70+, married 결혼
+function r2Stats() { var o = store.getJ('slp-r2st', {}); return o && typeof o === 'object' ? o : {}; }
+function r2Track(R) { var o = r2Stats(), S = R.S; o['g' + S.g] = 1; o.best = Math.max(o.best || 0, R.score); if (S.hp >= 70 && S.cr >= 70 && S.hap >= 70) o.tri = 1; if (S.married) o.married = 1; store.setJ('slp-r2st', o); }
 function r2Rec() { var x = rec(TODAY, 'road'); return x && x.picks && x.picks.length >= PC.R2_N ? x : null; }
 function renderRoad2() {
   var x = r2Rec(), p = r2Prog();
@@ -2724,6 +2747,7 @@ function r2Zorro(R) {
 function resultRoad2(x, fresh) {
   var R = PC.simRoad2(RPZ, ctx, x.picks || x.ans), S = R.S, EN = PC.roadEnding2(RPZ, ctx, R.picks), T = END_TXT[EN.id], B = endBook(), isNew = !B[EN.id];
   if (isNew) { B[EN.id] = TODAY; store.setJ('slp-endings', B); }
+  r2Track(R);
   var fin = S.c, scn = PC.ROAD_SC[RPZ.sc || 'new'], sex = S.g ? '남' : '여', W = PC.R2_W;
   var parts = [['연봉', Math.round(R.total / 10000 * W.money), '20년 수입 ' + eokS(R.total)], ['체력', Math.round(S.hp * W.hp), '마지막 ' + Math.round(S.hp)], ['커리어', Math.round(S.cr * W.cr), '마지막 ' + Math.round(S.cr)], ['행복', Math.round(S.hap * W.hap), '마지막 ' + Math.round(S.hap)]];
   var path = R.log.filter(function (l) { return !l.quiet; }).map(function (l) { return l.t === 'job' ? (l.failed ? '💥' : l.moved ? '🚀' : '🏠') : l.t === 'life' ? '💛' : '💼'; }).join('');
@@ -2843,7 +2867,7 @@ function cupReport(w, theme, all, picks) {
 
 // ── 4차 (2026-10-28): 소품 꾸미기 · 이번 주 보스 회사 · 친구 대결 도전장. 모두 이 기기 저장(localStorage, store 가 try/catch)
 
-// ── 소품 48개 (2026-10-28e 확장): [아이디, 칸(hat 모자·hand 손·acc 얼굴·목·bg 배경), 이름, 얻는 법, 조건, 게임, 등급(c 일반·r 희귀·l 전설), 진행(→ [지금, 목표]), 한 줄]
+// ── 소품 60개 (2026-10-28e 확장, 2026-10-30 커리어 로드 12개 추가): [아이디, 칸(hat 모자·hand 손·acc 얼굴·목·bg 배경), 이름, 얻는 법, 조건, 게임, 등급(c 일반·r 희귀·l 전설), 진행(→ [지금, 목표]), 한 줄]
 //    한 번 얻으면 'slp-items' 에 남음(예전 12개 아이디·조건 그대로). 조건은 이 기기 기록(slp-r-날-게임 등)에서 다시 계산 → 같은 소품은 딱 한 번만 들어옴
 //    소품은 꾸밈뿐: 점수·순위·서버(play_core.js)와 상관없음
 function endHas(ids) { var B = endBook(); return ids.some(function (i) { return B[i]; }); }
@@ -2876,7 +2900,7 @@ var ITEMS = [
   ['bag', 'hand', '서류가방', '엔딩 도감 3개 이상', function () { var B = endBook(); return Object.keys(B).length >= 3; }, 'road', 'c', function () { return [Object.keys(endBook()).length, 3]; }, '안엔 이력서 세 장'],
   ['laptop', 'hand', '노트북', '엔딩 \'이직의 신\' 또는 \'스타트업 대박\'', function () { return endHas(['hopper', 'startup']); }, 'road', 'r', null, '어디서든 일할 수 있는 사람'],
   ['umbrella', 'hand', '우산', '엔딩 \'구조조정 생존자\'', function () { return endHas(['survivor']); }, 'road', 'c', null, '비 오는 날에도 출근'],
-  ['plant', 'hand', '화분', '엔딩 \'대기업 정년각\'', function () { return endHas(['lifer']); }, 'road', 'c', null, '이 자리에 뿌리내렸어요'],
+  ['plant', 'hand', '화분', '엔딩 \'한 회사 20년\'', function () { return endHas(['lifer']); }, 'road', 'c', null, '이 자리에 뿌리내렸어요'],
   ['idcard', 'acc', '사원증', '조로 대리 되기', function () { return myRank() >= 1; }, 'etc', 'c', function () { return [myXP(), RANK_XP[1]]; }, '출입문이 열리는 소리'],
   ['glasses', 'acc', '안경', '조로 과장 되기', function () { return myRank() >= 2; }, 'etc', 'c', function () { return [myXP(), RANK_XP[2]]; }, '엑셀 셀이 잘 보여요'],
   ['goldtie', 'acc', '금넥타이', '조로 부장 되기', function () { return myRank() >= 4; }, 'etc', 'r', function () { return [myXP(), RANK_XP[4]]; }, '결재판이 반짝여요'],
@@ -2901,10 +2925,23 @@ var ITEMS = [
   ['stock', 'hand', '상승 차트 피켓', '엔딩 \'스타트업 대박\'', function () { return endHas(['startup']); }, 'road', 'c', null, '오른쪽 위로만 가는 그래프'],
   ['scarf', 'acc', '실크 머플러', '엔딩 \'억대 연봉 부장\'', function () { return endHas(['boss']); }, 'road', 'r', null, '부장님 출근룩 완성'],
   ['wand', 'hand', '요정 지팡이', '엔딩 \'이직의 신\'', function () { return endHas(['hopper']); }, 'road', 'c', null, '헤드헌터 요정이 두고 간 것'],
-  ['pin', 'acc', '근속 배지', '엔딩 \'대기업 정년각\'', function () { return endHas(['lifer']); }, 'road', 'c', null, '오랜 개근의 증표'],
+  ['pin', 'acc', '근속 배지', '엔딩 \'한 회사 20년\'', function () { return endHas(['lifer']); }, 'road', 'c', null, '오랜 개근의 증표'],
   ['helmet', 'hat', '안전모', '엔딩 \'구조조정 생존자\'', function () { return endHas(['survivor']); }, 'road', 'c', null, '떨어지는 공문 조심'],
   ['pillow', 'acc', '목베개', '엔딩 \'번아웃 퇴사\'', function () { return endHas(['burnout']); }, 'road', 'c', null, '일단 자고 생각해요'],
   ['lunchbox', 'hand', '도시락', '엔딩 \'무난한 직장인\'', function () { return endHas(['normal']); }, 'road', 'c', null, '점심 메뉴 고민 끝'],
+  // 커리어 로드 20년 (2026-10-30): 새 엔딩 8개 + 결혼·세 게이지·두 성별·종합 1,000점
+  ['nameplate', 'hand', '임원 명패', '엔딩 \'임원의 길\'', function () { return endHas(['exec']); }, 'road', 'r', null, '1년 계약이라도 내 이름'],
+  ['book', 'hand', '내 책', '엔딩 \'업계 전문가\'', function () { return endHas(['expert']); }, 'road', 'c', null, '이 분야는 이 책으로'],
+  ['flamepin', 'acc', '불꽃 배지', '엔딩 \'다시 일어선 사람\'', function () { return endHas(['returner']); }, 'road', 'r', null, '꺼진 줄 알았죠?'],
+  ['strawhat', 'hat', '밀짚모자', '엔딩 \'인생 2막\'', function () { return endHas(['second']); }, 'road', 'c', null, '이제 주말이 길어요'],
+  ['photo', 'hand', '가족사진 액자', '엔딩 \'가족이 1순위\'', function () { return endHas(['family']); }, 'road', 'r', null, '책상 위 1순위'],
+  ['dumbbell', 'hand', '아령', '엔딩 \'워라밸 장인\'', function () { return endHas(['balance']); }, 'road', 'c', null, '6시 퇴근 후 헬스장'],
+  ['cat', 'hand', '고양이', '엔딩 \'자유로운 싱글\'', function () { return endHas(['solo']); }, 'road', 'c', null, '집에서 기다리는 녀석'],
+  ['sprout', 'hat', '새싹 머리핀', '엔딩 \'늦게 핀 꽃\'', function () { return endHas(['late']); }, 'road', 'c', null, '늦게 피어도 꽃'],
+  ['bouquet', 'hand', '부케', '커리어 로드에서 결혼하기', function () { return !!r2Stats().married; }, 'road', 'c', null, '청첩장 돌리는 중'],
+  ['triple', 'acc', '트리플 배지', '체력·커리어·행복 모두 70 이상으로 20년 마치기', function () { return !!r2Stats().tri; }, 'road', 'r', null, '셋 다 잡은 사람'],
+  ['forkbg', 'bg', '갈림길 배경', '여자·남자로 각각 한 판씩', function () { return !!(r2Stats().g0 && r2Stats().g1); }, 'road', 'r', function () { var o = r2Stats(); return [(o.g0 ? 1 : 0) + (o.g1 ? 1 : 0), 2]; }, '두 사람의 20년'],
+  ['seasons', 'bg', '사계절 배경', '커리어 로드 종합 1,000점 이상', function () { return (r2Stats().best || 0) >= 1000; }, 'road', 'l', function () { return [r2Stats().best || 0, 1000]; }, '봄부터 겨울까지 완벽하게'],
   ['halo', 'hat', '후광', '엔딩 도감 모두 모으기', function () { var B = endBook(); return PC.ENDINGS.every(function (e) { return B[e[0]]; }); }, 'road', 'l', function () { var B = endBook(); return [PC.ENDINGS.filter(function (e) { return B[e[0]]; }).length, PC.ENDINGS.length]; }, '모든 길을 다 가 본 사람'],
   // 드림 컴퍼니 월드컵
   ['flag', 'hand', '응원 깃발', '월드컵 처음 우승 보기', function () { return Object.keys(cupWins()).length > 0; }, 'cup', 'c', null, '내 드림 컴퍼니 화이팅'],
@@ -2941,7 +2978,7 @@ var ITEMS = [
   ['hof', 'bg', '명예의 전당 배경', '주간 1위로 명예의 전당에 오르기', function () { return store.get('slp-hof') === '1'; }, 'etc', 'l', null, '이름이 박제됐어요']];
 var ITEM_BY = {}; ITEMS.forEach(function (it) { ITEM_BY[it[0]] = it; });
 // 진행 표시 단위 (다음 소품: '450점까지 32점')
-var PUNIT = { bikehelm: '번', hanriver: '번', clockpin: '번', moneybag: '만원', metro: '곳', rainbow: '가지', crown: '개', beanie: '일', bag: '개', idcard: '', glasses: '', goldtie: '', pen: '', calc: '개', monocle: '개', band: '개', phone: '개', starpin: '일', goggles: '점', halo: '종', rosette: '곳', laurel: '번', horns: '주', dawn: '일', night: '일', gold: '일' };
+var PUNIT = { forkbg: '판', seasons: '점', bikehelm: '번', hanriver: '번', clockpin: '번', moneybag: '만원', metro: '곳', rainbow: '가지', crown: '개', beanie: '일', bag: '개', idcard: '', glasses: '', goldtie: '', pen: '', calc: '개', monocle: '개', band: '개', phone: '개', starpin: '일', goggles: '점', halo: '종', rosette: '곳', laurel: '번', horns: '주', dawn: '일', night: '일', gold: '일' };
 var SLOT_LB = { hat: '모자', hand: '손에 들기', acc: '얼굴 · 목', bg: '배경' };
 var RAR_LB = { c: '일반', r: '희귀', l: '전설' };
 function itemsOwned() { var o = store.getJ('slp-items', {}); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; }
