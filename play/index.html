@@ -404,6 +404,74 @@ img.px, .pxs { image-rendering:crisp-edges; image-rendering:pixelated; display:b
 .evst .evi { animation:pxPop .6s steps(6) both; }
 .ending { width:100%; display:grid; gap:10px; justify-items:center; }
 .ending .pxst { width:100%; justify-content:center; gap:16px; min-height:170px; }
+/* ── 커리어 로드 20년 (2026-10-30): 한 화면에 하나씩, 계절색, 천천히 나타나는 일기 */
+.r2wrap, .r2ch { animation:r2In .45s ease both; }
+@keyframes r2In { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@keyframes r2Line { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+.r2sex { gap:10px; flex-wrap:wrap; justify-content:center; }
+.r2in .sum { max-width:60ch; }
+.r2st { justify-content:center; gap:18px; min-height:120px; }
+.r2st.sm { min-height:96px; }
+.r2ch { --ss:#eaf6dc; border:1.5px solid var(--ink); border-radius:20px; padding:18px 18px 20px; background:linear-gradient(var(--ss), var(--card) 70%); display:grid; justify-items:center; text-align:center; gap:6px; }
+.r2ch.s1 { --ss:#fff1c9; } .r2ch.s2 { --ss:#fbe2cf; } .r2ch.s3 { --ss:#e3ebf6; }
+.r2ch h3 { font-family:var(--display); font-weight:900; font-size:clamp(26px,4vw,40px); letter-spacing:-.04em; margin:0; }
+.r2ch .lv, .r2d .lv, .r2diary .lv { font-family:var(--display); font-weight:700; font-size:12.5px; letter-spacing:.08em; color:var(--muted); }
+.r2story { display:grid; gap:6px; max-width:44ch; margin:4px 0; }
+.r2story p { margin:0; font-size:16px; line-height:1.75; opacity:0; animation:r2Line .8s ease forwards; }
+.r2hud { border:1.5px solid var(--ink); border-radius:16px; padding:10px 14px; background:var(--card); display:grid; gap:8px; margin:6px 0 10px; }
+.r2top { display:flex; flex-wrap:wrap; gap:4px 12px; align-items:baseline; }
+.r2top .lv { font-family:var(--display); font-weight:800; font-size:13px; color:var(--muted); }
+.r2top .co { font-weight:800; min-width:0; overflow-wrap:anywhere; }
+.r2top .sal { margin-left:auto; font-family:var(--display); font-weight:900; font-variant-numeric:tabular-nums; }
+.r2gs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; width:100%; max-width:520px; }
+.r2g { display:grid; grid-template-columns:auto minmax(0,1fr) 2.2em; gap:6px; align-items:center; font-size:12.5px; }
+.r2g .l { color:var(--muted); font-weight:700; }
+.r2g .bar { height:8px; border-radius:99px; background:var(--fill); border:1px solid var(--line2); overflow:hidden; }
+.r2g .bar i { display:block; height:100%; border-radius:99px; transition:width .8s ease; }
+.r2g.hp .bar i { background:#e8412c; } .r2g.cr .bar i { background:#5b7cff; } .r2g.hap .bar i { background:#ffb020; }
+.r2g b { font-variant-numeric:tabular-nums; text-align:right; }
+@media (max-width:520px) { .r2gs { grid-template-columns:minmax(0,1fr); gap:5px; } }
+.r2path { list-style:none; margin:0 0 12px; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; width:100%; }
+.r2path li { display:grid; gap:3px; justify-items:center; }
+.r2path small { font-size:11px; color:var(--muted); font-weight:700; }
+.r2path span { display:flex; gap:4px; align-items:center; }
+.r2path i { width:6px; height:6px; border-radius:99px; background:var(--line2); }
+.r2path i.q { width:11px; height:11px; border-radius:3px; background:transparent; border:2px solid var(--line2); }
+.r2path i.done { background:var(--ink); border-color:var(--ink); }
+.r2path i.cur { background:var(--acc); border-color:var(--ink); box-shadow:0 0 0 2px var(--acc); }
+.r2q { display:grid; grid-template-columns:auto minmax(0,1fr); gap:6px 14px; align-items:center; margin:4px 0 12px; }
+.r2q .pxst { min-height:auto; padding:6px 10px; }
+@media (max-width:560px) { .r2q { grid-template-columns:minmax(0,1fr); } }
+.r2d { margin:0; font-size:clamp(17px,2.2vw,21px); line-height:1.7; font-weight:600; display:grid; gap:4px; text-wrap:pretty; }
+.r2opts { display:grid; gap:10px; }
+.r2o { text-align:left; border:1.5px solid var(--ink); border-radius:16px; background:var(--card); padding:14px 16px; display:grid; gap:6px; color:var(--ink); font:inherit; cursor:pointer; transition:transform .12s, box-shadow .12s; }
+.r2o:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 5px 0 var(--ink); }
+.r2o b { font-size:17px; }
+.r2h { display:flex; flex-wrap:wrap; gap:5px; }
+.r2h span, .r2chips span { font-size:12px; font-weight:800; border-radius:999px; padding:1px 9px; border:1px solid var(--line2); color:var(--soft); }
+.r2h .up, .r2chips .up { border-color:var(--good); color:var(--good); }
+.r2h .dn, .r2chips .dn { border-color:var(--warn); color:var(--warn); }
+.r2res { display:grid; gap:10px; }
+.r2diary { border-left:3px solid var(--ink); padding:4px 0 4px 14px; display:grid; gap:6px; }
+.r2diary p { margin:0; font-size:17px; line-height:1.75; }
+.r2diary b.ev { color:var(--warn); } .r2diary b.evg { color:var(--good); }
+.r2chips { display:flex; flex-wrap:wrap; gap:6px; }
+.r2inc { font-size:13px !important; color:var(--muted); }
+.r2quiet { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.r2quiet li { background:var(--fill); border-radius:12px; padding:8px 12px; font-size:14px; }
+.r2quiet small { color:var(--muted); }
+.r2sum { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; width:100%; max-width:560px; }
+.r2sum div { border-top:2px solid var(--ink); padding-top:6px; display:grid; text-align:left; }
+.r2sum .l { font-size:12px; color:var(--muted); font-weight:700; }
+.r2sum b { font-family:var(--display); font-size:22px; font-weight:900; }
+.r2sum small { font-size:11.5px; color:var(--muted); }
+@media (max-width:520px) { .r2sum { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+.r2tl { list-style:none; margin:8px 0 0; padding:0; display:grid; gap:4px; font-size:14px; }
+.r2tl li { border-bottom:1px dashed var(--line2); padding:4px 0; }
+.r2tl small { color:var(--muted); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .r2ch { --ss:#1d2a12; } :root:not([data-theme="light"]) .r2ch.s1 { --ss:#2c2510; } :root:not([data-theme="light"]) .r2ch.s2 { --ss:#2e1d12; } :root:not([data-theme="light"]) .r2ch.s3 { --ss:#152033; } }
+:root[data-theme="dark"] .r2ch { --ss:#1d2a12; } :root[data-theme="dark"] .r2ch.s1 { --ss:#2c2510; } :root[data-theme="dark"] .r2ch.s2 { --ss:#2e1d12; } :root[data-theme="dark"] .r2ch.s3 { --ss:#152033; }
+@media (prefers-reduced-motion: reduce) { .r2wrap, .r2ch, .r2story p { animation:none; opacity:1; } }
 .endnm { font-family:var(--px-font); font-size:clamp(20px,4vw,30px); }
 .dogam { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px; width:100%; }
 .dogam div { border:1.5px solid var(--line2); border-radius:12px; padding:8px 6px; display:grid; justify-items:center; gap:4px; font-size:12px; color:var(--muted); min-height:96px; align-content:end; text-align:center; }
@@ -962,7 +1030,7 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module">
-import * as PC from './play_core.js?v=db9456347c';
+import * as PC from './play_core.js?v=2cfb97ff70';
 const D = await (await fetch('data/play.json', { cache: 'no-cache' })).json();
 // 연봉 놀이터 v2 화면. make.py 가 page/*.js 를 이름순으로 이어 붙여 function main(D, PC) 하나로 만든다.
 // D = 회사 자료(make.py), PC = play_core.js (서버와 같은 규칙). 점수는 항상 PC.score* 로만 계산한다.
@@ -974,7 +1042,7 @@ var API_BASE = 'https://play-api.jobzorro.workers.dev';
 var SITE = 'https://job.jobzorro.kr/play/', SITE_S = 'job.jobzorro.kr/play';
 var ctx = PC.load(D), CO = ctx.all, BYN = ctx.by, POOL = ctx.P, RK = PC.RK;
 var TODAY = PC.kstDay();
-var GNAME = { higher: '어디가 더 많이 줄까?', today: '오늘의 회사', sniper: '연봉 스나이퍼', road: '이직 로드 10년', run: '조로 출근길' };
+var GNAME = { higher: '어디가 더 많이 줄까?', today: '오늘의 회사', sniper: '연봉 스나이퍼', road: '커리어 로드 20년', run: '조로 출근길' };
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]; }); }
@@ -1020,7 +1088,7 @@ var BADGES = [
   ['sniper', '스나이퍼', '연봉 스나이퍼 450점 이상'],
   ['att7', '7일 출석', '오늘의 회사 7일 연속 풀기'],
   ['perfect', '퍼펙트 데이', '같은 날 1번 10문제 다 맞힘 + 2번 단서 2개 안에 성공 + 3번 450점 이상'],
-  ['road', '이직의 신', '이직 로드 10년 그날 상위 1%'],
+  ['road', '커리어의 신', '커리어 로드 그날 상위 1%'],
   ['commute', '출근의 신', '조로 출근길 꽈당 0번 + 정시 출근'],
   ['early', '얼리버드', '조로 출근길 8시 50분 전 도착']];
 function badges() { return store.getJ('slp-badges', {}); }
@@ -1575,7 +1643,7 @@ function mockDay(day, game) {
     else if (game === 'today') { var op = r() < .18 ? 0 : 1 + Math.floor(r() * PC.TODAY_CLUES), ms = op ? Math.floor(r() * Math.min(PC.TODAY_PICKS, op)) : 0; row.aux = op; row.score = op ? PC.todayPts(op, ms) : 0; }   // op = 본 단서 수(0 = 실패), ms = 틀린 수
     else if (game === 'sniper') { var s = 0, errs = []; for (var q = 0; q < 5; q++) { var e = Math.round((r() - .42) * 40 * 10) / 10; errs.push(e); s += PC.sniperPts(e); } row.score = s; row.aux = 5; row.errs = errs; }
     else if (game === 'run') { row.aux = r() < .7 ? 1 : 0; row.score = Math.round((4000 + r() * 9000) / 10) * 10 + (row.aux ? 1000 + Math.floor(r() * 10) * 50 : 0); }
-    else { var picks = [0, 1, 2, 3, 4].map(function () { return Math.floor(r() * 3); }), R = PC.simRoad(pz, ctx, picks); row.score = R.total; row.aux = R.eok; row.picks = R.picks; }
+    else { var picks = (pz.v === 2 ? [Math.floor(r() * 2)].concat(PC.R2_SLOTS.map(function () { return Math.floor(r() * 3); })) : [0, 1, 2, 3, 4].map(function () { return Math.floor(r() * 3); })), R = PC.simRoad(pz, ctx, picks); row.score = pz.v === 2 ? R.score : R.total; row.aux = R.eok; row.picks = R.picks; }
     rows.push(row);
   });
   return (mockCache[key] = rows);
@@ -1796,7 +1864,7 @@ function drawCard(card, box) {
 }
 
 // ── 순위표 칸
-function fmtScore(game, s) { return game === 'road' ? eokS(s) : game === 'run' ? man(s) + '만원' : man(s) + '점'; }
+function fmtScore(game, s) { return game === 'road' ? (s >= 20000 ? eokS(s) : man(s) + '점') : game === 'run' ? man(s) + '만원' : man(s) + '점'; }
 // 순위표 줄 앞 조로 얼굴: 서버가 준 모양 글(lk) 그대로. 모양이 없던 예전 기록은 꾸밈 없는 사원 조로 (2026-10-29)
 function lbFace(lk, me) {
   if (!PX.ok) return '';
@@ -2314,6 +2382,7 @@ function firstPackDay() { var d = PC.ROAD_SC_FROM; while (PC.roadScen(d) === 'ne
 }
 function renderRoad() {
   RPZ = RPZ || PC.genRoad(TODAY, ctx);
+  if (RPZ.v === 2) return renderRoad2();   // 2026-10-31~ 커리어 로드 20년 (07b_road2.js)
   var x = rec(TODAY, 'road'), p = prog('road');
   if (x) return resultRoad(x);
   if (!p) {
@@ -2412,7 +2481,7 @@ function roadChart(a, b, x0) {
 function endBook() { return store.getJ('slp-endings', {}); }
 function endDogam(now) {
   var B = endBook(), n = PC.ENDINGS.filter(function (e) { return B[e[0]]; }).length;
-  return '<p class="h3" style="margin:14px 0 4px;font-size:18px;text-align:left;width:100%">엔딩 도감 ' + n + ' / 7</p><div class="dogam">' + PC.ENDINGS.map(function (e) {
+  return '<p class="h3" style="margin:14px 0 4px;font-size:18px;text-align:left;width:100%">엔딩 도감 ' + n + ' / ' + PC.ENDINGS.length + '</p><div class="dogam">' + PC.ENDINGS.map(function (e) {
     var on = !!B[e[0]];
     return '<div class="' + (on ? 'on' : '') + (e[0] === now ? ' now' : '') + '">' + (on ? icon(END_TXT[e[0]][0], 3) : icon('lock', 3)) + '<span>' + (on ? esc(e[1]) : '???') + '</span>' + (on ? '<small>' + mmdd(B[e[0]]) + '</small>' : '') + '</div>';
   }).join('') + '</div>';
@@ -2430,7 +2499,7 @@ function resultRoad(x, fresh) {
     '<div class="zorro"><div class="who"><i></i>조로의 한마디</div><p>' + esc(roadZorro(R)) + '</p></div>' +
     gotBox('road') + shareBox('shR', vsBox('road', x)) + nextBtn('road') + week7('road') +
     '<details class="more"><summary>10년 그래프 · 2년마다 기록</summary><div id="rChart" style="width:100%">' + roadChart(R.years, null, RPZ.x0) + '</div>' + roadLog(R, 4).replace('class="rlog"', 'class="rlog" style="width:100%;text-align:left"') + '</details>' +
-    '<details class="more"><summary>엔딩 도감 · ' + PC.ENDINGS.filter(function (e) { return endBook()[e[0]]; }).length + ' / 7</summary>' + endDogam(EN.id) + '</details>' +
+    '<details class="more"><summary>엔딩 도감 · ' + PC.ENDINGS.filter(function (e) { return endBook()[e[0]]; }).length + ' / ' + PC.ENDINGS.length + '</summary>' + endDogam(EN.id) + '</details>' +
     '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbR"></div></details><div class="row">' + againBtn('road', function () { RREV = false; renderRoad(); }) + '</div></div>';
   if (fresh && isNew) toast('새 엔딩을 모았어요: ' + EN.lb);
   wireShare('shR', text, { title: '이직 로드 10년 · ' + scn, big: eokS(R.total), sub: '엔딩: ' + EN.lb + '\n' + (R.eok ? '1억 ' + (R.eok + (RPZ.x0 || 0)) + '년 차' : '1억 못 찍음') + ' · ' + mmdd(TODAY), lines: [path],
@@ -2440,6 +2509,241 @@ function resultRoad(x, fresh) {
     if (!t) return;
     var b = t.stat.best;
     if (b && b.picks && b.picks.length === 5) { var B2 = PC.simRoad(RPZ, ctx, b.picks); $('rChart').innerHTML = roadChart(R.years, B2.years, RPZ.x0) + '<p class="src">오늘 1위 ' + esc(b.nick) + ': ' + B2.log.map(function (l) { return l.co; }).filter(function (n, i, a) { return a.indexOf(n) === i; }).map(esc).join(' → ') + ' · ' + eokS(B2.total) + mockTag() + '</p>'; }
+    var el = $('lbR'); if (el) el.innerHTML = lbAll(t, 'road') + '<p class="src"><a href="#hall">순위 · 명예의 전당 전체 보기 →</a></p>';
+  });
+}
+
+// ── 04-2 커리어 로드 20년 (2026-10-30) — 성별 고르기 → 4장(봄·여름·가을·겨울) × 4번 고르기 → 종합점수 엔딩
+// 한 화면에 하나씩: 장 시작 카드 → 상황(일기) → 고르기 → 결과(일기 + 게이지 변화) → 다음. 규칙·점수는 play_core.js simRoad2
+var SEASON = ['봄', '여름', '가을', '겨울'], SEASON_ICO = ['cap', 'flame', 'chest', 'house'];
+var GAUGE = [['hp', '체력'], ['cr', '커리어'], ['hap', '행복']];
+// 엔딩 15종: [아이콘, 한 줄, 표정, 조로 직급]
+Object.assign(END_TXT, {
+  exec: ['crown', '임원 명패를 받았어요. 1년 계약이라는 무게도 함께요.', 'happy', 4],
+  startup: ['rocket', '동료의 회사에 걸었던 시간이 지분으로 돌아왔어요.', 'happy', 3],
+  boss: ['money', '10년 안에 연봉 1억. 숫자로는 누구보다 빨랐어요.', 'happy', 4],
+  expert: ['magnifier', '관리자 대신 전문가. 이 분야에서 이름으로 찾는 사람이 됐어요.', 'happy', 3],
+  returner: ['flame', '멈췄던 시간이 있었지만, 다시 일어나 더 단단해졌어요.', 'happy', 3],
+  second: ['sign', '정년보다 먼저 문을 열고 나왔어요. 2막은 조금 느리고 더 내 것이에요.', 'happy', 3],
+  family: ['house', '연봉표보다 가족사진이 먼저 떠오르는 20년이었어요.', 'happy', 3],
+  hopper: ['fairy', '네 번 넘게 옮기며 몸값을 올렸어요. 헤드헌터가 먼저 찾는 사람이에요.', 'happy', 3],
+  lifer: ['target', '첫 회사에서 20년. 흔들리지 않는 것도 실력이에요.', 'normal', 4],
+  balance: ['star', '일도 몸도 마음도 지켰어요. 생각보다 어려운 일이에요.', 'happy', 3],
+  solo: ['puff', '혼자의 시간을 잘 가꿨어요. 내 속도로 산 20년이에요.', 'happy', 3],
+  late: ['chest', '처음엔 느렸지만 마지막 5년이 가장 빛났어요.', 'happy', 3],
+  survivor: ['skull', '구조조정을 두 번 넘겼어요. 살아남은 것도 실력이에요.', 'shock', 3],
+  burnout: ['broken', '연봉보다 사람이 먼저 지쳤어요. 다음엔 체력부터 챙겨요.', 'sad', 2],
+  normal: ['coin', '큰 사고도 대박도 없는 20년. 사실 가장 흔하고 귀한 엔딩이에요.', 'normal', 3]
+});
+function r2Age(g, y) { return (g ? 26 : 24) + (RPZ.x0 || 0) + y; }
+function r2Rank(x) { return rankAt(x); }
+function zG(g, rk, mood, s, anim) { return zorro(rk, mood, s, anim, { look: { base: g ? 'm' : 'f' } }); }
+function r2Prog() { var p = prog('road'); return p && p.v2 ? p : null; }
+// 지금까지 고른 것으로 멈춘 상태 (k = 고른 칸 수)
+function r2At(p, k) { return PC.simRoad2(RPZ, ctx, p.picks, k); }
+function r2Hint(h) {
+  var L = [['m', '연봉'], ['hp', '체력'], ['cr', '커리어'], ['hap', '행복']], out = [];
+  L.forEach(function (a) { var v = h && h[a[0]]; if (v) out.push('<span class="' + (v > 0 ? 'up' : 'dn') + '">' + a[1] + ' ' + (v > 0 ? '▲' : '▼').repeat(Math.min(2, Math.abs(v))) + '</span>'); });
+  return out.length ? '<span class="r2h">' + out.join('') + '</span>' : '<span class="r2h"><span>큰 변화 없음</span></span>';
+}
+function r2Bars(S) {
+  return GAUGE.map(function (a) { var v = Math.round(S[a[0]]); return '<div class="r2g ' + a[0] + '"><span class="l">' + a[1] + '</span><span class="bar"><i style="width:' + v + '%"></i></span><b>' + v + '</b></div>'; }).join('');
+}
+function r2Hud(S, y) {
+  return '<div class="r2hud"><div class="r2top"><span class="lv">' + SEASON[Math.floor(Math.min(19, y) / 5)] + ' · ' + (y + 1) + '년째 · ' + r2Age(S.g, y) + '살</span><span class="co">' + esc(S.cname || '취준생') + '</span>' +
+    '<span class="sal">' + (S.s ? man(S.s) + '만원' : '-') + '</span></div><div class="r2gs">' + r2Bars(S) + '</div></div>';
+}
+// 20년 길: 4계절 × 5칸, 고르는 해는 네모, 조용한 해는 점
+function r2Path(y) {
+  var slotY = {}; PC.R2_SLOTS.forEach(function (s) { slotY[s[0]] = 1; });
+  return '<ol class="r2path" aria-label="20년 중 ' + (y + 1) + '년째">' + [0, 1, 2, 3].map(function (c) {
+    return '<li class="ss s' + c + '"><small>' + SEASON[c] + '</small><span>' + [0, 1, 2, 3, 4].map(function (i) {
+      var yy = c * 5 + i; return '<i class="' + (slotY[yy] ? 'q' : '') + (yy < y ? ' done' : yy === y ? ' cur' : '') + '"></i>';
+    }).join('') + '</span></li>';
+  }).join('') + '</ol>';
+}
+// 장 시작 이야기 (성별·팩·지금 상태에 따라 한두 줄)
+function r2Chapter(S, ch) {
+  var g = S.g, x0 = RPZ.x0 || 0, sc = RPZ.sc || 'new', age = r2Age(g, ch * 5), L = [];
+  if (ch === 0) {
+    if (sc === 'jr') L.push(age + '살 봄. ' + (g ? '군 복무를 마치고 들어간 ' : '') + '작은 회사에서 ' + x0 + '년을 일했다. 일은 많이 배웠는데 통장은 그대로다.');
+    else L.push(g ? age + '살 봄. 군 복무 2년을 마치고 졸업했다. 친구들보다 조금 늦게 출발선에 섰다.' : age + '살 봄. 졸업식 사진이 아직 휴대폰 첫 화면에 있다.');
+    L.push(sc === 'jr' ? '큰 회사 중고신입 공고를 다시 열어 본다.' : sc === 'pub' ? '공공기관 세 곳에서 합격 연락이 왔다. 안정이냐, 조금 더 큰 무대냐.' : sc === 'dev' ? '코딩 테스트를 몇 번이나 봤는지 모르겠다. 개발자로 세 곳에 붙었다.' : '세 곳에서 합격 연락이 왔다. 어디로 첫 출근을 할지 정해야 한다.');
+    L.push('앞으로 20년. 매번 조금씩 고르게 될 것이다. 돈, 몸, 일, 그리고 사람 사이에서.');
+  } else if (ch === 1) {
+    L.push((ch * 5 + 1) + '년째 여름. 일이 손에 익었다. 모르는 번호로 전화가 오기 시작했다.');
+    L.push(S.dating ? '주말마다 만나는 사람이 있다. 미래 이야기가 조금씩 길어진다.' : '퇴근 후 시간이 조금 남는다. 그 시간을 어디에 쓸지 아직 모르겠다.');
+  } else if (ch === 2) {
+    L.push((ch * 5 + 1) + '년째 가을. 후배가 더 많아졌다. 회사에서도 집에서도 책임질 일이 늘었다.');
+    L.push(S.married ? PARTNER2() + '와 함께한 지 몇 해. 식탁에서 앞으로의 계획을 자주 이야기한다.' : '혼자의 생활이 단단해졌다. 다음 10년은 어떤 모습일까.');
+  } else {
+    L.push((ch * 5 + 1) + '년째 겨울. 사무실 창밖으로 신입들이 보인다.');
+    L.push(S.kids ? '아이는 벌써 학교에 다닌다. 남은 5년을 어떻게 쓸지 생각한다.' : '남은 5년. 무엇을 남기고 싶은지 생각한다.');
+  }
+  if (S.hp < 35) L.push('요즘 부쩍 피곤하다. 몸이 보내는 신호를 무시하기 어렵다.');
+  return L;
+}
+function PARTNER2() { return '배우자'; }
+function renderRoad2() {
+  var x = rec(TODAY, 'road'), p = r2Prog();
+  if (x) return resultRoad2(x);
+  if (!p) {
+    $('road').innerHTML = '<div class="intro r2in"><h3>커리어 로드 20년 · ' + mmdd(TODAY) + '</h3>' +
+      stage('<div class="pxrow">' + zG(0, 0, 'normal', 3, 'idle') + icon('sign', 4) + zG(1, 0, 'normal', 3, 'idle') + '</div>', 'r2st') +
+      '<p class="sum">사회 첫발부터 20년. 이직 갈림길, 회사 사건, 연애·결혼·아이·부모님 같은 개인사까지 <b>16번</b> 골라요.<br>연봉만이 아니라 <b>체력·커리어·행복</b>까지 합친 종합점수로 겨뤄요.</p>' +
+      '<p class="qline" style="font-size:20px;margin:14px 0 8px">누구의 20년을 살아 볼까요?</p>' +
+      '<div class="row r2sex"><button class="btn big" type="button" data-g="0">여자로 시작</button><button class="btn big" type="button" data-g="1">남자로 시작</button><button class="btn ghost" type="button" data-g="r">랜덤으로 정하기</button></div>' +
+      '<p class="src" style="margin-top:8px">성별에 따라 출발 나이와 만나는 사건이 달라요. 어느 쪽이든 점수의 기대값은 같도록 맞췄어요.</p>' +
+      scenLine() + '<details class="more" style="width:100%"><summary>엔딩 도감 · ' + PC.ENDINGS.filter(function (e) { return endBook()[e[0]]; }).length + ' / ' + PC.ENDINGS.length + '</summary>' + endDogam(null) + '</details><details class="rules"><summary>규칙 보기</summary><ul>' +
+      '<li>20년은 4장(봄·여름·가을·겨울), 장마다 4번 골라요. 고르기 전에 연봉·체력·커리어·행복이 어느 쪽으로 움직일지 화살표로 보여 줘요. 정확한 크기는 숨겨요.</li>' +
+      '<li>이직 제안은 10년 판과 같아요. 회사 이름은 고른 뒤에 공개하고, 커리어가 높을수록 협상이 유리하고 무리한 제안에도 잘 붙어요.</li>' +
+      '<li>체력이 바닥나면 번아웃으로 쉬어야 해요. 지금 고른 것이 몇 년 뒤 사건으로 돌아오기도 해요.</li>' +
+      '<li>종합점수 = 20년 누적 연봉 1억당 ' + PC.R2_W.money + '점 + 마지막 체력·커리어·행복 각 ×2점. 같은 날엔 모두 같은 팩·제안·사건을 받아요. 엔딩은 15종이에요.</li></ul></details></div>';
+    document.querySelectorAll('.r2sex button').forEach(function (b) { b.onclick = function () {
+      var g = b.dataset.g === 'r' ? (Math.random() < .5 ? 0 : 1) : +b.dataset.g;
+      document.querySelectorAll('.r2sex button').forEach(function (z) { z.disabled = true; });
+      if (b.dataset.g === 'r') toast((g ? '남자' : '여자') + '로 정해졌어요');
+      startDaily('road').then(function (st) { setProg('road', { tok: st.tok, t0: st.t0, picks: [g], v2: 1, chSeen: -1 }); RREV = false; renderRoad2(); });
+    }; });
+    return;
+  }
+  drawRoad2(p);
+}
+function drawRoad2(p) {
+  var k = p.picks.length - 1, wrap = $('road');
+  if (RREV) return r2Reveal(p, k);
+  if (k >= PC.R2_SLOTS.length) return finishRoad2(p);
+  var A = r2At(p, k), S = A.S, sl = A.slot;
+  if (sl.ch > p.chSeen) {   // 장 시작 카드
+    wrap.innerHTML = '<div class="r2ch s' + sl.ch + '">' + r2Path(sl.y) + '<span class="lv">' + (sl.ch + 1) + '장 · ' + SEASON[sl.ch] + '</span><h3>' + ['사원의 봄', '한창의 여름', '책임의 가을', '정리의 겨울'][sl.ch] + '</h3>' +
+      stage('<div class="pxrow">' + zG(S.g, r2Rank(S.x), S.hp < 35 ? 'sad' : 'normal', 3, 'idle') + icon(SEASON_ICO[sl.ch], 4) + (S.c ? bld(S.c, bS(), null, 'grow') : '') + '</div>', 'r2st') +
+      '<div class="r2story">' + r2Chapter(S, sl.ch).map(function (t, i) { return '<p style="animation-delay:' + (i * .5) + 's">' + esc(t) + '</p>'; }).join('') + '</div>' +
+      (sl.ch ? '<div class="r2gs">' + r2Bars(S) + '</div>' : '') +
+      '<div class="row" style="margin-top:14px"><button class="btn" id="r2Go" type="button">' + (sl.ch + 1) + '장 시작하기</button></div></div>';
+    $('r2Go').onclick = function () { p.chSeen = sl.ch; setProg('road', p); drawRoad2(p); };
+    $('r2Go').focus({ preventScroll: true });
+    return;
+  }
+  var h = r2Hud(S, sl.y) + r2Path(sl.y);
+  if (sl.t === 'job') {
+    var x = S.x, wcls = function (T) { return T.m >= 10000 ? 13 : T.m >= 3000 ? 11 : 9; };
+    var cards = sl.opts.map(function (o, j) {
+      if (o.stay) {
+        if (!S.c || S.off) return '<button class="offer stay" type="button" data-j="' + j + '">' + icon('house', 3) + '<span class="ol">' + 'ABC'[j] + '</span><span class="ot">' + esc(o.lb) + '</span>' + r2Hint({ hap: 2, cr: -1, m: -2 }) + '</button>';
+        var nx = S.su || S.retired ? S.s : S.s * PC.curve(S.c, x) / PC.curve(S.c, x - 1);
+        return '<button class="offer stay" type="button" data-j="' + j + '">' + bld(S.c, 3, null, 'ob') + '<span class="ol">' + 'ABC'[j] + '</span><span class="ot">' + esc(o.lb) + ' · ' + esc(S.cname) + '</span><span class="om">' + man(nx) + '<small>만원</small></span>' +
+          '<span class="sig"><span>' + (!S.su && !S.retired && Math.floor(x / 4) > Math.floor((x - 1) / 4) ? rankName(x) + ' 승진' : '같은 직급') + '</span>' + (S.c && PC.roadRiskSc(RPZ, S.c) >= .15 ? '<span class="risk">구조조정 걱정</span>' : '<span class="goodsig">익숙한 자리</span>') + '</span>' + r2Hint({ hap: 1 }) + '</button>';
+      }
+      var T = BYN[o.o.n], of = o.of, kind = o.o.kind;
+      var ttl = kind === 're' ? '재취업 · 경력 일부 인정' : kind === 'new' ? (T.pub ? '공공기관 신입 공채' : '신입 공채') : kind === 'jr' ? '중고신입 공채 · 경력 일부 인정' : kind === 'up' ? rankName(x + 4) + ' 제안 · 한 직급 위' : rankName(x) + ' 제안 · 같은 직급';
+      var hh = kind === 'up' ? { m: 2, cr: 2, hp: -1 } : kind === 'same' ? { m: 1, cr: 1 } : kind === 're' ? { m: 2, cr: 1, hap: 1 } : kind === 'jr' ? { m: 1, cr: 1 } : T.m >= 5000 ? { m: 1 } : T.my >= 8 ? { cr: 1 } : {};
+      if (T.rt && T.rt < 3) hh.hp = (hh.hp || 0) - 1; else if (T.rt >= 3.7) hh.hap = (hh.hap || 0) + 1;
+      return '<button class="offer" type="button" data-j="' + j + '">' + bld(T, 3, { blind: 1, w: wcls(T) }, 'ob') + '<span class="ol">' + 'ABC'[j] + '</span><span class="ot">' + esc(T.grp) + ' ' + ttl + '</span>' +
+        '<span class="om">' + man(of.lo) + '~' + man(of.hi) + '<small>만원</small></span>' + sigHtml(T, of) + r2Hint(hh) + '</button>';
+    });
+    var q = sl.q || (sl.first ? '첫 직장을 골라요. 세 곳 모두 붙었어요.' : sl.k === 0 ? '큰 회사에 붙었어요. 옮길까요?' : (sl.y + 1) + '년째, 제안이 왔어요.');
+    h += '<div class="r2q">' + stage('<div class="pxrow">' + zG(S.g, r2Rank(S.x), 'normal', 3, 'idle') + icon('fairy', 4) + '</div>', 'r2st sm') + '<p class="r2d"><span class="lv">' + (sl.y + 1) + '년째 · 이직 갈림길</span>' + esc(q) + '</p></div>' +
+      '<p class="qsub">연봉 범위는 협상에 따라 달라져요. 회사 이름은 고른 뒤에 공개해요.' + (S.hunt ? ' <b>미리 준비해 둔 덕에 협상이 유리해요.</b>' : '') + '</p><div class="offers">' + cards.join('') + '</div>';
+  } else {
+    h += '<div class="r2q">' + stage('<div class="pxrow">' + zG(S.g, r2Rank(S.x), sl.t === 'life' ? 'normal' : 'normal', 3, 'idle') + icon(sl.t === 'life' ? 'house' : 'sign', 4) + '</div>', 'r2st sm') +
+      '<p class="r2d"><span class="lv">' + (sl.y + 1) + '년째 · ' + (sl.t === 'life' ? '나의 삶' : '회사 일') + '</span>' + esc(sl.q) + '</p></div>' +
+      '<div class="r2opts">' + sl.opts.map(function (o, j) { return '<button class="r2o" type="button" data-j="' + j + '"><b>' + esc(o.lb) + '</b>' + r2Hint(o.h) + '</button>'; }).join('') + '</div>';
+  }
+  wrap.innerHTML = '<div class="r2wrap">' + h + '</div>';
+  wrap.querySelectorAll('[data-j]').forEach(function (b) { b.onclick = function () {
+    wrap.querySelectorAll('[data-j]').forEach(function (z) { z.disabled = true; });
+    p.picks.push(+b.dataset.j); setProg('road', p); RREV = true; drawRoad2(p);
+  }; });
+}
+// 고른 직후: 그 해 일기 + 게이지 변화 + 다음 고르기 전까지의 조용한 해들
+function r2Note(n, L, S) {
+  return { su_win: '<b class="evg">동료의 스타트업이 큰 회사에 인수됐다.</b> 지분이 현금이 됐다.', su_ok: '스타트업은 아직 버티고 있다. 결판은 조금 더 뒤로.', su_fail: '<b class="ev">스타트업이 문을 닫았다.</b> ' + esc(L.co) + '에 다시 들어갔다.',
+    rest: '<b class="ev">번아웃으로 쉬어 간 해.</b> 수입이 절반으로 줄었다.', burn: '<b class="ev">몸이 버티지 못했다.</b> 다음 해는 쉬어야 한다.', freeze: '연봉 동결.', jump: '<b class="evg">성과급 큰 해.</b>',
+    stock: '<b class="evg">스톡옵션이 터졌다.</b>', gap: '회사 밖에서 보낸 해.', re_auto: esc(L.co) + '에 다시 출근했다. 공백은 있었지만 몸이 기억하고 있었다.' }[n] || '';
+}
+function r2JobTxt(L) {
+  if (L.failed) return '<b class="ev">최종 면접에서 떨어졌다.</b> 지금 자리에 남았다.';
+  if (L.moved) return L.kind === 're' ? '<b class="evg">' + esc(L.co) + '에 다시 출근했다.</b> 첫해 연봉 ' + man(L.s) + '만원.' : L.kind === 'new' ? '<b class="evg">' + esc(L.co) + ' 입사.</b> 첫 연봉 ' + man(L.s) + '만원.'
+    : '<b class="evg">' + esc(L.co) + '로 옮겼다.</b> 협상 끝에 첫해 연봉 ' + man(L.s) + '만원.';
+  if (L.txt === 'more') return '1년 더 아이 곁에 있기로 했다.';
+  return '남기로 했다. 올해 연봉 ' + man(L.s) + '만원.';
+}
+function r2Reveal(p, k) {
+  var full = r2At(p, k), S = full.S, L = full.log.filter(function (l) { return l.k === k - 1 && !l.quiet; })[0], nextY = k < PC.R2_SLOTS.length ? PC.R2_SLOTS[k][0] : 20;
+  var quiet = full.log.filter(function (l) { return l.quiet && l.y > L.y && l.y < nextY; });
+  var txt = L.t === 'job' ? r2JobTxt(L) : esc(L.txt), d = L.d || {};
+  var chips = GAUGE.map(function (a) { var v = d[a[0]]; return v ? '<span class="' + (v > 0 ? 'up' : 'dn') + '">' + a[1] + ' ' + (v > 0 ? '+' : '') + v + '</span>' : ''; }).join('');
+  var mood = L.failed || (d.hp || 0) + (d.hap || 0) < -6 ? 'sad' : (d.cr || 0) + (d.hap || 0) >= 8 || L.moved ? 'happy' : 'normal';
+  var notes = (L.notes || []).map(function (n) { return r2Note(n, L, S); }).filter(Boolean);
+  var h = r2Hud(S, Math.min(19, L.y)) + '<div class="r2res">' + stage('<div class="pxrow">' + zG(S.g, r2Rank(L.x), mood, 3, mood === 'happy' ? 'jump' : 'idle') + (L.t === 'job' && S.c ? bld(S.c, bS(), null, 'grow') : icon(L.t === 'life' ? 'house' : 'sign', 4, 'evi')) + '</div>', 'evst') +
+    '<div class="r2diary"><span class="lv">' + (L.y + 1) + '년째 · ' + SEASON[Math.floor(L.y / 5)] + ' · ' + esc(L.lb || (L.t === 'job' ? '이직 갈림길' : '')) + '</span><p>' + txt + (notes.length ? ' ' + notes.join(' ') : '') + '</p>' +
+    (chips ? '<p class="r2chips">' + chips + '</p>' : '') + '<p class="r2inc">올해 수입 ' + man(L.inc) + '만원</p></div>' +
+    (quiet.length ? '<ul class="r2quiet">' + quiet.map(function (q) { var ns = q.notes.map(function (n) { return r2Note(n, q, S); }).filter(Boolean); return '<li><b>' + (q.y + 1) + '년째</b> ' + (ns.length ? ns.join(' ') : '조용히 지나갔다.') + ' <small>수입 ' + man(q.inc) + '만원</small></li>'; }).join('') + '</ul>' : '') +
+    '<div class="row" style="justify-content:flex-start;margin-top:14px"><button class="btn" id="r2Nx" type="button">' + (k < PC.R2_SLOTS.length ? (nextY % 5 === 0 ? '다음 장으로' : '다음 해로') : '20년 결과 보기') + '</button></div></div>';
+  $('road').innerHTML = '<div class="r2wrap">' + h + '</div>';
+  sfx(L.failed || mood === 'sad' ? 'wrong' : mood === 'happy' ? 'combo' : 'coin');
+  $('r2Nx').onclick = function () { RREV = false; drawRoad2(p); }; $('r2Nx').focus({ preventScroll: true });
+}
+function finishRoad2(p) {
+  var S = PC.scoreRoad(RPZ, p.picks, ctx);
+  $('road').innerHTML = '<p class="src">점수를 보내는 중이에요…</p>';
+  submitDaily('road', S.picks, S, { picks: S.picks }).then(function (x) { if (x.sent && x.rank <= Math.max(1, Math.floor(x.total / 100))) award('road'); resultRoad2(x, true); sfx('fanfare'); });
+}
+function roadChart2(a, b) {
+  var n = a.length, nar = window.innerWidth < 560, W = nar ? 380 : 640, H = nar ? 240 : 260, L = 46, Rr = 16, T = 14, B = 28, all = a.concat(b || [], [10000, 0]), mx = Math.max.apply(null, all), mn = Math.min.apply(null, all);
+  var step = mx - mn > 16000 ? 4000 : 2000, y0 = Math.floor(mn / step) * step, y1 = Math.ceil(mx / step) * step;
+  var X = function (t) { return L + (W - L - Rr) * t / (n - 1); }, Y = function (v) { return T + (H - T - B) * (1 - (v - y0) / (y1 - y0)); };
+  var g = '', pth = function (arr) { return arr.map(function (v, t) { return (t ? 'L' : 'M') + X(t).toFixed(1) + ' ' + Y(v).toFixed(1); }).join(''); };
+  for (var v = y0; v <= y1; v += step) g += '<line class="ax" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/><text class="tx" x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + (v >= 10000 ? (v / 10000).toFixed(v % 10000 ? 1 : 0) + '억' : man(v) + '만') + '</text>';
+  for (var t = 0; t < n; t++) g += '<text class="tx" x="' + X(t) + '" y="' + (H - 8) + '" text-anchor="middle">' + (t % 5 === 0 || t === n - 1 ? (t + 1) + '년' : '') + '</text>';
+  g += '<line class="eok" x1="' + L + '" x2="' + (W - Rr) + '" y1="' + Y(10000) + '" y2="' + Y(10000) + '"/>';
+  if (b) g += '<path class="bst" d="' + pth(b) + '"/>';
+  g += '<path class="me" d="' + pth(a) + '"/>';
+  return '<div class="chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="20년 연도별 수입: 내 길' + (b ? '과 오늘 1위의 길' : '') + '">' + g + '</svg><div class="leg"><span><i></i>내 길</span>' + (b ? '<span><i class="b"></i>오늘 1위의 길</span>' : '') + '<span>점선: 1억</span></div></div>';
+}
+function r2Story(R) {
+  return '<ol class="r2tl">' + R.log.filter(function (l) { return !l.quiet; }).map(function (l) {
+    return '<li><b>' + (l.y + 1) + '년째</b> ' + (l.t === 'job' ? (l.failed ? '이직 실패' : l.moved ? esc(l.co) + (l.kind === 'new' ? ' 입사' : l.kind === 're' ? ' 재취업' : '로 이직') : l.txt === 'more' ? '1년 더 쉬기' : '남기') : esc(l.lb)) + ' <small>' + man(l.inc) + '만원</small></li>';
+  }).join('') + '</ol>';
+}
+function r2Zorro(R) {
+  var S = R.S, out = [];
+  if (S.burn) out.push('번아웃으로 멈춘 해가 있었어요. 체력은 다른 걸 다 받쳐 주는 바닥이에요.');
+  if (S.off) out.push('아이 곁에서 보낸 시간이 있었어요. 공백보다 그 시간을 어떻게 설명하는지가 다시 일할 때 더 중요해요.');
+  else if (S.back) out.push('공백 뒤에 다시 일을 시작했어요. 실제로도 복귀 첫 1년이 가장 어렵고, 그다음은 빨라요.');
+  if (S.moves >= 4) out.push('네 번 넘게 옮겼어요. 몸값은 오르지만 서류 심사에선 \'잦은 이직\'으로 읽힐 수 있어요.');
+  else if (!S.moves) out.push('한 곳에서 오래 있었어요. 안정은 좋지만, 대리 때 한 번은 시장 가격을 확인해 볼 만했어요.');
+  if (S.cr >= 85 && S.hap < 40) out.push('커리어는 높이 올렸는데 행복은 많이 내려갔어요. 다음 판엔 개인사 쪽 선택도 한번 바꿔 보세요.');
+  if (S.hap >= 80 && S.cr < 50) out.push('행복은 꽉 채웠어요. 커리어는 조금 아쉬워요. 둘 다 잡는 길도 있어요.');
+  if (out.length < 2) out.push('20년 수입 ' + eokS(R.total) + '. 연봉은 점수의 절반 정도예요. 나머지는 몸과 일과 사람이 채워요.');
+  return out.slice(0, 2).join(' ');
+}
+function resultRoad2(x, fresh) {
+  var R = PC.simRoad2(RPZ, ctx, x.picks || x.ans), S = R.S, EN = PC.roadEnding2(RPZ, ctx, R.picks), T = END_TXT[EN.id], B = endBook(), isNew = !B[EN.id];
+  if (isNew) { B[EN.id] = TODAY; store.setJ('slp-endings', B); }
+  var fin = S.c, scn = PC.ROAD_SC[RPZ.sc || 'new'], sex = S.g ? '남' : '여', W = PC.R2_W;
+  var parts = [['연봉', Math.round(R.total / 10000 * W.money), '20년 수입 ' + eokS(R.total)], ['체력', Math.round(S.hp * W.hp), '마지막 ' + Math.round(S.hp)], ['커리어', Math.round(S.cr * W.cr), '마지막 ' + Math.round(S.cr)], ['행복', Math.round(S.hap * W.hap), '마지막 ' + Math.round(S.hap)]];
+  var path = R.log.filter(function (l) { return !l.quiet; }).map(function (l) { return l.t === 'job' ? (l.failed ? '💥' : l.moved ? '🚀' : '🏠') : l.t === 'life' ? '💛' : '💼'; }).join('');
+  var text = '연봉 놀이터 · 커리어 로드 20년 ' + mmdd(TODAY) + ' (' + scn + ' · ' + sex + ')\n' + path + '\n엔딩: ' + EN.lb + '\n종합 ' + man(R.score) + '점 · 20년 수입 ' + eokS(R.total) + '\n' + SITE_S;
+  var scene = '<div class="ending">' + stage('<div class="pxrow">' + zG(S.g, T[3], T[2], 4, T[2] === 'happy' ? 'jump' : 'idle') + icon(T[0], 5, 'evi') + (fin ? bld(fin, bS(true), null, 'grow') : '') + '</div>' + (T[2] === 'happy' ? confetti() : ''), '', '엔딩: ' + EN.lb) +
+    '<span class="lv">ENDING · ' + esc(scn) + ' · ' + sex + (isNew ? ' · NEW!' : '') + '</span><div class="endnm"><b>' + esc(EN.lb) + '</b></div><p>' + T[1] + '</p></div>';
+  $('road').innerHTML = '<div class="over"><span class="lv">커리어 로드 20년 · ' + mmdd(TODAY) + '</span>' + scene + vsScene('road', x) + '<div class="big" style="font-size:clamp(44px,8vw,90px)">' + man(R.score) + '<small style="font-size:.4em">점</small></div>' +
+    '<div class="r2sum">' + parts.map(function (a) { return '<div><span class="l">' + a[0] + '</span><b>' + man(a[1]) + '</b><small>' + a[2] + '</small></div>'; }).join('') + '</div>' +
+    '<p>' + path + '</p>' + rankBox('road', x) +
+    '<div class="zorro"><div class="who"><i></i>조로의 한마디</div><p>' + esc(r2Zorro(R)) + '</p></div>' +
+    gotBox('road') + shareBox('shR', vsBox('road', x)) + nextBtn('road') + week7('road') +
+    '<details class="more" open><summary>20년 이야기 · 고른 길</summary>' + r2Story(R).replace('class="r2tl"', 'class="r2tl" style="width:100%;text-align:left"') + '</details>' +
+    '<details class="more"><summary>20년 수입 그래프</summary><div id="rChart" style="width:100%">' + roadChart2(R.years, null) + '</div></details>' +
+    '<details class="more"><summary>엔딩 도감 · ' + PC.ENDINGS.filter(function (e) { return endBook()[e[0]]; }).length + ' / ' + PC.ENDINGS.length + '</summary>' + endDogam(EN.id) + '</details>' +
+    '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbR"></div></details><div class="row">' + againBtn('road', function () { RREV = false; renderRoad(); }) + '</div></div>';
+  if (fresh && isNew) toast('새 엔딩을 모았어요: ' + EN.lb);
+  wireShare('shR', text, { title: '커리어 로드 20년 · ' + scn, big: man(R.score) + '점', sub: '엔딩: ' + EN.lb + '\n20년 수입 ' + eokS(R.total) + ' · ' + mmdd(TODAY), lines: [path],
+    px: { mood: T[2], rk: T[3], co: fin, icon: T[0] } });
+  getTop('road').then(function (t) {
+    fillNb('road', t);
+    if (!t) return;
+    var b = t.stat.best;
+    if (b && b.picks && b.picks.length >= PC.R2_N) { var B2 = PC.simRoad2(RPZ, ctx, b.picks); $('rChart').innerHTML = roadChart2(R.years, B2.years) + '<p class="src">오늘 1위 ' + esc(b.nick) + ' (' + (B2.S.g ? '남' : '여') + '): 종합 ' + man(B2.score) + '점 · 엔딩 ' + esc(PC.roadEnding2(RPZ, ctx, b.picks).lb) + mockTag() + '</p>'; }
     var el = $('lbR'); if (el) el.innerHTML = lbAll(t, 'road') + '<p class="src"><a href="#hall">순위 · 명예의 전당 전체 보기 →</a></p>';
   });
 }
@@ -2594,11 +2898,11 @@ var ITEMS = [
   ['stock', 'hand', '상승 차트 피켓', '엔딩 \'스타트업 대박\'', function () { return endHas(['startup']); }, 'road', 'c', null, '오른쪽 위로만 가는 그래프'],
   ['scarf', 'acc', '실크 머플러', '엔딩 \'억대 연봉 부장\'', function () { return endHas(['boss']); }, 'road', 'r', null, '부장님 출근룩 완성'],
   ['wand', 'hand', '요정 지팡이', '엔딩 \'이직의 신\'', function () { return endHas(['hopper']); }, 'road', 'c', null, '헤드헌터 요정이 두고 간 것'],
-  ['pin', 'acc', '근속 배지', '엔딩 \'대기업 정년각\'', function () { return endHas(['lifer']); }, 'road', 'c', null, '10년 개근의 증표'],
+  ['pin', 'acc', '근속 배지', '엔딩 \'대기업 정년각\'', function () { return endHas(['lifer']); }, 'road', 'c', null, '오랜 개근의 증표'],
   ['helmet', 'hat', '안전모', '엔딩 \'구조조정 생존자\'', function () { return endHas(['survivor']); }, 'road', 'c', null, '떨어지는 공문 조심'],
   ['pillow', 'acc', '목베개', '엔딩 \'번아웃 퇴사\'', function () { return endHas(['burnout']); }, 'road', 'c', null, '일단 자고 생각해요'],
   ['lunchbox', 'hand', '도시락', '엔딩 \'무난한 직장인\'', function () { return endHas(['normal']); }, 'road', 'c', null, '점심 메뉴 고민 끝'],
-  ['halo', 'hat', '후광', '엔딩 도감 7종 모두 모으기', function () { var B = endBook(); return PC.ENDINGS.every(function (e) { return B[e[0]]; }); }, 'road', 'l', function () { var B = endBook(); return [PC.ENDINGS.filter(function (e) { return B[e[0]]; }).length, 7]; }, '모든 길을 다 가 본 사람'],
+  ['halo', 'hat', '후광', '엔딩 도감 모두 모으기', function () { var B = endBook(); return PC.ENDINGS.every(function (e) { return B[e[0]]; }); }, 'road', 'l', function () { var B = endBook(); return [PC.ENDINGS.filter(function (e) { return B[e[0]]; }).length, PC.ENDINGS.length]; }, '모든 길을 다 가 본 사람'],
   // 드림 컴퍼니 월드컵
   ['flag', 'hand', '응원 깃발', '월드컵 처음 우승 보기', function () { return Object.keys(cupWins()).length > 0; }, 'cup', 'c', null, '내 드림 컴퍼니 화이팅'],
   ['rosette', 'acc', '리본 훈장', '서로 다른 우승 회사 5곳', function () { return Object.keys(cupWins()).length >= 5; }, 'cup', 'c', function () { return [Object.keys(cupWins()).length, 5]; }, '취향이 넓은 편'],
@@ -2703,7 +3007,7 @@ function renderBoss() {
 // ── 친구 대결 도전장: 결과 화면 '친구에게 도전장 보내기' → job.jobzorro.kr/play/?vs=<도전장>#<게임>
 //    도전장은 서버가 서명해서 점수 낼 때 돌려줌(x.vs, 기기 번호 없음). 받은 사람은 같은 날이면 같은 문제로, 끝나면 둘이 나란히
 var VS = null;
-function fmtVs(game, s) { return game === 'road' ? eokS(s) : game === 'run' ? man(s) + '만원' : man(s) + '점'; }
+function fmtVs(game, s) { return game === 'road' ? fmtScore(game, s) : game === 'run' ? man(s) + '만원' : man(s) + '점'; }
 function vsLink(game, code) { return SITE + '?vs=' + encodeURIComponent(code) + '#' + game; }
 function vsBox(game, x) {
   if (!x || !x.vs) return '';
@@ -4152,7 +4456,7 @@ var GINFO = {
   higher: ['money', '두 회사 중 더 많이 주는 쪽을 골라요. 문제마다 비교 기준이 바뀌어요.', '10문제 · 문제당 15초'],
   today: ['magnifier', '후보 8곳 중 숨은 회사 1곳을 찾아요. 단서는 하나씩 열려요.', '기회 3번 · 약 1분'],
   sniper: ['target', '회사와 직급을 보고 막대를 밀어 연봉을 찍어요.', '5문제 · 약 2분'],
-  road: ['sign', '2년마다 이직할까 남을까. 10년 누적 연봉으로 겨뤄요.', '약 3분'],
+  road: ['sign', '여자·남자 중 골라 20년을 살아요. 이직·회사 일·연애·결혼·육아까지, 연봉·체력·커리어·행복 종합점수로 겨뤄요.', '16번 고르기 · 약 7분'],
   cup: ['trophy', '연봉은 가리고 이름만 보고 가고 싶은 회사를 골라요.', '순위 없음 · 연습'],
   run: ['bus', '탈것마다 미니게임이 바뀌는 출근 질주! 지하철은 연타로 타고, 신호등에선 꾹 멈춰요.', '약 1분 15초']
 };
@@ -4222,7 +4526,7 @@ function gbSync() {
     } else if (k === 'road') {
       p = prog('road');
       if (rec(TODAY, 'road')) t = '끝';
-      else if (p && p.picks) { t = Math.min(p.picks.length + 1, 5) + ' / 5'; f = p.picks.length / 5; }
+      else if (p && p.picks) { var NR = p.v2 ? PC.R2_SLOTS.length : 5, dn = p.v2 ? p.picks.length - 1 : p.picks.length; t = Math.min(dn + 1, NR) + ' / ' + NR; f = dn / NR; }
     } else if (k === 'run') {
       if (RUN && RUN.on) { t = hhmm(runClock(RUN)); f = (RUN.seg + Math.min(1, RUN.dist / RMAP[RUN.key].len)) / R_SLOTS.length; }
       else if (runRec()) t = '끝';
