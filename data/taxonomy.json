@@ -99,6 +99,12 @@
           "en": "Brand Marketing"
         },
         {
+          "id": "fmcg-bm",
+          "name": "소비재 BM (브랜드 매니저)",
+          "en": "Brand Manager (FMCG)",
+          "parent": "brand-marketer"
+        },
+        {
           "id": "product-planning",
           "name": "상품기획 (가전·자동차·IT기기)",
           "en": "Product Planning (Hardware)"
@@ -107,6 +113,11 @@
           "id": "performance-marketer",
           "name": "퍼포먼스·그로스 마케팅",
           "en": "Performance / Growth Marketing"
+        },
+        {
+          "id": "crm-marketing",
+          "name": "CRM 마케팅",
+          "en": "CRM Marketing"
         },
         {
           "id": "content-marketer",
@@ -159,6 +170,11 @@
           "id": "bd",
           "name": "사업개발·해외사업 (BD)",
           "en": "Business Development"
+        },
+        {
+          "id": "ma-invest",
+          "name": "투자·M&A (사업회사)",
+          "en": "Corporate Development / M&A"
         }
       ]
     },
@@ -244,6 +260,11 @@
           "id": "legal",
           "name": "법무",
           "en": "Legal Affairs"
+        },
+        {
+          "id": "compliance",
+          "name": "준법감시·내부감사",
+          "en": "Compliance / Internal Audit"
         },
         {
           "id": "esg",
@@ -381,6 +402,11 @@
           "en": "Freight Forwarding"
         },
         {
+          "id": "trade-admin",
+          "name": "무역사무·수출입",
+          "en": "Trade Administration / Import-Export"
+        },
+        {
           "id": "shipping",
           "name": "해운 영업·선박 운항",
           "en": "Shipping / Chartering",
@@ -411,6 +437,43 @@
           "id": "vmd",
           "name": "VMD (비주얼 머천다이저)",
           "en": "Visual Merchandiser"
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "name": "서비스·콘텐츠",
+      "track": "business",
+      "jobs": [
+        {
+          "id": "cabin-crew",
+          "name": "객실승무원",
+          "en": "Flight Attendant",
+          "industryOnly": "logistics"
+        },
+        {
+          "id": "ground-staff",
+          "name": "항공 지상직·운항관리",
+          "en": "Airline Ground Staff / Flight Dispatcher",
+          "industryOnly": "logistics"
+        },
+        {
+          "id": "hotel-ops",
+          "name": "호텔·리조트 운영",
+          "en": "Hotel / Resort Operations",
+          "industryOnly": "hospitality"
+        },
+        {
+          "id": "ent-manager",
+          "name": "엔터 매니지먼트·A&R",
+          "en": "Entertainment Management / A&R",
+          "industryOnly": "media"
+        },
+        {
+          "id": "content-pd",
+          "name": "콘텐츠 PD·에디터 (웹툰·출판)",
+          "en": "Content Producer / Editor",
+          "industryOnly": "media"
         }
       ]
     },
@@ -454,6 +517,21 @@
           "id": "frontend",
           "name": "프론트엔드 개발",
           "en": "Frontend Developer"
+        },
+        {
+          "id": "mobile-dev",
+          "name": "모바일 앱 개발",
+          "en": "Mobile App Developer"
+        },
+        {
+          "id": "devops",
+          "name": "DevOps·클라우드 엔지니어",
+          "en": "DevOps / Cloud Engineer"
+        },
+        {
+          "id": "security",
+          "name": "정보보안",
+          "en": "Information Security"
         },
         {
           "id": "data-analyst",
@@ -502,6 +580,11 @@
           "id": "rnd-chem",
           "name": "화학·소재 연구개발",
           "en": "Chemical / Materials R&D"
+        },
+        {
+          "id": "analysis-eng",
+          "name": "분석 엔지니어 (소재·성분 분석)",
+          "en": "Analytical Engineer"
         },
         {
           "id": "cosmetic-rnd",
@@ -635,6 +718,12 @@
           "en": "Quality Assurance / Control"
         },
         {
+          "id": "sq",
+          "name": "협력사·고객 품질 (SQ·CQ)",
+          "en": "Supplier / Customer Quality",
+          "parent": "quality"
+        },
+        {
           "id": "reliability",
           "name": "신뢰성·시험평가",
           "en": "Reliability / Test Engineer"
@@ -702,8 +791,19 @@
       "jobs": [
         {
           "id": "construction-mgmt",
-          "name": "건설·전기 시공관리",
+          "name": "건축 시공관리",
           "en": "Construction / Electrical Site Management"
+        },
+        {
+          "id": "mep",
+          "name": "전기·설비 (MEP) 시공관리",
+          "en": "MEP Construction Management",
+          "parent": "construction-mgmt"
+        },
+        {
+          "id": "cost-estimating",
+          "name": "공무·견적",
+          "en": "Construction Contract Admin / Cost Estimating"
         },
         {
           "id": "civil-eng",

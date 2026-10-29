@@ -80,6 +80,7 @@ GROUP_COLORS = {
     "quality-safety":   ((120, 230, 120), (9, 19, 10)),    # 그린
     "bio-pharma":       ((255, 140, 200), (20, 10, 18)),   # 로즈
     "construction":     ((210, 180, 140), (18, 15, 11)),   # 샌드
+    "service":          ((255, 215, 120), (20, 17, 9)),    # 골드
 }
 
 # 2026-10-28 사용자: 연봉 연구소 - 연봉 놀이터 - 회사 판단 - 직무사전 - 취업뉴스 - 함께하기 순서
@@ -129,8 +130,8 @@ def slim_job(j: dict) -> dict:
     s = j.get("sources") or {}
     return {
         "id": j["id"], "name": j["name"], "en": j["en"], "group": j["group"], "tagline": j["tagline"],
-        "summary": j["summary"][:120],                                           # 검색(haystack)용. 직무 116개(v2)부터 앞 120자만 — 상세는 전체 JSON
-        "skills": {"hard": j["skills"]["hard"], "soft": j["skills"]["soft"]},   # 카드는 hard 앞 3개, 검색은 전부
+        "summary": j["summary"][:100],                                           # 검색(haystack)용. 직무 133개(v2 3단계)부터 앞 100자만 — 상세는 전체 JSON
+        "skills": {"hard": j["skills"]["hard"], "soft": []},                    # 카드는 hard 앞 3개. soft(소통·꼼꼼함 등)는 모든 직무에 비슷해 검색에서 빼고 상세에서만 보인다
         "tools": j["tools"], "certs": j["certs"],                                # 검색용
         "salary": {"junior": j["salary"]["junior"]},                             # 카드 하단 신입 연봉대
         "ai": {"level": j["ai"]["level"]},                                       # 카드 AI 배지 · 'AI 영향 낮은 직무만' 필터
@@ -147,18 +148,18 @@ def slim_job(j: dict) -> dict:
 NEWS_TAG_MAP = {
     "인사": ["hr", "hrd-culture", "cnb", "labor", "recruiter", "general-affairs"],
     "영업": ["b2b-sales", "overseas-sales", "sales-management", "ecommerce-sales", "pharma-sales", "saas-sales", "technical-sales", "trading", "bid-sales", "channel-kam", "store-sv"],
-    "재무": ["finance", "ir", "accounting", "tax", "cost-accounting", "aml", "corporate-finance", "bank", "risk-management", "policy-finance", "fund-ops"],
-    "기획": ["strategy", "biz-planning", "sales-planning", "consulting", "bd", "esg"],
+    "재무": ["finance", "ir", "accounting", "tax", "cost-accounting", "aml", "corporate-finance", "bank", "risk-management", "policy-finance", "fund-ops", "compliance"],
+    "기획": ["strategy", "biz-planning", "sales-planning", "consulting", "bd", "esg", "ma-invest"],
     "PM": ["service-planning", "it-planning", "cx"],
     "MD": ["md", "online-md"],
-    "구매": ["purchasing", "purchasing-planning", "scm", "forwarding"],
-    "마케팅": ["brand-marketer", "performance-marketer", "content-marketer", "pr", "ad-planner"],
-    "개발": ["sw-dev", "backend", "frontend", "embedded-sw", "ai-engineer", "data-engineer", "data-analyst", "qa", "erp-sap"],
+    "구매": ["purchasing", "purchasing-planning", "scm", "forwarding", "trade-admin"],
+    "마케팅": ["brand-marketer", "performance-marketer", "content-marketer", "pr", "ad-planner", "crm-marketing", "fmcg-bm", "ent-manager", "content-pd"],
+    "개발": ["sw-dev", "backend", "frontend", "embedded-sw", "ai-engineer", "data-engineer", "data-analyst", "qa", "erp-sap", "mobile-dev", "devops", "security"],
     "디자인": ["ux-designer"],
     "생산": ["production-mgmt", "production-tech", "process-tech", "equipment-eng", "semiconductor-pkg"],
-    "연구": ["rnd-chem", "battery-dev", "device-rnd", "product-dev", "rnd-food", "rnd-bio", "bio-process", "circuit-design"],
-    "품질": ["quality", "reliability", "safety", "environment-eng", "gmp-qa"],
-    "건설": ["construction-mgmt", "civil-eng", "plant-epc", "equipment-pm", "plant-design"],
+    "연구": ["rnd-chem", "battery-dev", "device-rnd", "product-dev", "rnd-food", "rnd-bio", "bio-process", "circuit-design", "analysis-eng"],
+    "품질": ["quality", "reliability", "safety", "environment-eng", "gmp-qa", "sq"],
+    "건설": ["construction-mgmt", "civil-eng", "plant-epc", "equipment-pm", "plant-design", "mep", "cost-estimating"],
     "공공": ["public-admin"],
 }
 

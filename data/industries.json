@@ -1,5 +1,5 @@
 {
-  "_note": "산업 축 17개 (2026-10-29 v2). kw = 직무의 sources.industries 문구에 이 말이 들어 있으면 그 산업으로 자동 태깅한다 (build.py tag_industries). 한 문구가 여러 산업에 걸릴 수 있다.",
+  "_note": "산업 축 18개 (2026-10-29 v2). kw = 직무의 sources.industries 문구에 이 말이 들어 있으면 그 산업으로 자동 태깅한다 (build.py tag_industries). 한 문구가 여러 산업에 걸릴 수 있다.",
   "industries": [
     {
       "id": "semiconductor",
@@ -287,6 +287,20 @@
         "해운",
         "항공사",
         "항공 IT"
+      ]
+    },
+    {
+      "id": "hospitality",
+      "name": "호텔·여행·레저",
+      "desc": "호텔·리조트·여행사·테마파크",
+      "kw": [
+        "호텔",
+        "리조트",
+        "여행",
+        "레저",
+        "테마파크",
+        "카지노",
+        "관광"
       ]
     },
     {
