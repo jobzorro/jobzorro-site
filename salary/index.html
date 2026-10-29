@@ -197,6 +197,9 @@ details.how ol { padding-left:20px; margin:8px 0 0; } details.how li { margin-to
 .hbig { font-family:var(--display); font-weight:900; font-size:clamp(44px,5vw,68px); letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
 .hbig small { font-size:.3em; letter-spacing:0; color:var(--muted); margin-left:4px; }
 .hduo { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+.hx { margin-top:22px; } .hx h4 { margin:0 0 8px; font-family:var(--display); font-size:12px; letter-spacing:.08em; color:var(--muted); }   /* 장 아래 덧붙인 그래프 (2026-10-29 장 높이 맞추기) */
+.hbig.s { font-size:clamp(34px,3.6vw,48px); }
+.hduo.one { grid-template-columns:minmax(0,1fr); } .hduo.two { grid-template-columns:repeat(2,minmax(0,1fr)); }   /* two: 폰에서도 나란히 */   /* 늘 위아래로 (PC에서도 장 높이 맞추기) */
 .hduo h4 { margin:0 0 6px; font-family:var(--display); font-size:12px; letter-spacing:.08em; color:var(--muted); }
 .slide figure { margin:0; } .slide svg { display:block; width:100%; height:auto; }
 .hwhy { margin:-3px 0 7px; font-size:12px; color:var(--muted); }
@@ -219,6 +222,7 @@ details.how ol { padding-left:20px; margin:8px 0 0; } details.how li { margin-to
 .rank-list .v { font-family:var(--display); font-weight:900; font-size:17px; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .rank-list .why { color:var(--soft); font-weight:700; }
 .rank-list .v.up { color:var(--up); }
+.slide .rank-list li { padding:8px 2px; }   /* 넘겨 보는 장 안 목록은 촘촘하게 (장 높이 맞추기) */
 
 /* 계산기 */
 .calc { display:grid; grid-template-columns:minmax(0,360px) minmax(0,1fr); gap:40px; align-items:start; }
@@ -269,7 +273,8 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
 
 @media (max-width:899px) { .car-track { grid-auto-columns:88%; gap:16px; } .hduo { grid-template-columns:minmax(0,1fr); } }
 @media (max-width:640px) { .car-track { grid-auto-columns:100%; } }   /* 2026-10-28 모바일: 한 장씩 (위 88% 규칙보다 뒤에 둬야 먹음) */
-@media (max-width:899px) { .car-track { align-items:start; transition:height .25s ease; } }   /* 2026-10-29: 폰은 지금 보이는 장 높이에 맞춘다 (긴 장 때문에 짧은 장 아래가 화면 반 장씩 비던 문제) */
+/* ★ 장 높이 규칙 (2026-10-29 사용자): '숫자로 보는 회사들'의 모든 장은 거의 같은 높이로 만든다 (폰 390px 기준 약 750~850px).
+   새 장을 넣거나 고칠 때 짧으면 같은 자료로 그래프를 덧붙이고(.hx), 길면 줄인다. 확인: salary-lab/check_slides.py */
 @media (max-width:900px) {
   .hero-grid { grid-template-columns:minmax(0,1fr); gap:24px; }
   .stats { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:20px; }
@@ -764,9 +769,16 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var bars = function (rows, max, fmt, hl, base) { base = base || 0; return '<div class="hb">' + rows.map(function (r) {
       return '<div class="bar' + (hl && hl(r) ? ' hl' : '') + '">' + (r[3] != null ? co(r[0], r[3]) : '<span class="n">' + esc(r[0]) + '</span>') + '<span class="b"><i style="width:' + Math.max(2, (r[1] - base) / (max - base) * 100).toFixed(1) + '%"></i></span><span class="v">' + fmt(r[1]) + '</span></div>'; }).join('') + '</div>'; };
     var won = function (v) { return man(v) + '만'; }, dy = (H && H.dartYears) || ['', ''];
+    var hx = function (h4, inner) { return '<div class="hx"><h4>' + h4 + '</h4>' + inner + '</div>'; };   // 장 높이 맞추기용 보조 그래프
     if (H) {   // 2026-10-21 사용자: '내 연봉이면 어디쯤?'을 첫 장으로
         S.push({ t: '내 연봉이면 <b>직장인 중 어디쯤?</b>', per: ym(H.ym) + ' (국민연금 가입자)', hook: '막대를 움직여 보세요. 국민연금 가입자 <b>' + Math.round(H.distN / 1e4).toLocaleString('ko-KR') + '만 명</b>이 다니는 회사의 평균 연봉 분포예요.',
-          body: '<div class="hme"><figure id="hHist"></figure><label for="hMe">내 연봉 <b id="hMeV"></b></label><input id="hMe" type="range" min="1500" max="9000" step="100" value="5000"><p id="hMeT"></p></div>',
+          body: '<div class="hme"><figure id="hHist"></figure><label for="hMe">내 연봉 <b id="hMeV"></b></label><input id="hMe" type="range" min="1500" max="9000" step="100" value="5000"><p id="hMeT"></p></div>' + (function () {
+            var B = H.dist, c = 0, med = 0; for (var i = 0; i < 8; i++) { if (c + B[i] >= 50) { med = (i + (50 - c) / B[i]) * 1000; break; } c += B[i]; }
+            var g = [['3천 미만', B[0] + B[1] + B[2]], ['3~5천', B[3] + B[4]], ['5~7천', B[5] + B[6]], ['7천 이상', B[7]]].map(function (r) { return [r[0], Math.round(r[1] * 10) / 10]; });
+            var mx = Math.max.apply(null, g.map(function (r) { return r[1]; }));
+            return hx('딱 가운데 직장인', '<div class="hbig s">' + man(Math.round(med / 100) * 100) + '<small>만원 회사</small></div>') +
+              hx('구간별로 보면', bars(g, mx, function (v) { return v + '%'; }, function (r) { return r[1] === mx; }));
+          })(),
           src: '회사 평균 기준이라 개인 순위와는 달라요 · 7천만 이상은 국민연금 상한이라 한 칸으로 묶여요' });
     }
     S.push({ t: '평균 연봉 <b>TOP 10</b>', per: dy[1] + '년 1년치 (' + dy[1] + ' 사업보고서)', hook: '가입자 300명 이상 회사. 성과급이 들어간 1인 평균이라 성과급이 큰 해에는 높게 나옵니다.', body: '<ol class="rank-list" id="topAvg"></ol>', src: '사업보고서가 없는 회사는 국민연금 기준' });
@@ -776,22 +788,42 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       S.push({ t: '사람이 <b>안 나가는</b> 회사 TOP 10', per: ym(H.ym0) + ' ~ ' + ym(H.ym) + ' (최근 12개월)', hook: '<b>' + esc(st[0][0]) + '</b>는 1년 동안 100명 중 ' + Math.round(st[0][1]) + '명만 나갔어요.',
         body: '<ol class="rank-list">' + st.map(function (x, k) { return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[3] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(x[0]) + '</a><small>가입자 ' + man(x[2]) + '명</small></span><span class="v">' + x[1] + '%</span></li>'; }).join('') + '</ol>',
         src: '1년 퇴사자 ÷ 평균 인원 · 가입자 1,000명 이상 · 국민연금 상실 신고 기준' });
-      S.push({ t: '오래 다녀야 <b>많이 받을까?</b>', per: dy[1] + '년 (사업보고서)', hook: '점 하나가 회사 하나예요. 왼쪽 위로 갈수록 <b>짧게 다녀도 많이 주는</b> 회사.', body: '<figure id="hSc"></figure>', src: '직원 1,000명 이상 ' + H.pts.length + '곳 · 평균 근속연수와 1인 평균 급여(성과급 포함)' });
+      S.push({ t: '오래 다녀야 <b>많이 받을까?</b>', per: dy[1] + '년 (사업보고서)', hook: '점 하나가 회사 하나예요. 왼쪽 위로 갈수록 <b>짧게 다녀도 많이 주는</b> 회사.', body: '<figure id="hSc"></figure>' + (function () {
+        var shortHi = H.pts.filter(function (p) { return p[1] <= 7; }).sort(function (a, b) { return b[2] - a[2]; }).slice(0, 5).map(function (p) { return [p[0], p[2], 0, p[3]]; });
+        var longest = H.pts.slice().sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5).map(function (p) { return [p[0], p[1], 0, p[3]]; });
+        return '<div class="hduo hx">' + '<div><h4>근속 7년 이하인데 많이 줘요</h4>' + bars(shortHi, shortHi[0][1], won) + '</div>' +
+          '<div><h4>가장 오래 다녀요</h4>' + bars(longest, longest[0][1], function (v) { return v + '년'; }) + '</div></div>';
+      })(), src: '직원 1,000명 이상 ' + H.pts.length + '곳 · 평균 근속연수와 1인 평균 급여(성과급 포함)' });
       var rg = H.region, seoul = rg.map(function (r) { return r[0]; }).indexOf('서울') + 1;
       S.push({ t: '연봉 1등 지역은 <b>' + (seoul === 1 ? '역시 서울' : '서울이 아니에요') + '</b>', per: ym(H.ym) + ' (국민연금)', hook: '<b>' + esc(rg[0][0]) + '</b>이 1위, 서울은 <b>' + seoul + '위</b>. 공장·플랜트가 모인 곳이 위에 있어요.',
-        body: bars(rg, rg[0][1], won, function (r) { return r[0] === rg[0][0] || r[0] === '서울'; }, 4000), src: '회사 소재지 기준 · 인원 가중 평균 · 본사 주소라 지방 공장 인원도 본사 지역에 잡혀요 · 막대는 4천만부터' });
+        body: bars(rg, rg[0][1], won, function (r) { return r[0] === rg[0][0] || r[0] === '서울'; }, 4000) +
+          '<div class="hduo two">' + hx(esc(rg[0][0]) + ' vs ' + esc(rg[rg.length - 1][0]), '<div class="hbig s">' + man(rg[0][1] - rg[rg.length - 1][1]) + '<small>만원 차이</small></div>') +
+          hx('서울보다 높은 곳', '<div class="hbig s">' + (seoul - 1) + '<small>곳</small></div>') +
+          hx('서울 평균', '<div class="hbig s">' + man(rg[seoul - 1][1]) + '<small>만원</small></div>') + hx('지역 ' + rg.length + '곳 평균', '<div class="hbig s">' + man(rg.reduce(function (a, r) { return a + r[1]; }, 0) / rg.length) + '<small>만원</small></div>') + '</div>', src: '회사 소재지 기준 · 인원 가중 평균 · 본사 주소라 지방 공장 인원도 본사 지역에 잡혀요 · 막대는 4천만부터' });
       var hr = H.hires;
       S.push({ t: '이번 달 <b>가장 많이 뽑은</b> 회사', per: ym(H.ym) + ' 한 달 (신규 가입자)', hook: '<b>' + esc(hr[0][0]) + '</b>는 한 달에 ' + man(hr[0][1]) + '명, 하루 ' + Math.round(hr[0][1] / 30) + '명꼴로 들어왔어요.',
-        body: '<div class="hbig">' + man(hr[0][1]) + '<small>명 / 한 달</small></div>' + bars(hr, hr[0][1], function (v) { return man(v) + '명'; }), src: '국민연금 신규 가입자 · 가입자 1,000명 이상' });
+        body: '<div class="hbig">' + man(hr[0][1]) + '<small>명 / 한 달</small></div>' + bars(hr, hr[0][1], function (v) { return man(v) + '명'; }) + (function () {
+          var rt = hr.map(function (x) { return [x[0], Math.round(x[1] / x[2] * 1000) / 10, 0, x[3]]; }).sort(function (a, b) { return b[1] - a[1]; });
+          return hx('7곳 합계', '<div class="hbig s">' + man(hr.reduce(function (a, x) { return a + x[1]; }, 0)) + '<small>명 / 한 달</small></div>') + hx('직원 100명당 새로 온 사람', bars(rt, rt[0][1], function (v) { return v + '명'; }, function (r, k) { return r === rt[0]; }));
+        })(), src: '국민연금 신규 가입자 · 가입자 1,000명 이상' });
       var top1 = function (rows, mx, fmt) { return bars(rows.slice(0, 1), mx, fmt) + (rows[0][4] ? '<p class="hwhy">↳ ' + esc(rows[0][4]) + '</p>' : '') + bars(rows.slice(1), mx, fmt); };   // 1위 밑에 가볍게 추정 사유
       var pc = function (v) { return (v > 0 ? '+' : '−') + Math.abs(v) + '%'; }, gm = Math.max(H.grow[0][1], -H.shrink[0][1]);
       S.push({ t: '요즘 <b>커지는 회사, 줄어드는 회사</b>', per: (+H.ym.slice(0, 4) - 1) + '년 ' + (+H.ym.slice(5)) + '월 → ' + ym(H.ym), hook: '1년 새 사람이 가장 많이 는 곳과 준 곳이에요.',
-        body: '<div class="hduo"><div><h4>사람이 늘었어요</h4>' + top1(H.grow, gm, pc) + '</div><div><h4>사람이 줄었어요</h4>' + top1(H.shrink.map(function (x) { return [x[0], -x[1], x[2], x[3], x[4]]; }), gm, function (v) { return pc(-v); }) + '</div></div>',
+        body: '<div class="hduo one"><div><h4>사람이 늘었어요</h4>' + top1(H.grow, gm, pc) + '</div><div><h4>사람이 줄었어요</h4>' + top1(H.shrink.map(function (x) { return [x[0], -x[1], x[2], x[3], x[4]]; }), gm, function (v) { return pc(-v); }) + '</div></div>' + (function () {
+          var ppl = function (x) { return Math.round(Math.abs(x[2] - x[2] / (1 + x[1] / 100))); };
+          var g3 = H.grow.slice(0, 3).map(function (x) { return [x[0], ppl(x), 0, x[3]]; }), s3 = H.shrink.slice(0, 3).map(function (x) { return [x[0], ppl(x), 0, x[3]]; });
+          var mx = Math.max(g3[0][1], s3[0][1], 1), nm = function (v) { return man(v) + '명'; };
+          return '<div class="hduo one hx"><div><h4>늘어난 사람 수</h4>' + bars(g3, mx, nm) + '</div><div><h4>줄어든 사람 수</h4>' + bars(s3, mx, nm) + '</div></div>';
+        })(),
         src: '가입자 1,000명 이상 · 법인 분할·합병·이관도 그대로 잡혀요' });
       var yrs = D.meta.trendYears || [];
       var spark = function (t) { var mn = Math.min.apply(null, t), mx = Math.max.apply(null, t); return '<svg viewBox="0 0 92 28" aria-hidden="true"><polyline points="' + t.map(function (v, i) { return (4 + i * 84 / (t.length - 1)).toFixed(1) + ',' + (24 - (v - mn) / (mx - mn || 1) * 20).toFixed(1); }).join(' ') + '" fill="none" stroke="var(--ink)" stroke-width="2"/><circle cx="88" cy="4" r="3.5" fill="var(--acc)" stroke="var(--ink)"/></svg>'; };
       S.push({ t: '<b>' + (yrs.length || 4) + '년 연속</b> 오른 회사', per: (yrs[0] || '') + '~' + (yrs[yrs.length - 1] || '') + '년 매년 ' + (+H.ym.slice(5)) + '월', hook: '한 번 반짝이 아니라 <b>매년</b> 올랐어요.',
-        body: H.streak.map(function (x) { var t = x[1]; return '<div class="hsp"><a class="n" href="#" data-co="' + x[2] + '" data-name="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' + spark(t) + '<span class="v">+' + Math.round((t[t.length - 1] / t[0] - 1) * 100) + '%</span></div>'; }).join(''),
+        body: H.streak.map(function (x) { var t = x[1]; return '<div class="hsp"><a class="n" href="#" data-co="' + x[2] + '" data-name="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' + spark(t) + '<span class="v">+' + Math.round((t[t.length - 1] / t[0] - 1) * 100) + '%</span></div>'; }).join('') + (function () {
+          var now = H.streak.map(function (x) { return [x[0], x[1][x[1].length - 1], 0, x[2]]; }).sort(function (a, b) { return b[1] - a[1]; });
+          var avgUp = Math.round(H.streak.reduce(function (a, x) { return a + (x[1][x[1].length - 1] / x[1][0] - 1); }, 0) / H.streak.length * 100);
+          return hx('평균 상승률', '<div class="hbig s">+' + avgUp + '<small>% · ' + (yrs.length || 4) + '년</small></div>') + hx('지금 1인 평균', bars(now, now[0][1], won));
+        })(),
         src: '국민연금 1인 평균 · 가입자 1,000명 이상 · 국민연금 상한 회사 제외' });
     }
     var N = S.length, track = $('carTrack'), dots = $('carDots');
@@ -802,7 +834,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     rankings();
     if (H) { drawHist(); $('hMe').addEventListener('input', drawHist); $('hSc').innerHTML = scatter(H.pts); }
     function drawHist() {
-      var v = +$('hMe').value, B = H.dist, W = 520, Hh = 170, bw = W / 8, mx = Math.max.apply(null, B), g = '', pos = Math.min(v, 7999) / 1000, below = 0;
+      var v = +$('hMe').value, B = H.dist, W = 520, Hh = 230, bw = W / 8, mx = Math.max.apply(null, B), g = '', pos = Math.min(v, 7999) / 1000, below = 0;
       B.forEach(function (p, i) {
         var h = p / mx * (Hh - 40), on = i === Math.min(7, Math.floor(v / 1000));
         g += '<rect x="' + (i * bw + 4) + '" y="' + (Hh - 22 - h) + '" width="' + (bw - 8) + '" height="' + h + '" fill="' + (on ? 'var(--acc)' : 'var(--ink)') + '" stroke="var(--ink)" stroke-width="' + (on ? 1 : 0) + '"/>' +
@@ -844,11 +876,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     clones();
     var cur = 0, hold = false, stop = false, t0 = performance.now(), DUR = 8000, car = $('car');
     var per = function () { return innerWidth >= 900 ? 2 : 1; };
-    // 2026-10-29: 한 장씩 보이는 폰에서는 묶음 높이를 지금 장 높이로 (PC 두 장 보기는 그대로)
-    function fit() { var sl = slides[cur]; var cs = getComputedStyle(track), pad = cs.boxSizing === 'border-box' ? parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) : 0;
-      track.style.height = per() === 1 && sl ? (sl.offsetHeight + pad) + 'px' : ''; }
-    addEventListener('resize', function () { fit(); });
-    function mark() { fit(); var ix = cur % N; $('carCnt').innerHTML = String(ix + 1).padStart(2, '0') + ' <span>/ ' + String(N).padStart(2, '0') + '</span>'; [].forEach.call(dots.children, function (b, i) { b.classList.toggle('on', i === ix); if (i !== ix) b.style.removeProperty('--p'); }); }
+    function mark() { var ix = cur % N; $('carCnt').innerHTML = String(ix + 1).padStart(2, '0') + ' <span>/ ' + String(N).padStart(2, '0') + '</span>'; [].forEach.call(dots.children, function (b, i) { b.classList.toggle('on', i === ix); if (i !== ix) b.style.removeProperty('--p'); }); }
     var pos = function (i) { return slides[i].offsetLeft - slides[0].offsetLeft; };
     function go(i) {
       if (i < 0) { track.scrollTo({ left: pos(N), behavior: 'auto' }); i = N - 1; }   // 1번에서 뒤로: 같은 모양인 복제본 자리로 옮긴 뒤 한 칸 뒤로
@@ -884,9 +912,8 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var li = function (x, k, v, sub) { return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[4] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(x[0]) + '</a><small>' + esc(sub) + '</small></span><span class="v">' + man(v) + '만원</span></li>'; };
     $('topAvg').innerHTML = (D.meta.topAvg || []).map(function (x, k) { return li(x, k, x[3], (x[1] || '') + ' · ' + x[5]); }).join('');
     $('topRise').innerHTML = (D.meta.topRise || []).map(function (x, k) {   // [이름, 업종, 인원, 전년, 올해, 상승%, 인원증감%, 사유, 출처, i]
-      var mc = x[6] === null || x[6] === undefined ? '' : '인원 ' + (x[6] > 0 ? '+' : '') + x[6] + '% · ';   // 인원 증감은 사유 줄로 (폰에서 잘리지 않게)
       return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[9] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(x[0]) + '</a>' +
-        '<small>' + man(x[3]) + ' → ' + man(x[4]) + '만원</small><small class="why">' + mc + esc(x[7]) + '</small></span><span class="v up">+' + x[5] + '%</span></li>';
+        '<small>' + man(x[3]) + ' → ' + man(x[4]) + '만 · <b class="why">' + esc(x[7]) + '</b></small></span><span class="v up">+' + x[5] + '%</span></li>';
     }).join('');
   }
 
