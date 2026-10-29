@@ -83,11 +83,11 @@ GROUP_COLORS = {
     "service":          ((255, 215, 120), (20, 17, 9)),    # 골드
 }
 
-# 2026-10-28 사용자: 연봉 연구소 - 연봉 놀이터 - 회사 판단 - 직무사전 - 취업뉴스 - 함께하기 순서
+# 2026-10-29 사용자: 연봉 연구소 - 회사 판단 - 직무사전 - 취업뉴스 - 연봉 놀이터 - 함께하기 순서
 # 폰(480px 이하)에서는 sm 두 글자 이름만 (2026-10-28 모바일 개선: 6개가 한 줄에 다 들어가게)
-TABS = [("salary/index.html", '<span class="lg">연봉 연구소</span><span class="sm">연봉</span>'), ("play/index.html", '<span class="lg">연봉&nbsp;놀이터</span><span class="sm">게임</span><span class="new">NEW</span>'),
+TABS = [("salary/index.html", '<span class="lg">연봉 연구소</span><span class="sm">연봉</span>'),
         ("company/index.html", '<span class="lg">회사&nbsp;판단</span><span class="sm">회사</span>'), ("index.html", '<span class="lg">직무사전</span><span class="sm">직무</span>'),
-        ("news/index.html", '<span class="lg">취업뉴스</span><span class="sm">뉴스</span>'), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;함께하기</span><span class="sm">상담</span>')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
+        ("news/index.html", '<span class="lg">취업뉴스</span><span class="sm">뉴스</span>'), ("play/index.html", '<span class="lg">연봉&nbsp;놀이터</span><span class="sm">게임</span><span class="new">NEW</span>'), ("zorro/index.html", '<span class="lg">취업조로와&nbsp;함께하기</span><span class="sm">상담</span>')]   # 폰(480px 이하)에서는 "함께하기"만 보여 메뉴가 잘리지 않게
 # 2026-10-28 모바일: 뉴스 섹션마다 처음 3건만 보이고 '이 섹션 n건 더 보기' (일간·주간·월간이 화면에서 다시 그려져도 다시 접는다)
 NEWS_FOLD = ("<style>@media (max-width:640px){.news-grid.fold>.news-card:nth-child(n+4){display:none}}"
              ".nf-more{display:none}@media (max-width:640px){.nf-more{display:flex;align-items:center;justify-content:center;width:100%;min-height:46px;margin:14px 0 0;"
