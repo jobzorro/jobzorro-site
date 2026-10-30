@@ -84,6 +84,10 @@ h1 b { font-weight:900; background:linear-gradient(transparent 62%, var(--mark) 
 .detail .hint { font-size:12px; margin-top:8px; line-height:1.55; }
 .vbadge { display:inline-flex; margin:12px 0 0; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:999px; background:var(--acc); color:var(--acc-ink); line-height:1.4; }
 .warnbox { margin-top:14px; font-size:13.5px; color:var(--warn); border-left:3px solid var(--warn); padding:2px 0 2px 10px; }
+.ranks.lock { position:relative; }
+.ranks.lock .rk { filter:blur(3px); opacity:.55; }
+.ranks.lock .rk .v .ph { display:inline-block; width:84px; height:14px; border-radius:6px; background:var(--line); }
+.lockmsg { position:absolute; inset:12px 0 0; margin:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:12px 16px; font-weight:800; font-size:15px; line-height:1.55; color:var(--ink); }
 .ranks { margin-top:14px; display:grid; gap:8px; padding-top:12px; border-top:1px solid var(--line); }
 .rk { display:grid; grid-template-columns:52px minmax(0,1fr) 124px; gap:12px; align-items:center; }
 .rk .n { font-weight:900; font-size:15px; line-height:1.2; }
@@ -571,7 +575,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var R = (CMP && CMP.i !== r.i) ? CMP : null, h = '<section class="cmpco"><div class="row"><b>다른 회사와 비교</b>' + (R ? '<button type="button" class="x" data-cmp-x>비교 닫기</button>' : '') + '</div>';
     if (R) {
       var A = r.rk, B = R.rk;
-      h += '<div class="tw"><table><thead><tr><th>직급</th><th>' + esc(r.name) + '</th><th>' + esc(R.name) + '</th><th>차이</th></tr></thead><tbody>' + RANK_NAMES.map(function (k, j) {
+      h += '<div class="tw"><table><thead><tr><th>직급</th><th>' + esc(r.name) + '</th><th>' + esc(R.name) + '</th><th>차이</th></tr></thead><tbody>' + (A && B ? RANK_NAMES : []).map(function (k, j) {
         var d = B[j] - A[j]; return '<tr><td>' + k + '</td><td>' + man(A[j]) + '</td><td>' + man(B[j]) + '</td><td class="' + (d >= 0 ? 'up' : 'dn') + '">' + (d > 0 ? '+' : '') + man(d) + '</td></tr>';
       }).join('') + '<tr><td>평균 연봉</td><td>' + man(r.bAvg) + '</td><td>' + man(R.bAvg) + '</td><td class="' + (R.bAvg - r.bAvg >= 0 ? 'up' : 'dn') + '">' + (R.bAvg - r.bAvg > 0 ? '+' : '') + man(R.bAvg - r.bAvg) + '</td></tr></tbody></table></div>' +
         '<p class="hint">차이 = ' + esc(R.name) + ' − ' + esc(r.name) + ' (만원, 직급별 추정)</p>' +
@@ -623,7 +627,8 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     CURROW = r;
     var capped = r.capped && !r.dart && !r.calAvg, plus = capped ? '+' : '';
     var jx = (D.meta.jobMult || []).filter(function (x) { return x[0] === JOBK; })[0], jf = jx ? jx[2] : 1;   // 개선 4: 내 직무로 보기
-    var main = r.rk.map(function (v) { return v * jf; }), base = r.rkBase && r.rkBase.map(function (v) { return v * jf; }), max = Math.max.apply(null, main), V = D.meta.validation;
+    var lock = /-lock/.test(r.how), lockUni = /-lockuni/.test(r.how);   // 직급 금액 비공개: 데이터에도 없음 → 블록 + 문구 (2026-10-30)
+    var main = (r.rk || [0, 0, 0, 0, 0]).map(function (v) { return v * jf; }), base = r.rkBase && r.rkBase.map(function (v) { return v * jf; }), max = Math.max.apply(null, main), V = D.meta.validation;
     var hasYoy = r.yoyPct !== null && r.yoyPct !== undefined && !r.capped;   // 상한에 걸린 회사의 추이는 상한 인상분이라 숨긴다
     var facts = [['국민연금 가입자', r.members.toLocaleString('ko-KR') + '명'],
       r.newHireAnnual ? ['입사자 평균 연봉', man(r.newHireAnnual) + '만원'] : ['이번 달 입사', r.newHires.toLocaleString('ko-KR') + '명'],
@@ -663,15 +668,17 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       (r.members < 100 && !ptime ? '<p class="hint">직원 100명 미만 회사라 몇 사람의 입·퇴사에도 평균이 크게 흔들립니다. 직급별 금액은 <b>개인차가 큰 참고값</b>으로 보세요.</p>' : '') +
       (r.divs ? '<p class="hint"><b>부문마다 달라요</b> (국민연금 사업장별 평균, 상한 때문에 위쪽은 실제로 더 큼): ' + r.divs.map(function (d) { return esc(d[0]) + ' ' + man(d[2]) + '만원'; }).join(' · ') + '</p>' : '') +
       (r.jump ? '<p class="hint">사업보고서 평균 연봉이 전년보다 <b>' + r.jump + '%</b> 올랐습니다. 성과급이 특히 컸던 해일 수 있어 다음 해에는 다시 내려갈 수 있습니다.</p>' : '') +
-      (ptime ? '<p class="warnbox">단시간·시간제 근로자 비중이 높은 사업장이라 평균 연봉이 최저임금 수준으로 잡힙니다. 직급별 금액은 추정하지 않습니다.</p>' : '') +
+      (ptime && !lock ? '<p class="warnbox">단시간·시간제 근로자 비중이 높은 사업장이라 평균 연봉이 최저임금 수준으로 잡힙니다. 직급별 금액은 추정하지 않습니다.</p>' : '') +
+      (lock ? '<div class="ranks lock">' + RANK_NAMES.map(function (n, k) { return '<div class="rk"><span class="n">' + n + '</span><span class="bar"><i style="width:' + (40 + k * 15) + '%"></i></span><span class="v"><i class="ph"></i></span></div>'; }).join('') +
+        '<p class="lockmsg">' + (lockUni ? '교수·교직원은 사학연금·공무원연금에 가입해 국민연금에는 연구원·조교 등 계약 인력만 잡힙니다.<br>정확한 직급별 연봉 추정이 어려운 사업장입니다.' : '현장직·파트타임·인력파견·경비 등 인원 비율이 높아<br>정확한 직급별 연봉 추정이 어려운 회사입니다.') + '</p></div>' + trend :
       '<div class="ranks">' + (ptime ? [] : main).map(function (v, k) {
         return '<div class="rk"><span class="n">' + RANK_NAMES[k] + '</span><span class="bar"><i style="width:' + (v / max * 100).toFixed(1) + '%"></i></span><span class="v">' + man(v) + plus + '만원' +
           (base && base[k] < v - 1 ? '<small class="rb">' + (capcal ? '국민연금 ' + man(base[k]) + (base[k] >= D.meta.cap * 12 ? ' (상한)' : '') : '기본 약 ' + man(base[k]) + '만원') + '</small>' : '') + '</span></div>';
       }).join('') + (ex ? '<div class="rk exrow"><span class="n">임원<small class="yr">' + (ex[2] === '추정' ? '추정' : '공시') + '</small></span><span class="exd">' + (ex[0] ? (ex[2] === '추정' ? '약 ' : '') + ex[0] + '명 · ' : '') + esc(ex[2]) + (ex[3] ? ' <span class="gchip g-est">임원 비중 높음</span>' : '') + '</span><span class="v">' + man(ex[1]) + '만원</span></div>' : '') +
-        (r.fld && !ptime ? '<div class="rk exrow"><span class="n">' + fk + '<small class="yr">' + (r.fld[2] === '공시' ? '공시' : '추정') + '</small></span><span class="exd">직원의 약 ' + r.fld[0] + '% · 직급별 금액은 ' + (hq ? '본사' : fpro ? '일반직' : '사무직') + ' 평균 ' + man(r.fld[3]) + '만원 기준</span><span class="v">' + man(r.fld[1]) + '만원</span></div>' : '') + '</div>' + trend +
+        (r.fld && !ptime ? '<div class="rk exrow"><span class="n">' + fk + '<small class="yr">' + (r.fld[2] === '공시' ? '공시' : '추정') + '</small></span><span class="exd">직원의 약 ' + r.fld[0] + '% · 직급별 금액은 ' + (hq ? '본사' : fpro ? '일반직' : /^(시간제 경마 종사원|학생연구원·위촉 인력)$/.test(fk) ? '정규직' : '사무직') + ' 평균 ' + man(r.fld[3]) + '만원 기준</span><span class="v">' + man(r.fld[1]) + '만원</span></div>' : '') + '</div>' + trend) +
       '<dl class="facts">' + facts.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('') + '</dl>' +
-      (ptime ? '' : '<div class="myyr"><label for="myYr">내 총 경력</label><input id="myYr" type="number" inputmode="decimal" min="0" max="35" step="0.5" placeholder="예: 4"><span>년차</span><output id="myYrV" for="myYr"></output></div>') +
-      (ptime || !(D.meta.jobMult || []).length ? '' : '<div class="myyr"><label for="myJob">내 직무</label><select id="myJob"><option value="">전체 평균</option>' + D.meta.jobMult.map(function (x) {
+      (ptime || lock ? '' : '<div class="myyr"><label for="myYr">내 총 경력</label><input id="myYr" type="number" inputmode="decimal" min="0" max="35" step="0.5" placeholder="예: 4"><span>년차</span><output id="myYrV" for="myYr"></output></div>') +
+      (ptime || lock || !(D.meta.jobMult || []).length ? '' : '<div class="myyr"><label for="myJob">내 직무</label><select id="myJob"><option value="">전체 평균</option>' + D.meta.jobMult.map(function (x) {
         return '<option value="' + esc(x[0]) + '"' + (x[0] === JOBK ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</select>' +
         '<small>' + (jx ? '이 직무는 같은 직급 평균의 약 ' + Math.round(jf * 100) + '% (이직자 ' + jx[3] + '명 기준, 직무 간 차이는 크지 않은 편)' : '취업조로 이직자 연봉으로 본 직무별 차이를 반영합니다') + '</small>' + jobLinks(JOBK) + '</div>') +
       cmpHtml(r) +
