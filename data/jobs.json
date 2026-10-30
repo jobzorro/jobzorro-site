@@ -540,7 +540,14 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "bizadm",
+          "trade",
+          "mech",
+          "cheme",
+          "ie"
+        ]
       },
       "byIndustry": [
         {
@@ -1145,7 +1152,15 @@
           "prep": "수주 시점과 매출 시점이 다른 부품 사업 구조를 이해하고, 엑셀로 숫자를 다루는 연습을 해 가세요.",
           "basis": 3
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 0,
+          "content": 1
+        }
+      }
     },
     {
       "id": "sales-management",
@@ -1333,7 +1348,13 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "bizadm",
+          "logis",
+          "econ",
+          "mis"
+        ]
       },
       "byIndustry": [
         {
@@ -1396,7 +1417,15 @@
           "prep": "매장을 둘러보며 브랜드별 차이와 고객 동선을 관찰하고, 숫자와 사람을 함께 챙긴 경험을 준비하세요.",
           "basis": 3
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 2,
+          "thing": 0,
+          "content": 0
+        }
+      }
     },
     {
       "id": "channel-kam",
@@ -1561,7 +1590,11 @@
       "major": {
         "level": "open",
         "fields": [],
-        "majors": []
+        "majors": [
+          "logis",
+          "bizadm",
+          "econ"
+        ]
       }
     },
     {
@@ -1723,7 +1756,20 @@
       "major": {
         "level": "open",
         "fields": [],
-        "majors": []
+        "majors": [
+          "logis",
+          "bizadm",
+          "food",
+          "tour"
+        ]
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 1,
+          "content": 0
+        }
       }
     },
     {
@@ -1885,7 +1931,21 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "logis",
+          "mis",
+          "bizadm",
+          "media"
+        ]
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 2,
+          "thing": 0,
+          "content": 1
+        }
       }
     },
     {
@@ -2046,7 +2106,15 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "pharm",
+          "bio",
+          "biotech",
+          "chemsci",
+          "nurse",
+          "health"
+        ]
       }
     },
     {
@@ -2558,7 +2626,21 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "mis",
+          "cse",
+          "sw",
+          "bizadm"
+        ]
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 1,
+          "content": 0
+        }
       }
     },
     {
@@ -2841,6 +2923,14 @@
           "sw"
         ],
         "prep": "반도체·PCB·전자부품 쪽은 전자·재료 전공이 유리하고 FAE는 사실상 전자 전공이 필요합니다. 비전공자는 담당 제품이 고객 공정에서 어떤 역할을 하는지 설명할 수 있을 만큼 공부하고, 신입 교육이 있는 회사를 고르세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 2,
+          "content": 0
+        }
       }
     },
     {
@@ -3045,7 +3135,24 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "trade",
+          "eng",
+          "chn",
+          "bizadm",
+          "econ",
+          "euro",
+          "lang"
+        ]
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 2,
+          "thing": 0,
+          "content": 0
+        }
       }
     },
     {
@@ -3499,6 +3606,14 @@
           "stat",
           "food"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 2,
+          "thing": 0,
+          "content": 2
+        }
       }
     },
     {
@@ -3680,6 +3795,14 @@
           "auto",
           "id"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 2,
+          "thing": 2,
+          "content": 2
+        }
       }
     },
     {
@@ -3866,6 +3989,14 @@
           "adpr",
           "bizadm"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 3,
+          "thing": 0,
+          "content": 1
+        }
       }
     },
     {
@@ -4057,6 +4188,14 @@
           "ai"
         ],
         "prep": "SQL과 GA4·Amplitude 같은 분석 도구를 익히고, 세그먼트 설정부터 발송·성과 분석까지 직접 해 본 경험을 하나 만드세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 3,
+          "thing": 0,
+          "content": 1
+        }
       }
     },
     {
@@ -4445,6 +4584,14 @@
           "media",
           "kor"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 0,
+          "thing": 0,
+          "content": 3
+        }
       }
     },
     {
@@ -5603,7 +5750,21 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "bizadm",
+          "stat",
+          "econ",
+          "logis"
+        ]
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 3,
+          "thing": 0,
+          "content": 0
+        }
       }
     },
     {
@@ -5780,6 +5941,14 @@
         "level": "prep",
         "fields": [],
         "prep": "케이스 인터뷰를 따로 오래 준비해야 하고, 해당 직무 인턴 경험의 영향이 큽니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 3,
+          "thing": 0,
+          "content": 2
+        }
       }
     },
     {
@@ -5989,7 +6158,22 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "bizadm",
+          "trade",
+          "econ",
+          "eng",
+          "chn"
+        ]
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 2,
+          "thing": 0,
+          "content": 1
+        }
       }
     },
     {
@@ -6354,7 +6538,14 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "bizadm",
+          "psy",
+          "padm",
+          "socio",
+          "law"
+        ]
       },
       "byIndustry": [
         {
@@ -6432,7 +6623,15 @@
           "prep": "지원 회사의 인력 구조(연령대·고용 형태)를 공시와 기사로 확인하고, 비정규직 계약 기간 같은 근로 관계 기본을 익혀 두세요.",
           "basis": 4
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 0,
+          "content": 1
+        }
+      }
     },
     {
       "id": "hrd-culture",
@@ -6659,6 +6858,14 @@
           "bizadm",
           "socio"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 0,
+          "thing": 0,
+          "content": 2
+        }
       }
     },
     {
@@ -6884,6 +7091,14 @@
           "acct",
           "tax"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 3,
+          "thing": 0,
+          "content": 0
+        }
       }
     },
     {
@@ -7115,6 +7330,14 @@
           "bizadm"
         ],
         "prep": "전공보다 노동법 지식이 관건입니다. 공인노무사 1차 공부나 사회보험전문가 같은 시험으로 근로기준법·노사관계법 기초를 먼저 보여 주세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 0,
+          "content": 1
+        }
       }
     },
     {
@@ -7272,7 +7495,13 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "psy",
+          "bizadm",
+          "socio",
+          "edu"
+        ]
       },
       "parent": "hr",
       "byIndustry": [
@@ -7336,7 +7565,15 @@
           "prep": "지원 회사에서 뽑기 쉬운 직군과 어려운 직군을 구분해 보고, 처우 협의에 필요한 연봉 구조 기본을 공부하세요.",
           "basis": 2
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 0,
+          "content": 1
+        }
+      }
     },
     {
       "id": "general-affairs",
@@ -7512,7 +7749,12 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "bizadm",
+          "padm",
+          "law"
+        ]
       },
       "byIndustry": [
         {
@@ -7560,7 +7802,15 @@
           "prep": "지방 산업단지 근무를 전제로, 현장 근로자와 관계를 쌓고 민원을 끝까지 챙겨 본 경험을 준비하세요.",
           "basis": 2
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 1,
+          "content": 0
+        }
+      }
     },
     {
       "id": "finance",
@@ -7841,7 +8091,15 @@
           "prep": "지원사 재무제표에서 선급금처럼 업종 특유의 큰 계정을 찾아 그 이유를 설명할 수 있게 준비하세요.",
           "basis": 2
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 3,
+          "thing": 0,
+          "content": 0
+        }
+      }
     },
     {
       "id": "ir",
@@ -8036,6 +8294,14 @@
           "acct"
         ],
         "prep": "재무제표 분석과 비즈니스 영어를 준비하고, 회계·재무 직무 경력을 먼저 쌓는 경로를 계획하세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 2,
+          "thing": 0,
+          "content": 2
+        }
       }
     },
     {
@@ -8261,7 +8527,15 @@
           "prep": "연결회계의 내부거래 제거를 공부하고, 지원 회사가 짓는 데이터센터 같은 투자 이슈를 회계 처리(차입원가 자본화)로 설명해 보세요.",
           "basis": 2
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 3,
+          "thing": 0,
+          "content": 0
+        }
+      }
     },
     {
       "id": "tax",
@@ -8467,7 +8741,15 @@
           "prep": "전산세무·재경관리사로 실무 기초를 증명하고, '세무사 대신 왜 회사 세무인가'에 답할 준비를 하세요.",
           "basis": 7
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 3,
+          "thing": 0,
+          "content": 0
+        }
+      }
     },
     {
       "id": "cost-accounting",
@@ -8687,6 +8969,14 @@
           "tax"
         ],
         "prep": "원가관리회계 과목과 재경관리사로 기초를 갖추고, 지원 회사 공정을 공부해 가세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 3,
+          "thing": 1,
+          "content": 0
+        }
       }
     },
     {
@@ -8875,7 +9165,14 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "trade",
+          "bizadm",
+          "ie",
+          "logis",
+          "mech"
+        ]
       },
       "byIndustry": [
         {
@@ -8953,7 +9250,15 @@
           "prep": "소프트웨어 개발 용역의 단가 구조와 기본 IT 용어를 익혀 가세요.",
           "basis": 3
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 2,
+          "thing": 1,
+          "content": 0
+        }
+      }
     },
     {
       "id": "purchasing-planning",
@@ -9155,6 +9460,14 @@
           "trade",
           "ie"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 3,
+          "thing": 0,
+          "content": 0
+        }
       }
     },
     {
@@ -9378,6 +9691,14 @@
         "majors": [
           "law"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 1,
+          "thing": 0,
+          "content": 3
+        }
       }
     },
     {
@@ -9776,6 +10097,14 @@
         "level": "prep",
         "fields": [],
         "prep": "지속가능경영보고서와 GRI·중대성평가 구조를 먼저 공부해야 하고, 신입 채용 자체가 매우 적습니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 2,
+          "thing": 0,
+          "content": 2
+        }
       }
     },
     {
@@ -10183,6 +10512,14 @@
         "level": "prep",
         "fields": [],
         "prep": "NCS 필기와 경제·경영 기초를 먼저 준비해야 합니다. 2금융권·캐피탈 계약직 같은 금융 현장 경험이 차별점이 됩니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 2,
+          "thing": 0,
+          "content": 0
+        }
       }
     },
     {
@@ -10377,13 +10714,21 @@
           "biz"
         ],
         "majors": [
-          "bizadm",
           "econ",
           "fin",
-          "acct",
-          "tax"
+          "bizadm",
+          "tax",
+          "acct"
         ],
         "prep": "펀드투자권유자문인력·투자자산운용사로 상품 이해를 증명하고, 고객 상담 현장 경험을 하나 만들어 두세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 2,
+          "thing": 0,
+          "content": 0
+        }
       }
     },
     {
@@ -10593,11 +10938,19 @@
         ],
         "prep": "재무회계·기업금융을 공부하고 동종업계 인턴 경험을 만드는 것이 가장 중요합니다.",
         "majors": [
-          "fin",
           "econ",
+          "fin",
           "bizadm",
           "acct"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 3,
+          "thing": 0,
+          "content": 0
+        }
       }
     },
     {
@@ -10787,6 +11140,14 @@
           "acct"
         ],
         "prep": "재무회계와 기업가치평가를 익히고, IB·회계법인 딜 어드바이저리 인턴으로 딜 경험을 만들어야 합니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 3,
+          "thing": 0,
+          "content": 1
+        }
       }
     },
     {
@@ -10978,6 +11339,14 @@
           "math"
         ],
         "prep": "관심 산업의 기업분석 리포트와 실적 추정 모델을 직접 만들어 포트폴리오로 보여 줘야 합니다. 이공계는 해당 섹터 전문성을 강점으로 쓸 수 있습니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 3,
+          "thing": 0,
+          "content": 2
+        }
       }
     },
     {
@@ -11352,6 +11721,14 @@
           "acct"
         ],
         "prep": "금융권 입사나 KYC·모니터링 계약직으로 실무를 먼저 쌓고, 금융연수원 자금세탁방지 과정이나 CAMS로 전문성을 증명해야 합니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 3,
+          "thing": 0,
+          "content": 1
+        }
       }
     },
     {
@@ -11938,6 +12315,14 @@
           "auto"
         ],
         "prep": "손해사정사 1차 합격과 보험 약관·상법 보험편 공부로 관심을 증명하고, 법인 인턴·계약직 실무 경험을 만드세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 2,
+          "thing": 0,
+          "content": 1
+        }
       }
     },
     {
@@ -12583,7 +12968,15 @@
           "basis": 2
         }
       ],
-      "industryOnly": "realestate"
+      "industryOnly": "realestate",
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 3,
+          "thing": 0,
+          "content": 0
+        }
+      }
     },
     {
       "id": "re-am",
@@ -12779,6 +13172,14 @@
           "arch"
         ],
         "prep": "투자자산운용사와 부동산 투자 지표·현금흐름 모델을 갖추고, 이공계는 시공·자산관리 경력으로 우회하는 계획을 세우세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 3,
+          "thing": 0,
+          "content": 0
+        }
       }
     },
     {
@@ -12962,6 +13363,17 @@
           "econ"
         ],
         "prep": "전공보다 영업 경험과 공인중개사, 담당 지역 빌딩을 직접 분석한 자료가 무기입니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 0,
+          "content": 0
+        },
+        "w": {
+          "pay": 2
+        }
       }
     },
     {
@@ -13147,6 +13559,18 @@
           "law"
         ],
         "prep": "공인중개사와 상가건물 임대차보호법 공부로 산업 관심을 보여 주세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 2,
+          "thing": 1,
+          "content": 0
+        },
+        "w": {
+          "pay": 1,
+          "growth": 1
+        }
       }
     },
     {
@@ -13344,6 +13768,17 @@
           "energy"
         ],
         "prep": "전기기사·공조냉동기계기사·건축설비기사·소방설비기사 중 하나 이상을 갖추고, 가능하면 건설 현장 경력을 먼저 쌓으세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 1,
+          "thing": 3,
+          "content": 0
+        },
+        "w": {
+          "pay": 1
+        }
       }
     },
     {
@@ -13721,6 +14156,14 @@
         "level": "prep",
         "fields": [],
         "prep": "국제무역사·무역영어로 인코텀즈와 선적 서류를 먼저 익히고, 물류 아카데미 수료 경로도 고려하세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 0,
+          "content": 0
+        }
       }
     },
     {
@@ -14158,6 +14601,14 @@
           "chn",
           "jpn"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 0,
+          "content": 0
+        }
       }
     },
     {
@@ -14327,7 +14778,14 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "ie",
+          "logis",
+          "trade",
+          "bizadm",
+          "stat"
+        ]
       },
       "byIndustry": [
         {
@@ -14360,7 +14818,15 @@
           "prep": "B/L·CI·PL 같은 선적 서류와 FTA 원산지 개념을 익히고, 전기차 전환이 부품 물량에 주는 영향을 정리해 가세요.",
           "basis": 3
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 3,
+          "thing": 1,
+          "content": 0
+        }
+      }
     },
     {
       "id": "fulfillment",
@@ -14718,7 +15184,21 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "fashion",
+          "logis",
+          "bizadm",
+          "food"
+        ]
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 2,
+          "thing": 0,
+          "content": 1
+        }
       }
     },
     {
@@ -14893,7 +15373,14 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "logis",
+          "bizadm",
+          "fashion",
+          "mis",
+          "media"
+        ]
       },
       "byIndustry": [
         {
@@ -14926,7 +15413,15 @@
           "prep": "엑셀 함수와 피벗으로 매출을 상품·기간별로 쪼개 보는 연습을 하고, 직접 상품을 팔아 본 경험을 정리해 가세요.",
           "basis": 3
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 2,
+          "thing": 0,
+          "content": 1
+        }
+      }
     },
     {
       "id": "vmd",
@@ -15115,6 +15610,14 @@
           "id"
         ],
         "prep": "전공은 제한이 없지만 포토샵·일러스트·CAD 같은 툴과 매장 진열 제안 포트폴리오, 매장·VMD 아르바이트 경험을 준비해야 합니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 0,
+          "thing": 1,
+          "content": 3
+        }
       }
     },
     {
@@ -15313,6 +15816,17 @@
           "jpn",
           "sport"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 0,
+          "thing": 0,
+          "content": 1
+        },
+        "w": {
+          "balance": 0
+        }
       }
     },
     {
@@ -15512,6 +16026,14 @@
           "chn"
         ],
         "prep": "여객 지상직은 전공 무관이지만, 운항관리사는 국토교통부 인가 교육과정 이수 또는 FAA Dispatcher 자격 취득 후 국내 자격 전환이 필요합니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 1,
+          "thing": 2,
+          "content": 0
+        }
       }
     },
     {
@@ -15706,6 +16228,17 @@
           "jpn",
           "chn"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 1,
+          "thing": 1,
+          "content": 0
+        },
+        "w": {
+          "balance": 0
+        }
       }
     },
     {
@@ -16106,6 +16639,14 @@
           "histphil",
           "libsci"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 0,
+          "thing": 0,
+          "content": 3
+        }
       }
     },
     {
@@ -16327,6 +16868,14 @@
           "mis",
           "ie"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 2,
+          "thing": 1,
+          "content": 1
+        }
       }
     },
     {
@@ -16528,6 +17077,14 @@
           "ie",
           "acct"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 2,
+          "thing": 2,
+          "content": 0
+        }
       }
     },
     {
@@ -16777,7 +17334,15 @@
           "prep": "쇼핑 앱 몇 곳의 광고 지면 위치와 형태를 비교하고, 왜 그 자리에 있는지 지표 관점에서 설명해 보세요.",
           "basis": 2
         }
-      ]
+      ],
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 2,
+          "thing": 0,
+          "content": 2
+        }
+      }
     },
     {
       "id": "game-planning",
@@ -16965,6 +17530,14 @@
           "stat"
         ],
         "prep": "전공은 무관하지만 역기획서·직접 쓴 기획서·밸런스 시트가 담긴 포트폴리오가 사실상 필수입니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 2,
+          "thing": 0,
+          "content": 3
+        }
       }
     },
     {
@@ -17189,6 +17762,14 @@
           "sec",
           "mis"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 2,
+          "thing": 3,
+          "content": 0
+        }
       }
     },
     {
@@ -17409,6 +17990,14 @@
           "ai",
           "sec"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 2,
+          "thing": 3,
+          "content": 0
+        }
       }
     },
     {
@@ -17636,6 +18225,14 @@
           "cse",
           "sw"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 1,
+          "thing": 3,
+          "content": 2
+        }
       }
     },
     {
@@ -17822,6 +18419,14 @@
           "ai"
         ],
         "prep": "부트캠프나 독학으로 Kotlin·Swift 중 하나를 깊게 익히고, 앱 마켓에 출시해 운영한 앱을 포트폴리오로 준비하세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 1,
+          "thing": 3,
+          "content": 1
+        }
       }
     },
     {
@@ -18011,6 +18616,14 @@
           "ai"
         ],
         "prep": "리눅스·네트워크 기초와 클라우드에 서비스를 올려 CI/CD·모니터링까지 구성한 프로젝트가 필요합니다. 신입 공고가 적어 백엔드·시스템 엔지니어로 시작하는 길도 준비하세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 2,
+          "thing": 3,
+          "content": 0
+        }
       }
     },
     {
@@ -18202,6 +18815,14 @@
           "telecom"
         ],
         "prep": "네트워크·리눅스 기초와 실습 기반 포트폴리오, 정보보안기사가 필요합니다. 개인정보·인증 쪽은 법규 공부와 CPPG로 비전공자도 준비할 수 있습니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 2,
+          "thing": 3,
+          "content": 0
+        }
       }
     },
     {
@@ -18424,6 +19045,14 @@
           "econ",
           "mis"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 3,
+          "thing": 1,
+          "content": 1
+        }
       }
     },
     {
@@ -18621,6 +19250,14 @@
           "ai",
           "stat"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 2,
+          "thing": 3,
+          "content": 0
+        }
       }
     },
     {
@@ -18841,6 +19478,14 @@
           "math",
           "elecn"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 3,
+          "thing": 3,
+          "content": 0
+        }
       }
     },
     {
@@ -19046,6 +19691,14 @@
         "level": "prep",
         "fields": [],
         "prep": "수동 QA라도 SQL, API 검증, 브라우저 개발자 도구 사용을 먼저 익혀야 합니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 2,
+          "thing": 2,
+          "content": 0
+        }
       }
     },
     {
@@ -19235,6 +19888,14 @@
           "sec"
         ],
         "prep": "전자·전기·정보통신·컴퓨터 전공이 사실상 필요하고, 정보통신기사와 CCNA 수준 실습 경험을 갖춰야 합니다. 석사는 무선 설계·표준 연구 직무에서만 우대됩니다."
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 1,
+          "thing": 3,
+          "content": 0
+        }
       }
     },
     {
@@ -19457,6 +20118,14 @@
           "film",
           "psy"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 1,
+          "thing": 1,
+          "content": 3
+        }
       }
     },
     {
@@ -19669,7 +20338,22 @@
       "draftOnly": false,
       "major": {
         "level": "open",
-        "fields": []
+        "fields": [],
+        "majors": [
+          "psy",
+          "bizadm",
+          "stat",
+          "media",
+          "socio"
+        ]
+      },
+      "fitW": {
+        "o": {
+          "people": 3,
+          "number": 2,
+          "thing": 0,
+          "content": 2
+        }
       }
     },
     {
@@ -26273,6 +26957,14 @@
           "health",
           "medtech"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 2,
+          "thing": 1,
+          "content": 1
+        }
       }
     },
     {
@@ -26453,6 +27145,14 @@
           "chemsci"
         ],
         "prep": "약학·간호·생명 계열이 유리하며, ICH·GVP 가이드라인과 MedDRA 용어를 미리 익혀 두세요."
+      },
+      "fitW": {
+        "o": {
+          "people": 0,
+          "number": 3,
+          "thing": 0,
+          "content": 2
+        }
       }
     },
     {
@@ -26657,6 +27357,14 @@
           "bme",
           "health"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 1,
+          "number": 2,
+          "thing": 0,
+          "content": 3
+        }
       }
     },
     {
@@ -26847,6 +27555,14 @@
           "food",
           "bizadm"
         ]
+      },
+      "fitW": {
+        "o": {
+          "people": 2,
+          "number": 2,
+          "thing": 0,
+          "content": 2
+        }
       }
     },
     {

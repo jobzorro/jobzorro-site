@@ -138,6 +138,7 @@ def slim_job(j: dict) -> dict:
         "nonmajorOk": j["nonmajorOk"], "draftOnly": j["draftOnly"],
         "mj": j["mj"], "mf": (j.get("major") or {}).get("fields", []), "deg": (j.get("major") or {}).get("degree", ""),   # 전공 단계 표시 · 진단 매칭
         "mm": (j.get("major") or {}).get("majors", []),                         # 진단: 꼭 맞는 학과 키 (data/majors.json)
+        "fw": j.get("fitW"),                                                     # 진단: 직무별 성향 가중치 (있으면 직군 값 위에 덮어씀)
         "sources": {"count": s.get("count", 0), "public": s.get("public", 0), "industries": s.get("industries", [])},  # 근거 배지·필터·업종 검색
         "parent": j.get("parent"), "io": j.get("industryOnly"), "ind": j.get("ind", []),   # v2: 상위 직무 · 산업 전용 · 산업 필터
         "gc": _gc(j["group"]),                                                   # 웹 카드 그림 색 [액센트, 배경] (공유 이미지는 카톡 전용)
@@ -734,6 +735,9 @@ def audit_links(data: dict, share_dir: Path) -> None:
                 warn.append(f"{jid}: 관련 계열은 있는데 꼭 맞는 학과(major.majors)가 없음 → 진단에서 계열 단위로만 판정")
             if m["level"] == "req" and not m.get("fields"):
                 warn.append(f"{jid}: 전공 필수인데 관련 전공 계열이 비어 있음")
+            fw = j.get("fitW") or {}
+            if any(k not in ("people", "number", "thing", "content") for k in fw.get("o", {})) or any(k not in ("stable", "growth", "pay", "balance") for k in fw.get("w", {})):
+                warn.append(f"{jid}: fitW 키 오류 (o: people·number·thing·content, w: stable·growth·pay·balance)")
             if m["level"] == "prep" and not m.get("prep"):
                 warn.append(f"{jid}: 준비 필요 직무인데 '준비할 것' 문구 없음")
         if j.get("parent") and j["parent"] not in {x["id"] for x in data["jobs"]}:
