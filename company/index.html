@@ -749,6 +749,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
       <div class="mf"><label for="me_ind">업종</label><select id="me_ind" data-k="industry"></select></div>
       <div class="mf"><label for="me_job">직무</label><input id="me_job" data-k="job" placeholder="예: 재무, 공정"></div>
       <div class="mf"><label for="me_sal">연봉(총액)</label><div class="u"><input id="me_sal" type="number" min="0" inputmode="numeric" step="100" data-k="salary" placeholder="5800"><span>만 원</span></div></div>
+      <div class="mf"><label for="me_con">계약연봉 <small>(선택)</small></label><div class="u"><input id="me_con" type="number" min="0" inputmode="numeric" step="100" data-k="contract" placeholder="5000"><span>만 원</span></div></div>
+      <div class="mf wide"><small class="mhelp">연봉(총액)은 원천징수 기준(성과급 포함)이에요. 계약연봉도 넣으면 제시 연봉(보통 계약연봉)과 같은 기준으로 비교해요.</small></div>
       <div class="mf"><label for="me_wlb">워라밸</label><select id="me_wlb" data-k="wlb"></select></div>
       <div class="mf"><label for="me_place">근무지</label><select id="me_place" data-k="place"></select></div>
       <div class="mf wide"><label for="me_must">칼퇴</label><select id="me_must" data-k="mustOff"><option value="">상황 따라 괜찮아요</option><option value="1">꼭 필요해요 (육아·건강 등)</option></select></div>
@@ -2286,14 +2288,14 @@ async function meLoadNow() {
 function meCase(c) {
   const o = meOver[c.name] || {}, est = coSalary(c, ME.years), nc = meNow.c;
   const now = { sex: ME.sex, age: ME.age, years: ME.years, tenure: ME.tenure, moves: ME.moves, left: !!ME.left, gap: ME.left ? ME.gap : undefined,
-    size: ME.size || (nc ? coSize(nc) : "중견"), industry: ME.industry ? engInd(ME.industry) : engInd(nc?.salary?.group, nc?.salary?.industry, nc?.name), job: ME.job, salary: ME.salary,
+    size: ME.size || (nc ? coSize(nc) : "중견"), industry: ME.industry ? engInd(ME.industry) : engInd(nc?.salary?.group, nc?.salary?.industry, nc?.name), job: ME.job, salary: o.salary && ME.contract ? ME.contract : ME.salary,   // E2: 제시 연봉(계약연봉)은 내 계약연봉과 비교
     wlb: ME.wlb || coWlb(nc) || "보통", place: ME.place || (nc ? coPlace(nc) : "수도권"),
     rating: nc?.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[nc.verdict] : undefined,
     must_off: !!ME.mustOff, lead_want: ME.leadWant || "", why: ME.why || "" };
   const target = { size: o.size || coSize(c), industry: engInd(c.salary?.group, c.salary?.industry, c.name), job: ME.want || ME.job,
     salary: o.salary || est?.v, wlb: coWlb(c) || "보통", place: o.place || coPlace(c),   // 옮길 회사 워라밸은 그 회사 현직자 점수로 (입력 안 받음)
     rating: c.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[c.verdict] : undefined, lead: !!ME.lead,
-    how: o.salary ? "제시 연봉" : est?.how };   // 6회차: 연봉 문구에 '이 회사 대리급 추정 연봉은 …'
+    how: o.salary ? "제시 연봉" : est?.how, basis: o.salary && ME.contract ? "계약" : "" };   // 6회차: 연봉 문구에 '이 회사 대리급 추정 연봉은 …'
   return { c: { type: "A", now, target }, est };
 }
 // 이유 문장을 + ? ! 로 나눠 보이게
@@ -2428,7 +2430,8 @@ function meJudge(c) {
   } else if (c.verdict === "판단자료 부족") why.push("이 회사는 재무·평판 자료가 부족해요. 회사 자체는 따로 확인하세요.");
   // 내 연봉과 비교한 숫자 한 줄
   const gap = kase.target.salary - kase.now.salary, pct = Math.round(gap / kase.now.salary * 100);
-  const pay = `${meOver[c.name]?.salary ? "제시 연봉" : est.how} ${won(kase.target.salary)}만 원 — 지금보다 ${gap >= 0 ? "+" : ""}${won(gap)}만 원(${pct >= 0 ? "+" : ""}${pct}%)이에요.${meOver[c.name]?.salary ? "" : " (추정이라 실제 오퍼와 다를 수 있어요)"}`;
+  const tg = kase.target.salary - ME.salary, tp = Math.round(tg / ME.salary * 100);   // E2: 계약연봉끼리 비교했을 때 원천징수 총액 기준도 함께
+  const pay = `${meOver[c.name]?.salary ? "제시 연봉" : est.how} ${won(kase.target.salary)}만 원 — 지금${kase.target.basis ? ` 계약연봉(${won(kase.now.salary)}만 원)` : ""}보다 ${gap >= 0 ? "+" : ""}${won(gap)}만 원(${pct >= 0 ? "+" : ""}${pct}%)이에요.${kase.target.basis ? ` 원천징수 총액(${won(ME.salary)}만 원)과 비교하면 ${tp >= 0 ? "+" : ""}${tp}%${tp < 10 ? "라, 성과급이 얼마나 나오는지가 관건이에요." : "예요."}` : meOver[c.name]?.salary ? "" : " (추정이라 실제 오퍼와 다를 수 있어요)"}`;
   // 회사 일반 판정의 한마디를 이어 붙여 최소 5줄 (2026-10-27 사용자 요청)
   const sl = c.salary || {}, rg = c.grades?.["평판"]?.score;
   const facts = [];
@@ -2464,6 +2467,8 @@ function meJudge(c) {
   }
   // 6회차 B2: 갈 회사 연봉이 낮으면 협상이 조건 → 엔진이 정한 상한('조건 보고 가세요' 또는 '중립기어')
   if (r.cap != null) V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), r.cap)];
+  // E2: 계약연봉으로는 많이 올라도 원천징수 총액으로 10% 미만이면 성과급이 관건 → '무조건'은 아니다
+  if (kase.target.basis && tp < 10) V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), 5)];
   // 6회차 A: 워라밸이 나빠지면 (워라밸 중요한 사람은 세게) 판정을 낮추고, 그 얘기를 첫 줄·이유 맨 위에
   const wa = FitEngine.wlbAdjust(kase.now, kase.target, pct);
   if (wa) {
@@ -2509,7 +2514,7 @@ function meTail(V, o = {}) {
   if (V === "조건 보고 가세요") return "위 조건 중 하나라도 안 맞으면 미련 없이 접어도 되는 카드예요.";
   if (V === "중립기어") return "결국 지금 회사에서 제일 싫은 게 여기서 풀리는지가 답이에요. 풀리면 가고, 아니면 남으세요.";
   if (V === "스펙 보고 결정하세요") return "다른 카드와 나란히 놓고 정하세요. 이 카드 하나만 보고 서두를 필요는 없어요.";
-  if (o.now && o.pct != null && o.pct < 10) return "실제 오퍼를 받으면 '제시 연봉'에 넣어 다시 보세요. 추정치와 실제 오퍼는 꽤 달라요. 다만, 성과급과 현금성 복지까지 넣어 꼼꼼히 살피셔야 해요. 현재 연봉은 원천징수로 생각하고, 제안은 계약연봉으로만 생각하는 우를 범하시면 안 됩니다!";   // 6회차 B5
+  if (o.now && o.pct != null && o.pct < 10) return "실제 오퍼를 받으면 '제시 연봉'에 넣어 다시 보세요. 추정치와 실제 오퍼는 꽤 달라요. 다만, 성과급과 현금성 복지까지 넣어 꼼꼼히 살피셔야 해요. " + mePayWarn();   // 6회차 B5
   if (V === "다시 생각해요") return "지금 자리에서 버틸 만하다면, 이 카드보다 내 조건에 맞는 곳을 조금 더 기다려 보세요.";
   return "이 카드는 접고 다른 곳을 보세요.";
 }
@@ -2546,6 +2551,10 @@ function meCompose(c, V, why, pay, ctx, facts = [], o = {}) {
 }
 // 이유별 확인: { text, cap } — cap 이면 판정을 '조건 보고 가세요' 위로 못 올라가게
 const ME_GOOD = /^(S|A\+|A)$/, ME_BAD = /^(C|D|F)$/;
+// E2: 계약연봉을 넣었으면 원천징수·계약연봉 혼동 경고 대신 비교 기준을 알려 준다
+function mePayWarn() {
+  return ME?.contract ? `제시 연봉은 내 계약연봉(${won(ME.contract)}만 원)과 비교하고, 성과급·현금성 복지 차이는 따로 따져 보세요.` : "현재 연봉은 원천징수로 생각하고, 제안은 계약연봉으로만 생각하는 우를 범하시면 안 됩니다!";
+}
 function meReason(c, kase, pct) {
   const r = ME.why, g = k => c.grades?.[k]?.letter || "";
   if (!r) return null;
@@ -2553,7 +2562,7 @@ function meReason(c, kase, pct) {
   const how = /추정/.test(kase.target.how || "") ? "추정치로는" : "제시 연봉으로는";
   if (r === "연봉") return pct >= 10 ? { text: `연봉이 가장 큰 이유라면 +${pct}%는 이유를 풀어 주는 카드예요.` }
     : pct < 0 ? { text: `연봉 때문에 옮기시는데 ${how} 오히려 ${-pct}% 낮아요. 회사 급이나 다른 조건이 좋아도, 연봉 협상 결과를 보고 갈지 말지 정하세요.`, cap: 2 }   // 6회차 D6
-    : { text: `연봉 때문에 옮기시는 건데 ${how} +${pct}%예요. 연봉 이직이 되려면 실제 오퍼에서 지금보다 확실히 오른다면 좋겠습니다. 추정되는 성과급과 현금성 복지까지 넣어서 충분히 올라간다면 가시기 바랍니다. 현재 연봉은 원천징수로 생각하고 제안은 계약연봉으로만 생각하는 우를 범하시면 안 됩니다!`, cap: true };   // 6회차 B6
+    : { text: `연봉 때문에 옮기시는 건데 ${how} +${pct}%예요. 연봉 이직이 되려면 실제 오퍼에서 지금보다 확실히 오른다면 좋겠습니다. 추정되는 성과급과 현금성 복지까지 넣어서 충분히 올라간다면 가시기 바랍니다. ${mePayWarn()}`, cap: true };   // 6회차 B6
   if (r === "워라밸") return wt > wn ? { text: "", wlb: true }   // 나빠지는 건 워라밸 규칙(FitEngine.wlbAdjust)이 판정·문구를 맡는다
     : wt < wn ? { text: `워라밸이 이유라면 맞는 방향이에요. 현직자 워라밸이 '${kase.target.wlb}' 쪽이에요. ${FitEngine.TB}` }
     : { text: `워라밸은 지금과 비슷한 회사예요(현직자 기준 '${kase.target.wlb}'). 팀마다 다르니 면접에서 꼭 물어보세요.` };
@@ -2777,7 +2786,7 @@ meEl("meSave").onclick = () => {
   });
   if (m.kind === "new" && m.nstat !== "재직 중") { delete m.salary; delete m.prevSize; delete m.prevSame; }
   const err = m.kind === "new" ? (!m.age ? "나이를 넣어 주세요." : !m.job ? "지원 직무를 넣어 주세요." : "")
-    : !m.salary ? "지금 연봉을 넣어 주세요." : m.years == null ? "총 경력을 넣어 주세요." : !m.job ? "직무를 넣어 주세요." : "";
+    : !m.salary ? "지금 연봉을 넣어 주세요." : m.contract > m.salary ? "계약연봉은 연봉(총액)보다 클 수 없어요. 총액에는 성과급까지 넣어 주세요." : m.years == null ? "총 경력을 넣어 주세요." : !m.job ? "직무를 넣어 주세요." : "";
   if (err) { meEl("meErr").textContent = err; meEl("meErr").hidden = false; return; }
   ME = m; try { localStorage.setItem("cc-me", JSON.stringify(m)); } catch (e) {}
   // 연봉 보태기: 체크한 사람만, 같은 내용은 한 번만 보낸다
