@@ -504,7 +504,7 @@ img.px, .pxs { image-rendering:crisp-edges; image-rendering:pixelated; display:b
 /* 연봉 스나이퍼 조준경 */
 .scope { position:relative; height:116px; margin:4px 0 0; border:1.5px solid var(--ink); border-radius:12px; overflow:hidden; touch-action:none; cursor:ew-resize; }
 .scope canvas { display:block; width:100%; height:100%; }
-.snq.kick { animation:snKick .32s cubic-bezier(.2,.7,.3,1); }
+.snq.snkick { animation:snKick .32s cubic-bezier(.2,.7,.3,1); }
 @keyframes snKick { 0% { transform:none; } 15% { transform:translate(-3px,-5px) rotate(-.6deg); } 45% { transform:translate(2px,2px); } 100% { transform:none; } }   /* 쏠 때 반동 */
 .scope .xh { position:absolute; top:50%; width:44px; height:44px; transform:translate(-50%,-50%); border:3px solid var(--ink); border-radius:50%; }
 .scope .xh::before, .scope .xh::after { content:""; position:absolute; background:var(--ink); }
@@ -2666,7 +2666,7 @@ function drawSniper(p) {
   });
   $('sShot').onclick = function () {
     p.v[i] = SST.v; setProg('sniper', p); SST.done = true; drawSniper(p);
-    var q2 = document.querySelector('#sniper .snq'); if (q2 && !REDUCE) { q2.classList.remove('kick'); void q2.offsetWidth; q2.classList.add('kick'); }   // 반동
+    var q2 = document.querySelector('#sniper .snq'); if (q2 && !REDUCE) { q2.classList.remove('snkick'); void q2.offsetWidth; q2.classList.add('snkick'); }   // 반동 (2026-11-01: 'kick' 은 사이트 공통 CSS가 폰에서 숨기는 이름이라 snkick)
     try { if (navigator.vibrate && !REDUCE) navigator.vibrate(25); } catch (e) {}
     var e = PC.sniperErr(truth, p.v[i]); sfx(Math.abs(e) <= 3 ? 'combo' : PC.sniperPts(e) >= 60 ? 'coin' : 'wrong');   // 헤드샷 = 콤보 소리
   };
