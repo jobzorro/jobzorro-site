@@ -763,7 +763,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   </form>
   <div class="df"><p class="err" id="meErr" hidden></p><button class="clr" type="button" id="meClr">지우기</button><button class="go" type="button" id="meSave">입력 완료</button></div>
 </aside>
-<script>// 내 상황 판단 엔진 (F 규칙) — v0.5 (2026-10-28, 5회차 문답지 반영: 신입·중고신입 판정 N 규칙)
+<script>// 내 상황 판단 엔진 (F 규칙) — v0.6 (2026-10-31, 6회차 문답지: 연봉 낮은 회사는 협상 조건·문구 정리. 워라밸 강하게는 사이트 meWlb)
 // 규칙 설명은 rules/fit_rules.md 6장. 숫자는 아래 FIT 한곳에만 둔다.
 // 브라우저(사이트)와 node(fit_test.js) 둘 다에서 돈다. 입력은 서버로 보내지 않는다.
 (function (root) {
@@ -796,6 +796,9 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     down_cond_pct: 10,          // F3 4회차 C2: 아래 급 +500만 넘고 10~15%면 '조건 보고'(지금 회사 평점이 더 낮을 때)
     rating_min: 3.0,            // 조로 규칙 3.0 기준 — 갈 회사 평점이 이보다 낮으면 확인
     job_hop_avg: 2,             // 4회차 A4: 한 곳 평균 근속 2년 미만이면 '잦은 이직'
+    pay_low_light_pct: 5,       // 6회차 B3: 갈 회사 연봉이 5%까지 낮으면 '조금 낮아요'로만 가볍게
+    wlb_big_pay_pct: 20,        // 6회차 A6: 워라밸 중요한 사람도 연봉 20% 이상 오르면 한 단계 덜 내림
+    pay_low_warn_pct: 15,       //           5~15%는 '협상이 관건', 15% 넘으면 '기대치가 높거나 빡셀 수 있어요' + 판정 '중립기어'까지
   };
 
   // 받침 따라 조사 고르기: j("건설", "은", "는") → "건설은"
@@ -871,12 +874,61 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   const PLANT_JOB = /생산|공정|품질|설비|R&D|연구/;  // 공장에 있는 게 자연스러운 직무
   const lowRating = o => o.rating != null && o.rating < FIT.rating_min;
 
+  // ── 워라밸 강하게 (6회차 문답지 A) ─────────────────
+  // 워라밸이 중요한 사람(칼퇴 꼭 필요 = 가장 세게, 옮기는 이유 = 워라밸 = 한 단계 약하게)은 워라밸이 나빠지는 만큼 판정을 낮춘다.
+  // 돌려주는 값: { drop: 낮출 단계, fix: 이 단계 위로 못 감, cap: 상한, first: 첫 줄에 넣을 말, lines: 이유 맨 위에 넣을 말 } — 나빠지지 않으면 null
+  //   v = 판정 번호(6 무조건 가세요 … 0 비추예요), pct = 연봉 인상률. 하한은 '다시 생각해요'(1), 원래 '비추예요'면 그대로 (A3·A4)
+  const TB = "다만 워라밸은 팀바팀, 케바케가 있을 수 있으니 들어갈 팀을 잘 확인해 보세요!";
+  function wlbAdjust(now = {}, to = {}, pct = 0) {
+    const wn = wlb(now.wlb), wt = wlb(to.wlb);
+    if (!now.wlb || !to.wlb || wt <= wn) return null;
+    const pri = now.must_off ? 2 : now.why === "워라밸" ? 1 : 0, big = pct >= FIT.wlb_big_pay_pct;
+    const out = { drop: 0, fix: null, cap: null, first: "", lines: [] };
+    const bigLine = "연봉이 크게 오르는 자리라 판정은 한 단계 덜 낮췄어요. 워라밸을 포기하실 수 있다면 가셔야 합니다. 단, 연봉 제안은 사람마다 다르게 올 수 있으니 연봉 협상을 잘 하셔야 해요!"; // A6
+    if (pri === 2 && wt >= 3) {                         // 칼퇴 꼭 필요: F8이 이미 '이건 안 돼요'라고 말하니 첫 줄과 하한만
+      out.fix = 1; out.first = "칼퇴가 꼭 필요하신데 야근이 많은 회사예요.";
+    } else if (pri) {
+      if (wt === 4) {                                   // A4: 매일 야근은 '다시 생각해요' 고정 (연봉 20%↑면 한 단계 덜)
+        out.fix = big ? 2 : 1;
+        out.first = "워라밸이 크게 나빠지는 자리예요.";
+        out.lines.push(`${wn === 1 ? "칼퇴하던" : "지금보다 야근이 적던"} 분이 매일같이 야근해야 할지도 모르는 회사로 가는 거예요. 워라밸이 제일 중요하시면 연봉이 얼마든 이 카드는 접으세요.`); // A12
+        if (big) out.lines.push(bigLine);
+      } else if (wn === 1 && wt === 3) {                // A3: 칼퇴 → 야근 잦음 한 단계 내림 + '조건 보고' 위로 못 감 (D2)
+        out.drop = big ? 0 : 1; out.cap = 4;
+        out.first = `${pct > 0 ? "연봉은 오르지만 " : ""}워라밸이 크게 나빠지는 자리예요. 칼퇴가 가장 중요하시면 이곳은 힘드실 수 있어요.`;
+        out.lines.push(`워라밸이 가장 중요하다고 하셨는데, 칼퇴하던 분이 '야근 잦음' 회사로 가는 거라 판정을 낮췄어요. 연봉이 올라도 저녁이 사라진다면, 1년 안에 다시 이직을 고민하게 될 겁니다. ${TB}`); // A11
+        if (big) out.lines.push(bigLine);
+      } else if (wn === 1 && wt === 2) {                // A2·A8: 칼퇴 → 보통은 판정 그대로, 경고만
+        out.lines.push(pri === 2
+          ? `칼퇴가 꼭 필요하신데 이 회사 현직자 워라밸은 '보통'이에요. 육아·건강 때문에 칼퇴가 필수라면 들어갈 팀 퇴근 문화를 면접에서 꼭 확인하세요. ${TB}`
+          : `지금 칼퇴하시는데 이 회사 현직자 워라밸은 '보통'이에요. 워라밸이 제일 중요하시면 이 차이가 생각보다 크게 다가옵니다. 물론 팀바팀, 케바케긴 하니, 잘 확인하고 가셔야 해요!`); // A10
+      } else if (pri === 1) {                           // A5: 보통 → 야근 잦음은 경고만 (칼퇴 꼭 필요는 F8에서 이미 '안 돼요')
+        out.lines.push(`워라밸 때문에 옮기시는데 이 회사 현직자 워라밸은 '${to.wlb}' 쪽이라 지금('${now.wlb}')보다 나빠질 수 있어요. ${TB}`);
+      }
+    } else if (wn === 1 && wt === 4) {                  // D4: 워라밸을 안 골라도 칼퇴 → 매일 야근은 한 단계 내림
+      out.drop = 1;
+      out.lines.push("매일 야근이 예상되는 회사라 판정을 한 단계 내렸어요. 다른 조건이 괜찮다면 야근만 각오하고 가세요.");
+    } else if (wt >= 3) {                               // A7: 판정은 그대로, 경고만
+      out.lines.push(`지금${wn === 1 ? " 칼퇴하시는데" : "보다"} 이 회사 현직자 워라밸은 '${to.wlb}' 쪽이에요. 저녁 시간이 줄어드는 건 각오하고 가세요. ${TB}`);
+    }
+    return out.lines.length || out.first ? out : null;
+  }
+  // 판정 번호 v 에 wlbAdjust 결과를 씌운다
+  function wlbApply(v, a) {
+    if (!a || v <= 0) return v;
+    let n = v - a.drop;
+    if (a.fix != null) n = Math.min(n, a.fix);
+    if (a.cap != null) n = Math.min(n, a.cap);
+    return Math.max(n, a.drop || a.fix != null ? 1 : 0);
+  }
+
   // ── A. 이직 결정 ───────────────────────────────────
   // 돌려주는 값: { verdict, reasons:[{rule, text}] }
   function judgeMove(c) {
     const now = c.now || {}, to = c.target || {};
     const R = [], cond = [];      // R: 이유, cond: '조건 보고'로 만드는 것
     let fail = false;             // 마요 사유
+    let cap = null;               // 7단계 판정 상한 (6: 무조건 가세요 … 0: 비추예요). 사이트가 최종 판정에 씌운다
     const add = (rule, text, kind) => { R.push({ rule, text }); if (kind === "cond") cond.push(rule); if (kind === "fail") fail = true; };
 
     const tn = tier(now.size), tt = tier(to.size);
@@ -909,9 +961,19 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     if (won < 0 && now.left && (now.years || 0) >= 4 && (now.gap || 0) > 1 && -pct <= FIT.left_gap_cut_pct) {
       add("F11", `이미 퇴사하고 공백이 ${now.gap}년 넘었으니 ${-won}만 원(${(-pct).toFixed(0)}%) 삭감은 받아들일 만해요. 갈 회사 평판이 나쁘지 않을 때만요.`, "cond"); // 3회차 C3
     } else if (won < 0 && -pct <= FIT.tier_up_cut_pct && (step >= 2 || (tt.kind === "public" && tn.kind !== "public"))) {
-      add("F2", `연봉이 ${-won}만 원(${(-pct).toFixed(0)}%) 깎이지만 ${tt.kind === "public" ? "공기업으로 가는" : "회사 급이 크게 오르는"} 거라 ${FIT.tier_up_cut_pct}%까지는 받아들일 만해요.`); // 5회차 D4
+      add("F2", `${j(to.how || "갈 회사 연봉", "이", "가")} ${-won}만 원(${(-pct).toFixed(0)}%) 낮지만 ${tt.kind === "public" ? "공기업으로 가는" : "회사 급이 크게 오르는"} 거라 ${FIT.tier_up_cut_pct}%까지는 받아들일 만해요. 연봉 협상으로 차이를 줄여 보세요.`); // 5회차 D4 · 6회차 문구
+      cap = 5;   // 6회차 D8·D9: 연봉이 낮아지는데 '무조건 가세요'는 아니다 → '가세요'까지
+    } else if (won < 0 && rawWon >= 0) {
+      add("F9", `연봉은 +${rawWon}만 원이지만 지방 공장 근무까지 치면 손해예요.`, "fail");
     } else if (won < 0) {
-      add("F2", `연봉이 ${-won}만 원 깎여요. 이직은 연봉이 깎이면 안 됩니다.`, "fail");
+      // 6회차 B1~B4: 갈 회사 연봉(대부분 직급별 추정치, 오퍼도 같게)이 낮아도 '깎이면 안 됨'으로 막지 않는다
+      //   협상으로 비슷하거나 더 받으면 가도 되니 '조건 보고 가세요'까지, 15% 넘게 낮으면 '중립기어'까지 (cap = 7단계 번호)
+      const p = -rawWon / now.salary * 100, how = j(to.how || "갈 회사 연봉", "은", "는");
+      const w = `${how} 지금보다 ${-rawWon}만 원(${p.toFixed(0)}%) 낮아요.`;
+      if (p <= FIT.pay_low_light_pct) add("F2", `${how} 지금보다 조금 낮아요. 협상으로 충분히 맞출 수 있는 차이예요.`, "cond");
+      else if (p <= FIT.pay_low_warn_pct) add("F2", `${w} 이직 시 연봉 협상이 관건이에요.`, "cond");
+      else add("F2", `${w} 연봉 협상을 잘 하셔서 비슷하거나 더 높게 받으실 수 있다면 가셔도 됩니다. 다만 평균 연봉이 이 정도로 차이 난다면 역량 기대치가 너무 높거나 일을 빡세게 줄 수도 있어요.`, "cond");
+      cap = p > FIT.pay_low_warn_pct || step < 0 ? 3 : 4;   // 아래 급 회사에 연봉까지 낮으면 '중립기어'까지 (4회차 C6 '서울·업종 전환이 꼭 필요할 때만')
     } else if (step > 0) {
       if (eff >= 0) add("F2", `한 단계 위 회사에 연봉 +${won}만 원, 깎이지 않아요.`);
       else add("F8", `연봉은 +${won}만 원인데 워라밸이 나빠져 체감으로는 손해예요.`, "fail");
@@ -920,22 +982,22 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
       // 4회차 C3: 업황 꺾인 산업·현장에서 빠져나오면 % 기준은 안 본다
       const pctOk = eff >= FIT.down_min_pct * k || (escape && !badField(now));
       if (won > FIT.down_min_won * k && pctOk) {
-        add("F3", `아래 급으로 가지만 +${won}만 원${wlbGain > 0 ? ", 워라밸까지 치면 " + eff.toFixed(0) + "%" : "(" + pct.toFixed(0) + "%)"}이면 생각해 볼 만해요.`);
+        add("F3", `아래 급으로 가지만 +${won}만 원${wlbGain > 0 ? "에 워라밸까지 좋아지면 " : "(" + pct.toFixed(0) + "%)이면 "}생각해 볼 만해요.`);
         // D5 중견 안정성: 빠져나오는 거면 평점·재무가 나쁠 때만 '조건 보고' (4회차 A1)
         if (tt.n === 2) add("F3", "중견도 중견 나름이에요. 갈 회사가 안정적인지 확인하세요.", !escape || lowRating(to) ? "cond" : "");
       }
       else if (won > FIT.down_min_won * k && eff >= FIT.down_cond_pct * k) {   // 4회차 C2: 애매 구간은 평점으로 가른다
         if (now.rating != null && to.rating != null && to.rating > now.rating) add("F3", `아래 급이지만 +${won}만 원에 평점도 지금 회사보다 좋아요. 가도 돼요.`);
-        else add("F3", `아래 급에 +${won}만 원(${eff.toFixed(0)}%)은 애매해요. 지금 회사 평점이 갈 회사보다 낮다면 가도 돼요.`, "cond");
+        else add("F3", `아래 급에 +${won}만 원은 애매해요. 지금 회사 평점이 갈 회사보다 낮다면 가도 돼요.`, "cond");
       }
       else if (won >= 0 && badField(now) && !badField(to))
         add("F3", "아래 급에 연봉도 그대로예요. 지금 자리에서 더 클 수 없거나, 새 직무 의지·조직문화가 확실할 때만 가세요.", "cond"); // 4회차 C5
-      else add("F3", `아래 급으로 가려면 +${FIT.down_min_won}만 원 넘게, ${FIT.down_min_pct}% 이상은 올라야 해요.`, "fail");
+      else add("F3", `아래 급 회사로 옮길 땐 연봉이 확실히 올라야 값이 있어요(+${FIT.down_min_won}만 원 넘게, ${FIT.down_min_pct}% 안팎). 지금 숫자로는 조금 아쉬워요. 오퍼가 더 나오면 다시 넣어 보세요.`, "fail"); // 6회차 B8 부드럽게
     } else {
       if (won >= sameMin || eff >= 15) add("F1", `같은 급에서 +${won}만 원${wlbGain > 0 ? ", 워라밸도 좋아져요" : ""}.`);
-      else add("F1", `같은 급 이동인데 +${won}만 원은 ${sameMin}만 원 기준에 못 미쳐요${prime ? "(30대 초중반 기준)" : ""}.`, "fail");
+      else add("F1", `같은 급 이동에 ${/추정/.test(to.how || "") ? "추정치로는" : "연봉"} +${won}만 원이에요. 옮길 값으로는 약해요. 오퍼에서 +${sameMin}만 원 이상${prime ? "(30대 초중반 기준)" : ""} 나오거나, 연봉 말고 얻는 게 분명할 때 가세요.`, "fail"); // 6회차 B7
     }
-    if (wlbGain > 0 && step >= 0 && won >= 0) add("F8", `워라밸이 좋아지는 건 연봉 약 ${wlbGain.toFixed(0)}% 오른 셈이에요.`);
+    if (wlbGain > 0 && step >= 0 && won >= 0) add("F8", `워라밸이 좋아지는 건 연봉이 ${wlbGain >= 15 ? "꽤" : "조금"} 오른 것만큼 값어치 있어요.`); // 6회차 C3: % 숫자 대신 말로
     // 5회차 C10: 육아 등으로 칼퇴가 꼭 필요하면 워라밸이 나빠지는 곳은 연봉이 올라도 안 된다
     if (now.must_off && wlb(to.wlb) >= 3) add("F8", `칼퇴가 꼭 필요하신데 갈 회사는 '${to.wlb}' 쪽이에요. 연봉이 올라도 이건 안 돼요.`, "fail");
     // 5회차 B4·C9: 팀장 자리. 아래 급으로 가면서 팀장을 다는 건 욕심이 있을 때만
@@ -958,7 +1020,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     // 2) 사람마다 갈리는 조건 → 조건 보고
     const close = closeJob(now.job, to.job);
     const jobChange = family(now.job) !== family(to.job) && !close;
-    if (close) add("F28", `${now.job}→${to.job}는 가까운 직무라 직무 전환으로 보지 않아요.`);
+    if (close) add("F28", `${now.job}→${j(to.job, "은", "는")} 가까운 직무라 직무 전환으로 보지 않아요.`);
     // 3회차 C2: 회사 안에서만 쓰는 운영 직무 등 전망 어두운 직무에서 나오는 전환은 '될 때 가요'
     // 4회차 C3: 업황 꺾인 산업의 현장에서 빠져나오는 전환은 연차를 안 본다
     const hardEscape = outDown || (outFactory && /현장/.test(now.place || ""));
@@ -973,8 +1035,9 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     if ((tn.kind === "finance") !== (tt.kind === "finance"))   // 금융권 ↔ 일반 기업: 연봉 구조가 다르다
       add("F33", "금융권과 일반 기업은 연봉 구조(성과급·현금성 복지)가 달라요. 총보상과 기본연봉을 함께 비교하세요.");
     const goodStartup = tt.kind === "startup" && tn.n === 1 && /시리즈 ?[B-Z]|흑자|상장/.test(to.extra || "") && !lowRating(to);
-    if (goodStartup) add("F15", "투자를 충분히 받은 스타트업이라 지금보다 회사 상황이 나아요. 야근은 각오하세요.");
-    else if (tt.kind === "startup") add("F15", "스타트업은 투자 규모·버틸 재무 여력·산업 가능성을 확인하세요. 야근은 각오하고요.", "cond");
+    const late = wlb(to.wlb) >= 3;   // 6회차 C4: 스타트업이라고 다 야근하진 않는다 → 현직자 워라밸이 야근 쪽일 때만 '각오하세요'
+    if (goodStartup) add("F15", `투자를 충분히 받은 스타트업이라 지금보다 회사 상황이 나아요.${late ? " 야근은 각오하세요." : ""}`);
+    else if (tt.kind === "startup") add("F15", `스타트업은 투자 규모·버틸 재무 여력·산업 가능성을 확인하세요.${late ? " 야근은 각오하고요." : ""}`, "cond");
     if (tt.kind === "foreign") add("F16", "외국계는 레이오프·한국 철수 가능성과 영어 업무량을 확인하세요.", "cond");
     if (tn.kind === "public" && tt.kind !== "public") {
       if ((now.years || 0) <= FIT.public_to_private_max) add("F18", `공공에서 민간으로는 ${FIT.public_to_private_max}년 차 전이 기회예요.`);
@@ -984,9 +1047,9 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     const tmin = firstJob ? FIT.tenure_min_new : FIT.tenure_min;
     const tenure = now.tenure != null ? now.tenure : now.years;
     const bigGain = step >= 0 && won >= 0 && eff >= FIT.big_gain_pct && tenure >= FIT.tenure_min;
-    if (firstJob && bigGain && tenure < tmin) add("F4", `근속 ${tenure}년이지만 체감 ${eff.toFixed(0)}% 좋아지면 3년 기준은 넘겨도 돼요.`);
+    if (firstJob && bigGain && tenure < tmin) add("F4", `근속 ${tenure}년이지만 연봉·워라밸이 이만큼 좋아지면 3년 기준은 넘겨도 돼요.`);
     else if (tenure != null && tenure < tmin) {
-      add(tenure < 1 ? "F19" : "F4", `지금 회사 근속 ${tenure}년은 짧아요(권장 ${tmin}년). 갈 회사를 최소 4년은 다닐 수 있을 때만 가세요.`, "cond");
+      add(tenure < 1 ? "F19" : "F4", `지금 회사 ${tenure}년은 짧은 편이에요(권장은 ${tmin}년). 이번에 옮기신다면, 다음 회사는 4년 이상 다닐 각오로 가셔야 그 이후 이력이 버텨집니다.`, "cond"); // 6회차 C5
     }
     // 2026-10-27 사용자: 게임업계 → 게임업계, 게임기획 → 게임기획처럼 지금도 같은 판이면 '전망 어려워요'로 말리지 않는다
     if (badField(to) && badField(now)) add("F26", family(now.job) === family(to.job)
@@ -1015,7 +1078,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     if (tl.length >= 2 && tl.reduce((a, b) => a + b, 0) / tl.length < FIT.job_hop_avg) add("F5", "이직이 잦은 편이에요. 다음 회사에선 끝장을 본다는 생각으로 가세요.");
 
     let verdict = fail ? "마요" : cond.length ? "조건 보고" : "가요";
-    return { verdict, reasons: R };
+    return { verdict, reasons: R, cap };
   }
 
   // ── B. 지원 결정 ───────────────────────────────────
@@ -1279,7 +1342,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     return judgeOffers(c);
   }
 
-  const api = { FIT, STEPS, judge, tier, family, badField, spec, specNeed, newbieLimit };
+  const api = { FIT, STEPS, judge, tier, family, badField, spec, specNeed, newbieLimit, wlbAdjust, wlbApply, TB };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FitEngine = api;
 })(this);
@@ -1288,7 +1351,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 // 회사 데이터는 data/index.json(검색용 이름 목록) + data/co/NNN.json(회사 상세 128조각)으로 나눠 필요할 때만 읽는다
 const SHARDS = 128;
 const PICKS = ["펄어비스", "유풍", "오뚜기", "삼성전자", "현대자동차"];   // 많이 본 회사(/top)를 못 받을 때만 쓰는 기본 5곳
-const VDIST = {"조건 보고 가세요": 6311, "다시 생각해요": 13379, "가세요": 6124, "비추예요": 732, "중립기어": 563, "스펙 보고 결정하세요": 1295, "무조건 가세요": 249};   // 판정별 회사 수 (build.py, 2026-10-29 첫 화면 판정 분포 카드)
+const VDIST = {"조건 보고 가세요": 6496, "다시 생각해요": 13779, "가세요": 6263, "비추예요": 735, "중립기어": 564, "스펙 보고 결정하세요": 1308, "무조건 가세요": 249};   // 판정별 회사 수 (build.py, 2026-10-29 첫 화면 판정 분포 카드)
 const SERIES = [{"k": "must", "t": "무조건 가세요", "d": "붙으면 고민 말고 가라고 한 회사", "r": [["기아", "직원 31,366명 · 연봉 업계 상위 1%"], ["케이티", "직원 13,817명 · 연봉 업계 상위 1%"], ["엘지유플러스", "직원 9,321명 · 연봉 업계 상위 1%"], ["네이버", "직원 5,183명 · 연봉 업계 상위 1%"], ["한화시스템", "직원 5,083명 · 연봉 업계 상위 1%"], ["케이티앤지", "직원 4,009명 · 연봉 업계 상위 1%"], ["카카오", "직원 3,788명 · 연봉 업계 상위 1%"], ["셀트리온", "직원 3,106명 · 연봉 업계 상위 1%"], ["하이트 진로", "직원 2,757명"], ["코닝정밀소재", "직원 2,467명 · 연봉 업계 상위 3%"]]}, {"k": "go", "t": "가세요", "d": "재무·평점·연봉이 고르게 괜찮은 회사", "r": [["에이치디현대중공업", "직원 17,172명 · 연봉 업계 상위 4%"], ["포스코", "직원 16,794명 · 연봉 업계 상위 1%"], ["우리은행", "직원 13,023명 · 연봉 업계 상위 10%"], ["삼성SDI", "직원 12,426명 · 연봉 업계 상위 3%"], ["엘지화학", "직원 12,231명 · 연봉 업계 상위 1%"], ["서울아산병원", "직원 9,267명 · 연봉 업계 상위 1%"], ["한화에어로스페이스", "직원 8,023명 · 연봉 업계 상위 1%"], ["코스트코코리아", "직원 7,592명 · 연봉 업계 상위 35%"], ["근로복지공단", "직원 6,210명 · 연봉 업계 상위 17%"], ["한국타이어앤테크놀로지", "직원 6,117명 · 연봉 업계 상위 2%"]]}, {"k": "wlb", "t": "워라밸 좋은 회사", "d": "잡플래닛 워라밸 3.8점 넘고 판정도 '가세요' 이상", "r": [["한국중부발전", "워라밸 4.5점 · 리뷰 395개"], ["지엠테크니컬센터코리아", "워라밸 4.5점 · 리뷰 104개"], ["한국전력기술", "워라밸 4.4점 · 리뷰 608개"], ["한국도로교통공단", "워라밸 4.3점 · 리뷰 695개"], ["한국남동발전", "워라밸 4.3점 · 리뷰 407개"], ["한국지엠", "워라밸 4.3점 · 리뷰 665개"], ["서울도시가스", "워라밸 4.3점 · 리뷰 51개"], ["구글코리아", "워라밸 4.3점 · 리뷰 286개"], ["로버트보쉬코리아", "워라밸 4.2점 · 리뷰 428개"], ["코스콤", "워라밸 4.2점 · 리뷰 153개"]]}, {"k": "hidden", "t": "숨은 알짜 중견", "d": "직원 300~1천 명인데 연봉은 업계 상위 10% 안", "r": [["티케이지태광", "직원 918명 · 연봉 업계 상위 1%"], ["한국필립모리스", "직원 902명 · 연봉 업계 상위 1%"], ["연합뉴스", "직원 750명 · 연봉 업계 상위 1%"], ["신영증권", "직원 668명 · 연봉 업계 상위 1%"], ["한화파워", "직원 666명 · 연봉 업계 상위 1%"], ["에스케이플래닛（주）", "직원 606명 · 연봉 업계 상위 1%"], ["에코플라스틱", "직원 603명 · 연봉 업계 상위 1%"], ["삼성전자로지텍", "직원 551명 · 연봉 업계 상위 1%"], ["LX인터내셔널", "직원 504명 · 연봉 업계 상위 1%"], ["서울도시가스", "직원 479명 · 연봉 업계 상위 1%"]]}, {"k": "newbie", "t": "신입 초봉 높은 회사", "d": "신입 추정 연봉이 높은 순, 판정도 '가세요' 이상", "r": [["LS증권", "신입 추정 7,485만 원"], ["코오롱제약", "신입 추정 7,426만 원"], ["한국휴렛팩커드", "신입 추정 7,352만 원"], ["신한라이프생명보험", "신입 추정 7,262만 원"], ["경신", "신입 추정 7,240만 원"], ["현대엘리베이터", "신입 추정 7,177만 원"], ["화신", "신입 추정 7,157만 원"], ["에어메드텍코리아", "신입 추정 7,073만 원"], ["코오롱인더스트리（주）", "신입 추정 7,003만 원"], ["（주）신세계프라퍼티", "신입 추정 6,991만 원"]]}, {"k": "stay", "t": "오래 다니는 회사", "d": "평균 근속 15년 넘고 퇴사율은 낮은 곳", "r": [["대성에너지", "평균 근속 20.7년 · 한 해 퇴사 6%"], ["한국씨티은행", "평균 근속 19.4년 · 한 해 퇴사 10%"], ["디와이파워（주）", "평균 근속 18.6년 · 한 해 퇴사 9%"], ["케이티앤지", "평균 근속 18.2년 · 한 해 퇴사 9%"], ["미래에셋생명보험", "평균 근속 17.5년 · 한 해 퇴사 4%"], ["삼천리", "평균 근속 16.8년 · 한 해 퇴사 6%"], ["롯데정밀화학", "평균 근속 16.8년 · 한 해 퇴사 7%"], ["지엠비코리아", "평균 근속 16.1년 · 한 해 퇴사 8%"], ["한화오션", "평균 근속 15.9년 · 한 해 퇴사 9%"], ["신한라이프생명보험", "평균 근속 15.5년 · 한 해 퇴사 8%"]]}, {"k": "grow", "t": "요즘 크는 회사", "d": "매출이 연평균 15% 넘게 크고 성장성 등급 A+ 이상", "r": [["케이씨에이서비스", "매출 연평균 +461% · 직원 425명"], ["포티투닷", "매출 연평균 +164% · 직원 799명"], ["에스케이온", "매출 연평균 +110% · 직원 3,180명"], ["한화에어로스페이스", "매출 연평균 +67% · 직원 8,023명"], ["한화생명금융서비스", "매출 연평균 +65% · 직원 1,420명"], ["제주항공", "매출 연평균 +53% · 직원 2,739명"], ["에스피엠텍", "매출 연평균 +50% · 직원 1,010명"], ["케이엘에이텐코코리아", "매출 연평균 +43% · 직원 901명"], ["클래시스", "매출 연평균 +35% · 직원 551명"], ["인카금융서비스", "매출 연평균 +35% · 직원 475명"]]}];  // 첫 화면 시리즈 4개 (build.py series, 주마다 바뀜) — 맨 앞 '많이 본 TOP 10'은 /top 으로
 const TS_KEY = "0x4AAAAAAFpHJtrOG8cQcwBZ";   // Cloudflare Turnstile 사이트 키 (공개값, config turnstile_sitekey). 하루 많이 본 사람에게만 봇 확인 (2026-10-28)
 const API = "https://company-api.jobzorro.workers.dev";  // 비어 있지 않으면 회사 상세는 API에서 한 곳씩 (조각 파일은 사이트에 안 올림)
@@ -1618,11 +1681,11 @@ function myPayWire(c) {
     if (!v) { $("#myres").innerHTML = ""; $("#mysay").textContent = "지금 연봉을 만원 단위로 넣어 주세요."; return; }
     if (v < 1000 || v > 100000) { $("#myres").innerHTML = ""; $("#mysay").textContent = "만원 단위로 넣어 주세요 (예: 4,000)."; return; }
     const dd = Math.round((t - v) / v * 100);   // 보여 주는 % 와 문구 기준을 같은 반올림 값으로
-    $("#myres").innerHTML = `<div>${esc(c.name)} ${r.value} 추정<b>${won(t)}만</b></div><div class="${dd >= 0 ? "up" : "dn"}">지금보다<b>${dd >= 0 ? "+" : ""}${dd.toFixed(0)}%</b></div><div>협상 기준선 (지금 +10%)<b>${won(Math.round(v * 1.1))}만</b></div>`;
+    $("#myres").innerHTML = `<div>${esc(c.name)} ${r.value} 추정<b>${won(t)}만</b></div><div class="${dd >= 0 ? "up" : "dn"}">지금보다<b>${dd >= 0 ? "+" : ""}${dd.toFixed(0)}%</b></div>`;
     $("#mysay").textContent = dd >= 20 ? "연봉으로는 확실히 오르는 자리예요. 나머지(평판·안정성)만 따져 보세요."
       : dd >= 10 ? "오르긴 해요. 오퍼가 추정치보다 낮게 오면 협상 여지가 있어요."
       : dd >= 0 ? "연봉만 보고 옮길 이유는 약해요. 지금 회사가 나쁘지 않다면 STAY도 좋은 선택이에요."
-      : "추정치가 지금보다 낮아요. 오퍼가 지금 연봉 이상인지 꼭 확인하고, 아니면 STAY 쪽이에요."; };
+      : "추정치가 지금보다 낮아요. 연봉 협상으로 비슷하거나 더 받을 수 있다면 가도 되지만, 평균이 이만큼 낮으면 기대치가 높거나 일이 빡셀 수 있어요."; };
   r.onchange = calc; i.oninput = calc;
 }
 
@@ -2226,16 +2289,17 @@ function meCase(c) {
     size: ME.size || (nc ? coSize(nc) : "중견"), industry: ME.industry ? engInd(ME.industry) : engInd(nc?.salary?.group, nc?.salary?.industry, nc?.name), job: ME.job, salary: ME.salary,
     wlb: ME.wlb || coWlb(nc) || "보통", place: ME.place || (nc ? coPlace(nc) : "수도권"),
     rating: nc?.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[nc.verdict] : undefined,
-    must_off: !!ME.mustOff, lead_want: ME.leadWant || "" };
+    must_off: !!ME.mustOff, lead_want: ME.leadWant || "", why: ME.why || "" };
   const target = { size: o.size || coSize(c), industry: engInd(c.salary?.group, c.salary?.industry, c.name), job: ME.want || ME.job,
     salary: o.salary || est?.v, wlb: coWlb(c) || "보통", place: o.place || coPlace(c),   // 옮길 회사 워라밸은 그 회사 현직자 점수로 (입력 안 받음)
-    rating: c.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[c.verdict] : undefined, lead: !!ME.lead };
+    rating: c.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[c.verdict] : undefined, lead: !!ME.lead,
+    how: o.salary ? "제시 연봉" : est?.how };   // 6회차: 연봉 문구에 '이 회사 대리급 추정 연봉은 …'
   return { c: { type: "A", now, target }, est };
 }
 // 이유 문장을 + ? ! 로 나눠 보이게
 function meTone(t) {
   if (/깎이면 안|못 미쳐|손해예요|올라야 해요|어두워요\.$|다른 직무를 보세요|어려워요/.test(t)) return "fail";
-  if (/확인하세요|때만|각오|애매|따라|정하세요|달라요|늦은 편|짧아요/.test(t)) return "cond";
+  if (/확인하세요|확인해 보세요|때만|각오|애매|따라|정하세요|달라요|늦은 편|짧아요|짧은 편|낮아요|관건|아쉬워요|힘드실|접으세요|낮췄어요|내렸어요/.test(t)) return "cond";
   if (/좋아|기회|갈 만|올라|오른|않아요|돼요|없어요/.test(t)) return "plus";
   return "";
 }
@@ -2284,10 +2348,11 @@ function meJudgeNew(c) {
   const why = r.reasons.map(x => x.text);
   if (/비추예요|다시 생각해요/.test(c.verdict)) why.push(`회사 자체 판정은 '${c.verdict}'예요. 재무·평판을 꼭 확인하세요.`);
   else if (c.verdict === "판단자료 부족") why.push("이 회사는 재무·평판 자료가 부족해요. 회사 자체는 따로 확인하세요.");
-  let pay = est ? `${est.how} ${won(est.v)}만 원이에요.` : "이 회사는 연봉 자료가 없어요. 제시 연봉을 넣어 보세요.";
+  const guess = est && /추정/.test(est.how) ? " (추정이라 실제 오퍼와 다를 수 있어요)" : "";   // 6회차 C2
+  let pay = est ? `${est.how} ${won(est.v)}만 원이에요.${guess}` : "이 회사는 연봉 자료가 없어요. 제시 연봉을 넣어 보세요.";
   if (est && ME.salary && ME.nstat === "재직 중") {
     const g = est.v - ME.salary;
-    pay = `${est.how} ${won(est.v)}만 원 — 지금보다 ${g >= 0 ? "+" : ""}${won(g)}만 원이에요.`;
+    pay = `${est.how} ${won(est.v)}만 원 — 지금보다 ${g >= 0 ? "+" : ""}${won(g)}만 원이에요.${guess}`;
   }
   meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
   const z = meCompose(c, V, why, pay, { y: ME.years || 0, age, v: n >= 5 ? "가요" : n >= 3 ? "조건 보고" : "마요", est, left: false, newbie: true,
@@ -2353,14 +2418,17 @@ function meJudge(c) {
   }
   let v = r.verdict;
   const why = r.reasons.map(x => x.rule === "F28" && /직무가 바뀌어요/.test(x.text) ? "직무가 바뀌는 건 이미 정하고 가시는 거라 판정엔 크게 넣지 않았어요." : x.text);
-  if (jobMove && !why.some(t => /직무/.test(t))) why.push(`${meJ(ME.want, "으로", "로")} 직무를 바꾸시는 거라, 첫 1년은 새 직무를 배운다는 마음으로 가세요.`);
+  const wlbWorse = FitEngine.wlbAdjust(kase.now, kase.target, 0) != null;
+  if (jobMove && !why.some(t => /직무/.test(t))) why.push(wlbWorse
+    ? `${meJ(ME.want, "으로", "로")} 직무도 바뀌고 야근도 늘어서 처음 몇 년은 힘드실 거예요. 죽었다 생각하고 몇 년 버티면 길이 보입니다.`   // 6회차 D5
+    : `${meJ(ME.want, "으로", "로")} 직무를 바꾸시는 거라, 첫 1년은 새 직무를 배운다는 마음으로 가세요.`);
   // 회사 자체가 나쁘면 내 조건이 좋아도 한 단계 낮춘다 (엔진은 재무를 안 봄)
   if (/비추예요|다시 생각해요/.test(c.verdict)) {
     why.push(`회사 자체 판정은 '${c.verdict}'예요. 재무·평판을 꼭 확인하고 가세요.`);
   } else if (c.verdict === "판단자료 부족") why.push("이 회사는 재무·평판 자료가 부족해요. 회사 자체는 따로 확인하세요.");
   // 내 연봉과 비교한 숫자 한 줄
   const gap = kase.target.salary - kase.now.salary, pct = Math.round(gap / kase.now.salary * 100);
-  const pay = `${meOver[c.name]?.salary ? "제시 연봉" : est.how} ${won(kase.target.salary)}만 원 — 지금보다 ${gap >= 0 ? "+" : ""}${won(gap)}만 원(${pct >= 0 ? "+" : ""}${pct}%)이에요.`;
+  const pay = `${meOver[c.name]?.salary ? "제시 연봉" : est.how} ${won(kase.target.salary)}만 원 — 지금보다 ${gap >= 0 ? "+" : ""}${won(gap)}만 원(${pct >= 0 ? "+" : ""}${pct}%)이에요.${meOver[c.name]?.salary ? "" : " (추정이라 실제 오퍼와 다를 수 있어요)"}`;
   // 회사 일반 판정의 한마디를 이어 붙여 최소 5줄 (2026-10-27 사용자 요청)
   const sl = c.salary || {}, rg = c.grades?.["평판"]?.score;
   const facts = [];
@@ -2386,20 +2454,32 @@ function meJudge(c) {
     V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), 4)];
     why.push("게임 업계는 전망이 밝은 편이 아니라 '조건 보고 가세요'까지만 드려요. 회사 자체가 좋아서 가도 되지만, 길게 보면 다른 업계에서도 통하는 경력으로 키워 두세요.");
   }
-  if (ME_GRADE[V] > (ME_GRADE[c.verdict] ?? 4)) why.unshift(`회사 일반 판정은 '${c.verdict}'지만, ${better ? "지금 내 자리보다 위 급" : "연봉이 크게 오르는 자리"}라 내 기준에선 더 좋은 카드예요.`);
+  const upLine = `회사 일반 판정은 '${c.verdict}'지만, ${better ? "지금 내 자리보다 위 급이라" : "연봉이 크게 오르는 자리라"} 내 기준에선 더 좋은 카드예요.`;
+  if (ME_GRADE[V] > (ME_GRADE[c.verdict] ?? 4)) why.unshift(upLine);
   // 옮기려는 가장 큰 이유: 그 이유를 이 회사가 풀어 주는지 회사 자료로 본다. 못 풀어 주면 '조건 보고 가세요'까지만
   const reason = meReason(c, kase, pct);
   if (reason) {
-    why.unshift(reason.text);
-    if (reason.cap) V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), 4)];
+    if (reason.text) why.unshift(reason.text);
+    if (reason.cap) V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), reason.cap === true ? 4 : reason.cap)];
   }
+  // 6회차 B2: 갈 회사 연봉이 낮으면 협상이 조건 → 엔진이 정한 상한('조건 보고 가세요' 또는 '중립기어')
+  if (r.cap != null) V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), r.cap)];
+  // 6회차 A: 워라밸이 나빠지면 (워라밸 중요한 사람은 세게) 판정을 낮추고, 그 얘기를 첫 줄·이유 맨 위에
+  const wa = FitEngine.wlbAdjust(kase.now, kase.target, pct);
+  if (wa) {
+    V = ME_STEPS[Math.min(FitEngine.wlbApply(ME_STEPS.indexOf(V), wa), 5)];   // 워라밸이 나빠지는데 '고민할 이유가 없어요'는 아니다 (6회차 D1)
+    why.unshift(...wa.lines);
+  } else if (ME.mustOff && ME.why !== "워라밸" && kase.target.wlb === "칼퇴" && kase.now.wlb !== "칼퇴") why.push(`칼퇴가 꼭 필요하시면 맞는 방향이에요(현직자 워라밸 '칼퇴' 쪽). ${FitEngine.TB}`);   // 6회차 D3
+  // 마지막에: 낮춘 뒤 '더 좋은 카드' 말은 빼고, 이유=연봉 말과 겹치는 연봉 낮음 말은 하나만
+  if (ME_GRADE[V] <= (ME_GRADE[c.verdict] ?? 4)) { const i = why.indexOf(upLine); if (i >= 0) why.splice(i, 1); }
+  if (reason?.cap === 2) { const i = why.findIndex(t => /낮아요\. (이직 시|협상으로|연봉 협상을)/.test(t)); if (i >= 0) why.splice(i, 1); }
   meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
   const z = meCompose(c, V, why, pay, { y: ME.years || 0, age: ME.age || 0, v: ME_GRADE[V] >= 5 ? "가요" : ME_GRADE[V] >= 3 ? "조건 보고" : "마요", est, left: !!ME.left,
-    wlb: kase.now.wlb, tenure: sl.tenure, sameInd: kase.now.industry === kase.target.industry }, facts, { pct, cap: reason?.cap, now: kase.now.salary });
+    wlb: kase.now.wlb, tenure: sl.tenure, sameInd: kase.now.industry === kase.target.industry }, facts, { pct, cap: reason?.cap, now: kase.now.salary, first: wa?.first, wlbTop: wa?.lines });
   const chips = [step > 0 ? "한 단계 위 회사" : step < 0 ? "아래 급 회사" : "같은 급", `연봉 ${pct >= 0 ? "+" : ""}${pct}%`,
     kase.now.industry && kase.target.industry ? (kase.now.industry === kase.target.industry ? "같은 업계" : "업계 바뀜") : "",
     FitEngine.family(kase.now.job) === FitEngine.family(kase.target.job) ? "같은 직무" : "직무 전환",
-    reason ? `이유(${ME.why}) ${reason.cap ? "안 풀림" : "풀림"}` : "", `회사 판정 ${c.verdict}`].filter(Boolean);
+    reason ? `이유(${ME.why}) ${reason.cap || reason.wlb ? "안 풀림" : "풀림"}` : "", wa && wa.drop + (wa.fix != null ? 1 : 0) > 0 ? "워라밸로 낮춤" : wa ? "워라밸 나빠짐" : "", `회사 판정 ${c.verdict}`].filter(Boolean);
   return { v: V, z, kase, est, chips };
 }
 // ── 내 상황 한마디 다시 짜기 (2026-10-27 사용자: "밑은 칭찬 일색인데 위 판정은 '다시 생각해요'" → 회사 말을 그대로 긁지 말고 사람에 맞춰)
@@ -2429,7 +2509,7 @@ function meTail(V, o = {}) {
   if (V === "조건 보고 가세요") return "위 조건 중 하나라도 안 맞으면 미련 없이 접어도 되는 카드예요.";
   if (V === "중립기어") return "결국 지금 회사에서 제일 싫은 게 여기서 풀리는지가 답이에요. 풀리면 가고, 아니면 남으세요.";
   if (V === "스펙 보고 결정하세요") return "다른 카드와 나란히 놓고 정하세요. 이 카드 하나만 보고 서두를 필요는 없어요.";
-  if (o.now && o.pct != null && o.pct < 10) return `제시 연봉이 ${won(Math.round(o.now * 1.1 / 100) * 100)}만 원 넘게 나오면 다시 넣어 보세요. 그때는 판정이 달라질 수 있어요.`;
+  if (o.now && o.pct != null && o.pct < 10) return "실제 오퍼를 받으면 '제시 연봉'에 넣어 다시 보세요. 추정치와 실제 오퍼는 꽤 달라요. 다만, 성과급과 현금성 복지까지 넣어 꼼꼼히 살피셔야 해요. 현재 연봉은 원천징수로 생각하고, 제안은 계약연봉으로만 생각하는 우를 범하시면 안 됩니다!";   // 6회차 B5
   if (V === "다시 생각해요") return "지금 자리에서 버틸 만하다면, 이 카드보다 내 조건에 맞는 곳을 조금 더 기다려 보세요.";
   return "이 카드는 접고 다른 곳을 보세요.";
 }
@@ -2447,8 +2527,11 @@ function meCompose(c, V, why, pay, ctx, facts = [], o = {}) {
   if (n <= 2) { plus = plus.map(first).filter(t => !/ㅎㅎ/.test(t)); fact = fact.filter(t => !joinTalk.test(t)); minus = minus.filter(t => !joinTalk.test(t)); }
   // 내 이유: 판정 방향과 같은 말을 앞에
   const rank = t => { const s = meTone(t); return n <= 2 ? (s === "fail" ? 0 : s === "cond" ? 1 : 2) : n >= 5 ? (s === "plus" ? 0 : s === "" ? 1 : 2) : (s === "cond" ? 0 : 1); };
-  const reasons = why.map((t, i) => [t, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
-  const z = [`지금 ${meWho()} 기준이면, ${ME_FIRST[V]}`, ...reasons, pay];
+  const top = o.wlbTop || [];
+  const reasons = [...top, ...why.filter(t => !top.includes(t)).map((t, i) => [t, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0])];
+  // 6회차 C6: 경력은 첫 줄에 내 연봉을 안 보인다(캡처 공유). A13: 워라밸로 낮췄으면 첫 줄에 그 얘기
+  const head = o.newbie ? `지금 ${meWho()} 기준이면,` : "말씀하신 연봉 기준이면,";
+  const z = [`${head} ${o.first ? o.first + " " : ""}${ME_FIRST[V]}`, ...reasons, pay];
   let co;
   if (base != null && n <= 2 && base >= 4) co = [`회사 자체는 일반 판정 '${c.verdict}'일 만큼 괜찮은 곳이에요. ${o.newbie ? "판정이 낮은 건 내 나이·스펙·직무로 봤을 때 더 맞는 길이 있어서예요." : "걸리는 건 회사가 아니라 지금 내 조건이에요."}`, ...plus.slice(0, 1), ...minus.slice(0, 2)];
   else if (n <= 2) co = [...minus.slice(0, 3), ...plus.slice(0, 1)];
@@ -2467,10 +2550,12 @@ function meReason(c, kase, pct) {
   const r = ME.why, g = k => c.grades?.[k]?.letter || "";
   if (!r) return null;
   const W = ["칼퇴", "보통", "야근 잦음", "매일 야근"], wn = W.indexOf(kase.now.wlb), wt = W.indexOf(kase.target.wlb);
+  const how = /추정/.test(kase.target.how || "") ? "추정치로는" : "제시 연봉으로는";
   if (r === "연봉") return pct >= 10 ? { text: `연봉이 가장 큰 이유라면 +${pct}%는 이유를 풀어 주는 카드예요.` }
-    : { text: `연봉이 가장 큰 이유인데 인상이 ${pct}%면 아쉬워요. 최소 10%는 받아 내고 움직이세요.`, cap: true };
-  if (r === "워라밸") return wt > wn ? { text: `워라밸 때문에 옮기는 건데 이 회사 현직자 워라밸은 '${kase.target.wlb}' 쪽이라 지금('${kase.now.wlb}')보다 나빠질 수 있어요.`, cap: true }
-    : wt < wn ? { text: `워라밸이 이유라면 맞는 방향이에요. 현직자 워라밸이 '${kase.target.wlb}' 쪽이에요.` }
+    : pct < 0 ? { text: `연봉 때문에 옮기시는데 ${how} 오히려 ${-pct}% 낮아요. 회사 급이나 다른 조건이 좋아도, 연봉 협상 결과를 보고 갈지 말지 정하세요.`, cap: 2 }   // 6회차 D6
+    : { text: `연봉 때문에 옮기시는 건데 ${how} +${pct}%예요. 연봉 이직이 되려면 실제 오퍼에서 지금보다 확실히 오른다면 좋겠습니다. 추정되는 성과급과 현금성 복지까지 넣어서 충분히 올라간다면 가시기 바랍니다. 현재 연봉은 원천징수로 생각하고 제안은 계약연봉으로만 생각하는 우를 범하시면 안 됩니다!`, cap: true };   // 6회차 B6
+  if (r === "워라밸") return wt > wn ? { text: "", wlb: true }   // 나빠지는 건 워라밸 규칙(FitEngine.wlbAdjust)이 판정·문구를 맡는다
+    : wt < wn ? { text: `워라밸이 이유라면 맞는 방향이에요. 현직자 워라밸이 '${kase.target.wlb}' 쪽이에요. ${FitEngine.TB}` }
     : { text: `워라밸은 지금과 비슷한 회사예요(현직자 기준 '${kase.target.wlb}'). 팀마다 다르니 면접에서 꼭 물어보세요.` };
   if (r === "성장·커리어") return ME_BAD.test(g("성장성")) ? { text: `성장 때문에 옮기는 건데 이 회사 성장성은 ${g("성장성")}이에요. 커리어가 클 자리인지 직무 범위부터 확인하세요.`, cap: true }
     : !g("성장성") ? { text: "성장이 이유인데 이 회사는 성장성 자료가 없어요. 최근 매출·채용 흐름을 면접에서 꼭 물어보세요." }
