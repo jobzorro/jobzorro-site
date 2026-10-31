@@ -468,7 +468,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       $('qHint').textContent = '회사 목록을 불러오는 중…';
       idxP = fetch('data/index.json?v=' + VER(), REFRESH ? { cache: 'reload' } : {}).then(function (r) { return r.json(); }).then(function (a) {
         // 현장 사업장(flag 8)은 '회사명 (현장 사업장)'으로 보이고 회사명으로만 검색된다
-        IDX = a.map(function (x, i) { return { i: i, n: x[0], al: x[5] || '', k: (x[3] & 8 ? norm(x[0].replace(/ \(현장 사업장\)$/, '')) : norm(x[0])) + (x[5] ? '|' + norm(x[5]) : ''), m: x[1], avg: x[2], cap: !!(x[3] & 1), dart: !!(x[3] & 2), cal: !!(x[3] & 4), hide: !!(x[3] & 8), att: !!(x[3] & 16), ind: D.meta.inds[x[4]] || '' }; });   // x[5]: SK텔레콤 같은 흔한 이름
+        IDX = a.map(function (x, i) { return { i: i, n: x[0], al: x[5] || '', k: (x[3] & 8 ? norm(x[0].replace(/ \(현장 사업장\)$/, '')) : norm(x[0])) + (x[5] ? '|' + norm(x[5]) : '') + (x[6] ? '|' + norm(x[6]) : ''), m: x[1], avg: x[2], cap: !!(x[3] & 1), dart: !!(x[3] & 2), cal: !!(x[3] & 4), hide: !!(x[3] & 8), att: !!(x[3] & 16), ind: D.meta.inds[x[4]] || '' }; });   // x[5]: SK텔레콤 같은 흔한 이름
         hint(); return IDX;
       });
     }
@@ -519,9 +519,10 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var hit = [], pre = [], exact = [];
     for (var i = 0; i < IDX.length; i++) {
       var r = IDX[i], p = (r.att && !/어린이집|금고|협동조합|노동조합|복지/.test(q)) ? -1 : r.k.indexOf(q);   // 부속 기관은 기관 단어로 검색할 때만
-      if (p < 0 && !(r.al && r.k.indexOf('|' + q) >= 0)) continue;
+      if (p < 0) continue;
       if (norm(r.n) === q || (r.al && norm(r.al) === q)) exact.push(r);   // 이름이 정확히 같은 회사(지주사 '엘지' 등)는 가입자가 적어도 맨 위에
-      else if (p === 0 || (r.al && r.k.indexOf('|' + q) >= 0)) { if (pre.length < 400) pre.push(r); }
+      else if (p === 0 || r.k.indexOf('|' + q) >= 0) {   // 약칭·브랜드 검색어(x[5]·x[6])가 앞에서 맞아도 앞쪽에
+        if (pre.length < 400) pre.push(r); }
       else if (hit.length < 400) hit.push(r);
     }
     var list = exact.concat(pre, hit).slice(0, 20);   // 목록은 가입자 많은 순 → 큰 회사가 먼저
