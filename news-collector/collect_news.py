@@ -176,7 +176,7 @@ def filter_fresh(articles, hours=FRESH_HOURS):
     return [a for a in articles if a["published"] >= cutoff]
 
 
-def already_published(days=REPEAT_GUARD_DAYS):
+def already_published(days=REPEAT_GUARD_DAYS, raw=False):
     """
     최근 지면(archive/*.json)에 실린 기사의 정규화 제목·URL 집합.
     같은 기사가 며칠 연속 지면에 오르는 걸 막는다 (관련 기사 묶음까지 포함).
@@ -193,10 +193,10 @@ def already_published(days=REPEAT_GUARD_DAYS):
             continue
         for sec in day.get("sections", []):
             for a in sec.get("articles", []):
-                titles.add(normalize_title(a.get("title", "")))
+                titles.add(a.get("title", "") if raw else normalize_title(a.get("title", "")))
                 urls.add(a.get("url"))
                 for r in a.get("related", []):
-                    titles.add(normalize_title(r.get("title", "")))
+                    titles.add(r.get("title", "") if raw else normalize_title(r.get("title", "")))
                     urls.add(r.get("url"))
     titles.discard("")
     urls.discard(None)
@@ -210,7 +210,7 @@ def drop_already_published(articles):
       - 3일: 제목이 달라도 같은 사안인 기사 (다른 언론사가 쓴 같은 뉴스가 하루 뒤 다시 1면에 오르는 것)
     """
     titles, urls = already_published()
-    recent_titles, _ = already_published(days=SAME_STORY_GUARD_DAYS)
+    recent_titles, _ = already_published(days=SAME_STORY_GUARD_DAYS, raw=True)   # 원래 제목(띄어쓰기 그대로)이어야 핵심어 비교가 된다
     recent_sigs = [_story_sig(t) for t in recent_titles]
     out = []
     for a in articles:
@@ -255,9 +255,42 @@ def _subject(title):
     return m.group(1) if m else None
 
 
+# 2026-10-31 사용자: 같은 사건 기사는 꼭 하나로 묶는다 (10-31 '홈플러스 희망퇴직 철회' 5건, 10-28 'MS 희망퇴직' 5건이 따로 실림)
+#   → 조사·'천억' 표기를 맞춘 핵심어가 2개 이상 겹치면 같은 사건 (흔한 말은 STORY_STOP 으로 뺀다)
+STORY_JOSA = re.compile(r"(으로|에서|에게|까지|부터|마저|조차|에도|으론|은|는|이|가|을|를|에|의|도|와|과|로|만)$")
+STORY_STOP = {"채용", "신입", "경력", "연봉", "기업", "청년", "일자리", "실적", "영업이익", "영업익", "매출", "분기", "1분기", "2분기", "3분기", "4분기",
+              "직원", "인력", "전년", "역대", "최대", "AI", "올해", "내년", "지난해", "이번", "사업", "시장", "확대", "강화", "추진", "발표", "공개", "선정",
+              "개최", "지원", "정부", "국내", "글로벌", "종합", "단독", "속보", "인상", "노사", "금융", "청년채용", "실시", "하반기", "상반기", "등록", "활용",
+              "고용", "취업", "구직", "직장인", "노동", "임금", "기준", "제도", "도입", "출시", "모집", "공채", "명", "억", "만"}
+STORY_MIN_SHARED = 2
+# 사건을 가리키지 못하는 흔한 주제어: 겹치는 핵심어가 이것뿐이면 같은 사건으로 보지 않는다 ('인재 확보'·'구조조정 희망퇴직'이 다른 회사 기사끼리 묶이던 문제)
+STORY_GENERIC = {"인재", "확보", "양성", "전문인력", "구조조정", "희망퇴직", "감원", "해고", "고용률", "실업률", "취업자", "감소", "증가", "상승", "하락", "지역",
+                 "원인", "많은", "조기", "노조", "파업", "임금", "기본급", "임협", "임단협", "타결", "합의", "실업급여", "반도체", "수출", "성과급", "퇴직금",
+                 "공무원", "공공기관", "공기업", "은행", "대기업", "중소기업", "스타트업", "미래", "혁신", "협력", "체결", "MOU", "업무협약", "교육", "대학",
+                 "역량", "평가", "면접", "서류", "합격", "경쟁률", "인턴", "모집", "경력직", "신입사원", "청년층", "중장년", "여성", "노인", "고령자", "외국", "최고", "최저", "대졸", "고졸", "대한민국", "으뜸기업",
+                 "노동부", "고용노동부", "고용부", "기재부", "이상", "이하", "지급", "지급액", "논란", "사과", "전국", "서울", "부산", "인천", "경기"}
+STORY_GENERIC_RE = re.compile(r"^(\d+(월|년|일|분기|%|명|만|억|조|배))$")
+
+
+def _story_tokens(title):
+    t = re.sub(r"\[[^\]]{1,20}\]", "", title)
+    t = re.sub(r"(\d+)\s*천\s*(억|만)", lambda m: str(int(m.group(1)) * 1000) + m.group(2), t)   # 1천억원 = 1000억원
+    out = set()
+    for w in re.split(r"[^가-힣a-zA-Z0-9]+", t):
+        if len(w) > 2:
+            w = STORY_JOSA.sub("", w)
+        w = re.sub(r"(억|만)원$", r"\1", w)
+        if len(w) >= 2 and w not in STORY_STOP and not re.fullmatch(r"\d+", w):
+            out.add(w)
+    return out
+
+
 def _same_story(sig_a, sig_b):
-    (grams_a, words_a, subj_a), (grams_b, words_b, subj_b) = sig_a, sig_b
+    (grams_a, words_a, subj_a, toks_a), (grams_b, words_b, subj_b, toks_b) = sig_a, sig_b
     if _jaccard(grams_a, grams_b) >= GRAM_THRESHOLD:
+        return True
+    shared = toks_a & toks_b
+    if len(shared) >= STORY_MIN_SHARED and any(w not in STORY_GENERIC and not STORY_GENERIC_RE.match(w) for w in shared):
         return True
     words = _jaccard(words_a, words_b)
     if words >= WORD_THRESHOLD:
@@ -268,7 +301,7 @@ def _same_story(sig_a, sig_b):
 def _story_sig(title):
     """_same_story 비교용 지문 (문자 3-gram, 단어 집합, 맨 앞 주어)"""
     grams, words = _signature(title)
-    return grams, words, _subject(title)
+    return grams, words, _subject(title), _story_tokens(title)
 
 
 def cluster_near_duplicates(articles):
@@ -283,7 +316,7 @@ def cluster_near_duplicates(articles):
         grams, words = _signature(a["title"])
         if not grams:
             continue
-        sig = (grams, words, _subject(a["title"]))
+        sig = (grams, words, _subject(a["title"]), _story_tokens(a["title"]))
         leader = next((k for k, s in zip(kept, sigs) if _same_story(sig, s)), None)
         if leader is not None:
             related = leader["related"]
@@ -294,6 +327,29 @@ def cluster_near_duplicates(articles):
         kept.append(a)
         sigs.append(sig)
     return kept
+
+
+def merge_same_story(payload):
+    """이미 만든 지면(payload)에서 같은 사건 기사를 하나로 묶는다 — 뒤에 나온 기사는 앞 기사의 '관련 기사'로.
+    수집 때 묶기에서 빠진 지면(예전 지면·캐시된 오늘 지면)도 화면에 낼 때 다시 걸러 준다 (2026-10-31 사용자). 묶은 건수를 돌려준다."""
+    sigs, leaders, removed = [], [], 0
+    for sec in payload.get("sections", []):
+        keep = []
+        for a in sec.get("articles", []):
+            sg = _story_sig(a.get("title", ""))
+            lead = next((l for l, s_ in zip(leaders, sigs) if _same_story(sg, s_)), None)
+            if lead is not None:
+                rel = lead.setdefault("related", [])
+                if len(rel) < MAX_RELATED and all(r.get("url") != a.get("url") for r in rel):
+                    rel.append({"title": a.get("title"), "source": a.get("source"), "url": a.get("url")})
+                removed += 1
+                continue
+            leaders.append(a); sigs.append(sg); keep.append(a)
+        for i, a in enumerate(keep, 1):
+            if "rank" in a:
+                a["rank"] = i
+        sec["articles"] = keep
+    return removed
 
 
 def bucketize(articles):
@@ -431,6 +487,46 @@ def split_lead(summary):
 # ============================================================
 # 4. 출력
 # ============================================================
+
+HIRING_TITLE = re.compile(r"채용|공채|인턴|신입사원|원서 접수|서류 접수|(직원|사원|인재|경력직|신입) ?모집")
+HIRING_NOT = re.compile(r"가짜 채용|채용 비리|채용비리|부정채용|사기|해킹|피싱|불법|참여 모집|참가자|교육생|수강생|지원사업|입주")
+HIRING_MIN = 3   # 2026-10-31 사용자: '채용 시즌·공고' 칸은 최소 3건 (10-31 지면은 1건뿐이었음)
+
+
+def fill_hiring(buckets, recent, fresh):
+    """48시간 안의 채용 기사가 3건이 안 되면, 최근 며칠 안 기사 중 지면에 안 실린 채용 기사로 채운다 (같은 사건은 빼고)"""
+    have = buckets.get("hiring", [])
+    if len(have) >= HIRING_MIN:
+        return
+    fresh_ids = {id(a) for a in fresh}
+    older = drop_already_published([a for a in recent if id(a) not in fresh_ids])
+    extra = classify_all(older).get("hiring", [])
+    sigs = [_story_sig(a["title"]) for a in have]
+    for a in extra:
+        if len(have) >= HIRING_MIN:
+            break
+        sig = _story_sig(a["title"])
+        if any(_same_story(sig, x) for x in sigs):
+            continue
+        a.setdefault("related", [])
+        have.append(a); sigs.append(sig)
+    if len(have) < HIRING_MIN:   # 그래도 모자라면: 제목에 채용·공채·모집이 들어간 기사(다른 칸 하위권·미분류 포함)로 채운다
+        used = {id(a) for v in buckets.values() for a in v}
+        cand = [a for a in drop_already_published(recent) if id(a) not in used and HIRING_TITLE.search(a["title"]) and not HIRING_NOT.search(a["title"])]
+        for a in sorted(cand, key=lambda x: x["published"], reverse=True):
+            if len(have) >= HIRING_MIN:
+                break
+            sig = _story_sig(a["title"])
+            if any(_same_story(sig, x) for x in sigs):
+                continue
+            for v in buckets.values():   # 다른 칸에 있던 기사면 옮긴다
+                if a in v: v.remove(a)
+            a.update(section="hiring", score=a.get("score") or 0, keywords=a.get("keywords") or [])
+            a.setdefault("related", [])
+            have.append(a); sigs.append(sig)
+    buckets["hiring"] = have
+    print(f"  채용 칸 보충: {len(have)}건 (최근 {MAX_AGE_DAYS}일 기사에서)")
+
 
 def allocate(buckets, top_n=None):
     """
@@ -640,6 +736,7 @@ def main():
           f" -> 최근 {REPEAT_GUARD_DAYS}일 지면 중복 제외 {len(today_pool)}건")
 
     buckets = classify_all(today_pool)
+    fill_hiring(buckets, recent, fresh)
     relevant = sum(len(v) for v in buckets.values())
     print(f"  커리어 관련 {relevant}건 선별")
     for sec in SECTIONS:

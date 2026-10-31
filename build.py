@@ -691,6 +691,7 @@ def attach_industries(data: dict) -> None:
         txt = " ".join((j.get("sources") or {}).get("industries", []))
         got = {i["id"] for i in inds if any(k in txt for k in i["kw"])}
         got |= {r["ind"] for r in j.get("byIndustry", [])}
+        got |= {i["id"] for i in inds if j["id"] in i.get("jobs", [])}   # 근거 문구엔 안 나오지만 그 산업에도 있는 공통 직무 (2026-10-31 사용자: 호텔·여행·레저 2개뿐)
         if j.get("industryOnly"):
             got = {j["industryOnly"]}
         j["ind"] = [i["id"] for i in inds if i["id"] in got]
@@ -843,6 +844,10 @@ def build(out_dir: Path, with_news: bool) -> None:
                 .replace("/*__N_GROUPS__*/", str(len(data["meta"]["groups"])))
                 .replace("/*__TICKER__*/", ticker_spans(TICK["home"]))
 )
+    # 2026-10-31 사용자: 검색 엔진·JS 꺼진 화면에도 '직무 0 · 자료 0건' 대신 실제 숫자가 보이게 빌드 때 미리 채운다 (JS 가 다시 덮어써도 같은 값)
+    for id_, v_ in (("mJobs", _n_jobs), ("mSrc", f"{_n_ev:,}"), ("ledeSources", f"{_n_ev:,}"), ("factJobs", _n_jobs),
+                    ("factGroups", len(data["meta"]["groups"])), ("factSources", f"{_n_ev:,}")):
+        html = re.sub(rf'(id="{id_}">)0(<)', lambda mm: mm.group(1) + str(v_) + mm.group(2), html)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(html, encoding="utf-8")
     print(f"직무사전: 직무 {n_jobs}개 · 직군 {len(data['meta']['groups'])}개 · 근거 {n_evidence}건 -> {out_dir / 'index.html'} "

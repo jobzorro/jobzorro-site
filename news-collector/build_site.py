@@ -1870,7 +1870,15 @@ def main():
 
     today = json.loads(data_path.read_text(encoding="utf-8"))
 
+    # 2026-10-31 사용자: 같은 사건 기사는 꼭 하나로 (캐시된 오늘 지면·예전 지면도 화면에 낼 때 다시 묶는다)
+    from collect_news import merge_same_story
+    n_merged = merge_same_story(today)
+
     days = rankings.load_archive()
+    for d_ in days:
+        n_merged += merge_same_story(d_)
+    if n_merged:
+        print(f"같은 사건 기사 {n_merged}건을 관련 기사로 묶음")
     archive = rankings.build(days)
     archive["full_days"] = days
     if not archive["days"]:

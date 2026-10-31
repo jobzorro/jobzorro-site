@@ -328,10 +328,10 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       <p class="lead">국민연금 신고 소득과 사업보고서·공공기관 공시로 회사 평균 연봉을 잡고, <b>사원부터 부장까지 직급별 연봉</b>을 추정합니다. <span class="opt">취업조로 이직자의 실제 연봉으로 검증했습니다.</span></p>
     </div>
     <dl class="stats" aria-label="연봉 연구소 자료 규모">
-      <div><dt>회사</dt><dd id="stCo">-<small>곳</small></dd></div>
-      <div><dt>공시값 반영</dt><dd id="stOff">-<small>곳</small></dd></div>
-      <div><dt>실제 연봉 검증</dt><dd id="stVal">-<small>건</small></dd></div>
-      <div><dt>기준</dt><dd id="stYm">-</dd></div>
+      <div><dt>회사</dt><dd id="stCo">52,305<small>곳</small></dd></div>
+      <div><dt>공시값 반영</dt><dd id="stOff">2,875<small>곳</small></dd></div>
+      <div><dt>실제 연봉 검증</dt><dd id="stVal">3,378<small>건</small></dd></div>
+      <div><dt>기준</dt><dd id="stYm">2026.09</dd></div>
     </dl>
   </div>
 </header>
@@ -440,6 +440,10 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
+  // 화면 이름: 법인 표기(（주）·주식회사·유한회사)와 끝의 영문 병기를 뺀다 (2026-10-31, build_site.display_name 과 같은 규칙)
+  function dn(s) { s = String(s == null ? '' : s); var t = s.replace(/\s*[（(][A-Za-z0-9 .,&'\-]+[)）]\s*$/, '').replace(/[（(]\s*[주유]\s*[）)]|㈜|주식회사|유한책임회사|유한회사/g, '').replace(/\s+/g, ' ').trim(); return t || s; }
+  function dk(s) { return dn(s).replace(/ \((현장 사업장|협력 정비업체|부속 기관)\)$/, ''); }   // 이름 맞춰 보기용 (표시 이름 ↔ 등록 이름)
+  var GOV_RE = /(교육청|교육지원청|도청|시청|군청|구청|공무직|공직노무|육군|해군|공군|국군|국방부|사령부|경찰|소방)/;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function man(v) { return Math.round(v).toLocaleString('ko-KR'); }   // 만원 단위 숫자
   function won(v) { return Math.round(v).toLocaleString('ko-KR') + '원'; }
@@ -503,7 +507,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     // 2026-10-29 페이지 아래 출처 문단은 뺌 (Simple is Best)
     hookCar(); netCalc(); posCalc(); negCalc(); emptyDetail();
     var q = decodeURIComponent((location.hash || '').slice(1));
-    if (q) { $('q').value = q; loadIndex().then(function () { search(); var hit = IDX.find(function (x) { return x.n === q; }); if (hit) openCo(hit.i); }); }
+    if (q) { $('q').value = q; loadIndex().then(function () { search(); var hit = IDX.find(function (x) { return x.n === q; }) || IDX.find(function (x) { return dk(x.n) === dk(q); }); if (hit) openCo(hit.i); }); }
   }).catch(function () { $('qHint').textContent = '데이터를 불러오지 못했습니다. 새로고침해 주세요.'; });
   $('q').addEventListener('focus', function () { if (D.meta) loadIndex(); });
 
@@ -575,10 +579,10 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var R = (CMP && CMP.i !== r.i) ? CMP : null, h = '<section class="cmpco"><div class="row"><b>다른 회사와 비교</b>' + (R ? '<button type="button" class="x" data-cmp-x>비교 닫기</button>' : '') + '</div>';
     if (R) {
       var A = r.rk, B = R.rk;
-      h += '<div class="tw"><table><thead><tr><th>직급</th><th>' + esc(r.name) + '</th><th>' + esc(R.name) + '</th><th>차이</th></tr></thead><tbody>' + (A && B ? RANK_NAMES : []).map(function (k, j) {
+      h += '<div class="tw"><table><thead><tr><th>직급</th><th>' + esc(dn(r.name)) + '</th><th>' + esc(dn(R.name)) + '</th><th>차이</th></tr></thead><tbody>' + (A && B ? RANK_NAMES : []).map(function (k, j) {
         var d = B[j] - A[j]; return '<tr><td>' + k + '</td><td>' + man(A[j]) + '</td><td>' + man(B[j]) + '</td><td class="' + (d >= 0 ? 'up' : 'dn') + '">' + (d > 0 ? '+' : '') + man(d) + '</td></tr>';
       }).join('') + '<tr><td>평균 연봉</td><td>' + man(r.bAvg) + '</td><td>' + man(R.bAvg) + '</td><td class="' + (R.bAvg - r.bAvg >= 0 ? 'up' : 'dn') + '">' + (R.bAvg - r.bAvg > 0 ? '+' : '') + man(R.bAvg - r.bAvg) + '</td></tr></tbody></table></div>' +
-        '<p class="hint">차이 = ' + esc(R.name) + ' − ' + esc(r.name) + ' (만원, 직급별 추정)</p>' +
+        '<p class="hint">차이 = ' + esc(dn(R.name)) + ' − ' + esc(dn(r.name)) + ' (만원, 직급별 추정)</p>' +
         '<a class="cmplink" href="https://job.jobzorro.kr/company/#' + encodeURIComponent(r.name) + '~' + encodeURIComponent(R.name) + '" target="_blank" rel="noopener">회사 판단 연구소에서 평판·재무까지 VS 비교 →</a>';
     } else {
       h += '<div class="row"><input id="cmpQ" type="search" placeholder="비교할 회사 이름" autocomplete="off" aria-label="비교할 회사"></div><div class="opts" id="cmpOpts"></div>' +
@@ -602,7 +606,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   });
   function emptyDetail() {
     $('detail').innerHTML = '<div class="empty"><h3>회사를 고르면 여기에 나옵니다</h3><p>평균 연봉, 사원부터 부장까지 직급별 추정, 입사·퇴사 흐름, 현직자 제보를 한 화면에서 봅니다.</p>' +
-      '<div class="picks">' + (D.meta.picks || []).map(function (x) { return '<button type="button" data-co="' + x[1] + '" data-name="' + esc(x[0]) + '">' + esc(x[0]) + '</button>'; }).join('') + '</div></div>';
+      '<div class="picks">' + (D.meta.picks || []).map(function (x) { return '<button type="button" data-co="' + x[1] + '" data-name="' + esc(x[0]) + '">' + esc(dn(x[0])) + '</button>'; }).join('') + '</div></div>';
   }
   // 데이터가 바뀐 뒤 브라우저에 예전 목록이 남아 있으면 번호가 어긋나 다른 회사가 열린다.
   // 열린 회사 이름이 누른 이름과 다르면 캐시를 무시하고 목록·조각을 다시 받아 이름으로 다시 찾는다.
@@ -613,11 +617,11 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     CUR = i;
     document.querySelectorAll('.res').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-i') === i); });
     loadRow(i).then(function (r) {
-      if (r && (!name || r.name === name)) return show(r);
+      if (r && (!name || r.name === name || dk(r.name) === dk(name))) return show(r);
       if (REFRESH) { if (r) show(r); return; }
       REFRESH = true; IDX = null; idxP = null; SH = {};
       loadIndex().then(function (idx) {
-        var hit = idx.filter(function (x) { return x.n === name; }).sort(function (a, b) { return b.m - a.m; })[0];
+        var hit = idx.filter(function (x) { return x.n === name || dk(x.n) === dk(name); }).sort(function (a, b) { return b.m - a.m; })[0];
         if (hit) { CUR = hit.i; loadRow(hit.i).then(function (r2) { if (r2) show(r2); }); }
         if ($('q').value) search();
       });
@@ -631,14 +635,14 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var main = (r.rk || [0, 0, 0, 0, 0]).map(function (v) { return v * jf; }), base = r.rkBase && r.rkBase.map(function (v) { return v * jf; }), max = Math.max.apply(null, main), V = D.meta.validation;
     var hasYoy = r.yoyPct !== null && r.yoyPct !== undefined && !r.capped;   // 상한에 걸린 회사의 추이는 상한 인상분이라 숨긴다
     var facts = [['국민연금 가입자', r.members.toLocaleString('ko-KR') + '명'],
-      r.newHireAnnual ? ['입사자 평균 연봉', man(r.newHireAnnual) + '만원'] : ['이번 달 입사', r.newHires.toLocaleString('ko-KR') + '명'],
+      r.newHireAnnual ? ['입사자 평균 연봉' + (r.fld && /매장|급식|극장|호텔|물류 현장|파견|휴게소/.test(r.fld[4] || '') ? '(매장·현장 포함)' : ''), man(r.newHireAnnual) + '만원'] : ['이번 달 입사', r.newHires.toLocaleString('ko-KR') + '명'],
       hasYoy ? ['1년 연봉 인상률', (r.yoyPct > 0 ? '+' : '') + r.yoyPct + '%'] : ['이번 달 퇴사', r.leavers.toLocaleString('ko-KR') + '명'],
       ['평균 근속', r.tT.toFixed(1) + '년']];
     var trend = (!r.capped && r.trend && r.trend.length > 1 && D.meta.trendYears) ? '<p class="hint">연도별 평균 연봉(국민연금, 매년 같은 달): ' +
       r.trend.map(function (v, k) { return D.meta.trendYears[k] + '년 ' + man(v) + '만원'; }).join(' → ') + '</p>' : '';
     var capcal = r.how === 'capcal';   // 상한 보정 회사: 상한에 걸리는 직급만 총보상 추정
     var v2 = String(r.how).indexOf('v2') === 0, holding = String(r.how).indexOf('v2-holding') === 0, ptime = String(r.how).indexOf('v2-parttime') === 0, firm = String(r.how).indexOf('v2-firm') === 0,
-      fk = r.fld ? (r.fld[4] || '현장') : '', hq = /^(매장직|급식 현장|극장 단기 근로|호텔 현장|물류 현장)$/.test(fk), fpro = fk === '조종사' || fk === '의사' || hq, skew = /-skew$/.test(r.how), ex = r.ex;
+      fk = r.fld ? (r.fld[4] || '현장') : '', hq = /^(매장직|급식 현장|극장 단기 근로|호텔 현장|물류 현장|급식·휴게소 현장|파견 인력)$/.test(fk), fpro = fk === '조종사' || fk === '의사' || hq, skew = /-skew$/.test(r.how), ex = (GOV_RE.test(r.name) && !r.dart) ? null : r.ex;   // 공무직·군 사업장은 임원 줄을 빼요 (2026-10-31)
     var howRank = v2 ? '<li>직급별: 신입 기준 연봉 ' + (r.s0 ? man(r.s0) + '만원(' + esc(r.s0src || '') + ')' : '') + '에서 표준 직급 배수(대리 1.25 · 과장 1.54 · 차장 1.82 · 부장 2.04)로 올렸습니다. 직원 평균 경력은 약 ' + (r.cC || '-') + '년(회사 근속 + 회사 나이로 가늠한 입사 전 경력)으로 보고, 직급 연봉의 가중 평균이 회사 평균과 같아지도록 맞췄습니다. 평균이 기본 연봉보다 높은 차액(성과급·고연봉 인력 몫)은 직급이 높을수록 더 붙였습니다.</li>' +
       (String(r.how).indexOf('v2-flat') === 0 ? '<li>현장형 회사라 직급 간 연봉 차이를 표준의 절반으로 잡았습니다.</li>' : '') +
       (firm ? '<li>전문직 펌(로펌·회계법인·전략 컨설팅)이라 파트너급이 평균을 끌어올리는 구조로 보고 직급 폭을 넓혔습니다(부장 배수 2.6). 변호사·회계사·컨설턴트와 지원 인력이 함께 들어 있습니다.</li>' : '') +
@@ -653,12 +657,13 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       (V ? '<li>검증: 취업조로 경력이직 고객 ' + V.nMatched + '명의 실제 연봉(이직 직전)과 비교해 직급별 치우침을 보정했습니다(개인별 오차 중앙값 약 ' + Math.round(V.errAfter) + '%, 같은 회사·직급 안에서도 사람마다 차이가 큽니다). 평균 연봉 보정은 사업보고서 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사의 실제 평균 급여로 검증했습니다(오차 중앙값 약 ' + (V.dartErr || '') + '%).</li>' : '') +
       '<li>계열사·지점이 다른 법인으로 등록돼 있으면 따로 나옵니다.</li>';
     $('detail').innerHTML = '<article class="detail" aria-live="polite">' +
-      '<div class="top"><div><h2>' + esc(r.name) + '</h2><div class="meta">' + esc([r.industry, r.sido, '사업자번호 앞자리 ' + r.biz6].filter(Boolean).join(' · ')) + '</div></div>' +
+      '<div class="top"><div><h2>' + esc(IDX && IDX[r.i] && IDX[r.i].al || dn(r.name)) + '</h2><div class="meta">' + esc([r.industry, r.sido, '사업자번호 앞자리 ' + r.biz6].filter(Boolean).join(' · ')) + '</div></div>' +
       '<div class="avg"><div class="v">' + man(r.bAvg) + plus + '<small>만원</small></div><div class="l">평균 연봉' + (/^(국민연금 기준|총보상 추정)$/.test(r.bSrc) ? '' : ' · ' + esc(r.bSrc)) + ' ' + gradeChip(r.dart && !dNps ? 2 : r.calAvg ? 4 : r.capped ? 1 : 0) + '</div></div></div>' +
       (V ? '<p class="vbadge">실제 연봉 ' + V.total.toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명' + (V.nReports ? ' + 현직자 제보 ' + V.nReports + '건' : '') + ' + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
       (r.cfN ? '<p class="hint">취업조로 경력이직 고객 <b>' + r.cfN + '명</b>의 실제 연봉으로 이 회사 직급별 금액을 보정했습니다(개인 값은 공개하지 않습니다).</p>' : '') +
       (skew ? '<p class="hint">평균 연봉에는 성과급·주식보상이 크게 들어 있어, 직급별 금액은 <b>통상 연봉(기본 + 일반 성과급)</b> 기준입니다.</p>' : '') +
       (firm ? '<p class="hint">전문직 펌이라 직급별 금액은 변호사·회계사·컨설턴트 기준에 가깝고, 지원 인력은 이보다 낮습니다.</p>' : '') +
+      (GOV_RE.test(r.name) && !r.dart ? '<p class="warnbox">공무직(교육공무직·청사 관리 등)·군 사업장입니다. 국민연금에는 공무원이 아닌 공무직·계약 인력만 잡히므로 공무원 연봉과는 다릅니다.</p>' : '') +
       (holding ? '<p class="warnbox">지주회사라 직원이 적고 임원·고참 비중이 높습니다. 직급별 금액은 참고용이며 실제와 차이가 클 수 있습니다.</p>' : '') +
       (capped ? '<p class="warnbox">이 회사는 1인 평균이 국민연금 소득 상한(월 ' + D.meta.cap + '만원)에 가까워 실제 연봉은 이보다 높을 가능성이 큽니다. 아래 직급별 금액도 "최소 이 정도"로 보세요.</p>' : '') +
       (r.dart && r.avgAnnual ? '<p class="hint">참고: 국민연금 기준 추정 평균은 ' + man(r.avgAnnual) + '만원입니다. 공시 평균에는 상한 위 몫과 올해 성과급까지 들어갑니다.</p>' : '') +
@@ -774,7 +779,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   // ── 첫 화면 넘겨 보는 장 (빌드가 meta.hook 으로 미리 계산). 장마다 자료 기간을 검은 알약으로 표시한다.
   function hookCar() {
     var H = D.meta.hook, S = [], ym = function (s) { return s.slice(0, 4) + '년 ' + (+s.slice(5)) + '월'; };
-    var co = function (x, i) { return '<a class="n" href="#" data-co="' + i + '" data-name="' + esc(x) + '">' + esc(x) + '</a>'; };
+    var co = function (x, i) { return '<a class="n" href="#" data-co="' + i + '" data-name="' + esc(x) + '">' + esc(dn(x)) + '</a>'; };
     var bars = function (rows, max, fmt, hl, base) { base = base || 0; return '<div class="hb">' + rows.map(function (r) {
       return '<div class="bar' + (hl && hl(r) ? ' hl' : '') + '">' + (r[3] != null ? co(r[0], r[3]) : '<span class="n">' + esc(r[0]) + '</span>') + '<span class="b"><i style="width:' + Math.max(2, (r[1] - base) / (max - base) * 100).toFixed(1) + '%"></i></span><span class="v">' + fmt(r[1]) + '</span></div>'; }).join('') + '</div>'; };
     var won = function (v) { return man(v) + '만'; }, dy = (H && H.dartYears) || ['', ''];
@@ -794,8 +799,8 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     S.push({ t: '작년보다 <b>많이 오른</b> 회사', per: dy[0] + '년 → ' + dy[1] + '년 (사업보고서)', hook: '두 해 사업보고서가 모두 있는 회사의 1인 평균 비교. 오른 이유는 인원·근속 변화로 가볍게 추정했습니다.', body: '<ol class="rank-list" id="topRise"></ol>', src: '120% 넘게 오른 값은 자료 오류일 수 있어 뺐어요' });
     if (H) {
       var st = H.stay;
-      S.push({ t: '사람이 <b>안 나가는</b> 회사 TOP 10', per: ym(H.ym0) + ' ~ ' + ym(H.ym) + ' (최근 12개월)', hook: '<b>' + esc(st[0][0]) + '</b>는 1년 동안 100명 중 ' + Math.round(st[0][1]) + '명만 나갔어요.',
-        body: '<ol class="rank-list">' + st.map(function (x, k) { return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[3] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(x[0]) + '</a><small>가입자 ' + man(x[2]) + '명</small></span><span class="v">' + x[1] + '%</span></li>'; }).join('') + '</ol>',
+      S.push({ t: '사람이 <b>안 나가는</b> 회사 TOP 10', per: ym(H.ym0) + ' ~ ' + ym(H.ym) + ' (최근 12개월)', hook: '<b>' + esc(dn(st[0][0])) + '</b>는 1년 동안 100명 중 ' + Math.round(st[0][1]) + '명만 나갔어요.',
+        body: '<ol class="rank-list">' + st.map(function (x, k) { return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[3] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(dn(x[0])) + '</a><small>가입자 ' + man(x[2]) + '명</small></span><span class="v">' + x[1] + '%</span></li>'; }).join('') + '</ol>',
         src: '1년 퇴사자 ÷ 평균 인원 · 가입자 1,000명 이상 · 국민연금 상실 신고 기준' });
       S.push({ t: '오래 다녀야 <b>많이 받을까?</b>', per: dy[1] + '년 (사업보고서)', hook: '점 하나가 회사 하나예요. 왼쪽 위로 갈수록 <b>짧게 다녀도 많이 주는</b> 회사.', body: '<figure id="hSc"></figure>' + (function () {
         var shortHi = H.pts.filter(function (p) { return p[1] <= 7; }).sort(function (a, b) { return b[2] - a[2]; }).slice(0, 5).map(function (p) { return [p[0], p[2], 0, p[3]]; });
@@ -804,13 +809,13 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
           '<div><h4>가장 오래 다녀요</h4>' + bars(longest, longest[0][1], function (v) { return v + '년'; }) + '</div></div>';
       })(), src: '직원 1,000명 이상 ' + H.pts.length + '곳 · 평균 근속연수와 1인 평균 급여(성과급 포함)' });
       var rg = H.region, seoul = rg.map(function (r) { return r[0]; }).indexOf('서울') + 1;
-      S.push({ t: '연봉 1등 지역은 <b>' + (seoul === 1 ? '역시 서울' : '서울이 아니에요') + '</b>', per: ym(H.ym) + ' (국민연금)', hook: '<b>' + esc(rg[0][0]) + '</b>이 1위, 서울은 <b>' + seoul + '위</b>. 공장·플랜트가 모인 곳이 위에 있어요.',
+      S.push({ t: '연봉 1등 지역은 <b>' + (seoul === 1 ? '역시 서울' : '서울이 아니에요') + '</b>', per: ym(H.ym) + ' (국민연금)', hook: '<b>' + esc(dn(rg[0][0])) + '</b>이 1위, 서울은 <b>' + seoul + '위</b>. 공장·플랜트가 모인 곳이 위에 있어요.',
         body: bars(rg, rg[0][1], won, function (r) { return r[0] === rg[0][0] || r[0] === '서울'; }, 4000) +
           '<div class="hduo two">' + hx(esc(rg[0][0]) + ' vs ' + esc(rg[rg.length - 1][0]), '<div class="hbig s">' + man(rg[0][1] - rg[rg.length - 1][1]) + '<small>만원 차이</small></div>') +
           hx('서울보다 높은 곳', '<div class="hbig s">' + (seoul - 1) + '<small>곳</small></div>') +
           hx('서울 평균', '<div class="hbig s">' + man(rg[seoul - 1][1]) + '<small>만원</small></div>') + hx('지역 ' + rg.length + '곳 평균', '<div class="hbig s">' + man(rg.reduce(function (a, r) { return a + r[1]; }, 0) / rg.length) + '<small>만원</small></div>') + '</div>', src: '회사 소재지 기준 · 인원 가중 평균 · 본사 주소라 지방 공장 인원도 본사 지역에 잡혀요 · 막대는 4천만부터' });
       var hr = H.hires;
-      S.push({ t: '이번 달 <b>가장 많이 뽑은</b> 회사', per: ym(H.ym) + ' 한 달 (신규 가입자)', hook: '<b>' + esc(hr[0][0]) + '</b>는 한 달에 ' + man(hr[0][1]) + '명, 하루 ' + Math.round(hr[0][1] / 30) + '명꼴로 들어왔어요.',
+      S.push({ t: '이번 달 <b>가장 많이 뽑은</b> 회사', per: ym(H.ym) + ' 한 달 (신규 가입자)', hook: '<b>' + esc(dn(hr[0][0])) + '</b>는 한 달에 ' + man(hr[0][1]) + '명, 하루 ' + Math.round(hr[0][1] / 30) + '명꼴로 들어왔어요.',
         body: '<div class="hbig">' + man(hr[0][1]) + '<small>명 / 한 달</small></div>' + bars(hr, hr[0][1], function (v) { return man(v) + '명'; }) + (function () {
           var rt = hr.map(function (x) { return [x[0], Math.round(x[1] / x[2] * 1000) / 10, 0, x[3]]; }).sort(function (a, b) { return b[1] - a[1]; });
           return hx('7곳 합계', '<div class="hbig s">' + man(hr.reduce(function (a, x) { return a + x[1]; }, 0)) + '<small>명 / 한 달</small></div>') + hx('직원 100명당 새로 온 사람', bars(rt, rt[0][1], function (v) { return v + '명'; }, function (r, k) { return r === rt[0]; }));
@@ -828,7 +833,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       var yrs = D.meta.trendYears || [];
       var spark = function (t) { var mn = Math.min.apply(null, t), mx = Math.max.apply(null, t); return '<svg viewBox="0 0 92 28" aria-hidden="true"><polyline points="' + t.map(function (v, i) { return (4 + i * 84 / (t.length - 1)).toFixed(1) + ',' + (24 - (v - mn) / (mx - mn || 1) * 20).toFixed(1); }).join(' ') + '" fill="none" stroke="var(--ink)" stroke-width="2"/><circle cx="88" cy="4" r="3.5" fill="var(--acc)" stroke="var(--ink)"/></svg>'; };
       S.push({ t: '<b>' + (yrs.length || 4) + '년 연속</b> 오른 회사', per: (yrs[0] || '') + '~' + (yrs[yrs.length - 1] || '') + '년 매년 ' + (+H.ym.slice(5)) + '월', hook: '한 번 반짝이 아니라 <b>매년</b> 올랐어요.',
-        body: H.streak.map(function (x) { var t = x[1]; return '<div class="hsp"><a class="n" href="#" data-co="' + x[2] + '" data-name="' + esc(x[0]) + '">' + esc(x[0]) + '</a>' + spark(t) + '<span class="v">+' + Math.round((t[t.length - 1] / t[0] - 1) * 100) + '%</span></div>'; }).join('') + (function () {
+        body: H.streak.map(function (x) { var t = x[1]; return '<div class="hsp"><a class="n" href="#" data-co="' + x[2] + '" data-name="' + esc(x[0]) + '">' + esc(dn(x[0])) + '</a>' + spark(t) + '<span class="v">+' + Math.round((t[t.length - 1] / t[0] - 1) * 100) + '%</span></div>'; }).join('') + (function () {
           var now = H.streak.map(function (x) { return [x[0], x[1][x[1].length - 1], 0, x[2]]; }).sort(function (a, b) { return b[1] - a[1]; });
           var avgUp = Math.round(H.streak.reduce(function (a, x) { return a + (x[1][x[1].length - 1] / x[1][0] - 1); }, 0) / H.streak.length * 100);
           return hx('평균 상승률', '<div class="hbig s">+' + avgUp + '<small>% · ' + (yrs.length || 4) + '년</small></div>') + hx('지금 1인 평균', bars(now, now[0][1], won));
@@ -872,7 +877,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       P.forEach(function (p) { if (!lab[p[0]]) return; var x = tx(p[1]), y = ty(p[2]), nm = p[0].replace('（주）비바리퍼블리카', '토스').replace(/^에스케이/, 'SK').replace(/^에이치디/, 'HD').replace(/^케이지/, 'KG').replace(/^케이티$/, 'KT');
         var w = nm.length * 13 + 4, opt = [[x + 9, y + 5, 'start', [x + 8, y - 9, w, 17]], [x - 9, y + 5, 'end', [x - 8 - w, y - 9, w, 17]], [x, y - 10, 'middle', [x - w / 2, y - 24, w, 17]], [x, y + 21, 'middle', [x - w / 2, y + 8, w, 17]]];
         var o = opt.filter(function (c) { return !hit(c[3]); })[0] || opt[x > W - 140 ? 1 : 0]; used.push(o[3]);
-        g += '<a href="#" data-co="' + p[3] + '" data-name="' + esc(p[0]) + '"><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="5" fill="var(--acc)" stroke="var(--ink)"/><text x="' + o[0].toFixed(1) + '" y="' + o[1].toFixed(1) + '" text-anchor="' + o[2] + '" font-size="14" font-weight="700" fill="var(--ink)">' + esc(nm) + '</text></a>'; });
+        g += '<a href="#" data-co="' + p[3] + '" data-name="' + esc(p[0]) + '"><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="5" fill="var(--acc)" stroke="var(--ink)"/><text x="' + o[0].toFixed(1) + '" y="' + o[1].toFixed(1) + '" text-anchor="' + o[2] + '" font-size="14" font-weight="700" fill="var(--ink)">' + esc(dn(nm)) + '</text></a>'; });
       return '<svg viewBox="0 0 ' + W + ' ' + Hh + '" role="img" aria-label="평균 근속연수와 평균 연봉">' + g + '</svg>';
     }
     // 넘기기: 8초 자동 · 화살표·막대 · 손으로 밀기 · 보는 동안(마우스 올림·만짐·초점) 멈춤
@@ -918,10 +923,10 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
 
   // ── 첫 화면 순위 (빌드가 미리 계산): 평균 연봉 TOP 10 · 입사자 연봉 TOP 10
   function rankings() {
-    var li = function (x, k, v, sub) { return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[4] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(x[0]) + '</a><small>' + esc(sub) + '</small></span><span class="v">' + man(v) + '만원</span></li>'; };
+    var li = function (x, k, v, sub) { return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[4] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(dn(x[0])) + '</a><small>' + esc(sub) + '</small></span><span class="v">' + man(v) + '만원</span></li>'; };
     $('topAvg').innerHTML = (D.meta.topAvg || []).map(function (x, k) { return li(x, k, x[3], (x[1] || '') + ' · ' + x[5]); }).join('');
     $('topRise').innerHTML = (D.meta.topRise || []).map(function (x, k) {   // [이름, 업종, 인원, 전년, 올해, 상승%, 인원증감%, 사유, 출처, i]
-      return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[9] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(x[0]) + '</a>' +
+      return '<li><span class="no">' + (k + 1) + '</span><span class="t"><a href="#" data-co="' + x[9] + '" data-name="' + esc(x[0]) + '" style="color:inherit">' + esc(dn(x[0])) + '</a>' +
         '<small>' + man(x[3]) + ' → ' + man(x[4]) + '만 · <b class="why">' + esc(x[7]) + '</b></small></span><span class="v up">+' + x[5] + '%</span></li>';
     }).join('');
   }
