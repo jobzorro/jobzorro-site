@@ -2431,7 +2431,7 @@ function meJudge(c) {
   // 내 연봉과 비교한 숫자 한 줄
   const gap = kase.target.salary - kase.now.salary, pct = Math.round(gap / kase.now.salary * 100);
   const tg = kase.target.salary - ME.salary, tp = Math.round(tg / ME.salary * 100);   // E2: 계약연봉끼리 비교했을 때 원천징수 총액 기준도 함께
-  const pay = `${meOver[c.name]?.salary ? "제시 연봉" : est.how} ${won(kase.target.salary)}만 원 — 지금${kase.target.basis ? ` 계약연봉(${won(kase.now.salary)}만 원)` : ""}보다 ${gap >= 0 ? "+" : ""}${won(gap)}만 원(${pct >= 0 ? "+" : ""}${pct}%)이에요.${kase.target.basis ? ` 원천징수 총액(${won(ME.salary)}만 원)과 비교하면 ${tp >= 0 ? "+" : ""}${tp}%${tp < 10 ? "라, 성과급이 얼마나 나오는지가 관건이에요." : "예요."}` : meOver[c.name]?.salary ? "" : " (추정이라 실제 오퍼와 다를 수 있어요)"}`;
+  const pay = `${meOver[c.name]?.salary ? "제시 연봉" : est.how} ${won(kase.target.salary)}만 원 — 지금${kase.target.basis ? ` 계약연봉(${won(kase.now.salary)}만 원)` : ""}보다 ${gap >= 0 ? "+" : ""}${won(gap)}만 원(${pct >= 0 ? "+" : ""}${pct}%)이에요.${kase.target.basis ? ` 원천징수 총액(${won(ME.salary)}만 원)과 비교하면 ${tp >= 0 ? "+" : ""}${tp}%${tp < 10 ? "라, 성과급이 얼마나 나오는지는 꼭 확인해 보세요." : "예요."}` : meOver[c.name]?.salary ? "" : " (추정이라 실제 오퍼와 다를 수 있어요)"}`;
   // 회사 일반 판정의 한마디를 이어 붙여 최소 5줄 (2026-10-27 사용자 요청)
   const sl = c.salary || {}, rg = c.grades?.["평판"]?.score;
   const facts = [];
@@ -2467,8 +2467,7 @@ function meJudge(c) {
   }
   // 6회차 B2: 갈 회사 연봉이 낮으면 협상이 조건 → 엔진이 정한 상한('조건 보고 가세요' 또는 '중립기어')
   if (r.cap != null) V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), r.cap)];
-  // E2: 계약연봉으로는 많이 올라도 원천징수 총액으로 10% 미만이면 성과급이 관건 → '무조건'은 아니다
-  if (kase.target.basis && tp < 10) V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), 5)];
+  // E2: 원천징수 총액 기준 10% 미만이어도 판정은 막지 않는다 (2026-10-31 사용자: 회사 좋으면 '무조건 가세요'까지)
   // 6회차 A: 워라밸이 나빠지면 (워라밸 중요한 사람은 세게) 판정을 낮추고, 그 얘기를 첫 줄·이유 맨 위에
   const wa = FitEngine.wlbAdjust(kase.now, kase.target, pct);
   if (wa) {
