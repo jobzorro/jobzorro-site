@@ -669,7 +669,6 @@ button.dk:hover { border-color:var(--ink); }
 button.dk .di { grid-row:span 2; display:grid; place-items:center; min-width:24px; }
 button.dk b { font-size:14.5px; font-weight:900; min-width:0; }
 button.dk small { font-size:12.5px; color:var(--muted); grid-column:2; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.dk-game { display:none; }
 .lobby2 .in { padding-top:4px; }
 .lobby2 .outl { margin:18px 0 0; font-size:13px; color:var(--muted); }
 /* 게임 중: 위에 검은 막대 하나(← 게임 고르기 · 이름 · 진행 · 효과음) + 얇은 진행 바 */
@@ -748,12 +747,11 @@ body > .zn { margin-left:calc(-1 * max(16px, env(safe-area-inset-left,0px))); ma
   .gc .ft { max-width:calc(100% - 34px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }   /* 폰: '추천' 띠가 오른쪽 아이콘과 겹치지 않게 */
   :root[data-view="menu"] .dock { display:block; }
   .dock { position:fixed; left:0; right:0; bottom:0; z-index:30; background:var(--bg); border-top:1px solid var(--line2); padding-bottom:env(safe-area-inset-bottom,0px); }
-  .dock-in { grid-template-columns:repeat(4,minmax(0,1fr)); gap:2px; margin:0 auto; padding:4px max(8px, env(safe-area-inset-left,0px)) 4px max(8px, env(safe-area-inset-right,0px)); }
+  .dock-in { grid-template-columns:repeat(3,minmax(0,1fr)); gap:2px; margin:0 auto; padding:4px max(8px, env(safe-area-inset-left,0px)) 4px max(8px, env(safe-area-inset-right,0px)); }
   button.dk { border:0; background:transparent; grid-template-columns:minmax(0,1fr); justify-items:center; gap:3px; min-height:56px; padding:6px 2px; border-radius:10px; text-align:center; color:var(--muted); }
   button.dk .di { grid-row:auto; height:24px; padding:0 8px; border-radius:7px; }
   button.dk b { font-size:11.5px; font-weight:700; }
   button.dk small, button.dk .pc { display:none; }
-  .dk-game { display:grid; }
   button.dk[aria-current="page"] { color:var(--ink); }
   button.dk[aria-current="page"] b { font-weight:900; }
   button.dk[aria-current="page"] .di { background:var(--acc); box-shadow:0 0 0 1.5px var(--ink); }
@@ -766,7 +764,6 @@ body > .zn { margin-left:calc(-1 * max(16px, env(safe-area-inset-left,0px))); ma
   body:has(.zb) .dock-in { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:0; margin-top:10px; }
   body:has(.zb) button.dk { border:1.5px solid var(--ink); background:var(--card); color:var(--ink); border-radius:14px; min-height:64px; }
   body:has(.zb) button.dk b { font-size:13px; font-weight:900; }
-  body:has(.zb) .dk-game { display:none; }
   :root:not([data-view="game"]) body:has(.zb) { padding-bottom:calc(var(--tabbar-h, 58px) + 16px + env(safe-area-inset-bottom,0px)); }
   .pb-back span { display:none; }
   .pb-in { gap:6px 10px; min-height:48px; }
@@ -1106,14 +1103,11 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
   <div class="games" id="games"></div>
 </div></section>
 <nav class="dock" id="dock" aria-label="놀이터 메뉴"><div class="in dock-in">
-  <button type="button" class="dk dk-game" id="t-lobby" data-go="lobby"><span class="di" data-ic="coin"></span><b>게임</b></button>
   <button type="button" class="dk" id="t-hall" data-go="hall"><span class="di" data-ic="trophy"></span><b>순위<span class="pc"> · 명예의 전당</span></b><small id="dkHall">매일 첫 판만 순위에 올라요</small></button>
   <button type="button" class="dk" id="t-look" data-go="look"><span class="di" data-ic="zorro"></span><b>내 조로</b><small id="dkLook">칭호 · 소품 · 엔딩</small></button>
   <button type="button" class="dk" id="t-tools" data-go="tools"><span class="di" data-ic="money"></span><b><span class="pc">연봉 </span>도구</b><small>직급 환산기 · 실시간 월급</small></button>
 </div></nav>
-<div class="lobby2" id="lobby2"><div class="in">
-  <div id="boss" hidden></div>
-</div></div>
+<!-- 2026-11-01 사용자: 이번 주 보스 카드 뺌 (게임 속 BOSS 배지는 남김) -->
 
 <main>
 <div class="playbar nop" id="playbar"><div class="pb-in">
@@ -2059,7 +2053,7 @@ function renderBand(t) {
   var sun = PC.dow(TODAY) === 0, wk = t && t.weekTop && t.weekTop[0];
   var items = [];
   if (t) items.push('오늘 ' + man(t.plays.people) + '명 도전');
-  if (BOSS) items.push({ boss: '이번 주 보스 ' + BOSS.n + (sun ? ' · 오늘 정체 공개' : ' · 만나면 BOSS') });
+  // 2026-11-01 사용자: 띠의 '이번 주 보스' 뺌
   if (wk) items.push('오늘의 회사 주간 1위 ' + wk[0] + ' ' + man(wk[1]) + '점');
   if (t) items.push('오늘의 회사 #' + PC.genToday(TODAY, ctx).no + ' 정답자 ' + man(t.todayGame.ok) + '명');
   items.push('매일 0시 새 문제');
@@ -3318,7 +3312,7 @@ var ITEMS = [
   ['laurel', 'hat', '월계관', '도전장 대결 3번 이기기', function () { return vsWins() >= 3; }, 'etc', 'r', function () { return [vsWins(), 3]; }, '단톡방 공식 챔피언'],
   // 이번 주 보스
   ['horns', 'hat', '악마 뿔', '이번 주 보스를 4주 만나기', function () { return bossCount() >= 4; }, 'etc', 'r', function () { return [bossCount(), 4]; }, '보스를 너무 자주 봤더니'],
-  ['bossbg', 'bg', '보스 빌딩 배경', '일요일에 보스 정체 공개 보기', function () { return store.get('slp-bosssun') === '1'; }, 'etc', 'r', null, '그 빌딩 앞에서 인증샷'],
+  ['bossbg', 'bg', '보스 빌딩 배경', '이번 주 보스를 2주 만나기', function () { return store.get('slp-bosssun') === '1' || bossCount() >= 2; }, 'etc', 'r', null, '그 빌딩 앞에서 인증샷'],
   // 조로 출근길 (2026-10-29): 조건은 이 기기 출근길 누적 기록(runStats)
   ['ticket', 'hand', '교통카드', '조로 출근길 첫 완주', function () { return runStats().n >= 1; }, 'run', 'c', null, '삑— 환승입니다'],
   ['raincap', 'hat', '노란 우비 모자', '비 오는 날 출근 완주', function () { return !!runStats().wx.rain; }, 'run', 'c', null, '우산은 버스에 두고 내렸어요'],
