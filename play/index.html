@@ -669,6 +669,57 @@ button.dk:hover { border-color:var(--ink); }
 button.dk .di { grid-row:span 2; display:grid; place-items:center; min-width:24px; }
 button.dk b { font-size:14.5px; font-weight:900; min-width:0; }
 button.dk small { font-size:12.5px; color:var(--muted); grid-column:2; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* 2026-11-01 오늘의 회사 v2: 추측 표 (회사 + 비교 칸 5개) · 숨은 회사 빌딩 */
+.t2leg { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:4px 0 2px; }
+.t2leg small { font-size:12px; color:var(--muted); }
+.t2top { display:flex; gap:14px; align-items:flex-end; margin:12px 0 10px; }
+.t2bld { flex:none; min-width:64px; display:grid; justify-items:center; }
+.t2q { flex:1; min-width:0; display:grid; gap:6px; }
+.t2hint { margin:0; font-size:12.5px; color:var(--soft); }
+.t2hint b { font-family:var(--display); font-size:16px; background:linear-gradient(transparent 55%, var(--mark) 55%); padding:0 3px; }
+.t2in input[type=text] { font-size:16px; }
+.t2tb { display:grid; gap:4px; margin:4px 0 8px; }
+.t2r { display:grid; grid-template-columns:minmax(0,1.35fr) repeat(5,minmax(0,1fr)); gap:4px; align-items:stretch; }
+.t2h span { font-size:11px; font-weight:800; color:var(--muted); text-align:center; }
+.t2h span:first-child { text-align:left; }
+.t2n { display:flex; align-items:center; gap:5px; min-width:0; font-size:12.5px; }
+.t2n b { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:900; letter-spacing:-.02em; }
+.t2n .lg { flex:none; }
+.t2c { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:40px; padding:3px 2px; border-radius:8px; font-size:11.5px; font-weight:800; line-height:1.15; text-align:center; word-break:keep-all; overflow-wrap:anywhere; background:var(--t-diff); color:var(--ink); }
+.t2c i { font-style:normal; font-size:10px; line-height:1; }
+.t2c.s-g { background:var(--t-eq); color:var(--t-ink); }
+.t2c.s-y { background:var(--t-near); color:var(--t-ink); }
+.t2c.s-n { background:transparent; border:1px dashed var(--line2); color:var(--muted); }
+.t2leg .t2c { min-height:28px; padding:3px 9px; flex-direction:row; gap:3px; }
+.t2r.win .t2n b { background:linear-gradient(transparent 55%, var(--mark) 55%); }
+.t2r.fresh .t2c { animation:t2flip .42s ease-out both; }
+@keyframes t2flip { 0% { transform:rotateX(90deg); opacity:.2; } 100% { transform:none; opacity:1; } }
+@media (prefers-reduced-motion: reduce) { .t2r.fresh .t2c { animation:none; } }
+.t2em { font-family:inherit; font-size:18px; line-height:1.25; margin:0; letter-spacing:2px; }
+.t2empty { margin:6px 0 10px; }
+/* 월드컵 오늘의 16강: 민심 점수 */
+.cuphow { list-style:none; margin:4px 0 10px; padding:0; display:grid; gap:6px; }
+.cuphow li { font-size:14px; padding:8px 12px; border-radius:12px; background:var(--fill); }
+.cuphow b { margin-right:6px; }
+.cupbar .cupsc { font-size:13px; color:var(--soft); }
+.cupbar .cupsc b { color:var(--ink); }
+.prate.ok b.ok { color:var(--ink); background:var(--acc); padding:0 6px; border-radius:6px; }
+.prate.no b.no { color:var(--warn); background:none; }
+.cupln { margin:0; font-size:14.5px; }
+.cupln small { color:var(--muted); }
+.cupem { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:17px; letter-spacing:1px; }
+.cupem span { display:inline-flex; align-items:center; gap:6px; }
+.cupem small { font-size:11px; color:var(--muted); letter-spacing:0; }
+.rep .big { font-family:var(--display); font-weight:900; font-size:clamp(38px,6vw,64px); letter-spacing:-.05em; line-height:1; }
+.rep .big small { font-size:.32em; font-weight:700; color:var(--muted); margin-left:6px; letter-spacing:0; }
+@media (max-width:640px) {
+  .t2top { margin:6px 0 6px; gap:10px; }
+  .t2r { grid-template-columns:minmax(0,1.2fr) repeat(5,minmax(0,1fr)); gap:3px; }
+  .t2c { min-height:36px; font-size:10.5px; border-radius:7px; }
+  .t2n { font-size:11.5px; }
+  .t2n .lg { display:none; }
+  :root[data-view="game"] .cuphow li { padding:6px 10px; font-size:13px; }
+}
 .lobby2 .in { padding-top:4px; }
 .lobby2 .outl { margin:18px 0 0; font-size:13px; color:var(--muted); }
 /* 게임 중: 위에 검은 막대 하나(← 게임 고르기 · 이름 · 진행 · 효과음) + 얇은 진행 바 */
@@ -1170,7 +1221,7 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module">
-import * as PC from './play_core.js?v=425d17c201';
+import * as PC from './play_core.js?v=c45255c25f';
 const D = await (await fetch('data/play.json', { cache: 'no-cache' })).json();
 // 연봉 놀이터 v2 화면. make.py 가 page/*.js 를 이름순으로 이어 붙여 function main(D, PC) 하나로 만든다.
 // D = 회사 자료(make.py), PC = play_core.js (서버와 같은 규칙). 점수는 항상 PC.score* 로만 계산한다.
@@ -1182,7 +1233,7 @@ var API_BASE = 'https://play-api.jobzorro.workers.dev';
 var SITE = 'https://job.jobzorro.kr/play/', SITE_S = 'job.jobzorro.kr/play';
 var ctx = PC.load(D), CO = ctx.all, BYN = ctx.by, POOL = ctx.P, RK = PC.RK;
 var TODAY = PC.kstDay();
-var GNAME = { higher: '어디가 더 많이 줄까?', today: '오늘의 회사', sniper: '연봉 스나이퍼', road: '커리어 로드 20년', run: '조로 출근길' };
+var GNAME = { higher: '어디가 더 많이 줄까?', today: '오늘의 회사', sniper: '연봉 스나이퍼', road: '커리어 로드 20년', run: '조로 출근길', cup: '드림 컴퍼니 월드컵' };
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]; }); }
@@ -1228,7 +1279,7 @@ var BADGES = [
   ['sniper', '스나이퍼', '연봉 스나이퍼 450점 이상'],
   ['att7', '7일 출석', '7일 연속 출석 (아무 게임 1판)'],
   ['dhs', '더블 헤드샷', '연봉 스나이퍼 연속 2문제 오차 3% 이내'],
-  ['perfect', '퍼펙트 데이', '같은 날 1번 10문제 다 맞힘 + 2번 단서 2개 안에 성공 + 3번 450점 이상'],
+  ['perfect', '퍼펙트 데이', '같은 날 1번 10문제 다 맞힘 + 2번 단서 2개(또는 추측 2번) 안에 성공 + 3번 450점 이상'],
   ['road', '커리어의 신', '커리어 로드 그날 상위 1%'],
   ['commute', '출근의 신', '조로 출근길 꽈당 0번 + 정시 출근'],
   ['early', '얼리버드', '조로 출근길 8시 50분 전 도착']];
@@ -1900,6 +1951,8 @@ function mockDay(day, game) {
     var r = PC.rng('mock|' + key + '|' + n); if (r() > .72) return;
     var row = { nick: n, dev: 'mock' + i, ts: i, lk: mockLook(r) };
     if (game === 'higher') { var ok = 4 + Math.floor(r() * 7); row.aux = ok; row.score = ok * 100 + Math.round(ok * (6 + r() * 12)); }
+    else if (game === 'today' && PC.genToday(day, ctx).v === 2) { var g2 = r() < .15 ? 0 : 1 + Math.floor(r() * PC.TODAY2_TRIES); row.aux = g2; row.score = g2 ? PC.today2Pts(g2 - 1) : 0; }   // g2 = 맞힌 추측 번째(0 = 실패)
+    else if (game === 'cup') { row.aux = 5 + Math.floor(r() * 11); row.score = Math.round(row.aux / 15 * 820 / 20) * 20 + Math.floor(r() * 16) * PC.CUP_EYE; }   // aux = 민심 일치 수
     else if (game === 'today') { var op = r() < .18 ? 0 : 1 + Math.floor(r() * PC.TODAY_CLUES), ms = op ? Math.floor(r() * Math.min(PC.TODAY_PICKS, op)) : 0; row.aux = op; row.score = op ? PC.todayPts(op, ms) : 0; }   // op = 본 단서 수(0 = 실패), ms = 틀린 수
     else if (game === 'sniper') { var s = 0, errs = []; for (var q = 0; q < 5; q++) { var e = Math.round((r() - .42) * 40 * 10) / 10; errs.push(e); s += PC.sniperPts(e); } row.score = s; row.aux = 5; row.errs = errs; }
     else if (game === 'run') { row.aux = r() < .7 ? 1 : 0; row.score = Math.round((4000 + r() * 9000) / 10) * 10 + (row.aux ? 1000 + Math.floor(r() * 10) * 50 : 0); }
@@ -1933,7 +1986,8 @@ function mock(path, b) {
     return { tok: 'mock.' + b.game + '.' + Date.now(), t0: Date.now(), day: TODAY, ver: ctx.ver };
   }
   if (u[0] === '/play/score') {   // 서버와 똑같이: 날짜로 문제를 다시 만들고, 보낸 답으로 점수를 다시 계산
-    var pz = PC.gen(b.game, TODAY, ctx), S = PC.score(b.game, pz, b.ans, ctx), pv = rec(TODAY, b.game);
+    var rt = null; if (b.game === 'cup') { rt = {}; mock('/play/cup').rows.forEach(function (x) { rt[x[0]] = [x[1], x[2]]; }); }   // 월드컵: 서버처럼 전국 선택률로
+    var pz = PC.gen(b.game, TODAY, ctx), S = PC.score(b.game, pz, b.ans, ctx, rt), pv = rec(TODAY, b.game);
     if (b.game === 'run' && pv && pv.sent && pv.score > S.score) S = { score: pv.score, aux: pv.aux };   // 출근길: 2번 중 높은 점수 (서버와 같게)
     var rows = mockDay(TODAY, b.game).concat([{ score: S.score, ts: 1e15 }]).sort(byScore);
     return { ok: true, day: TODAY, score: S.score, aux: S.aux, rank: rows.findIndex(function (r) { return r.ts === 1e15; }) + 1, total: rows.length,
@@ -2386,12 +2440,13 @@ var TLV = ['쉬움', '보통', '어려움'];
 function todayInfo() {
   var y = PC.genToday(PC.addDays(TODAY, -1), ctx), t = TTOP;
   return '<div class="tinfo"><span>오늘의 회사 <b>#' + TPZ.no + '</b> · ' + TLV[TPZ.tier] + '</span>' +
-    (t ? '<span>오늘 정답자 <b>' + man(t.todayGame.ok) + '명</b> · 평균 단서 <b>' + (t.todayGame.avg || '-') + '개</b>' + mockTag() + '</span>' : '') +
+    (t ? '<span>오늘 정답자 <b>' + man(t.todayGame.ok) + '명</b> · ' + (TPZ.v === 2 ? '평균 추측 <b>' + (t.todayGame.avg || '-') + '번</b>' : '평균 단서 <b>' + (t.todayGame.avg || '-') + '개</b>') + mockTag() + '</span>' : '') +
     '<span>어제 정답 <b>' + esc(y.ans) + '</b>' + (t && t.yday.n ? ' · 정답률 ' + Math.round(t.yday.ok / t.yday.n * 100) + '%' : '') + '</span></div>';
 }
 function renderToday() {
   TPZ = TPZ || PC.genToday(TODAY, ctx);
   if (!TTOP) getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); if (!$('p-today').hidden && !prog('today')) renderToday(); } });
+  if (TPZ.v === 2) return renderToday2();   // 2026-11-02~ 비교 힌트 추리 (아래)
   var x = rec(TODAY, 'today'), p = prog('today');
   if (x) return resultToday(x);
   if (!p) {
@@ -2478,6 +2533,105 @@ function resultToday(x) {
     '<details class="more"><summary>단서 · 후보 8곳 다시 보기</summary>' + clueList(PC.todayClues(TPZ, ctx), PC.TODAY_CLUES, -1) + '<div class="cands done" aria-label="오늘의 후보 8곳">' + cards + '</div>' +
     '<div class="row"><a class="btn ghost sm" href="' + link(A) + '" target="_blank" rel="noopener">직급별 연봉 보기</a><a class="btn ghost sm" href="' + coLink(A) + '" target="_blank" rel="noopener">이 회사 가도 될까?</a></div></details>' +
     '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbT"></div></details><div class="row">' + againBtn('today', function () { TSEL = ''; renderToday(); }) + '</div></div>';
+  wireShare('shT', text, { title: '오늘의 회사 #' + TPZ.no, big: tries, sub: (ok ? man(x.score) + '점' : '아쉽게 실패') + ' · 정답은 비밀\n🔥 ' + streak() + '일 연속', lines: lines,
+    px: { mood: ok ? 'happy' : 'sad', hat: 1, co: A, o: { blind: 1, neutral: 1, w: 11, all: ok ? 1 : 0, off: ok ? 0 : 1 } } });   // 공유 그림엔 정답을 흘리지 않는 빌딩
+  miniLb('lbT', 'today');
+}
+
+// ── 오늘의 회사 v2 (2026-11-02~, 사용자 '재미가 없다 · 획기적 변화'): 아무 회사나 이름을 넣어 추측 → 정답과 비교한 칸 5개가 칠해짐
+//    🟩 같음 · 🟨 가까움 · ▲▼ 정답이 더 큼/작음. 기회 7번. 위에는 숨은 회사의 빌딩 실루엣(폭 = 직원 수, 층 = 부장 연봉)이
+//    틀릴수록 드러남: 2번 틀리면 색(업종) · 4번 틀리면 불빛(사원 연봉) + 이름 첫 글자
+var T2_SHORT = ['업종', '지역', '직원', '사원 연봉', '근속'];
+function t2Val(k, c) {
+  if (k === 'grp') return c.grp;
+  if (k === 'sido') return c.sido || '-';
+  if (k === 'm') return c.m >= 10000 ? (Math.round(c.m / 1000) / 10) + '만' : man(c.m);
+  if (k === 's') return man(Math.round(c.rk[0] / 10) * 10);
+  return c.tt ? c.tt.toFixed(1) + '년' : '-';
+}
+function t2Rows(log, fresh) {
+  var A = BYN[TPZ.ans];
+  return '<div class="t2tb" role="table" aria-label="추측 기록"><div class="t2r t2h" role="row"><span role="columnheader">회사</span>' + T2_SHORT.map(function (h) { return '<span role="columnheader">' + h + '</span>'; }).join('') + '</div>' +
+    log.map(function (n, i) {
+      var c = BYN[n], cells = PC.today2Row(TPZ, ctx, n), win = n === A.n;
+      return '<div class="t2r' + (i === fresh ? ' fresh' : '') + (win ? ' win' : '') + '" role="row"><span class="t2n" role="cell">' + logo(c, 's') + '<b>' + esc(n) + '</b></span>' + cells.map(function (x, j) {
+        var v = t2Val(PC.TODAY2_COLS[j][0], c), lab = { g: '같음', y: '가까움', x: '다름', n: '자료 없음' }[x.st] + (x.dir ? (x.dir > 0 ? ', 정답이 더 큼' : ', 정답이 더 작음') : '');
+        return '<span class="t2c s-' + x.st + '" role="cell" aria-label="' + T2_SHORT[j] + ' ' + esc(v) + ', ' + lab + '"' + (i === fresh ? ' style="animation-delay:' + (j * .12) + 's"' : '') + '>' + esc(v) +
+          (x.dir ? '<i>' + (x.dir > 0 ? '▲' : '▼') + '</i>' : '') + '</span>';
+      }).join('') + '</div>';
+    }).join('') + '</div>';
+}
+// 숨은 회사 빌딩: 0~1번 틀림 = 검은 실루엣 · 2~3번 = 색(업종) · 4번~ = 불빛(사원 연봉)
+function t2Bld(miss) {
+  if (!PX.ok) return '';
+  return bld(BYN[TPZ.ans], 4, miss < 2 ? { sil: 1 } : miss < 4 ? { off: 1 } : null, 't2b');
+}
+function t2Hint(miss) {
+  var A = BYN[TPZ.ans];
+  return miss >= 4 ? '이름 첫 글자 <b>' + esc(PC.firstChar(A.n)) + '</b> · 불빛 = 사원 연봉' : miss >= 2 ? '색이 드러났어요 (업종) · 4번 틀리면 불빛·첫 글자' : '숨은 회사 빌딩 · 폭 = 직원 수 · 층 = 부장 연봉 · 2번 틀리면 색 공개';
+}
+function renderToday2() {
+  var x = rec(TODAY, 'today'), p = prog('today');
+  if (x) return resultToday2(x);
+  if (!p) {
+    $('today').innerHTML = todayInfo() + '<div class="intro"><h3>오늘의 회사 #' + TPZ.no + '</h3>' +
+      '<p class="sum">게임에 나오는 회사 ' + man(ctx.H.length) + '곳 중 숨은 회사 하나를 찾아요. 아무 회사나 이름을 넣으면 정답과 비교해 칸이 칠해져요.</p>' +
+      '<div class="t2leg"><span class="t2c s-g">같음</span><span class="t2c s-y">가까움</span><span class="t2c s-x">다름</span><span class="t2c s-x">4,800<i>▲</i></span><small>▲ 정답이 더 커요</small></div>' +
+      '<p class="sum">기회는 <b>7번</b>. 500점에서 틀릴 때마다 −' + PC.TODAY2_STEP + '점, 적게 추측할수록 높은 순위예요.</p>' +
+      '<button class="btn big" id="tGo" type="button">시작하기 ▶</button><details class="rules"><summary>규칙 보기</summary><ul>' +
+      '<li>비교 칸: <b>업종 · 지역 · 직원 수 · 사원 연봉 · 평균 근속</b>. 직원 수 ±10%, 사원 연봉 ±4%, 근속 ±0.5년이면 초록, 직원 수 1.6배·연봉 ±12%·근속 ±2년 안이면 노랑이에요.</li>' +
+      '<li>위의 빌딩이 숨은 회사예요. 폭은 직원 수, 층수는 부장 연봉. 2번 틀리면 색(업종), 4번 틀리면 불빛(사원 연봉)과 이름 첫 글자가 보여요.</li>' +
+      '<li>모두에게 같은 정답이고 30일 안에는 같은 회사가 다시 안 나와요. 월요일은 이름난 회사, 주말은 어려운 회사예요.</li></ul></details></div>';
+    $('tGo').onclick = function () { $('tGo').disabled = true; startDaily('today').then(function (st) { setProg('today', { tok: st.tok, t0: st.t0, log: [], v: 2 }); renderToday(); }); };
+    return;
+  }
+  if (!Array.isArray(p.log) || p.v !== 2 || !PC.simToday2(TPZ, p.log, ctx)) { p.log = []; p.v = 2; setProg('today', p); }   // 예전 규칙(8지선다)으로 하던 판이면 새로
+  drawToday2(p);
+}
+function drawToday2(p, fresh) {
+  var Q = PC.simToday2(TPZ, p.log, ctx), miss = Q.wrong, left = PC.TODAY2_TRIES - Q.n, now = PC.today2Pts(miss);
+  $('today').innerHTML = todayInfo() + '<div class="gbar">' + tDet({ wrong: new Array(miss) }) + '<span class="lv">추측 ' + Q.n + ' / ' + PC.TODAY2_TRIES + '</span><span class="stat"><span>남은 기회 <b>' + left + '</b></span><span>맞히면 <b>' + man(now) + '</b>점</span></span></div>' +
+    '<div class="t2top"><div class="t2bld" aria-hidden="true">' + t2Bld(miss) + '</div><div class="t2q"><p class="t2hint">' + t2Hint(miss) + '</p>' +
+    '<div class="fld t2in"><label for="tIn">회사 이름으로 추측</label><input type="text" id="tIn" autocomplete="off" placeholder="예: 삼성전자" enterkeyhint="go"><div class="ac" id="tAc" hidden></div></div></div></div>' +
+    (Q.n ? t2Rows(p.log, fresh) : '<p class="src t2empty">아무 회사나 넣어 보세요. 비교 칸이 단서가 돼요.</p>') +
+    '<p class="src">숫자는 연봉 연구소 추정치 · 칸의 값은 내가 넣은 회사의 값이에요.</p>';
+  var used = {}; p.log.forEach(function (n) { used[n] = 1; });
+  var list = ctx.H.filter(function (c) { return !used[c.n]; });
+  var guess = function (n) {
+    p.log.push(n); setProg('today', p);
+    var S = PC.simToday2(TPZ, p.log, ctx);
+    sfx(S.solved ? 'fanfare' : 'wrong');
+    if (S.done) return finishToday2(p);
+    if (S.wrong === 2 || S.wrong === 4) toast(S.wrong === 2 ? '빌딩 색이 드러났어요! (업종)' : '불빛이 켜지고 첫 글자가 보여요!');
+    drawToday2(p, p.log.length - 1);
+  };
+  ac($('tIn'), $('tAc'), list, function (c, txt) {
+    if (!c && txt) { var q = txt.toLowerCase(); c = list.filter(function (x) { return x.n.toLowerCase() === q || x.o.toLowerCase() === q; })[0]; }
+    if (!c) { if (txt) toast('게임에 나오는 회사 중에서 골라 주세요.'); return; }
+    guess(c.n);
+  });
+  if (fresh != null) { var rw = $('today').querySelectorAll('.t2r')[fresh + 1]; if (rw) rw.scrollIntoView({ block: 'nearest', behavior: REDUCE ? 'auto' : 'smooth' }); }
+}
+function finishToday2(p) {
+  var ans = { log: p.log }, S = PC.scoreToday(TPZ, ans, ctx);
+  $('today').innerHTML = '<p class="src">점수를 보내는 중이에요…</p>';
+  submitDaily('today', ans, S, { solved: S.solved, open: S.open }).then(function (x) { store.set('slp-today1', '1'); bumpStreak(TODAY); checkPerfect(TODAY); renderMe(); TTOP = null; resultToday2(x); });
+}
+function resultToday2(x) {
+  var A = BYN[TPZ.ans], log = (x.ans && x.ans.log) || [], Q = PC.simToday2(TPZ, log, ctx) || { n: log.length, solved: false, wrong: log.length };
+  var ok = Q.solved, tries = (ok ? Q.n : 'X') + '/' + PC.TODAY2_TRIES, lines = PC.today2Emoji(TPZ, ctx, log);
+  var text = '연봉 놀이터 · 오늘의 회사 #' + TPZ.no + ' ' + tries + '\n' + lines.join('\n') + '\n' + SITE_S;
+  var det = { hat: 1 }, scene = ok
+    ? stage('<div class="pxrow">' + zorro(myRank(), 'happy', 3, 'jump', det) + icon('magnifier', 4) + bld(A, 4, { all: 1 }, 'lightup') + '</div>', 'resst', '정답 ' + A.n + ' 빌딩에 불이 다 켜졌어요')
+    : stage('<div class="pxrow">' + zorro(myRank(), 'shock', 3, 'idle', det) + '<span class="fleetx">범인 도주!</span><div class="runaway" style="position:relative">' + icon('puff', 3, 'puff') + bld(A, 4, { sil: 1 }) + '</div></div>', 'resst flee', '숨은 회사가 도망갔어요');
+  $('today').innerHTML = todayInfo() + '<div class="over"><span class="lv">오늘의 회사 #' + TPZ.no + ' · ' + (ok ? '성공' : '다음 기회에') + '</span>' + scene + vsScene('today', x) + (ok ? logo(A, 'l').replace('class="lg l', 'class="lg l lightup') : logo(A, 'l')) +
+    '<div class="ttl"><b>' + esc(A.n) + '</b></div><div class="big">' + tries + '<small> 추측</small></div>' +
+    '<p>' + (ok ? (Q.n === 1 ? '한 번에' : Q.n + '번 만에') + ' 찾았어요. ' + man(x.score) + '점' : '7번 안에 못 찾았어요. 0점') + '</p>' +
+    '<pre class="t2em" aria-label="추측 결과 칸">' + lines.join('\n') + '</pre>' +
+    rankBox('today', x) + gotBox('today') + shareBox('shT', vsBox('today', x)) + nextBtn('today') + week7('today') +
+    '<details class="more"><summary>내 추측 다시 보기 · 정답 회사</summary>' + t2Rows(log, -1) +
+    '<div class="row"><a class="btn ghost sm" href="' + link(A) + '" target="_blank" rel="noopener">직급별 연봉 보기</a><a class="btn ghost sm" href="' + coLink(A) + '" target="_blank" rel="noopener">이 회사 가도 될까?</a></div></details>' +
+    '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbT"></div></details><div class="row">' + againBtn('today', function () { renderToday(); }) + '</div></div>';
   wireShare('shT', text, { title: '오늘의 회사 #' + TPZ.no, big: tries, sub: (ok ? man(x.score) + '점' : '아쉽게 실패') + ' · 정답은 비밀\n🔥 ' + streak() + '일 연속', lines: lines,
     px: { mood: ok ? 'happy' : 'sad', hat: 1, co: A, o: { blind: 1, neutral: 1, w: 11, all: ok ? 1 : 0, off: ok ? 0 : 1 } } });   // 공유 그림엔 정답을 흘리지 않는 빌딩
   miniLb('lbT', 'today');
@@ -3131,97 +3285,164 @@ function resultRoad2(x, fresh) {
 }
 
 
-// ── 05 드림 컴퍼니 월드컵 — 연봉은 가리고 고르기. 고를 때마다 전국 선택률, 우승하면 진짜 성적표
-var CUP = null, CSTAT = null, CTODAY = 0, CTHEME = 'all';
+// ── 05 드림 컴퍼니 월드컵 — 연봉은 가리고 고르기
+//    2026-11-01 사용자 '어떻게 1등 되는지 모르겠다' → 오늘의 16강(누구에게나 같은 대진·순위 있음) + 테마 연습(무작위·순위 없음)
+//    고를 때마다 그 대결의 민심(전국 선택률이 높은 쪽)을 공개, 민심과 같으면 점수 (규칙은 PC.scoreCupAll — 서버도 같은 계산)
+var CUP = null, CSTAT = null, CTODAY = 0, CMODE = 'day', CPZ = null;
 function pctS(v) { return v == null ? '-' : Math.round(v * 1000) / 10 + '%'; }
 function loadCupStat() {
   return call('/play/cup').then(function (j) { CSTAT = {}; (j.rows || []).forEach(function (r) { CSTAT[r[0]] = [r[1], r[2], r[3]]; }); CTODAY = j.today || 0; }).catch(function () { CSTAT = CSTAT || {}; });
 }
 function rate(n) { var s = CSTAT && CSTAT[n]; return s && s[0] >= 20 ? s[1] / s[0] : null; }
+function cupRates() { var o = {}; Object.keys(CSTAT || {}).forEach(function (n) { o[n] = [CSTAT[n][0], CSTAT[n][1]]; }); return o; }
+var CUP_RL = ['16강', '8강', '4강', '결승'];
 function themeBar() {
-  return '<div class="toolbar"><div class="seg" id="cupTh" aria-label="테마">' + Object.keys(PC.THEMES).map(function (k) { return '<button type="button" data-v="' + k + '" aria-pressed="' + (k === CTHEME) + '">' + PC.THEMES[k] + '</button>'; }).join('') + '</div>' +
+  return '<div class="toolbar"><div class="seg" id="cupTh" aria-label="월드컵 고르기"><button type="button" data-v="day" aria-pressed="' + (CMODE === 'day') + '">🏆 오늘의 16강</button>' +
+    Object.keys(PC.THEMES).map(function (k) { return '<button type="button" data-v="' + k + '" aria-pressed="' + (k === CMODE) + '">' + (k === 'all' ? '연습 · ' : '') + PC.THEMES[k] + '</button>'; }).join('') + '</div>' +
     '<span class="src" style="margin:0">오늘 <b>' + man(CTODAY) + '판</b>' + mockTag() + '</span></div>';
 }
 function wireTheme() {
   document.querySelectorAll('#cupTh button').forEach(function (b) { b.onclick = function () {
-    if (b.dataset.v === CTHEME) return;
-    if (CUP && CUP.picks.length && wireTheme.ask !== b.dataset.v) { wireTheme.ask = b.dataset.v; toast('지금 대진은 처음부터 다시 시작돼요. 바꾸려면 한 번 더 눌러 주세요.'); return; }   // 2026-10-31: 진행 중엔 확인
-    wireTheme.ask = ''; CTHEME = b.dataset.v; newCup();
+    if (b.dataset.v === CMODE) return;
+    if (CUP && CUP.mode !== 'day' && CUP.ans.length && wireTheme.ask !== b.dataset.v) { wireTheme.ask = b.dataset.v; toast('지금 연습 대진은 처음부터 다시 시작돼요. 바꾸려면 한 번 더 눌러 주세요.'); return; }   // 오늘의 16강은 하던 판이 저장돼 있어 바로 바꿔도 됨
+    wireTheme.ask = ''; CMODE = b.dataset.v; CUP = null; renderCup();
   }; });
 }
-function renderCup() { if (!CSTAT) loadCupStat().then(function () { CUP ? cupDraw() : newCup(); }); else if (CUP) cupDraw(); else newCup(); }
-function newCup() {
-  var pool = PC.cupPool(ctx, CTHEME), n = PC.cupSize(pool), r = PC.rng(Math.random() + '|cup'), L = PC.shuffleR(r, pool).slice(0, n);
-  CUP = { theme: CTHEME, all: L, round: L, next: [], i: 0, picks: [], last: null, started: false };
+function renderCup() { if (!CSTAT) loadCupStat().then(cupRoute); else cupRoute(); }
+function cupRoute() {
+  if (CMODE !== 'day') { if (!CUP || CUP.mode === 'day') newCup(); else cupDraw(); return; }
+  CPZ = CPZ || PC.genCup(TODAY, ctx);
+  var x = rec(TODAY, 'cup'), p = prog('cup');
+  if (x) return cupReport({ mode: 'day', theme: 'all', names: CPZ.all, ans: x.ans, x: x });
+  if (!p) {
+    $('cup').innerHTML = themeBar() + '<div class="intro"><h3>오늘의 16강 · ' + mmdd(TODAY) + '</h3>' +
+      '<p class="sum">모두 같은 16곳, 같은 대진이에요. 가고 싶은 회사를 고르면 그 대결의 <b>전국 민심</b>이 바로 공개돼요.<br>민심과 같은 쪽을 고를수록 점수가 올라가요.</p>' +
+      '<ul class="cuphow"><li><b>민심 맞히기</b> 16강 40 · 8강 60 · 4강 80 · 결승 100점</li><li><b>안목 보너스</b> 우승 회사의 대리 연봉이 16곳 중 높을수록 최대 +180점</li><li><b>만점 1,000점</b> · 하루 첫 판만 순위에 올라요</li></ul>' +
+      '<button class="btn big" id="cGo" type="button">시작하기 ▶</button><details class="rules"><summary>규칙 보기</summary><ul>' +
+      '<li>민심 = 지금까지 전국 사람들이 그 회사를 고른 비율(선택률)이 더 높은 쪽이에요. 기록이 적은 회사는 50%에 가깝게 쳐요.</li>' +
+      '<li>연봉은 끝날 때까지 비밀이에요. 우승 회사의 대리 연봉이 16곳 중 r위면 (16 − r) × 12점을 더해요.</li>' +
+      '<li>위 테마 버튼(연습)은 무작위 대진으로 몇 번이든 할 수 있고 순위에는 안 올라가요.</li></ul></details></div>';
+    $('cGo').onclick = function () { $('cGo').disabled = true; startDaily('cup').then(function (st) { setProg('cup', { tok: st.tok, t0: st.t0, ans: [] }); renderCup(); }); };
+    wireTheme(); return;
+  }
+  if (!Array.isArray(p.ans)) { p.ans = []; setProg('cup', p); }
+  CUP = cupState('day', 'all', CPZ.all.map(function (n) { return BYN[n]; }), p.ans);
+  if (!CUP) { p.ans = []; setProg('cup', p); CUP = cupState('day', 'all', CPZ.all.map(function (n) { return BYN[n]; }), []); }
   cupDraw();
 }
-// 도트 대진표 (3차): 고르는 동안엔 숫자 없는 빌딩(연봉은 비밀), 떨어진 회사는 흐리게, 지금 대결은 테두리
+function newCup() {
+  var pool = PC.cupPool(ctx, CMODE), n = PC.cupSize(pool), r = PC.rng(Math.random() + '|cup');
+  CUP = cupState(CMODE, CMODE, PC.shuffleR(r, pool).slice(0, n), []);
+  cupDraw();
+}
+// 고른 기록 ans 로 대진 상태 다시 만들기: round(지금 판 회사들) · i(지금 대결 위치) · picks [[이긴, 진]] · 민심 일치·점수
+function cupState(mode, theme, all, ans) {
+  var st = { mode: mode, theme: theme, all: all, ans: [], round: all, next: [], i: 0, r: 0, picks: [], last: null, agree: 0, pts: 0 }, R = cupRates();
+  for (var k = 0; k < ans.length; k++) if (!cupPick(st, ans[k], R)) return null;
+  return st;
+}
+function cupPick(st, j, R) {
+  if (j !== 0 && j !== 1) return false;
+  var a = st.round[st.i], b = st.round[st.i + 1]; if (!a || !b) return false;
+  var w = j ? b : a, l = j ? a : b, M = PC.cupMaj(R, a.n, b.n), ok = !M.maj || M.maj === w.n, add = ok ? PC.CUP_W[st.r] || 100 : 0;
+  st.ans.push(j); st.picks.push([w.n, l.n]); st.next.push(w); st.i += 2;
+  st.last = { w: w, l: l, a: a, b: b, pa: M.pa, maj: M.maj, ok: ok, add: add }; if (ok) { st.agree++; st.pts += add; }
+  if (st.i >= st.round.length) { st.round = st.next; st.next = []; st.i = 0; st.r++; }
+  return true;
+}
+// 도트 대진표: 고르는 동안엔 숫자 없는 빌딩, 떨어진 회사는 흐리게, 지금 대결은 테두리
 function cupBrk() {
   if (!PX.ok) return '';
   var lost = {}, a = CUP.round[CUP.i], b = CUP.round[CUP.i + 1];
   CUP.picks.forEach(function (p) { lost[p[1]] = 1; });
   return '<div class="brk8" aria-hidden="true">' + CUP.all.map(function (c) { return bld(c, 2, { blind: 1 }, lost[c.n] ? 'gone' : c === a || c === b ? 'now' : ''); }).join('') + '</div>';
 }
-// 끝난 뒤 대진표: 16강(또는 8강) → … → 우승, 진짜 빌딩으로 (picks 앞에서부터 판마다 [이긴 회사, 진 회사])
+// 끝난 뒤 대진표: 16강 → … → 우승, 진짜 빌딩으로
 function cupBkt(all, picks) {
   if (!PX.ok) return '';
   var rows = [[all.length + '강', all]], i = 0, m = all.length / 2;
   while (m >= 1) { rows.push([m === 1 ? '우승' : m + '강', picks.slice(i, i + m).map(function (p) { return BYN[p[0]]; })]); i += m; m /= 2; }
   return '<div class="bkt" aria-hidden="true">' + rows.map(function (r) { return '<div class="rl">' + r[0] + '</div><div class="rnd">' + r[1].map(function (c) { return bld(c, 2); }).join('') + '</div>'; }).join('') + '</div>';
 }
+// 방금 대결의 민심 한 줄
+function cupLastLine(L) {
+  if (!L) return '';
+  var pw = Math.round((L.w === L.a ? L.pa : 1 - L.pa) * 100);
+  if (!L.maj) return '민심 반반! <b>' + esc(L.w.n) + '</b> 골라도 <b>+' + L.add + '</b>';
+  return L.ok ? '민심과 같아요! 전국 <b>' + pw + '%</b>가 ' + esc(L.w.n) + ' · <b class="ok">+' + L.add + '</b>'
+    : '민심은 <b>' + esc(L.l.n) + '</b>(' + (100 - pw) + '%)였어요 · <b class="no">0점</b>';
+}
 function cupDraw() {
-  var R = CUP.round, n = R.length, lv = n === 2 ? '결승' : n + '강', a = R[CUP.i], b = R[CUP.i + 1], dots = '';
+  var R = CUP.round, n = R.length, lv = n === 2 ? '결승' : n + '강', a = R[CUP.i], b = R[CUP.i + 1], dots = '', day = CUP.mode === 'day';
   for (var k = 0; k < n / 2; k++) dots += '<i class="' + (k < CUP.i / 2 ? 'on' : '') + '"></i>';
-  var pr = '';
-  if (CUP.last) { var rt = rate(CUP.last.n); pr = rt == null ? esc(CUP.last.n) + '는 아직 고른 사람이 적은 회사예요.' : '전국 <b>' + Math.round(rt * 100) + '%</b>가 ' + esc(CUP.last.n) + '를 골랐어요.' + mockTag(); }
-  $('cup').innerHTML = themeBar() + '<div class="cupbar"><span class="lv">' + PC.THEMES[CUP.theme] + ' · ' + lv + '</span><span class="pg">' + (CUP.i / 2 + 1) + ' / ' + n / 2 + '</span><span class="dots">' + dots + '</span></div>' +
-    cupBrk() + '<p class="qline">어디로 <b>가고 싶어요?</b></p><p class="qsub">연봉은 아직 비밀이에요.</p>' +
-    '<div class="duel">' + [a, b].map(function (c, j) { return '<button class="pick" type="button" data-j="' + j + '">' + bld(c, 3, { blind: 1 }, 'pb') + logo(c) + '<span class="nm">' + esc(c.n) + bossMark(c) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + '</span><span class="amt q">?</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
-    '<p class="prate" aria-live="polite">' + pr + '</p>';
+  $('cup').innerHTML = themeBar() + '<div class="cupbar"><span class="lv">' + (day ? '오늘의 ' : '연습 · ') + lv + '</span><span class="pg">' + (CUP.i / 2 + 1) + ' / ' + n / 2 + '</span>' +
+    '<span class="cupsc">민심 <b>' + CUP.agree + '</b>/' + CUP.ans.length + ' · <b>' + CUP.pts + '</b>점</span><span class="dots">' + dots + '</span></div>' +
+    cupBrk() + '<p class="qline">어디로 <b>가고 싶어요?</b></p><p class="qsub">고르면 전국 민심 공개 · 같으면 <b>+' + (PC.CUP_W[CUP.r] || 100) + '</b> · 연봉은 아직 비밀</p>' +
+    '<div class="duel">' + [a, b].map(function (c, j) { return '<button class="pick" type="button" data-j="' + j + '">' + bld(c, 3, { blind: 1 }, 'pb') + logo(c) + '<span class="nm">' + esc(c.n) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + '</span><span class="amt q">?</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
+    '<p class="prate' + (CUP.last ? CUP.last.ok ? ' ok' : ' no' : '') + '" aria-live="polite">' + cupLastLine(CUP.last) + '</p>';
   wireTheme();
   document.querySelectorAll('#cup .pick').forEach(function (el) { el.onclick = function () {
-    if (!CUP.started) { CUP.started = true; call('/play/start', { game: 'cup', dev: DEV }).catch(function () {}); }
-    var w = +el.dataset.j ? b : a, l = w === a ? b : a; sfx('coin');
-    CUP.picks.push([w.n, l.n]); CUP.next.push(w); CUP.last = w; CUP.i += 2;
-    if (CUP.i >= n) { CUP.round = CUP.next; CUP.next = []; CUP.i = 0; }
-    CUP.round.length === 1 ? cupEnd(CUP.round[0]) : cupDraw();
+    if (!day && !CUP.started) { CUP.started = true; call('/play/start', { game: 'cup', dev: DEV }).catch(function () {}); }
+    cupPick(CUP, +el.dataset.j, cupRates()); sfx(CUP.last.ok ? 'coin' : 'wrong');
+    if (day) { var p = prog('cup') || {}; p.ans = CUP.ans.slice(); setProg('cup', p); }
+    CUP.round.length === 1 ? cupEnd() : cupDraw();
   }; });
 }
-function cupEnd(w) {
-  var theme = CUP.theme, all = CUP.all, picks = CUP.picks;
+function cupEnd() {
+  var C = CUP, w = C.round[0], names = C.all.map(function (c) { return c.n; }), S = PC.scoreCupAll(names, C.ans, ctx, cupRates());
   store.set('slp-cupw-' + TODAY, w.n);
-  var CW = cupWins(); CW[w.n] = (CW[w.n] || 0) + 1; store.setJ('slp-cupwins', CW);   // 소품 '응원 깃발'·'리본 훈장'   // 1차 UX: 로비 카드에 '오늘 우승: 회사' 표시용 (이 기기)
-  call('/play/cup', { dev: DEV, theme: theme, picks: picks }).catch(function () {}).then(function () { return loadCupStat(); }).then(function () { cupReport(w, theme, all, picks); sfx('fanfare'); });
-  CUP = null;
+  var CW = cupWins(); CW[w.n] = (CW[w.n] || 0) + 1; store.setJ('slp-cupwins', CW);   // 소품 '응원 깃발'·'리본 훈장'
+  if (S.agree >= 12) store.set('slp-cupmind', '1');   // 소품 '선글라스'
+  if (S.eyeR === 1) store.set('slp-cupeye', '1');     // 소품 '보스 빌딩 배경'
+  if (rate(w.n) != null && rate(w.n) < .3) store.set('slp-cupminor', '1');   // 소품 '중절모': 선택률 30% 미만 회사로 우승
+  CUP = null; $('cup').innerHTML = '<p class="src">' + (C.mode === 'day' ? '점수를 보내는 중이에요…' : '결과를 모으는 중이에요…') + '</p>';
+  var agg = function () { return call('/play/cup', { dev: DEV, theme: C.theme, picks: C.picks }).catch(function () {}).then(loadCupStat); };
+  // 오늘의 16강: 점수를 먼저 낸 뒤(서버는 내 판을 더하기 전 민심으로 계산) 전국 누적에 더함
+  (C.mode === 'day' ? submitDaily('cup', C.ans, S, { champ: w.n, agree: S.agree, eye: S.eye, eyeR: S.eyeR, per: S.per.join('') }).then(function (x) { checkPerfect(TODAY); return agg().then(function () { return x; }); })
+    : agg().then(function () { return { score: S.score, aux: S.agree, champ: w.n, agree: S.agree, eye: S.eye, eyeR: S.eyeR, per: S.per.join(''), ans: C.ans }; }))
+    .then(function (x) { cupReport({ mode: C.mode, theme: C.theme, names: names, ans: C.ans, x: x }); sfx('fanfare'); });
 }
-function cupReport(w, theme, all, picks) {
-  if (picks && rate(w.n) != null && rate(w.n) < .3) store.set('slp-cupminor', '1');   // 소품 '중절모': 선택률 30% 미만 회사로 우승
-  var by = all.slice().sort(function (x, y) { return y.rk[1] - x.rk[1]; }), r = by.indexOf(w) + 1, top = by[0], N = all.length;
-  var pool = PC.cupPool(ctx, theme), wins = function (c) { var s = CSTAT[c.n]; return s ? s[2] : 0; };
-  var want = pool.slice().sort(function (x, y) { return wins(y) - wins(x) || (rate(y.n) || 0) - (rate(x.n) || 0); }).slice(0, 10);
-  var pay = pool.slice().sort(function (x, y) { return y.rk[2] - x.rk[2]; }).slice(0, 10), payN = pay.map(function (c) { return c.n; });
-  var wr = pool.slice().sort(function (x, y) { return wins(y) - wins(x); }).indexOf(w) + 1;
-  var tw = r === 1 ? '연봉까지 ' + N + '곳 중 1등을 골랐어요. 안목 인정이에요.'
-    : r <= 4 ? '대리 연봉도 ' + N + '곳 중 ' + r + '위, 상위권이에요. 마음과 지갑이 같은 방향이네요.'
-    : '대리 연봉은 ' + N + '곳 중 ' + r + '위예요. 연봉 1등은 ' + esc(top.n) + '(' + man(top.rk[1] - w.rk[1]) + '만원 더)였어요.';
-  var text = '연봉 놀이터 · 드림 컴퍼니 월드컵 (' + PC.THEMES[theme] + ')\n🏆 ' + w.n + ' (대리 연봉 ' + N + '곳 중 ' + r + '위)\n' + SITE_S;
-  $('cup').innerHTML = themeBar() + '<div class="rep"><span class="crown">WINNER · 내 드림 컴퍼니 · ' + PC.THEMES[theme] + '</span>' +
-    stage('<div class="pxrow">' + zorro(myRank(), 'happy', 3, 'jump') + '<div class="champ">' + icon('trophy', 4) + bld(w, bS(true), null, 'grow') + '</div></div>' + confetti(), 'resst', '우승 ' + w.n + ' 빌딩 위에 트로피') + logo(w, 'l') + '<span class="nm"><b>' + esc(w.n) + '</b></span>' +
-    '<p class="twist" style="background:none;padding:0">전국 우승 순위 <b>' + wr + '위</b> (' + PC.THEMES[theme] + ' ' + pool.length + '곳 중, 우승 ' + man(wins(w)) + '번)' + mockTag() + '</p>' +
+// 결과 이모지: 라운드마다 한 줄 (🟩 민심과 같음 · 🟥 다름)
+function cupEmoji(per) { var s = String(per || ''), out = [], i = 0; [8, 4, 2, 1].forEach(function (k) { if (i < s.length) out.push(s.slice(i, i + k).replace(/1/g, '🟩').replace(/0/g, '🟥')); i += k; }); return out; }
+function cupReport(o) {
+  var x = o.x || {}, day = o.mode === 'day', all = o.names.map(function (n) { return BYN[n]; }), Sm = PC.simCup(o.names, o.ans || []);
+  if (!Sm) { $('cup').innerHTML = themeBar() + '<p class="src">결과를 다시 그리지 못했어요.</p>'; wireTheme(); return; }
+  var w = BYN[x.champ || Sm.champ], picks = Sm.ms.map(function (m) { return [m.w, m.w === m.a ? m.b : m.a]; }), N = all.length, theme = o.theme;
+  var per = x.per || PC.scoreCupAll(o.names, o.ans, ctx, cupRates()).per.join(''), agree = x.agree != null ? x.agree : x.aux, eye = x.eye || 0;
+  var by = all.slice().sort(function (p, q) { return q.rk[1] - p.rk[1]; }), r = by.indexOf(w) + 1, top = by[0];
+  var pool = PC.cupPool(ctx, theme), wins = function (c) { var s = CSTAT && CSTAT[c.n]; return s ? s[2] : 0; };
+  var want = pool.slice().sort(function (p, q) { return wins(q) - wins(p) || (rate(q.n) || 0) - (rate(p.n) || 0); }).slice(0, 10);
+  var pay = pool.slice().sort(function (p, q) { return q.rk[2] - p.rk[2]; }).slice(0, 10), payN = pay.map(function (c) { return c.n; });
+  var em = cupEmoji(per), lbl = day ? '오늘의 16강 · ' + mmdd(TODAY) : '연습 · ' + PC.THEMES[theme];
+  var tw = r === 1 ? '우승 회사가 대리 연봉도 ' + N + '곳 중 1등! 안목 만점이에요.'
+    : r <= 4 ? '우승 회사 대리 연봉은 ' + N + '곳 중 ' + r + '위, 상위권이에요. 마음과 지갑이 같은 방향이네요.'
+    : '우승 회사 대리 연봉은 ' + N + '곳 중 ' + r + '위예요. 연봉 1등은 ' + esc(top.n) + '(' + man(top.rk[1] - w.rk[1]) + '만원 더)였어요.';
+  var text = '연봉 놀이터 · ' + (day ? '드림 컴퍼니 월드컵 오늘의 16강 ' + mmdd(TODAY) : '드림 컴퍼니 월드컵 연습 (' + PC.THEMES[theme] + ')') + '\n🏆 ' + w.n + ' · ' + man(x.score) + '점\n민심 ' + agree + '/15\n' + em.join('\n') + '\n' + SITE_S;
+  $('cup').innerHTML = themeBar() + '<div class="rep"><span class="crown">' + lbl + ' · 내 드림 컴퍼니</span>' +
+    stage('<div class="pxrow">' + zorro(myRank(), 'happy', 3, 'jump') + '<div class="champ">' + icon('trophy', 4) + bld(w, bS(true), null, 'grow') + '</div></div>' + confetti(), 'resst', '우승 ' + w.n + ' 빌딩 위에 트로피') + (day ? vsScene('cup', x) : '') +
+    logo(w, 'l') + '<span class="nm"><b>' + esc(w.n) + '</b></span>' +
+    '<div class="big">' + man(x.score) + '<small>점 / 1,000' + (day ? '' : ' · 연습') + '</small></div>' +
+    '<p class="cupln">민심 일치 <b>' + agree + '/15</b> · 안목 보너스 <b>+' + eye + '</b> <small>(대리 연봉 ' + N + '곳 중 ' + r + '위)</small></p>' +
+    '<div class="cupem" aria-label="라운드별 민심 일치">' + em.map(function (e, i) { return '<span><small>' + CUP_RL[i] + '</small>' + e + '</span>'; }).join('') + '</div>' +
+    (day ? rankBox('cup', x) : '') + gotBox('cup') + shareBox('shC', day ? vsBox('cup', x) : '') + nextBtn('cup') +
+    '<div class="row">' + (day ? '<button class="btn ghost" id="cupPr" type="button">테마 연습 하기</button>' + againBtn('cup', function () { CUP = null; renderCup(); }) : '<button class="btn ghost" id="cupAgain" type="button">새 ' + N + '강 연습</button>') + '</div>' + week7('cup') +
+    '<p class="twist">' + tw + '</p>' +
+    '<details class="more"><summary>우승 회사 성적표 · 대진표 · 민심 vs 연봉</summary>' +
     '<div class="stats"><div><small>신입 기준 연봉</small><b>' + (w.s0 ? man(w.s0) + '만' : '-') + '</b></div><div><small>대리</small><b>' + man(w.rk[1]) + '만</b></div><div><small>부장</small><b>' + eokS(w.rk[4]) + '</b></div>' +
     '<div><small>1년 퇴사율</small><b>' + pctS(w.to) + '</b></div><div><small>평균 근속</small><b>' + (w.tt ? w.tt.toFixed(1) + '년' : '-') + '</b></div><div><small>직원</small><b>' + man(w.m) + '명</b></div></div>' +
-    '<p class="twist">' + tw + '</p>' +
-    gotBox('cup') + shareBox('shC') + nextBtn('cup') + '<div class="row"><button class="btn ghost" id="cupAgain" type="button">새 ' + N + '강 하기</button></div>' + week7('cup') +   // 2차 UX: 공유 → 다음 게임 → 이번 주, 긴 표는 접기
     '<div class="row"><a class="btn ghost sm" href="' + coLink(w) + '" target="_blank" rel="noopener">이 회사 가도 될까? 판단 보기</a><a class="btn ghost sm" href="' + link(w) + '" target="_blank" rel="noopener">직급별 연봉 보기</a></div>' +
-    '<details class="more"><summary>가고 싶은 회사 vs 연봉 높은 회사 · 대진표</summary>' +
+    cupBkt(all, picks) +
     '<p class="h3" style="margin-top:6px">가고 싶은 회사 vs 연봉 높은 회사 · ' + PC.THEMES[theme] + mockTag() + '</p>' +
     '<div class="vs2"><div><b>가고 싶은 TOP 10</b> <small class="src">(전국 우승 횟수)</small><ol>' + want.map(function (c) { return '<li class="' + (payN.indexOf(c.n) < 0 ? 'off' : '') + '">' + esc(c.n) + ' <small>· 과장 ' + man(c.rk[2]) + '</small></li>'; }).join('') + '</ol></div>' +
     '<div><b>연봉 TOP 10</b> <small class="src">(과장 연봉)</small><ol>' + pay.map(function (c) { return '<li>' + esc(c.n) + ' <small>· ' + man(c.rk[2]) + '만원</small></li>'; }).join('') + '</ol></div></div>' +
     '<p class="src">빨간 이름: 인기는 TOP 10인데 연봉은 TOP 10 밖인 곳이에요.</p>' +
-    (picks ? cupBkt(all, picks) : '') + '<details class="brk"><summary>이번 ' + N + '곳 대리 연봉 순위 보기</summary><ol>' + by.map(function (c) { return '<li>' + (c === w ? '<b>' + esc(c.n) + '</b>' : esc(c.n)) + ' · ' + man(c.rk[1]) + '만원</li>'; }).join('') + '</ol></details></details></div>';
+    '<details class="brk"><summary>이번 ' + N + '곳 대리 연봉 순위 보기</summary><ol>' + by.map(function (c) { return '<li>' + (c === w ? '<b>' + esc(c.n) + '</b>' : esc(c.n)) + ' · ' + man(c.rk[1]) + '만원</li>'; }).join('') + '</ol></details></details>' +
+    (day ? '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbC"></div></details>' : '') + '</div>';
   wireTheme();
-  wireShare('shC', text, { title: '드림 컴퍼니 월드컵', big: '🏆', sub: w.n + '\n대리 연봉 ' + N + '곳 중 ' + r + '위 · ' + PC.THEMES[theme], px: { mood: 'happy', co: w, icon: 'trophy' } });
-  $('cupAgain').onclick = newCup;
+  wireShare('shC', text, { title: day ? '오늘의 16강' : '드림 컴퍼니 월드컵', big: man(x.score) + '점', sub: '🏆 ' + w.n + '\n민심 ' + agree + '/15 · 안목 +' + eye, lines: em, px: { mood: 'happy', co: w, icon: 'trophy' } });
+  if ($('cupAgain')) $('cupAgain').onclick = function () { CUP = null; newCup(); };
+  if ($('cupPr')) $('cupPr').onclick = function () { CMODE = 'all'; CUP = null; renderCup(); };
+  if (day) miniLb('lbC', 'cup');
 }
 
 // ── 4차 (2026-10-28): 소품 꾸미기 · 이번 주 보스 회사 · 친구 대결 도전장. 모두 이 기기 저장(localStorage, store 가 try/catch)
@@ -3254,7 +3475,7 @@ var ITEMS = [
   // 예전 12개 (아이디·조건 그대로)
   ['crown', 'hat', '왕관', '칭호 3개 이상 또는 \'퍼펙트 데이\'', function () { var b = badges(); return Object.keys(b).length >= 3 || !!b.perfect; }, 'etc', 'r', function () { return [Object.keys(badges()).length, 3]; }, '머리 위가 좀 무거워요'],
   ['headset', 'hat', '헤드셋', '칭호 1개 이상', function () { return Object.keys(badges()).length >= 1; }, 'etc', 'c', null, '회의 중이라 못 들었어요'],
-  ['beanie', 'hat', '비니', '연속 출석 7일 또는 보스 조우 3주', function () { return streak() >= 7 || bossCount() >= 3; }, 'etc', 'c', function () { return [streakMax(), 7]; }, '출근길 칼바람 대비'],
+  ['beanie', 'hat', '비니', '연속 출석 7일', function () { return streak() >= 7; }, 'etc', 'c', function () { return [streakMax(), 7]; }, '출근길 칼바람 대비'],
   ['coffee', 'hand', '커피', '오늘의 회사 한 번 풀기', function () { return store.get('slp-today1') === '1' || !!rec(TODAY, 'today'); }, 'today', 'c', null, '수사는 카페인으로'],
   ['bag', 'hand', '서류가방', '엔딩 도감 3개 이상', function () { var B = endBook(); return Object.keys(B).length >= 3; }, 'road', 'c', function () { return [Object.keys(endBook()).length, 3]; }, '안엔 이력서 세 장'],
   ['laptop', 'hand', '노트북', '엔딩 \'이직의 신\' 또는 \'스타트업 대박\'', function () { return endHas(['hopper', 'startup']); }, 'road', 'r', null, '어디서든 일할 수 있는 사람'],
@@ -3263,7 +3484,7 @@ var ITEMS = [
   ['idcard', 'acc', '사원증', '조로 대리 되기', function () { return myRank() >= 1; }, 'etc', 'c', function () { return [myXP(), RANK_XP[1]]; }, '출입문이 열리는 소리'],
   ['glasses', 'acc', '안경', '조로 과장 되기', function () { return myRank() >= 2; }, 'etc', 'c', function () { return [myXP(), RANK_XP[2]]; }, '엑셀 셀이 잘 보여요'],
   ['goldtie', 'acc', '금넥타이', '조로 부장 되기', function () { return myRank() >= 4; }, 'etc', 'r', function () { return [myXP(), RANK_XP[4]]; }, '결재판이 반짝여요'],
-  ['shades', 'acc', '선글라스', '이번 주 보스 회사를 게임에서 만나기', function () { return bossCount() >= 1; }, 'etc', 'c', null, '보스 눈빛 차단'],
+  ['shades', 'acc', '선글라스', '월드컵 한 판에서 민심 12번 이상 맞히기', function () { return store.get('slp-cupmind') === '1'; }, 'cup', 'c', null, '사람들 속마음이 다 보여요'],
   // 어디가 더 많이 줄까
   ['cap', 'hat', '야구모자', '어디가 더 많이 줄까 첫 판 끝내기', function () { return recsOf('higher').length > 0; }, 'higher', 'c', null, '출근 첫날은 모자부터'],
   ['calc', 'hand', '계산기', '오늘의 도전 8개 이상 맞히기', function () { return bestOf('higher', function (x) { return x.aux; }) >= 8; }, 'higher', 'c', function () { return [bestOf('higher', function (x) { return x.aux; }), 8]; }, '실수령액부터 두드려 봐요'],
@@ -3271,8 +3492,8 @@ var ITEMS = [
   ['band', 'hat', '집중 머리띠', '무한 모드 10개 맞히기', function () { return +(store.get('slp-best') || 0) >= 10; }, 'higher', 'c', function () { return [+(store.get('slp-best') || 0), 10]; }, '이마에 필승 두 글자'],
   ['phone', 'hand', '황금 폰', '무한 모드 25개 맞히기', function () { return +(store.get('slp-best') || 0) >= 25; }, 'higher', 'r', function () { return [+(store.get('slp-best') || 0), 25]; }, '연봉 비교는 이걸로만'],
   // 오늘의 회사
-  ['beret', 'hat', '탐정 베레모', '오늘의 회사 처음 맞히기', function () { return anyOf('today', function (x) { return x.aux > 0; }); }, 'today', 'c', null, '범인은 이 8곳 안에 있다'],
-  ['magglass', 'hand', '명탐정 돋보기', '오늘의 회사 단서 1개로 맞히기', function () { return anyOf('today', function (x) { return x.aux === 1; }); }, 'today', 'r', null, '업종만 보고 알아챈 사람'],
+  ['beret', 'hat', '탐정 베레모', '오늘의 회사 처음 맞히기', function () { return anyOf('today', function (x) { return x.aux > 0; }); }, 'today', 'c', null, '범인은 이 안에 있다'],
+  ['magglass', 'hand', '명탐정 돋보기', '오늘의 회사 한 번에 맞히기 (단서 1개·첫 추측)', function () { return anyOf('today', function (x) { return x.aux === 1; }); }, 'today', 'r', null, '첫눈에 알아챈 사람'],
   ['bandage', 'acc', '반창고', '오늘의 회사 3번 다 틀려도 끝까지 하기', function () { return anyOf('today', function (x) { return x.aux === 0; }); }, 'today', 'c', null, '틀려도 출근은 해요'],
   ['starpin', 'acc', '보안관 배지', '오늘의 회사 3일 연속 맞히기', function () { return solvedRun() >= 3; }, 'today', 'r', function () { return [solvedRun(), 3]; }, '이 동네 연봉 치안 담당'],
   // 연봉 스나이퍼
@@ -3310,9 +3531,9 @@ var ITEMS = [
   ['plane', 'hand', '종이비행기', '도전장 처음 보내기', function () { return store.get('slp-vssent') === '1'; }, 'etc', 'c', null, '결투 신청서 발송 완료'],
   ['medal', 'acc', '승리 메달', '도전장 대결에서 이기기', function () { return vsWins() >= 1; }, 'etc', 'c', null, '친구보다 1점이라도'],
   ['laurel', 'hat', '월계관', '도전장 대결 3번 이기기', function () { return vsWins() >= 3; }, 'etc', 'r', function () { return [vsWins(), 3]; }, '단톡방 공식 챔피언'],
-  // 이번 주 보스
-  ['horns', 'hat', '악마 뿔', '이번 주 보스를 4주 만나기', function () { return bossCount() >= 4; }, 'etc', 'r', function () { return [bossCount(), 4]; }, '보스를 너무 자주 봤더니'],
-  ['bossbg', 'bg', '보스 빌딩 배경', '이번 주 보스를 2주 만나기', function () { return store.get('slp-bosssun') === '1' || bossCount() >= 2; }, 'etc', 'r', null, '그 빌딩 앞에서 인증샷'],
+  // 월드컵 오늘의 16강 (2026-11-01: 예전 '이번 주 보스' 소품 자리)
+  ['horns', 'hat', '악마 뿔', '월드컵 오늘의 16강 4일 하기', function () { return recsOf('cup').length >= 4; }, 'cup', 'r', function () { return [recsOf('cup').length, 4]; }, '보스를 너무 자주 봤더니'],
+  ['bossbg', 'bg', '보스 빌딩 배경', '월드컵 연봉 1위 회사로 우승 (안목 만점)', function () { return store.get('slp-bosssun') === '1' || store.get('slp-cupeye') === '1'; }, 'cup', 'r', null, '그 빌딩 앞에서 인증샷'],
   // 조로 출근길 (2026-10-29): 조건은 이 기기 출근길 누적 기록(runStats)
   ['ticket', 'hand', '교통카드', '조로 출근길 첫 완주', function () { return runStats().n >= 1; }, 'run', 'c', null, '삑— 환승입니다'],
   ['raincap', 'hat', '노란 우비 모자', '비 오는 날 출근 완주', function () { return !!runStats().wx.rain; }, 'run', 'c', null, '우산은 버스에 두고 내렸어요'],
@@ -3345,7 +3566,7 @@ function itemsOwned() { var o = store.getJ('slp-items', {}); return o && typeof 
 function gameItems(g) { return ITEMS.filter(function (it) { return it[5] === g; }); }
 // 오늘의 선물 상자: 오늘 게임 3개(2026-10-31 사용자: 5개 → 3개, 월드컵은 우승해야 1개)를 하면 아직 없는 일반·희귀 소품 하나. 날짜 + 기기 번호 해시로 골라서 새로 고침해도 같음
 var GIFT_N = 3;
-function dayCount(d) { return PC.DAILY.filter(function (g) { return rec(d, g); }).length + (store.get('slp-cupw-' + d) ? 1 : 0); }
+function dayCount(d) { return PC.DAILY.filter(function (g) { return g !== 'cup' && rec(d, g); }).length + (rec(d, 'cup') || store.get('slp-cupw-' + d) ? 1 : 0); }   // 월드컵은 연습 판도 한 게임으로
 function allDoneToday() { return dayCount(TODAY) >= GIFT_N; }
 function giftLeft() { var G = store.getJ('slp-gift', {}) || {}; return G[TODAY] ? 0 : Math.max(0, GIFT_N - dayCount(TODAY)); }
 function giftPick(own, day) {
@@ -3393,9 +3614,9 @@ function meetBoss() {
   setTimeout(function () { toast('이번 주 보스 ' + BOSS.n + '를 만났어요! 보스 조우 ' + bossCount() + '번째'); sfx('combo'); renderBoss(); itemCheck(); }, 50);
 }
 // 회사 이름 옆 보스 배지 (보이는 순간 조우로 침)
-function bossMark(c) { if (!BOSS || !c || c.n !== BOSS.n) return ''; meetBoss(); return '<span class="bossb">' + icon('horns', 1.5) + 'BOSS</span>'; }
+function bossMark(c) { return ''; }   // 2026-11-01 BOSS 배지 뺌 (보스 카드도 없어서 의미가 안 보임)
 function renderBoss() {
-  var el = $('boss'); if (!el || !BOSS) return;
+  var el = $('boss'); if (!el || !BOSS) return;   // 2026-11-01 로비 보스 카드(#boss) 뺌 → 늘 여기서 끝남
   var sun = PC.dow(TODAY) === 0, B = BOSS, met = bossMet();
   el.hidden = !(sun || BOSS_OPEN);
   if (sun && store.get('slp-bosssun') !== '1') { store.set('slp-bosssun', '1'); setTimeout(function () { itemCheck(); }, 600); }   // 소품 '보스 빌딩 배경'   // 1차 UX: 보스 카드는 일요일(정체 공개)에만 로비에 펼쳐 두고, 다른 날은 검은 띠의 보스 이름을 누르면 열림
@@ -3496,10 +3717,10 @@ function tmrLine() {
 }
 // 이번 주 7칸: 한 날 = 라임 채움, 오늘 = 점선 테두리, 아직 안 온 날 = 흐리게
 var DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
-function playedOn(d, game) { return game === 'cup' ? store.get('slp-cupw-' + d) : rec(d, game); }
+function playedOn(d, game) { return rec(d, game); }
 function dots7(game) {
   return '<ol class="d7">' + PC.weekDays(TODAY).map(function (d) {
-    var x = playedOn(d, game), sc = x && game !== 'cup' ? fmtScore(game, x.score) : x ? '우승 ' + x : '';
+    var x = playedOn(d, game), sc = x ? fmtScore(game, x.score) : '';
     return '<li class="' + (x ? 'on' : '') + (d === TODAY ? ' td' : '') + (d > TODAY ? ' fu' : '') + '" title="' + mmdd(d) + (sc ? ' ' + esc(sc) : '') + '"><i aria-hidden="true"></i><small>' + DOW_KO[PC.dow(d)] + '</small>' +
       '<span class="sr-only">' + mmdd(d) + ' ' + (x ? '함 ' + esc(sc) : d > TODAY ? '아직' : '안 함') + '</span></li>';
   }).join('') + '</ol>';
@@ -5131,17 +5352,16 @@ var PNAME = { higher: GNAME.higher, today: '오늘의 회사', sniper: GNAME.sni
 // 게임 카드: [도트 아이콘, 한 줄 설명, 걸리는 시간]
 var GINFO = {
   higher: ['money', '두 회사 중 더 많이 주는 쪽을 골라요. 문제마다 비교 기준이 바뀌어요.', '10문제 · 문제당 15초'],
-  today: ['magnifier', '후보 8곳 중 숨은 회사 1곳을 찾아요. 단서는 하나씩 열려요.', '기회 3번 · 약 1분'],
+  today: PC.genToday(TODAY, ctx).v === 2 ? ['magnifier', '아무 회사나 넣어 추측하면 업종·지역·직원 수·연봉이 정답과 비교돼요.', '기회 7번 · 약 2분'] : ['magnifier', '후보 8곳 중 숨은 회사 1곳을 찾아요. 단서는 하나씩 열려요.', '기회 3번 · 약 1분'],
   sniper: ['target', '회사와 직급을 보고 막대를 밀어 연봉을 찍어요.', '5문제 · 약 2분'],
   road: ['sign', '여자·남자 중 골라 20년을 살아요. 이직·회사 일·연애·결혼·육아까지, 연봉·체력·커리어·행복 종합점수로 겨뤄요.', '16번 고르기 · 약 7분'],
-  cup: ['trophy', '연봉은 가리고 이름만 보고 가고 싶은 회사를 골라요.', '순위 없음 · 연습'],
+  cup: ['trophy', '오늘의 16강! 가고 싶은 회사를 고르면 전국 민심이 공개, 민심과 같을수록 점수.', '15번 고르기 · 약 1분'],
   run: ['bus', '탈것마다 미니게임이 바뀌는 출근 질주! 지하철은 연타로 타고, 신호등에선 꾹 멈춰요.', '약 1분 15초']
 };
 // 오늘 이 기기 상태: 끝낸 판(slp-r-<날>-<게임>, 월드컵은 slp-cupw-<날>) · 하던 판(slp-p-…)
 function gState(k) {
   if (k === 'run') { var rx = runRec(); return RUN && RUN.on ? { prog: 1, meta: '달리는 중이에요', go: '이어서 달리기 ▶' }
     : rx && rx.sent != null ? { done: 1, meta: '✓ ' + man(rx.score) + '만원' + (rx.sent && rx.rank ? ' · 오늘 ' + man(rx.rank) + '위' : '') + (runRanked() ? ' · 1번 남음' : ''), go: runRanked() ? '두 번째 도전 ▶' : '연습 출근하기' } : null; }   // sent = 오늘의 코스(순위 판)를 낸 날 · 하루 2번 도전
-  if (k === 'cup') { var w = store.get('slp-cupw-' + TODAY); return w ? { done: 1, meta: '✓ 오늘 우승: ' + w, go: '다시 하기' } : null; }
   var x = rec(TODAY, k);
   if (x) return { done: 1, meta: '✓ ' + fmtScore(k, x.score) + (x.sent && x.rank ? ' · 오늘 ' + man(x.rank) + '위' : ''), go: '결과 보기' };
   if (prog(k)) return { prog: 1, meta: '하던 판이 있어요', go: '이어서 하기 ▶' };
@@ -5197,6 +5417,7 @@ function gbSync() {
     } else if (k === 'today') {
       p = prog('today');
       if (rec(TODAY, 'today')) t = '끝';
+      else if (p && TPZ && TPZ.v === 2 && Array.isArray(p.log)) { t = '추측 ' + p.log.length + ' / ' + PC.TODAY2_TRIES; f = p.log.length / PC.TODAY2_TRIES; }
       else if (p && TPZ && Array.isArray(p.log)) { var R = PC.simToday(TPZ, p.log); if (R) { t = '단서 ' + R.open + ' / ' + PC.TODAY_CLUES; f = R.open / PC.TODAY_CLUES; } }
     } else if (k === 'sniper') {
       p = prog('sniper');
@@ -5210,7 +5431,8 @@ function gbSync() {
       if (RUN && RUN.on) { t = hhmm(runClock(RUN)); f = (RUN.seg + Math.min(1, RUN.dist / RMAP[RUN.key].len)) / R_SLOTS.length; }
       else if (runRec()) t = '끝';
     } else if (k === 'cup') {
-      if (CUP) { var tot = CUP.all.length - 1; t = Math.min(CUP.picks.length + 1, tot) + ' / ' + tot; f = CUP.picks.length / tot; }
+      if (rec(TODAY, 'cup') && CMODE === 'day') t = '끝';
+      else if (CUP) { var tot = CUP.all.length - 1; t = Math.min(CUP.picks.length + 1, tot) + ' / ' + tot; f = CUP.picks.length / tot; }
       else if ($('cup').querySelector('.rep')) t = '끝';
     }
   } catch (e) {}
