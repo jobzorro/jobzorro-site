@@ -336,7 +336,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zf { margin-top:72px; background:var(--paper); color:var(--ink); border-top:1px solid var(--ink); font-family:var(--font); }
 .zf-in { max-width:1120px; margin:0 auto; padding:36px 20px 44px; }
 .zf-logo img { height:20px; width:auto; filter:var(--logo-filter,none); display:block; }
-.zf-links { display:flex; flex-wrap:wrap; gap:16px; font-size:12.5px; margin-top:18px; color:var(--ink-soft); }
+.zf-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px 22px; }   /* 로고와 링크 한 줄 */
+.zf-links { display:flex; flex-wrap:wrap; gap:16px; font-size:12.5px; color:var(--ink-soft); }
 .zf-links a { color:inherit; text-decoration:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; } .zf-links a:hover { color:var(--muted); }
 .zf-box { margin-top:18px; background:var(--mist); border:1px solid var(--hairline); border-radius:10px; padding:14px 16px; font-size:12px; line-height:1.9; color:var(--muted); }
 .zf-box b { color:var(--ink-soft); font-weight:600; }
@@ -632,16 +633,17 @@ def nav_html(active: str, root: str, logo: str) -> str:
 
 
 def footer_html(root: str, logo: str, note: str) -> str:
-    """모든 페이지 공용 푸터: 큰 TEAM ZORRO 글씨·슬로건 → 로고 → 링크 3개 → 사업자 정보 상자 → (있으면) 접힌 '자료 안내'
-    2026-10-29 단순화 때 큰 글씨·상자를 뺐다가, 사용자 요청('너무 밋밋해졌다')으로 다시 넣고 모든 페이지에 똑같이 붙인다. 링크는 3개 유지"""
+    """모든 페이지 공용 푸터: 큰 TEAM ZORRO 글씨·슬로건 → 로고 옆 링크 2개 → 사업자 정보 상자 → (있으면) 접힌 '자료 안내'
+    2026-10-29 단순화 때 큰 글씨·상자를 뺐다가, 사용자 요청('너무 밋밋해졌다')으로 다시 넣고 모든 페이지에 똑같이 붙인다. 링크는 2개(10-31)"""
     c = COMPANY
     return (
         f'<footer class="zf"><div class="zf-in">'
         f'<div class="zf-outro"><svg class="zf-big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg>'
         f'<p class="zf-slogan">TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.</p></div>'
-        f'<a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"></a>'
-        f'<div class="zf-links"><a href="{root}{APPLY}">무료 상담 신청</a><a href="{c["home"]}" target="_blank" rel="noopener">취업조로 홈</a>'
-        f'<a href="{root}privacy/index.html">개인정보처리방침</a></div>'
+        # 2026-10-31 사용자: '취업조로 홈' 링크 삭제, 로고(CI) 바로 옆에 링크 2개(무료 상담 신청·개인정보처리방침)를 한 줄로
+        f'<div class="zf-row"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"></a>'
+        f'<div class="zf-links"><a href="{root}{APPLY}">무료 상담 신청</a>'
+        f'<a href="{root}privacy/index.html">개인정보처리방침</a></div></div>'
         f'<div class="zf-box"><b>법인명(상호)</b> {c["name"]} &nbsp;·&nbsp; <b>대표자</b> {c["ceo"]} &nbsp;·&nbsp; <b>개인정보보호책임자</b> {c["privacy"]}<br>'
         f'<b>사업자등록번호</b> {c["reg"]}<br><b>주소</b> {c["addr"]}<br>© Copyright 2026 All rights reserved by CAREERPROJECT inc.</div>'
         f'{f"<details class=\"zf-note\"><summary>자료 안내</summary><p>{note}</p></details>" if note else ""}'
