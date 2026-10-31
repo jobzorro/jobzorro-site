@@ -134,23 +134,27 @@ function todayAns(day, ctx) {
 }
 // 헷갈리는 후보 7곳: 날짜 씨앗으로 고정(누구에게나 같은 8곳). 같은 업종 묶음에서 직원 수가 비슷한 회사 위주,
 // 어려운 날일수록 같은 업종을 많이·직원 수가 더 가까운 회사로. 후보는 정답과 같은 급 이하에서(쉬운 날은 이름난 120곳끼리)
-function todayCands(A, day, ctx) {
+function todayCands(A, day, ctx, N, same) {
+  N = N || TODAY_N;
   const r = rng('today8|' + day), t = A.tier, used = { [A.n]: 1 }, out = [];
   const L = ctx.H.filter(c => c.n !== A.n && c.tier <= t);
   const far = c => Math.abs(Math.log(c.m / A.m));
   const take = (list, k) => { shuffleR(r, list).forEach(c => { if (out.length < k && !used[c.n]) { used[c.n] = 1; out.push(c); } }); };
   const near = L.filter(c => c.grp === A.grp).sort((x, y) => far(x) - far(y) || (x.n < y.n ? -1 : 1));
-  const want = TODAY_SAME[t] || 5;
+  const want = same != null ? same : TODAY_SAME[t] || 5;   // same: 같은 업종 후보 수 (v3·v4 는 업종 힌트가 쓸모 있게 섞음)
   take(t === 0 ? near : near.slice(0, want + (t === 1 ? 6 : 3)), want);   // 보통: 가까운 11곳 중 5곳 · 어려움: 가까운 10곳 중 7곳
   take(near, want);                                                         // 모자라면 같은 업종 아무 곳
   const rest = L.filter(c => c.grp !== A.grp);
-  take(t === 0 ? rest : rest.filter(c => far(c) < Math.log(3)), TODAY_N - 1);   // 다른 업종: 보통·어려움은 직원 수 3배 안
-  take(rest, TODAY_N - 1);
+  take(t === 0 ? rest : rest.filter(c => far(c) < Math.log(3)), N - 1);   // 다른 업종: 보통·어려움은 직원 수 3배 안
+  take(rest, N - 1);
   return shuffleR(r, out.concat([A])).map(c => c.n);
 }
-function genToday(day, ctx) {
+function genToday(day, ctx, v) {
   const A = todayAns(day, ctx);
-  if (day >= TODAY2_FROM) return { game: 'today', v: 2, day, no: dayIndex(day) + 1, ans: A.n, tier: A.tier };
+  v = v || (day >= TODAY2_FROM ? 3 : 1);   // 2026-11-01~ 스무고개 퀴즈 (사용자가 v2 이름 넣기 · v4 카드 + 비교 칸 대신 고름)
+  if (v === 4) return { game: 'today', v: 4, day, no: dayIndex(day) + 1, ans: A.n, tier: A.tier, cands: todayCands(A, day, ctx, T4_N, [3, 4, 5][A.tier] || 4) };
+  if (v === 3) { const P = t3Premise(A, day, ctx); return { game: 'today', v: 3, day, no: dayIndex(day) + 1, ans: A.n, tier: A.tier, pre: P.pre, cands: P.cands }; }
+  if (v === 2) return { game: 'today', v: 2, day, no: dayIndex(day) + 1, ans: A.n, tier: A.tier };
   return { game: 'today', day, no: dayIndex(day) + 1, ans: A.n, tier: A.tier, cands: todayCands(A, day, ctx) };
 }
 // ── 오늘의 회사 v2 (2026-11-01 사용자: '재미가 없다, 획기적 변화'): 게임에 나오는 회사(로고 있는 곳) 아무 곳이나 이름을 넣어 추측 →
@@ -181,6 +185,98 @@ function simToday2(pz, log, ctx) {
   }
   return { n: log.length, solved, done, wrong: seq.filter(x => x === 'x').length, seq: seq.join('') };
 }
+// ── 스무고개 퀴즈 (2026-11-01 사용자가 고름 · 2차 규칙 + 먼저 찍기): 후보 카드 12장, 질문은 5번까지(첫 질문 무료, 그 뒤 −50).
+//    답과 안 맞는 카드는 탈락. 답을 알면 '먼저 찍기'(틀리면 −150, 2번까지) · 아니면 '최종 선택'에서 정답 + 미끼 1곳 중 하나 (한 번, 틀리면 0점)
+//    log: '?r1:7000' 질문 · '!회사' 먼저 찍기 · 마지막 '회사' 최종 선택
+const T3_N = 12, T3_MAXQ = 5, T3_FREE = 0, T3_Q = 50, T3_EARLY = 150, T3_EARLY_MAX = 2, T3_FLOOR = 50;
+// 질문 = '종류:값'. 숫자는 '그 값보다 큼'. pub 공기업 · my 직원 증가 · jump 성과급 대박 난 해 (값 0)
+const T3_KEYS = { grp: c => c.grp, sido: c => c.sido || '', pub: c => (c.pub ? 1 : 0), m: c => c.m, s0: c => c.s0 || 0, r1: c => c.rk[1], r2: c => c.rk[2], r4: c => c.rk[4],
+  tt: c => c.tt || 0, to: c => c.to || 0, rt: c => c.rt || 0, ag: c => c.ag || 0, my: c => c.my || 0, jump: c => c.jump || 0 };
+function t3Ask(c, q) {
+  q = String(q || ''); if (q[0] === '~') { const r = t3Ask(c, q.slice(1)); return r === null ? null : !r; }   // '~' = 아니다 (대전제 '1,000명이 안 되는')
+  const m = /^([a-z0-9]+):(.{1,24})$/.exec(q); if (!m || !c || !T3_KEYS[m[1]]) return null;
+  const v = T3_KEYS[m[1]](c);
+  if (m[1] === 'grp' || m[1] === 'sido') return v === m[2];
+  const x = Number(m[2]); if (!isFinite(x)) return null;
+  return v > x;
+}
+// 스페셜 힌트 (2026-11-01 사용자: '대전제는 후보 중 안 맞는 것도 있어야 · 그것만으로도 유추할 수 있게'): 정답에 맞는 문장 하나를 날짜 씨앗으로 고르고,
+//    후보 12장 중 정답 포함 4~5장만 그 문장에 맞게 뽑음 (안 맞는 카드도 자동으로 지우지 않음 — 힌트를 보고 스스로 추리).
+//    쉬운 날(정답이 이름난 회사)은 후보도 이름난 회사 위주. 연봉·규모 같은 재밌는 힌트 먼저, 업종·지역은 마지막에
+const T3_PRE = ['r4:10000', 'r1:6000', 'r2:8000', 'm:10000', '~m:1000', 'tt:15', '~tt:6', 'pub:0', 'ag:40', 'my:5', 'rt:3.6', 'jump:0', 's0:5000', '~to:0.05', 'grp:', 'sido:'];
+const T3_NEEDS = ['tt', 'rt', 's0', 'to', 'ag'];   // 자료가 없으면(0) 힌트로 못 쓰는 칸
+function t3Premise(A, day, ctx) {
+  const r = rng('t3pre|' + day), list = shuffleR(r, T3_PRE.filter(q => q !== 'grp:' && q !== 'sido:')).concat(['grp:' + A.grp, A.sido ? 'sido:' + A.sido : '']).filter(Boolean);
+  const key = q => q.replace('~', '').split(':')[0], has = (c, k) => T3_NEEDS.indexOf(k) < 0 || T3_KEYS[k](c) > 0;
+  for (const q of list) {
+    const k = key(q);
+    if (!has(A, k) || t3Ask(A, q) !== true) continue;
+    const base = ctx.H.filter(c => c.n !== A.n && has(c, k)), near = base.filter(c => c.tier <= Math.max(1, A.tier)), P = near.length >= 40 ? near : base;
+    const yes = P.filter(c => t3Ask(c, q)), no = P.filter(c => !t3Ask(c, q)), ny = 3 + (r() < .5 ? 1 : 0);   // 정답 말고 맞는 카드 3~4장
+    if (yes.length < ny || no.length < T3_N - 1 - ny) continue;
+    return { pre: q, cands: shuffleR(r, shuffleR(r, yes).slice(0, ny).concat(shuffleR(r, no).slice(0, T3_N - 1 - ny)).map(c => c.n).concat([A.n])) };
+  }
+  return { pre: '', cands: todayCands(A, day, ctx, T3_N, [4, 5, 6][A.tier] || 5) };
+}
+function t3Final(pz, alive, log) {   // 최종 두 곳: 정답 + 미끼(남은 카드에서, 다 지웠으면 탈락 카드에서) — 날짜·기록 씨앗이라 서버도 같은 두 곳
+  const pool = alive.filter(n => n !== pz.ans), L = pool.length ? pool : pz.cands.filter(n => n !== pz.ans);
+  const h = hash32('t3d|' + pz.day + '|' + log.join('|')), d = L[h % L.length];
+  return h & 1 ? [pz.ans, d] : [d, pz.ans];
+}
+function simToday3(pz, log, ctx) {
+  if (!Array.isArray(log) || log.length > T3_MAXQ + T3_EARLY_MAX + 1) return null;
+  const A = ctx.by[pz.ans]; let alive = pz.cands.slice(), asks = 0, ew = 0, solved = false, done = false, early = false, fin = null; const steps = [], qs = [], seq = [];
+  for (let i = 0; i < log.length; i++) {
+    const a = log[i];
+    if (done || typeof a !== 'string') return null;
+    if (a[0] === '?') {
+      const q = a.slice(1), yes = t3Ask(A, q); if (yes === null || asks >= T3_MAXQ || qs.indexOf(q) >= 0) return null;
+      const out = alive.filter(n => t3Ask(ctx.by[n], q) !== yes); alive = alive.filter(n => out.indexOf(n) < 0);
+      asks++; qs.push(q); steps.push({ q, yes, out }); seq.push('q'); continue;
+    }
+    if (a[0] === '!') {   // 먼저 찍기: 남은 카드에서만, 틀리면 그 카드 탈락 · −150
+      const n = a.slice(1); if (alive.indexOf(n) < 0 || ew >= T3_EARLY_MAX) return null;
+      if (n === pz.ans) { solved = done = early = true; seq.push('O'); continue; }
+      ew++; alive = alive.filter(x => x !== n); steps.push({ g: n, out: [n] }); seq.push('e'); continue;
+    }
+    fin = t3Final(pz, alive, log.slice(0, i));
+    if (fin.indexOf(a) < 0) return null;
+    solved = a === pz.ans; done = true; seq.push(solved ? 'o' : 'x');
+  }
+  return { alive, asks, ew, early, solved, done, steps, fin: fin || t3Final(pz, alive, log), seq: seq.join('') };
+}
+function today3Pts(asks, ew) { return Math.max(T3_FLOOR, 500 - T3_Q * Math.max(0, asks - T3_FREE) - T3_EARLY * (ew || 0)); }
+// 지금 남은 카드를 나누는 질문 칩 (최대 lim 개): 종류마다 반에 가장 가깝게 나누는 값 하나, 나누는 힘 순
+const T3_VALS = { m: [300, 500, 1000, 2000, 3000, 5000, 10000, 20000, 30000], s0: [3000, 3500, 4000, 4500, 5000, 5500, 6000], r1: [4000, 4500, 5000, 5500, 6000, 6500, 7000, 8000],
+  r2: [5000, 6000, 7000, 8000, 9000, 10000], r4: [7000, 8000, 9000, 10000, 12000, 15000], tt: [3, 5, 7, 10, 12, 15, 18, 20], to: [.03, .05, .08, .1, .15, .2],
+  rt: [3, 3.2, 3.4, 3.6, 3.8, 4], ag: [10, 20, 30, 40, 50], pub: [0], my: [0], jump: [0] };
+function t3Questions(alive, ctx, used, lim) {
+  const C = alive.map(n => ctx.by[n]), N = C.length, cand = [], U = used || {};
+  const bal = q => { const y = C.filter(c => t3Ask(c, q)).length; return y > 0 && y < N ? Math.abs(y - N / 2) / N : null; };
+  ['grp', 'sido'].forEach(k => { const seen = {}; C.forEach(c => { const v = T3_KEYS[k](c); if (v && !seen[v]) { seen[v] = 1; const q = k + ':' + v, b = bal(q); if (b != null && !U[q]) cand.push([q, b]); } }); });
+  Object.keys(T3_VALS).forEach(k => {
+    if (['s0', 'tt', 'to', 'rt', 'ag'].indexOf(k) >= 0 && C.some(c => !(T3_KEYS[k](c) > 0))) return;   // 자료 없는 회사가 있으면 그 질문은 안 냄
+    const b = T3_VALS[k].map(v => [k + ':' + v, bal(k + ':' + v)]).filter(x => x[1] != null && !U[x[0]]).sort((a, c) => a[1] - c[1])[0]; if (b) cand.push(b);
+  });
+  const best = {}; cand.forEach(x => { const k = x[0].split(':')[0]; if (k === 'grp' || k === 'sido') { if (!best[k] || x[1] < best[k][1]) best[k] = x; } });
+  const L = cand.filter(x => { const k = x[0].split(':')[0]; return !(k === 'grp' || k === 'sido') || best[k] === x; }).sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1));
+  return L.slice(0, lim || 6).map(x => x[0]);
+}
+// ── 오늘의 회사 v4 (2026-11-01 사용자가 고름): v2 와 같은 비교 칸, 대신 이름을 치지 않고 후보 카드 10장에서 고름. 처음에 업종 공개(화면).
+//    기회 4번, 틀릴 때마다 −120
+const T4_N = 10, T4_TRIES = 4, T4_STEP = 120;
+function simToday4(pz, log, ctx) {
+  if (!Array.isArray(log) || log.length > T4_TRIES) return null;
+  let solved = false, done = false; const seen = {}, seq = [];
+  for (const a of log) {
+    if (done || typeof a !== 'string' || pz.cands.indexOf(a) < 0 || seen[a]) return null;
+    seen[a] = 1;
+    if (a === pz.ans) { solved = done = true; seq.push('o'); } else seq.push('x');
+    if (seq.length >= T4_TRIES) done = true;
+  }
+  return { n: log.length, solved, done, wrong: seq.filter(x => x === 'x').length, seq: seq.join('') };
+}
+function today4Pts(miss) { return Math.max(0, 500 - T4_STEP * miss); }
 function today2Pts(miss) { return Math.max(0, 500 - TODAY2_STEP * miss); }
 // 결과 이모지: 추측 한 줄에 5칸 (🟩 같음 🟨 가까움 ⬛ 다름·자료 없음)
 function today2Emoji(pz, ctx, log) { return log.map(n => today2Row(pz, ctx, n).map(c => c.st === 'g' ? '🟩' : c.st === 'y' ? '🟨' : '⬛').join('')); }
@@ -221,6 +317,16 @@ function todayPts(open, miss) { return Math.max(TODAY_FLOOR, TODAY_BASE - TODAY_
 // ans: {log:[...]} → 맞히면 500 − 80 × (처음 뒤로 더 연 단서) − 60 × (틀린 수), 최소 50 · 실패 0. aux = 맞혔을 때 본 단서 수(1~5), 실패 0
 // bad = 말이 안 되거나 덜 끝난 기록 (서버는 받지 않음)
 function scoreToday(pz, ans, ctx) {
+  if (pz.v === 3) {   // aux = 질문 수 + 1 (맞혔을 때), 실패 0
+    const Q = simToday3(pz, ans && ans.log, ctx);
+    if (!Q || !Q.done) return { score: 0, aux: 0, solved: false, bad: true, perfect: false, seq: '' };
+    return { score: Q.solved ? today3Pts(Q.asks, Q.ew) : 0, aux: Q.solved ? Q.asks + 1 : 0, solved: Q.solved, early: Q.early, ew: Q.ew, seq: Q.seq, perfect: Q.solved && Q.asks <= 1 && !Q.ew, open: Q.asks, wrong: [] };
+  }
+  if (pz.v === 4) {   // aux = 맞힌 번째(1~4), 실패 0
+    const Q = simToday4(pz, ans && ans.log, ctx);
+    if (!Q || !Q.done) return { score: 0, aux: 0, solved: false, bad: true, perfect: false, seq: '' };
+    return { score: Q.solved ? today4Pts(Q.wrong) : 0, aux: Q.solved ? Q.n : 0, solved: Q.solved, seq: Q.seq, perfect: Q.solved && Q.n <= 2, open: Q.n, wrong: [] };
+  }
   if (pz.v === 2) {   // aux = 맞힌 추측 번째(1~7), 실패 0
     const Q = simToday2(pz, ans && ans.log, ctx);
     if (!Q || !Q.done) return { score: 0, aux: 0, solved: false, bad: true, perfect: false, seq: '' };
@@ -789,7 +895,7 @@ const ENDINGS = ENDINGS2;
 // ── 5 드림 컴퍼니 월드컵 (점수 없음, 전국 선택률만)
 const THEMES = { all: '전체', it: 'IT·게임', food: '식품·유통', fin: '금융', pub: '공기업' };
 function cupPool(ctx, theme) {
-  const f = { it: c => c.grp === 'IT·게임' || c.grp === '통신·미디어', food: c => c.grp === '식품·유통', fin: c => c.grp === '금융', pub: c => !!c.pub }[theme] || (() => true);
+  const f = { it: c => c.grp === 'IT·게임' || c.grp === '통신·미디어', food: c => c.grp === '식품' || c.grp === '유통·상사', fin: c => c.grp === '금융', pub: c => !!c.pub }[theme] || (() => true);
   let L = ctx.P.filter(c => c.m >= 2000 && f(c));
   if (L.length < 16) L = ctx.P.filter(f);
   return L;
@@ -877,4 +983,4 @@ function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : 
 // rates: 월드컵만 (서버가 DB 에서 그 16곳의 전국 선택률을 읽어 넘김)
 function score(game, pz, ans, ctx, rates) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : game === 'run' ? scoreRun(pz, ans) : game === 'cup' ? scoreCup(pz, ans, ctx, rates) : null; }
 
-export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, ROAD2_FROM, roadV, WEEK_OFF, weekOff, R2_SLOTS, R2_N, R2_W, R2_EV, r2Score, simRoad2, roadEnding2, ENDINGS1, ENDINGS2, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, CUP_W, CUP_EYE, genCup, simCup, cupShare, cupMaj, scoreCupAll, scoreCup, TODAY2_FROM, TODAY2_TRIES, TODAY2_STEP, TODAY2_COLS, today2Cell, today2Row, simToday2, today2Pts, today2Emoji, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
+export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, ROAD2_FROM, roadV, WEEK_OFF, weekOff, R2_SLOTS, R2_N, R2_W, R2_EV, r2Score, simRoad2, roadEnding2, ENDINGS1, ENDINGS2, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, CUP_W, CUP_EYE, genCup, simCup, cupShare, cupMaj, scoreCupAll, scoreCup, T3_N, T3_MAXQ, T3_FREE, T3_Q, T3_PRE, t3Premise, T3_EARLY, T3_EARLY_MAX, T3_FLOOR, t3Ask, t3Final, simToday3, today3Pts, t3Questions, T4_N, T4_TRIES, T4_STEP, simToday4, today4Pts, TODAY2_FROM, TODAY2_TRIES, TODAY2_STEP, TODAY2_COLS, today2Cell, today2Row, simToday2, today2Pts, today2Emoji, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };

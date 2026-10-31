@@ -697,6 +697,66 @@ button.dk small { font-size:12.5px; color:var(--muted); grid-column:2; min-width
 @media (prefers-reduced-motion: reduce) { .t2r.fresh .t2c { animation:none; } }
 .t2em { font-family:inherit; font-size:18px; line-height:1.25; margin:0; letter-spacing:2px; }
 .t2empty { margin:6px 0 10px; }
+/* 2026-11-01 오늘의 회사 시안: ① 조로 스무고개 · ③ 카드 + 비교 칸 · 미리보기 전용 시안 바꾸기 */
+.tvsw { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:10px 0 0; padding:8px 10px; border:1.5px dashed var(--line2); border-radius:12px; }
+.tvsw span { font-size:12px; font-weight:800; color:var(--muted); margin-right:4px; }
+.t3bub { display:flex; gap:8px; align-items:center; margin:10px 0 8px; padding:8px 12px; border:1.5px solid var(--ink); border-radius:14px; background:var(--card); font-size:14px; min-height:44px; }
+.t3bub small { color:var(--muted); margin-left:4px; }
+.t3bub.pop { animation:okPop .32s ease-out; }
+.t3z { flex:none; display:inline-grid; }
+.t3qs { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
+.t3q { border:1.5px solid var(--ink); background:var(--acc); color:var(--acc-ink); border-radius:999px; padding:7px 12px; font:inherit; font-size:13.5px; font-weight:800; min-height:38px; box-shadow:2px 2px 0 var(--ink); }
+.t3q:active { transform:translate(2px,2px); box-shadow:none; }
+.cands.t3c, .cands.t4c { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.t3c .cand, .t4c .cand { min-height:58px; padding:7px 8px; gap:3px; }
+.t3c .cand .lg.m, .t4c .cand .lg.m { height:20px; }
+.t3c .cand .cn, .t4c .cand .cn { font-size:12.5px; }
+.t3c .cand.out, .t4c .cand.out { opacity:.35; border-style:dashed; }
+.t3c .cand.flip { animation:t3flip .5s ease-in both; }
+@keyframes t3flip { 0% { transform:none; opacity:1; } 50% { transform:rotateY(90deg); opacity:.6; } 100% { transform:none; opacity:.35; } }
+@media (prefers-reduced-motion: reduce) { .t3c .cand.flip { animation:none; } }
+.t4c { margin:0 0 10px; }
+.t3cost { margin:-4px 0 8px; font-size:12.5px; color:var(--muted); }
+.t3cost b { color:var(--ink); }
+.t3pre { margin:10px 0 8px; padding:10px 14px; border:2px solid var(--ink); border-radius:14px; background:var(--px-hi); color:#0b0b0b; display:grid; gap:2px; box-shadow:3px 3px 0 var(--ink); }
+.t3pre .t3pk { font-family:var(--px-font); font-size:12px; letter-spacing:.04em; }
+.t3pre p { margin:0; font-size:16px; font-weight:700; line-height:1.4; }
+.t3pre p b { font-weight:900; background:linear-gradient(transparent 58%, rgba(255,255,255,.75) 58%); }
+.t3pre small { font-size:11.5px; opacity:.75; }
+.t3talk { display:flex; gap:10px; align-items:flex-end; margin:8px 0 10px; }
+.t3talk .t3z { flex:none; display:inline-grid; }
+.t3talk .t3bub { position:relative; flex:1; min-width:0; margin:0 0 6px; padding:12px 14px; border:2px solid var(--ink); border-radius:16px; background:var(--card); font-size:16px; line-height:1.45; min-height:64px; display:block; }
+.t3talk .t3bub::before { content:""; position:absolute; left:-9px; bottom:14px; width:14px; height:14px; background:var(--card); border-left:2px solid var(--ink); border-bottom:2px solid var(--ink); transform:rotate(45deg); }
+.t3talk .t3who { display:block; font-family:var(--px-font); font-size:11.5px; color:var(--muted); margin-bottom:2px; }
+.t3talk.pop .t3bub { animation:okPop .32s ease-out; }
+.t3warn { margin:0 0 8px; padding:8px 12px; border-radius:12px; border:1.5px solid var(--warn); color:var(--warn); font-size:13.5px; font-weight:700; animation:noShake .34s ease-out; }
+.t3warn b { color:var(--warn); }
+.cuphow b.warn { color:var(--warn); }
+.btn.danger { background:var(--warn); color:#fff; border-color:var(--warn); }
+.t3fin { margin:4px 0 8px; }
+.t3fin .pick { min-height:120px; }
+.t4hint { margin:0 0 8px; font-size:14px; }
+.t4hint b { font-family:var(--display); font-size:16px; background:linear-gradient(transparent 55%, var(--mark) 55%); padding:0 3px; }
+.t4c .cand.dim { opacity:.6; }
+.t4c .cand.dim small { color:var(--muted); }
+.t3log { margin:6px 0 10px; padding-left:20px; font-size:14px; display:grid; gap:4px; }
+@media (max-width:640px) {
+  .t3bub { margin:6px 0; font-size:13px; }
+  .t3q { font-size:12.5px; padding:6px 10px; min-height:36px; }
+  .t3qs { gap:5px; margin-bottom:6px; }
+  .t3q { font-size:12px; padding:5px 9px; min-height:34px; }
+  .cands.t3c .cand { min-height:40px; padding:5px 7px; }
+  .cands.t3c .cand .lg { display:none; }
+  .cands.t3c .cand small { display:none; }
+  .cands.t3c .cand .cn { font-size:12px; }
+  .t3pre { margin:4px 0 6px; padding:7px 12px; box-shadow:2px 2px 0 var(--ink); }
+  .t3pre p { font-size:14.5px; }
+  :root[data-view="game"] #today .t3pre small, :root[data-view="game"] #today .gbar + .t3talk ~ .t3pre { display:none; }
+  #today .t3pre + .gbar { margin-top:2px; }
+  .t3talk .t3z .zr { max-height:96px; }
+  .t3talk { margin:4px 0 8px; }
+  .t3talk .t3bub { font-size:15px; padding:10px 12px; min-height:58px; }
+}
 /* 월드컵 오늘의 16강: 민심 점수 */
 .cuphow { list-style:none; margin:4px 0 10px; padding:0; display:grid; gap:6px; }
 .cuphow li { font-size:14px; padding:8px 12px; border-radius:12px; background:var(--fill); }
@@ -1138,7 +1198,7 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
     <dl class="hstats" id="board" aria-label="연봉 놀이터 오늘 현황">
       <div class="s1"><dt>지금까지 플레이</dt><dd id="stPlay">-<small>판</small></dd></div>
       <div class="s2"><dt>오늘 도전한 사람</dt><dd id="stPeople">-<small>명</small></dd></div>
-      <div class="s3"><dt id="stTodayL">오늘의 회사 정답자</dt><dd id="stToday">-<small>명</small></dd></div>
+      <div class="s3"><dt id="stTodayL">스무고개 퀴즈 정답자</dt><dd id="stToday">-<small>명</small></dd></div>
       <div class="s4"><dt>다음 문제까지</dt><dd id="cd">--:--:--</dd></div>
     </dl>
     <p class="stnote" id="stNote"></p>
@@ -1172,7 +1232,7 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
   <p class="src">로고 있는 이름난 회사(오늘의 도전)와 상장사 매출 상위 500곳·직원 1,000명 이상 회사(무한 모드)의 연봉 연구소 추정치예요. 실제와 다를 수 있어요.</p>
 </div></section>
 
-<section class="sec gp" id="p-today" aria-label="오늘의 회사" hidden><div class="in">
+<section class="sec gp" id="p-today" aria-label="스무고개 퀴즈" hidden><div class="in">
   <div class="sec-head"><span class="num">02</span><h2>오늘의 <b>회사</b></h2><p>하루 한 번, 모두에게 같은 회사 8곳이 나오고 그중 하나가 숨은 회사예요. 단서가 하나씩 열려요. 3번 안에 골라 보세요.</p></div>
   <div id="today"></div>
 </div></section>
@@ -1221,7 +1281,7 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module">
-import * as PC from './play_core.js?v=c45255c25f';
+import * as PC from './play_core.js?v=4d3b20f5fb';
 const D = await (await fetch('data/play.json', { cache: 'no-cache' })).json();
 // 연봉 놀이터 v2 화면. make.py 가 page/*.js 를 이름순으로 이어 붙여 function main(D, PC) 하나로 만든다.
 // D = 회사 자료(make.py), PC = play_core.js (서버와 같은 규칙). 점수는 항상 PC.score* 로만 계산한다.
@@ -1233,7 +1293,7 @@ var API_BASE = 'https://play-api.jobzorro.workers.dev';
 var SITE = 'https://job.jobzorro.kr/play/', SITE_S = 'job.jobzorro.kr/play';
 var ctx = PC.load(D), CO = ctx.all, BYN = ctx.by, POOL = ctx.P, RK = PC.RK;
 var TODAY = PC.kstDay();
-var GNAME = { higher: '어디가 더 많이 줄까?', today: '오늘의 회사', sniper: '연봉 스나이퍼', road: '커리어 로드 20년', run: '조로 출근길', cup: '드림 컴퍼니 월드컵' };
+var GNAME = { higher: '어디가 더 많이 줄까?', today: '스무고개 퀴즈', sniper: '연봉 스나이퍼', road: '커리어 로드 20년', run: '조로 출근길', cup: '드림 컴퍼니 월드컵' };
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]; }); }
@@ -1279,7 +1339,8 @@ var BADGES = [
   ['sniper', '스나이퍼', '연봉 스나이퍼 450점 이상'],
   ['att7', '7일 출석', '7일 연속 출석 (아무 게임 1판)'],
   ['dhs', '더블 헤드샷', '연봉 스나이퍼 연속 2문제 오차 3% 이내'],
-  ['perfect', '퍼펙트 데이', '같은 날 1번 10문제 다 맞힘 + 2번 단서 2개(또는 추측 2번) 안에 성공 + 3번 450점 이상'],
+  ['perfect', '퍼펙트 데이', '같은 날 1번 10문제 다 맞힘 + 2번 질문 1개 안에 성공 + 3번 450점 이상'],
+  ['detect', '명탐정', '스무고개 퀴즈 질문 1개 안에 맞히기 (먼저 찍기 빗나감 없이)'],
   ['road', '커리어의 신', '커리어 로드 그날 상위 1%'],
   ['commute', '출근의 신', '조로 출근길 꽈당 0번 + 정시 출근'],
   ['early', '얼리버드', '조로 출근길 8시 50분 전 도착']];
@@ -1469,7 +1530,7 @@ function lookKey(L, o) { return baseOf(L) + hairOf(L) + (L.bottom === 'skirt' ? 
 //    o.blind: 숫자를 안 드러내는 빌딩(층 6 고정, 창 반쯤, 문제 푸는 중에 답을 흘리지 않게) · o.neutral: 색도 업종 대신 이름 해시
 //    o.off: 불 다 꺼짐 · o.all: 불 다 켜짐 · o.sil: 실루엣 · o.w: 폭 고정(칸)
 var GRP_COL = { '금융': '#3f9a72', 'IT·게임': '#5b7cff', '통신·미디어': '#a35fd6', '반도체·전자': '#3a9fd6', '자동차': '#8796ab', '철강·소재': '#8a7a6e',
-  '화학·에너지': '#d68a2c', '바이오·제약': '#36b5a5', '조선·기계': '#4f6f93', '식품·유통': '#e0694f', '건설·부동산': '#b98a4c', '운송·물류': '#caa32a', '기타·서비스': '#8c80ad' };
+  '화학·에너지': '#d68a2c', '바이오·제약': '#36b5a5', '조선·기계': '#4f6f93', '식품': '#e0694f', '유통·상사': '#d9a441', '패션·뷰티': '#d45d9a', '건설·부동산': '#b98a4c', '운송·물류': '#caa32a', '기타·서비스': '#8c80ad' };
 var NEUTRAL = ['#7f8ca8', '#a8907f', '#7fa898', '#9b80a8', '#a8a07f', '#7f9da8'];
 function shade(hex, f) {   // f > 0 밝게, < 0 어둡게
   var n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(function (v) { return Math.round(f > 0 ? v + (255 - v) * f : v * (1 + f)); });
@@ -1951,7 +2012,7 @@ function mockDay(day, game) {
     var r = PC.rng('mock|' + key + '|' + n); if (r() > .72) return;
     var row = { nick: n, dev: 'mock' + i, ts: i, lk: mockLook(r) };
     if (game === 'higher') { var ok = 4 + Math.floor(r() * 7); row.aux = ok; row.score = ok * 100 + Math.round(ok * (6 + r() * 12)); }
-    else if (game === 'today' && PC.genToday(day, ctx).v === 2) { var g2 = r() < .15 ? 0 : 1 + Math.floor(r() * PC.TODAY2_TRIES); row.aux = g2; row.score = g2 ? PC.today2Pts(g2 - 1) : 0; }   // g2 = 맞힌 추측 번째(0 = 실패)
+    else if (game === 'today' && PC.genToday(day, ctx).v === 4) { var g2 = r() < .08 ? 0 : 1 + Math.floor(r() * PC.T4_TRIES); row.aux = g2; row.score = g2 ? PC.today4Pts(g2 - 1) : 0; }   // g2 = 맞힌 번째(0 = 실패)
     else if (game === 'cup') { row.aux = 5 + Math.floor(r() * 11); row.score = Math.round(row.aux / 15 * 820 / 20) * 20 + Math.floor(r() * 16) * PC.CUP_EYE; }   // aux = 민심 일치 수
     else if (game === 'today') { var op = r() < .18 ? 0 : 1 + Math.floor(r() * PC.TODAY_CLUES), ms = op ? Math.floor(r() * Math.min(PC.TODAY_PICKS, op)) : 0; row.aux = op; row.score = op ? PC.todayPts(op, ms) : 0; }   // op = 본 단서 수(0 = 실패), ms = 틀린 수
     else if (game === 'sniper') { var s = 0, errs = []; for (var q = 0; q < 5; q++) { var e = Math.round((r() - .42) * 40 * 10) / 10; errs.push(e); s += PC.sniperPts(e); } row.score = s; row.aux = 5; row.errs = errs; }
@@ -1987,7 +2048,7 @@ function mock(path, b) {
   }
   if (u[0] === '/play/score') {   // 서버와 똑같이: 날짜로 문제를 다시 만들고, 보낸 답으로 점수를 다시 계산
     var rt = null; if (b.game === 'cup') { rt = {}; mock('/play/cup').rows.forEach(function (x) { rt[x[0]] = [x[1], x[2]]; }); }   // 월드컵: 서버처럼 전국 선택률로
-    var pz = PC.gen(b.game, TODAY, ctx), S = PC.score(b.game, pz, b.ans, ctx, rt), pv = rec(TODAY, b.game);
+    var pz = b.game === 'today' && TPZ ? TPZ : PC.gen(b.game, TODAY, ctx), S = PC.score(b.game, pz, b.ans, ctx, rt), pv = rec(TODAY, b.game);   // 오늘의 회사: 미리보기 시안
     if (b.game === 'run' && pv && pv.sent && pv.score > S.score) S = { score: pv.score, aux: pv.aux };   // 출근길: 2번 중 높은 점수 (서버와 같게)
     var rows = mockDay(TODAY, b.game).concat([{ score: S.score, ts: 1e15 }]).sort(byScore);
     return { ok: true, day: TODAY, score: S.score, aux: S.aux, rank: rows.findIndex(function (r) { return r.ts === 1e15; }) + 1, total: rows.length,
@@ -2061,7 +2122,7 @@ function renderMe(edit) {
   // 2차 UX: 조로 그림·닉네임을 누르면 '내 조로' 옆 서랍이 열림
   var h = '<button type="button" class="mylk" data-go="look" aria-label="내 조로 열기 · ' + esc(NICK) + ', 조로 ' + RK[r] + '">' + (PX.ok ? '<span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + zorro(r, 'normal', 1.5, '', { bg: 1, head: 1 }) + '조로 ' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span>' : '') +
     '<span class="nick">' + esc(NICK) + '</span></button>' + (b ? '<span class="badge1">' + esc(b) + '</span>' : '') +
-    '<span class="fire" title="오늘의 회사를 이어서 푼 날">' + (s ? '🔥 ' + s + '일 연속' : '🔥 0일') + '</span><span class="sp"></span>' +
+    '<span class="fire" title="이어서 출석한 날">' + (s ? '🔥 ' + s + '일 연속' : '🔥 0일') + '</span><span class="sp"></span>' +
     '<button class="lnk" id="nickEd" type="button" aria-label="닉네임 바꾸기"><span class="pc">닉네임 바꾸기</span><span class="ph" aria-hidden="true">✎</span></button>' + sndBtn('sndM');
   if (edit) h += '<div class="nickf" style="width:100%"><label for="nickIn" style="font-size:13px;font-weight:700">닉네임</label><input id="nickIn" maxlength="10" value="' + esc(NICK) + '" autocomplete="off">' +
     '<button class="btn sm" id="nickOk" type="button">저장</button><button class="btn sm ghost" id="nickRnd" type="button">새로 지어 주기</button><button class="btn sm ghost" id="nickNo" type="button">그만두기</button>' +
@@ -2093,7 +2154,7 @@ function renderBoard(t) {
   var pz = PC.genToday(TODAY, ctx);
   $('stPlay').innerHTML = (t ? man(t.plays.total) : '-') + '<small>판</small>';
   $('stPeople').innerHTML = (t ? man(t.plays.people) : '-') + '<small>명</small>';
-  $('stTodayL').textContent = '오늘의 회사 #' + pz.no + ' 정답자';
+  $('stTodayL').textContent = '스무고개 퀴즈 #' + pz.no + ' 정답자';
   $('stToday').innerHTML = (t ? man(t.todayGame.ok) : '-') + '<small>명</small>';
   $('stNote').innerHTML = MOCK ? '숫자는 미리보기용 예시예요' : '';
   tickCd(); renderBand(t);
@@ -2108,8 +2169,8 @@ function renderBand(t) {
   var items = [];
   if (t) items.push('오늘 ' + man(t.plays.people) + '명 도전');
   // 2026-11-01 사용자: 띠의 '이번 주 보스' 뺌
-  if (wk) items.push('오늘의 회사 주간 1위 ' + wk[0] + ' ' + man(wk[1]) + '점');
-  if (t) items.push('오늘의 회사 #' + PC.genToday(TODAY, ctx).no + ' 정답자 ' + man(t.todayGame.ok) + '명');
+  if (wk) items.push('스무고개 퀴즈 주간 1위 ' + wk[0] + ' ' + man(wk[1]) + '점');
+  if (t) items.push('스무고개 퀴즈 #' + PC.genToday(TODAY, ctx).no + ' 정답자 ' + man(t.todayGame.ok) + '명');
   items.push('매일 0시 새 문제');
   items.push('연봉 연구소 ' + D.ym.replace('-', '.') + ' 자료');
   var row = function (copy) {
@@ -2439,14 +2500,15 @@ var TPZ = null, TTOP = null, TSEL = '';
 var TLV = ['쉬움', '보통', '어려움'];
 function todayInfo() {
   var y = PC.genToday(PC.addDays(TODAY, -1), ctx), t = TTOP;
-  return '<div class="tinfo"><span>오늘의 회사 <b>#' + TPZ.no + '</b> · ' + TLV[TPZ.tier] + '</span>' +
-    (t ? '<span>오늘 정답자 <b>' + man(t.todayGame.ok) + '명</b> · ' + (TPZ.v === 2 ? '평균 추측 <b>' + (t.todayGame.avg || '-') + '번</b>' : '평균 단서 <b>' + (t.todayGame.avg || '-') + '개</b>') + mockTag() + '</span>' : '') +
-    '<span>어제 정답 <b>' + esc(y.ans) + '</b>' + (t && t.yday.n ? ' · 정답률 ' + Math.round(t.yday.ok / t.yday.n * 100) + '%' : '') + '</span></div>';
+  return '<div class="tinfo"><span>' + (TPZ.v === 3 ? '스무고개 퀴즈' : '오늘의 회사') + ' <b>#' + TPZ.no + '</b> · ' + TLV[TPZ.tier] + '</span>' +
+    (t ? '<span>오늘 정답자 <b>' + man(t.todayGame.ok) + '명</b> · ' + (TPZ.v === 3 ? '평균 질문 <b>' + (t.todayGame.avg ? Math.round((t.todayGame.avg - 1) * 10) / 10 : '-') + '번</b>' : TPZ.v === 2 ? '평균 추측 <b>' + (t.todayGame.avg || '-') + '번</b>' : '평균 단서 <b>' + (t.todayGame.avg || '-') + '개</b>') + mockTag() + '</span>' : '') +
+    '<span>어제 정답 <b>' + esc(y.ans) + '</b>' + (t && t.yday.n ? ' · 정답률 ' + Math.round(t.yday.ok / t.yday.n * 100) + '%' : '') + '</span></div>' + tvSwitch();
 }
 function renderToday() {
   TPZ = TPZ || PC.genToday(TODAY, ctx);
   if (!TTOP) getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); if (!$('p-today').hidden && !prog('today')) renderToday(); } });
-  if (TPZ.v === 2) return renderToday2();   // 2026-11-02~ 비교 힌트 추리 (아래)
+  if (TPZ.v === 2 || TPZ.v === 4) return renderToday2();   // 비교 칸 추리 (v4 카드 10장 · v2 이름 넣기는 안 씀)
+  if (TPZ.v === 3) return renderToday3();                    // 스무고개 퀴즈 (2026-11-01~)
   var x = rec(TODAY, 'today'), p = prog('today');
   if (x) return resultToday(x);
   if (!p) {
@@ -2542,6 +2604,9 @@ function resultToday(x) {
 //    🟩 같음 · 🟨 가까움 · ▲▼ 정답이 더 큼/작음. 기회 7번. 위에는 숨은 회사의 빌딩 실루엣(폭 = 직원 수, 층 = 부장 연봉)이
 //    틀릴수록 드러남: 2번 틀리면 색(업종) · 4번 틀리면 불빛(사원 연봉) + 이름 첫 글자
 var T2_SHORT = ['업종', '지역', '직원', '사원 연봉', '근속'];
+function t2Sim(log) { return TPZ.v === 4 ? PC.simToday4(TPZ, log, ctx) : PC.simToday2(TPZ, log, ctx); }
+function t2Tries() { return TPZ.v === 4 ? PC.T4_TRIES : PC.TODAY2_TRIES; }
+function t2Pts(m) { return TPZ.v === 4 ? PC.today4Pts(m) : PC.today2Pts(m); }
 function t2Val(k, c) {
   if (k === 'grp') return c.grp;
   if (k === 'sido') return c.sido || '-';
@@ -2564,10 +2629,11 @@ function t2Rows(log, fresh) {
 // 숨은 회사 빌딩: 0~1번 틀림 = 검은 실루엣 · 2~3번 = 색(업종) · 4번~ = 불빛(사원 연봉)
 function t2Bld(miss) {
   if (!PX.ok) return '';
-  return bld(BYN[TPZ.ans], 4, miss < 2 ? { sil: 1 } : miss < 4 ? { off: 1 } : null, 't2b');
+  var k = TPZ.v === 4 ? 1 : 2; return bld(BYN[TPZ.ans], 4, miss < k ? { sil: 1 } : miss < 2 * k ? { off: 1 } : null, 't2b');
 }
 function t2Hint(miss) {
   var A = BYN[TPZ.ans];
+  if (TPZ.v === 4) return miss >= 2 ? '불빛 = 사원 연봉 · 색 = 업종' : miss >= 1 ? '색이 드러났어요 (업종) · 한 번 더 틀리면 불빛' : '숨은 회사 빌딩 · 폭 = 직원 수 · 층 = 부장 연봉';
   return miss >= 4 ? '이름 첫 글자 <b>' + esc(PC.firstChar(A.n)) + '</b> · 불빛 = 사원 연봉' : miss >= 2 ? '색이 드러났어요 (업종) · 4번 틀리면 불빛·첫 글자' : '숨은 회사 빌딩 · 폭 = 직원 수 · 층 = 부장 연봉 · 2번 틀리면 색 공개';
 }
 function renderToday2() {
@@ -2575,37 +2641,40 @@ function renderToday2() {
   if (x) return resultToday2(x);
   if (!p) {
     $('today').innerHTML = todayInfo() + '<div class="intro"><h3>오늘의 회사 #' + TPZ.no + '</h3>' +
-      '<p class="sum">게임에 나오는 회사 ' + man(ctx.H.length) + '곳 중 숨은 회사 하나를 찾아요. 아무 회사나 이름을 넣으면 정답과 비교해 칸이 칠해져요.</p>' +
+      (TPZ.v === 4 ? '<p class="sum">후보 카드 10장 중 숨은 회사 하나를 찾아요. 처음에 <b>업종</b>을 알려 주고, 카드를 고르면 정답과 비교해 칸이 칠해져요.</p>' : '<p class="sum">게임에 나오는 회사 ' + man(ctx.H.length) + '곳 중 숨은 회사 하나를 찾아요. 아무 회사나 이름을 넣으면 정답과 비교해 칸이 칠해져요.</p>') +
       '<div class="t2leg"><span class="t2c s-g">같음</span><span class="t2c s-y">가까움</span><span class="t2c s-x">다름</span><span class="t2c s-x">4,800<i>▲</i></span><small>▲ 정답이 더 커요</small></div>' +
-      '<p class="sum">기회는 <b>7번</b>. 500점에서 틀릴 때마다 −' + PC.TODAY2_STEP + '점, 적게 추측할수록 높은 순위예요.</p>' +
+      '<p class="sum">기회는 <b>' + t2Tries() + '번</b>. 500점에서 틀릴 때마다 −' + (TPZ.v === 4 ? PC.T4_STEP : PC.TODAY2_STEP) + '점, 적게 추측할수록 높은 순위예요.</p>' +
       '<button class="btn big" id="tGo" type="button">시작하기 ▶</button><details class="rules"><summary>규칙 보기</summary><ul>' +
       '<li>비교 칸: <b>업종 · 지역 · 직원 수 · 사원 연봉 · 평균 근속</b>. 직원 수 ±10%, 사원 연봉 ±4%, 근속 ±0.5년이면 초록, 직원 수 1.6배·연봉 ±12%·근속 ±2년 안이면 노랑이에요.</li>' +
       '<li>위의 빌딩이 숨은 회사예요. 폭은 직원 수, 층수는 부장 연봉. 2번 틀리면 색(업종), 4번 틀리면 불빛(사원 연봉)과 이름 첫 글자가 보여요.</li>' +
       '<li>모두에게 같은 정답이고 30일 안에는 같은 회사가 다시 안 나와요. 월요일은 이름난 회사, 주말은 어려운 회사예요.</li></ul></details></div>';
-    $('tGo').onclick = function () { $('tGo').disabled = true; startDaily('today').then(function (st) { setProg('today', { tok: st.tok, t0: st.t0, log: [], v: 2 }); renderToday(); }); };
+    $('tGo').onclick = function () { $('tGo').disabled = true; startDaily('today').then(function (st) { setProg('today', { tok: st.tok, t0: st.t0, log: [], v: TPZ.v }); renderToday(); }); };
     return;
   }
-  if (!Array.isArray(p.log) || p.v !== 2 || !PC.simToday2(TPZ, p.log, ctx)) { p.log = []; p.v = 2; setProg('today', p); }   // 예전 규칙(8지선다)으로 하던 판이면 새로
+  if (!Array.isArray(p.log) || p.v !== TPZ.v || !t2Sim(p.log)) { p.log = []; p.v = TPZ.v; setProg('today', p); }   // 예전 규칙(8지선다)으로 하던 판이면 새로
   drawToday2(p);
 }
 function drawToday2(p, fresh) {
-  var Q = PC.simToday2(TPZ, p.log, ctx), miss = Q.wrong, left = PC.TODAY2_TRIES - Q.n, now = PC.today2Pts(miss);
-  $('today').innerHTML = todayInfo() + '<div class="gbar">' + tDet({ wrong: new Array(miss) }) + '<span class="lv">추측 ' + Q.n + ' / ' + PC.TODAY2_TRIES + '</span><span class="stat"><span>남은 기회 <b>' + left + '</b></span><span>맞히면 <b>' + man(now) + '</b>점</span></span></div>' +
+  var Q = t2Sim(p.log), miss = Q.wrong, left = t2Tries() - Q.n, now = t2Pts(miss);
+  $('today').innerHTML = todayInfo() + '<div class="gbar">' + tDet({ wrong: new Array(miss) }) + '<span class="lv">추측 ' + Q.n + ' / ' + t2Tries() + '</span><span class="stat"><span>남은 기회 <b>' + left + '</b></span><span>맞히면 <b>' + man(now) + '</b>점</span></span></div>' +
     '<div class="t2top"><div class="t2bld" aria-hidden="true">' + t2Bld(miss) + '</div><div class="t2q"><p class="t2hint">' + t2Hint(miss) + '</p>' +
-    '<div class="fld t2in"><label for="tIn">회사 이름으로 추측</label><input type="text" id="tIn" autocomplete="off" placeholder="예: 삼성전자" enterkeyhint="go"><div class="ac" id="tAc" hidden></div></div></div></div>' +
-    (Q.n ? t2Rows(p.log, fresh) : '<p class="src t2empty">아무 회사나 넣어 보세요. 비교 칸이 단서가 돼요.</p>') +
+    (TPZ.v === 4 ? '' : '<div class="fld t2in"><label for="tIn">회사 이름으로 추측</label><input type="text" id="tIn" autocomplete="off" placeholder="예: 삼성전자" enterkeyhint="go"><div class="ac" id="tAc" hidden></div></div>') + '</div></div>' +
+    (TPZ.v === 4 ? '<p class="t4hint">🔓 처음 힌트 · 업종 <b>' + esc(BYN[TPZ.ans].grp) + '</b></p><div class="cands t4c" role="group" aria-label="후보 카드 10장">' + TPZ.cands.map(function (n) { var c = BYN[n], out = p.log.indexOf(n) >= 0, dim = !out && c.grp !== BYN[TPZ.ans].grp;
+      return '<button type="button" class="cand' + (out ? ' out' : '') + (dim ? ' dim' : '') + '" data-n="' + esc(n) + '"' + (out ? ' disabled aria-label="' + esc(n) + ', 아니에요"' : '') + '>' + logo(c, 'm') + '<span class="cn">' + esc(n) + '</span>' + (out ? '<small>아니에요</small>' : dim ? '<small>업종 다름</small>' : '') + '</button>'; }).join('') + '</div>' : '') +
+    (Q.n ? t2Rows(p.log, fresh) : '<p class="src t2empty">' + (TPZ.v === 4 ? '카드를 하나 눌러 보세요. 비교 칸이 단서가 돼요.' : '아무 회사나 넣어 보세요. 비교 칸이 단서가 돼요.') + '</p>') +
     '<p class="src">숫자는 연봉 연구소 추정치 · 칸의 값은 내가 넣은 회사의 값이에요.</p>';
   var used = {}; p.log.forEach(function (n) { used[n] = 1; });
   var list = ctx.H.filter(function (c) { return !used[c.n]; });
   var guess = function (n) {
     p.log.push(n); setProg('today', p);
-    var S = PC.simToday2(TPZ, p.log, ctx);
+    var S = t2Sim(p.log);
     sfx(S.solved ? 'fanfare' : 'wrong');
     if (S.done) return finishToday2(p);
-    if (S.wrong === 2 || S.wrong === 4) toast(S.wrong === 2 ? '빌딩 색이 드러났어요! (업종)' : '불빛이 켜지고 첫 글자가 보여요!');
+    var k = TPZ.v === 4 ? 1 : 2; if (S.wrong === k || S.wrong === 2 * k) toast(S.wrong === k ? '빌딩 색이 드러났어요! (업종)' : TPZ.v === 4 ? '빌딩 불빛이 켜졌어요! (사원 연봉)' : '불빛이 켜지고 첫 글자가 보여요!');
     drawToday2(p, p.log.length - 1);
   };
-  ac($('tIn'), $('tAc'), list, function (c, txt) {
+  if (TPZ.v === 4) { $('today').querySelectorAll('.t4c .cand:not(.out)').forEach(function (bt) { bt.onclick = function () { guess(bt.dataset.n); }; }); }
+  else ac($('tIn'), $('tAc'), list, function (c, txt) {
     if (!c && txt) { var q = txt.toLowerCase(); c = list.filter(function (x) { return x.n.toLowerCase() === q || x.o.toLowerCase() === q; })[0]; }
     if (!c) { if (txt) toast('게임에 나오는 회사 중에서 골라 주세요.'); return; }
     guess(c.n);
@@ -2618,15 +2687,15 @@ function finishToday2(p) {
   submitDaily('today', ans, S, { solved: S.solved, open: S.open }).then(function (x) { store.set('slp-today1', '1'); bumpStreak(TODAY); checkPerfect(TODAY); renderMe(); TTOP = null; resultToday2(x); });
 }
 function resultToday2(x) {
-  var A = BYN[TPZ.ans], log = (x.ans && x.ans.log) || [], Q = PC.simToday2(TPZ, log, ctx) || { n: log.length, solved: false, wrong: log.length };
-  var ok = Q.solved, tries = (ok ? Q.n : 'X') + '/' + PC.TODAY2_TRIES, lines = PC.today2Emoji(TPZ, ctx, log);
+  var A = BYN[TPZ.ans], log = (x.ans && x.ans.log) || [], Q = t2Sim(log) || { n: log.length, solved: false, wrong: log.length };
+  var ok = Q.solved, tries = (ok ? Q.n : 'X') + '/' + t2Tries(), lines = PC.today2Emoji(TPZ, ctx, log);
   var text = '연봉 놀이터 · 오늘의 회사 #' + TPZ.no + ' ' + tries + '\n' + lines.join('\n') + '\n' + SITE_S;
   var det = { hat: 1 }, scene = ok
     ? stage('<div class="pxrow">' + zorro(myRank(), 'happy', 3, 'jump', det) + icon('magnifier', 4) + bld(A, 4, { all: 1 }, 'lightup') + '</div>', 'resst', '정답 ' + A.n + ' 빌딩에 불이 다 켜졌어요')
     : stage('<div class="pxrow">' + zorro(myRank(), 'shock', 3, 'idle', det) + '<span class="fleetx">범인 도주!</span><div class="runaway" style="position:relative">' + icon('puff', 3, 'puff') + bld(A, 4, { sil: 1 }) + '</div></div>', 'resst flee', '숨은 회사가 도망갔어요');
   $('today').innerHTML = todayInfo() + '<div class="over"><span class="lv">오늘의 회사 #' + TPZ.no + ' · ' + (ok ? '성공' : '다음 기회에') + '</span>' + scene + vsScene('today', x) + (ok ? logo(A, 'l').replace('class="lg l', 'class="lg l lightup') : logo(A, 'l')) +
     '<div class="ttl"><b>' + esc(A.n) + '</b></div><div class="big">' + tries + '<small> 추측</small></div>' +
-    '<p>' + (ok ? (Q.n === 1 ? '한 번에' : Q.n + '번 만에') + ' 찾았어요. ' + man(x.score) + '점' : '7번 안에 못 찾았어요. 0점') + '</p>' +
+    '<p>' + (ok ? (Q.n === 1 ? '한 번에' : Q.n + '번 만에') + ' 찾았어요. ' + man(x.score) + '점' : t2Tries() + '번 안에 못 찾았어요. 0점') + '</p>' +
     '<pre class="t2em" aria-label="추측 결과 칸">' + lines.join('\n') + '</pre>' +
     rankBox('today', x) + gotBox('today') + shareBox('shT', vsBox('today', x)) + nextBtn('today') + week7('today') +
     '<details class="more"><summary>내 추측 다시 보기 · 정답 회사</summary>' + t2Rows(log, -1) +
@@ -2636,6 +2705,122 @@ function resultToday2(x) {
     px: { mood: ok ? 'happy' : 'sad', hat: 1, co: A, o: { blind: 1, neutral: 1, w: 11, all: ok ? 1 : 0, off: ok ? 0 : 1 } } });   // 공유 그림엔 정답을 흘리지 않는 빌딩
   miniLb('lbT', 'today');
 }
+
+// ── 스무고개 퀴즈 (2026-11-01 사용자가 고름, 3차): 위에 '스페셜 힌트' 한 문장(후보 12장 중 4~5장만 맞음 — 그것만으로도 추리) · 질문 하나 −50(5번까지)
+//    · 답을 알면 먼저 찍기(틀리면 −150, 경고) · 마지막은 두 회사 중 하나
+//    후보 카드 12장 → 질문 칩을 누르면 조로가 응/아니로 답하고 안 맞는 카드가 넘어감
+var T3_EMO = { grp: '🏷', sido: '📍', pub: '🏛', m: '👥', s0: '🌱', r1: '💰', r2: '💼', r4: '👔', tt: '⏳', to: '🏃', rt: '⭐', ag: '🎂', my: '📈', jump: '🎁' };
+var T3SEL = '', T3ARM = 0;
+function t3Label(q) {
+  var i = q.indexOf(':'), k = q.slice(0, i), v = q.slice(i + 1), n = +v, won = function (x) { return x >= 10000 ? (x % 10000 ? (x / 10000).toFixed(1) : x / 10000) + '억' : man(x) + '만'; };
+  var t = k === 'grp' ? v + ' 회사야?' : k === 'sido' ? '본사가 ' + v + '에 있어?' : k === 'pub' ? '공기업이야?' : k === 'm' ? '직원 ' + man(n) + '명 넘는 회사야?'
+    : k === 's0' ? '신입 연봉 ' + won(n) + ' 넘어?' : k === 'r1' ? '대리 연봉 ' + won(n) + ' 이상!?' : k === 'r2' ? '과장 연봉 ' + won(n) + ' 넘어?' : k === 'r4' ? '부장 연봉 ' + won(n) + ' 넘어?'
+    : k === 'tt' ? '평균 ' + v + '년 넘게 다녀?' : k === 'to' ? '1년 안에 ' + Math.round(n * 100) + '% 넘게 그만둬?' : k === 'rt' ? '직원 평점 ' + v + ' 넘어?' : k === 'ag' ? v + '년 넘은 회사야?'
+    : k === 'my' ? '작년보다 직원이 늘었어?' : '성과급 대박 난 해가 있어?';
+  return (T3_EMO[k] || '❓') + ' ' + t;
+}
+// 스페셜 힌트 문장: '이 회사는 ○○ 회사입니다. 맞춰 보세요!'
+function t3PreTxt(q) {
+  if (!q) return '';
+  var neg = q[0] === '~', b = neg ? q.slice(1) : q, i = b.indexOf(':'), k = b.slice(0, i), v = b.slice(i + 1), n = +v;
+  var won = function (x) { return x >= 10000 ? (x % 10000 ? (x / 10000).toFixed(1) : x / 10000) + '억' : (x % 1000 ? man(x) + '만 원' : x / 1000 + '천만 원'); };
+  var P = { r4: '부장 연봉이 ' + won(n) + '이 넘는', r1: '대리 연봉이 ' + won(n) + '이 넘는', r2: '과장 연봉이 ' + won(n) + '이 넘는', s0: '신입 연봉이 ' + won(n) + '이 넘는',
+    m: neg ? '직원이 ' + man(n) + '명이 안 되는' : '직원이 ' + (n >= 10000 ? n / 10000 + '만' : man(n)) + ' 명이 넘는', tt: neg ? '평균 근속이 ' + v + '년이 안 되는' : '평균 ' + v + '년 넘게 다니는',
+    pub: '공공기관·공기업인', ag: v + '년 넘은', my: '1년 새 직원이 ' + v + '% 넘게 늘어난', rt: '직원 평점이 ' + v + '을 넘는', jump: '성과급이 크게 터진 해가 있는',
+    to: neg ? '1년 안에 그만두는 사람이 ' + Math.round(n * 100) + '%도 안 되는' : '1년 안에 ' + Math.round(n * 100) + '% 넘게 그만두는', grp: v + ' 업종', sido: '본사가 ' + v + '에 있는' }[k];
+  return P ? '이 회사는 <b>' + esc(P) + '</b> 회사입니다. 맞춰 보세요!' : '';
+}
+function t3PreBox() { return TPZ.pre ? '<div class="t3pre"><span class="t3pk">✨ 스페셜 힌트</span><p>' + t3PreTxt(TPZ.pre) + '</p><small>후보 12장 중 몇 장만 이 힌트에 맞아요. 나머지는 스스로 걸러 보세요!</small></div>' : ''; }
+function t3Cost(asks) { return asks < PC.T3_FREE ? '무료' : '−' + PC.T3_Q; }
+function renderToday3() {
+  var x = rec(TODAY, 'today'), p = prog('today');
+  if (x) return resultToday3(x);
+  if (!p) {
+    $('today').innerHTML = todayInfo() + '<div class="intro"><h3>스무고개 퀴즈 #' + TPZ.no + '</h3>' +
+      t3PreBox() + '<p class="sum">후보 카드 12장 중 숨은 회사 하나. <b>스페셜 힌트</b>로 먼저 추리하고, 모르겠으면 질문! 조로가 <b>응 / 아니</b>로 답하고 안 맞는 카드는 넘어가요.</p>' +
+      '<ul class="cuphow"><li><b>질문</b> 하나에 −' + PC.T3_Q + '점 · 5번까지</li><li><b>먼저 찍기</b> 답을 알면 바로 찍어요. 틀리면 <b class="warn">−' + PC.T3_EARLY + '점</b>!</li><li><b>최종 선택</b> 아니면 마지막에 두 회사 중 하나 (한 번, 틀리면 0점)</li></ul>' +
+      '<button class="btn big" id="tGo" type="button">시작하기 ▶</button><details class="rules"><summary>규칙 보기</summary><ul>' +
+      '<li>질문은 대리·과장·부장 연봉, 신입 연봉, 직원 수, 근속, 퇴사율, 평점, 회사 나이, 업종, 지역 등에서 지금 남은 카드를 나눌 수 있는 것만 나와요.</li>' +
+      '<li>500점에서 시작해요. 먼저 찍기는 2번까지, 틀린 카드는 탈락하고 ' + PC.T3_EARLY + '점이 깎여요. 맞히면 최소 ' + PC.T3_FLOOR + '점은 받아요.</li>' +
+      '<li>최종 선택을 누르면 남은 카드에서 정답과 미끼 한 곳이 나와요. 카드를 한 장만 남겼다면 미끼는 이미 탈락한 카드예요.</li>' +
+      '<li>모두에게 같은 12장·같은 정답이고, 숫자는 연봉 연구소 추정치예요.</li></ul></details></div>';
+    $('tGo').onclick = function () { $('tGo').disabled = true; startDaily('today').then(function (st) { setProg('today', { tok: st.tok, t0: st.t0, log: [], v: 3 }); T3SEL = ''; T3ARM = 0; renderToday(); }); };
+    return;
+  }
+  if (!Array.isArray(p.log) || p.v !== 3 || !PC.simToday3(TPZ, p.log, ctx)) { p.log = []; p.v = 3; p.fin = 0; setProg('today', p); }
+  drawToday3(p);
+}
+function drawToday3(p, flash) {
+  var Q = PC.simToday3(TPZ, p.log, ctx), last = Q.steps[Q.steps.length - 1], used = {};
+  p.log.forEach(function (a) { if (a[0] === '?') used[a.slice(1)] = 1; });
+  if (TPZ.pre) used[TPZ.pre.replace('~', '')] = 1;   // 스페셜 힌트와 같은 질문은 칩에서 뺌
+  if (Q.alive.indexOf(T3SEL) < 0) { T3SEL = ''; T3ARM = 0; }
+  var fin = p.fin || Q.asks >= PC.T3_MAXQ && Q.ew >= PC.T3_EARLY_MAX, now = PC.today3Pts(Q.asks, Q.ew), qs = fin || Q.asks >= PC.T3_MAXQ ? [] : PC.t3Questions(Q.alive, ctx, used, (window.innerWidth || 400) <= 640 ? 4 : 6);   // 폰은 4개 (한 화면)
+  var canEarly = Q.ew < PC.T3_EARLY_MAX;
+  var bub = fin ? '자, 마지막! <b>둘 중 하나</b>가 범인이야. 한 번에 찍어!' : !last ? '스페셜 힌트부터 봐! 질문은 하나에 −' + PC.T3_Q + '점이야.'
+    : last.g ? '<b>' + esc(last.g) + '</b>? 땡! 아니야. <small>−' + PC.T3_EARLY + '점</small>'
+    : '<b>' + esc(t3Label(last.q)) + '</b> → ' + (last.yes ? '응!' : '아니!') + ' <small>' + (last.out.length ? '카드 ' + last.out.length + '장 탈락' : '탈락 없음') + '</small>';
+  var h = t3PreBox() + '<div class="gbar"><span class="lv">질문 ' + Q.asks + ' / ' + PC.T3_MAXQ + '</span><span class="stat"><span>남은 카드 <b>' + Q.alive.length + '</b></span><span>맞히면 <b>' + man(now) + '</b>점</span></span></div>' +
+    '<div class="t3talk' + (flash ? ' pop' : '') + '"><span class="t3z" aria-hidden="true">' + (PX.ok ? zorro(myRank(), fin ? 'normal' : last ? (last.g ? 'shock' : last.yes ? 'happy' : 'sad') : 'normal', 2, flash ? 'jump' : 'idle', { hat: 1 }) : '') + '</span><p class="t3bub" aria-live="polite"><span class="t3who">조로 탐정</span>' + bub + '</p></div>';
+  if (fin) {
+    h += '<div class="duel t3fin">' + Q.fin.map(function (n) { var c = BYN[n]; return '<button class="pick" type="button" data-n="' + esc(n) + '">' + logo(c) + '<span class="nm">' + esc(n) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
+      '<p class="src">' + (Q.alive.length <= 1 ? '카드를 한 장만 남겼어요. 남은 그 카드가 정답이에요!' : '남은 카드 ' + Q.alive.length + '장 중 두 곳이 나왔어요.') + '</p>';
+  } else {
+    h += (T3SEL ? '<p class="t3warn" role="alert">⚠ <b>' + esc(T3SEL) + '</b> 먼저 찍기 · 틀리면 <b>−' + PC.T3_EARLY + '점</b>이에요! ' + (T3ARM ? '정말 찍으려면 한 번 더 눌러요.' : '확실할 때만! (카드를 다시 누르면 취소)') + '</p>' : (Q.asks < PC.T3_MAXQ ? '<div class="t3qs" role="group" aria-label="질문 고르기 (' + t3Cost(Q.asks) + ')">' + (qs.length ? qs.map(function (q) { return '<button type="button" class="t3q" data-q="' + esc(q) + '">' + esc(t3Label(q)) + '</button>'; }).join('') : '<span class="src" style="margin:0">더 나눌 질문이 없어요.</span>') + '</div>' +
+      '<p class="t3cost">이번 질문 <b>' + t3Cost(Q.asks) + '</b> · 남은 질문 ' + (PC.T3_MAXQ - Q.asks) + '번' + (canEarly ? ' · 카드를 누르면 먼저 찍기' : '') + '</p>' : '<p class="t3cost">질문을 다 썼어요. ' + (canEarly ? '먼저 찍거나 ' : '') + '최종 선택으로 가요.</p>')) +
+      '<div class="cands t3c" role="group" aria-label="후보 카드 12장">' + TPZ.cands.map(function (n) {
+        var c = BYN[n], out = Q.alive.indexOf(n) < 0, nw = out && last && last.out.indexOf(n) >= 0 && flash;
+        return '<button type="button" class="cand' + (out ? ' out' : '') + (nw ? ' flip' : '') + '" data-n="' + esc(n) + '"' + (out || !canEarly ? ' disabled' : ' aria-pressed="' + (T3SEL === n) + '"') + (out ? ' aria-label="' + esc(n) + ', 탈락"' : '') + '>' +
+          logo(c, 'm') + '<span class="cn">' + esc(n) + '</span>' + (out ? '<small>탈락</small>' : '') + '</button>';
+      }).join('') + '</div>' +
+      '<div class="row tact">' + (T3SEL ? '<button class="btn' + (T3ARM ? ' danger' : '') + '" id="tEarly" type="button">' + (T3ARM ? '정말 찍기! (틀리면 −' + PC.T3_EARLY + ')' : '먼저 찍기: ' + esc(T3SEL)) + '</button>' : '') +
+      '<button class="btn ' + (T3SEL ? 'ghost' : '') + '" id="tFin" type="button">' + (T3SEL ? '최종 선택 ▶' : '최종 선택 ▶ 두 회사 중 하나') + '</button></div>';
+  }
+  $('today').innerHTML = h; window.scrollTo(0, 0);   // 한 화면 고정 (스페셜 힌트가 위로 밀려 안 보이지 않게)
+  document.querySelectorAll('#today .t3q').forEach(function (bt) { bt.onclick = function () { T3SEL = ''; T3ARM = 0; p.log.push('?' + bt.dataset.q); setProg('today', p); sfx('coin'); drawToday3(p, 1); }; });
+  $('today').querySelectorAll('.t3c .cand:not([disabled])').forEach(function (bt) { bt.onclick = function () { T3SEL = T3SEL === bt.dataset.n ? '' : bt.dataset.n; T3ARM = 0; drawToday3(p); }; });
+  if ($('tEarly')) $('tEarly').onclick = function () {
+    if (!T3ARM) { T3ARM = 1; sfx('wrong'); drawToday3(p); return; }   // 경고 한 번 더
+    var n = T3SEL; T3SEL = ''; T3ARM = 0; p.log.push('!' + n); setProg('today', p);
+    var S = PC.simToday3(TPZ, p.log, ctx); sfx(S.solved ? 'fanfare' : 'wrong');
+    if (S.done) return finishToday3(p);
+    toast('땡! ' + n + ' 아니에요. −' + PC.T3_EARLY + '점'); drawToday3(p, 1);
+  };
+  if ($('tFin')) $('tFin').onclick = function () { T3SEL = ''; T3ARM = 0; p.fin = 1; setProg('today', p); drawToday3(p, 1); };
+  document.querySelectorAll('#today .t3fin .pick').forEach(function (bt) { bt.onclick = function () {
+    p.log.push(bt.dataset.n); setProg('today', p);
+    var S = PC.simToday3(TPZ, p.log, ctx); sfx(S.solved ? 'fanfare' : 'wrong'); finishToday3(p);
+  }; });
+}
+function finishToday3(p) {
+  var ans = { log: p.log }, S = PC.scoreToday(TPZ, ans, ctx);
+  $('today').innerHTML = '<p class="src">점수를 보내는 중이에요…</p>';
+  submitDaily('today', ans, S, { solved: S.solved, open: S.open, early: S.early ? 1 : 0, ew: S.ew }).then(function (x) {
+    store.set('slp-today1', '1'); if (S.solved && S.open <= 1 && !S.ew) award('detect');
+    bumpStreak(TODAY); checkPerfect(TODAY); renderMe(); TTOP = null; resultToday3(x);
+  });
+}
+function resultToday3(x) {
+  var A = BYN[TPZ.ans], log = (x.ans && x.ans.log) || [], Q = PC.simToday3(TPZ, log, ctx) || { asks: 0, ew: 0, solved: false, early: false, steps: [], fin: [] };
+  var ok = Q.solved, line = '🃏' + PC.T3_N + ' ' + Q.steps.map(function (s) { return s.g ? '💥' : s.yes ? '🙆' : '🙅'; }).join('') + ' → ' + (ok ? (Q.early ? '🎯' : '✅') : '❌');
+  var text = '연봉 놀이터 · 스무고개 퀴즈 #' + TPZ.no + ' · 질문 ' + Q.asks + '번' + (ok ? (Q.early ? ' · 먼저 찍어 맞힘' : '') : ' · 실패') + '\n' + line + '\n' + SITE_S;
+  var det = { hat: 1 }, scene = ok
+    ? stage('<div class="pxrow">' + zorro(myRank(), 'happy', 3, 'jump', det) + icon('magnifier', 4) + bld(A, 4, { all: 1 }, 'lightup') + '</div>', 'resst', '정답 ' + A.n + ' 빌딩에 불이 다 켜졌어요')
+    : stage('<div class="pxrow">' + zorro(myRank(), 'shock', 3, 'idle', det) + '<span class="fleetx">범인 도주!</span><div class="runaway" style="position:relative">' + icon('puff', 3, 'puff') + bld(A, 4, { sil: 1 }) + '</div></div>', 'resst flee', '숨은 회사가 도망갔어요');
+  $('today').innerHTML = todayInfo() + '<div class="over"><span class="lv">스무고개 퀴즈 #' + TPZ.no + ' · ' + (ok ? '성공' : '다음 기회에') + '</span>' + scene + vsScene('today', x) + logo(A, 'l') +
+    '<div class="ttl"><b>' + esc(A.n) + '</b></div><div class="big">' + Q.asks + '<small> 질문</small></div>' +
+    '<p>' + (ok ? '질문 ' + Q.asks + '번' + (Q.early ? ', 먼저 찍어서' : '') + ' 찾았어요' + (Q.ew ? ' (먼저 찍기 ' + Q.ew + '번 빗나감)' : '') + '. ' + man(x.score) + '점' : '마지막 두 곳에서 아쉽게 빗나갔어요. 0점') + '</p>' +
+    '<p class="t2em">' + line + '</p>' + t3PreBox() +
+    rankBox('today', x) + gotBox('today') + shareBox('shT', vsBox('today', x)) + nextBtn('today') + week7('today') +
+    '<details class="more"><summary>내 질문 다시 보기</summary><ol class="t3log">' + Q.steps.map(function (s) { return '<li>' + (s.g ? esc(s.g) + ' 먼저 찍기 → <b>땡</b> (−' + PC.T3_EARLY + ')' : esc(t3Label(s.q)) + ' → <b>' + (s.yes ? '응' : '아니') + '</b> · ' + s.out.length + '장 탈락') + '</li>'; }).join('') +
+    (Q.early ? '<li>' + esc(A.n) + ' 먼저 찍기 → <b>정답!</b></li>' : '<li>최종 두 곳: ' + Q.fin.map(esc).join(' vs ') + ' → <b>' + (ok ? '정답!' : '땡') + '</b></li>') + '</ol>' +
+    '<div class="row"><a class="btn ghost sm" href="' + link(A) + '" target="_blank" rel="noopener">직급별 연봉 보기</a><a class="btn ghost sm" href="' + coLink(A) + '" target="_blank" rel="noopener">이 회사 가도 될까?</a></div></details>' +
+    '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbT"></div></details><div class="row">' + againBtn('today', function () { T3SEL = ''; T3ARM = 0; renderToday(); }) + '</div></div>';
+  wireShare('shT', text, { title: '스무고개 퀴즈 #' + TPZ.no, big: Q.asks + ' 질문', sub: (ok ? man(x.score) + '점' : '아쉽게 실패') + ' · 정답은 비밀\n🔥 ' + streak() + '일 연속', lines: [line],
+    px: { mood: ok ? 'happy' : 'sad', hat: 1, co: A, o: { blind: 1, neutral: 1, w: 11, all: ok ? 1 : 0, off: ok ? 0 : 1 } } });
+  miniLb('lbT', 'today');
+}
+function tvSwitch() { return ''; }   // 미리보기 시안 바꾸기는 스무고개로 정하면서 뺌 (2026-11-01)
 
 
 // ── 03 연봉 스나이퍼 — 5문제, 막대로 연봉 찍기 (오차 3% 이내 100점, 그 뒤 1%마다 4점↓)
@@ -3460,7 +3645,7 @@ function recsOf(game) {
 }
 function bestOf(game, f) { var b = 0; recsOf(game).forEach(function (r) { var v = +f(r.x) || 0; if (v > b) b = v; }); return b; }
 function anyOf(game, f) { return recsOf(game).some(function (r) { try { return !!f(r.x); } catch (e) { return false; } }); }
-// 오늘의 회사 연속 정답 일수(가장 길었던 줄)
+// 스무고개 퀴즈(예전 오늘의 회사) 연속 정답 일수(가장 길었던 줄)
 function solvedRun() {
   var best = 0, run = 0, prev = '';
   recsOf('today').forEach(function (r) { if (r.x.aux > 0) { run = prev && PC.addDays(prev, 1) === r.day ? run + 1 : 1; prev = r.day; if (run > best) best = run; } else { run = 0; prev = ''; } });
@@ -3476,7 +3661,7 @@ var ITEMS = [
   ['crown', 'hat', '왕관', '칭호 3개 이상 또는 \'퍼펙트 데이\'', function () { var b = badges(); return Object.keys(b).length >= 3 || !!b.perfect; }, 'etc', 'r', function () { return [Object.keys(badges()).length, 3]; }, '머리 위가 좀 무거워요'],
   ['headset', 'hat', '헤드셋', '칭호 1개 이상', function () { return Object.keys(badges()).length >= 1; }, 'etc', 'c', null, '회의 중이라 못 들었어요'],
   ['beanie', 'hat', '비니', '연속 출석 7일', function () { return streak() >= 7; }, 'etc', 'c', function () { return [streakMax(), 7]; }, '출근길 칼바람 대비'],
-  ['coffee', 'hand', '커피', '오늘의 회사 한 번 풀기', function () { return store.get('slp-today1') === '1' || !!rec(TODAY, 'today'); }, 'today', 'c', null, '수사는 카페인으로'],
+  ['coffee', 'hand', '커피', '스무고개 퀴즈 한 번 풀기', function () { return store.get('slp-today1') === '1' || !!rec(TODAY, 'today'); }, 'today', 'c', null, '수사는 카페인으로'],
   ['bag', 'hand', '서류가방', '엔딩 도감 3개 이상', function () { var B = endBook(); return Object.keys(B).length >= 3; }, 'road', 'c', function () { return [Object.keys(endBook()).length, 3]; }, '안엔 이력서 세 장'],
   ['laptop', 'hand', '노트북', '엔딩 \'이직의 신\' 또는 \'스타트업 대박\'', function () { return endHas(['hopper', 'startup']); }, 'road', 'r', null, '어디서든 일할 수 있는 사람'],
   ['umbrella', 'hand', '우산', '엔딩 \'구조조정 생존자\'', function () { return endHas(['survivor']); }, 'road', 'c', null, '비 오는 날에도 출근'],
@@ -3491,11 +3676,11 @@ var ITEMS = [
   ['monocle', 'acc', '외눈 안경', '오늘의 도전 10문제 다 맞히기', function () { return bestOf('higher', function (x) { return x.aux; }) >= 10; }, 'higher', 'r', function () { return [bestOf('higher', function (x) { return x.aux; }), 10]; }, '연봉표를 꿰뚫는 한쪽 눈'],
   ['band', 'hat', '집중 머리띠', '무한 모드 10개 맞히기', function () { return +(store.get('slp-best') || 0) >= 10; }, 'higher', 'c', function () { return [+(store.get('slp-best') || 0), 10]; }, '이마에 필승 두 글자'],
   ['phone', 'hand', '황금 폰', '무한 모드 25개 맞히기', function () { return +(store.get('slp-best') || 0) >= 25; }, 'higher', 'r', function () { return [+(store.get('slp-best') || 0), 25]; }, '연봉 비교는 이걸로만'],
-  // 오늘의 회사
-  ['beret', 'hat', '탐정 베레모', '오늘의 회사 처음 맞히기', function () { return anyOf('today', function (x) { return x.aux > 0; }); }, 'today', 'c', null, '범인은 이 안에 있다'],
-  ['magglass', 'hand', '명탐정 돋보기', '오늘의 회사 한 번에 맞히기 (단서 1개·첫 추측)', function () { return anyOf('today', function (x) { return x.aux === 1; }); }, 'today', 'r', null, '첫눈에 알아챈 사람'],
-  ['bandage', 'acc', '반창고', '오늘의 회사 3번 다 틀려도 끝까지 하기', function () { return anyOf('today', function (x) { return x.aux === 0; }); }, 'today', 'c', null, '틀려도 출근은 해요'],
-  ['starpin', 'acc', '보안관 배지', '오늘의 회사 3일 연속 맞히기', function () { return solvedRun() >= 3; }, 'today', 'r', function () { return [solvedRun(), 3]; }, '이 동네 연봉 치안 담당'],
+  // 스무고개 퀴즈 (2026-11-01 오늘의 회사 → 스무고개 퀴즈, 조건도 새 규칙에 맞춤)
+  ['beret', 'hat', '탐정 베레모', '스무고개 퀴즈 처음 맞히기', function () { return anyOf('today', function (x) { return x.aux > 0; }); }, 'today', 'c', null, '범인은 이 안에 있다'],
+  ['magglass', 'hand', '명탐정 돋보기', '스무고개 퀴즈 먼저 찍기로 맞히기', function () { return anyOf('today', function (x) { return x.early === 1; }); }, 'today', 'r', null, '최종 선택까지 갈 필요 없었어요'],
+  ['bandage', 'acc', '반창고', '스무고개 퀴즈 아깝게 틀려도 끝까지 하기', function () { return anyOf('today', function (x) { return x.aux === 0; }); }, 'today', 'c', null, '틀려도 출근은 해요'],
+  ['starpin', 'acc', '보안관 배지', '스무고개 퀴즈 3일 연속 맞히기', function () { return solvedRun() >= 3; }, 'today', 'r', function () { return [solvedRun(), 3]; }, '이 동네 연봉 치안 담당'],
   // 연봉 스나이퍼
   ['visor', 'hat', '선캡', '연봉 스나이퍼 첫 판 끝내기', function () { return recsOf('sniper').length > 0; }, 'sniper', 'c', null, '햇빛 가리고 조준'],
   ['dart', 'hand', '다트', '한 문제를 오차 3% 안으로 맞히기', function () { return anyOf('sniper', function (x) { return errsOf(x).some(function (e) { return Math.abs(e) <= 3; }); }); }, 'sniper', 'c', null, '한가운데 꽂히는 맛'],
@@ -3707,13 +3892,13 @@ function fillNb(game, t) {
 function nextBtn(game) {
   var order = G5.slice(G5.indexOf(game) + 1).concat(G5.slice(0, G5.indexOf(game) + 1)), nx = '';
   order.forEach(function (k) { if (!nx && k !== game) { var S = gState(k); if (!S || !S.done) nx = k; } });
-  return '<div class="nxrow">' + (nx ? '<button type="button" class="btn lime nx" data-go="' + nx + '">다음 게임: ' + esc(nx === 'today' ? '오늘의 회사' : PNAME[nx]) + ' ▶</button>'
+  return '<div class="nxrow">' + (nx ? '<button type="button" class="btn lime nx" data-go="' + nx + '">다음 게임: ' + esc(PNAME[nx]) + ' ▶</button>'
     : '<button type="button" class="btn lime nx" data-go="lobby">오늘 ' + G5.length + '개 다 했어요 · 게임 고르기로</button>') + tmrLine() + '</div>';
 }
 // 내일 예고 (2026-10-31): 바깥 알림이 없으니 다음 날 올 이유를 결과 화면에서 말해 줌
 function tmrLine() {
   var gl = giftLeft(), no = PC.genToday(PC.addDays(TODAY, 1), ctx).no;
-  return '<p class="tmr">' + (gl ? '🎁 선물 상자까지 <b>' + gl + '게임</b> · ' : '') + '내일 0시: 오늘의 회사 <b>#' + no + '</b> · 오늘 정답 공개 · 🔥 출석 <b>' + (streak() + 1) + '일째</b></p>';
+  return '<p class="tmr">' + (gl ? '🎁 선물 상자까지 <b>' + gl + '게임</b> · ' : '') + '내일 0시: 스무고개 퀴즈 <b>#' + no + '</b> · 오늘 정답 공개 · 🔥 출석 <b>' + (streak() + 1) + '일째</b></p>';
 }
 // 이번 주 7칸: 한 날 = 라임 채움, 오늘 = 점선 테두리, 아직 안 온 날 = 흐리게
 var DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
@@ -5348,11 +5533,11 @@ document.querySelectorAll('#toolSeg button').forEach(function (b) { b.onclick = 
 var KEYS = ['higher', 'today', 'sniper', 'road', 'cup', 'run', 'hall', 'tools'], G5 = KEYS.slice(0, 6);   // G5 = 로비 게임 카드 (2026-10-29 조로 출근길 추가로 6개)
 var RENDER = { higher: renderHigher, today: renderToday, sniper: renderSniper, road: renderRoad, cup: renderCup, run: renderRun, hall: renderHall, tools: function () { toolRender(); } };
 function toolRender() { TOOL === 'live' ? liveStart() : rankTool(); }
-var PNAME = { higher: GNAME.higher, today: '오늘의 회사', sniper: GNAME.sniper, road: GNAME.road, cup: '드림 컴퍼니 월드컵', run: '조로 출근길', hall: '순위 · 명예의 전당', look: '내 조로', tools: '연봉 도구' };
+var PNAME = { higher: GNAME.higher, today: '스무고개 퀴즈', sniper: GNAME.sniper, road: GNAME.road, cup: '드림 컴퍼니 월드컵', run: '조로 출근길', hall: '순위 · 명예의 전당', look: '내 조로', tools: '연봉 도구' };
 // 게임 카드: [도트 아이콘, 한 줄 설명, 걸리는 시간]
 var GINFO = {
   higher: ['money', '두 회사 중 더 많이 주는 쪽을 골라요. 문제마다 비교 기준이 바뀌어요.', '10문제 · 문제당 15초'],
-  today: PC.genToday(TODAY, ctx).v === 2 ? ['magnifier', '아무 회사나 넣어 추측하면 업종·지역·직원 수·연봉이 정답과 비교돼요.', '기회 7번 · 약 2분'] : ['magnifier', '후보 8곳 중 숨은 회사 1곳을 찾아요. 단서는 하나씩 열려요.', '기회 3번 · 약 1분'],
+  today: PC.genToday(TODAY, ctx).v === 3 ? ['magnifier', '스페셜 힌트 하나로 추리하고 조로에게 예/아니오 질문! 카드 12장 중 숨은 회사를 찾아요.', '질문 5번 · 약 1분'] : ['magnifier', '후보 8곳 중 숨은 회사 1곳을 찾아요. 단서는 하나씩 열려요.', '기회 3번 · 약 1분'],
   sniper: ['target', '회사와 직급을 보고 막대를 밀어 연봉을 찍어요.', '5문제 · 약 2분'],
   road: ['sign', '여자·남자 중 골라 20년을 살아요. 이직·회사 일·연애·결혼·육아까지, 연봉·체력·커리어·행복 종합점수로 겨뤄요.', '16번 고르기 · 약 7분'],
   cup: ['trophy', '오늘의 16강! 가고 싶은 회사를 고르면 전국 민심이 공개, 민심과 같을수록 점수.', '15번 고르기 · 약 1분'],
@@ -5373,7 +5558,7 @@ function renderLobby() {
   RPZ = RPZ || PC.genRoad(TODAY, ctx);
   var tno = PC.genToday(TODAY, ctx).no, order = G5;   // 2026-10-29 사용자: 01~06 번호 순서 그대로 두 줄, 추천 카드도 같은 크기 (색만 다름)
   $('games').innerHTML = order.map(function (k) {
-    var S = st[k], f = k === feat, I = GINFO[k], nm = k === 'today' ? '오늘의 회사 #' + tno : PNAME[k];
+    var S = st[k], f = k === feat, I = GINFO[k], nm = k === 'today' ? '스무고개 퀴즈 #' + tno : PNAME[k];
     var meta = esc(S ? S.meta : k === 'road' ? '오늘 팩: ' + PC.ROAD_SC[RPZ.sc || 'new'] : I[2]) + (!S && k === 'today' && TTOP ? '<span class="pc"> · 정답자 ' + man(TTOP.todayGame.ok) + '명</span>' : !S && k === 'road' ? '<span class="pc"> · ' + I[2] + '</span>' : '');
     return '<button type="button" class="gc' + (f ? ' feat' : '') + (S && S.done ? ' done' : '') + '" id="t-' + k + '" data-go="' + k + '">' +
       '<span class="no" aria-hidden="true">0' + (G5.indexOf(k) + 1) + '</span>' + (PX.ok ? '<span class="gi">' + icon(I[0], ph ? 2.5 : 3) + '</span>' : '') +
@@ -5383,7 +5568,7 @@ function renderLobby() {
   }).join('');
   var gl = giftLeft(), crs = ['higher', 'today', 'sniper'].filter(function (k) { return !(st[k] && st[k].done); })[0];
   $('lobbyN').innerHTML = G5.length + '개 중 ' + nDone + '개 했어요 · ' + (gl ? '🎁 선물 상자까지 <b>' + gl + '개</b>' : '🎁 오늘 선물 받음');
-  $('course').innerHTML = crs ? '<button type="button" class="btn big crs" data-go="' + crs + '">▶ 오늘의 3분 코스' + (crs === 'higher' ? '' : ' 이어서') + '<small>어디가 더 → 오늘의 회사 → 스나이퍼</small></button>' : '';
+  $('course').innerHTML = crs ? '<button type="button" class="btn big crs" data-go="' + crs + '">▶ 오늘의 3분 코스' + (crs === 'higher' ? '' : ' 이어서') + '<small>어디가 더 → 스무고개 → 스나이퍼</small></button>' : '';
   dockSubs();
 }
 // 순위·내 조로·도구 칸의 작은 글 + 아이콘
@@ -5417,7 +5602,8 @@ function gbSync() {
     } else if (k === 'today') {
       p = prog('today');
       if (rec(TODAY, 'today')) t = '끝';
-      else if (p && TPZ && TPZ.v === 2 && Array.isArray(p.log)) { t = '추측 ' + p.log.length + ' / ' + PC.TODAY2_TRIES; f = p.log.length / PC.TODAY2_TRIES; }
+      else if (p && TPZ && TPZ.v === 3 && Array.isArray(p.log)) { t = '질문 ' + p.log.filter(function (a) { return a[0] === '?'; }).length + ' / ' + PC.T3_MAXQ; }
+      else if (p && TPZ && (TPZ.v === 2 || TPZ.v === 4) && Array.isArray(p.log)) { var T2 = TPZ.v === 4 ? PC.T4_TRIES : PC.TODAY2_TRIES; t = '추측 ' + p.log.length + ' / ' + T2; f = p.log.length / T2; }
       else if (p && TPZ && Array.isArray(p.log)) { var R = PC.simToday(TPZ, p.log); if (R) { t = '단서 ' + R.open + ' / ' + PC.TODAY_CLUES; f = R.open / PC.TODAY_CLUES; } }
     } else if (k === 'sniper') {
       p = prog('sniper');
