@@ -6,7 +6,7 @@
 const RULES = 5;                 // 규칙 판: 점수 규칙을 바꾸면 올린다 (2 = 2026-10-28 오늘의 회사 8지선다, 3 = 이직 로드 요일별 시나리오 팩·엔딩, 4 = 커리어 로드 20년 2026-10-30~, 5 = 오늘의 회사 비교 힌트·월드컵 오늘의 16강 2026-11-01)
 const EPOCH = '2026-10-01';      // 오늘의 회사 #1 날짜 (바꾸면 모든 날의 문제가 바뀜)
 const RK = ['사원', '대리', '과장', '차장', '부장'];
-const DAILY = ['higher', 'today', 'sniper', 'road', 'run', 'cup'];   // 순위표가 있는 오늘의 도전 (2026-10-29 조로 출근길, 2026-11-01 월드컵 오늘의 16강 — 도전장 번호 때문에 뒤에만 붙임)
+const DAILY = ['higher', 'today', 'sniper', 'road', 'run', 'cup', 'line'];   // 순위표가 있는 오늘의 도전 (2026-10-29 조로 출근길, 2026-11-01 월드컵 오늘의 16강 · 연봉 줄서기 — 도전장 번호 때문에 뒤에만 붙임. higher 는 로비에서 빠졌지만 지난 기록·도전장 때문에 남김)
 const GAMES = DAILY.concat(['endless']);                            // + 플레이 수만 세는 판
 
 // ── 씨앗 있는 난수 (FNV-1a 해시 → mulberry32)
@@ -977,6 +977,48 @@ function nickCheck(s) {   // '' = 괜찮음, 아니면 고칠 점
   return '';
 }
 
+// ── 연봉 줄서기 (2026-11-01, 로비 01번 = 예전 '어디가 더' 자리): 회사·직급이 다른 조로들을 연봉 높은 순서대로 줄 세우기
+//    5판 3·4·4·5·5명. 조로 한 명 = 회사(로고 있는 이름난 400곳) + 직급, 연봉 = 직급 추정값 rk. 짝수 판은 같은 회사 다른 직급을 한 명 섞음
+//    연봉끼리 4% 넘게 차이(동점 없음), 뒤 판일수록 위아래 폭이 좁음, 업종(= 옷 색)은 되도록 다 다르게
+//    점수: 자리 맞힌 조로 1명 100점 + 한 판 다 맞히면 150점 (만점 2,850). aux = 완벽한 판 수(0~5)
+const LINE_N = [3, 4, 4, 5, 5], LINE_PT = 100, LINE_PERF = 150;
+function lineRounds(seed, ctx) {   // seed: 오늘의 줄 = 날짜, 연습 판 = 아무 글
+  const r = rng('line|' + seed), H = ctx.H.filter(c => c.tier <= 1);
+  return LINE_N.map((n, k) => {
+    let best = null, ok2 = null, last = null;   // ok2 = 조건은 덜 맞아도 연봉 4% 차이는 지킨 줄 (끝까지 못 찾으면 이걸로)
+    for (let t = 0; t < 200; t++) {
+      const ppl = [], used = {}; let guard = 0;
+      while (ppl.length < n && guard++ < 50) {
+        let c = H[Math.floor(r() * H.length)], ri = Math.floor(r() * 5);
+        if (k % 2 && ppl.length === 1) { c = ppl[0].c; ri = (ppl[0].ri + 1 + Math.floor(r() * 3)) % 5; }
+        if (used[c.n + ri]) continue; used[c.n + ri] = 1;
+        ppl.push({ c, ri, v: c.rk[ri] });
+      }
+      const vs = ppl.map(p => p.v).sort((a, b) => b - a);
+      const gap = vs.every((v, i) => !i || (vs[i - 1] - v) / vs[i - 1] >= .04), span = (vs[0] - vs[n - 1]) / vs[0];
+      const gs = {}; ppl.forEach(q => { gs[q.c.grp] = 1; });
+      last = ppl; if (gap && !ok2) ok2 = ppl;
+      if (gap && span < [.75, .65, .55, .5, .45][k] && Object.keys(gs).length >= n - (k % 2)) { best = ppl; break; }
+    }
+    best = best || ok2 || last;
+    return best.map(p => ({ n: p.c.n, ri: p.ri, v: p.v }));
+  });
+}
+function genLine(day, ctx) { return { game: 'line', day, R: lineRounds(day, ctx) }; }
+// 세운 줄 pick(조로 번호 순서)의 자리마다 맞는지: 그 자리 연봉 = 정답 순서 그 자리 연봉
+function lineCheck(P, pick) { const vs = P.map(p => p.v).sort((a, b) => b - a); return pick.map((j, i) => P[j].v === vs[i]); }
+function linePick(a, n) { return Array.isArray(a) && a.length === n && a.every(j => Number.isInteger(j) && j >= 0 && j < n) && new Set(a).size === n; }
+function scoreLine(pz, ans) {   // ans = 판마다 세운 줄 [[2,0,1], [3,1,0,2], …] — 다 끝난 판만 받음
+  if (!Array.isArray(ans) || ans.length !== pz.R.length || !pz.R.every((P, k) => linePick(ans[k], P.length))) return { bad: 1, score: 0, aux: 0 };
+  let score = 0, ok = 0, perf = 0; const res = [];
+  pz.R.forEach((P, k) => {
+    const r = lineCheck(P, ans[k]), c = r.filter(Boolean).length;
+    ok += c; score += c * LINE_PT + (c === P.length ? LINE_PERF : 0); if (c === P.length) perf++;
+    res.push(r.map(x => (x ? 'o' : 'x')).join(''));
+  });
+  return { score, aux: perf, ok, res, seq: res.join('-'), perfect: perf === pz.R.length };
+}
+
 // ── 공통: 게임별 문제·점수
 // ── 조로 출근길 (2026-10-29): 손으로 하는 달리기라 서버가 판을 다시 돌릴 수는 없다.
 //    대신 오늘 코스는 날짜 씨앗 하나(모두 같은 길)이고, 보낸 숫자가 말이 되는지만 본다:
@@ -989,8 +1031,8 @@ function scoreRun(pz, ans) {
   if (m < 0 || m > RUN_MONEY_MAX || b < 0 || b > RUN_BONUS_MAX || s !== m + b || el < RUN_EL_MIN || el > 1800 || h < 0 || h > 200) return { bad: 1, score: 0, aux: 0 };
   return { score: s, aux: b > 0 ? 1 : 0, el };   // aux = 정시 출근(1) · 지각(0)
 }
-function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : game === 'today' ? genToday(day, ctx) : game === 'sniper' ? genSniper(day, ctx) : game === 'road' ? genRoad(day, ctx) : game === 'run' ? genRun(day) : game === 'cup' ? genCup(day, ctx) : null; }
+function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : game === 'today' ? genToday(day, ctx) : game === 'sniper' ? genSniper(day, ctx) : game === 'road' ? genRoad(day, ctx) : game === 'run' ? genRun(day) : game === 'cup' ? genCup(day, ctx) : game === 'line' ? genLine(day, ctx) : null; }
 // rates: 월드컵만 (서버가 DB 에서 그 16곳의 전국 선택률을 읽어 넘김)
-function score(game, pz, ans, ctx, rates) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : game === 'run' ? scoreRun(pz, ans) : game === 'cup' ? scoreCup(pz, ans, ctx, rates) : null; }
+function score(game, pz, ans, ctx, rates) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : game === 'run' ? scoreRun(pz, ans) : game === 'cup' ? scoreCup(pz, ans, ctx, rates) : game === 'line' ? scoreLine(pz, ans) : null; }
 
-export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, ROAD2_FROM, roadV, WEEK_OFF, weekOff, R2_SLOTS, R2_N, R2_W, R2_EV, r2Score, simRoad2, roadEnding2, ENDINGS1, ENDINGS2, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, CUP_W, CUP_EYE, genCup, simCup, cupShare, cupMaj, scoreCupAll, scoreCup, T3_N, T3_MAXQ, T3_FREE, T3_Q, T3_PRE, T3_PRE2, T3_PRE2_FROM, t3Premise, T3_EARLY, T3_EARLY_MAX, T3_FLOOR, t3Ask, t3Final, simToday3, today3Pts, t3Questions, T4_N, T4_TRIES, T4_STEP, simToday4, today4Pts, TODAY2_FROM, TODAY2_TRIES, TODAY2_STEP, TODAY2_COLS, today2Cell, today2Row, simToday2, today2Pts, today2Emoji, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
+export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, ROAD2_FROM, roadV, WEEK_OFF, weekOff, R2_SLOTS, R2_N, R2_W, R2_EV, r2Score, simRoad2, roadEnding2, ENDINGS1, ENDINGS2, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, CUP_W, CUP_EYE, genCup, simCup, cupShare, cupMaj, scoreCupAll, scoreCup, T3_N, T3_MAXQ, T3_FREE, T3_Q, T3_PRE, T3_PRE2, T3_PRE2_FROM, t3Premise, T3_EARLY, T3_EARLY_MAX, T3_FLOOR, t3Ask, t3Final, simToday3, today3Pts, t3Questions, T4_N, T4_TRIES, T4_STEP, simToday4, today4Pts, TODAY2_FROM, TODAY2_TRIES, TODAY2_STEP, TODAY2_COLS, today2Cell, today2Row, simToday2, today2Pts, today2Emoji, LINE_N, LINE_PT, LINE_PERF, lineRounds, genLine, lineCheck, scoreLine, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
