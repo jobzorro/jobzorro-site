@@ -723,6 +723,8 @@ button.dk small { font-size:12.5px; color:var(--muted); grid-column:2; min-width
 .t3pre p { margin:0; font-size:16px; font-weight:700; line-height:1.4; }
 .t3pre p b { font-weight:900; background:linear-gradient(transparent 58%, rgba(255,255,255,.75) 58%); }
 .t3pre small { font-size:11.5px; opacity:.75; }
+.t3pre .t3cat { font-style:normal; margin-left:6px; padding:1px 8px; border:1.5px solid #0b0b0b; border-radius:999px; background:rgba(255,255,255,.6); font-family:inherit; font-size:11.5px; font-weight:800; }
+.t3pre .t3quip { font-size:13px; font-weight:700; opacity:.85; }
 .t3talk { display:flex; gap:10px; align-items:flex-end; margin:8px 0 10px; }
 .t3talk .t3z { flex:none; display:inline-grid; }
 .t3talk .t3bub { position:relative; flex:1; min-width:0; margin:0 0 6px; padding:12px 14px; border:2px solid var(--ink); border-radius:16px; background:var(--card); font-size:16px; line-height:1.45; min-height:64px; display:block; }
@@ -1281,7 +1283,7 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module">
-import * as PC from './play_core.js?v=4d3b20f5fb';
+import * as PC from './play_core.js?v=aa3633766b';
 const D = await (await fetch('data/play.json', { cache: 'no-cache' })).json();
 // 연봉 놀이터 v2 화면. make.py 가 page/*.js 를 이름순으로 이어 붙여 function main(D, PC) 하나로 만든다.
 // D = 회사 자료(make.py), PC = play_core.js (서버와 같은 규칙). 점수는 항상 PC.score* 로만 계산한다.
@@ -2709,28 +2711,49 @@ function resultToday2(x) {
 // ── 스무고개 퀴즈 (2026-11-01 사용자가 고름, 3차): 위에 '스페셜 힌트' 한 문장(후보 12장 중 4~5장만 맞음 — 그것만으로도 추리) · 질문 하나 −50(5번까지)
 //    · 답을 알면 먼저 찍기(틀리면 −150, 경고) · 마지막은 두 회사 중 하나
 //    후보 카드 12장 → 질문 칩을 누르면 조로가 응/아니로 답하고 안 맞는 카드가 넘어감
-var T3_EMO = { grp: '🏷', sido: '📍', pub: '🏛', m: '👥', s0: '🌱', r1: '💰', r2: '💼', r4: '👔', tt: '⏳', to: '🏃', rt: '⭐', ag: '🎂', my: '📈', jump: '🎁' };
+var T3_EMO = { grp: '🏷', sido: '📍', pub: '🏛', m: '👥', s0: '🌱', r1: '💰', r2: '💼', r4: '👔', tt: '⏳', to: '🏃', rt: '⭐', ag: '🎂', my: '📈', jump: '🎁', ex: '👑', lad: '🪜', tw: '🏆', yoy: '🔥', up: '🚀' };
 var T3SEL = '', T3ARM = 0;
 function t3Label(q) {
   var i = q.indexOf(':'), k = q.slice(0, i), v = q.slice(i + 1), n = +v, won = function (x) { return x >= 10000 ? (x % 10000 ? (x / 10000).toFixed(1) : x / 10000) + '억' : man(x) + '만'; };
   var t = k === 'grp' ? v + ' 회사야?' : k === 'sido' ? '본사가 ' + v + '에 있어?' : k === 'pub' ? '공기업이야?' : k === 'm' ? '직원 ' + man(n) + '명 넘는 회사야?'
     : k === 's0' ? '신입 연봉 ' + won(n) + ' 넘어?' : k === 'r1' ? '대리 연봉 ' + won(n) + ' 이상!?' : k === 'r2' ? '과장 연봉 ' + won(n) + ' 넘어?' : k === 'r4' ? '부장 연봉 ' + won(n) + ' 넘어?'
     : k === 'tt' ? '평균 ' + v + '년 넘게 다녀?' : k === 'to' ? '1년 안에 ' + Math.round(n * 100) + '% 넘게 그만둬?' : k === 'rt' ? '직원 평점 ' + v + ' 넘어?' : k === 'ag' ? v + '년 넘은 회사야?'
-    : k === 'my' ? '작년보다 직원이 늘었어?' : '성과급 대박 난 해가 있어?';
+    : k === 'my' ? '작년보다 직원이 늘었어?' : k === 'ex' ? '임원 연봉 ' + won(n) + ' 넘어?' : k === 'lad' ? '부장 연봉이 사원의 ' + v + '배 넘어?'
+    : k === 'tw' ? '업종 평균보다 과장 연봉 많이 줘?' : k === 'yoy' ? '올해 연봉 ' + v + '% 넘게 올랐어?' : k === 'up' ? '3년 새 연봉 ' + v + '% 넘게 올랐어?' : '성과급 대박 난 해가 있어?';
   return (T3_EMO[k] || '❓') + ' ' + t;
 }
-// 스페셜 힌트 문장: '이 회사는 ○○ 회사입니다. 맞춰 보세요!'
-function t3PreTxt(q) {
-  if (!q) return '';
+// 스페셜 힌트 문장 (2026-11-01 사용자: 더 재밌게): [분류, '이 회사는 ○○ 회사', 조로 한마디]. '~' 는 그 반대
+function t3PreParts(q) {
+  if (!q) return null;
   var neg = q[0] === '~', b = neg ? q.slice(1) : q, i = b.indexOf(':'), k = b.slice(0, i), v = b.slice(i + 1), n = +v;
   var won = function (x) { return x >= 10000 ? (x % 10000 ? (x / 10000).toFixed(1) : x / 10000) + '억' : (x % 1000 ? man(x) + '만 원' : x / 1000 + '천만 원'); };
-  var P = { r4: '부장 연봉이 ' + won(n) + '이 넘는', r1: '대리 연봉이 ' + won(n) + '이 넘는', r2: '과장 연봉이 ' + won(n) + '이 넘는', s0: '신입 연봉이 ' + won(n) + '이 넘는',
-    m: neg ? '직원이 ' + man(n) + '명이 안 되는' : '직원이 ' + (n >= 10000 ? n / 10000 + '만' : man(n)) + ' 명이 넘는', tt: neg ? '평균 근속이 ' + v + '년이 안 되는' : '평균 ' + v + '년 넘게 다니는',
-    pub: '공공기관·공기업인', ag: v + '년 넘은', my: '1년 새 직원이 ' + v + '% 넘게 늘어난', rt: '직원 평점이 ' + v + '을 넘는', jump: '성과급이 크게 터진 해가 있는',
-    to: neg ? '1년 안에 그만두는 사람이 ' + Math.round(n * 100) + '%도 안 되는' : '1년 안에 ' + Math.round(n * 100) + '% 넘게 그만두는', grp: v + ' 업종', sido: '본사가 ' + v + '에 있는' }[k];
-  return P ? '이 회사는 <b>' + esc(P) + '</b> 회사입니다. 맞춰 보세요!' : '';
+  var pct = Math.round(n * 100) + '%', P = {
+    r4: ['💰 연봉', '부장 되면 연봉이 ' + won(n) + '을 넘는', '버티면 억대 연봉!'],
+    r2: ['💰 연봉', '과장 연봉이 ' + won(n) + '을 넘는', '과장님 지갑이 두툼'],
+    r1: ['💰 연봉', '대리만 달아도 ' + won(n) + '이 넘는', '대리 때부터 여유 있는 곳'],
+    s0: ['🌱 연봉', '신입 첫 연봉부터 ' + won(n) + '이 넘는', '첫 월급부터 든든!'],
+    ex: ['👑 임원', '임원 평균 연봉이 ' + won(n) + '을 넘는', '별 달면 인생 역전'],
+    lad: ['🪜 연봉 사다리', '사원에서 부장까지 연봉이 ' + v + '배 넘게 뛰는', '오래 버틸수록 이득인 곳'],
+    tw: ['🏆 업계 비교', '같은 업종 평균보다 과장 연봉을 ' + Math.round((n - 1) * 100) + '% 넘게 더 주는', '업계에서 손 큰 집'],
+    my: neg ? ['📉 성장성', '1년 새 직원이 ' + (-n) + '% 넘게 줄어든', '요즘 몸집 줄이는 중…'] : ['📈 성장성', '1년 새 직원이 ' + v + '% 넘게 늘어난', '지금 쑥쑥 크는 중!'],
+    up: ['🚀 성장성', '3년 새 평균 연봉이 ' + v + '% 넘게 오른', '월급 오르는 맛이 있는 곳'],
+    yoy: neg ? ['🧊 성장성', '올해 평균 연봉이 ' + v + '%도 안 오른', '올해는 동결 분위기…'] : ['🔥 성장성', '올해 평균 연봉이 ' + v + '% 넘게 오른', '올해 인상률 두둑!'],
+    tt: neg ? ['🌪 안정성', '평균 근속이 ' + v + '년이 안 되는', '젊고 빠르게 도는 곳'] : ['🛡 안정성', '평균 ' + v + '년 넘게 다니는', '한번 들어가면 안 나온다'],
+    to: neg ? ['🛡 안정성', '1년 안에 그만두는 사람이 ' + pct + '도 안 되는', '떠나는 사람이 거의 없어요'] : ['🏃 안정성', '1년 안에 ' + pct + ' 넘게 떠나는', '들고 나는 게 활발한 곳'],
+    pub: ['🏛 안정성', '나라가 주인인 공공기관·공기업인', '철밥통 후보 등장'],
+    ag: ['🎂 업력', v + '년 넘게 버틴 장수', '업력이 곧 무기'],
+    rt: neg ? ['🌧 분위기', '직원 평점이 ' + v + '점을 못 넘는', '속사정이 좀 있는 듯…'] : ['⭐ 분위기', '직원 평점이 ' + v + '점을 넘는', '다니는 사람이 칭찬하는 곳'],
+    jump: ['🎁 성과급', '성과급이 크게 터진 해가 있는', '대박 난 해를 기억하는 곳'],
+    m: neg ? ['🐜 규모', '직원이 ' + man(n) + '명이 안 되는', '작지만 단단한 곳'] : ['🐘 규모', '직원이 ' + (n >= 10000 ? n / 10000 + '만' : man(n)) + ' 명 넘는', '초대형 공룡'],
+    grp: ['🏷 업종', v + ' 업종', ''], sido: ['📍 지역', '본사가 ' + v + '에 있는', ''] }[k];
+  return P || null;
 }
-function t3PreBox() { return TPZ.pre ? '<div class="t3pre"><span class="t3pk">✨ 스페셜 힌트</span><p>' + t3PreTxt(TPZ.pre) + '</p><small>후보 12장 중 몇 장만 이 힌트에 맞아요. 나머지는 스스로 걸러 보세요!</small></div>' : ''; }
+function t3PreTxt(q) { var P = t3PreParts(q); return P ? '이 회사는 <b>' + esc(P[1]) + '</b> 회사입니다. 맞춰 보세요!' : ''; }
+function t3PreBox() {
+  var P = t3PreParts(TPZ.pre); if (!P) return '';
+  return '<div class="t3pre"><span class="t3pk">✨ 스페셜 힌트 <i class="t3cat">' + esc(P[0]) + '</i></span><p>' + t3PreTxt(TPZ.pre) + '</p>' +
+    (P[2] ? '<span class="t3quip">조로: “' + esc(P[2]) + '”</span>' : '') + '<small>후보 12장 중 몇 장만 이 힌트에 맞아요. 나머지는 스스로 걸러 보세요!</small></div>';
+}
 function t3Cost(asks) { return asks < PC.T3_FREE ? '무료' : '−' + PC.T3_Q; }
 function renderToday3() {
   var x = rec(TODAY, 'today'), p = prog('today');

@@ -44,7 +44,7 @@ function msToMidnight(ms) { const k = (ms == null ? Date.now() : ms) + 9 * 3600e
 // ── 회사 자료: make.py 의 행 → 객체. 게임용(P)만 문제에 쓴다. 순서는 make.py 가 고정(직원 많은 순)
 function load(D) {
   const all = D.co.map(r => ({ n: r[0], o: r[1], slug: r[2], ind: r[3], m: r[4], rk: r[5], g: r[6], ex: r[7], to: r[8], tt: r[9], s0: r[10],
-    sido: r[11], exR: r[12], lg: r[13] || '', lt: r[14] || 0, hl: r[15], grp: r[16], jump: r[17] || 0, rt: r[18] || 0, my: r[19] || 0, pub: r[20], ag: r[21] || 0 }));
+    sido: r[11], exR: r[12], lg: r[13] || '', lt: r[14] || 0, hl: r[15], grp: r[16], jump: r[17] || 0, rt: r[18] || 0, my: r[19] || 0, pub: r[20], ag: r[21] || 0, yoy: r[22] == null ? null : r[22], up: r[23] == null ? null : r[23] }));
   const by = {}; all.forEach(c => { by[c.n] = c; });
   const P = all.filter(c => c.g), H = P.filter(c => c.hl);   // H: 로고 있는 게임용 회사 (오늘의 회사·스나이퍼)
   H.forEach((c, i) => { c.tier = i < 120 ? 0 : i < 400 ? 1 : 2; });   // 직원 수 순서로 쉬움·보통·어려움
@@ -191,11 +191,13 @@ function simToday2(pz, log, ctx) {
 const T3_N = 12, T3_MAXQ = 5, T3_FREE = 0, T3_Q = 50, T3_EARLY = 150, T3_EARLY_MAX = 2, T3_FLOOR = 50;
 // 질문 = '종류:값'. 숫자는 '그 값보다 큼'. pub 공기업 · my 직원 증가 · jump 성과급 대박 난 해 (값 0)
 const T3_KEYS = { grp: c => c.grp, sido: c => c.sido || '', pub: c => (c.pub ? 1 : 0), m: c => c.m, s0: c => c.s0 || 0, r1: c => c.rk[1], r2: c => c.rk[2], r4: c => c.rk[4],
-  tt: c => c.tt || 0, to: c => c.to || 0, rt: c => c.rt || 0, ag: c => c.ag || 0, my: c => c.my || 0, jump: c => c.jump || 0 };
+  tt: c => c.tt || 0, to: c => c.to || 0, rt: c => c.rt || 0, ag: c => c.ag || 0, my: c => c.my || 0, jump: c => c.jump || 0,
+  // 2026-11-01 추가: 임원 평균 · 사원→부장 몇 배 · 업종 중간값 대비 과장 연봉 · 올해 연봉 인상률(%) · 3년 새 연봉 상승(%) (뒤 둘은 모르면 null)
+  ex: c => c.ex || 0, lad: c => Math.round(c.rk[4] / c.rk[0] * 100) / 100, tw: c => Math.round(c.twist * 100) / 100, yoy: c => c.yoy, up: c => c.up };
 function t3Ask(c, q) {
   q = String(q || ''); if (q[0] === '~') { const r = t3Ask(c, q.slice(1)); return r === null ? null : !r; }   // '~' = 아니다 (대전제 '1,000명이 안 되는')
   const m = /^([a-z0-9]+):(.{1,24})$/.exec(q); if (!m || !c || !T3_KEYS[m[1]]) return null;
-  const v = T3_KEYS[m[1]](c);
+  const v = T3_KEYS[m[1]](c); if (v == null) return null;
   if (m[1] === 'grp' || m[1] === 'sido') return v === m[2];
   const x = Number(m[2]); if (!isFinite(x)) return null;
   return v > x;
@@ -204,10 +206,17 @@ function t3Ask(c, q) {
 //    후보 12장 중 정답 포함 4~5장만 그 문장에 맞게 뽑음 (안 맞는 카드도 자동으로 지우지 않음 — 힌트를 보고 스스로 추리).
 //    쉬운 날(정답이 이름난 회사)은 후보도 이름난 회사 위주. 연봉·규모 같은 재밌는 힌트 먼저, 업종·지역은 마지막에
 const T3_PRE = ['r4:10000', 'r1:6000', 'r2:8000', 'm:10000', '~m:1000', 'tt:15', '~tt:6', 'pub:0', 'ag:40', 'my:5', 'rt:3.6', 'jump:0', 's0:5000', '~to:0.05', 'grp:', 'sido:'];
-const T3_NEEDS = ['tt', 'rt', 's0', 'to', 'ag'];   // 자료가 없으면(0) 힌트로 못 쓰는 칸
+const T3_NEEDS = ['tt', 'rt', 's0', 'to', 'ag', 'ex'];   // 자료가 없으면(0) 힌트로 못 쓰는 칸 (yoy·up 은 null 이 없음)
+const t3Has = (c, k) => { const v = T3_KEYS[k](c); return v != null && (T3_NEEDS.indexOf(k) < 0 || v > 0); };
+// 2026-11-02~ 힌트 (사용자: '더 재밌게 · 성장성 안정성 · 지표 최대한'): 연봉·임원·연봉 사다리·업계 비교 · 성장성(직원·연봉 인상) · 안정성(근속·퇴사·공기업·업력) · 평점 · 규모
+//    '~' 는 그 반대(이하). 문장은 page/05_today.js t3PreTxt
+const T3_PRE2_FROM = '2026-11-02';
+const T3_PRE2 = ['r4:10000', 's0:5000', 'r1:6000', 'ex:30000', 'lad:2', 'tw:1.2', 'my:5', '~my:-3', 'up:15', 'yoy:5', '~yoy:1',
+  'tt:15', '~tt:5', '~to:0.1', 'to:0.3', 'pub:0', 'ag:35', 'rt:3.5', '~rt:2.7', 'grp:', 'sido:'];
+const T3_PRE2_TAIL = ['m:10000', '~m:1000'];   // 규모는 흔히 맞아 뒤로 (업종·지역 바로 앞)
 function t3Premise(A, day, ctx) {
-  const r = rng('t3pre|' + day), list = shuffleR(r, T3_PRE.filter(q => q !== 'grp:' && q !== 'sido:')).concat(['grp:' + A.grp, A.sido ? 'sido:' + A.sido : '']).filter(Boolean);
-  const key = q => q.replace('~', '').split(':')[0], has = (c, k) => T3_NEEDS.indexOf(k) < 0 || T3_KEYS[k](c) > 0;
+  const r = rng('t3pre|' + day), list = shuffleR(r, (day >= T3_PRE2_FROM ? T3_PRE2 : T3_PRE).filter(q => q !== 'grp:' && q !== 'sido:')).concat(day >= T3_PRE2_FROM ? T3_PRE2_TAIL : [], ['grp:' + A.grp, A.sido ? 'sido:' + A.sido : '']).filter(Boolean);
+  const key = q => q.replace('~', '').split(':')[0], has = t3Has;
   for (const q of list) {
     const k = key(q);
     if (!has(A, k) || t3Ask(A, q) !== true) continue;
@@ -249,13 +258,14 @@ function today3Pts(asks, ew) { return Math.max(T3_FLOOR, 500 - T3_Q * Math.max(0
 // 지금 남은 카드를 나누는 질문 칩 (최대 lim 개): 종류마다 반에 가장 가깝게 나누는 값 하나, 나누는 힘 순
 const T3_VALS = { m: [300, 500, 1000, 2000, 3000, 5000, 10000, 20000, 30000], s0: [3000, 3500, 4000, 4500, 5000, 5500, 6000], r1: [4000, 4500, 5000, 5500, 6000, 6500, 7000, 8000],
   r2: [5000, 6000, 7000, 8000, 9000, 10000], r4: [7000, 8000, 9000, 10000, 12000, 15000], tt: [3, 5, 7, 10, 12, 15, 18, 20], to: [.03, .05, .08, .1, .15, .2],
-  rt: [3, 3.2, 3.4, 3.6, 3.8, 4], ag: [10, 20, 30, 40, 50], pub: [0], my: [0], jump: [0] };
+  rt: [3, 3.2, 3.4, 3.6, 3.8, 4], ag: [10, 20, 30, 40, 50], pub: [0], my: [0], jump: [0],
+  ex: [10000, 15000, 20000, 30000, 40000], lad: [1.6, 1.8, 2, 2.2], tw: [1], yoy: [2, 3, 5, 7], up: [5, 10, 15, 20] };
 function t3Questions(alive, ctx, used, lim) {
   const C = alive.map(n => ctx.by[n]), N = C.length, cand = [], U = used || {};
   const bal = q => { const y = C.filter(c => t3Ask(c, q)).length; return y > 0 && y < N ? Math.abs(y - N / 2) / N : null; };
   ['grp', 'sido'].forEach(k => { const seen = {}; C.forEach(c => { const v = T3_KEYS[k](c); if (v && !seen[v]) { seen[v] = 1; const q = k + ':' + v, b = bal(q); if (b != null && !U[q]) cand.push([q, b]); } }); });
   Object.keys(T3_VALS).forEach(k => {
-    if (['s0', 'tt', 'to', 'rt', 'ag'].indexOf(k) >= 0 && C.some(c => !(T3_KEYS[k](c) > 0))) return;   // 자료 없는 회사가 있으면 그 질문은 안 냄
+    if (C.some(c => !t3Has(c, k))) return;   // 자료 없는 회사가 있으면 그 질문은 안 냄
     const b = T3_VALS[k].map(v => [k + ':' + v, bal(k + ':' + v)]).filter(x => x[1] != null && !U[x[0]]).sort((a, c) => a[1] - c[1])[0]; if (b) cand.push(b);
   });
   const best = {}; cand.forEach(x => { const k = x[0].split(':')[0]; if (k === 'grp' || k === 'sido') { if (!best[k] || x[1] < best[k][1]) best[k] = x; } });
@@ -983,4 +993,4 @@ function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : 
 // rates: 월드컵만 (서버가 DB 에서 그 16곳의 전국 선택률을 읽어 넘김)
 function score(game, pz, ans, ctx, rates) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : game === 'run' ? scoreRun(pz, ans) : game === 'cup' ? scoreCup(pz, ans, ctx, rates) : null; }
 
-export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, ROAD2_FROM, roadV, WEEK_OFF, weekOff, R2_SLOTS, R2_N, R2_W, R2_EV, r2Score, simRoad2, roadEnding2, ENDINGS1, ENDINGS2, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, CUP_W, CUP_EYE, genCup, simCup, cupShare, cupMaj, scoreCupAll, scoreCup, T3_N, T3_MAXQ, T3_FREE, T3_Q, T3_PRE, t3Premise, T3_EARLY, T3_EARLY_MAX, T3_FLOOR, t3Ask, t3Final, simToday3, today3Pts, t3Questions, T4_N, T4_TRIES, T4_STEP, simToday4, today4Pts, TODAY2_FROM, TODAY2_TRIES, TODAY2_STEP, TODAY2_COLS, today2Cell, today2Row, simToday2, today2Pts, today2Emoji, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
+export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, ROAD2_FROM, roadV, WEEK_OFF, weekOff, R2_SLOTS, R2_N, R2_W, R2_EV, r2Score, simRoad2, roadEnding2, ENDINGS1, ENDINGS2, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, CUP_W, CUP_EYE, genCup, simCup, cupShare, cupMaj, scoreCupAll, scoreCup, T3_N, T3_MAXQ, T3_FREE, T3_Q, T3_PRE, T3_PRE2, T3_PRE2_FROM, t3Premise, T3_EARLY, T3_EARLY_MAX, T3_FLOOR, t3Ask, t3Final, simToday3, today3Pts, t3Questions, T4_N, T4_TRIES, T4_STEP, simToday4, today4Pts, TODAY2_FROM, TODAY2_TRIES, TODAY2_STEP, TODAY2_COLS, today2Cell, today2Row, simToday2, today2Pts, today2Emoji, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
