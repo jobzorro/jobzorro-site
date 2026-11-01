@@ -1256,6 +1256,25 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
   :root[data-view="game"] #p-cup .pick .pxs.bld, :root[data-view="game"] #p-cup .pick img.px { max-height:48px; width:auto; }
 }
 @media (prefers-reduced-motion: reduce) { .band { overflow-x:auto; } .band .tr { animation:none; } }
+/* ── 그래픽 D (2026-11-01): 무대 배경 그림(--px-scene, page/01d_scene.js) + 시간대. 글자색은 하늘에 맞춰 (사이트 밝음·어둠과 상관없이) */
+.gp .pxst, #lkDrawer .pxst, .promoPop .ppSt { background:var(--px-scene, none) center bottom / auto 100% repeat-x, linear-gradient(var(--px-sky), var(--px-sky2)); }
+:root[data-tod="morning"] :is(.gp, #lkDrawer) .pxst:not(.lncrowd), :root[data-tod="day"] :is(.gp, #lkDrawer) .pxst:not(.lncrowd) { color:#0b0b0b; --soft:#45483f; --muted:#5d6057; }
+:root[data-tod="evening"] :is(.gp, #lkDrawer) .pxst:not(.lncrowd), :root[data-tod="night"] :is(.gp, #lkDrawer) .pxst:not(.lncrowd) { color:#f6f4ee; --soft:#e4e2f0; --muted:#cfcbe0; }
+:root[data-tod] :is(.gp, #lkDrawer) .pxst .vsw small { text-shadow:0 1px 0 rgba(0,0,0,.25); }
+/* 줄서기 조로 카드: 글자는 사이트 색 그대로(밤 하늘 글자색 안 받음) + 뒤 배경이 덜 비치게 (2026-11-01 사용자: 밤에 직급 글자 안 보임) */
+.gp .lncrowd .lnp { background:color-mix(in srgb, var(--card) 94%, transparent); border-color:var(--line2); }
+.todpk { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:0 0 10px; padding:8px 10px; border:1.5px dashed var(--line2); border-radius:12px; font-size:12px; color:var(--muted); font-weight:700; }
+.todpk span { margin-right:4px; }
+/* ── 그래픽 C (2026-11-01): 게임 화면 틀 도트화 — 게임 칸(.gp) 안에서만. 둥근 모서리 대신 네 방향 그림자로 모서리 한 칸 빈 도트 틀 + 버튼 입체(위 밝게·아래 어둡게)
+   사이트 공통 이름(.kick 등)과 안 겹치게 새 클래스 없이 .gp 아래 기존 이름만 */
+.gp { --pxf:0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px 0 0 var(--ink), 3px 0 0 var(--ink); }
+.gp .btn { border:0; border-radius:0; box-shadow:var(--pxf), inset -3px -3px 0 rgba(0,0,0,.2), inset 3px 3px 0 rgba(255,255,255,.3); }
+.gp .btn.ghost { box-shadow:var(--pxf), inset -3px -3px 0 var(--line); }
+.gp .btn.sm { box-shadow:0 -2px 0 var(--ink), 0 2px 0 var(--ink), -2px 0 0 var(--ink), 2px 0 0 var(--ink), inset -2px -2px 0 rgba(0,0,0,.16); }
+.gp .btn:not(:disabled):active { transform:translateY(2px); box-shadow:var(--pxf), inset 3px 3px 0 rgba(0,0,0,.22); }
+.gp .over, .gp .intro, .gp .pxst { border:0; border-radius:0; box-shadow:var(--pxf); }
+.gp .pxst { margin-left:3px; margin-right:3px; }
+.gp .cupbar .lv, .gp .over .lv { font-family:var(--px-font); font-weight:400; letter-spacing:.04em; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; animation:none !important; } .pick:hover:not(:disabled), .offer:hover:not(:disabled), button:not(:disabled):active, a.btn:active, .pick:not(:disabled):active, .offer:not(:disabled):active { transform:none; } }
 </style>
 </head>
@@ -1362,7 +1381,7 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script type="module">
-import * as PC from './play_core.js?v=1acf6310ea';
+import * as PC from './play_core.js?v=1c5a328c2b';
 const D = await (await fetch('data/play.json', { cache: 'no-cache' })).json();
 // 연봉 놀이터 v2 화면. make.py 가 page/*.js 를 이름순으로 이어 붙여 function main(D, PC) 하나로 만든다.
 // D = 회사 자료(make.py), PC = play_core.js (서버와 같은 규칙). 점수는 항상 PC.score* 로만 계산한다.
@@ -2180,9 +2199,98 @@ function itemArt(id, s, cls, maxPx) {
   return PX.img(key, c.r, c.p, se, 'itart ' + (cls || ''));
 }
 
+// ── 그래픽 D (2026-11-01): 게임별 무대 배경 + 시간대(아침·낮·저녁·밤, 한국 시간)
+//    무대(.pxst) 뒤에 도트 배경 그림 한 장(캔버스 160×56칸 → PNG)을 깔고, 시간대마다 하늘색·창문 불빛·해/달이 바뀜
+//    게임 칸(#p-<게임>)에 --px-scene 으로 그림을 넣음 → CSS 가 무대 배경으로 씀. 그림은 시간대·게임별로 한 번만 만듦
+//    미리보기(MOCK)에선 로비에 시간대 바꾸기 단추 (진짜 사이트에선 안 보임)
+var TOD_KO = { morning: '아침', day: '낮', evening: '저녁', night: '밤' };
+var TOD_SKY = {   // [하늘 위, 하늘 아래, 먼 빌딩, 가까운 빌딩, 창문, 불 켜진 창문]
+  morning: ['#ffe2c4', '#fff4e3', '#e9c9b5', '#d9b29d', '#f6dccb', '#ffe9a8'],
+  day: ['#bfe2ff', '#eef7ff', '#c7d6e6', '#a9bccf', '#dfe9f3', '#f4f8fb'],
+  evening: ['#6b5aa6', '#ff9f6b', '#8a6a9c', '#5c4a78', '#7d6a95', '#ffcf6b'],
+  night: ['#141a33', '#2a3358', '#232a4a', '#181d36', '#262d4f', '#ffd76b']
+};
+function todNow() {
+  var o = /[?&]tod=(morning|day|evening|night)/.exec(location.search || ''), f = store.get('slp-tod');
+  if (o) return o[1]; if (MOCK && TOD_SKY[f]) return f;
+  var h = new Date(Date.now() + 9 * 3600e3).getUTCHours();
+  return h >= 6 && h < 10 ? 'morning' : h >= 10 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'evening' : 'night';
+}
+var SCN = {};
+function sceneURL(kind, tod) {
+  var key = kind + '|' + tod; if (SCN[key]) return SCN[key];
+  var W = 160, H = 56, c = document.createElement('canvas'); c.width = W; c.height = H;
+  var g = c.getContext('2d'), S = TOD_SKY[tod], r = PC.rng('scene|' + kind), night = tod === 'night', eve = tod === 'evening';
+  var px = function (x, y, w, h, col) { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  // 하늘: 4칸 띠로 계단 그러데이션 (도트 느낌)
+  for (var i = 0; i < 7; i++) { var t = i / 6; g.fillStyle = mixHex(S[0], S[1], t); g.fillRect(0, i * 6, W, 6); }
+  px(0, 42, W, H - 42, S[1]);
+  // 해 · 달 · 별 · 구름
+  if (night) { for (var s = 0; s < 22; s++) px(Math.floor(r() * W), Math.floor(r() * 26), 1, 1, r() < .3 ? '#ffffff' : '#9fb0e0'); ['..###..', '.##....', '##.....', '##.....', '##.....', '.##....', '..###..'].forEach(function (row, yy) { row.split('').forEach(function (ch, xx) { if (ch === '#') px(128 + xx, 5 + yy, 1, 1, '#fff3c4'); }); }); }   // 초승달
+  else if (tod === 'morning') { px(20, 20, 9, 9, '#ffd27a'); px(19, 22, 11, 5, '#ffd27a'); }
+  else if (eve) { px(118, 26, 13, 13, '#ffcf6b'); px(116, 29, 17, 7, '#ffcf6b'); }
+  else { px(132, 6, 8, 8, '#fff6c9'); }
+  if (!night) [[16, 8], [70, 4], [104, 14]].forEach(function (q, k) { if (k === 2 && eve) return; var cl = eve ? '#e9a7b8' : '#ffffff'; px(q[0], q[1] + 2, 18, 3, cl); px(q[0] + 4, q[1], 9, 3, cl); });
+  // 먼 빌딩 줄 (모든 장면 공통, 씨앗마다 높이 다름)
+  for (var x = 0; x < W;) { var bw = 8 + Math.floor(r() * 10), bh = 10 + Math.floor(r() * 16); px(x, H - bh - 4, bw, bh + 4, S[2]); x += bw + Math.floor(r() * 3); }
+  var bldg = function (x0, w, h) {   // 가까운 빌딩 + 창문 (밤엔 불 켜진 창이 섞임)
+    px(x0, H - h, w, h, S[3]);
+    for (var yy = H - h + 3; yy < H - 4; yy += 4) for (var xx = x0 + 2; xx < x0 + w - 2; xx += 3) px(xx, yy, 1, 2, night || eve ? (r() < .45 ? S[5] : S[4]) : S[4]);
+  };
+  if (kind === 'line') {   // 회사 로비: 큰 건물 + 유리문 + 줄 세우는 차단봉
+    bldg(4, 30, 34); bldg(122, 34, 30); px(52, 22, 56, 34, S[3]); px(60, 26, 40, 6, night ? S[5] : S[4]);
+    px(70, 38, 20, 18, night ? '#3a4470' : '#b8d4ea'); px(79, 38, 2, 18, S[3]);
+    for (var p = 0; p < 5; p++) { var sx = 14 + p * 34; px(sx, 46, 2, 10, '#c9b06b'); px(sx - 1, 45, 4, 2, '#e8cf7f'); if (p < 4) for (var k2 = 0; k2 < 32; k2++) px(sx + 2 + k2, 47 + Math.round(Math.sin(k2 / 32 * Math.PI) * 3), 1, 1, '#c8423a'); }
+  } else if (kind === 'today') {   // 스무고개: 탐정 사무실 창밖 도시 + 물음표 구름
+    bldg(0, 26, 26); bldg(30, 20, 34); bldg(110, 22, 30); bldg(136, 24, 22);
+    var qm = ['.###.', '#...#', '...#.', '..#..', '.....', '..#..'];
+    [[60, 6], [86, 14]].forEach(function (o) { qm.forEach(function (row, yy) { row.split('').forEach(function (ch, xx) { if (ch === '#') px(o[0] + xx * 2, o[1] + yy * 2, 2, 2, night ? '#ffd76b' : '#7a6fd0'); }); }); });
+  } else if (kind === 'sniper') {   // 스나이퍼: 옥상에서 본 높은 빌딩 + 안테나
+    bldg(10, 22, 44); px(20, 4, 1, 8, S[3]); px(19, 3, 3, 1, '#e8412c'); bldg(48, 18, 36); bldg(96, 26, 46); px(108, 2, 1, 8, S[3]); px(107, 1, 3, 1, '#e8412c'); bldg(132, 20, 30);
+    px(0, H - 6, W, 6, night ? '#20253f' : '#9aa1a8'); for (var e = 0; e < W; e += 10) px(e, H - 7, 6, 1, night ? '#2c3354' : '#b4bac0');
+  } else if (kind === 'road') {   // 커리어 로드: 언덕 + 갈림길 표지판
+    for (var hx = 0; hx < W; hx++) { var hh = 8 + Math.round(Math.sin(hx / 22) * 4 + Math.sin(hx / 9) * 2); px(hx, H - hh, 1, hh, night ? '#1d3a2e' : eve ? '#6b7a4a' : '#9cc58a'); }
+    px(0, H - 5, W, 5, night ? '#2a2f45' : '#6f7268'); for (var lx = 4; lx < W; lx += 14) px(lx, H - 3, 7, 1, '#f2f3ee');
+    [[30, 'R'], [124, 'L']].forEach(function (s) { px(s[0], H - 22, 2, 17, '#7a5a3a'); px(s[0] - 8, H - 24, 18, 6, '#3f9a4a'); px(s[1] === 'R' ? s[0] + 10 : s[0] - 10, H - 23, 2, 4, '#3f9a4a'); px(s[0] - 6, H - 22, 14, 2, '#d8f0c8'); });
+  } else if (kind === 'cup') {   // 월드컵: 경기장 조명탑 + 관중석
+    px(0, H - 14, W, 14, night ? '#262c4a' : '#8f96a3');
+    for (var cx = 0; cx < W; cx += 3) px(cx, H - 14 - (cx % 6 ? 1 : 2), 2, 2, ['#e8412c', '#4f7dff', '#ffcf3d', '#3f9a4a', '#ff5bb0'][Math.floor(r() * 5)]);
+    [[14], [140]].forEach(function (q) { px(q[0], 8, 2, H - 22, S[3]); px(q[0] - 5, 4, 12, 6, S[3]); for (var lj = 0; lj < 4; lj++) px(q[0] - 4 + lj * 3, 5, 2, 2, night || eve ? '#fff6c9' : '#e6e9ee'); });
+    if (night) { g.globalAlpha = .18; g.fillStyle = '#fff6c9'; g.beginPath(); g.moveTo(15, 10); g.lineTo(50, H - 14); g.lineTo(-20, H - 14); g.fill(); g.beginPath(); g.moveTo(141, 10); g.lineTo(176, H - 14); g.lineTo(106, H - 14); g.fill(); g.globalAlpha = 1; }
+  } else if (kind === 'run') {   // 출근길: 버스 정류장 + 가로등
+    bldg(0, 30, 30); bldg(40, 22, 24); bldg(118, 40, 32);
+    px(70, H - 26, 40, 2, '#4f7dff'); px(72, H - 24, 2, 24, '#6f7268'); px(106, H - 24, 2, 24, '#6f7268'); px(76, H - 20, 26, 10, night ? '#2c3354' : '#cfe3f3');
+    px(140, 14, 2, H - 14, '#55594f'); px(134, 13, 9, 2, '#55594f'); if (night || eve) { px(134, 15, 4, 2, '#fff2a8'); g.globalAlpha = .16; g.fillStyle = '#fff2a8'; g.fillRect(126, 17, 20, H - 17); g.globalAlpha = 1; }
+  } else { bldg(6, 24, 30); bldg(60, 30, 38); bldg(120, 28, 28); }   // 기본 (순위·내 조로 등): 도시
+  return (SCN[key] = 'url(' + c.toDataURL() + ')');
+}
+function mixHex(a, b, t) {
+  var p = function (h, i) { return parseInt(h.slice(1 + i * 2, 3 + i * 2), 16); };
+  return '#' + [0, 1, 2].map(function (i) { return ('0' + Math.round(p(a, i) + (p(b, i) - p(a, i)) * t).toString(16)).slice(-2); }).join('');
+}
+// 시간대 적용: <html data-tod> (하늘색 CSS) + 게임 칸마다 배경 그림
+var SCENE_OF = { line: 'line', today: 'today', sniper: 'sniper', road: 'road', cup: 'cup', run: 'run', hall: 'city', higher: 'city' };
+function applyTod() {
+  if (!PX.ok) return;
+  var tod = todNow(); document.documentElement.setAttribute('data-tod', tod);
+  Object.keys(SCENE_OF).forEach(function (k) { var el = $('p-' + k); if (el) try { el.style.setProperty('--px-scene', sceneURL(SCENE_OF[k], tod)); } catch (e) {} });
+  try { document.documentElement.style.setProperty('--px-scene', sceneURL('city', tod)); } catch (e) {}   // 기본(내 조로 서랍 · 승진 창) = 도시
+}
+// 미리보기 전용: 시간대 바꿔 보기 (로비 맨 아래)
+function todPicker() {
+  if (!MOCK || !PX.ok) return '';
+  var cur = todNow();
+  return '<div class="todpk" role="group" aria-label="미리보기 전용: 시간대 바꿔 보기"><span>미리보기 전용 · 시간대</span>' + Object.keys(TOD_KO).map(function (k) { return '<button type="button" class="btn sm' + (k === cur ? '' : ' ghost') + '" data-tod="' + k + '">' + TOD_KO[k] + '</button>'; }).join('') + '</div>';
+}
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('.todpk [data-tod]'); if (!b) return;
+  store.set('slp-tod', b.dataset.tod); applyTod(); if (typeof renderLobby === 'function') renderLobby();
+});
+
 
 // ── 서버 부르기. API_BASE 가 비었거나 연결이 안 되면 모의 서버(mock)로 — 미리보기도 끝까지 놀 수 있게
 var MOCK = !API_BASE;
+if (MOCK) try { globalThis.__ROAD3 = true; } catch (e) {}   // 미리보기: 커리어 로드 새 사건 덱(11-02~)을 오늘 판에도 켬
 function mockTag() { return MOCK ? ' <span class="tag">미리보기용 예시</span>' : ''; }
 function call(path, body) {
   if (MOCK) return Promise.resolve(mock(path, body));
@@ -3027,7 +3135,7 @@ function drawToday3(p, flash) {
   p.log.forEach(function (a) { if (a[0] === '?') used[a.slice(1)] = 1; });
   if (TPZ.pre) used[TPZ.pre.replace('~', '')] = 1;   // 스페셜 힌트와 같은 질문은 칩에서 뺌
   if (Q.alive.indexOf(T3SEL) < 0) { T3SEL = ''; T3ARM = 0; }
-  var fin = p.fin || Q.asks >= PC.T3_MAXQ && Q.ew >= PC.T3_EARLY_MAX, now = PC.today3Pts(Q.asks, Q.ew), qs = fin || Q.asks >= PC.T3_MAXQ ? [] : PC.t3Questions(Q.alive, ctx, used, (window.innerWidth || 400) <= 640 ? 4 : 6);   // 폰은 4개 (한 화면)
+  var fin = p.fin || Q.asks >= PC.T3_MAXQ && Q.ew >= PC.T3_EARLY_MAX, now = PC.today3Pts(Q.asks, Q.ew), qs = fin || Q.asks >= PC.T3_MAXQ ? [] : PC.t3Questions(Q.alive, ctx, used, (window.innerWidth || 400) <= 640 ? 4 : 6, TPZ.pre);   // 폰은 4개 (한 화면)
   var canEarly = Q.ew < PC.T3_EARLY_MAX;
   var bub = fin ? '자, 마지막! <b>둘 중 하나</b>가 범인이야. 한 번에 찍어!' : !last ? '스페셜 힌트부터 봐! 질문은 하나에 −' + PC.T3_Q + '점이야.'
     : last.g ? '<b>' + esc(last.g) + '</b>? 땡! 아니야. <small>−' + PC.T3_EARLY + '점</small>'
@@ -3572,7 +3680,7 @@ function PARTNER2() { return '배우자'; }
 // 20년 판 기록인지 (2026-10-30 당일 전환: 그날 아침 10년 판으로 낸 기록은 없는 셈 치고 새로 하게)
 // 이 기기 커리어 로드 통계 (소품 조건): g0·g1 해 본 성별, best 최고 종합점수, tri 세 게이지 70+, married 결혼
 function r2Stats() { var o = store.getJ('slp-r2st', {}); return o && typeof o === 'object' ? o : {}; }
-function r2Track(R) { var o = r2Stats(), S = R.S; o['g' + S.g] = 1; o.best = Math.max(o.best || 0, R.score); if (S.hp >= 70 && S.cr >= 70 && S.hap >= 70) o.tri = 1; if (S.married) o.married = 1; store.setJ('slp-r2st', o); }
+function r2Track(R) { var o = r2Stats(), S = R.S; o['g' + S.g] = 1; o.best = Math.max(o.best || 0, R.score); if (S.hp >= 70 && S.cr >= 70 && S.hap >= 70) o.tri = 1; if (S.married || S.wed) o.married = 1; store.setJ('slp-r2st', o); }
 function r2Rec() { var x = rec(TODAY, 'road'); return x && x.picks && x.picks.length >= PC.R2_N ? x : null; }
 function renderRoad2() {
   var x = r2Rec(), p = r2Prog();
@@ -3650,6 +3758,8 @@ function drawRoad2(p) {
 // 고른 직후: 그 해 일기 + 게이지 변화 + 다음 고르기 전까지의 조용한 해들
 function r2Note(n, L, S) {
   return { su_win: '<b class="evg">동료의 스타트업이 큰 회사에 인수됐다.</b> 지분이 현금이 됐다.', su_ok: '스타트업은 아직 버티고 있다. 결판은 조금 더 뒤로.', su_fail: '<b class="ev">스타트업이 문을 닫았다.</b> ' + esc(L.co) + '에 다시 들어갔다.',
+    my_win: '<b class="evg">\'' + esc(S.suItem || '내 회사') + '\'가 큰 회사에 인수됐다!</b> 대표 지분이 현금이 됐다.', my_ok: '\'' + esc(S.suItem || '내 회사') + '\'는 흑자를 냈다. 대표 월급도 예전만큼 나온다.',
+    my_fail: '<b class="ev">\'' + esc(S.suItem || '내 회사') + '\'가 문을 닫았다.</b> 폐업 신고를 하고 ' + esc(L.co) + '에 들어갔다.',
     rest: '<b class="ev">번아웃으로 쉬어 간 해.</b> 수입이 절반으로 줄었다.', burn: '<b class="ev">몸이 버티지 못했다.</b> 다음 해는 쉬어야 한다.', freeze: '연봉 동결.', jump: '<b class="evg">성과급 큰 해.</b>',
     stock: '<b class="evg">스톡옵션이 터졌다.</b>', gap: '회사 밖에서 보낸 해.', re_auto: esc(L.co) + '에 다시 출근했다. 공백은 있었지만 몸이 기억하고 있었다.' }[n] || '';
 }
@@ -3712,6 +3822,7 @@ function r2Zorro(R) {
 }
 function resultRoad2(x, fresh) {
   var R = PC.simRoad2(RPZ, ctx, x.picks || x.ans), S = R.S, EN = PC.roadEnding2(RPZ, ctx, R.picks), T = END_TXT[EN.id], B = endBook(), isNew = !B[EN.id];
+  if (EN.id === 'startup' && S.suItem) T = [T[0], '내가 차린 「' + S.suItem + '」가 큰 회사에 인수됐어요. 대표로 버틴 시간이 지분으로 돌아왔어요.', T[2], T[3]];   // 2026-11-02~ 내 창업
   if (isNew) { B[EN.id] = TODAY; store.setJ('slp-endings', B); }
   r2Track(R);
   var fin = S.c, scn = PC.ROAD_SC[RPZ.sc || 'new'], sex = S.g ? '남' : '여', W = PC.R2_W;
@@ -3932,7 +4043,7 @@ var ITEMS = [
   // 예전 12개 (아이디·조건 그대로)
   ['crown', 'hat', '왕관', '칭호 3개 이상 또는 \'퍼펙트 데이\'', function () { var b = badges(); return Object.keys(b).length >= 3 || !!b.perfect; }, 'etc', 'r', function () { return [Object.keys(badges()).length, 3]; }, '머리 위가 좀 무거워요'],
   ['headset', 'hat', '헤드셋', '칭호 1개 이상', function () { return Object.keys(badges()).length >= 1; }, 'etc', 'c', null, '회의 중이라 못 들었어요'],
-  ['beanie', 'hat', '비니', '연속 출석 7일', function () { return streak() >= 7; }, 'etc', 'c', function () { return [streakMax(), 7]; }, '출근길 칼바람 대비'],
+  ['beanie', 'hat', '비니', '연속 출석 7일', function () { return streakMax() >= 7; }   /* 2026-11-01 점검: 진행 표시(최고 기록)와 같은 기준으로 — 지금 연속이 끊기면 30/7 인데 못 받던 것 */, 'etc', 'c', function () { return [streakMax(), 7]; }, '출근길 칼바람 대비'],
   ['coffee', 'hand', '커피', '스무고개 퀴즈 한 번 풀기', function () { return store.get('slp-today1') === '1' || !!rec(TODAY, 'today'); }, 'today', 'c', null, '수사는 카페인으로'],
   ['bag', 'hand', '서류가방', '엔딩 도감 3개 이상', function () { var B = endBook(); return Object.keys(B).length >= 3; }, 'road', 'c', function () { return [Object.keys(endBook()).length, 3]; }, '안엔 이력서 세 장'],
   ['laptop', 'hand', '노트북', '엔딩 \'이직의 신\' 또는 \'스타트업 대박\'', function () { return endHas(['hopper', 'startup']); }, 'road', 'r', null, '어디서든 일할 수 있는 사람'],
@@ -4016,7 +4127,7 @@ var ITEMS = [
   ['hof', 'bg', '명예의 전당 배경', '주간 1위로 명예의 전당에 오르기', function () { return store.get('slp-hof') === '1'; }, 'etc', 'l', null, '이름이 박제됐어요']];
 var ITEM_BY = {}; ITEMS.forEach(function (it) { ITEM_BY[it[0]] = it; });
 // 진행 표시 단위 (다음 소품: '450점까지 32점')
-var PUNIT = { forkbg: '판', seasons: '점', bikehelm: '번', hanriver: '번', clockpin: '번', moneybag: '만원', metro: '곳', rainbow: '가지', crown: '개', beanie: '일', bag: '개', idcard: '', glasses: '', goldtie: '', pen: '', calc: '개', monocle: '개', band: '개', phone: '개', starpin: '일', goggles: '점', halo: '종', rosette: '곳', laurel: '번', horns: '주', dawn: '일', night: '일', gold: '일' };
+var PUNIT = { forkbg: '판', seasons: '점', bikehelm: '번', hanriver: '번', clockpin: '번', moneybag: '만원', metro: '곳', rainbow: '가지', crown: '개', beanie: '일', bag: '개', idcard: '', glasses: '', goldtie: '', pen: '', calc: '명', monocle: '판', band: '점', phone: '판', starpin: '일', goggles: '점', halo: '종', rosette: '곳', laurel: '번', horns: '주', dawn: '일', night: '일', gold: '일' };
 var SLOT_LB = { hat: '모자', hand: '손에 들기', acc: '얼굴 · 목', bg: '배경' };
 var RAR_LB = { c: '일반', r: '희귀', l: '전설' };
 function itemsOwned() { var o = store.getJ('slp-items', {}); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; }
@@ -5876,7 +5987,7 @@ function lnFreeResult(x) {
   return '<div class="rep">' + (PX.ok ? stage('<div class="pxrow">' + zorro(myRank(), pct >= .6 ? 'happy' : pct >= .35 ? 'normal' : 'sad', 3, pct >= .6 ? 'jump' : pct >= .35 ? 'idle' : 'oops') + icon(pct >= .8 ? 'trophy' : 'star', 4) + '</div>' + (pct >= .8 ? confetti() : ''), 'resst', '줄서기 결과') : '') +
     '<p class="lnres big"><small>연습 판</small><b>' + man(x.score) + '점</b> <span class="lnmx">/ ' + man(mx) + '</span></p>' +
     '<div class="cupem">' + x.res.map(function (r, i) { return '<span><small>' + (i + 1) + '판</small>' + r + '</span>'; }).join('') + '</div>' +
-    '<p class="src">완벽한 줄 ' + perf + ' / ' + LN_N.length + '판 · 연습 판은 순위에 안 올라가요</p>' + shareBox('shL') + '</div>';
+    '<p class="src">완벽한 줄 ' + perf + ' / ' + LN_N.length + '판 · 연습 판은 순위에 안 올라가요</p>' + gotBox('line') + shareBox('shL') + '</div>';   // 연습 판에서 채운 소품(머리띠·황금 폰)도 바로 상자로
 }
 function wireLnShare(x) {
   var perf = x.res.filter(function (r) { return r.indexOf('❌') < 0; }).length;
@@ -5999,7 +6110,7 @@ function renderLobby() {
   }).join('');
   var gl = giftLeft(), crs = ['line', 'today', 'sniper'].filter(function (k) { return !(st[k] && st[k].done); })[0];
   $('lobbyN').innerHTML = G5.length + '개 중 ' + nDone + '개 했어요 · ' + (gl ? '🎁 선물 상자까지 <b>' + gl + '개</b>' : '🎁 오늘 선물 받음');
-  $('course').innerHTML = crs ? '<button type="button" class="btn big crs" data-go="' + crs + '">▶ 오늘의 3분 코스' + (crs === 'line' ? '' : ' 이어서') + '<small>줄서기 → 스무고개 → 스나이퍼</small></button>' : '';
+  $('course').innerHTML = todPicker() + (crs ? '<button type="button" class="btn big crs" data-go="' + crs + '">▶ 오늘의 3분 코스' + (crs === 'line' ? '' : ' 이어서') + '<small>줄서기 → 스무고개 → 스나이퍼</small></button>' : '');
   dockSubs();
 }
 // 순위·내 조로·도구 칸의 작은 글 + 아이콘
@@ -6111,6 +6222,7 @@ renderBoss();
 renderMe();
 renderBoard(null);
 getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); } });
+applyTod(); setInterval(function () { var t = document.documentElement.getAttribute('data-tod'); if (todNow() !== t) applyTod(); }, 300e3);   // 그래픽 D: 시간대 (5분마다 확인)
 route();   // 주소 #게임 · #look 으로 바로 열림
 if (!API_BASE) window.__slp = { zRows: zRows, zorro: zorro, itemArt: itemArt, ITEMS: ITEMS, itemCheck: itemCheck, giftPick: giftPick, allDoneToday: allDoneToday, cleanLook: cleanLook, getLook: function () { return LOOK; }, DEV: DEV, TODAY: TODAY, HAIRS: HAIRS, ITEM_DRAW: ITEM_DRAW, BG_DRAW: BG_DRAW };   // 미리보기 시험용 (실제 사이트엔 없음)
 vsLoad();   // ?vs=도전장 으로 왔으면 도전장 띠 + 그 게임으로

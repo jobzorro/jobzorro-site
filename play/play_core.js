@@ -260,12 +260,12 @@ const T3_VALS = { m: [300, 500, 1000, 2000, 3000, 5000, 10000, 20000, 30000], s0
   r2: [5000, 6000, 7000, 8000, 9000, 10000], r4: [7000, 8000, 9000, 10000, 12000, 15000], tt: [3, 5, 7, 10, 12, 15, 18, 20], to: [.03, .05, .08, .1, .15, .2],
   rt: [3, 3.2, 3.4, 3.6, 3.8, 4], ag: [10, 20, 30, 40, 50], pub: [0], my: [0], jump: [0],
   ex: [10000, 15000, 20000, 30000, 40000], lad: [1.6, 1.8, 2, 2.2], tw: [1], yoy: [2, 3, 5, 7], up: [5, 10, 15, 20] };
-function t3Questions(alive, ctx, used, lim) {
-  const C = alive.map(n => ctx.by[n]), N = C.length, cand = [], U = used || {};
+function t3Questions(alive, ctx, used, lim, pre) {   // pre = 스페셜 힌트 — 같은 지표로 묻는 질문은 빼요 (2026-11-01 사용자: '1,000명 이하' 힌트에 '3,000명 넘나요?' 질문)
+  const C = alive.map(n => ctx.by[n]), N = C.length, cand = [], U = used || {}, PK = String(pre || '').replace('~', '').split(':')[0];
   const bal = q => { const y = C.filter(c => t3Ask(c, q)).length; return y > 0 && y < N ? Math.abs(y - N / 2) / N : null; };
-  ['grp', 'sido'].forEach(k => { const seen = {}; C.forEach(c => { const v = T3_KEYS[k](c); if (v && !seen[v]) { seen[v] = 1; const q = k + ':' + v, b = bal(q); if (b != null && !U[q]) cand.push([q, b]); } }); });
+  ['grp', 'sido'].forEach(k => { if (k === PK) return; const seen = {}; C.forEach(c => { const v = T3_KEYS[k](c); if (v && !seen[v]) { seen[v] = 1; const q = k + ':' + v, b = bal(q); if (b != null && !U[q]) cand.push([q, b]); } }); });
   Object.keys(T3_VALS).forEach(k => {
-    if (C.some(c => !t3Has(c, k))) return;   // 자료 없는 회사가 있으면 그 질문은 안 냄
+    if (k === PK || C.some(c => !t3Has(c, k))) return;   // 힌트와 같은 지표 · 자료 없는 회사가 있으면 그 질문은 안 냄
     const b = T3_VALS[k].map(v => [k + ':' + v, bal(k + ':' + v)]).filter(x => x[1] != null && !U[x[0]]).sort((a, c) => a[1] - c[1])[0]; if (b) cand.push(b);
   });
   const best = {}; cand.forEach(x => { const k = x[0].split(':')[0]; if (k === 'grp' || k === 'sido') { if (!best[k] || x[1] < best[k][1]) best[k] = x; } });
@@ -542,6 +542,9 @@ function roadEnding1(pz, ctx, picks) {
 //   같은 날 같은 성별·같은 선택이면 누구나 같은 사건·같은 결과(씨앗). 서버도 이 함수로 다시 계산한다.
 const ROAD2_FROM = '2026-10-30';   // 이 날부터 20년 판 (그 전 날짜는 10년 판 그대로)
 function roadV(day) { return day >= ROAD2_FROM ? 2 : 1; }
+// 2026-11-02 판부터 사건 덱 확장(v3): 연애·늦은 결혼·이혼·재혼·늦은 아이·둘째·창업 아이템 고르기·대학원 전공 고르기 등. 그 전 날은 예전 덱 그대로
+const ROAD3_FROM = '2026-11-02';
+function road3(day) { return day >= ROAD3_FROM || (typeof globalThis !== 'undefined' && globalThis.__ROAD3 === true); }   // __ROAD3 = 미리보기 전용 (서버엔 없음)
 // 주간 순위·명예의 전당을 쉬는 주 (2026-10-30 사용자: 10년 → 20년 개편 주는 점수 단위가 섞여 이직 로드 주간 순위 제외)
 const WEEK_OFF = { road: ['2026-W44'] };
 function weekOff(game, day) { return (WEEK_OFF[game] || []).indexOf(isoWeek(day)) >= 0; }
@@ -559,7 +562,7 @@ function genRoad2(day, ctx) {
   const mid = P.filter(c => !used[c.n] && c.m >= 300 && c.m < 3000 && !c.pub);   // 다시 들어가는 회사(희망퇴직·창업 실패·재취업 뒤)
   const spare = [0, 1, 2].map(() => { const c = pickR(r, mid.length ? mid : P); used[c.n] = 1; return c.n; });
   const ed = R2_SLOTS.map(() => r()), u = R2_SLOTS.map(() => [0, 1, 2].map(() => [r(), r(), r()])), yd = Array.from({ length: 20 }, () => r());
-  return Object.assign({}, base, { v: 2, spare, ed, u, yd });
+  return Object.assign({}, base, { v: 2, spare, ed, u, yd, v3: road3(day) ? 1 : 0, dk: day });
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function r2Add(S, d) { ['hp', 'cr', 'hap'].forEach(k => { if (d[k]) S[k] = clamp(S[k] + d[k], 0, 100); }); }
@@ -746,7 +749,7 @@ const R2_EV = {
       { lb: '반려동물을 들인다', h: { hap: 2 }, f: S => { r2Add(S, { hap: 9, hp: 2 }); return '퇴근길 발걸음이 빨라졌다. 기다리는 녀석이 있다.'; } },
       { lb: '대학원에 간다', h: { cr: 2, hp: -1 }, f: S => { S.cert = 1; r2Add(S, { cr: 9, hp: -4 }); return '서른 중반의 대학원. 수업이 이렇게 재밌는 줄 몰랐다.'; } },
       { lb: '긴 여행을 떠난다', h: { hap: 2, hp: 1, m: -1 }, f: S => { S.mul = .85; r2Add(S, { hap: 9, hp: 7 }); return '무급휴가 두 달. 돌아와서 일이 다시 재밌어졌다.'; } }] },
-  l_parent: { t: 'life', fixed: 1, q: () => '부모님이 편찮으시다는 연락을 받았다.',
+  l_parent: { t: 'life', fixed: 1, ch: [3, 3], q: () => '부모님이 편찮으시다는 연락을 받았다.',
     o: () => [
       { lb: '가족돌봄휴직을 쓴다', h: { hap: 1, m: -1, cr: -1 }, f: S => { S.mul = .75; r2Add(S, { hap: 7, hp: -4, cr: -2 }); return '석 달을 병원에서 보냈다. 부모님 손을 오래 잡았다.'; } },
       { lb: '주말마다 내려간다', h: { hp: -1, hap: 1 }, f: S => { r2Add(S, { hp: -6, hap: 4 }); return '금요일 밤 기차가 익숙해졌다.'; } },
@@ -755,8 +758,133 @@ const R2_EV = {
     o: () => [
       { lb: '석 달 쉰다', h: { hp: 2, m: -1 }, f: S => { S.mul = Math.min(S.mul, .75); r2Add(S, { hp: 25, cr: -3, hap: 3 }); return '석 달을 쉬었다. 다시 아침이 가벼워졌다.'; } },
       { lb: '운동부터 시작한다', h: { hp: 1 }, f: S => { r2Add(S, { hp: 12, cr: -1 }); return '새벽 수영을 시작했다.'; } },
-      { lb: '조금만 더 버틴다', h: { hp: -1, cr: 1 }, f: S => { r2Add(S, { hp: -5, cr: 2 }); return '버텼다. 몸은 기억하고 있을 것이다.'; } }] }
+      { lb: '조금만 더 버틴다', h: { hp: -1, cr: 1 }, f: S => { r2Add(S, { hp: -5, cr: 2 }); return '버텼다. 몸은 기억하고 있을 것이다.'; } }] },
+  // ── 2026-11-02~ (v3) 새 사건: 같은 날이면 누구나 같은 후보(씨앗 = 날짜 · 연차), 날마다 다른 조합
+  // 대학원: 전공 7개 중 그날 3개
+  w_grad: { t: 'work', ch: [0, 2], v3: 1, w: 1.3, c: S => !S.cert && !S.su && !S.off, q: () => '야간 대학원 원서 마감이 이번 주다. 퇴근 후 2년, 어떤 전공으로 갈까?',
+    o: S => r3Pick(S, 'grad', 3, R3_GRAD).map(m => ({ lb: m[0], h: m[1], f: (S, u) => { S.cert = 1; return m[2](S, u); } })) },
+  // 창업: 아이디어 → (다음 회사 칸) 아이템 12개 중 그날 3개 고르기 → 3년 뒤 결판
+  w_suidea: { t: 'work', ch: [1, 2], v3: 1, w: 1.2, c: S => S.cr >= 40 && !S.su && !S.retired && !S.off && !S.suPlan, q: () => '샤워하다가 떠오른 사업 아이디어가 며칠째 머리에서 떠나지 않는다.',
+    o: () => [
+      { lb: '퇴사하고 창업한다', h: { cr: 1, hap: 1, m: -1 }, f: S => { S.suPlan = 1; r2Add(S, { cr: 3, hap: 3, hp: -2 }); return '사표를 품에 넣고 다니기 시작했다. 아이템부터 정하기로 했다.'; } },
+      { lb: '주말에 시제품만 만든다', h: { cr: 1, hp: -1 }, f: (S, u) => { r2Add(S, { cr: 3, hp: -4 }); if (u[0] < .3) { S.bonus += S.s * .15; return '시제품이 입소문을 탔다. 작은 부수입이 생겼다.'; } return '주말이 사라졌다. 그래도 만드는 건 재밌었다.'; } },
+      { lb: '접는다', h: { hap: -1 }, f: S => { r2Add(S, { hap: -2, hp: 1 }); return '아이디어 노트를 서랍에 넣었다. 가끔 꺼내 본다.'; } }] },
+  w_supick: { t: 'work', ch: [1, 3], v3: 1, w: 40, c: S => (S.suPlan || S.prep) && !S.su && !S.retired && !S.off, q: () => '창업 아이템 최종 후보 세 개. 이 중 하나에 앞으로 3년을 건다.',
+    o: S => r3Pick(S, 'su', 3, R3_SU).map(it => ({ lb: it[0], h: { m: -1, cr: 2, hap: it[1] >= .45 ? 1 : 2 }, f: (S, u) => {
+      S.su = 1; S.suMine = 1; S.suItem = it[0]; S.suP = it[1]; S.suPay = it[2]; S.suBase = S.s; S.suY = Math.min(S.y + 3, 19); S.suU = u[0]; S.moves++; S.suPlan = 0; S.prep = 0;
+      S.cname = it[0] + ' 대표'; S.s *= .6; r2Add(S, { cr: 6, hap: 5, hp: -6 });
+      return '\'' + it[0] + '\' 대표가 됐다. ' + it[3] + ' 3년 안에 결판이 난다.'; } })) },
+  w_ai: { t: 'work', ch: [1, 3], v3: 1, q: () => '회사에 AI 자동화가 들어왔다. 내 업무의 절반이 사라질 수도 있다는 말이 돈다.',
+    o: () => [
+      { lb: 'AI를 제일 잘 쓰는 사람이 된다', h: { cr: 2, hp: -1, m: 1 }, f: S => { r2Add(S, { cr: 8, hp: -4 }); S.raise *= 1.03; return '사내 AI 담당이 됐다. 다들 나한테 물어본다.'; } },
+      { lb: '사람만 할 수 있는 일로 옮긴다', h: { cr: 1, hap: 1 }, f: S => { r2Add(S, { cr: 4, hap: 3 }); return '고객을 만나는 일로 옮겼다. 사람 상대가 의외로 맞았다.'; } },
+      { lb: '모른 척 버틴다', h: { cr: -1 }, f: (S, u) => { if (u[0] < .4) { r2Add(S, { cr: -6, hap: -4 }); return '내 업무가 정말 자동화됐다. 남는 시간이 불편했다.'; } r2Add(S, { cr: -2 }); return '생각보다 느리게 바뀌었다. 한숨 돌렸다.'; } }] },
+  w_whistle: { t: 'work', ch: [1, 3], v3: 1, w: .7, c: S => !S.su && !S.retired, q: () => '부서 장부에서 이상한 숫자를 발견했다. 위에서 시킨 일인 것 같다.',
+    o: () => [
+      { lb: '감사팀에 제보한다', h: { cr: 1, hap: 1, hp: -1 }, f: (S, u) => { if (u[0] < .55) { r2Add(S, { cr: 10, hap: 5, hp: -3 }); return '감사가 시작됐다. 회사가 나를 다시 봤다.'; } r2Add(S, { cr: -6, hap: -4, hp: -4 }); S.hunt = 1; return '조용히 한직으로 밀려났다. 이력서를 다시 열었다.'; } },
+      { lb: '상사에게 직접 묻는다', h: { cr: 1 }, f: (S, u) => { if (u[0] < .5) { r2Add(S, { cr: 4, hap: 2 }); return '실수였다고 했다. 숫자는 바로잡혔다.'; } r2Add(S, { hap: -5, hp: -2 }); return '"모르는 게 좋을 거야." 그 말이 오래 남았다.'; } },
+      { lb: '못 본 척한다', h: { hap: -1 }, f: S => { r2Add(S, { hap: -4, hp: -1 }); return '눈을 감았다. 밤에 잠이 잘 안 왔다.'; } }] },
+  w_mna: { t: 'work', ch: [1, 3], v3: 1, w: .8, c: S => !S.su && !S.retired && !S.off, q: () => '아침 뉴스에 우리 회사 매각 기사가 떴다. 메신저가 폭발했다.',
+    o: () => [
+      { lb: '새 주인 밑에서 기회를 본다', h: { m: 1, cr: 1, hp: -1 }, f: (S, u) => { if (u[0] < .5) { S.raise *= 1.08; r2Add(S, { cr: 6 }); return '새 대주주가 핵심 인력에게 연봉을 올려 줬다. 내가 거기 있었다.'; } S.freeze = 1; r2Add(S, { hap: -4, hp: -3 }); return '통합 작업으로 1년이 갔다. 연봉은 동결이었다.'; } },
+      { lb: '위로금 받고 이직을 준비한다', h: { m: 1, cr: 1 }, f: S => { S.bonus += S.s * .3; S.hunt = 1; r2Add(S, { cr: 2, hap: 1 }); return '위로금을 챙겼다. 다음 제안은 협상이 수월할 것 같다.'; } }] },
+  w_remote: { t: 'work', ch: [0, 2], v3: 1, q: () => '회사가 주 3일 재택을 시범 운영한다. 신청자를 받는다.',
+    o: () => [
+      { lb: '재택을 신청한다', h: { hp: 1, hap: 1, cr: -1 }, f: S => { r2Add(S, { hp: 5, hap: 4, cr: -2 }); return '출퇴근 세 시간이 사라졌다. 점심엔 산책을 했다.'; } },
+      { lb: '사무실로 나간다', h: { cr: 1 }, f: S => { r2Add(S, { cr: 4, hp: -1 }); return '텅 빈 사무실에서 팀장님과 가까워졌다.'; } }] },
+
+  // 연애
+  l_spark: { t: 'life', ch: [0, 1], v3: 1, w: 1.3, c: S => !S.married && !S.dating, q: () => '옆 팀 동료와 점심을 같이 먹는 날이 늘었다. 메신저 답장이 유난히 빠르다.',
+    o: () => [
+      { lb: '고백한다', h: { hap: 2 }, f: (S, u) => { if (u[0] < .55) { S.dating = 1; r2Add(S, { hap: 10 }); return '사내 연애 시작. 엘리베이터에서 모른 척하는 게 제일 어렵다.'; } r2Add(S, { hap: -6 }); return '"좋은 동료로 지내요." 한동안 회의실이 어색했다.'; } },
+      { lb: '친구로 남는다', h: { hap: 0 }, f: S => { r2Add(S, { hap: 1 }); return '좋은 점심 친구가 됐다. 그것도 괜찮았다.'; } },
+      { lb: '데이팅 앱을 깐다', h: { hap: 1 }, f: (S, u) => { if (u[0] < .45) { S.dating = 1; r2Add(S, { hap: 7 }); return '세 번째 만남에서 통했다. 사진보다 실물이 나았다.'; } r2Add(S, { hap: -2 }); return '대화만 백 번. 앱을 지웠다.'; } }] },
+  l_ldr: { t: 'life', ch: [0, 2], v3: 1, w: 1.4, c: S => S.dating && !S.married, q: () => '연인이 해외 발령을 받았다. 2년 동안 장거리 연애가 될 것 같다.',
+    o: () => [
+      { lb: '기다린다', h: { hap: 1 }, f: (S, u) => { if (u[0] < .6) { r2Add(S, { hap: 6 }); S.bond = 1; return '시차를 넘긴 영상 통화 2년. 공항 마중이 연애의 하이라이트였다.'; } S.dating = 0; r2Add(S, { hap: -8 }); return '시차에 지쳤다. 마지막 통화는 짧았다.'; } },
+      { lb: '휴직하고 따라간다', h: { hap: 2, m: -1, cr: -1 }, f: S => { S.mul = .5; S.bond = 1; r2Add(S, { hap: 10, cr: -6 }); return '반년을 낯선 도시에서 같이 살았다. 사진이 제일 많은 해다.'; } },
+      { lb: '헤어진다', h: { hap: -1, cr: 1 }, f: S => { S.dating = 0; r2Add(S, { hap: -5, cr: 3 }); return '서로를 위해 놓아주기로 했다. 그해 일만 했다.'; } }] },
+  l_meetpar: { t: 'life', ch: [1, 2], v3: 1, w: 1.2, c: S => S.dating && !S.married, q: () => '연인의 부모님과 첫 식사. "그래서 연봉은 얼마나…" 분위기가 싸늘하다.',
+    o: () => [
+      { lb: '솔직하게 다 말한다', h: { hap: 1 }, f: (S, u) => { if (u[0] < .6) { S.bond = 1; r2Add(S, { hap: 6 }); return '"솔직해서 좋네." 디저트가 나올 때쯤 웃음이 나왔다.'; } r2Add(S, { hap: -5 }); return '숫자가 나오자 대화가 끊겼다. 집에 오는 길에 둘이 한참 말이 없었다.'; } },
+      { lb: '정성으로 승부한다', h: { hap: 1, hp: -1 }, f: S => { r2Add(S, { hap: 4, hp: -3 }); S.bond = 1; return '명절마다 선물을 들고 갔다. 세 번째 명절에 밥을 두 공기 주셨다.'; } },
+      { lb: '둘이 정하면 된다고 버틴다', h: { hap: 0 }, f: S => { r2Add(S, { hap: 2 }); return '연인이 내 편을 들었다. 그게 제일 고마웠다.'; } }] },
+  l_ex: { t: 'life', ch: [1, 2], v3: 1, w: .9, c: S => !S.married, q: () => '새벽 1시, 전 연인에게서 문자가 왔다. "자니?"',
+    o: () => [
+      { lb: '답장한다', h: { hap: 1 }, f: (S, u) => { if (u[0] < .35) { S.dating = 1; S.bond = 1; r2Add(S, { hap: 8 }); return '다시 만났다. 이번엔 서로 조금 더 어른이었다.'; } r2Add(S, { hap: -7, hp: -2 }); return '역시 아니었다. 왜 헤어졌는지 30분 만에 기억났다.'; } },
+      { lb: '읽고 답하지 않는다', h: { hap: 1 }, f: S => { r2Add(S, { hap: 2 }); return '다음 날 아침, 아무 일도 없던 것처럼 출근했다.'; } },
+      { lb: '차단한다', h: { hp: 1 }, f: S => { r2Add(S, { hap: 1, hp: 2 }); return '단호하게. 잠이 잘 왔다.'; } }] },
+  // 늦은 결혼 · 위기 · 이혼 · 재혼
+  l_late: { t: 'life', ch: [2, 3], v3: 1, w: 1.8, c: S => !S.married && !S.divorced, q: S => S.dating ? '오래 만난 사람이 조심스럽게 말했다. "우리, 이제 결혼할까?"' : '마흔 즈음, 동호회에서 만난 사람과 자꾸 웃게 된다.',
+    o: S => [
+      { lb: '결혼한다', h: { hap: 2, hp: -1 }, f: S => { S.married = 1; S.wed = 1; S.dating = 1; r2Add(S, { hap: 12, hp: -2 }); return '늦은 만큼 단단한 결혼식. 하객들이 제일 많이 운 결혼식이었다.'; } },
+      { lb: '같이 살아 보고 정한다', h: { hap: 1 }, f: S => { S.dating = 1; r2Add(S, { hap: 6 }); return '칫솔 두 개가 나란히 꽂혔다. 서두를 필요는 없었다.'; } },
+      { lb: '지금의 자유가 좋다', h: { hap: 1, hp: 1 }, f: S => { S.solo = 1; r2Add(S, { hap: 3, hp: 2 }); return '혼자의 저녁이 좋다고 솔직하게 말했다.'; } }] },
+  l_crisis: { t: 'life', ch: [2, 3], v3: 1, w: 1.8, c: S => S.married, q: () => '대화가 줄었다. 식탁엔 휴대폰 두 개만 켜져 있다. 각방을 쓰기 시작했다.',
+    o: () => [
+      { lb: '부부 상담을 받는다', h: { hap: 1, m: -1 }, f: (S, u) => { S.bonus -= S.s * .03; if (u[0] < .65) { r2Add(S, { hap: 9 }); return '상담실에서 처음으로 울었다. 그날 밤 오랜만에 같이 산책했다.'; } r2Add(S, { hap: -3 }); return '상담은 다섯 번에서 멈췄다. 아직 숙제가 남았다.'; } },
+      { lb: '둘만의 여행을 떠난다', h: { hap: 1, hp: 1 }, f: (S, u) => { r2Add(S, { hp: 3 }); if (u[0] < .5) { r2Add(S, { hap: 7 }); return '연애할 때 갔던 바다에 다시 갔다. 그때 이야기를 밤새 했다.'; } r2Add(S, { hap: -2 }); return '여행 내내 싸웠다. 그래도 싸울 기운은 남아 있었다.'; } },
+      { lb: '이혼한다', h: { hap: -1, m: -2, hp: -1 }, f: S => { S.married = 0; S.divorced = 1; S.dating = 0; S.bonus -= S.s * .5; r2Add(S, { hap: -10, hp: -5, cr: 2 }); return '도장을 찍었다. 재산을 나누고 작은 집으로 옮겼다. 이상하게 숨은 쉬어졌다.'; } }] },
+  l_rewed: { t: 'life', ch: [2, 3], v3: 1, w: 2, c: S => S.divorced && !S.married, q: () => '이혼하고 몇 해. 친구가 "좋은 사람 있는데"라며 웃는다.',
+    o: () => [
+      { lb: '다시 사랑해 본다', h: { hap: 2 }, f: (S, u) => { if (u[0] < .6) { S.married = 1; S.wed = 1; r2Add(S, { hap: 12 }); return '두 번째 결혼식은 작고 조용했다. 이번엔 서로 더 많이 묻는다.'; } S.dating = 1; r2Add(S, { hap: 5 }); return '천천히 만나기로 했다. 서두르지 않기로.'; } },
+      { lb: '혼자가 편하다', h: { hap: 1, hp: 1 }, f: S => { S.solo = 1; r2Add(S, { hap: 5, hp: 3 }); return '혼자 사는 집에 화분이 늘었다. 이대로 좋다.'; } }] },
+  // 아기
+  l_babylate: { t: 'life', ch: [2, 3], v3: 1, w: 2.2, c: S => S.married && !S.kids, q: () => '마흔이 가까워지자 아이 생각이 다시 났다.',
+    o: () => [
+      { lb: '난임 병원에 다닌다', h: { hap: 1, hp: -1, m: -1 }, f: (S, u) => { S.bonus -= S.s * .05; r2Add(S, { hp: -6 }); if (u[0] < .5) { S.kids = 1; S.kidY = S.y; r2Add(S, { hap: 14 }); return '두 줄! 기다린 만큼 둘이 같이 울었다.'; } r2Add(S, { hap: -4 }); return '이번엔 아니었다. 서로의 손을 오래 잡았다.'; } },
+      { lb: '입양을 알아본다', h: { hap: 2, cr: -1 }, f: S => { S.kids = 1; S.kidY = S.y; r2Add(S, { hap: 12, cr: -2, hp: -3 }); return '1년의 서류 끝에 아이가 왔다. 첫날 밤, 셋이 같은 방에서 잤다.'; } },
+      { lb: '둘이서 행복하자', h: { hap: 1, hp: 1 }, f: S => { r2Add(S, { hap: 5, hp: 2 }); return '둘만의 여행 계획을 세웠다. 그것도 가족이다.'; } }] },
+  l_second: { t: 'life', ch: [2, 3], v3: 1, w: 1.2, c: S => S.kids && !S.kid2 && S.married, q: () => '첫째가 동생을 갖고 싶다고 조른다. 식탁에서 둘째 이야기가 나왔다.',
+    o: () => [
+      { lb: '둘째를 낳는다', h: { hap: 2, hp: -2, m: -1 }, f: S => { S.kid2 = 1; S.kidY = S.y; S.mul = .9; r2Add(S, { hap: 10, hp: -7 }); return '집이 두 배로 시끄러워졌다. 웃음도 두 배.'; } },
+      { lb: '하나로 충분하다', h: { hap: 1, hp: 1 }, f: S => { r2Add(S, { hap: 3, hp: 2 }); return '첫째에게 더 집중하기로 했다.'; } }] },
+  l_kidsick: { t: 'life', ch: [2, 3], v3: 1, w: 1.6, c: S => S.kids, q: () => '새벽 3시, 아이 열이 40도. 오늘 오전엔 중요한 발표가 있다.',
+    o: () => [
+      { lb: '연차 내고 병원에 간다', h: { hap: 1, cr: -1 }, f: S => { r2Add(S, { hap: 6, cr: -3, hp: -2 }); return '응급실에서 아침을 맞았다. 발표는 후배가 했다. 아이는 금방 나았다.'; } },
+      { lb: '부모님께 부탁하고 발표한다', h: { cr: 1, hap: -1 }, f: S => { r2Add(S, { cr: 5, hap: -3, hp: -3 }); return '발표는 잘 끝났다. 점심시간에 영상 통화로 아이 얼굴부터 봤다.'; } },
+      { lb: '재택으로 바꿔 달라고 한다', h: { hap: 1 }, f: (S, u) => { if (u[0] < .6) { r2Add(S, { hap: 4, cr: 1 }); return '화면을 켜고 발표했다. 무릎엔 아이가 잠들어 있었다.'; } r2Add(S, { hap: -2, cr: -2 }); return '"이번만"이라는 말에 팀장 표정이 굳었다.'; } }] },
+  l_daycare: { t: 'life', ch: [2, 3], v3: 1, w: 1.2, c: S => S.kids && S.y - S.kidY < 6, q: () => '어린이집 대기 번호 87번. 아침 등원 전쟁이 매일 반복된다.',
+    o: () => [
+      { lb: '조부모 찬스를 쓴다', h: { hap: 1, hp: 1 }, f: S => { r2Add(S, { hap: 3, hp: 3 }); return '할머니 집이 아이의 두 번째 집이 됐다. 명절 선물이 커졌다.'; } },
+      { lb: '등하원 시터를 쓴다', h: { hp: 1, m: -1 }, f: S => { S.bonus -= S.s * .12; r2Add(S, { hp: 5, cr: 2 }); return '월급의 꽤 많은 몫이 나갔다. 대신 아침이 조용해졌다.'; } },
+      { lb: '직장어린이집 있는 회사를 찾는다', h: { cr: 1 }, f: S => { S.hunt = 1; r2Add(S, { cr: 2, hp: -2 }); return '채용 공고에서 \'직장어린이집\'부터 찾게 됐다.'; } }] },
+  // 돈 · 취미
+  l_coin: { t: 'life', ch: [0, 2], v3: 1, w: .9, q: () => '점심시간마다 동기들이 코인 차트 얘기뿐이다. "지금 안 타면 늦어."',
+    o: () => [
+      { lb: '모은 돈을 몰빵한다', h: { m: 1, hap: -1 }, f: (S, u) => { if (u[0] < .25) { S.bonus += S.s * .8; r2Add(S, { hap: 6 }); return '떡상! 계좌를 몇 번이나 새로고침했다.'; } S.bonus -= S.s * .3; r2Add(S, { hap: -7, hp: -3 }); return '한강 물 온도를 검색했다. 수업료가 비쌌다.'; } },
+      { lb: '적립식 ETF만 산다', h: { m: 1 }, f: (S, u) => { if (u[0] < .8) { S.bonus += S.s * .08; return '재미는 없었다. 대신 꾸준히 불었다.'; } return '그해 시장이 안 좋았다. 그래도 계속 샀다.'; } },
+      { lb: '관심 끈다', h: { hap: 1 }, f: S => { r2Add(S, { hap: 1 }); return '앱을 깔지 않았다. 점심시간이 조용해졌다.'; } }] },
+  l_band: { t: 'life', ch: [1, 3], v3: 1, w: .8, q: () => '회사 직장인 밴드에서 드러머를 구한다. 고등학교 때 쳐 본 적은 있다.',
+    o: () => [
+      { lb: '합류한다', h: { hap: 2, hp: -1 }, f: S => { r2Add(S, { hap: 8, hp: -2, cr: 1 }); return '연말 공연에서 사장님이 앙코르를 외쳤다.'; } },
+      { lb: '관객으로만 간다', h: { hap: 1 }, f: S => { r2Add(S, { hap: 2 }); return '맨 앞줄에서 응원봉을 흔들었다.'; } }] },
 };
+// v3 후보 뽑기: 날짜·연차·종류로 정해진 순서 (같은 날 누구나 같은 후보)
+function r3Pick(S, tag, n, L) { return shuffleR(rng('r3|' + S.dk + '|' + tag + '|' + S.y), L).slice(0, n); }
+// 대학원 전공 [이름, 미리보기, 결과]
+const R3_GRAD = [
+  ['경영(MBA)', { cr: 2, m: 1, hp: -1 }, S => { r2Add(S, { cr: 9, hp: -6 }); S.raise *= 1.04; return 'MBA 동기들이 다 다른 회사 사람이었다. 인맥이 두 배가 됐다.'; }],
+  ['데이터·AI', { cr: 2, hp: -1 }, (S, u) => { r2Add(S, { cr: 10, hp: -7 }); S.hunt = 1; if (u[1] < .4) { S.raise *= 1.05; return '논문 주제가 회사 프로젝트가 됐다. 연봉 협상이 쉬워졌다.'; } return '파이썬 에러와 2년을 싸웠다. 헤드헌터 연락이 늘었다.'; }],
+  ['노무·인사(HRD)', { cr: 1, hap: 1 }, S => { r2Add(S, { cr: 6, hap: 3, hp: -4 }); S.track = S.track || 'exp'; return '사람과 조직을 공부했다. 팀원 면담이 달라졌다.'; }],
+  ['회계·세무', { cr: 1, m: 1 }, S => { r2Add(S, { cr: 6, hp: -4 }); S.raise *= 1.03; return '숫자에 강해졌다. 연말정산 때마다 동료들이 줄을 섰다.'; }],
+  ['상담심리', { hap: 2, cr: 1 }, S => { r2Add(S, { hap: 8, cr: 2, hp: -3 }); return '남의 마음을 듣다가 내 마음도 들렸다.'; }],
+  ['디자인·UX', { cr: 1, hap: 1 }, (S, u) => { r2Add(S, { cr: 5, hap: 4, hp: -4 }); if (u[1] < .3) { S.bonus += S.s * .15; return '졸업 작품이 공모전에서 상을 탔다. 상금도 있었다.'; } return '보는 눈이 달라졌다. 회사 화면이 다 거슬리기 시작했다.'; }],
+  ['부동산학', { m: 1, hap: -1 }, (S, u) => { r2Add(S, { cr: 3, hp: -4 }); if (u[1] < .4) { S.bonus += S.s * .4; r2Add(S, { hap: 4 }); return '수업에서 본 동네에 집을 샀다. 몇 년 뒤 뉴스에 나왔다.'; } r2Add(S, { hap: -3 }); return '이론은 완벽했다. 시장은 이론대로 움직이지 않았다.'; }]];
+// 창업 아이템 [이름, 성공 확률, 성공 시 일시금(창업 전 연봉 배수), 한 줄]
+const R3_SU = [
+  ['반려동물 건강 기록 앱', .38, 3, '강아지 산책 데이터로 병원 예약까지 잇는다.'],
+  ['AI 면접 코치', .32, 4, '취준생이 밤마다 AI와 모의 면접을 본다.'],
+  ['무인 빨래방 체인', .55, 1.5, '동네마다 하나씩, 24시간 돌아간다.'],
+  ['시니어 병원 동행 서비스', .45, 2, '바쁜 자식 대신 부모님 병원 길을 함께한다.'],
+  ['중고 명품 AI 감정', .3, 4, '사진 한 장으로 진품을 가린다.'],
+  ['K-뷰티 해외 직구몰', .42, 2.5, '한국 화장품을 지구 반대편까지 보낸다.'],
+  ['1인 가구 반찬 구독', .4, 2, '혼자 사는 사람의 냉장고를 채운다.'],
+  ['인디 게임 스튜디오', .2, 6, '대박 아니면 쪽박, 게임 하나에 전부를 건다.'],
+  ['탄소 배출 측정 SaaS', .28, 5, '공장 굴뚝의 탄소를 숫자로 보여 준다.'],
+  ['숏폼 자격증 강의', .45, 2, '1분짜리 영상으로 자격증을 딴다.'],
+  ['동네 소형 PT 체인', .5, 1.6, '퇴근길 20분 운동을 판다.'],
+  ['웹툰 캐릭터 굿즈', .35, 3, '좋아하는 웹툰 주인공을 책상 위로 데려온다.']];
 const R2_FIXED = { 6: 'l_marry', 10: 'l_baby', 11: 'w_team', 15: 'w_exec', 17: 'l_parent' };
 function r2Move(S, c, start) { S.c = c; S.cn = c.n; S.cname = c.n; S.s = start; S.moves++; S.su = 0; S.retired = 0; S.raise = 1; }
 // 칸 k 에서 고를 것: 종류·사건 id·상황·고르기 (state S 를 바꾸지 않음)
@@ -777,11 +905,16 @@ function r2Slot(pz, ctx, S, k) {
     return { k, y, t, ch, id: 'job', first, q: '', opts: first ? opts : opts.concat([{ stay: 1, lb: '남는다' }]) };
   }
   let id = R2_FIXED[y];
+  if (pz.v3) {   // v3: 고정 칸도 상황 따라 열림 → 연애·늦은 결혼·이혼·아기 이야기가 더 자주 (만나는 사람 없으면 7년 차 결혼 대신 연애 사건, 부모님은 겨울 장 무작위)
+    if (id === 'l_marry' && !S.dating) id = null;
+    if (id === 'l_baby' && !S.married && !S.dating) id = null;
+    if (id === 'l_parent') id = null;
+  }
   if (t === 'work' && S.off) id = 'w_home';
-  if (t === 'life' && S.hp < 35 && id !== 'l_marry' && id !== 'l_baby') id = 'l_health';   // 체력이 바닥이면 몸이 먼저
+  if (t === 'life' && S.hp < (pz.v3 ? 25 : 35) && id !== 'l_marry' && id !== 'l_baby' && !(pz.v3 && S.used.l_health)) id = 'l_health';   // 체력이 바닥이면 몸이 먼저 (v3: 한 번만)
   if (!id) {
-    const L = Object.keys(R2_EV).filter(e => { const E = R2_EV[e]; return E.t === t && !E.fixed && !S.used[e] && ch >= E.ch[0] && ch <= E.ch[1] && (E.g == null || E.g === S.g) && (!E.c || E.c(S, S.c, pz)); });
-    const W = L.map(e => (R2_EV[e].w || 1) * (e === 'w_cut' ? roadRiskSc(pz, S.c) * 6 : 1)), sum = W.reduce((a, b) => a + b, 0);
+    const L = Object.keys(R2_EV).filter(e => { const E = R2_EV[e]; return E.t === t && (!E.fixed || (pz.v3 && e === 'l_parent' && ch === 3)) && (!E.v3 || pz.v3) && !S.used[e] && ch >= E.ch[0] && ch <= E.ch[1] && (E.g == null || E.g === S.g) && (!E.c || E.c(S, S.c, pz)); });
+    const W = L.map(e => (e === 'l_parent' ? 2 : R2_EV[e].w || 1) * (e === 'w_cut' ? roadRiskSc(pz, S.c) * 6 : 1)), sum = W.reduce((a, b) => a + b, 0);
     let d = pz.ed[k] * sum; id = L[L.length - 1];
     for (let i = 0; i < L.length; i++) { d -= W[i]; if (d < 0) { id = L[i]; break; } }
   }
@@ -796,13 +929,18 @@ function simRoad2(pz, ctx, picks, stop) {
   picks = r2Picks(picks);
   const g = picks[0] === 1 ? 1 : 0, S0 = roadStart(pz, ctx), N = ctx.nego;
   const S = { g, y: 0, x: S0.x, s: S0.s, c: S0.c, cn: S0.c ? S0.c.n : '', cname: S0.c ? S0.c.n : '', hp: 70, cr: S0.c ? 30 : 25, hap: 55, raise: 1, mul: 1, bonus: 0, freeze: 0, hunt: 0,
-    moves: 0, cuts: 0, burn: 0, fails: 0, used: {}, dating: 0, married: 0, kids: 0, off: 0, rest: 0, track: '', firstCo: S0.c ? S0.c.n : '', maxS: 0, eokY: 0, starts: [] };
+    moves: 0, cuts: 0, burn: 0, fails: 0, used: {}, dk: pz.day || '', dating: 0, married: 0, kids: 0, off: 0, rest: 0, track: '', firstCo: S0.c ? S0.c.n : '', maxS: 0, eokY: 0, starts: [] };
   const years = [], log = [], notes = [], out = [g];
   let k = 0;
   for (let y = 0; y < 20; y++) {
     S.y = y; S.mul = 1; S.bonus = 0; notes[y] = [];
     // 3년 뒤 스타트업 결판
-    if (S.su && S.suY === y) {
+    if (S.su && S.suY === y && S.suMine) {   // v3 내 창업: 아이템마다 확률·보상이 다름
+      if (S.suU < S.suP) { S.bonus += S.suBase * S.suPay; S.suWin = 1; r2Add(S, { cr: 12, hap: 10 }); notes[y].push('my_win'); }
+      else if (S.suU < S.suP + .3) { S.s = S.suBase * .9; r2Add(S, { cr: 6, hap: 2 }); notes[y].push('my_ok'); }
+      else { S.mul = .4; r2Move(S, ctx.by[pz.spare[1]], curve(ctx.by[pz.spare[1]], S.x) * .9); S.moves--; r2Add(S, { hap: -8, hp: -5, cr: 3 }); notes[y].push('my_fail'); }
+      S.suMine = S.su ? 1 : 0;
+    } else if (S.su && S.suY === y) {
       if (S.suU < .3) { S.bonus += S.s * 2.5; S.suWin = 1; r2Add(S, { cr: 10, hap: 8 }); notes[y].push('su_win'); }
       else if (S.suU < .62) { r2Add(S, { cr: 5 }); notes[y].push('su_ok'); }
       else { S.mul = .4; r2Move(S, ctx.by[pz.spare[1]], curve(ctx.by[pz.spare[1]], S.x) * .9); S.moves--; r2Add(S, { hap: -6, hp: -4 }); notes[y].push('su_fail'); }
@@ -1035,4 +1173,4 @@ function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : 
 // rates: 월드컵만 (서버가 DB 에서 그 16곳의 전국 선택률을 읽어 넘김)
 function score(game, pz, ans, ctx, rates) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : game === 'run' ? scoreRun(pz, ans) : game === 'cup' ? scoreCup(pz, ans, ctx, rates) : game === 'line' ? scoreLine(pz, ans) : null; }
 
-export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, ROAD2_FROM, roadV, WEEK_OFF, weekOff, R2_SLOTS, R2_N, R2_W, R2_EV, r2Score, simRoad2, roadEnding2, ENDINGS1, ENDINGS2, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, CUP_W, CUP_EYE, genCup, simCup, cupShare, cupMaj, scoreCupAll, scoreCup, T3_N, T3_MAXQ, T3_FREE, T3_Q, T3_PRE, T3_PRE2, T3_PRE2_FROM, t3Premise, T3_EARLY, T3_EARLY_MAX, T3_FLOOR, t3Ask, t3Final, simToday3, today3Pts, t3Questions, T4_N, T4_TRIES, T4_STEP, simToday4, today4Pts, TODAY2_FROM, TODAY2_TRIES, TODAY2_STEP, TODAY2_COLS, today2Cell, today2Row, simToday2, today2Pts, today2Emoji, LINE_N, LINE_PT, LINE_PERF, lineRounds, genLine, lineCheck, scoreLine, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
+export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, ROAD2_FROM, roadV, WEEK_OFF, weekOff, R2_SLOTS, R2_N, R2_W, R2_EV, ROAD3_FROM, R3_GRAD, R3_SU, r2Score, simRoad2, roadEnding2, ENDINGS1, ENDINGS2, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, CUP_W, CUP_EYE, genCup, simCup, cupShare, cupMaj, scoreCupAll, scoreCup, T3_N, T3_MAXQ, T3_FREE, T3_Q, T3_PRE, T3_PRE2, T3_PRE2_FROM, t3Premise, T3_EARLY, T3_EARLY_MAX, T3_FLOOR, t3Ask, t3Final, simToday3, today3Pts, t3Questions, T4_N, T4_TRIES, T4_STEP, simToday4, today4Pts, TODAY2_FROM, TODAY2_TRIES, TODAY2_STEP, TODAY2_COLS, today2Cell, today2Row, simToday2, today2Pts, today2Emoji, LINE_N, LINE_PT, LINE_PERF, lineRounds, genLine, lineCheck, scoreLine, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
