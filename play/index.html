@@ -599,6 +599,9 @@ img.px, .pxs { image-rendering:crisp-edges; image-rendering:pixelated; display:b
 .itemb.locked { border-style:dashed; border-color:var(--line2); cursor:default; }
 .myrk { display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:13.5px; }
 .myrk small { color:var(--muted); font-weight:500; }
+.mylk .nk2 + .myrk { margin-left:-6px; color:var(--soft); }
+.nk2 { display:inline-flex; align-items:center; gap:8px; min-width:0; }
+.nk2 .nick { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 @media (prefers-reduced-motion: reduce) { .pxmag, .conf { display:none; } }
 .toast { position:fixed; left:50%; bottom:max(18px, env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:14px; font-weight:700; z-index:50; max-width:calc(100vw - 32px); text-align:center; box-shadow:0 8px 24px var(--shadow); }
 /* ── 1차 UX (2026-10-28c): 히어로(왼쪽 제목 + 오른쪽 숫자 기둥) → 검은 띠 → '오늘의 게임 고르기' 로비. 게임을 누르면 그 게임만 + 위에 검은 막대.
@@ -832,7 +835,9 @@ body > .zn { margin-left:calc(-1 * max(16px, env(safe-area-inset-left,0px))); ma
   .band .bossbtn { min-height:44px; }
   .lobby { padding-top:8px; }
   .me { font-size:13px; padding:0; gap:2px 10px; }
-  .me .myrk small, .me .badge1, .me .lnk .pc, .me .sndb .sl { display:none; }
+  .me .myrk small, .me .lnk .pc, .me .sndb .sl { display:none; }
+  .me .badge1 { font-size:10px; padding:0 6px; line-height:1.5; white-space:nowrap; }
+  .me .nk2 { flex-direction:column; align-items:flex-start; gap:1px; }
   .me .lnk { min-height:44px; min-width:44px; text-decoration:none; font-size:16px; }
   .me .lnk .ph { display:inline; }
   .me .nick { font-size:15px; }
@@ -994,6 +999,16 @@ html.lk-open, html.lk-open body { overflow:hidden; }
 .opts { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 6px; }
 .opt { display:grid; justify-items:center; align-content:end; gap:3px; min-width:76px; min-height:76px; padding:8px 10px; border:1.5px solid var(--line2); border-radius:12px; background:var(--card); color:var(--ink); font-size:13px; font-weight:800; }
 .opts.big .opt { min-width:120px; min-height:104px; }
+.sws { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 6px; }
+.sw { display:grid; justify-items:center; gap:3px; min-width:52px; padding:6px 4px; border:1.5px solid var(--line2); border-radius:12px; background:var(--card); color:var(--ink); font-size:11.5px; font-weight:800; }
+.sw i { width:26px; height:26px; border-radius:50%; border:2px solid var(--ink); }
+.sw[aria-pressed="true"] { border-color:var(--ink); box-shadow:0 0 0 2px var(--acc); }
+.lbt, .hft { display:inline-block; margin-right:4px; padding:0 6px; border-radius:999px; background:var(--acc); color:var(--acc-ink); font-size:10.5px; font-weight:800; vertical-align:1px; }
+.hft { margin:0; }
+.lbr { color:var(--muted); font-weight:700; font-size:.82em; }
+.lkrk1 { font-size:.8em; color:var(--soft); }
+.bgrid button.bg { font:inherit; text-align:left; cursor:pointer; }
+.bgrid .bg.wear { box-shadow:0 0 0 2px var(--acc); }
 .opt[aria-pressed="true"] { border-color:var(--ink); background:var(--acc); color:var(--acc-ink); box-shadow:inset 0 -4px 0 var(--acc-ink); }
 .itemb.r-r { border-color:#4f7dff; }
 .itemb.r-l { border-color:#e0a800; box-shadow:0 0 0 2px rgba(255,207,61,.35); position:relative; overflow:hidden; }
@@ -1353,7 +1368,15 @@ function award(id) {
   var d = BADGES.filter(function (x) { return x[0] === id; })[0];
   toast('칭호를 얻었어요: ' + d[1]); renderMe();
 }
-function topBadge() { var b = badges(), t = null; BADGES.forEach(function (x) { if (b[x[0]]) t = x[1]; }); return t; }
+// 닉네임 옆 칭호 (2026-11-01 사용자: 최신 칭호 말고 내가 고른 것): slp-title = 칭호 id · 'none'(안 달기) · 없으면 가장 최근 칭호
+function badgeName(id) { var d = BADGES.filter(function (x) { return x[0] === id; })[0]; return d ? d[1] : ''; }
+function myTitleId() {
+  var b = badges(), t = store.get('slp-title'), last = '';
+  if (t === 'none') return '';
+  if (t && b[t]) return t;
+  BADGES.forEach(function (x) { if (b[x[0]]) last = x[0]; }); return last;
+}
+function topBadge() { return badgeName(myTitleId()) || null; }
 function checkPerfect(day) {
   var a = rec(day, 'higher'), b = rec(day, 'today'), c = rec(day, 'sniper');
   if (a && b && c && a.aux === 10 && b.aux > 0 && b.aux <= 2 && c.score >= 450) award('perfect');   // 오늘의 회사 aux = 본 단서 수 (0 = 실패)
@@ -1499,34 +1522,51 @@ var PX = (function () {
 }());
 
 // ── 조로 사원 그림(격자·소품·배경·zorro)은 page/01c_zorro.js (2026-10-29 2배 도트)
-// ── 기본 모습 (꾸미기 확장, 2026-10-28e): 남자 조로(m) / 여자 조로(f), 머리 모양, 여자 조로는 바지·치마. 처음부터 무료, 잠금 없음
-//    LOOK = { base, hair, bottom, hat, hand, acc, bg } — 예전 기록 {hat, hand, acc} 는 그대로 남자 조로 기본 머리로 읽힘
+// ── 기본 모습 (꾸미기 확장, 2026-10-28e · 2026-11-01 사용자: 머리·옷·옷 색·얼굴형 늘림, 다른 곳에서도 쓰게 표 하나로)
+//    LOOK = { base, hair, bottom, fit, col, face, hat, hand, acc, bg } — 없는 칸은 기본값. 예전 기록 {hat, hand, acc} 는 그대로 남자 조로 기본 머리로 읽힘
+//    아래 표(BASES·HAIRS·BOTTOMS·FITS·COLS·FACES)만 늘리면 고르기 화면·모양 글·그림이 같이 따라감 (그림은 page/01c_zorro.js)
 var BASES = { m: '남자 조로', f: '여자 조로' };
-var HAIRS = { m: [['basic', '기본'], ['short', '짧은 머리'], ['part', '가르마']], f: [['long', '긴 머리'], ['bob', '단발'], ['pony', '포니테일']] };
+var HAIRS = { m: [['basic', '기본'], ['short', '짧은 머리'], ['part', '가르마'], ['two', '투블럭'], ['slick', '포마드'], ['curly', '펌'], ['buzz', '스포츠']],
+  f: [['long', '긴 머리'], ['bob', '단발'], ['pony', '포니테일'], ['wave', '웨이브'], ['pixie', '숏컷'], ['bun', '올림머리']] };
 var BOTTOMS = [['pants', '바지'], ['skirt', '치마']];
-// ── 소품 꾸미기: 격자를 좌우 2칸씩 넓혀 16칸 → 손에 든 소품은 오른쪽 빈칸에
-//    o.plain = 꾸밈 없는 기본 조로(친구 대결 상대), o.look = 이 모습으로(꾸미기 미리보기), o.bg = 배경 판까지(프로필·내 조로·공유 그림), o.sil = 실루엣(못 얻은 소품)
+var FITS = [['suit', '정장'], ['semi', '세미캐주얼'], ['dress', '원피스', 'f']];   // 3번째 칸 'f' = 여자 조로만
+// 옷 색: auto = 정장은 직급 색(사원은 흰 셔츠), 세미캐주얼은 하늘 니트, 원피스는 네이비
+var COLS = [['auto', '기본', ''], ['navy', '네이비', '#2c3e66'], ['char', '차콜', '#3a3d44'], ['gray', '그레이', '#7d8491'], ['beige', '베이지', '#b39b74'],
+  ['brown', '브라운', '#6e4b33'], ['olive', '올리브', '#5a6b45'], ['wine', '와인', '#7a2f3e'], ['sky', '하늘', '#8fb3d9'], ['pink', '로즈', '#d98fa6']];
+var FACES = [['basic', '기본'], ['oval', '갸름한'], ['square', '각진'], ['round', '동글동글']];
 var LOOK = store.getJ('slp-look', {}) || {};
 if (typeof LOOK !== 'object' || Array.isArray(LOOK)) LOOK = {};
 function lookOf(o) { return o && o.plain ? {} : o && o.look ? o.look : LOOK; }
 function baseOf(L) { return L && L.base === 'f' ? 'f' : 'm'; }
-function hairOf(L) { var b = baseOf(L), H = HAIRS[b]; return H.some(function (x) { return x[0] === (L && L.hair); }) ? L.hair : H[0][0]; }
-// 꾸민 조로를 짧은 글로 (순위표·명예의 전당에 남의 조로를 그리려고 점수와 같이 보냄, 2026-10-29): 'r2.bf.hbob.os.t<모자>.d<손>.a<얼굴>.g<배경>'
+function pickOf(T, v) { return T.some(function (x) { return x[0] === v; }) ? v : T[0][0]; }
+function hairOf(L) { return pickOf(HAIRS[baseOf(L)], L && L.hair); }
+function fitOf(L) { var f = pickOf(FITS, L && L.fit); return f === 'dress' && baseOf(L) !== 'f' ? 'suit' : f; }
+function colOf(L) { return pickOf(COLS, L && L.col); }
+function faceOf(L) { return pickOf(FACES, L && L.face); }
+function colHex(k) { var c = COLS.filter(function (x) { return x[0] === k; })[0]; return c ? c[2] : ''; }
+// 꾸민 조로를 짧은 글로 (순위표·명예의 전당에 남의 조로를 그리려고 점수와 같이 보냄, 2026-10-29): 'r2.bf.hbob.os.wsemi.cnavy.foval.t<모자>.d<손>.a<얼굴>.g<배경>.n<칭호>'
+//    w 옷 · c 옷 색 · f 얼굴형 · n 내가 단 칭호 (2026-11-01). 기본값은 안 붙임 (글이 짧게, 서버는 120자까지)
 function lookCode() {
   var L = LOOK, a = ['r' + myRank()]; if (baseOf(L) === 'f') a.push('bf'); a.push('h' + hairOf(L)); if (baseOf(L) === 'f' && L.bottom === 'skirt') a.push('os');
+  if (fitOf(L) !== 'suit') a.push('w' + fitOf(L)); if (colOf(L) !== 'auto') a.push('c' + colOf(L)); if (faceOf(L) !== 'basic') a.push('f' + faceOf(L));
   [['t', 'hat'], ['d', 'hand'], ['a', 'acc'], ['g', 'bg']].forEach(function (p) { if (L[p[1]]) a.push(p[0] + L[p[1]]); });
+  var t = myTitleId(); if (t) a.push('n' + t);
   return a.join('.');
 }
-function lookParse(c) {   // → { rk, look } — 모르는 소품·자리가 안 맞는 소품은 버림
-  var L = {}, rk = 0, SL = { t: 'hat', d: 'hand', a: 'acc', g: 'bg' };
+function lookParse(c) {   // → { rk, look, title } — 모르는 소품·자리가 안 맞는 소품은 버림
+  var L = {}, rk = 0, title = '', SL = { t: 'hat', d: 'hand', a: 'acc', g: 'bg' };
   String(c || '').split('.').forEach(function (x) {
     var k = x.charAt(0), v = x.slice(1);
     if (k === 'r') rk = Math.max(0, Math.min(4, +v || 0)); else if (k === 'b' && v === 'f') L.base = 'f'; else if (k === 'h') L.hair = v; else if (k === 'o' && v === 's') L.bottom = 'skirt';
+    else if (k === 'w') L.fit = v; else if (k === 'c') L.col = v; else if (k === 'f') L.face = v;
+    else if (k === 'n') title = badgeName(v);
     else if (SL[k] && ITEM_BY[v] && ITEM_BY[v][1] === SL[k]) L[SL[k]] = v;
   });
-  return { rk: rk, look: L };
+  return { rk: rk, look: L, title: title };
 }
-function lookKey(L, o) { return baseOf(L) + hairOf(L) + (L.bottom === 'skirt' ? 'S' : '') + '.' + (L.hat || '') + '.' + (L.hand || '') + '.' + (L.acc || '') + (o && o.bg ? '.' + (L.bg || '') : '') + (o && o.sil ? '.sil' : ''); }
+function lookKey(L, o) { return baseOf(L) + hairOf(L) + (L.bottom === 'skirt' ? 'S' : '') + fitOf(L) + colOf(L) + faceOf(L) + '.' + (L.hat || '') + '.' + (L.hand || '') + '.' + (L.acc || '') + (o && o.bg ? '.' + (L.bg || '') : '') + (o && o.sil ? '.sil' : ''); }
+// 이름표: '닉네임 과장' (2026-11-01 사용자: '조로 과장' 말고 내 닉네임 옆에 직위)
+function nameRank(nick, rk) { return nick + ' ' + RK[Math.max(0, Math.min(4, rk | 0))]; }
 
 // ── 회사 = 도트 빌딩. 폭 ← 직원 수, 층 ← 부장 연봉, 불 켜진 창 ← 사원 연봉, 색 ← 업종 묶음, 지붕 모양·창 무늬 ← 회사 이름 해시
 //    o.blind: 숫자를 안 드러내는 빌딩(층 6 고정, 창 반쯤, 문제 푸는 중에 답을 흘리지 않게) · o.neutral: 색도 업종 대신 이름 해시
@@ -1633,7 +1673,7 @@ function grantPromo() { var x = myXP() + 1, r = rankOfXP(x); if (r >= 4) return 
 function promoCheck() {
   var r = myRank(), seen = store.get('slp-rank');
   if (seen == null) { store.set('slp-rank', r); return; }
-  if (r > +seen) { store.set('slp-rank', r); sfx('fanfare'); toast('승진했어요! 이제 조로 ' + RK[r] + '이에요.'); renderMe(); }
+  if (r > +seen) { store.set('slp-rank', r); sfx('fanfare'); toast('승진했어요! 이제 ' + nameRank(NICK, r) + '님이에요.'); renderMe(); }
 }
 
 // ── 8비트 효과음 (WebAudio 네모파, 기본 꺼짐 · 켜고 끈 상태는 이 기기에 저장)
@@ -1691,16 +1731,29 @@ function zr(g, x0, y0, x1, y1, c) { for (var y = y0; y <= y1; y++) for (var x = 
 function zs(g, x, y, rows) { rows.forEach(function (s, j) { for (var i = 0; i < s.length; i++) if (s[i] !== ' ') zp(g, x + i, y + j, s[i] === '_' ? '.' : s[i]); }); }   // ' ' = 그대로, '_' = 지움
 function zat(g, x, y) { return g[y] && g[y][x] !== undefined ? g[y][x] : '.'; }
 // ── 얼굴 (피부) 16칸 x8~23, y8~19 + 귀
-function zFace(g) {
-  zs(g, 8, 8, ['  ssssssssssss  ', ' ssssssssssssss ', 'ssssssssssssssss', 'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf',
-    'sssssssssssssssf', 'sssssssssssssssf', ' sssssssssssssf ', '  ssssssssssff  ', '    ffffffff    ']);
-  zr(g, 7, 12, 7, 14, 's'); zr(g, 24, 12, 24, 14, 'f');
+//    얼굴형 4가지 (2026-11-01): basic 기본 · oval 갸름한(턱이 좁게) · square 각진(턱이 넓고 평평) · round 동글동글(볼이 한 칸씩 넓게, 귀도 바깥으로)
+var Z_FACE = {
+  basic: ['  ssssssssssss  ', ' ssssssssssssss ', 'ssssssssssssssss', 'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf',
+    'sssssssssssssssf', 'sssssssssssssssf', ' sssssssssssssf ', '  ssssssssssff  ', '    ffffffff    '],
+  oval: ['  ssssssssssss  ', ' ssssssssssssss ', 'ssssssssssssssss', 'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf',
+    ' sssssssssssssf ', ' sssssssssssssf ', '  sssssssssssf  ', '   sssssssssf   ', '     ffffff     '],
+  square: [' ssssssssssssss ', 'ssssssssssssssss', 'ssssssssssssssss', 'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf',
+    'sssssssssssssssf', 'sssssssssssssssf', 'sssssssssssssssf', ' ssssssssssssff ', '  ffffffffffff  '],
+  round: ['   ssssssssssss   ', '  ssssssssssssss  ', ' ssssssssssssssss ', 'sssssssssssssssssf', 'sssssssssssssssssf', 'sssssssssssssssssf', 'sssssssssssssssssf',
+    'sssssssssssssssssf', 'sssssssssssssssssf', ' sssssssssssssssf ', '   sssssssssssff   ', '     ffffffff     ']
+};
+function zFace(g, face) {
+  var F = Z_FACE[face] || Z_FACE.basic, wide = F[0].length > 16;
+  zs(g, wide ? 7 : 8, 8, F);
+  if (wide) { zr(g, 6, 12, 6, 14, 's'); zr(g, 25, 12, 25, 14, 'f'); } else { zr(g, 7, 12, 7, 14, 's'); zr(g, 24, 12, 24, 14, 'f'); }
 }
 // ── 머리 모양 6가지 (남: basic · short · part / 여: long · bob · pony). 여자 머리는 옆머리가 얼굴 양옆(x6~8, x23~25)을 덮음
 function zHairBack(g, b, hr) {   // 얼굴보다 뒤에 그리는 머리: 긴 머리·단발 뒷머리, 포니테일(왼쪽으로 늘어짐)
   if (b !== 'f') return;
   if (hr === 'long') { zr(g, 6, 9, 25, 25, 'i'); zr(g, 7, 24, 24, 26, 'i'); }
   if (hr === 'bob') zr(g, 6, 9, 25, 19, 'i');
+  if (hr === 'wave') { zr(g, 6, 9, 25, 25, 'i'); for (var y = 11; y <= 26; y++) { var o = Math.floor(y / 3) % 2; zp(g, 5 + o, y, 'i'); zp(g, 26 - o, y, 'i'); } zs(g, 7, 26, [' ii ii  ii  ii ii ']); }
+  if (hr === 'bun') zs(g, 11, 0, ['  hhhhhh  ', ' hhjjhhhh ', 'hhjhhhhhhi', ' BBBBBBBB ']);   // 머리 위 올림머리 + 머리끈
   if (hr === 'pony') {   // 묶은 자리(빨간 끈) + 왼쪽 뒤로 늘어지는 꼬리
     zs(g, 1, 5, ['    hhB ', '   hhhBB', '  hhjhh ', ' hhjhhh ', ' hhhhhi ', 'hhjhhhi ', 'hhhhhii ', 'hhhhhi  ', 'hjhhhi  ', 'hhhhii  ', ' hhhi   ', ' hhhi   ', ' hhii   ', '  hi    ', '  hi    ', '  i     ']);
   }
@@ -1711,23 +1764,41 @@ function zHair(g, b, hr) {
     if (hr === 'long') { zs(g, 6, 11, ['hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhi', 'hhi', 'hi ', 'hi ']); zs(g, 23, 11, ['hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hii', 'hii', ' hi', ' hi']); }
     if (hr === 'bob') { zs(g, 6, 11, ['hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhh', 'hhi', 'hii']); zs(g, 23, 11, ['hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hhi', 'hii', 'ii ']); zs(g, 7, 10, ['h']); zs(g, 24, 10, ['h']); }
     if (hr === 'pony') { zs(g, 7, 11, ['hh', 'hj', 'hh', 'hi', ' i']); zs(g, 23, 11, ['hh', 'hi', 'hi', 'hi', 'i ']); }
+    if (hr === 'bun') { zs(g, 7, 11, ['hh', 'hi', ' i', ' i']); zs(g, 23, 11, ['hh', 'ih', 'i ', 'i ']); }
+    if (hr === 'wave') { zs(g, 6, 11, ['hhh', 'hhh', ' hhh', ' hhh', 'hhh', 'hhh', ' hhh', ' hhh', 'hhh', 'hhi', ' hhi', ' hi', 'hi', 'i']); zs(g, 23, 11, ['hhi', 'hhi', 'hhi ', 'hhi', ' hhi', ' hhi', 'hhi', 'hhi', ' hhi', ' hhi', 'hhi', ' hi', '  hi', '  i']); }
+    if (hr === 'pixie') { zs(g, 7, 3, ['   hhhhhhhhhhhh   ', '  hhhjjjhhhhhhhh  ', ' hhhjjhhhhhhhhhhh ', 'hhhjhhhhhhhhhhhhhi', 'hhhhhhhhhhhhhhhhhi', 'hhhhhhhhhhhhhhhhii', 'hhhhhhhhhhhiiihhii', 'hhhhhhhhii    hhhi']);
+      zs(g, 6, 11, [' hh', 'hhh', 'hhi', ' hi']); zs(g, 23, 11, ['hh', 'hhi', 'hi', 'i']); }   // 옆으로 넘긴 앞머리 + 귀 덮는 짧은 옆머리
     return;
   }
   if (hr === 'short') { zs(g, 7, 4, ['    hhhhhhhhhh    ', '  hhihhhhhihhhhh  ', ' hhhhhhihhhhhhhih ', ' hhihhhhhhhhihhhi ', 'hhhhhhhhhhhhhhhhhi', 'hi  i  i  i  i  ih', 'h                h']); return; }
+  if (hr === 'two') { zs(g, 7, 3, ['    hhhhhhhhhh    ', '  hhhjjjjhhhhhhh  ', ' hhjjjhhhhhhhhhhh ', ' hhhhhhhhhhhhhhhh ', 'iihhhhhhhhhhhhhhii', 'ii  hhhhhh hhhh ii', 'i                i']); return; }   // 투블럭: 옆은 짧게, 위는 숱
+  if (hr === 'slick') { zs(g, 7, 2, ['     hhhhhhhh     ', '   hhhjjjjjjhhh   ', '  hhjjhhhhhhjjhh  ', ' hhhhhhhhhhhhhhhh ', ' hhhhhhhhhhhhhhhi ', 'hhhhhhhhhhhhhhhhii', 'hhi            iih', 'hh              hh', 'h                h']); return; }   // 포마드: 이마 드러나게 넘김
+  if (hr === 'curly') { zs(g, 7, 2, ['   hh  hhh  hh    ', '  hhhhhhhhhhhhhh  ', ' hhjhhjhhhjhhjhhh ', 'hhhhihhhhihhhhihhh', 'hjhhhhjhhhhjhhhhhi', 'hhhihhhhihhhhihhhi', 'hhh hhi hhi hhh hi', 'hh              hh', 'h                h']); return; }   // 펌: 뽀글뽀글
+  if (hr === 'buzz') { zs(g, 7, 4, ['    iiiiiiiiii    ', '  iihhhhhhhhhhii  ', ' ihhhhjhhhhhhhhi ', ' hhhhhhhhhhhhhhhh ', ' i              i ']); return; }   // 스포츠: 짧게 친 머리
   if (hr === 'part') { zs(g, 7, 3, ['    hhhhhhhhhh    ', '  hhhhfhhhhjjhhh  ', ' hhhhfhhhhjjhhhhh ', ' hhhfhhhhhhhhhhhi ', 'hhhfhhhhhhhhhhhhii', 'hhhhhhhhhhhhhhhhii', 'hh  iihhhhhhhhhiih', 'h      iihhhhhh hh', 'h               hh']); return; }
   zs(g, 7, 3, ['    hhhhhhhhhh    ', '  hhhhjjjhhhhhhh  ', ' hhhjjjhhhhhhhhhh ', ' hhjjhhhhhhhhhhhi ', 'hhhhhhhhhhhhhhhhii', 'hhhhhhhhhhhhhhhhii', 'hhiihhhhihhhhhhiih', 'hh   hh    hh   hh', 'h                h']);
 }
 // ── 몸: 셔츠·재킷·넥타이(여자 = 리본)·사원증·팔·손·바지/치마·신발. pose = 'stand' | 'up'(만세)
-function zBody(g, R, fem, skirt, pose) {
-  var jk = R.jk ? 'J' : 'w', sh = R.jk ? 'd' : 'x';
+//    fit = 'suit' 정장 · 'semi' 세미캐주얼(니트 가디건 + 노타이 셔츠 + 면바지) · 'dress' 원피스(여자 조로) · hasJ = 겉옷(재킷·니트·원피스)을 입었는지
+function zBody(g, R, fem, skirt, pose, fit, hasJ) {
+  fit = fit || 'suit'; if (hasJ == null) hasJ = !!R.jk;
+  R = { jk: hasJ, id: R.id };
+  var jk = hasJ ? 'J' : 'w', sh = hasJ ? 'd' : 'x';
   zr(g, 14, 20, 17, 20, 's'); zp(g, 17, 20, 'f');   // 목
   zr(g, 9, 21, 22, 28, jk); zr(g, 22, 21, 22, 28, sh); zr(g, 9, 28, 22, 28, sh);   // 몸통 + 그늘
   // 셔츠 V + 옷깃(재킷이면 옷깃 l)
-  zs(g, 12, 21, [R.jk ? 'lwwwwwwl' : 'xwwwwwwx', R.jk ? ' lwwwwl ' : ' xwwwwx ', R.jk ? ' lwwwwl ' : '  wwww  ', R.jk ? '  lwwl  ' : '  wwww  ']);
-  if (!R.jk) { zr(g, 13, 25, 18, 27, 'w'); zp(g, 21, 23, 'x'); zp(g, 10, 26, 'x'); }
-  if (fem) zs(g, 12, 21, [' ttyytt ', '  t  t  ', '  y  y  ']);   // 리본
-  else zs(g, 15, 21, ['yy', 'tt', 'ty', 'ty', 'ty', 'ty', 'tt', ' y']);   // 넥타이
-  if (R.jk) { zp(g, 12, 25, 'd'); zp(g, 19, 25, 'd'); zp(g, 13, 26, 'Y'); zp(g, 13, 27, 'Y'); }   // 단추
+  if (fit === 'dress') {   // 원피스: 둥근 흰 깃 + 작은 리본 + 허리 벨트
+    zs(g, 11, 21, ['wwww  wwww', ' wwwttwww ', '    yy    ']); zr(g, 9, 27, 22, 27, 'd'); zs(g, 15, 27, ['YY']);
+  } else if (fit === 'semi') {   // 세미캐주얼: 가디건 V 사이로 셔츠 깃, 넥타이 없음, 단추 · 니트 밑단 골
+    zs(g, 12, 21, ['xwwwwwwx', 'lwwwwwwl', ' lwwwwl ', '  lwwl  ', '   ll   ']); zp(g, 15, 26, 'Z'); zp(g, 15, 27, 'Z');
+    for (var x = 9; x <= 22; x++) zp(g, x, 28, x % 2 ? 'd' : 'J');
+  } else {
+    zs(g, 12, 21, [R.jk ? 'lwwwwwwl' : 'xwwwwwwx', R.jk ? ' lwwwwl ' : ' xwwwwx ', R.jk ? ' lwwwwl ' : '  wwww  ', R.jk ? '  lwwl  ' : '  wwww  ']);
+    if (!R.jk) { zr(g, 13, 25, 18, 27, 'w'); zp(g, 21, 23, 'x'); zp(g, 10, 26, 'x'); }
+    if (fem) zs(g, 12, 21, [' ttyytt ', '  t  t  ', '  y  y  ']);   // 리본
+    else zs(g, 15, 21, ['yy', 'tt', 'ty', 'ty', 'ty', 'ty', 'tt', ' y']);   // 넥타이
+    if (R.jk) { zp(g, 12, 25, 'd'); zp(g, 19, 25, 'd'); zp(g, 13, 26, 'Y'); zp(g, 13, 27, 'Y'); }   // 단추
+  }
   if (R.id) zs(g, 11, 21, ['  c', ' c ', ' c ', 'cccc', 'cRRc', 'cCmc', 'cccc']);   // 사원증 + 끈
   // 팔·손
   if (pose === 'up') {   // 만세 (2026-10-30 다시 그림): 손은 머리 양옆, 팔은 어깨에서 비스듬히 올라가 좌우 대칭 · 손목엔 셔츠 소매
@@ -1741,7 +1812,10 @@ function zBody(g, R, fem, skirt, pose) {
     zs(g, 23, 21, [jk + jk + ' ', jk + jk + sh, jk + jk + sh, jk + jk + sh, jk + jk + sh, jk + jk + sh, 'xxx', 'ssf', 'sf ']);
   }
   // 아래
-  if (skirt) {
+  if (fit === 'dress') {   // 원피스 치마: 윗옷과 같은 색, 주름 몇 줄
+    zs(g, 9, 29, [' JJJJJJJJJJJd ', 'JJdJJJdJJJdJJd', 'JJdJJJdJJJdJdd', ' ssss    ssss ']);
+    zr(g, 10, 32, 13, 32, 's'); zr(g, 18, 32, 21, 32, 's'); zp(g, 13, 32, 'f'); zp(g, 21, 32, 'f'); zr(g, 14, 32, 17, 32, '.');
+  } else if (skirt) {
     zs(g, 9, 29, [' pppppppppppa ', 'ppappappappapa', 'papppapppapppa', ' ssss    ssss ']);
     zr(g, 10, 32, 13, 32, 's'); zr(g, 18, 32, 21, 32, 's'); zp(g, 13, 32, 'f'); zp(g, 21, 32, 'f'); zr(g, 14, 32, 17, 32, '.');
   } else {
@@ -1923,9 +1997,10 @@ function zRows(rk, mood, o) {
   var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], L = lookOf(o), b = baseOf(L), hr = hairOf(L), fem = b === 'f', pose = zPose(mood), g = zg();
   var H = Z_HAND[pose], A = { hx: H[0], hy: H[1], pose: pose };
   zHairBack(g, b, hr);
-  zFace(g);
+  zFace(g, faceOf(L));
   if (!o.hat) zHair(g, b, hr); else { zHair(g, b, hr); zs(g, 5, 2, ['    kkkkkkkkkkkkkk    ', '   kkkkkkkkkkkkkkkk   ', '   kkkkkkkkkkkkkkkk   ', '   kkkkkkkkkkkkkkkk   ', '   vvvvvvvvvvvvvvvv   ', '   kkkkkkkkkkkkkkkk   ', ' kkkkkkkkkkkkkkkkkkkk ', 'vvvvvvvvvvvvvvvvvvvvvv']); }
-  zBody(g, R, fem, fem && L.bottom === 'skirt', pose);
+  var fit = fitOf(L);
+  zBody(g, R, fem, fem && L.bottom === 'skirt' && fit !== 'dress', pose, fit, fit !== 'suit' || !!R.jk || colOf(L) !== 'auto');
   zMood(g, mood, o.blink);
   if (fem) zFemEyes(g, mood, o.blink);
   if (R.gl && L.acc !== 'shades' && L.acc !== 'goggles' && L.acc !== 'glasses') zGlasses(g, 'g');
@@ -1933,9 +2008,12 @@ function zRows(rk, mood, o) {
   return g.map(function (r) { return r.join(''); });
 }
 function zPal(rk, mood, o) {
-  var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], L = lookOf(o), hc = R.h, jk = R.jk || '#f4f4f4', tie = L.acc === 'goldtie' ? '#ffcf3d' : R.tie;
+  var R = Z_RANK[Math.max(0, Math.min(4, rk | 0))], L = lookOf(o), hc = R.h, tie = L.acc === 'goldtie' ? '#ffcf3d' : R.tie;
+  var fit = fitOf(L), ck = colOf(L), col = colHex(ck);   // 옷 색: 정장은 고른 색(기본 = 직급 색), 세미캐주얼 니트 기본 하늘, 원피스 기본 네이비
+  var jk = fit === 'semi' ? (col || '#8fb3d9') : fit === 'dress' ? (col || '#2c3e66') : (col || R.jk || '#f4f4f4');
+  var pt = fit === 'semi' ? (ck === 'beige' || ck === 'brown' ? '#2a2f45' : '#c8b38c') : col ? shade(col, -.25) : '#2a2f45';   // 바지: 세미캐주얼은 면바지(베이지)
   var p = { h: hc, i: shade(hc, -.28), j: shade(hc, .35), n: shade(hc, -.35), s: '#f6cfa6', f: '#e2aa82', E: '#1b1b22', o: '#7a4a32', M: '#7a2a2a', u: '#d0505a', r: '#ff9b9b', T: '#6fb6ff',
-    w: '#f6f6f2', x: '#d3d6de', t: tie, y: shade(tie, -.3), J: jk, d: shade(jk, -.3), l: shade(jk, .25), p: '#2a2f45', a: '#1b1f30', b: '#191919', z: '#5a5a5a', c: '#ffcf3d', g: '#cfe9ff', k: '#6b4a2b', v: '#3d2a18',
+    w: '#f6f6f2', x: '#d3d6de', t: tie, y: shade(tie, -.3), J: jk, d: shade(jk, -.3), l: shade(jk, .25), p: pt, a: shade(pt, -.3), b: '#191919', z: '#5a5a5a', c: '#ffcf3d', g: '#cfe9ff', k: '#6b4a2b', v: '#3d2a18',
     Y: '#ffcf3d', F: '#c99a00', H: '#fff3a0', K: '#3a3f4a', B: '#e8412c', Q: '#a8281b', W: '#f6f6f2', Z: '#c9ced6', O: '#8a5a1c', e: '#b98a5a', L: '#9fd3ff', m: '#6a6f7c',
     R: '#5b7cff', I: '#3550b8', G: '#3f9a4a', S: '#2a6b33', P: '#c0602b', C: '#ffffff', q: '#111111', V: '#8e5bd6', N: '#ff8fc7', D: '#2b2f45', A: '#ff9a1f', U: '#36b5a5', X: '#f0c6a0' };
   var G = o && o.bg && BG_DRAW[L.bg];
@@ -2027,7 +2105,10 @@ function mockDay(day, game) {
 // 가짜 참가자의 꾸민 조로 (모양 글 lookCode 와 같은 꼴)
 function mockLook(r) {
   var f = r() < .45, a = ['r' + Math.floor(r() * 5)], H = HAIRS[f ? 'f' : 'm']; if (f) a.push('bf'); a.push('h' + H[Math.floor(r() * H.length)][0]); if (f && r() < .5) a.push('os');
+  var any = function (T) { return T[Math.floor(r() * T.length)][0]; };
+  if (r() < .4) a.push('w' + (f && r() < .4 ? 'dress' : 'semi')); if (r() < .6) a.push('c' + any(COLS)); if (r() < .5) a.push('f' + any(FACES));
   [['t', 'hat'], ['d', 'hand'], ['a', 'acc'], ['g', 'bg']].forEach(function (p) { var L = ITEMS.filter(function (it) { return it[1] === p[1]; }); if (L.length && r() < .55) a.push(p[0] + L[Math.floor(r() * L.length)][0]); });
+  if (r() < .7) a.push('n' + any(BADGES));
   return a.join('.');
 }
 function myRow(day, game) { var x = rec(day, game); return x && x.sent ? { nick: x.nick, dev: DEV, score: x.score, aux: x.aux, ts: 1e15, errs: x.errs, picks: x.picks, me: 1, lk: lookCode() } : null; }
@@ -2122,8 +2203,9 @@ function renderMe(edit) {
   var b = topBadge(), s = streak();
   var r = myRank(), nx = nextXP();
   // 2차 UX: 조로 그림·닉네임을 누르면 '내 조로' 옆 서랍이 열림
-  var h = '<button type="button" class="mylk" data-go="look" aria-label="내 조로 열기 · ' + esc(NICK) + ', 조로 ' + RK[r] + '">' + (PX.ok ? '<span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + zorro(r, 'normal', 1.5, '', { bg: 1, head: 1 }) + '조로 ' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span>' : '') +
-    '<span class="nick">' + esc(NICK) + '</span></button>' + (b ? '<span class="badge1">' + esc(b) + '</span>' : '') +
+  // 2026-11-01 사용자: '조로 과장' 대신 '닉네임 과장', 칭호는 내가 고른 것
+  var h = '<button type="button" class="mylk" data-go="look" aria-label="내 조로 열기 · ' + esc(nameRank(NICK, r)) + '">' + (PX.ok ? zorro(r, 'normal', 1.5, '', { bg: 1, head: 1 }) : '') +
+    '<span class="nk2">' + (b ? '<span class="badge1">' + esc(b) + '</span>' : '') + '<span class="nick">' + esc(NICK) + '</span></span><span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span></button>' +
     '<span class="fire" title="이어서 출석한 날">' + (s ? '🔥 ' + s + '일 연속' : '🔥 0일') + '</span><span class="sp"></span>' +
     '<button class="lnk" id="nickEd" type="button" aria-label="닉네임 바꾸기"><span class="pc">닉네임 바꾸기</span><span class="ph" aria-hidden="true">✎</span></button>' + sndBtn('sndM');
   if (edit) h += '<div class="nickf" style="width:100%"><label for="nickIn" style="font-size:13px;font-weight:700">닉네임</label><input id="nickIn" maxlength="10" value="' + esc(NICK) + '" autocomplete="off">' +
@@ -2235,7 +2317,7 @@ function drawCard(card, box) {
     } catch (e) {}
   }
   g.fillStyle = tk('--ink'); g.fillRect(70, 520, 1060, 2);
-  g.fillStyle = tk('--soft'); g.font = '700 30px ' + F; g.fillText(NICK + (topBadge() ? ' · ' + topBadge() : ''), 70, 575);
+  g.fillStyle = tk('--soft'); g.font = '700 30px ' + F; g.fillText((topBadge() ? '[' + topBadge() + '] ' : '') + nameRank(NICK, myRank()), 70, 575);
   g.textAlign = 'right'; g.fillText('나도 해 보기 → ' + SITE_S, 1130, 575);
   var url = cv.toDataURL('image/png');
   box.querySelector('.imgout').innerHTML = '<img src="' + url + '" alt="결과 카드 그림: ' + esc(card.title + ' ' + card.big) + '"><div class="row" style="margin-top:8px"><a class="btn sm" href="' + url + '" download="salary-play.png">그림 저장</a></div>';
@@ -2244,6 +2326,10 @@ function drawCard(card, box) {
 // ── 순위표 칸
 function fmtScore(game, s) { return game === 'road' ? (s >= 20000 ? eokS(s) : man(s) + '점') : game === 'run' ? man(s) + '만원' : man(s) + '점'; }
 // 순위표 줄 앞 조로 얼굴: 서버가 준 모양 글(lk) 그대로. 모양이 없던 예전 기록은 꾸밈 없는 사원 조로 (2026-10-29)
+function lbWho(nick, lk, me) {   // 순위표 이름 칸: [칭호] 닉네임 직위 (모양 글이 없던 예전 기록은 닉네임만)
+  var P = me ? { rk: myRank(), title: topBadge() } : lookParse(lk);
+  return (P.title ? '<span class="lbt">' + esc(P.title) + '</span>' : '') + esc(nick) + (me || lk ? ' <small class="lbr">' + RK[P.rk] + '</small>' : '');
+}
 function lbFace(lk, me) {
   if (!PX.ok) return '';
   var P = me ? { rk: myRank(), look: LOOK } : lookParse(lk);
@@ -2252,17 +2338,17 @@ function lbFace(lk, me) {
 function lbCol(title, sub, rows, game, mine, li0) {   // rows: [[이름, 점수, …]], li0 = 모양 글 칸 번호, mine: {rank, score} (10위 밖이면 아래에 고정)
   var inTop = false, li = rows.map(function (r, i) {
     var me = mine && mine.rank === i + 1 && r[0] === NICK; if (me) inTop = true;
-    return '<li class="' + (me ? 'mine' : '') + (i < 3 ? ' top' + (i + 1) : '') + '"><span class="r">' + (i + 1) + '</span>' + lbFace(r[li0], me) + '<span class="n">' + esc(r[0]) + '</span><span class="s">' + fmtScore(game, r[1]) + '</span></li>';
+    return '<li class="' + (me ? 'mine' : '') + (i < 3 ? ' top' + (i + 1) : '') + '"><span class="r">' + (i + 1) + '</span>' + lbFace(r[li0], me) + '<span class="n">' + lbWho(r[0], r[li0], me) + '</span><span class="s">' + fmtScore(game, r[1]) + '</span></li>';
   }).join('');
-  if (mine && mine.rank && !inTop) li += '<li class="mine pin"><span class="r">' + mine.rank + '</span>' + lbFace('', 1) + '<span class="n">' + esc(NICK) + '</span><span class="s">' + fmtScore(game, mine.score) + '</span></li>';
+  if (mine && mine.rank && !inTop) li += '<li class="mine pin"><span class="r">' + mine.rank + '</span>' + lbFace('', 1) + '<span class="n">' + lbWho(NICK, '', 1) + '</span><span class="s">' + fmtScore(game, mine.score) + '</span></li>';
   return '<div class="lbc"><h4>' + title + mockTag() + '</h4><p class="sub">' + sub + '</p>' + (li ? '<ol>' + li + '</ol>' : '<p class="empty">아직 기록이 없어요. 첫 번째가 되어 보세요.</p>') + '</div>';
 }
 function hallCol(rows, game) {
   // 2026-10-29 사용자: 주간 1위마다 그 사람이 꾸민 조로(배경 포함)를 액자처럼. 맨 위(가장 최근 주)는 크게
-  return '<div class="lbc hof"><h4>명예의 전당' + mockTag() + '</h4><p class="sub">역대 주간 1위 · 그 주의 조로 그대로 영구 박제</p>' + (rows.length ? '<ol class="hofl">' + rows.map(function (r, i) {
+  return '<div class="lbc hof"><h4>명예의 전당' + mockTag() + '</h4><p class="sub">역대 주간 1위 · 그 주의 칭호·직위·조로 그대로 영구 박제</p>' + (rows.length ? '<ol class="hofl">' + rows.map(function (r, i) {
     var P = lookParse(r[3]), wk = r[0].replace(/^(\d{4})-W0?(\d+)$/, '$1년 $2주');
     return '<li class="' + (i ? '' : 'hof1') + '">' + (PX.ok ? '<span class="hz">' + zorro(P.rk, 'happy', i ? 1.5 : 2.5, i ? '' : 'idle', { look: P.look, bg: 1 }) + '</span>' : '') +
-      '<span class="hw">👑 ' + esc(wk) + '</span><span class="n">' + esc(r[1]) + '</span><span class="s">' + fmtScore(game, r[2]) + '</span></li>'; }).join('') + '</ol>' : '<p class="empty">첫 주가 끝나면 1위가 여기 올라요.</p>') + '</div>';
+      '<span class="hw">👑 ' + esc(wk) + '</span>' + (P.title ? '<span class="hft">' + esc(P.title) + '</span>' : '') + '<span class="n">' + esc(r[1]) + (r[3] ? ' <small class="lbr">' + RK[P.rk] + '</small>' : '') + '</span><span class="s">' + fmtScore(game, r[2]) + '</span></li>'; }).join('') + '</ol>' : '<p class="empty">첫 주가 끝나면 1위가 여기 올라요.</p>') + '</div>';
 }
 function myWeek(game, days) { var s = 0, any = false; days.forEach(function (d) { var x = rec(d, game); if (x && x.sent) { s += x.score; any = true; } }); return any ? s : null; }
 function lbAll(t, game) {
@@ -2426,8 +2512,8 @@ function finishH() {
 function confetti() { var c = ['#ffcf3d', '#c6ff3d', '#ff5bb0', '#5b7cff', '#e8412c'], h = ''; for (var i = 0; i < 18; i++) h += '<i style="left:' + (i * 5.5 + 2) + '%;background:' + c[i % 5] + ';animation-delay:' + (i % 6) * .12 + 's"></i>'; return '<span class="conf">' + h + '</span>'; }
 function promoScene(pr) {
   var a = pr[0], b = pr[1];
-  return stage('<span class="pxbanner">' + (b > a ? '특진! 조로 ' + RK[b] : '부장 만렙 · 10/10') + '</span><div class="pxrow">' + (b > a ? zorro(a, 'normal', 3) + '<span class="pxarrow">▶</span>' : '') +
-    zorro(b, 'happy', 4, 'jump') + icon(b >= 4 ? 'crown' : 'star', 4) + '</div>' + confetti(), 'promo', '10문제를 다 맞혀 조로 ' + RK[b] + '로 특진했어요');
+  return stage('<span class="pxbanner">' + (b > a ? '특진! ' + esc(nameRank(NICK, b)) : '부장 만렙 · 10/10') + '</span><div class="pxrow">' + (b > a ? zorro(a, 'normal', 3) + '<span class="pxarrow">▶</span>' : '') +
+    zorro(b, 'happy', 4, 'jump') + icon(b >= 4 ? 'crown' : 'star', 4) + '</div>' + confetti(), 'promo', '10문제를 다 맞혀 ' + nameRank(NICK, b) + '(으)로 특진했어요');
 }
 function moodOf(ratio) { return ratio >= .8 ? 'happy' : ratio >= .5 ? 'normal' : ratio > 0 ? 'sad' : 'shock'; }
 function resultHigher(x) {
@@ -3797,6 +3883,9 @@ function cleanLook() {
   if (src.base === 'f') L.base = 'f';
   if (HAIRS[baseOf(L)].some(function (h) { return h[0] === src.hair; })) L.hair = src.hair;
   if (L.base === 'f' && src.bottom === 'skirt') L.bottom = 'skirt';
+  if (fitOf({ base: L.base, fit: src.fit }) !== 'suit') L.fit = src.fit;
+  if (colOf(src) !== 'auto') L.col = src.col;
+  if (faceOf(src) !== 'basic') L.face = src.face;
   ITEMS.forEach(function (it) { if (src[it[1]] === it[0] && own[it[0]]) L[it[1]] = it[0]; });
   LOOK = L;
 }
@@ -3952,9 +4041,9 @@ function lookWith(k, v) { var L = {}; for (var x in LOOK) L[x] = LOOK[x]; if (v)
 function saveLook() { store.setJ('slp-look', LOOK); }
 function lookTop() {
   var r = myRank(), x = myXP(), nx = nextXP(), lo = RANK_XP[r], hi = RANK_XP[Math.min(4, r + 1)], pct = r >= 4 ? 100 : Math.round((x - lo) / Math.max(1, hi - lo) * 100);
-  return '<div class="lktop">' + (PX.ok ? stage(zorro(r, 'happy', 6, 'idle', { bg: 1 }), 'resst lkst', '지금 내 조로: ' + BASES[baseOf(LOOK)] + ', 조로 ' + RK[r]) : '') +
-    '<div class="lkme"><p class="lknm">' + esc(NICK) + (topBadge() ? ' <span class="badge1">' + esc(topBadge()) + '</span>' : '') + '</p>' +
-    '<p class="lkrk">조로 <b>' + RK[r] + '</b> · 경험치 ' + x + (r >= 4 ? ' · 만렙' : ' · ' + RK[r + 1] + ' 승진까지 ' + nx + '판') + '</p>' +
+  return '<div class="lktop">' + (PX.ok ? stage(zorro(r, 'happy', 6, 'idle', { bg: 1 }), 'resst lkst', '지금 내 조로: ' + BASES[baseOf(LOOK)] + ', ' + nameRank(NICK, r)) : '') +
+    '<div class="lkme"><p class="lknm">' + (topBadge() ? '<span class="badge1">' + esc(topBadge()) + '</span> ' : '') + esc(NICK) + ' <b class="lkrk1">' + RK[r] + '</b></p>' +
+    '<p class="lkrk">경험치 ' + x + (r >= 4 ? ' · 만렙' : ' · ' + RK[r + 1] + ' 승진까지 ' + nx + '판') + '</p>' +
     '<div class="xpbar" role="progressbar" aria-label="다음 직급까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' +
     '<p class="src" style="margin:4px 0 0">오늘의 도전·조로 출근길을 끝낼 때마다(게임마다 하루 한 번) 경험치 +1, 칭호마다 +3. 10문제 다 맞히면 특진.</p></div></div>';
 }
@@ -3963,14 +4052,24 @@ function lookBase() {
   var r = myRank(), b = baseOf(LOOK), hr = hairOf(LOOK), opt = function (attr, v, on, inner, label) {
     return '<button type="button" class="opt" data-' + attr + '="' + v + '" aria-pressed="' + on + '"' + (label ? ' aria-label="' + esc(label) + '"' : '') + '>' + inner + '</button>'; };
   var h = '<div class="opts big" role="group" aria-label="기본 모습">' + ['m', 'f'].map(function (k) {
-    var L = { base: k, hair: k === b ? hr : HAIRS[k][0][0], bottom: LOOK.bottom, hat: LOOK.hat, hand: LOOK.hand, acc: LOOK.acc };
+    var L = { base: k, hair: k === b ? hr : HAIRS[k][0][0], bottom: LOOK.bottom, fit: k === 'f' || LOOK.fit !== 'dress' ? LOOK.fit : '', col: LOOK.col, face: LOOK.face, hat: LOOK.hat, hand: LOOK.hand, acc: LOOK.acc };
     return opt('base', k, k === b, (PX.ok ? zorro(r, 'normal', 2, '', { look: L }) : '') + '<span>' + BASES[k] + '</span>');
   }).join('') + '</div><p class="lkh4">머리 모양</p><div class="opts" role="group" aria-label="머리 모양">' + HAIRS[b].map(function (x) {
-    return opt('hair', x[0], x[0] === hr, (PX.ok ? zorro(r, 'normal', 1.5, '', { look: { base: b, hair: x[0] }, head: 1 }) : '') + '<span>' + x[1] + '</span>');
+    return opt('hair', x[0], x[0] === hr, (PX.ok ? zorro(r, 'normal', 1.5, '', { look: { base: b, hair: x[0], face: LOOK.face }, head: 1 }) : '') + '<span>' + x[1] + '</span>');
   }).join('') + '</div>';
-  if (b === 'f') h += '<p class="lkh4">아래옷</p><div class="opts" role="group" aria-label="아래옷">' + BOTTOMS.map(function (x) {
+  var fit = fitOf(LOOK), with1 = function (k, v) { var L = lookWith(k, v); delete L.hat; delete L.hand; delete L.acc; return L; };   // 미리보기는 소품 빼고 옷만 보이게
+  h += '<p class="lkh4">얼굴형</p><div class="opts" role="group" aria-label="얼굴형">' + FACES.map(function (x) {
+    return opt('face', x[0], x[0] === faceOf(LOOK), (PX.ok ? zorro(r, 'normal', 1.5, '', { look: with1('face', x[0]), head: 1 }) : '') + '<span>' + x[1] + '</span>');
+  }).join('') + '</div>';
+  h += '<p class="lkh4">옷</p><div class="opts" role="group" aria-label="옷">' + FITS.filter(function (x) { return !x[2] || x[2] === b; }).map(function (x) {
+    return opt('fit', x[0], x[0] === fit, (PX.ok ? zorro(r, 'normal', 1.5, '', { look: with1('fit', x[0]) }) : '') + '<span>' + x[1] + '</span>');
+  }).join('') + '</div>';
+  h += '<p class="lkh4">옷 색 <small>' + (fit === 'suit' ? '기본 = 직급 색(사원은 흰 셔츠)' : fit === 'semi' ? '니트 색' : '원피스 색') + '</small></p><div class="sws" role="group" aria-label="옷 색">' + COLS.map(function (x) {
+    return '<button type="button" class="sw" data-col="' + x[0] + '" aria-pressed="' + (x[0] === colOf(LOOK)) + '" title="' + x[1] + '"><i style="background:' + (x[2] || 'conic-gradient(#3b4a6b 0 25%,#34405e 0 50%,#2b2f3a 0 75%,#f4f4f4 0)') + '"></i><span>' + x[1] + '</span></button>';
+  }).join('') + '</div>';
+  if (b === 'f' && fit !== 'dress') h += '<p class="lkh4">아래옷</p><div class="opts" role="group" aria-label="아래옷">' + BOTTOMS.map(function (x) {
     var on = (LOOK.bottom === 'skirt' ? 'skirt' : 'pants') === x[0];
-    return opt('bottom', x[0], on, (PX.ok ? zorro(r, 'normal', 1.5, '', { look: { base: 'f', hair: hr, bottom: x[0] } }) : '') + '<span>' + x[1] + '</span>');
+    return opt('bottom', x[0], on, (PX.ok ? zorro(r, 'normal', 1.5, '', { look: with1('bottom', x[0] === 'skirt' ? 'skirt' : '') }) : '') + '<span>' + x[1] + '</span>');
   }).join('') + '</div>';
   return h;
 }
@@ -3988,17 +4087,20 @@ function lookItems() {
       }).join('') + '</div></div>';
   }).join('');
 }
-function lookBadges() {
-  var b = badges();
+function lookBadges() {   // 2026-11-01 사용자: 최신 칭호 말고 원하는 칭호를 닉네임 앞에 — 얻은 칭호를 누르면 달기
+  var b = badges(), cur = myTitleId(), pick = store.get('slp-title');
   return '<div class="bgrid">' + BADGES.map(function (x) {
-    return '<div class="bg' + (b[x[0]] ? ' on' : '') + '" title="' + esc(x[2]) + '">' + (PX.ok ? icon(b[x[0]] ? 'star' : 'lock', 2) : '') + '<b>' + esc(x[1]) + '</b><small>' + (b[x[0]] ? mmdd(b[x[0]]) + ' 얻음' : esc(x[2])) + '</small></div>';
-  }).join('') + '</div>';
+    var on = !!b[x[0]], inner = (PX.ok ? icon(on ? 'star' : 'lock', 2) : '') + '<b>' + esc(x[1]) + '</b><small>' + (on ? (cur === x[0] ? '닉네임 앞에 다는 중' : mmdd(b[x[0]]) + ' 얻음 · 눌러서 달기') : esc(x[2])) + '</small>';
+    return on ? '<button type="button" class="bg on' + (cur === x[0] ? ' wear' : '') + '" data-title="' + x[0] + '" aria-pressed="' + (cur === x[0]) + '" title="' + esc(x[2]) + '">' + inner + '</button>'
+      : '<div class="bg" title="' + esc(x[2]) + '">' + inner + '</div>';
+  }).join('') + '</div>' + (Object.keys(b).length ? '<div class="row" style="margin-top:8px"><button type="button" class="btn sm ghost" data-title="none" aria-pressed="' + (pick === 'none') + '">칭호 안 달기</button>' +
+    (pick ? '<button type="button" class="btn sm ghost" data-title="">가장 최근 칭호로 (자동)</button>' : '') + '</div>' : '');
 }
 var LOOK_SECS = [
   ['lkBase', '기본 <b>모습</b>', function () { return '<p class="src" style="margin:0 0 10px">처음부터 무료예요. 직급(재킷·안경·머리색)은 남녀 똑같이 따라가요.</p>' + lookBase(); }],
   ['lkItems', '소품 <b>꾸미기</b>', function () { var n = Object.keys(itemsOwned()).filter(function (k) { return ITEM_BY[k]; }).length;
     return '<p class="src" style="margin:0 0 10px">모은 소품 <b>' + n + ' / ' + ITEMS.length + '</b> · 칸마다 하나씩. 게임마다 얻는 소품이 따로 있고, 하루 3게임을 하면 선물 상자가 열려요(이 기기에 저장, 점수와는 상관없어요).</p>' + lookItems(); }],
-  ['lkBadges', '<b>칭호</b>', function () { return '<p class="src" style="margin:0 0 10px">닉네임 옆엔 가장 최근 칭호가 보여요. 연속 출석 🔥 ' + streak() + '일.</p>' + lookBadges(); }],
+  ['lkBadges', '<b>칭호</b>', function () { return '<p class="src" style="margin:0 0 10px">얻은 칭호를 누르면 닉네임 앞에 달아요 (순위표·명예의 전당에도 같이). 고르지 않으면 가장 최근 칭호. 연속 출석 🔥 ' + streak() + '일.</p>' + lookBadges(); }],
   ['lkEnd', '엔딩 <b>도감</b>', function () { return '<p class="src" style="margin:0 0 6px">커리어 로드에서 본 엔딩이 모여요.</p>' + endDogam(null).replace(/<p class="h3"[^>]*>[^<]*<\/p>/, ''); }]
 ];
 function renderLook() {
@@ -4012,12 +4114,20 @@ function renderLook() {
     LOOK[b.dataset.slot] = b.dataset.id; if (!b.dataset.id) delete LOOK[b.dataset.slot];
     saveLook(); sfx('coin'); after('.itemb[data-slot="' + b.dataset.slot + '"][data-id="' + b.dataset.id + '"]');
   }; });
-  el.querySelectorAll('.opt').forEach(function (b) { b.onclick = function () {
-    var d = b.dataset;
-    if (d.base) { if (d.base === 'f') LOOK.base = 'f'; else delete LOOK.base; delete LOOK.hair; if (d.base !== 'f') delete LOOK.bottom; }
+  el.querySelectorAll('.opt, .sw').forEach(function (b) { b.onclick = function () {
+    var d = b.dataset, set = function (k, v, dflt) { if (v === dflt) delete LOOK[k]; else LOOK[k] = v; };
+    if (d.base) { if (d.base === 'f') LOOK.base = 'f'; else { delete LOOK.base; if (LOOK.fit === 'dress') delete LOOK.fit; } delete LOOK.hair; if (d.base !== 'f') delete LOOK.bottom; }
     if (d.hair) LOOK.hair = d.hair;
-    if (d.bottom) { if (d.bottom === 'skirt') LOOK.bottom = 'skirt'; else delete LOOK.bottom; }
-    saveLook(); sfx('coin'); after(d.base ? '.opt[data-base="' + d.base + '"]' : d.hair ? '.opt[data-hair="' + d.hair + '"]' : '.opt[data-bottom="' + d.bottom + '"]');
+    if (d.bottom) set('bottom', d.bottom, 'pants');
+    if (d.fit) set('fit', d.fit, 'suit');
+    if (d.col) set('col', d.col, 'auto');
+    if (d.face) set('face', d.face, 'basic');
+    var k = ['base', 'hair', 'bottom', 'fit', 'col', 'face'].filter(function (x) { return d[x]; })[0];
+    saveLook(); sfx('coin'); after('[data-' + k + '="' + d[k] + '"]');
+  }; });
+  el.querySelectorAll('[data-title]').forEach(function (b) { b.onclick = function () {
+    var t = b.dataset.title; if (t) store.set('slp-title', t); else store.del('slp-title');
+    sfx('coin'); after(t ? '[data-title="' + t + '"]' : '#lkBadges'); toast(t === 'none' ? '칭호를 떼었어요.' : t ? '칭호를 달았어요: ' + badgeName(t) : '가장 최근 칭호가 자동으로 붙어요.');
   }; });
 }
 // 소품 칸의 '입어 본 모습'은 서랍을 연 뒤 몇 개씩 나눠 그림 (처음 열 때 한꺼번에 48장을 만들면 느린 폰에서 멈칫해서). 한 번 그린 그림은 캐시
