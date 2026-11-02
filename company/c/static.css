@@ -20,6 +20,9 @@ h1 { font-family:var(--display); font-weight:900; font-size:clamp(34px, 7vw, 64p
 .grades li { padding:12px 4px; border-bottom:1px solid var(--hairline); display:flex; flex-direction:column; gap:2px; }
 .grades span { font-size:12px; font-weight:700; color:var(--muted); }
 .grades b { font-family:var(--display); font-size:26px; font-weight:900; letter-spacing:-.04em; }
+.nofin { display:inline-block; margin-left:8px; vertical-align:middle; font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; border:1.5px dashed var(--muted); color:var(--muted); }
+.lg { margin:12px 0 0; font-size:12.5px; color:var(--muted); }
+.lg b { color:var(--soft); margin-right:4px; }
 .say { margin:30px 0 0; padding:20px 22px; border-radius:16px; background:var(--fill); }
 .say h2 { margin:0 0 8px; font-family:var(--display); font-size:15px; font-weight:900; letter-spacing:-.02em; }
 .say p { margin:6px 0 0; font-size:15.5px; }
@@ -35,6 +38,6 @@ h1 { font-family:var(--display); font-weight:900; font-size:clamp(34px, 7vw, 64p
   .sp { padding:18px 16px 48px; }
   .grades li { padding:10px 2px; }
   .grades b { font-size:21px; }
-  .grades span { font-size:11px; }
+  .grades span { font-size:12px; }
   .say { padding:16px; }
 }
