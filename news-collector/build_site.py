@@ -76,7 +76,7 @@ STYLE = """
   --down:       #2f6fb0;
   --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
 
-  --serif: "Playfair Display", Georgia, "Nanum Myeongjo", serif;
+  --serif: "Archivo", "Noto Sans KR", Georgia, serif;
   --sans:  "Inter", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono:  "Inter", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -1499,7 +1499,12 @@ def day_description(day):
     return " / ".join(a["title"] for a in arts[:3])
 
 
-def static_head(title, desc, root="../"):
+# 2026-11-03: 글꼴 요청 한 줄로 합치고 쓰는 굵기만 (전엔 4개 글꼴 17굵기 + 상위 build.py 가 Noto·Archivo 를 한 번 더)
+FONT_LINK = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900'
+             '&family=Inter:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">')
+
+
+def static_head(title, desc, root="../", noindex=False):
     """정적 페이지 공통 <head> + 마스트헤드. 자산 경로는 root 기준(../assets/...)."""
     return f"""<!doctype html>
 <html lang="ko">
@@ -1507,12 +1512,12 @@ def static_head(title, desc, root="../"):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{e(title)}</title>
-<meta name="description" content="{e(desc)}">
+<meta name="description" content="{e(desc)}">{'<meta name="robots" content="noindex,follow">' if noindex else ''}
 <link rel="icon" type="image/png" sizes="32x32" href="{root}assets/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="{root}assets/favicon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+{FONT_LINK}
 <style>{STYLE}{STATIC_STYLE}</style>
 <script>
   try {{ var t = localStorage.getItem('cb-theme');
@@ -1591,7 +1596,26 @@ def render_daynav(prev_date, next_date):
             f'<a href="../archive/">지난 지면 전체</a><a href="../">오늘 지면으로</a><span class="spacer"></span>{next_html}</nav>')
 
 
-def render_day_page(day, prev_date, next_date):
+def _keys(day):
+    arts = day_articles(day)
+    return {a.get("url") for a in arts if a.get("url")} | {a.get("title") for a in arts if a.get("title")}
+
+
+def repeat_days(days):
+    """앞 지면을 거의 그대로 되풀이한 날 (2026-11-03: 주말·휴일 지면이 전날과 같은 기사·설명으로 나가던 것 — 10-10, 08-30 등).
+    새 기사가 없거나 기사 절반 이상이 앞 지면과 같으면 그날 쪽은 검색에서 빼고(noindex) sitemap 에도 넣지 않는다."""
+    out, prev = [], None
+    for d in days:
+        arts = day_articles(d)
+        if prev is not None and arts:
+            same = sum(1 for a in arts if a.get("url") in prev or a.get("title") in prev)
+            if same == len(arts) or same * 2 >= len(arts) or day_description(d) == prev_desc:
+                out.append(d["date"])
+        prev, prev_desc = _keys(d), day_description(d)
+    return out
+
+
+def render_day_page(day, prev_date, next_date, noindex=False):
     """site/<YYYY-MM-DD>/index.html — 독립 HTML (공용 탭바·푸터는 상위 build.py 가 끼운다)"""
     date = day["date"]
     kdate = korean_date(date)
@@ -1600,7 +1624,7 @@ def render_day_page(day, prev_date, next_date):
     title = f"{kdate} 커리어브리핑 — 취업조로"
     desc = day_description(day)
 
-    out = [static_head(title, desc), '<main class="container">',
+    out = [static_head(title, desc, noindex=noindex), '<main class="container">',
            f'  <div class="day-head"><div class="day-kicker">Career Briefing · Daily</div>'
            f'<h1 class="day-title">{e(kdate)} 커리어브리핑</h1>'
            f'<p class="day-sub">{e(date)} 지면 · 기사 {total}건 · 취업조로가 고른 채용·이직·기업·고용·커리어 뉴스</p></div>',
@@ -1787,7 +1811,7 @@ def render(today, archive):
 <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+{FONT_LINK}
 <style>{STYLE}</style>
 <script>
   // 저장된 테마를 그리기 전에 적용 (깜빡임 방지)
@@ -1911,12 +1935,17 @@ def main():
     # 날짜별 정적 지면 + 아카이브 목록 + 날짜 목록(days.json)
     full_days = archive["full_days"]
     dates = [d["date"] for d in full_days]
+    rep_days = set(repeat_days(full_days))
     for i, day in enumerate(full_days):
         page_dir = site_dir / day["date"]
         page_dir.mkdir(parents=True, exist_ok=True)
         (page_dir / "index.html").write_text(
-            render_day_page(day, dates[i - 1] if i > 0 else None, dates[i + 1] if i + 1 < len(dates) else None),
+            render_day_page(day, dates[i - 1] if i > 0 else None, dates[i + 1] if i + 1 < len(dates) else None, noindex=day["date"] in rep_days),
             encoding="utf-8")
+    # 상위 build.py 가 읽어 이 날짜들은 noindex + sitemap 제외
+    (site_dir / "repeat_days.json").write_text(json.dumps(sorted(rep_days)), encoding="utf-8")
+    if rep_days:
+        print(f"  앞 지면 반복 {len(rep_days)}일 -> noindex: {', '.join(sorted(rep_days))}")
     (site_dir / "archive").mkdir(exist_ok=True)
     (site_dir / "archive" / "index.html").write_text(render_archive_page(full_days), encoding="utf-8")
     (site_dir / "days.json").write_text(json.dumps(dates), encoding="utf-8")

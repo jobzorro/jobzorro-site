@@ -97,7 +97,7 @@
   function fmt(n) { return Number(n).toLocaleString('ko-KR'); }
   function rng(r) { return fmt(r[0]) + '~' + fmt(r[1]); }
   var AI = { 1: '낮음', 2: '보통', 3: '큼' };
-  var SAL_MIN = 2500, SAL_MAX = 18000;
+  var SAL_MIN = 2500, SAL_MAX = /*__SAL_MAX__*/18000;   // 2026-11-03: 빌드 때 자료의 최댓값(올림)으로 바꿔 넣는다
   function pct(v) { return ((v - SAL_MIN) / (SAL_MAX - SAL_MIN) * 100).toFixed(1); }
   function bar(r, cls) { return '<div class="bar ' + cls + '"><i style="left:' + pct(r[0]) + '%;width:' + ((r[1] - r[0]) / (SAL_MAX - SAL_MIN) * 100).toFixed(1) + '%"></i></div>'; }
   var JOBS = [], byId = {}, GNAME = {};
@@ -122,8 +122,21 @@
       '<div class="brow"><span class="lbl">미들</span>' + bar(s.mid, 'mid') + '<span class="num">' + rng(s.mid) + '</span></div>' +
       '<div class="brow"><span class="lbl">시니어</span>' + bar(s.senior, 'sen') + '<span class="num">' + rng(s.senior) + '</span></div>';
   }
+  // 2026-11-03: 전체 자료(2MB) 대신 홈과 같은 요약 자료로 목록을 만들고, 고른 두 직무만 data/job/<id>.json 으로 받는다
+  var FULL = {}, VER = '';
+  function getJob(id, cb) {
+    if (FULL[id]) { cb(FULL[id]); return; }
+    fetch('../data/job/' + encodeURIComponent(id) + '.json' + (VER ? '?v=' + VER : '')).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) { FULL[id] = j; cb(j); }, function () { cb(null); });
+  }
+  var seq = 0;
   function render() {
-    var A = byId[a], B = byId[b];
+    if (!byId[a] || !byId[b]) { draw(); return; }
+    var my = ++seq, got = {};
+    [a, b].forEach(function (id) { getJob(id, function (j) { got[id] = j || false; if (my === seq && a in got && b in got) draw(got[a], got[b]); }); });
+  }
+  function draw(A, B) {
+    if (A === false || B === false) { $('out').innerHTML = '<div class="state"><b>불러오지 못했습니다</b>네트워크를 확인하고 새로고침해 주세요.</div>'; return; }
     if (!A || !B) { $('out').innerHTML = '<div class="state"><b>직무를 찾지 못했습니다</b>위에서 다시 골라 주세요.</div>'; return; }
     try { localStorage.setItem('jz_cmp', JSON.stringify([a, b])); } catch (e) {}
     history.replaceState(null, '', '?a=' + a + '&b=' + b);
@@ -164,15 +177,10 @@
     $('selA').addEventListener('change', function () { a = this.value; render(); });
     $('selB').addEventListener('change', function () { b = this.value; render(); });
   }
-  var x = new XMLHttpRequest();
-  x.open('GET', '../data/jobs.json', true);
-  x.onload = function () {
-    if (x.status !== 200 && x.status !== 0) { $('out').innerHTML = '<div class="state"><b>불러오지 못했습니다</b>새로고침해 주세요.</div>'; return; }
-    var d = JSON.parse(x.responseText); JOBS = d.jobs; JOBS.forEach(function (j) { byId[j.id] = j; }); d.meta.groups.forEach(function (g) { GNAME[g.id] = g.name; });
+  fetch('/*__SUMMARY_URL__*/').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (d) {
+    JOBS = d.jobs; VER = d.meta.dataVersion || ''; JOBS.forEach(function (j) { byId[j.id] = j; }); d.meta.groups.forEach(function (g) { GNAME[g.id] = g.name; });
     fillSelects(); render();
-  };
-  x.onerror = function () { $('out').innerHTML = '<div class="state"><b>불러오지 못했습니다</b>네트워크를 확인하고 새로고침해 주세요.</div>'; };
-  x.send();
+  }, function () { $('out').innerHTML = '<div class="state"><b>불러오지 못했습니다</b>네트워크를 확인하고 새로고침해 주세요.</div>'; });
 })();
 </script>
 </body>

@@ -70,6 +70,7 @@ textarea { min-height:96px; resize:vertical; line-height:1.6; }
 .done .big { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
 .done h2 { font-family:var(--display); font-size:clamp(30px, 4vw, 52px); letter-spacing:-.05em; margin-top:12px; line-height:1; }
 .done h2 .mark { background:linear-gradient(transparent 68%, var(--mark) 68%); }
+.done .done-alt { font-size:13.5px; color:var(--muted); margin-top:10px; }
 .done p { margin-top:16px; color:var(--ink-soft); font-size:15px; max-width:52ch; line-height:1.7; }
 .row2 { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
 .z-btn { display:inline-flex; align-items:center; gap:10px; font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:14px 22px; border-radius:999px; text-decoration:none; border:1px solid var(--ink); color:var(--ink); }
@@ -197,6 +198,7 @@ textarea { min-height:96px; resize:vertical; line-height:1.6; }
         <div class="big">Received</div>
         <h2>신청이 <span class="mark">접수됐습니다.</span></h2>
         <p>취업조로가 확인한 뒤 남겨 주신 연락처로 연락드립니다. 급하시면 카카오톡 오픈프로필로 바로 말씀해 주세요.</p>
+        <p class="done-alt">이틀 안에 연락이 없으면 접수가 안 됐을 수 있어요. 카카오톡 오픈프로필로 "상담 신청"이라고 보내 주세요.</p>
         <div class="row2"><a class="z-btn solid" href="/*__KAKAO_OPEN__*/" target="_blank" rel="noopener">카카오톡 오픈프로필 열기</a><a class="z-btn" href="../index.html">직무사전 둘러보기</a></div>
       </div>
     </section>
@@ -295,9 +297,16 @@ textarea { min-height:96px; resize:vertical; line-height:1.6; }
     var btn = $('submitBtn'), st = $('status-msg');
     if (!CFG.formEndpoint) { st.className = 'st bad'; st.textContent = '접수 시스템이 아직 연결되지 않았습니다. 카카오톡 오픈프로필로 보내 주세요.'; return; }
     btn.disabled = true; st.className = 'st'; st.textContent = '보내는 중...';
-    fetch(CFG.formEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) })
-      .then(function () { form.hidden = true; $('notice').hidden = true; $('done').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); })
-      .catch(function () { btn.disabled = false; st.className = 'st bad'; st.textContent = '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡 오픈프로필로 보내 주세요.'; });
+    // 2026-11-03: no-cors 라 서버 응답은 못 읽는다. 대신 네트워크 오류·시간 초과(20초)·오프라인은 실패로 보여 주고 카카오톡 길을 안내한다
+    function fail() {
+      btn.disabled = false; st.className = 'st bad';
+      st.innerHTML = '전송에 실패했어요. 잠시 후 다시 시도하거나 <a href="' + CFG.kakaoOpen + '" target="_blank" rel="noopener">카카오톡 오픈프로필</a>로 "상담 신청"이라고 보내 주세요.';
+    }
+    if (navigator.onLine === false) { fail(); return; }
+    var ac = window.AbortController ? new AbortController() : null, timer = ac ? setTimeout(function () { ac.abort(); }, 20000) : 0;
+    fetch(CFG.formEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data), signal: ac ? ac.signal : undefined })
+      .then(function () { clearTimeout(timer); form.hidden = true; $('notice').hidden = true; $('done').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); })
+      .catch(function () { clearTimeout(timer); fail(); });
   });
 
   // 헤드라인 한 줄 맞춤

@@ -9,7 +9,7 @@
 <style>
 /* 연봉 연구소 Ver 0.5 — 직무사전 v2와 같은 체계: 넓은 폭(1320) · 히어로(얇은 윗줄+굵은 제목+형광 밑줄) · 오른쪽 숫자판 · 검은 띠 · 알약 탭 · 번호 섹션
    보는 순서: ① 회사 검색(첫 화면) ② 회사 상세(PC 오른쪽 고정, 폰 아래에서 올라오는 창) ③ 순위 두 개 ④ 계산기 세 개(탭) */
-:root { --bg:#ffffff; --ink:#0b0b0b; --soft:#45483f; --muted:#7a7d73; --line:#e4e6df; --line2:#cfd2c8; --fill:#f4f5f1; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d; --warn:#b4453a; --up:#b4453a;
+:root { --bg:#ffffff; --ink:#0b0b0b; --soft:#45483f; --muted:#6b6e64; --line:#e4e6df; --line2:#cfd2c8; --fill:#f4f5f1; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d; --warn:#b4453a; --up:#b4453a;
   --display:"Archivo","Noto Sans KR",system-ui,sans-serif; --font:"Noto Sans KR",system-ui,sans-serif; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#8d9085; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; --up:#ff8f7d; color-scheme:dark } }
 :root[data-theme="dark"] { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#8d9085; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; --up:#ff8f7d; color-scheme:dark }
@@ -330,7 +330,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     <dl class="stats" aria-label="연봉 연구소 자료 규모">
       <div><dt>회사</dt><dd id="stCo">52,305<small>곳</small></dd></div>
       <div><dt>공시값 반영</dt><dd id="stOff">2,875<small>곳</small></dd></div>
-      <div><dt>실제 연봉 검증</dt><dd id="stVal">3,378<small>건</small></dd></div>
+      <div><dt>실제 연봉 검증</dt><dd id="stVal">3,380<small>건</small></dd></div>
       <div><dt>기준</dt><dd id="stYm">2026.09</dd></div>
     </dl>
   </div>
@@ -461,22 +461,44 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   //    직급별 금액·기본연봉·출처는 빌드(build_site.py)가 미리 계산해 조각에 넣는다 → 화면과 회사별 페이지 숫자가 같다.
   var D = { meta: null }, IDX = null, idxP = null, SH = {}, CUR = null;
   var RANK_NAMES = ['사원<small class="yr">1~3년차</small>', '대리', '과장', '차장', '부장'];   // 사원 값은 고객 자료의 사원·주임(1~3년차) 평균에 맞춰져 있어 연차를 함께 적는다
-  var norm = function (s) { return s.replace(/\s+/g, '').toLowerCase(); };
+  // 검색용 이름: 띄어쓰기·하이픈·법인 표기((주)·주식회사·㈜) 빼고 소문자 (2026-11-03, 회사 판단 연구소와 같은 규칙)
+  var norm = function (s) { return String(s || '').replace(/[（(]\s*주\s*[）)]|㈜|주식회사|[\s\-]/g, '').toLowerCase(); };
+  // 한글 자모 맞추기 (회사 판단 연구소 검색과 같은 방식): '깅' → 기아, 'ㅅㅅㅈㅈ' → 삼성전자
+  var HG = { cho: 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', jung: ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅗㅏ','ㅗㅐ','ㅗㅣ','ㅛ','ㅜ','ㅜㅓ','ㅜㅔ','ㅜㅣ','ㅠ','ㅡ','ㅡㅣ','ㅣ'],
+    jong: ['','ㄱ','ㄲ','ㄱㅅ','ㄴ','ㄴㅈ','ㄴㅎ','ㄷ','ㄹ','ㄹㄱ','ㄹㅁ','ㄹㅂ','ㄹㅅ','ㄹㅌ','ㄹㅍ','ㄹㅎ','ㅁ','ㅂ','ㅂㅅ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'],
+    pair: { 'ㄳ':'ㄱㅅ','ㄵ':'ㄴㅈ','ㄶ':'ㄴㅎ','ㄺ':'ㄹㄱ','ㄻ':'ㄹㅁ','ㄼ':'ㄹㅂ','ㄽ':'ㄹㅅ','ㄾ':'ㄹㅌ','ㄿ':'ㄹㅍ','ㅀ':'ㄹㅎ','ㅄ':'ㅂㅅ','ㅘ':'ㅗㅏ','ㅙ':'ㅗㅐ','ㅚ':'ㅗㅣ','ㅝ':'ㅜㅓ','ㅞ':'ㅜㅔ','ㅟ':'ㅜㅣ','ㅢ':'ㅡㅣ' } };
+  function jamo(s) { var o = ''; for (var i = 0; i < s.length; i++) { var ch = s[i], c = ch.charCodeAt(0) - 0xac00;
+    o += (c >= 0 && c < 11172) ? HG.cho[Math.floor(c / 588)] + HG.jung[Math.floor(c % 588 / 28)] + HG.jong[c % 28] : (HG.pair[ch] || ch); } return o; }
+  function choOf(s) { var o = ''; for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i) - 0xac00; o += (c >= 0 && c < 11172) ? HG.cho[Math.floor(c / 588)] : s[i]; } return o; }
+  // 맞춤 정도: 0 앞부분 일치 · 1 치는 중인 자모·초성으로 앞부분 일치 · 2 중간 포함 · -1 없음 (k 는 '이름|약칭|브랜드')
+  function qOf(v) { var q = norm(v); return { q: q, j: jamo(q), c: /^[ㄱ-ㅎ]+$/.test(q) }; }
+  function match(r, Q) {
+    var p = r.k.indexOf(Q.q);
+    if (p === 0 || (p > 0 && r.k.indexOf('|' + Q.q) >= 0)) return 0;
+    var kj = r.kj || (r.kj = jamo(r.k));
+    if (kj.indexOf(Q.j) === 0 || kj.indexOf('|' + Q.j) >= 0) return 1;
+    if (Q.c) { var kc = r.kc || (r.kc = choOf(r.k)); if (kc.indexOf(Q.q) === 0 || kc.indexOf('|' + Q.q) >= 0) return 1; if (Q.q.length >= 2 && kc.indexOf(Q.q) >= 0) return 2; }
+    return p > 0 ? 2 : -1;
+  }
   function loadIndex() {
     if (IDX) return Promise.resolve(IDX);
     if (!idxP) {
       $('qHint').textContent = '회사 목록을 불러오는 중…';
-      idxP = fetch('data/index.json?v=' + VER(), REFRESH ? { cache: 'reload' } : {}).then(function (r) { return r.json(); }).then(function (a) {
+      idxP = fetch('data/index.json?v=' + VER(), REFRESH ? { cache: 'reload' } : {}).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (a) {
         // 현장 사업장(flag 8)은 '회사명 (현장 사업장)'으로 보이고 회사명으로만 검색된다
         IDX = a.map(function (x, i) { return { i: i, n: x[0], al: x[5] || '', k: (x[3] & 8 ? norm(x[0].replace(/ \(현장 사업장\)$/, '')) : norm(x[0])) + (x[5] ? '|' + norm(x[5]) : '') + (x[6] ? '|' + norm(x[6]) : ''), m: x[1], avg: x[2], cap: !!(x[3] & 1), dart: !!(x[3] & 2), cal: !!(x[3] & 4), hide: !!(x[3] & 8), att: !!(x[3] & 16), ind: D.meta.inds[x[4]] || '' }; });   // x[5]: SK텔레콤 같은 흔한 이름
         hint(); return IDX;
+      }).catch(function (e) {   // 실패한 약속을 붙잡아 두면 '불러오는 중…'에 멈춘다 → 비우고 다시 시도할 수 있게 (2026-11-03)
+        idxP = null; $('qHint').textContent = '회사 목록을 불러오지 못했어요. 인터넷 연결을 확인하고 검색창을 다시 눌러 주세요.';
+        throw e;
       });
     }
     return idxP;
   }
   function loadRow(i) {
     var s = i % D.meta.shards;
-    if (!SH[s]) SH[s] = fetch('data/co/' + ('0' + s).slice(-2) + '.json?v=' + VER(), REFRESH ? { cache: 'reload' } : {}).then(function (r) { return r.json(); });
+    if (!SH[s]) SH[s] = fetch('data/co/' + ('0' + s).slice(-2) + '.json?v=' + VER(), REFRESH ? { cache: 'reload' } : {}).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .catch(function (e) { delete SH[s]; throw e; });   // 실패하면 다음에 다시 받게
     return SH[s].then(function (rows) {
       var row = rows.find(function (x) { return x[0] === i; }), o = {};
       if (!row) return null;
@@ -506,26 +528,29 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var ym = m.ym.replace('-', '년 ') + '월';
     // 2026-10-29 페이지 아래 출처 문단은 뺌 (Simple is Best)
     hookCar(); netCalc(); posCalc(); negCalc(); emptyDetail();
-    var q = decodeURIComponent((location.hash || '').slice(1));
-    if (q) { $('q').value = q; loadIndex().then(function () { search(); var hit = IDX.find(function (x) { return x.n === q; }) || IDX.find(function (x) { return dk(x.n) === dk(q); }); if (hit) openCo(hit.i); }); }
+    var q = '', hm = /^#@(\d+)\/(.*)$/.exec(location.hash || '');
+    try { q = decodeURIComponent((location.hash || '').slice(1)); } catch (e) {}
+    if (hm) { var hn = ''; try { hn = decodeURIComponent(hm[2]); } catch (e) {} openCo(+hm[1], hn); q = ''; }   // 2026-11-03 회사 페이지에서 올 때: 검색 목록(2MB) 없이 그 회사 조각만
+    else if (/^@\//.test(q)) q = q.slice(2);
+    if (q) { $('q').value = q; loadIndex().then(function () { search(); var hit = IDX.find(function (x) { return x.n === q; }) || IDX.find(function (x) { return dk(x.n) === dk(q); }); if (hit) openCo(hit.i); }).catch(function () {}); }
   }).catch(function () { $('qHint').textContent = '데이터를 불러오지 못했습니다. 새로고침해 주세요.'; });
-  $('q').addEventListener('focus', function () { if (D.meta) loadIndex(); });
+  $('q').addEventListener('focus', function () { if (D.meta) loadIndex().catch(function () {}); });
 
   // ── 검색
   function search() {
-    var q = norm($('q').value);
+    var Q = qOf($('q').value), q = Q.q;
     if (!q || !D.meta) { $('results').innerHTML = ''; return; }
-    if (!IDX) { loadIndex().then(search); return; }
-    var hit = [], pre = [], exact = [];
+    if (!IDX) { loadIndex().then(search).catch(function () {}); return; }
+    var hit = [], pre = [], exact = [], jhead = [];
     for (var i = 0; i < IDX.length; i++) {
-      var r = IDX[i], p = (r.att && !/어린이집|금고|협동조합|노동조합|복지/.test(q)) ? -1 : r.k.indexOf(q);   // 부속 기관은 기관 단어로 검색할 때만
+      var r = IDX[i], p = (r.att && !/어린이집|금고|협동조합|노동조합|복지/.test(q)) ? -1 : match(r, Q);   // 부속 기관은 기관 단어로 검색할 때만
       if (p < 0) continue;
       if (norm(r.n) === q || (r.al && norm(r.al) === q)) exact.push(r);   // 이름이 정확히 같은 회사(지주사 '엘지' 등)는 가입자가 적어도 맨 위에
-      else if (p === 0 || r.k.indexOf('|' + q) >= 0) {   // 약칭·브랜드 검색어(x[5]·x[6])가 앞에서 맞아도 앞쪽에
-        if (pre.length < 400) pre.push(r); }
+      else if (p === 0) { if (pre.length < 400) pre.push(r); }   // 약칭·브랜드 검색어(x[5]·x[6])가 앞에서 맞아도 앞쪽에
+      else if (p === 1) { if (jhead.length < 400) jhead.push(r); }   // 치는 중인 자모·초성으로 앞부분이 맞는 회사
       else if (hit.length < 400) hit.push(r);
     }
-    var list = exact.concat(pre, hit).slice(0, 20);   // 목록은 가입자 많은 순 → 큰 회사가 먼저
+    var list = exact.concat(pre, jhead, hit).slice(0, 20);   // 목록은 가입자 많은 순 → 큰 회사가 먼저
     $('results').innerHTML = list.length ? list.map(function (r) {
       return '<button class="res' + (CUR === r.i ? ' on' : '') + '" type="button" data-i="' + r.i + '"><span class="nm">' + esc(r.al || r.n) + '</span>' +
         '<span class="sub">' + gradeChip(r.dart ? 2 : r.cal ? 4 : r.cap ? 1 : 0) + ' ' + esc([r.al ? r.n : '', r.ind, r.m.toLocaleString('ko-KR') + '명'].filter(Boolean).join(' · ')) + '</span>' +   // 칩을 앞에 둬야 긴 업종명에 잘리지 않는다
@@ -533,6 +558,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     }).join('') : '<p class="hint">찾는 회사가 없습니다. 가입자 30명 이상 회사만 있고, 법인명 기준이라 브랜드명과 다를 수 있습니다.</p>';
   }
   var tm; $('q').addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(search, 120); });
+  $('q').addEventListener('compositionupdate', function () { clearTimeout(tm); tm = setTimeout(search, 120); });   // 한글 조합 중('ㄱ'→'기')에도 따라오게
   $('results').addEventListener('click', function (e) { var b = e.target.closest('.res'); if (b) openCo(+b.getAttribute('data-i'), b.querySelector('.nm') && IDX && IDX[+b.getAttribute('data-i')] ? IDX[+b.getAttribute('data-i')].n : ''); });
   document.addEventListener('click', function (e) {
     var a = e.target.closest('[data-co]'); if (!a) return; e.preventDefault();
@@ -584,25 +610,25 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
         var d = B[j] - A[j]; return '<tr><td>' + k + '</td><td>' + man(A[j]) + '</td><td>' + man(B[j]) + '</td><td class="' + (d >= 0 ? 'up' : 'dn') + '">' + (d > 0 ? '+' : '') + man(d) + '</td></tr>';
       }).join('') + '<tr><td>평균 연봉</td><td>' + man(r.bAvg) + '</td><td>' + man(R.bAvg) + '</td><td class="' + (R.bAvg - r.bAvg >= 0 ? 'up' : 'dn') + '">' + (R.bAvg - r.bAvg > 0 ? '+' : '') + man(R.bAvg - r.bAvg) + '</td></tr></tbody></table></div>' +
         '<p class="hint">차이 = ' + esc(dn(R.name)) + ' − ' + esc(dn(r.name)) + ' (만원, 직급별 추정)</p>' +
-        '<a class="cmplink" href="https://job.jobzorro.kr/company/#' + encodeURIComponent(r.name) + '~' + encodeURIComponent(R.name) + '" target="_blank" rel="noopener">회사 판단 연구소에서 평판·재무까지 VS 비교 →</a>';
+        (r.cc && R.cc ? '<a class="cmplink" href="../company/#' + encodeURIComponent(r.name) + '~' + encodeURIComponent(R.name) + '">회사 판단 연구소에서 평판·재무까지 VS 비교 →</a>' : '');   // 두 회사 모두 회사 판단 연구소에 있을 때만, 같은 탭 (2026-11-03)
     } else {
       h += '<div class="row"><input id="cmpQ" type="search" placeholder="비교할 회사 이름" autocomplete="off" aria-label="비교할 회사"></div><div class="opts" id="cmpOpts"></div>' +
-        '<a class="cmplink" href="https://job.jobzorro.kr/company/#' + encodeURIComponent(r.name) + '" target="_blank" rel="noopener">이 회사 갈 만한지 회사 판단 연구소에서 보기 →</a>';
+        (r.cc ? '<a class="cmplink" href="../company/#' + encodeURIComponent(r.name) + '">이 회사 갈 만한지 회사 판단 연구소에서 보기 →</a>' : '');
     }
     return h + '</section>';
   }
   document.addEventListener('input', function (e) {
     if (e.target.id !== 'cmpQ') return;
-    var q = norm(e.target.value), box = $('cmpOpts');
+    var Q = qOf(e.target.value), q = Q.q, box = $('cmpOpts');
     if (!q) { box.innerHTML = ''; return; }
     loadIndex().then(function (idx) {
-      var list = idx.filter(function (x) { return x.i !== CUR && x.k.indexOf(q) >= 0 && !x.att; }).slice(0, 6);
+      var list = idx.filter(function (x) { return x.i !== CUR && !x.att && match(x, Q) >= 0; }).sort(function (a, b) { return match(a, Q) - match(b, Q) || b.m - a.m; }).slice(0, 6);
       box.innerHTML = list.map(function (x) { return '<button type="button" data-cmp-i="' + x.i + '">' + esc(x.al || x.n) + ' <small>' + x.m.toLocaleString('ko-KR') + '명</small></button>'; }).join('');
-    });
+    }).catch(function () { box.innerHTML = '<p class="hint">회사 목록을 불러오지 못했어요. 다시 입력해 주세요.</p>'; });
   });
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-cmp-i]');
-    if (b) { loadRow(+b.getAttribute('data-cmp-i')).then(function (r2) { if (r2) { CMP = r2; show(CURROW); } }); return; }
+    if (b) { loadRow(+b.getAttribute('data-cmp-i')).then(function (r2) { if (r2) { CMP = r2; show(CURROW); } }).catch(function () { b.textContent = '불러오지 못했어요 · 다시 누르기'; }); return; }
     if (e.target.closest('[data-cmp-x]')) { CMP = null; show(CURROW); }
   });
   function emptyDetail() {
@@ -625,8 +651,11 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
         var hit = idx.filter(function (x) { return x.n === name || dk(x.n) === dk(name); }).sort(function (a, b) { return b.m - a.m; })[0];
         if (hit) { CUR = hit.i; loadRow(hit.i).then(function (r2) { if (r2) show(r2); }); }
         if ($('q').value) search();
-      });
-    });
+      }).catch(loadFail);
+    }).catch(loadFail);
+    function loadFail() {   // 2026-11-03 조각·목록을 못 받으면 멈추지 말고 다시 시도 버튼
+      $('detail').innerHTML = '<div class="empty"><h3>회사 정보를 불러오지 못했어요</h3><p>인터넷 연결을 확인하고 다시 눌러 주세요.</p><div class="picks"><button type="button" data-co="' + i + '" data-name="' + esc(name || '') + '">다시 시도</button></div></div>';
+    }
   }
   function show(r) {
     CURROW = r;
@@ -660,6 +689,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     $('detail').innerHTML = '<article class="detail" aria-live="polite">' +
       '<div class="top"><div><h2>' + esc(IDX && IDX[r.i] && IDX[r.i].al || dn(r.name)) + '</h2><div class="meta">' + esc([r.industry, r.sido, '사업자번호 앞자리 ' + r.biz6].filter(Boolean).join(' · ')) + '</div></div>' +
       '<div class="avg"><div class="v">' + man(r.bAvg) + plus + '<small>만원</small></div><div class="l">평균 연봉' + (/^(국민연금 기준|총보상 추정)$/.test(r.bSrc) ? '' : ' · ' + esc(r.bSrc)) + ' ' + gradeChip(r.dart && !dNps ? 2 : r.calAvg ? 4 : r.capped ? 1 : 0) + '</div></div></div>' +
+      (r.avgNote ? '<p class="hint">' + esc(r.avgNote) + '</p>' : '') +   // 2026-11-03 평균이 직급표 밖일 때 까닭 한 줄
       (V ? '<p class="vbadge">실제 연봉 ' + V.total.toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명' + (V.nReports ? ' + 현직자 제보 ' + V.nReports + '건' : '') + ' + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
       (r.cfN ? '<p class="hint">취업조로 경력이직 고객 <b>' + r.cfN + '명</b>의 실제 연봉으로 이 회사 직급별 금액을 보정했습니다(개인 값은 공개하지 않습니다).</p>' : '') +
       (skew ? '<p class="hint">평균 연봉에는 성과급·주식보상이 크게 들어 있어, 직급별 금액은 <b>통상 연봉(기본 + 일반 성과급)</b> 기준입니다.</p>' : '') +
@@ -672,6 +702,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       (base && capcal ? '' : base ? '<p class="hint"><b>성과급 포함 총보상</b> 기준입니다. 작은 숫자는 기본연봉 추정이고, 성과급은 해마다 크게 달라집니다.</p>' : '') +
       (r.fld && r.fld[5] ? '<p class="hint">' + esc(r.fld[5]) + '</p>' : '') +
       (r.rkNote ? '<p class="hint"><b>' + esc(r.rkNote) + '</b></p>' : '') +
+      (!lock && !ptime && r.rk && Math.round(r.rk[0]) === Math.round(r.rk[1]) && r.members < 300 ? '<p class="hint">작은 회사는 사원·대리 구분이 약해 같은 값으로 추정했어요.</p>' : '') +
       (r.members < 100 && !ptime ? '<p class="hint">직원 100명 미만 회사라 몇 사람의 입·퇴사에도 평균이 크게 흔들립니다. 직급별 금액은 <b>개인차가 큰 참고값</b>으로 보세요.</p>' : '') +
       (r.divs ? '<p class="hint"><b>부문마다 달라요</b> (국민연금 사업장별 평균, 상한 때문에 위쪽은 실제로 더 큼): ' + r.divs.map(function (d) { return esc(d[0]) + ' ' + man(d[2]) + '만원'; }).join(' · ') + '</p>' : '') +
       (r.jump ? '<p class="hint">사업보고서 평균 연봉이 전년보다 <b>' + r.jump + '%</b> 올랐습니다. 성과급이 특히 컸던 해일 수 있어 다음 해에는 다시 내려갈 수 있습니다.</p>' : '') +
@@ -695,10 +726,10 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     if (isPhone()) {
       if (!sh.classList.contains('open')) {
         sh.classList.add('open'); document.body.classList.add('sheet-open');
-        try { history.pushState({ sheet: 1 }, '', '#' + encodeURIComponent(r.name)); } catch (e) {}
-      } else { try { history.replaceState({ sheet: 1 }, '', '#' + encodeURIComponent(r.name)); } catch (e) {} }
+        try { history.pushState({ sheet: 1 }, '', '#@' + r.i + '/' + encodeURIComponent(r.name)); } catch (e) {}
+      } else { try { history.replaceState({ sheet: 1 }, '', '#@' + r.i + '/' + encodeURIComponent(r.name)); } catch (e) {} }
       $('sheetClose').focus();
-    } else { try { history.replaceState(null, '', '#' + encodeURIComponent(r.name)); } catch (e) {} }
+    } else { try { history.replaceState(null, '', '#@' + r.i + '/' + encodeURIComponent(r.name)); } catch (e) {} }
   }
 
   // ── 연봉 제보: 같은 회사·직급 제보가 5건 이상이면 범위 공개, 아니면 건수만

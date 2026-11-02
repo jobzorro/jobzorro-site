@@ -8,6 +8,7 @@ SEO · GEO(생성형 엔진 최적화) 보조 모듈 — build.py 가 쓴다.
 """
 import html
 import json
+import urllib.parse
 import os
 import re
 from datetime import date
@@ -134,6 +135,24 @@ def job_faq(j: dict, by_id: dict):
     return qa
 
 
+def based_on(src: dict) -> str:
+    """근거 문구. 0건인 쪽은 빼고 적는다 (2026-11-03: 초안 직무에 '인터뷰 0건 및'이 붙던 것)"""
+    parts = []
+    if src.get("count"):
+        parts.append(f"취업조로 현직자 직무 인터뷰 {src['count']}건")
+    if src.get("public"):
+        parts.append(f"공개 현직자 자료 {src['public']}건")
+    return " 및 ".join(parts)
+
+
+SAL_MAX = 18000   # 연봉 막대 오른쪽 끝(만원). build.py 가 자료의 최댓값으로 다시 정한다 (2026-11-03)
+
+
+def safe_url(u: str) -> str:
+    """원문 주소의 공백·한글 등을 % 인코딩 (comento 주소에 공백이 그대로 있던 것)"""
+    return urllib.parse.quote(u.strip(), safe=":/?#[]@!$&'()*+,;=%~")
+
+
 def job_ld(base: str, j: dict, by_id: dict, meta: dict, group_name: str, updated: str, image: str = "") -> list:
     path = f"jobs/{j['id']}/"
     url = abs_url(base, path)
@@ -164,7 +183,7 @@ def job_ld(base: str, j: dict, by_id: dict, meta: dict, group_name: str, updated
         "publisher": {"@type": "Organization", "name": "커리어프로젝트 주식회사", "logo": {"@type": "ImageObject", "url": abs_url(base, "assets/og.png")}},
         "datePublished": "2026-10-15", "dateModified": updated,
         "about": {"@type": "Occupation", "name": j["name"]},
-        "isBasedOn": f"취업조로 현직자 직무 인터뷰 {j['sources'].get('count', 0)}건 및 공개 현직자 자료 {j['sources'].get('public', 0)}건" if evidence else "일반 직무 정보(초안)",
+        "isBasedOn": based_on(j["sources"]) if evidence else "일반 직무 정보(초안)",
         "mainEntityOfPage": url,
     }
     faq = {"@context": "https://schema.org", "@type": "FAQPage",
@@ -205,7 +224,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     def sec(title, body, hint=""):
         return f'<section class="sec"><div class="sec-h"><span class="ic"></span><h2>{e(title)}</h2>' + (f'<span class="hint">{e(hint)}</span>' if hint else "") + f"</div>{body}</section>"
 
-    SAL_MIN, SAL_MAX = 2500, 18000
+    SAL_MIN = 2500
 
     def pct(v):
         return f"{(v - SAL_MIN) / (SAL_MAX - SAL_MIN) * 100:.1f}"
@@ -231,6 +250,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
              f'<div><dt>전공</dt><dd>{major_dd(j)}</dd></div>'
              f'<div><dt>AI 영향</dt><dd>{AI_LABEL.get(j["ai"]["level"], "보통")}</dd></div>'
              f'<div><dt>근거 자료</dt><dd>{str(ev) + "건" if ev else "초안"}</dd></div></dl>')
+    h.append('<p class="fit-link"><a href="../../fit/">나에게 맞는지 1분 진단 →</a><span>학력·전공·성향으로 맞는 직무를 골라 드려요</span></p>')
     if par:
         h.append(f'<p class="parent-link">{e(par["name"])}의 세부 직무 <a href="../{e(par["id"])}/">전체 개요 보기 →</a></p>')
     kids = [k for k in j.get("children", []) if k in by_id]
@@ -276,7 +296,8 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
                  '</div><p class="note">단위 만원, 세전 기본급 기준 추정치. 산업·기업 규모·인센티브에 따라 범위를 벗어나는 경우가 흔합니다.</p>' + client_sal_html(j), "만원 · 추정"))
     trans = [t for t in j.get("transitions", []) if t in by_id]
     if trans:
-        h.append(sec("옮겨갈 수 있는 직무", '<div class="trans">' + "".join(f'<a class="btn-link" href="../{t}/">{e(by_id[t]["name"])} →</a>' for t in trans) + "</div>"))
+        h.append(sec("옮겨갈 수 있는 직무", '<ul class="trans tr-cmp">' + "".join(
+            f'<li><a class="btn-link" href="../{t}/">{e(by_id[t]["name"])} →</a><a class="cmp-link" href="../../compare/?a={e(j["id"])}&amp;b={e(t)}" aria-label="{e(j["name"])}와 {e(by_id[t]["name"])} 비교">비교</a></li>' for t in trans) + "</ul>"))
     h.append(sec("면접에서 꼭 묻는 것", li(j["interview"], "mark") + f'<a class="more" href="../../interview/#{e(j["id"])}">이 직무 단골 면접 질문 5개 →</a>'))
     if j.get("prep"):
         h.append(sec("현직자가 권하는 준비", li(j["prep"])))
@@ -293,7 +314,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     ws = j.get("webSources") or []
     if j.get("news"):
         items = "".join(f'<li><a href="{e(n["url"])}" target="_blank" rel="noopener nofollow"><span class="d">{e(n["date"][5:].replace("-", "."))} · {e(n["source"])}</span><b>{e(n["title"])}</b>' + (f'<span class="w">{e(n["why"])}</span>' if n.get("why") else "") + '</a></li>' for n in j["news"])
-        h.append(sec("이 직무 관련 최근 뉴스", f'<ul class="newsbox">{items}</ul><a class="more" href="../../news/">커리어브리핑 전체 보기 →</a>', "취업조로 커리어브리핑"))
+        h.append(sec("이 직무 관련 최근 뉴스" if not j.get("newsGroup") else f"{group_name} 직군 최근 뉴스", f'<ul class="newsbox">{items}</ul><a class="more" href="../../news/">커리어브리핑 전체 보기 →</a>', "취업조로 커리어브리핑"))
     src = '<div class="src"><b>근거 자료</b> '
     if src_n:
         src += f'취업조로 현직자 직무 인터뷰 {src_n}건 ({e(j["sources"].get("years", "2020~2026"))})'
@@ -306,7 +327,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     if inds:
         src += f'<br><b>인터뷰 현직자 업종</b> {e(", ".join(inds))}'
     if ws:
-        src += "<ul>" + "".join(f'<li><a href="{e(w["url"])}" target="_blank" rel="noopener nofollow">{e(w["title"])}</a></li>' for w in ws[:8]) + "</ul>"
+        src += "<ul>" + "".join(f'<li><a href="{e(safe_url(w["url"]))}" target="_blank" rel="noopener nofollow">{e(w["title"])}</a></li>' for w in ws[:8]) + "</ul>"
     src += f'<br><span class="upd">작성 취업조로(조현빈) · 최종 수정 {e(updated)}</span></div>'
     h.append(src)
     h.append('<div class="cta"><h2>이 직무로 취업·이직을 고민 중이라면</h2><p>지금 경력에서 이 직무로 가는 가장 빠른 경로를 취업조로 컨설턴트가 1:1로 정리해 드립니다.</p>'
@@ -327,6 +348,13 @@ JOB_PAGE_CSS = """
 .jobpage .sec-h .ic { display: none; }
 .jobpage .trans .btn-link { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 13.5px; color: var(--black); background: var(--surface); text-decoration: none; }
 .jobpage .trans .btn-link:hover { border-color: var(--fill); background: var(--fill); color: var(--fillfg); }
+/* 2026-11-03: 옮겨갈 직무마다 '비교' 링크, 진단 바로가기 */
+.jobpage .tr-cmp li { display: inline-flex; align-items: center; gap: 4px; }
+.jobpage .tr-cmp .cmp-link { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); padding: 6px 8px; text-decoration: underline; text-underline-offset: 3px; }
+.jobpage .tr-cmp .cmp-link:hover { color: var(--ink); }
+.jobpage .fit-link { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--muted); }
+.jobpage .fit-link a { display: inline-flex; padding: 7px 14px; border-radius: 999px; background: var(--acc); color: var(--acc-ink); font-weight: 800; font-size: 13.5px; text-decoration: none; }
+.jobpage .fit-link a:hover { background: var(--ink); color: var(--paper); }
 .jobpage .faqs { display: grid; gap: 8px; }
 .jobpage .faq { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 0 14px; }
 .jobpage .faq summary { cursor: pointer; padding: 12px 0; font-weight: 700; color: var(--black); font-size: 14.5px; list-style: none; }
@@ -632,22 +660,48 @@ def render_industry_index(inds, jobs) -> str:
     return "".join(h)
 
 
-def write_sitemap(out_dir: Path, base: str, entries) -> None:
-    """entries: [(path, lastmod, changefreq, priority)]"""
-    body = "".join(
-        f"<url><loc>{e(abs_url(base, p))}</loc><lastmod>{lm}</lastmod><changefreq>{cf}</changefreq><priority>{pr}</priority></url>\n"
-        for p, lm, cf, pr in entries)
-    (out_dir / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + body + "</urlset>\n", encoding="utf-8")
+def sitemap_section(path: str) -> str:
+    """sitemap 묶음 이름: 직무·회사·연봉·뉴스는 따로, 나머지(홈·산업·면접·도구 등)는 pages"""
+    top = path.split("/", 1)[0]
+    return {"jobs": "jobs", "company": "company", "salary": "salary", "news": "news"}.get(top, "pages")
+
+
+def write_sitemap(out_dir: Path, base: str, entries) -> list:
+    """entries: [(path, lastmod, changefreq, priority)]
+    2026-11-03: sitemap.xml 은 색인(sitemapindex)이 되고, 실제 주소는 sitemap-<묶음>.xml 에 나눠 쓴다
+    (서치 콘솔에 제출한 주소 sitemap.xml 은 그대로). 묶음별 lastmod 는 그 묶음에서 가장 최근 날짜."""
+    groups = {}
+    for ent in entries:
+        groups.setdefault(sitemap_section(ent[0]), []).append(ent)
+    for old in out_dir.glob("sitemap-*.xml"):
+        old.unlink()
+    idx = []
+    for name in ("pages", "jobs", "news", "company", "salary"):
+        ents = groups.get(name)
+        if not ents:
+            continue
+        body = "".join(
+            f"<url><loc>{e(abs_url(base, p))}</loc><lastmod>{lm}</lastmod><changefreq>{cf}</changefreq><priority>{pr}</priority></url>\n"
+            for p, lm, cf, pr in ents)
+        fn = f"sitemap-{name}.xml"
+        (out_dir / fn).write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + body + "</urlset>\n", encoding="utf-8")
+        idx.append((fn, max(lm for _, lm, _, _ in ents), len(ents)))
+    (out_dir / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "".join(f"<sitemap><loc>{e(abs_url(base, fn))}</loc><lastmod>{lm}</lastmod></sitemap>\n" for fn, lm, _ in idx)
+        + "</sitemapindex>\n", encoding="utf-8")
+    return idx
 
 
 def write_robots(out_dir: Path, base: str) -> None:
     bots = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-User", "anthropic-ai", "PerplexityBot", "Google-Extended", "Googlebot", "Bingbot", "Yeti", "Daum", "NaverBot"]
-    txt = "# 취업조로 직무사전 — 검색엔진과 AI 검색(생성형 엔진) 모두 허용\nUser-agent: *\nAllow: /\nDisallow: /admin/\n\n" + "".join(f"User-agent: {b}\nAllow: /\n\n" for b in bots)
+    # 2026-11-03: 봇 이름을 따로 적은 묶음은 '*' 묶음 규칙을 읽지 않으므로 묶음마다 /admin/ 막기를 같이 적는다
+    txt = "# 취업조로 직무사전 — 검색엔진과 AI 검색(생성형 엔진) 모두 허용\nUser-agent: *\nAllow: /\nDisallow: /admin/\n\n" + "".join(f"User-agent: {b}\nAllow: /\nDisallow: /admin/\n\n" for b in bots)
     txt += f"Sitemap: {abs_url(base, 'sitemap.xml')}\n"
     (out_dir / "robots.txt").write_text(txt, encoding="utf-8")
 
 
-def write_llms(out_dir: Path, base: str, jobs, groups, updated: str, n_docs: int = 0) -> None:
+def write_llms(out_dir: Path, base: str, jobs, groups, updated: str, n_docs: int = 0, inds=None, stamp: str = "") -> None:
+    """stamp: 빌드한 날(한국 시간). 직무 자료 기준일(updated)과 따로 적는다 (2026-11-03)"""
     gname = {g["id"]: g["name"] for g in groups}
     n_pub = sum((j.get("sources") or {}).get("public", 0) for j in jobs)
     lines = [
@@ -656,18 +710,25 @@ def write_llms(out_dir: Path, base: str, jobs, groups, updated: str, n_docs: int
         "> 취업·이직 컨설턴트 취업조로(조현빈, 커리어프로젝트 주식회사 대표, 컨설팅 15년 차, 합격자 1,100명 이상)가 현직자 직무 인터뷰 " + f"{n_docs:,}건과 공개 현직자 자료 {n_pub:,}건을" + " 바탕으로 정리한 한국 직무 설명 사이트. "
         "직무마다 하는 일·하루 일과·필요 역량·들어가는 길(전공/비전공/경력 전환)·커리어 패스·연봉대(추정)·옮겨갈 수 있는 직무·면접 질문·현직자의 말·AI 영향을 다룬다. 회사명과 개인은 특정하지 않는다.",
         "",
-        f"최종 수정: {updated}. 언어: 한국어. 연봉은 만원 단위 세전 기본급 추정치.",
+        f"최종 수정: {stamp or updated} (직무 자료 기준일 {updated}). 언어: 한국어. 연봉은 만원 단위 세전 기본급 추정치.",
         "",
         "## 주요 페이지",
         f"- [직무사전 전체]({abs_url(base, '')}): 직군·트랙별로 직무를 고르고 상세를 본다",
         f"- [취업뉴스 커리어브리핑]({abs_url(base, 'news/')}): 매일 아침 고용·채용·이직·기업 뉴스를 선별하고 취업조로 관점의 한마디를 붙인다",
         f"- [취업조로와 함께하기]({abs_url(base, 'zorro/')}): 컨설턴트 소개, 상황별(신입·중고신입·경력이직·선퇴사자) 상담 안내",
         f"- [무료 상담 신청]({abs_url(base, 'apply/')})",
+        f"- [연봉 연구소]({abs_url(base, 'salary/')}): 회사별 사원~부장 직급 추정 연봉(국민연금·사업보고서 기반), 업계 순위, 이직 연봉 계산기",
+        f"- [산업별 직무 지도]({abs_url(base, 'industry/')}): 산업마다 어떤 직무가 있고 같은 직무가 산업에 따라 어떻게 다른지",
         "",
         "## 직무 페이지",
     ]
     for j in jobs:
         lines.append(f"- [{j['name']}]({abs_url(base, f'jobs/{j['id']}/')}): {gname.get(j['group'], '')} · {j['tagline']} · 신입 {rng(j['salary']['junior'])}만원")
+    if inds:
+        lines += ["", "## 산업별 직무 지도"]
+        for i in inds:
+            n = sum(1 for j in jobs if i["id"] in j.get("ind", []))
+            lines.append(f"- [{i['name']}]({abs_url(base, f'industry/{i['id']}/')}): {i.get('desc', '')} · 직무 {n}개")
     lines += ["", "## 도구", f"- [직무 비교]({abs_url(base, 'compare/')}): 두 직무의 연봉·역량·경로를 나란히", f"- [1분 직무 진단]({abs_url(base, 'fit/')}): 학력·전공 계열·성향·원하는 것으로 바로 지원할 직무와 준비하면 열리는 직무 추천", f"- [직무별 면접 질문]({abs_url(base, 'interview/')})",
               "", "## 기타", f"- [개인정보처리방침]({abs_url(base, 'privacy/')})", f"- [sitemap]({abs_url(base, 'sitemap.xml')})"]
     (out_dir / "llms.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -870,7 +931,7 @@ def render_interview_all(common: dict, iq: dict, jobs, groups) -> str:
     def chips(arr):
         return '<ul class="intent">' + "".join(f"<li>{e(x)}</li>" for x in arr) + "</ul>"
     def stars(n):
-        return f'<span class="freq" title="빈출도 {n}/5">' + "●" * n + '<i>' + "●" * (5 - n) + '</i></span>' if n else ""
+        return f'<span class="freq" role="img" aria-label="빈출도 {n}/5" title="빈출도 {n}/5"><span aria-hidden="true">' + "●" * n + '<i>' + "●" * (5 - n) + '</i></span></span>' if n else ""
     top = common["top"]
     by_g = {}
     for j in jobs:
@@ -954,7 +1015,7 @@ INTERVIEW_ALL_CSS = """
 .iq-top .q { margin-top: 6px; font-family: var(--display); font-size: 19px; font-weight: 900; letter-spacing: -.03em; line-height: 1.35; color: var(--ink); }
 .iq-top .meta { display: flex; gap: 10px; align-items: center; }
 .tp { font-family: var(--display); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
-.freq { font-size: 9px; letter-spacing: 2px; color: var(--ink); } .freq i { font-style: normal; color: var(--line-strong); }
+.freq { font-size: 11px; letter-spacing: 1.5px; color: var(--ink); } .freq i { font-style: normal; color: var(--line-strong); }
 .iq-list > li { display: grid; grid-template-columns: 40px minmax(0,1fr) auto; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); align-items: start; }
 .iq-list .no { font-family: var(--display); font-weight: 900; font-size: 18px; color: var(--ink); padding-top: 1px; }
 .iq-list .q { font-size: 16px; font-weight: 700; line-height: 1.5; color: var(--ink); }

@@ -62,29 +62,46 @@ def manifest(root: str) -> dict:
 # 서비스워커: 같은 사이트 요청만 다룬다 (회사 판단 API·구글 폼 등 다른 주소는 손대지 않음)
 #  - 페이지(HTML)·JSON: 인터넷 먼저 → 안 되면 저장해 둔 것 → 그것도 없으면 offline.html
 #  - 그림·글꼴 등: 저장해 둔 것 먼저 보여주고 뒤에서 새로 받아 둠
-SW_JS = """// 빌드 때 pwa.py 가 만든다 — 직접 고치지 말 것
+SW_JS = r"""// 빌드 때 pwa.py 가 만든다 — 직접 고치지 말 것
 const V = '__VERSION__';
 const ROOT = '__ROOT__';
 const OFFLINE = ROOT + 'offline.html';
+const KEEP = [OFFLINE, ROOT + 'assets/app/icon-192.png'];
+const MAX = 200;   // 저장 개수 상한 — 넘으면 오래된 것부터 지운다 (2026-11-03)
+// 큰 자료는 저장하지 않고 인터넷으로만 (연봉 전체 목록·회사 판단 자료)
+const NOSTORE = [/\/salary\/data\//, /\/company\/data\//];
+const BIG = 1500000;   // 1.5MB 넘는 응답도 저장 안 함
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(V).then(c => c.addAll([OFFLINE, ROOT + 'assets/app/icon-192.png'])).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(V).then(c => c.addAll(KEEP)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== V).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
+// ?v= ·?source= 같은 꼬리는 떼고 한 주소에 하나만 저장 (같은 화면이 여러 개 쌓이지 않게)
+const keyOf = u => u.origin + u.pathname;
+function save(key, res) {
+  if (!res.ok || res.type === 'opaque') return;
+  const n = +res.headers.get('content-length') || 0;
+  if (n > BIG) return;
+  const c = res.clone();
+  caches.open(V).then(x => x.put(key, c).then(() => x.keys()).then(ks => {
+    const old = ks.filter(k => KEEP.indexOf(new URL(k.url).pathname) < 0);
+    return Promise.all(old.slice(0, Math.max(0, old.length - MAX)).map(k => x.delete(k)));
+  })).catch(() => {});
+}
 self.addEventListener('fetch', e => {
   const r = e.request, u = new URL(r.url);
   if (r.method !== 'GET' || u.origin !== location.origin) return;
   if (__SKIP__.some(p => u.pathname.startsWith(ROOT + p + '/'))) return;
-  const fresh = r.mode === 'navigate' || /\\.(json|html|txt|xml)$/.test(u.pathname) || u.pathname.endsWith('/');
+  if (NOSTORE.some(re => re.test(u.pathname))) return;   // 브라우저 기본 동작 (저장 안 함)
+  const key = keyOf(u);
+  const fresh = r.mode === 'navigate' || u.search || /\.(json|html|txt|xml)$/.test(u.pathname) || u.pathname.endsWith('/');
   if (fresh) {
-    e.respondWith(fetch(r).then(res => {
-      if (res.ok) { const c = res.clone(); caches.open(V).then(x => x.put(r, c)); }
-      return res;
-    }).catch(() => caches.match(r).then(m => m || (r.mode === 'navigate' ? caches.match(OFFLINE) : Response.error()))));
+    e.respondWith(fetch(r).then(res => { save(key, res); return res; })
+      .catch(() => caches.match(key).then(m => m || (r.mode === 'navigate' ? caches.match(OFFLINE) : Response.error()))));
   } else {
-    e.respondWith(caches.match(r).then(m => {
-      const net = fetch(r).then(res => { if (res.ok) { const c = res.clone(); caches.open(V).then(x => x.put(r, c)); } return res; }).catch(() => m);
+    e.respondWith(caches.match(key).then(m => {
+      const net = fetch(r).then(res => { save(key, res); return res; }).catch(() => m);
       return m || net;
     }));
   }
@@ -93,7 +110,7 @@ self.addEventListener('fetch', e => {
 
 OFFLINE_HTML = """<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="{theme}"><title>오프라인 — 취업이직연구소</title>
+<meta name="theme-color" content="{theme}"><meta name="robots" content="noindex"><title>오프라인 — 취업이직연구소</title>
 <style>
 body{{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:{theme};color:#f4f5f1;
 font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;text-align:center;padding:24px;box-sizing:border-box}}

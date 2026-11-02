@@ -14,3 +14,6 @@ trigger_briefing.log
 corpus_new/
 corpus_new_*
 corpus_scan*.txt
+
+# sitemap lastmod 기록 (Actions 캐시로 이어 감, 2026-11-03)
+.cache/

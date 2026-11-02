@@ -126,9 +126,25 @@ jobs:
           git push
 
       # ---- 사이트 전체 ----
+      # sitemap lastmod 용 '쪽마다 내용이 마지막으로 바뀐 날' 기록 (.cache/lastmod.json) — 실행마다 이어 쓴다 (2026-11-03)
+      - name: lastmod 기록 꺼내기
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/lastmod.json
+          key: lastmod-${{ github.run_id }}
+          restore-keys: lastmod-
+
       - name: 사이트 빌드 (직무사전 · 뉴스 탭 · 함께하기 · 상담 신청)
         if: steps.guard.outputs.skip != 'true'
         run: python build.py
+
+      - name: lastmod 기록 저장
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/lastmod.json
+          key: lastmod-${{ github.run_id }}
 
       - uses: actions/configure-pages@v5
         if: steps.guard.outputs.skip != 'true'

@@ -765,6 +765,11 @@ def main():
         print("\nAI 브리핑 생성 중...")
         ai_brief.annotate(payload)
 
+    # 2026-11-03: 앞 지면과 겹치지 않는 새 기사가 0건이면 오늘 지면을 저장하지 않는다 (전날 지면을 되풀이해 내지 않게).
+    #   예약 실행은 다음 차례에 다시 시도한다.
+    if not targets:
+        print("\n[실패] 지면에 올릴 새 기사가 0건입니다 (앞 지면과 겹치는 기사는 뺌). 오늘 지면을 저장하지 않습니다. 피드 상태를 확인하세요.")
+        sys.exit(2)
     DATA_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     save_archive(payload)
     print(f"\n저장 완료: {DATA_FILE.name} ({DATA_FILE.stat().st_size / 1024:.0f} KB)"

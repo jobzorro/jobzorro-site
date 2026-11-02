@@ -99,6 +99,95 @@ NEWS_FOLD = ("<style>@media (max-width:640px){.news-grid.fold>.news-card:nth-chi
              "fold();new MutationObserver(fold).observe(document.body,{childList:true,subtree:true})})();</script>")
 APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 신청하기" 버튼이 여기로 간다)
 
+# 2026-11-03: 방문 분석(구글 애널리틱스 4) 측정 ID 자리 — 'G-XXXXXXXXXX' 를 넣으면 빌드 끝에 모든 페이지 <head> 에 태그가 붙는다.
+#   빈 값이면 아무것도 넣지 않는다 (지금은 꺼짐: 사장님이 ID 를 아직 안 주심). 관리자 화면(admin/)·이동용 빈 쪽에는 넣지 않는다.
+ANALYTICS_ID = ""
+GSTATIC = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'   # 구글 글꼴 파일 서버 미리 연결 (모든 페이지)
+STALE_FILES = ("index-v2.html",)   # 예전 시안 — 빌드 때마다 지운다 (2026-11-03)
+LASTMOD_STATE = BASE / ".cache" / "lastmod.json"   # 연봉·회사 쪽별 내용 해시 → 마지막으로 바뀐 날 (Actions 캐시로 이어 간다)
+_DATE_RE = re.compile(r"\d{4}[.-]\d{1,2}[.-]\d{1,2}|\d{4}년\s*\d{1,2}월(\s*\d{1,2}일)?")
+
+
+def load_lastmod() -> dict:
+    try:
+        return json.loads(LASTMOD_STATE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def save_lastmod(state: dict, seen: set) -> None:
+    LASTMOD_STATE.parent.mkdir(parents=True, exist_ok=True)
+    LASTMOD_STATE.write_text(json.dumps({k: v for k, v in state.items() if k in seen}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+
+
+def page_lastmod(state: dict, key: str, text: str, today: str, first: str) -> str:
+    """sitemap lastmod: 쪽 내용(날짜 글자는 빼고)의 해시가 지난 빌드와 같으면 그때 날짜 그대로, 바뀌었으면 오늘.
+    처음 보는 쪽(또는 캐시가 없을 때)은 자료 자체의 기준일(first)을 쓴다 — 매일 모든 쪽이 '오늘'로 바뀌지 않게 (2026-11-03)"""
+    h = hashlib.md5(_DATE_RE.sub("", text).encode("utf-8")).hexdigest()[:12]
+    old = state.get(key)
+    if old and old[0] == h:
+        return old[1]
+    d = today if old else first
+    state[key] = [h, d]
+    return d
+
+
+def head_common(rel_parts: tuple, h: str) -> str:
+    """모든 페이지 <head> 공통: 글꼴 서버 preconnect + (ID 가 있으면) 분석 태그"""
+    if "fonts.googleapis.com/css" in h and 'href="https://fonts.gstatic.com" crossorigin' not in h:
+        h = h.replace("</head>", GSTATIC + "</head>", 1) if "<head>" not in h else h.replace("<head>", "<head>" + GSTATIC, 1)
+    if ANALYTICS_ID and "data-analytics" not in h and (not rel_parts or rel_parts[0] != "admin"):
+        tag = (f'<script async src="https://www.googletagmanager.com/gtag/js?id={ANALYTICS_ID}" data-analytics></script>'
+               f"<script>window.dataLayer=window.dataLayer||[];function gtag(){{dataLayer.push(arguments)}}gtag('js',new Date());gtag('config','{ANALYTICS_ID}');</script>")
+        h = h.replace("</head>", tag + "</head>", 1)
+    return h
+
+
+def add_head_common(out_dir: Path) -> int:
+    n = 0
+    for f in out_dir.rglob("*.html"):
+        h = f.read_text(encoding="utf-8")
+        if "</head>" not in h:
+            continue
+        h2 = head_common(f.relative_to(out_dir).parts, h)
+        if h2 != h:
+            f.write_text(h2, encoding="utf-8"); n += 1
+    return n
+
+
+def all_jobs_html(data: dict, root: str = "") -> str:
+    """홈 카드 그리드는 JS 로 그리므로, 검색 엔진·JS 꺼진 화면용 직군별 전체 직무 링크 (접힌 목록, 2026-11-03)"""
+    esc = _html.escape
+    out = []
+    for g in data["meta"]["groups"]:
+        js = [j for j in data["jobs"] if j["group"] == g["id"]]
+        if js:
+            out.append(f'<h3>{esc(g["name"])} <small>{len(js)}</small></h3><ul>'
+                       + "".join(f'<li><a href="{root}jobs/{esc(j["id"])}/">{esc(j["name"])}</a></li>' for j in js) + "</ul>")
+    return f'<details class="alljobs"><summary>직군별 전체 직무 {len(data["jobs"])}개 목록</summary>' + "".join(out) + "</details>"
+
+
+def _hashed(dir_: Path, stem: str, ext: str, body: bytes) -> str:
+    """dir_/stem.<해시8>.ext 로 쓰고 같은 stem 의 옛 파일은 지운다. 파일 이름을 돌려준다 (캐시 오래 둬도 되는 이름)"""
+    dir_.mkdir(parents=True, exist_ok=True)
+    name = f"{stem}.{hashlib.md5(body).hexdigest()[:8]}{ext}"
+    for old in dir_.glob(f"{stem}.*{ext}"):
+        if old.name != name and re.fullmatch(re.escape(stem) + r"\.[0-9a-f]{8}" + re.escape(ext), old.name):
+            old.unlink()
+    (dir_ / name).write_bytes(body)
+    return name
+
+
+HOME_LOADER = """
+(function () {
+  var s = document.currentScript, u = s && s.getAttribute('data-sum');
+  fetch(u).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(jzHome, function () {
+    var c = document.getElementById('count');
+    if (c) c.innerHTML = '<b>직무 목록을 불러오지 못했어요.</b> 인터넷 연결을 확인하고 <a href="">새로고침</a>해 주세요.';
+  });
+})();
+"""
+
 
 def data_uri(path: Path, mime="image/png") -> str:
     return f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode()
@@ -211,7 +300,26 @@ def attach_news(data: dict, days: int = 45) -> None:
                 break
         if out:
             j["news"] = out; n += 1
-    print(f"관련 뉴스: 직무 {n}개에 최근 {days}일 기사 연결")
+    # 2026-11-03: 태그가 맞는 기사가 없는 직무는 같은 직군 다른 직무들의 최근 기사로 채우고 '○○ 직군 최근 뉴스'로 보여 준다
+    by_group = {}
+    for j in data["jobs"]:
+        by_group.setdefault(j["group"], []).extend(by_job.get(j["id"], []))
+    ng = 0
+    for j in data["jobs"]:
+        if j.get("news"):
+            continue
+        items = sorted(by_group.get(j["group"], []), key=lambda x: (x["date"], x["score"]), reverse=True)
+        seen, out = set(), []
+        for it in items:
+            if it["url"] in seen:
+                continue
+            seen.add(it["url"]); out.append({k: v for k, v in it.items() if k != "score"})
+            if len(out) == 3:
+                break
+        if out:
+            j["news"] = out; j["newsGroup"] = True; ng += 1
+    left = sum(1 for j in data["jobs"] if not j.get("news"))
+    print(f"관련 뉴스: 직무 {n}개에 최근 {days}일 기사 연결 + 직군 뉴스로 보충 {ng}개 (뉴스 없음 {left}개)")
 
 
 def attach_client_salary(data: dict) -> None:
@@ -277,7 +385,7 @@ GLOSS = {"terms": []}
 
 SHARED_CSS = """
 /* 취업뉴스(커리어브리핑)와 같은 편집 디자인 톤: 먹색 글자, 종이색 바탕, 황동색 포인트, 라벨·숫자는 모노 글꼴, 다크모드 지원 */
-:root { --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#7a7a7a; --faint:#a3a3a3; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d;
+:root { --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#6f6f6f; --faint:#a3a3a3; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d;
   --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2;
   /* 아래는 기존 템플릿이 쓰는 이름 → 위 토큰에 연결 */
   --bg:var(--ground); --surface:var(--paper); --surface-2:var(--mist); --black:var(--ink); --fg-soft:var(--ink-soft); --line:var(--hairline); --line-strong:var(--hairline-2);
@@ -416,7 +524,7 @@ def ticker_spans(items: list) -> str:
 
 NEWS_MASTHEAD_CSS = """
 /* v2 톤: 황동 포인트 → 검정, 명조 → Archivo, 라임은 배경 강조에만 */
-:root { --mark:#c6ff3d; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --serif:"Archivo","Noto Sans KR",sans-serif; --sans:"Noto Sans KR","Archivo",-apple-system,sans-serif; --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#7a7a7a; --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2; }
+:root { --mark:#c6ff3d; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --serif:"Archivo","Noto Sans KR",sans-serif; --sans:"Noto Sans KR","Archivo",-apple-system,sans-serif; --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#6f6f6f; --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mark:rgba(198,255,61,.32); --brass-bar:rgba(198,255,61,.32); --brass:#f3f3f3; --brass-tint:#161616; --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; } }
 :root[data-theme="dark"] { --mark:rgba(198,255,61,.32); --brass-bar:rgba(198,255,61,.32); --brass:#f3f3f3; --brass-tint:#161616; --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; }
 .masthead .brand-name { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; letter-spacing:-.04em; font-size:22px; }
@@ -802,6 +910,13 @@ def build(out_dir: Path, with_news: bool) -> None:
     attach_client_salary(data)   # 취업조로 이직자 연봉(직군별 집계, 5명 이상만) — salary-lab/job_link_stats.py 가 만든다
     attach_news(data)
     attach_industries(data)
+    # 2026-11-03: 원문 주소에 공백 등이 그대로 있던 것(comento) → % 인코딩 (직무 페이지·홈 상세 모두)
+    for j in data["jobs"]:
+        for w in j.get("webSources") or []:
+            w["url"] = seo.safe_url(w["url"])
+    # 2026-11-03: 연봉 막대 오른쪽 끝을 자료의 최댓값(1,000만원 단위 올림)으로 — 18,000 고정이면 20,000짜리 막대가 넘친다
+    _smax = max(r[1] for j in data["jobs"] for r in (j["salary"]["junior"], j["salary"]["mid"], j["salary"]["senior"]))
+    seo.SAL_MAX = max(18000, -(-int(_smax) // 1000) * 1000)
     # 로고는 data URI 로 페이지마다 박지 않고 site/assets/ 의 파일을 참조한다 (nav_html/footer_html 이 root 를 붙여 깊이별 상대경로로 만든다)
     logo = "assets/jobzorro_logo.png"            # 푸터: 취업조로
     logo_nav = "assets/teamzorro_logo_halo.png"  # 맨 위 탭바만 TEAM ZORRO CI — 흰 테두리를 그림에 넣은 판 (폰 '웹사이트 어둡게'는 그림만 안 바꿔 검은 로고가 묻힘, 2026-10-22)
@@ -822,6 +937,12 @@ def build(out_dir: Path, with_news: bool) -> None:
     (out_dir / "data" / "jobs.json").write_text(full_payload, encoding="utf-8")
     slim = {"meta": data["meta"], "jobs": [slim_job(j) for j in data["jobs"]]}
     payload = json.dumps(slim, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    # 2026-11-03: 홈·진단이 각자 박던 요약 자료(160KB)를 파일 하나로 (이름에 해시 → 오래 캐시) — 비교는 이 요약 + 직무별 파일
+    summary_rel = "data/" + _hashed(out_dir / "data", "summary", ".json", json.dumps(slim, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
+    shutil.rmtree(out_dir / "data" / "job", ignore_errors=True); (out_dir / "data" / "job").mkdir(parents=True)
+    for j in data["jobs"]:
+        (out_dir / "data" / "job" / f"{j['id']}.json").write_text(json.dumps(j, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    preload = lambda root: f'<link rel="preload" href="{root}{summary_rel}" as="fetch" crossorigin>'
     html = (BASE / "template.html").read_text(encoding="utf-8")
     # site_cfg 는 아래(zorro 블록 앞)에서 읽지만 첫 페이지 SEO 에도 필요하므로 여기서 먼저 읽는다
     _cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
@@ -831,14 +952,14 @@ def build(out_dir: Path, with_news: bool) -> None:
     html = html.replace("/*__SEO__*/", seo.seo_head(_base, f"취업조로 직무사전 — 직무 {_n_jobs}개, 현직자 인터뷰·자료 {_n_ev:,}건으로 정리한 직무 설명",
         f"취업·이직 컨설턴트 취업조로가 현직자 인터뷰 {_n_ev:,}건을 바탕으로 정리한 직무사전. 하는 일, 하루 일과, 연봉대, 들어가는 길, 옮겨갈 수 있는 직무, 면접 질문, 현직자의 말까지 직무 {_n_jobs}개를 한 곳에서.",
         "", seo.abs_url(_base, "assets/og." + __import__("hashlib").md5((BASE / "assets" / "share" / "og.png").read_bytes()).hexdigest()[:8] + ".png") if (BASE / "assets" / "share" / "og.png").exists() else seo.abs_url(_base, "assets/og.png"), [seo.org_ld(_base, COMPANY), seo.website_ld(_base)]))
-    for ph in ("/*__JOBS_JSON__*/", "/*__NAV__*/", "/*__FOOTER__*/", "/*__FAB__*/", "/*__SHARED_CSS__*/"):
+    for ph in ("/*__ALL_JOBS__*/", "/*__NAV__*/", "/*__FOOTER__*/", "/*__FAB__*/", "/*__SHARED_CSS__*/", "<!--HOME_JS-->"):
         if ph not in html:
             raise SystemExit(f"template.html 에 {ph} 가 없습니다")
     html = (html.replace("/*__SHARED_CSS__*/", SHARED_CSS)
                 .replace("/*__NAV__*/", nav_html("index.html", "", logo_nav))
                 .replace("/*__FOOTER__*/", footer_html("", logo, ""))
                 .replace("/*__FAB__*/", fab_html(""))
-                .replace("/*__JOBS_JSON__*/", payload)
+                .replace("/*__ALL_JOBS__*/", all_jobs_html(data))
                 # 상단 띠 숫자: 직무·인터뷰가 늘면 자동으로 바뀐다
                 .replace("/*__N_DOCS__*/", f'{data["meta"].get("sourceDocs", 0):,}')
                 .replace("/*__N_PUBLIC__*/", f'{sum(j["sources"].get("public", 0) for j in data["jobs"]):,}')
@@ -850,10 +971,17 @@ def build(out_dir: Path, with_news: bool) -> None:
     for id_, v_ in (("mJobs", _n_jobs), ("mSrc", f"{_n_ev:,}"), ("ledeSources", f"{_n_ev:,}"), ("factJobs", _n_jobs),
                     ("factGroups", len(data["meta"]["groups"])), ("factSources", f"{_n_ev:,}")):
         html = re.sub(rf'(id="{id_}">)0(<)', lambda mm: mm.group(1) + str(v_) + mm.group(2), html)
+    # 2026-11-03: 홈 스크립트(약 60KB)를 assets/home.<해시>.js 로 떼고, 요약 자료는 받아서 jzHome(DATA) 로 시작
+    _m = re.search(r"<!--HOME_JS--><script>\n(.*?)</script><!--/HOME_JS-->", html, re.S)
+    if not _m:
+        raise SystemExit("template.html 의 <!--HOME_JS--> 블록을 찾지 못했습니다")
+    home_js = _hashed(out_dir / "assets", "home", ".js", (_m.group(1) + HOME_LOADER).encode("utf-8"))
+    html = html[:_m.start()] + f'<script src="assets/{home_js}" data-sum="{summary_rel}" defer></script>' + html[_m.end():]
+    html = html.replace("</head>", preload("") + "\n</head>", 1)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(html, encoding="utf-8")
     print(f"직무사전: 직무 {n_jobs}개 · 직군 {len(data['meta']['groups'])}개 · 근거 {n_evidence}건 -> {out_dir / 'index.html'} "
-          f"({(out_dir / 'index.html').stat().st_size:,} bytes, 슬림 JSON {len(payload.encode('utf-8')):,}) · 전체 데이터 -> data/jobs.json ({len(full_payload.encode('utf-8')):,} bytes)")
+          f"({(out_dir / 'index.html').stat().st_size:,} bytes, 요약 JSON {summary_rel} {len(payload.encode('utf-8')):,} · 스크립트 assets/{home_js}) · 전체 데이터 -> data/jobs.json ({len(full_payload.encode('utf-8')):,} bytes) + data/job/<id>.json")
 
     # 2) 취업조로와 함께하기
     site_cfg = json.loads((BASE / "data" / "site.json").read_text(encoding="utf-8"))
@@ -880,7 +1008,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         seo.og_image(share / "og-zorro.png", "취업조로와\n함께하기", "신입·중고신입·경력이직·선퇴사자\n1:1 맞춤 컨설팅 · 무료 상담", "TEAM ZORRO", "뽑고 싶은 인재의 비밀", art="zorro")
         seo.og_image(share / "og-salary.png", "내 연차면\n얼마 받을까", f"회사 {n_sal} 곳의 사원~부장 추정 연봉\n업계 순위 · 연봉 계산기", "연봉 연구소", "그 회사,", art="salary")
         seo.og_image(share / "og-company.png", "이직할까 말까\n내 상황으로", "연차·연봉을 넣으면 평점·연봉·재무를 보고\n갈지 말지 Zorro가 정해 드려요", "회사 판단 연구소", "합격한 그 회사, 나라면?", art="company")
-        seo.og_image(share / "og-play.png", "오늘의 도전\n연봉 놀이터", "어디가 더 많이 줄까 · 오늘의 회사 · 연봉 스나이퍼\n매일 순위와 명예의 전당", "연봉 놀이터", "회사 연봉으로 하는 게임", art="play")
+        seo.og_image(share / "og-play.png", "오늘의 도전\n연봉 놀이터", "연봉 줄서기 · 스무고개 퀴즈 · 연봉 스나이퍼\n매일 순위와 명예의 전당", "연봉 놀이터", "회사 연봉으로 하는 게임", art="play")
         # 2026-10-28 사용자: 비교·진단·면접·개인정보도 전용 그림 (전엔 직무사전 기본 그림 공유)
         seo.og_image(share / "og-compare.png", "두 직무를\n나란히 비교", "연봉대·필요 역량·들어가는 길·커리어 패스를\n한 화면에서", "직무 비교", "고민되는 두 직무,", art="compare")
         seo.og_image(share / "og-fit.png", "1분 직무 진단", f"학력·전공·성향으로 직무 {len(data['jobs'])}개 중\n지금 갈 수 있는 직무 3개", "직무 진단", "내 전공으로 갈 수 있는", art="fit")
@@ -890,6 +1018,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     else:
         print("  (한글 글꼴이 없어 공유 이미지는 다시 만들지 않고 assets/share 의 기존 파일을 씁니다)")
     import shutil as _sh, hashlib as _hl
+    og_made = set()   # 이번 빌드에서 쓴 공유 이미지 (나머지 옛 해시 파일은 빌드 끝에 지운다)
     def share_url(rel: str) -> str:
         """assets/share/<rel> 을 site/assets/ 로 복사하되 파일명에 내용 해시를 붙인다 (카카오 등이 옛 이미지를 캐시하지 않도록)."""
         src = share / rel
@@ -899,7 +1028,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         stem, ext = src.stem, src.suffix
         dst_rel = f"assets/og/{stem}.{h}{ext}" if rel.startswith("jobs/") else f"assets/{stem}.{h}{ext}"
         dst = out_dir / dst_rel; dst.parent.mkdir(parents=True, exist_ok=True)
-        _sh.copy(src, dst)
+        _sh.copy(src, dst); og_made.add(dst_rel)
         if rel == "og.png":   # 구조화 데이터의 로고(assets/og.png)가 계속 가리킬 수 있게 원래 이름으로도 둔다
             _sh.copy(src, out_dir / "assets" / "og.png")
         return seo.abs_url(base_url, dst_rel)
@@ -925,8 +1054,11 @@ def build(out_dir: Path, with_news: bool) -> None:
         im = ImageOps.exif_transpose(Image.open(avatar)).convert("RGB")
         im = ImageOps.fit(im, (640, 640), centering=(0.5, 0.3))  # 얼굴이 위쪽에 있는 세로 사진 기준
         buf = BytesIO(); im.save(buf, "JPEG", quality=84, optimize=True)
-        avatar_html = f'<img src="data:image/jpeg;base64,{base64.b64encode(buf.getvalue()).decode()}" alt="취업조로 조현빈">'
-        (ASSETS / "profile_web.jpg").write_bytes(buf.getvalue())
+        # 2026-11-03: base64 로 박지 않고 파일로 (assets/zorro/profile.<해시>.jpg)
+        _av = _hashed(out_dir / "assets" / "zorro", "profile", ".jpg", buf.getvalue())
+        avatar_html = f'<img src="../assets/zorro/{_av}" alt="취업조로 조현빈" width="640" height="640" loading="lazy" decoding="async">'
+        if not (ASSETS / "profile_web.jpg").exists() or (ASSETS / "profile_web.jpg").read_bytes() != buf.getvalue():
+            (ASSETS / "profile_web.jpg").write_bytes(buf.getvalue())
     else:
         avatar_html = '<div class="ph"><b>😎</b>프로필 사진 자리<br>(assets/profile.jpg 를 넣으면 표시됩니다)</div>'
     z = (z.replace("/*__SHARED_CSS__*/", SHARED_CSS)
@@ -938,8 +1070,14 @@ def build(out_dir: Path, with_news: bool) -> None:
           .replace("/*__EVIDENCE__*/", f"{n_evidence:,}")
           .replace("/*__JOBS__*/", str(n_jobs))
           .replace("/*__AVATAR__*/", avatar_html))
+    # 2026-11-03: 상황별 그림 4장도 base64(약 210KB) 대신 webp 파일 + loading="lazy"
+    from io import BytesIO as _BIO
+    from PIL import Image as _Img
     for key in ("new", "old", "change", "quit"):
-        z = z.replace(f"/*__ILL_{key.upper()}__*/", data_uri(ASSETS / f"ill_{key}.png"))
+        _im = _Img.open(ASSETS / f"ill_{key}.png"); _b = _BIO(); _im.save(_b, "WEBP", quality=82, method=6)
+        _fn = _hashed(out_dir / "assets" / "zorro", f"ill_{key}", ".webp", _b.getvalue())
+        z = (z.replace(f"/*__ILL_{key.upper()}__*/", f"../assets/zorro/{_fn}")
+              .replace(f"/*__ILL_{key.upper()}_WH__*/", f' width="{_im.width}" height="{_im.height}"'))
     (out_dir / "zorro").mkdir(exist_ok=True)
     (out_dir / "zorro" / "index.html").write_text(z, encoding="utf-8")
     print(f"취업조로와 함께하기 -> {out_dir / 'zorro' / 'index.html'}")
@@ -984,7 +1122,10 @@ def build(out_dir: Path, with_news: bool) -> None:
                 .replace("/*__NAV__*/", nav_html("index.html", "../", logo_nav))
                 .replace("/*__FOOTER__*/", footer_html("../", logo, ""))
                 .replace("/*__FAB__*/", fab_html("../"))
-                .replace("/*__JOBS_JSON__*/", payload))
+                .replace("/*__JOBS_JSON__*/", payload)
+                .replace("/*__SUMMARY_URL__*/", "../" + summary_rel)
+                .replace("/*__SAL_MAX__*/18000", str(seo.SAL_MAX))
+                .replace("</head>", preload("../") + "\n</head>", 1))
         (out_dir / sub).mkdir(exist_ok=True)
         (out_dir / sub / "index.html").write_text(pg, encoding="utf-8")
         print(f"{sub}/ -> {out_dir / sub / 'index.html'}")
@@ -993,6 +1134,9 @@ def build(out_dir: Path, with_news: bool) -> None:
     tpl = (BASE / "template.html").read_text(encoding="utf-8")
     css = tpl[tpl.index("<style>") + 7:tpl.index("</style>")].replace("/*__SHARED_CSS__*/", SHARED_CSS) + seo.JOB_PAGE_CSS
     fonts = tpl[tpl.index('<link rel="preconnect"'):tpl.index("<style>")]
+    # 2026-11-03: 직무 133쪽·산업 19쪽·면접 쪽마다 박던 같은 CSS(약 62KB)를 assets/site.<해시>.css 하나로
+    site_css = _hashed(out_dir / "assets", "site", ".css", css.encode("utf-8"))
+    css_link = lambda root: f'<link rel="stylesheet" href="{root}assets/{site_css}">'
     entries = [("", today, "daily", "1.0"), ("news/", today, "daily", "0.9"), ("zorro/", updated, "monthly", "0.8"), ("apply/", updated, "monthly", "0.6"), ("compare/", updated, "monthly", "0.6"), ("fit/", updated, "monthly", "0.7")]
     for j in data["jobs"]:
         jid = j["id"]
@@ -1006,7 +1150,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         body = seo.render_job_body(j, by_id, gname.get(j["group"], ""), updated, base_url)
         page = ("<!doctype html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n"
                 "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n"
-                + head + "\n" + fonts + "<style>" + css + "</style>\n</head>\n<body>\n"
+                + head + "\n" + fonts + css_link("../../") + "\n</head>\n<body>\n"
                 + nav_html("index.html", "../../", logo_nav)
                 + "<main class=\"jobpage\"><div class=\"d-body\">" + body + "</div></main>\n"
                 + footer_html("../../", logo, "") + fab_html("../../")
@@ -1015,6 +1159,11 @@ def build(out_dir: Path, with_news: bool) -> None:
         d.mkdir(parents=True, exist_ok=True)
         (d / "index.html").write_text(page, encoding="utf-8")
         entries.append((f"jobs/{jid}/", updated, "weekly", "0.8"))
+    # 2026-11-03: /jobs/ 주소가 404 였던 것 → 홈으로 보내는 빈 쪽 (검색 제외, 대표 주소는 홈)
+    (out_dir / "jobs" / "index.html").write_text(
+        f'<!doctype html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex,follow">'
+        f'<link rel="canonical" href="{seo.abs_url(base_url, "")}"><meta http-equiv="refresh" content="0;url=../">'
+        f'<title>직무사전으로 이동</title></head><body><p><a href="../">직무사전 전체 보기</a></p></body></html>\n', encoding="utf-8")
     # sitemap.xml 은 뉴스 블록이 날짜별 지면 URL 을 entries 에 더한 뒤, 맨 끝에서 쓴다
     ic = json.loads((BASE / "data" / "interview_common.json").read_text(encoding="utf-8"))
     iqp = BASE / "data" / "interview_jobs.json"
@@ -1029,7 +1178,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         if d.is_dir(): _sh2.rmtree(d)
     (out_dir / "interview" / "index.html").write_text(
         "<!doctype html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n"
-        + ix + "\n" + fonts + "<style>" + css + seo.INTERVIEW_ALL_CSS + "</style>\n</head>\n<body>\n" + nav_html("index.html", "../", logo_nav)
+        + ix + "\n" + fonts + css_link("../") + "<style>" + seo.INTERVIEW_ALL_CSS + "</style>\n</head>\n<body>\n" + nav_html("index.html", "../", logo_nav)
         + "<main class=\"iqpage jobpage\">" + seo.render_interview_all(ic, iqj, data["jobs"], data["meta"]["groups"]) + "</main>\n"
         + footer_html("../", logo, "") + seo.INTERVIEW_ALL_JS + "\n</body>\n</html>\n", encoding="utf-8")
     print(f"면접 질문 페이지: 공통 {len(ic['top'])}개 + 직무 {len(iqj)}개 -> {out_dir / 'interview' / 'index.html'}")
@@ -1040,7 +1189,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         def ind_page(root, path, title, desc, crumbs, body):
             head = seo.seo_head(base_url, title, desc, path, og_main, [seo.breadcrumb_ld(base_url, crumbs)])
             return ("<!doctype html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n"
-                    + head + "\n" + fonts + "<style>" + css + "</style>\n</head>\n<body>\n" + nav_html("index.html", root, logo_nav)
+                    + head + "\n" + fonts + css_link(root) + "\n</head>\n<body>\n" + nav_html("index.html", root, logo_nav)
                     + "<main class=\"jobpage\"><div class=\"d-body\">" + body + "</div></main>\n" + footer_html(root, logo, "") + fab_html(root) + "\n</body>\n</html>\n")
         (out_dir / "industry").mkdir(exist_ok=True)
         (out_dir / "industry" / "index.html").write_text(ind_page("../", "industry/", f"산업별 직무 지도 — 산업 {len(inds)}개, 어떤 직무가 있고 무엇이 다른가 | 취업조로 직무사전",
@@ -1066,7 +1215,8 @@ def build(out_dir: Path, with_news: bool) -> None:
         '<body><p>관리 화면이 옮겨졌어요. <a href="https://company-admin.jobzorro.workers.dev/jobs">여기로 이동</a></p></body></html>\n',
         encoding="utf-8")
     seo.write_robots(out_dir, base_url)
-    seo.write_llms(out_dir, base_url, data["jobs"], data["meta"]["groups"], updated, data["meta"].get("sourceDocs", 0))
+    seo.write_llms(out_dir, base_url, data["jobs"], data["meta"]["groups"], updated, data["meta"].get("sourceDocs", 0),
+                   inds=data["meta"].get("industries", []), stamp=today)
     print(f"직무 페이지 {len(data['jobs'])}개 + robots.txt · llms.txt -> {out_dir / 'jobs'}")
     print(f"무료 상담 신청 폼 -> {out_dir / 'apply' / 'index.html'} (전송: {cfg_public['formEndpoint'] or '미연결'})")
 
@@ -1097,8 +1247,9 @@ def build(out_dir: Path, with_news: bool) -> None:
         # 카톡 미리보기 설명 (2026-10-27 사용자: 섹션마다 각자의 이야기)
         news_desc = "채용·이직·기업·고용 뉴스 중 내 커리어에 영향을 주는 것만 매일 아침 골라, 취업조로의 한마디와 함께 정리해 드려요. 주간·월간 랭킹도 한눈에."
         n = re.sub(r'(<meta (?:name="description"|property="og:description") content=")[^"]*(")', lambda m: m.group(1) + news_desc + m.group(2), n)
-        n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&family=Archivo:wght@700;900&display=swap">'
-                      + f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:type" content="website"><meta property="og:site_name" content="취업조로"><meta property="og:locale" content="ko_KR"><meta property="og:image" content="{og_news}"><meta name="twitter:image" content="{og_news}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">' + seo.verify_tags()
+        if "family=Archivo" not in n:   # 비상용(NEWS_URL) 옛 페이지에만 Archivo 를 더한다 (2026-11-03: 뉴스 글꼴 요청은 news-collector 한 줄로)
+            n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&display=swap"></head>', 1)
+        n = n.replace("</head>", f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:type" content="website"><meta property="og:site_name" content="취업조로"><meta property="og:locale" content="ko_KR"><meta property="og:image" content="{og_news}"><meta name="twitter:image" content="{og_news}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">' + seo.verify_tags()
                       + "".join(seo.jsonld(o) for o in news_ld) + "</head>", 1)
         (out_dir / "news").mkdir(exist_ok=True)
         (out_dir / "news" / "index.html").write_text(n, encoding="utf-8")
@@ -1115,7 +1266,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         #      (NEWS_URL 비상 모드는 index.html 만 내려받으므로 days.json 이 없고, 이 블록은 건너뛴다)
         news_note = "뉴스 원문의 저작권은 각 언론사에 있으며, 이 페이지는 제목·요약과 원문 링크만 싣습니다."
 
-        def wrap_news_page(src: Path, rel: str, title: str, lastmod: str, ld: list, changefreq: str, priority: str) -> bool:
+        def wrap_news_page(src: Path, rel: str, title: str, lastmod: str, ld: list, changefreq: str, priority: str, noindex: bool = False) -> bool:
             """news/<rel>index.html 로 쓴다. 페이지 자체 <title>/description 은 떼고 seo_head 것으로 바꾼다. 성공하면 sitemap entries 에 더한다."""
             if not src.exists():
                 return False
@@ -1125,13 +1276,15 @@ def build(out_dir: Path, with_news: bool) -> None:
             page = re.sub(r"<title>.*?</title>\s*", "", page, count=1, flags=re.S)
             page = re.sub(r'<meta name="description" content="[^"]*">\s*', "", page, count=1)
             page = re.sub(r'<link rel="(?:icon|apple-touch-icon)"[^>]*>\s*', "", page)   # seo_head 가 절대 경로로 다시 넣는다
-            page = page.replace("</head>", seo.seo_head(base_url, title, desc, f"news/{rel}", og_news, ld) + seo.verify_tags() + "\n</head>", 1)
+            page = re.sub(r'<meta name="robots"[^>]*>\s*', "", page)
+            page = page.replace("</head>", seo.seo_head(base_url, title, desc, f"news/{rel}", og_news, ld, noindex=noindex) + seo.verify_tags() + "\n</head>", 1)
             page = re.sub(r"(<body[^>]*>)", lambda mm: mm.group(1) + nav_css + nav_html("news/index.html", "../../", logo_nav), page, count=1)
             page = page.replace("</body>", footer_html("../../", logo, news_note) + fab_html("../../") + "</body>", 1)
             dst = out_dir / "news" / rel / "index.html"
             dst.parent.mkdir(parents=True, exist_ok=True)
             dst.write_text(page, encoding="utf-8")
-            entries.append((f"news/{rel}", lastmod, changefreq, priority))
+            if not noindex:
+                entries.append((f"news/{rel}", lastmod, changefreq, priority))
             return True
 
         days_file = news_src.parent / "days.json"
@@ -1141,6 +1294,10 @@ def build(out_dir: Path, with_news: bool) -> None:
                 news_days = [d for d in json.loads(days_file.read_text(encoding="utf-8")) if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(d))]
             except (json.JSONDecodeError, OSError):
                 news_days = []
+        try:   # 앞 지면을 되풀이한 날 (news-collector/build_site.py repeat_days) → noindex · sitemap 제외
+            rep_days = set(json.loads((news_src.parent / "repeat_days.json").read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            rep_days = set()
         n_day_pages = 0
         for d in news_days:
             y, mo, dd = (int(x) for x in d.split("-"))
@@ -1148,7 +1305,7 @@ def build(out_dir: Path, with_news: bool) -> None:
             ld = [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/"), (f"{kdate} 지면", f"news/{d}/")]),
                   {"@context": "https://schema.org", "@type": "WebPage", "@id": seo.abs_url(base_url, f"news/{d}/"), "name": f"{kdate} 커리어브리핑",
                    "inLanguage": "ko", "datePublished": d, "isPartOf": {"@id": seo.abs_url(base_url, "#website")}, "author": {"@id": seo.abs_url(base_url, "zorro/#person")}}]
-            if wrap_news_page(news_src.parent / d / "index.html", f"{d}/", f"{kdate} 커리어브리핑 — 취업조로", d, ld, "monthly", "0.5"):
+            if wrap_news_page(news_src.parent / d / "index.html", f"{d}/", f"{kdate} 커리어브리핑 — 취업조로", d, ld, "monthly", "0.5", noindex=d in rep_days):
                 n_day_pages += 1
         has_archive = wrap_news_page(news_src.parent / "archive" / "index.html", "archive/", "지난 지면 전체 보기 — 취업조로의 커리어브리핑", updated,
                                      [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/"), ("지난 지면 전체", "news/archive/")])], "weekly", "0.6")
@@ -1156,9 +1313,19 @@ def build(out_dir: Path, with_news: bool) -> None:
             print(f"  날짜별 지면 {n_day_pages}쪽 -> {out_dir / 'news' / '<날짜>'}" + (f" + 지난 지면 목록 -> {out_dir / 'news' / 'archive' / 'index.html'}" if has_archive else ""))
         else:
             print("  (days.json 이 없어 날짜별 지면은 만들지 않았습니다)")
+        # 2026-11-03: 뉴스가 어제보다 오래됐으면 알린다. 배포는 Actions 가 뉴스부터 다시 만들므로(site/ 는 git 에 안 올라감)
+        #   로컬 빌드가 그대로 배포되지는 않는다. NEWS_STRICT=1 이면 빌드를 멈춘다.
+        if news_days:
+            _yday = (datetime.datetime.utcnow() + datetime.timedelta(hours=9) - datetime.timedelta(days=1)).date().isoformat()
+            if max(news_days) < _yday:
+                _msg = f"취업뉴스 최신 지면이 {max(news_days)} 입니다 (어제 {_yday} 보다 오래됨). news-collector 를 git pull 후 build_site.py 로 다시 만드세요."
+                print(("::warning::" if os.environ.get("GITHUB_ACTIONS") else "경고: ") + _msg)
+                if os.environ.get("NEWS_STRICT") == "1":
+                    raise SystemExit(_msg)
         if NEWS_URL:
             shutil.rmtree(news_src.parent, ignore_errors=True)
 
+    lm_state, lm_seen = load_lastmod(), set()   # sitemap lastmod: 쪽 내용이 바뀐 날 (연봉·회사 쪽)
     # ---- 연봉 연구소 (/salary/): salary-lab/publish_to_site.py 가 만든 salary/ 를 복사하고 상단 메뉴를 붙인다
     sal = BASE / ("_skip" if PREVIEW else "salary")
     if sal.exists():
@@ -1192,14 +1359,31 @@ def build(out_dir: Path, with_news: bool) -> None:
         og_tags = (f'<meta property="og:type" content="website"><meta property="og:site_name" content="취업조로"><meta property="og:image" content="{og_salary}">'
                    f'<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{og_salary}">')
         cos = sorted((dst / "co").iterdir())
+        sal_live, n_redirect = [], 0
         for d in cos:
-            add_nav(d / "index.html", "../../../")
             p = d / "index.html"; h = p.read_text(encoding="utf-8")
+            if 'http-equiv="refresh"' in h:
+                # 2026-11-03: 다른 이름으로 옮겨진 회사의 이동용 빈 쪽 — 메뉴를 <!doctype> 앞에 붙이면 호환 모드가 되므로 건드리지 않고,
+                #   canonical 만 절대 주소로, sitemap 에서도 뺀다 (noindex 쪽)
+                _u = seo.abs_url(base_url, f"salary/co/{urllib.parse.quote(d.name)}/")
+                h = re.sub(r'(<link rel="canonical" href=")([^"]+)(")', lambda m: m.group(1) + urllib.parse.urljoin(_u, m.group(2)) + m.group(3), h)
+                if 'property="og:image"' not in h and "</head>" in h:   # 카톡 미리보기 그림은 붙인다 (빈 쪽도 head/body 가 생김, 2026-11-03)
+                    h = h.replace("</head>", og_tags + "</head>", 1)
+                p.write_text(h, encoding="utf-8")
+                n_redirect += 1
+                continue
+            add_nav(d / "index.html", "../../../")
+            h = p.read_text(encoding="utf-8")
             if 'property="og:image"' not in h:
                 p.write_text(h.replace("</head>", og_tags + "</head>", 1), encoding="utf-8")
+            sal_live.append(d)
         entries.append(("salary/", sal_updated, "monthly", "0.8"))
-        entries += [(f"salary/co/{urllib.parse.quote(d.name)}/", sal_updated, "monthly", "0.5") for d in cos]
-        print(f"연봉 연구소: /salary/ + 회사 페이지 {len(cos):,}개")
+        for d in sal_live:
+            _k = f"salary/co/{urllib.parse.quote(d.name)}/"
+            _src = sal / "co" / d.name / "index.html"
+            entries.append((_k, page_lastmod(lm_state, _k, _src.read_text(encoding="utf-8"), today, sal_updated), "monthly", "0.5"))
+            lm_seen.add(_k)
+        print(f"연봉 연구소: /salary/ + 회사 페이지 {len(sal_live):,}개 (이동용 빈 쪽 {n_redirect}개는 메뉴·sitemap 제외)")
     # 2026-10-21 사용자: 법적·평판 리스크 대비 안내 (판정은 공개 자료 기반 참고용 의견, 출처·기준일 표기, 정정 창구)
     COMPANY_NOTE = ("해당사항은 회사의 공식 입장과 사실확정은 아니며, 항목마다 출처와 기준일을 표기합니다. "   # 2026-10-29 사용자 문구로 줄임
                     "사실과 다른 내용은 회사 화면 아래 '정정 요청하기'로 알려주시면 확인 후 고치거나 내려드리겠습니다.")
@@ -1234,7 +1418,12 @@ def build(out_dir: Path, with_news: bool) -> None:
                 h = re.sub(r"<!--FOOT-->.*?<!--/FOOT-->", lambda m: footer_html("../../../", logo, COMPANY_NOTE), h, count=1, flags=re.S)
                 h = h.replace("https://job.jobzorro.kr/assets/og-company.png", og_company)
                 p.write_text(h, encoding="utf-8")
-        entries += [(f"company/c/{urllib.parse.quote(p.parent.name)}/", today, "weekly", "0.6") for p in cpages]
+        for p in cpages:
+            _k = f"company/c/{urllib.parse.quote(p.parent.name)}/"
+            _t = (comp / "c" / p.parent.name / "index.html").read_text(encoding="utf-8")
+            _b = re.search(r"기준일\s*(\d{4})\.(\d{2})\.(\d{2})", _t)   # 처음 보는 쪽은 그 쪽의 자료 기준일
+            entries.append((_k, page_lastmod(lm_state, _k, _t, today, "-".join(_b.groups()) if _b else today), "weekly", "0.6"))
+            lm_seen.add(_k)
         with open(out_dir / "llms.txt", "a", encoding="utf-8") as f:
             f.write(f"\n## 회사 판단 연구소\n- [회사 판단 연구소]({base_url}company/): 합격한 회사가 갈 만한지 잡플래닛·블라인드·캐치 평점, 직급별 연봉, DART 5개년 재무(별도), 최근 뉴스, AI 영향을 보고 상·중·하와 'Zorro의 한마디'로 판단\n")
         co_dir = dst / "data" / "co"  # API 모드면 조각 파일이 없음 (회사 상세는 Cloudflare Worker가 줌)
@@ -1249,7 +1438,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         h = (dst / "index.html").read_text(encoding="utf-8")
         h = re.sub(r'<title>[^<]*</title>|<meta (name="description"|property="og:[^"]+"|name="twitter:[^"]+")[^>]*>|<link rel="canonical"[^>]*>', "", h)
         h = h.replace('<meta charset="utf-8">', '<meta charset="utf-8">' + seo.seo_head(base_url, "연봉 놀이터 — 회사 연봉으로 하는 오늘의 게임 | 취업조로",
-            "어디가 더 많이 줄까, 오늘의 회사, 연봉 스나이퍼, 이직 로드 10년, 드림 컴퍼니 월드컵. 매일 같은 문제로 겨루는 오늘의 도전 순위와 명예의 전당.",
+            "회사 연봉으로 하는 매일 게임 6개. 연봉 줄서기, 스무고개 퀴즈, 연봉 스나이퍼, 커리어 로드 20년, 조로 출근길, 드림 컴퍼니 월드컵. 오늘의 도전 순위와 명예의 전당.",   # 2026-11-03 salary-lab/play/make.py 문구와 같게
             "play/", og_play), 1)
         if 'class="zn"' not in h:
             h = h.replace("</style>", zn_css + "\n</style>", 1)
@@ -1258,16 +1447,29 @@ def build(out_dir: Path, with_news: bool) -> None:
         (dst / "index.html").write_text(h, encoding="utf-8")
         entries.append(("play/", today, "daily", "0.7"))
         with open(out_dir / "llms.txt", "a", encoding="utf-8") as f:
-            f.write(f"\n## 연봉 놀이터\n- [연봉 놀이터]({base_url}play/): 연봉 연구소 자료로 하는 매일 게임 5종(어디가 더 많이 줄까·오늘의 회사·연봉 스나이퍼·이직 로드 10년·드림 컴퍼니 월드컵), 오늘의 도전 순위와 명예의 전당\n")
+            f.write(f"\n## 연봉 놀이터\n- [연봉 놀이터]({base_url}play/): 연봉 연구소 자료로 하는 매일 게임 6종(연봉 줄서기·스무고개 퀴즈·연봉 스나이퍼·커리어 로드 20년·조로 출근길·드림 컴퍼니 월드컵), 오늘의 도전 순위와 명예의 전당\n")
         print("연봉 놀이터: /play/")
-    seo.write_sitemap(out_dir, base_url, entries)
+    if lm_seen:
+        save_lastmod(lm_state, lm_seen)
+    sm_idx = seo.write_sitemap(out_dir, base_url, entries)
+    # 26) 이번 빌드에서 안 쓴 옛 해시 공유 이미지 지우기 (assets/og/*, assets/og-*.<해시>.png)
+    n_og = 0
+    for f in list((out_dir / "assets" / "og").glob("*.png")) + list((out_dir / "assets").glob("og*.png")):
+        rel = f.relative_to(out_dir).as_posix()
+        if re.search(r"\.[0-9a-f]{8}\.png$", f.name) and rel not in og_made:
+            f.unlink(); n_og += 1
+    # 16) 예전 시안 파일 지우기
+    for name in STALE_FILES:
+        (out_dir / name).unlink(missing_ok=True)
     audit_links(data, BASE / "assets" / "share")
     print(f"인앱 브라우저 → 기본 브라우저 전환: {add_inapp(out_dir)}개 페이지")
     print(f"다크모드 지원 표시(color-scheme): {add_color_scheme(out_dir)}개 페이지")
     print(f"화면 끝까지(viewport-fit=cover) 맞춤: {add_viewport_fit(out_dir)}개 페이지")
     print(f"단순화(영어 꼬리표 숨김): {add_simple(out_dir)}개 페이지")
     print(f"앱(PWA) 설치 연결: {pwa.add_pwa(out_dir, base_url)}개 페이지 (manifest·sw.js)")
-    print(f"sitemap.xml: URL {len(entries)}개 -> {out_dir / 'sitemap.xml'}")
+    print(f"공통 head(글꼴 preconnect{' · 분석 ' + ANALYTICS_ID if ANALYTICS_ID else ''}): {add_head_common(out_dir)}개 페이지")
+    print(f"옛 공유 이미지 정리: {n_og}개 삭제")
+    print(f"sitemap.xml(색인): URL {sum(n for _, _, n in sm_idx)}개 -> " + ", ".join(f"{fn} {n}" for fn, _, n in sm_idx))
 
 
 # 카카오톡·라인 인앱 브라우저로 열리면 휴대폰 기본 브라우저로 다시 연다 (모든 페이지 <head> 맨 앞)
