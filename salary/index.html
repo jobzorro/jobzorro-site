@@ -661,7 +661,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     CURROW = r;
     var capped = r.capped && !r.dart && !r.calAvg, plus = capped ? '+' : '';
     var jx = (D.meta.jobMult || []).filter(function (x) { return x[0] === JOBK; })[0], jf = jx ? jx[2] : 1;   // 개선 4: 내 직무로 보기
-    var lock = /-lock/.test(r.how), lockUni = /-lockuni/.test(r.how);   // 직급 금액 비공개: 데이터에도 없음 → 블록 + 문구 (2026-10-30)
+    var lock = /-lock/.test(r.how), lockUni = /-lockuni/.test(r.how), lockGov = /-lockgov/.test(r.how);   // 직급 금액 비공개: 데이터에도 없음 → 블록 + 문구 (2026-10-30)
     var main = (r.rk || [0, 0, 0, 0, 0]).map(function (v) { return v * jf; }), base = r.rkBase && r.rkBase.map(function (v) { return v * jf; }), max = Math.max.apply(null, main), V = D.meta.validation;
     var hasYoy = r.yoyPct !== null && r.yoyPct !== undefined && !r.capped;   // 상한에 걸린 회사의 추이는 상한 인상분이라 숨긴다
     var facts = [['국민연금 가입자', r.members.toLocaleString('ko-KR') + '명'],
@@ -708,7 +708,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       (r.jump ? '<p class="hint">사업보고서 평균 연봉이 전년보다 <b>' + r.jump + '%</b> 올랐습니다. 성과급이 특히 컸던 해일 수 있어 다음 해에는 다시 내려갈 수 있습니다.</p>' : '') +
       (ptime && !lock ? '<p class="warnbox">단시간·시간제 근로자 비중이 높은 사업장이라 평균 연봉이 최저임금 수준으로 잡힙니다. 직급별 금액은 추정하지 않습니다.</p>' : '') +
       (lock ? '<div class="ranks lock">' + RANK_NAMES.map(function (n, k) { return '<div class="rk"><span class="n">' + n + '</span><span class="bar"><i style="width:' + (40 + k * 15) + '%"></i></span><span class="v"><i class="ph"></i></span></div>'; }).join('') +
-        '<p class="lockmsg">' + (lockUni ? '교수·교직원은 사학연금·공무원연금에 가입해 국민연금에는 연구원·조교 등 계약 인력만 잡힙니다.<br>정확한 직급별 연봉 추정이 어려운 사업장입니다.' : '현장직·파트타임·인력파견·경비 등 인원 비율이 높아<br>정확한 직급별 연봉 추정이 어려운 회사입니다.') + '</p></div>' + trend :
+        '<p class="lockmsg">' + (lockUni ? '교수·교직원은 사학연금·공무원연금에 가입해 국민연금에는 연구원·조교 등 계약 인력만 잡힙니다.<br>정확한 직급별 연봉 추정이 어려운 사업장입니다.' : lockGov ? '공무원은 공무원연금에 가입해 국민연금에는 공무직·교육공무직·기간제 근로자만 잡힙니다.<br>정확한 직급별 연봉 추정이 어려운 사업장입니다.' : '현장직·파트타임·인력파견·경비 등 인원 비율이 높아<br>정확한 직급별 연봉 추정이 어려운 회사입니다.') + '</p></div>' + trend :
       '<div class="ranks">' + (ptime ? [] : main).map(function (v, k) {
         return '<div class="rk"><span class="n">' + RANK_NAMES[k] + '</span><span class="bar"><i style="width:' + (v / max * 100).toFixed(1) + '%"></i></span><span class="v">' + man(v) + plus + '만원' +
           (base && base[k] < v - 1 ? '<small class="rb">' + (capcal ? '국민연금 ' + man(base[k]) + (base[k] >= D.meta.cap * 12 ? ' (상한)' : '') : '기본 약 ' + man(base[k]) + '만원') + '</small>' : '') + '</span></div>';
