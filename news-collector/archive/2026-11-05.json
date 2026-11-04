@@ -1,0 +1,532 @@
+{
+  "title": "CAREER BRIEFING",
+  "date": "2026-11-05",
+  "generated_at": "2026-11-05 07:57",
+  "stats": {
+    "collected": 1460,
+    "deduped": 1400,
+    "recent": 781,
+    "fresh": 652,
+    "relevant": 92,
+    "published": 20,
+    "feeds": 30,
+    "dead_feeds": [
+      "머니투데이 https://rss.mt.co.kr/mt_news.xml"
+    ]
+  },
+  "sections": [
+    {
+      "key": "hiring",
+      "name": "채용 시즌·공고",
+      "en": "HIRING NOW",
+      "desc": "대기업·계열사·중견·외국계·공기업이 지금 사람을 뽑는 공고와 일정",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "고졸초대졸잡, 고졸·초대졸 채용정보 서비스 확대… 자소서·자격증 취업 자료 원스톱 제공",
+          "lead": "고졸·초대졸 취업 특화 플랫폼 고졸초대졸잡이 고등학교 졸업자와 전문대학(초대졸) 구직자를 위한 채용정보 서비스를 확대하며 주목받고 있다.",
+          "summary": "고졸초대졸잡은 대기업·중견기업 생산직·기술직 채용공고 제공을 넘어 자소서·자격증 등 취업 자료까지 한곳에서 이용할 수 있는 원스톱 구성으로 차별화를 꾀하고 있다.고졸·초대졸 구직자는 대체로 생산직·기술직 중심의 채용정보를",
+          "url": "https://www.youthassembly.kr/news/1030455",
+          "source": "유스연합",
+          "published": "2026-11-05 05:48",
+          "score": 7,
+          "keywords": [
+            "채용정보",
+            "채용"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "고졸·초대졸 특화 플랫폼이 생산·기술직 공고에 자소서·자격증 자료까지 한곳에 묶었다.",
+          "ai_why": "초대졸 신입이라면 대기업·중견기업 기술직 공고를 한곳에서 모아보세요. 취업은 정보 싸움이라 먼저 본 사람이 먼저 쓰거든요.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "2027년 국가공무원 공채 일정 공개…5급·외교 3월 4~8일 채용 접수",
+          "lead": "5급·외교관후보자·7급, PSAT 성적 발표 전에 채용 원서접수 마감9급 필기 3월 27일…한국사능력검정시험 3급 이상으로 대체[법률저널=이상연 기자] 2027년부터 별도 검정시험으로 시행되는 공직적격성평가(PSAT)가 심화는 2월 27일, 기본은 7월 10일에 치러진다. 국가공무원 5급·7급 공채와 외교관후보자 선발시험 수험생은 PSAT에 먼저 응시한 뒤 해당 채용시험에 별도로 원서를 내야 한다. 두 시험 모두 PSAT 성적이 발표되기 전에 채용 원서접수가 마감된다. 국가공무원 9급 공채 필기시험은 3월 27일에 실시된다.인사혁신",
+          "summary": "",
+          "url": "https://www.lec.co.kr/news/articleView.html?idxno=752978",
+          "source": "법률저널",
+          "published": "2026-11-05 01:01",
+          "score": 10,
+          "keywords": [
+            "공채",
+            "채용",
+            "접수"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "PSAT가 별도 시험으로 분리돼 성적 발표 전에 5·7급 원서접수가 먼저 마감된다.",
+          "ai_why": "공무원과 사기업 사이에서 고민하는 신입이라면 지금 결정하세요. 심화 PSAT가 2월 27일이라 준비 기간이 넉넉하지 않거든요.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "기업 채용문 좁아지는데, 알바도 '바늘구멍'",
+          "lead": "기업 채용문 좁아지는데, 알바도 '바늘구멍', 구인·구직 불균형 심화 구직자수, 4년간 그대로인데 채용 70만건 줄어…40% 급감 아르바이트 모집도 1년새 22%↓ 자영업자 수는 3년만에 증가세",
+          "summary": "",
+          "url": "https://www.hankyung.com/article/2026110463181",
+          "source": "한국경제",
+          "published": "2026-11-04 18:14",
+          "score": 0,
+          "keywords": [],
+          "image": null,
+          "related": [],
+          "ai_line": "구직자 수는 4년째 그대로인데 채용은 40% 줄었고 알바 모집도 1년새 22% 감소했다.",
+          "ai_why": "신입분들, 알바로 버티며 기다리는 전략도 이제 쉽지 않습니다. 공백을 늘리지 말고 중고신입 경로까지 열어두고 지원하세요.",
+          "ai_tags": [
+            "공통"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "moves",
+      "name": "이직·연봉·HR",
+      "en": "MOVES & PAY",
+      "desc": "경력직 수요, 연봉·성과급, 희망퇴직, 평가·승진, 면접과 채용 프로세스의 변화",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "성과급 적립부터 퇴직금 운용까지...신한은행, 퇴직연금 방문상담 확대",
+          "lead": "신한은행이 퇴직연금 방문상담 서비스를 확대한다.",
+          "summary": "상담 대상에 경영성과급이나 퇴직금 등 목돈을 받는 고객과 최고경영자(CEO)·임원 등을 포함하고, 성과급의 퇴직연금 적립부터 퇴직금 수령 이후 자산운용까지 상담 범위를 넓혔다.신한은행은 퇴직연금 고객의 체계적인 은퇴자산 관리와 절세를 지원하기 위해 기존 방문상담 서비스를 확대해 '찾아가는 1:1 맞춤형 연금컨설팅'을 운영한다고 4일 밝혔다. 퇴직연금솔루션부 소속 자산관리(WM) 전문가와 세무사가 고객의 사업장이나 고객이 원하는 장소를 찾아가 일대일로 상담한다.기존 자산배분과 연금 수령",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156921",
+          "source": "테크M",
+          "published": "2026-11-04 23:42",
+          "score": 26,
+          "keywords": [
+            "성과급",
+            "퇴직금"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "신한은행이 성과급·퇴직금 목돈 수령자와 임원까지 퇴직연금 방문상담 대상을 넓혔다.",
+          "ai_why": "재직자분들, 성과급 받으면 퇴직연금 적립부터 따져보세요. 이직하며 받은 퇴직금을 생활비로 녹이는 게 제일 아까운 실수거든요.",
+          "ai_tags": [
+            "재무"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "구조조정 칼바람 속 엑스박스, 21년 베테랑 COO 돌연 해고",
+          "lead": "마이크로소프트(MS) 게임 부문인 엑스박스(Xbox)의 최고운영책임자(COO) 헬렌 치앙(Helen Chiang)이 승진 3개월 만에 돌연 회사를 떠났다.",
+          "summary": "추가",
+          "url": "https://it.chosun.com/news/articleView.html?idxno=3000000000125",
+          "source": "IT조선",
+          "published": "2026-11-03 14:19",
+          "score": 26,
+          "keywords": [
+            "구조조정",
+            "해고"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "엑스박스 COO 헬렌 치앙이 승진 3개월 만에 돌연 회사를 떠났다.",
+          "ai_why": "경력직분들, 21년 베테랑도 하루아침에 나가는 게 구조조정 국면입니다. 직급보다 회사 방향을 읽고 이력서는 늘 업데이트해 두세요.",
+          "ai_tags": [
+            "기획"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "조상호 세종시장 \"내년 예산안 2조1579억원…고강도 구조조정\"",
+          "lead": "",
+          "summary": "",
+          "url": "https://www.news1.kr/local/sejong-chungbuk/6342582",
+          "source": "뉴스1",
+          "published": "2026-11-04 11:19",
+          "score": 20,
+          "keywords": [
+            "구조조정"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "세종시가 내년 예산안을 2조1579억원으로 편성하며 고강도 구조조정을 예고했다.",
+          "ai_why": "지자체 산하기관이나 공공 일자리를 노리는 분들은 기다리세요. 예산을 조이는 해에는 신규 채용부터 줄어들기 쉽거든요.",
+          "ai_tags": [
+            "재무"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "AI 충격 속 칸바, 대규모 구조조정 돌입｜Global Money Club",
+          "lead": "캔바가 구조조정과 조직 개편을 단행한다고 발표했습니다.",
+          "summary": "이번 조치는 전체 직원의 5분의 1이 넘는 인원에 영향을 미칩니다. 10년 만에 처음...",
+          "url": "https://www.joongang.co.kr/gmc/article/25475593",
+          "source": "중앙일보",
+          "published": "2026-11-04 09:45",
+          "score": 17,
+          "keywords": [
+            "구조조정"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "캔바가 전체 직원 5분의 1이 넘는 인원에 영향을 주는 10년 만의 첫 구조조정에 들어갔다.",
+          "ai_why": "글로벌 테크 기업 이직을 노리는 경력자라면 기다리세요. 성장 둔화 신호가 나온 곳은 연봉보다 안정성을 먼저 보셔야 합니다.",
+          "ai_tags": [
+            "PM"
+          ]
+        },
+        {
+          "rank": 5,
+          "title": "캔바 2026년 감원: 인력 22% 구조조정·감원·사무실 복귀",
+          "lead": "캔바가 전체 인력의 22%에 해당하는 1,271개 직무를 감축하는 사상 최대 규모의 구조조정에 나선다.",
+          "summary": "멜라니 퍼킨스 CEO는 성장 둔화와 신기술을 배경으로 들었다. 이 계획은 제품 조직을 통합하고 관리 계층을 축소하며 시드니를 핵심 거점으로 삼고, 1월부터 대부분의 하이브리드 근무 직원에게 주 2~3일 사무실 출근을 요구하며, 퇴사자에게 6개월치 퇴직금을 지급한다.",
+          "url": "https://www.indexbox.io/ko/blog/canva-restructures-1271-employees-affected-as-22-of-workforce-faces-layoffs-and-role-changes/",
+          "source": "IndexBox",
+          "published": "2026-11-05 02:50",
+          "score": 16,
+          "keywords": [
+            "구조조정",
+            "감원"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "캔바가 1,271개 직무를 줄이고 관리 계층 축소와 주 2~3일 사무실 출근을 시행한다.",
+          "ai_why": "40대 관리자분들, 이번 칼날은 중간 관리층을 향했습니다. 관리만 하지 말고 실무 감각과 AI 활용 능력을 지금부터 준비하세요.",
+          "ai_tags": [
+            "PM",
+            "인사"
+          ]
+        },
+        {
+          "rank": 6,
+          "title": "CS 디스코, 인력 3% 감원 구조조정 착수…비용 최대 180만 달러",
+          "lead": "법률 인공지능(AI) 플랫폼 기업 CS 디스코(CS DISCO INC, NYSE: LAW)가 전체 인력의 약 3%를 줄이는 구조조정 계획을 확정했다.",
+          "summary": "회사는 4일 제출한 3분기 분기보고서(10-Q)에서 이같이 밝혔다. 같은 날 발표한 3분기 실적 공시에 이은 후속 공시다.공시에 따르면",
+          "url": "https://www.datatooza.com/article/20261104224801195352ef34e6c4_80",
+          "source": "데이터투자",
+          "published": "2026-11-04 22:48",
+          "score": 16,
+          "keywords": [
+            "구조조정",
+            "감원"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "법률 AI 기업 CS 디스코가 3분기 공시에서 인력 약 3% 감원 계획을 확정했다.",
+          "ai_why": "AI 기업이라고 다 안전한 건 아닙니다. 경력직은 이직 전에 최근 분기 실적과 공시부터 확인하세요, 작은 감원도 신호거든요.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 7,
+          "title": "금감원 조사 방해에 자료도 조작…농협은행 ‘기관경고’ 받아",
+          "lead": "엔에이치(NH)농협은행이 허위 자료를 제출하는 등 금융감독원의 자금세탁방지 업무 관련 검사를 방해한 혐의로 기관경고를 받았다.",
+          "summary": "금감원 자금세탁방지실은 지난달 26일 농협은행에 기관경고 및 미등기 임원을 포함한 직원 등에게 감봉(6명), 견책(7명), 주의(2명), 자율",
+          "url": "https://www.hani.co.kr/arti/economy/finance/1285637.html",
+          "source": "한겨레",
+          "published": "2026-11-05 07:55",
+          "score": 14,
+          "keywords": [
+            "감원"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "농협은행이 자금세탁방지 검사에 허위 자료를 내 기관경고와 직원 징계를 받았다.",
+          "ai_why": "금융권 지원자분들, 내부통제 이슈는 면접 단골 질문이 될 수 있습니다. 준법·리스크 관점의 답변을 미리 준비하세요.",
+          "ai_tags": [
+            "기획"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "company",
+      "name": "기업·산업 레이더",
+      "en": "COMPANY WATCH",
+      "desc": "실적·적자·사업재편·증설·폐점 — 지원해도 되는 회사인지 가르는 신호",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "외국인 매출 비중 25% 돌파...현대백화점, 공간 혁신과 면세 흑자로 실적 체력 입증",
+          "lead": "현대백화점이 3분기 연결 영업이익 30.1% 증가라는 괄목할 성적표를 받아든 가운데, 실적 이면에 자리한 구조적 변화가 주목받고 있습니다.현대백화점은 연결 기준 2026년 3분기 순매출이 1조1723억원으로 전년 동기 대비 16.0% 증가했다고 4일 공시했습니다. 같은 기간 연결 영업이익은 946억원을 기록해 전년 동기 대비 30.1% 급증해 눈길을 끌었습니다.외국인 비중 25% 돌파... 글로벌 랜드마크 굳힌 '더현대 서울'백화점 부문의 영업이익 27.8% 성장을 견인한 핵심 축은 단연 외국인 관광객이었습니다. 특히 여의도 더현대",
+          "summary": "",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156932",
+          "source": "테크M",
+          "published": "2026-11-05 00:38",
+          "score": 41,
+          "keywords": [
+            "흑자",
+            "실적",
+            "매출",
+            "백화점"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "현대백화점 3분기 영업이익이 946억원으로 30.1% 늘었고 외국인 매출 비중이 25%를 넘었다.",
+          "ai_why": "유통 MD·마케팅 지망 신입이라면 지원하세요. 외국인 고객이 실적을 끄는 회사에서는 외국어와 글로벌 감각이 강한 무기가 되거든요.",
+          "ai_tags": [
+            "MD",
+            "마케팅"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "LG헬로비전, 매출-영업이익 감소 지속...비용 절감-포트폴리오 재편 진행중",
+          "lead": "LG헬로비전은 연결재무제표 기준 2026년 3분기 매출 2262억원, 영업이익 2억원을 기록했다고 4일 밝혔다.",
+          "summary": "동영상서비스(OTT) 확산과 주문형비디오(VOD) 감소 등 방송 시장 변화와 함께, 사업 체질 개선을 위한 사업포트폴리오 재편이 실적 전반에 영향을 미쳤다는 설명이다.3분기 매출은 전년 동기 대비 24.2%, 전 분기 대비 7% 감소했다. 영업이익은 업황 둔화와 사업 재편에 따른 비용 영향을 받았다. 전년 동기 대비 97.5%, 전 분기 대비 92.5% 감소다. 회사 측은 최근 희망퇴직을 단행하는 등 전사적인 비용 구조",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156893",
+          "source": "테크M",
+          "published": "2026-11-04 19:44",
+          "score": 36,
+          "keywords": [
+            "영업이익",
+            "매출",
+            "LG"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "LG헬로비전 3분기 영업이익이 2억원으로 97.5% 줄었고 희망퇴직까지 진행했다.",
+          "ai_why": "신입 지원은 지금은 피하세요. 재직자라면 선퇴사 말고 내년 3~4월 시즌에 맞춰 환승이직을 준비하는 게 맞습니다.",
+          "ai_tags": [
+            "기획",
+            "재무"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "에어부산, 3분기 영업이익 47억원…흑자 전환",
+          "lead": "(부산=연합뉴스) 박성제 기자 = 에어부산[298690]이 올해 3분기 매출 증가에 힘입어 영업이익과 당기순이익 모두 흑자 전환에 성공했다.",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261104155200051",
+          "source": "연합뉴스",
+          "published": "2026-11-04 17:15",
+          "score": 36,
+          "keywords": [
+            "영업이익",
+            "흑자"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "에어부산이 매출 증가에 힘입어 3분기 영업이익 47억원으로 흑자 전환했다.",
+          "ai_why": "항공 지망생이라면 준비하세요. 흑자 전환은 채용 재개로 이어지는 경우가 많으니 내년 상반기 공고를 노려볼 만합니다.",
+          "ai_tags": [
+            "영업"
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "세아제강지주, 북미 강관 호조에 분기 최대 매출…영업익 134% 증가",
+          "lead": "3분기 매출 1조2210억·영업익 933억 에너지용 강관 판가 상승·데이터센터 수요 확대 세아제강도 흑자전환…미국 생산설비 보완 투자",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/business/12196408",
+          "source": "매일경제",
+          "published": "2026-11-04 15:12",
+          "score": 36,
+          "keywords": [
+            "영업익",
+            "매출"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "세아제강지주 3분기 영업익 134%↑…북미 강관 판매 확대(종합)",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261104110951527"
+            },
+            {
+              "title": "LGU+, 3Q 영업익 84.1% 증가…희망퇴직 기저효과에 AI 사업도 호조",
+              "source": "MTN 머니투데이방송",
+              "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE9TM2VhZUczNzZya1d3RXdxOVNadXdrVjNWSGtOcW5mcXhIZ0h0TzktbGU1MmM3TGRTeGFDaG9mRmVaM25fUFB2WEJWX1BNZjRrMThTRzUzNi1HNFh6VkVr?oc=5"
+            }
+          ],
+          "ai_line": "세아제강지주가 북미 강관 호조로 분기 최대 매출과 영업이익 134% 증가를 기록했다.",
+          "ai_why": "철강은 불황이라는 편견은 버리세요. 해외영업·재무 경력자라면 미국 투자를 늘리는 회사를 눈여겨보고 지원하세요.",
+          "ai_tags": [
+            "영업",
+            "재무"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "macro",
+      "name": "고용지표·정책",
+      "en": "MACRO",
+      "desc": "통계청 고용동향, 청년고용, 최저임금·실업급여, 노동법 — 시장 전체의 온도",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "‘쉬었음’ 4년 만에 감소했지만…청년 고용률은 29개월 연속 하락",
+          "lead": "특별한 이유 없이 구직활동을 하지 않는 ‘쉬었음’ 인구가 4년 만에 처음으로 감소했다.",
+          "summary": "청년(15~29살) 쉬었음 인구 중 일부가 교육이나 취업 준비 같은 취업 전 단계로 이동한 것 등이 영향을 미친 것으로 풀이된다. 다만 청년층 고용이 부진한 흐름을 이어가면서 이들이",
+          "url": "https://www.hani.co.kr/arti/economy/economy_general/1285715.html",
+          "source": "한겨레",
+          "published": "2026-11-05 07:55",
+          "score": 36,
+          "keywords": [
+            "고용률",
+            "청년 고용",
+            "쉬었음",
+            "고용"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "쉬었음 인구는 4년 만에 줄었지만 청년 고용률은 29개월 연속 떨어졌다.",
+          "ai_why": "쉬었음이 줄었다고 안심하면 안 됩니다. 신입분들은 쉬는 기간을 인턴과 자격증으로 채워 공백을 설명할 수 있게 준비하세요.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "‘쉬었음’ 9만명 줄었지만…“원하는 일자리 없어” 쉰 30대 늘었다",
+          "lead": "일도 구직활동도 하지 않고 ‘쉬었음’ 상태에 있는 사람이 255만명에 달하는 것으로 나타났다.",
+          "summary": "국가데이터처가 4일 발표한 ‘2026년 8월 경제활동인구조사 비경제활동인구 부가조사 결과’를 보면 지난 8월 비경제활동인구는 1629만7000명으로 지난해 같은 달보다 7만7000명 증가했다. 15세 이상 인구에서 차지하는 비중은 35.4%로 전년과 같았다....",
+          "url": "https://www.khan.co.kr/article/202611042042025/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news",
+          "source": "경향신문",
+          "published": "2026-11-04 20:42",
+          "score": 30,
+          "keywords": [
+            "쉬었음",
+            "일자리"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "‘쉬었음 청년’ 줄었지만…3명 중 1명 “원하는 일자리 없어요”",
+              "source": "이데일리",
+              "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQZl81YzNMMFNzWmsxYmFWS1RzWURuU3RJc3BXbWVpWXBTa3otRnVBVE5NS1JreURHc1R2ZEM0Z3k0WkFaanpoc1NDbzYyeGJ3UWtQLW1idmpWdml6dkxxYWMtckxzSUt4WkVrQmJ4V1pwaEtsZlJxWnJqNzhtOGtlNg?oc=5"
+            },
+            {
+              "title": "'쉬었음' 청년 줄었지만…최악 취업난에 실업·자영업 내몰려",
+              "source": "뉴시스",
+              "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE1hS0o5U3lLYUV0bXRud0c3WDhMbE1qT0M5NTYteEQxMXlyQXFKVUJselhkRkFLbnhyaW9fMVpEUUNEOG9qbVBNRzNrem91OFhhMEJkR09JQ1NuMm5KUVZrb9IBeEFVX3lxTE11TTE0aFVvSGVTQmF3ZEktUWNtMVdxMTI2ellXSXlfYXJobXcwUUZxelE1eW1kRG1RYW5uTDB1SXhzX29YZmYySERvZzV1cnlVUFE4WVROYndfb3ZHb0FRNkJOcS12dUQ2c2pBby1yUTJuV1IzMURXVQ?oc=5"
+            },
+            {
+              "title": "'쉬었음' 청년 3명중 1명 \"원하는 일자리 없어요\"",
+              "source": "매일경제",
+              "url": "https://www.mk.co.kr/news/economy/12196640"
+            }
+          ],
+          "ai_line": "쉬었음 인구가 255만명이고 원하는 일자리가 없어 쉰 30대가 늘었다.",
+          "ai_why": "3~10년차 경력자분들, 맞는 자리 없다고 먼저 그만두면 공백만 길어집니다. 다니면서 환승이직하세요, 그게 협상력이거든요.",
+          "ai_tags": [
+            "공통"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "광주청년일자리스테이션 상무, 청년 맞춤형 프로그램 운영",
+          "lead": "[헤럴드경제(광주)=서인주 기자] 광주대학교 산학협력단이 위탁 운영하는 광주청년일자리스테이션 상무센터(센터장 조유근)는 지역 청년들의 취업역량 강화와 진로 탐색,",
+          "summary": "",
+          "url": "https://biz.heraldcorp.com/article/10925763",
+          "source": "헤럴드경제",
+          "published": "2026-11-04 14:41",
+          "score": 26,
+          "keywords": [
+            "청년일자리",
+            "일자리",
+            "청년"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "광주청년일자리스테이션 상무, 지역청년 ‘취업·진로’ 지원",
+              "source": "MTN 머니투데이방송",
+              "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE1MRm1HQnVSWW93cDRiQm5aS2tkRm5ubW1kbW1pTHVmR090THE4aUVkOTBrS3R5QWtoMGlPSHlmdjNqQ0RZWWpHOHlaOHV0UVJFWkpvblpNd2FQM0FaWXB3?oc=5"
+            },
+            {
+              "title": "광주청년일자리스테이션 상무 11월 청년 맞춤형 프로그램",
+              "source": "베리타스알파",
+              "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE0wQ1pDVWF2SmhnMUIyUjFkXzkwTE5lYmt1Mjd2VEhwbE1yLUpzZFZvYlhkLTVrY3hvVGR3SEMxNkg0TTA3dlEtenQwMHJXNjBMTU84RE1Ub0VFaWJqWndRUl9sazI4WE03cFY4aQ?oc=5"
+            },
+            {
+              "title": "광주청년일자리스테이션 상무, 11월 청년 맞춤형 프로그램 운영 > 뉴스",
+              "source": "더코리아",
+              "url": "https://news.google.com/rss/articles/CBMickFVX3lxTFBXU3hOY3J5b3hhcEs5Yl9ZaS1zcVo3VENNZUpJdkpuUjNqQXRkLUg4RW0wbzNEU0UtOWQ2VTRKZDZvV05BYTRWd1NaeWlZN2wwc3FodWxlUjVIQlhscFF4Tl9HbENkNGZCZTJ0RlBRQWRSdw?oc=5"
+            }
+          ],
+          "ai_line": "광주청년일자리스테이션 상무센터가 취업역량과 진로 탐색을 돕는 청년 프로그램을 운영한다.",
+          "ai_why": "광주 지역 취준생이라면 지역 센터 프로그램부터 지원하세요. 무료로 열린 정보와 컨설팅을 안 쓰는 게 제일 손해입니다.",
+          "ai_tags": [
+            "공통"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "future",
+      "name": "커리어의 변화",
+      "en": "CAREER SHIFT",
+      "desc": "AI가 바꾸는 직무, 40대 이후의 생존, 중장년 재이직, N잡과 멀티커리어",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "KB국민은행, 대부업 성실상환자 1만명 이자 지원...1인당 최대 100만원",
+          "lead": "KB국민은행이 대부업체 대출을 6개월 이상 연체 없이 갚아 온 저신용 차주 약 1만명의 이자 부담을 덜어준다.",
+          "summary": "지원 대상에 선정되면 1년간 정상 납부한 이자의 절반을 1인당 최대 100만원까지 돌려받는다.KB국민은행은 4일 총 100억원 규모의 '크레딧 빌드업(Credit Build Up) 이자지원 프로그램'을 실시한다고 밝혔다. 국민은행이 사회연대은행에 100억원을 기부하고, 사회연대은행은 참여 대부업체와 협력해 대상자 선정과 요건 확인, 지원금 지급을 맡는다.지원 대상은 금융감독원이 선정한 '서민금융 우수대부업체' 가운데 프로그",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156922",
+          "source": "테크M",
+          "published": "2026-11-04 23:53",
+          "score": 20,
+          "keywords": [
+            "부업"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "KB국민은행이 대부업 성실상환자 약 1만명에게 이자 절반을 최대 100만원까지 돌려준다.",
+          "ai_why": "은행 지원자라면 이런 포용금융 사례를 정리해 두세요. 지원 동기에 회사의 사회적 역할을 녹이면 답변이 훨씬 단단해지거든요.",
+          "ai_tags": [
+            "기획"
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "'시간당 커피 250잔'…엑스와이지, 로보월드서 차세대 로봇 바리스타 첫선",
+          "lead": "인공지능(AI) 로보틱스 기업 엑스와이지(XYZ)가 시간당 커피 250잔을 제조할 수 있는 차세대 로봇 바리스타를 선보였다.",
+          "summary": "주문부터 음료 제조까지 자동화하는 로봇카페 기술을 고도화하며 무인매장 시장 공략에 속도를 내는 모습이다.4일 로봇업계에 따르면 엑스와이지는 이날 경기 고양시 킨텍스에서 개막한 '2026 로보월드'에서 신형 로봇 바리스타 '바리스브루 맥스(Barisbrew Max)'를 처음 공개했다.바리스브루 맥스의 가장 큰 특징은 대량 주문 처리 능력이다. 키오스크와 로봇을 연동하는 'N대 연동 주문 클러스터링 시스템'을 적",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=156934",
+          "source": "테크M",
+          "published": "2026-11-05 00:37",
+          "score": 16,
+          "keywords": [
+            "로봇"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "엑스와이지가 시간당 커피 250잔을 만드는 로봇 바리스타를 로보월드에서 처음 공개했다.",
+          "ai_why": "매장 운영 쪽 40대라면 준비하세요. 사람이 하던 제조는 자동화되고, 무인매장을 관리하고 기획하는 역량이 남는 자리가 됩니다.",
+          "ai_tags": [
+            "기획"
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "이창수 원장, “자율주행 가능한 AI 일자리 내비게이션…국민의 평생 직업 선택을 지원”",
+          "lead": "양질의 일자리 부족과 일자리 미스매치, AI 확산으로 개인의 직업 선택과 경력 관리는 갈수록 중요해지고 있다.",
+          "summary": "구직자는 자신의 적성과 역량을 진단하고 이를 토대로 직업훈련·일경험·취업·이직·재취업을 연결하는 평생 경력을 설계해야 한다. 고용노동부(장관 김영훈)와 한국고",
+          "url": "https://www.news2day.co.kr/article/20261008500177",
+          "source": "뉴스투데이",
+          "published": "2026-11-03 18:20",
+          "score": 13,
+          "keywords": [
+            "AI 일자리",
+            "AI",
+            "일자리",
+            "직업"
+          ],
+          "image": null,
+          "related": [],
+          "ai_line": "AI로 적성 진단부터 훈련·이직·재취업까지 잇는 일자리 내비게이션 구상이 소개됐다.",
+          "ai_why": "재이직을 고민하는 40대라면 이런 공공 진단 도구를 적극 써보세요. AI는 보조 도구일 뿐, 최종 판단은 본인 몫입니다.",
+          "ai_tags": [
+            "인사"
+          ]
+        }
+      ]
+    }
+  ],
+  "briefing": [
+    "오늘 지면은 캔바, 엑스박스, LG헬로비전까지 구조조정 기사가 줄줄이 나왔는데요, 특히 관리 계층을 줄이는 흐름은 40대에게 남 얘기가 아닙니다.",
+    "반대로 현대백화점, 세아제강지주, 에어부산처럼 실적이 살아난 회사도 분명히 있거든요? 같은 업계 안에서도 어느 회사냐가 커리어를 가릅니다.",
+    "청년 고용률은 29개월째 떨어지는 중이니, 오늘은 관심 회사 세 곳의 3분기 실적부터 직접 찾아보세요."
+  ]
+}
