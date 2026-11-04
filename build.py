@@ -1107,6 +1107,13 @@ def build(out_dir: Path, with_news: bool) -> None:
     (out_dir / "privacy").mkdir(exist_ok=True)
     (out_dir / "privacy" / "index.html").write_text(pv, encoding="utf-8")
     print(f"개인정보처리방침 -> {out_dir / 'privacy' / 'index.html'}")
+    # 404 (2026-11-04): GitHub Pages 기본 영어 404 대신. 어느 깊이 주소에서든 열리므로 링크는 모두 사이트 루트 기준(/)
+    nf = (BASE / "template_404.html").read_text(encoding="utf-8")
+    nf = (nf.replace("/*__SHARED_CSS__*/", SHARED_CSS)
+            .replace("/*__NAV__*/", nav_html("", "/", logo_nav))
+            .replace("/*__FOOTER__*/", footer_html("/", logo, ""))
+            .replace("/*__FAB__*/", fab_html("/")))
+    (out_dir / "404.html").write_text(nf, encoding="utf-8")
 
     # 직무 비교 / 직무 진단
     for tpl_name, sub, title, desc in (
