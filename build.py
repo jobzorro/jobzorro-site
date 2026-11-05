@@ -479,7 +479,11 @@ TABBAR_CSS = """.zb { display:none; }
   html { scroll-behavior:auto !important; }   /* 2026-10-28: 폰에선 부드러운 스크롤 끔 (삼성 인터넷이 뉴스에서 아래 바를 도구 막대 뒤로 숨김) */
   .zb a { position:relative; display:grid; justify-items:center; gap:2px; padding:2px 0; color:var(--muted, #777); text-decoration:none; font-family:"Noto Sans KR",sans-serif; font-size:11px; font-weight:700; -webkit-tap-highlight-color:transparent; }
   .zb a svg { width:23px; height:23px; box-sizing:content-box; padding:3px 14px; border-radius:999px; transition:background .15s ease; }
-  .zb a.on { color:var(--ink, #0b0b0b); font-weight:900; }   /* 2026-10-29 사용자: 눌린 탭이 확실히 보이게 — 밝은·어두운 모드 모두 형광 알약 + 검은 아이콘 */
+  .zb a.on { color:var(--ink, #0b0b0b); }
+  /* 2026-11-05 사용자: 아래 탭 글자 크기·굵기가 직무사전/연봉 연구소/회사 판단마다 달라 보임 → 페이지 글꼴·글자 간격·폰 글자 자동 확대에 흔들리지 않게 고정. 굵기는 모든 탭·모든 상태 700 하나로 */
+  .zb, .zb a { -webkit-text-size-adjust:100% !important; text-size-adjust:100% !important; }
+  .zb a, .zb a.on { font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif !important; font-size:11px !important; font-weight:700 !important;
+    line-height:1.2 !important; letter-spacing:-0.02em !important; white-space:nowrap !important; font-style:normal !important; text-transform:none !important; }   /* 2026-10-29 사용자: 눌린 탭이 확실히 보이게 — 밝은·어두운 모드 모두 형광 알약 + 검은 아이콘 */
   .zb a.on svg { background:#c6ff3d; color:#0b0b0b; stroke-width:2.3; }
   .zb .dot { position:absolute; top:3px; right:calc(50% - 20px); width:7px; height:7px; border-radius:50%; background:#c6ff3d; border:1px solid var(--ink, #0b0b0b); }
 }
