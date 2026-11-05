@@ -666,7 +666,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var hasYoy = r.yoyPct !== null && r.yoyPct !== undefined && !r.capped;   // 상한에 걸린 회사의 추이는 상한 인상분이라 숨긴다
     var facts = [['국민연금 가입자', r.members.toLocaleString('ko-KR') + '명'],
       r.newHireAnnual ? ['입사자 평균 연봉' + (r.fld && /매장|급식|극장|호텔|물류 현장|파견|휴게소/.test(r.fld[4] || '') ? '(매장·현장 포함)' : ''), man(r.newHireAnnual) + '만원'] : ['이번 달 입사', r.newHires.toLocaleString('ko-KR') + '명'],
-      hasYoy ? ['1년 연봉 인상률', (r.yoyPct > 0 ? '+' : '') + r.yoyPct + '%'] : ['이번 달 퇴사', r.leavers.toLocaleString('ko-KR') + '명'],
+      hasYoy ? ['1년 연봉 인상률', Math.abs(r.yoyPct) > 30 ? '가입자 구성 변동으로 비교 생략' : (r.yoyPct > 0 ? '+' : '') + r.yoyPct + '%'] :   // 2026-11-05 ±30% 넘으면 가입자 구성이 바뀐 것 ['이번 달 퇴사', r.leavers.toLocaleString('ko-KR') + '명'],
       ['평균 근속', r.tT.toFixed(1) + '년']];
     var trend = (!r.capped && r.trend && r.trend.length > 1 && D.meta.trendYears) ? '<p class="hint">연도별 평균 연봉(국민연금, 매년 같은 달): ' +
       r.trend.map(function (v, k) { return D.meta.trendYears[k] + '년 ' + man(v) + '만원'; }).join(' → ') + '</p>' : '';

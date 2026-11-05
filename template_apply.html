@@ -297,16 +297,25 @@ textarea { min-height:96px; resize:vertical; line-height:1.6; }
     var btn = $('submitBtn'), st = $('status-msg');
     if (!CFG.formEndpoint) { st.className = 'st bad'; st.textContent = '접수 시스템이 아직 연결되지 않았습니다. 카카오톡 오픈프로필로 보내 주세요.'; return; }
     btn.disabled = true; st.className = 'st'; st.textContent = '보내는 중...';
-    // 2026-11-03: no-cors 라 서버 응답은 못 읽는다. 대신 네트워크 오류·시간 초과(20초)·오프라인은 실패로 보여 주고 카카오톡 길을 안내한다
-    function fail() {
+    // 2026-11-05: Apps Script 응답(JSON, Access-Control-Allow-Origin: *)을 실제로 읽어 {ok:true}일 때만 완료로 보여 준다.
+    //   text/plain POST 라 사전 요청(preflight) 없이 가고, 응답을 못 읽는 경우(네트워크·시간 초과)는 '확인 못 함'으로 안내한다
+    function fail(msg) {
       btn.disabled = false; st.className = 'st bad';
-      st.innerHTML = '전송에 실패했어요. 잠시 후 다시 시도하거나 <a href="' + CFG.kakaoOpen + '" target="_blank" rel="noopener">카카오톡 오픈프로필</a>로 "상담 신청"이라고 보내 주세요.';
+      st.innerHTML = (msg || '전송에 실패했어요.') + ' 잠시 후 다시 시도하거나 <a href="' + CFG.kakaoOpen + '" target="_blank" rel="noopener">카카오톡 오픈프로필</a>로 "상담 신청"이라고 보내 주세요.';
     }
+    function done() { form.hidden = true; $('notice').hidden = true; $('done').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); }
     if (navigator.onLine === false) { fail(); return; }
     var ac = window.AbortController ? new AbortController() : null, timer = ac ? setTimeout(function () { ac.abort(); }, 20000) : 0;
-    fetch(CFG.formEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data), signal: ac ? ac.signal : undefined })
-      .then(function () { clearTimeout(timer); form.hidden = true; $('notice').hidden = true; $('done').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); })
-      .catch(function () { clearTimeout(timer); fail(); });
+    fetch(CFG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data), signal: ac ? ac.signal : undefined })
+      .then(function (r) { return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (x) {} return { http: r.ok, j: j }; }); })
+      .then(function (res) {
+        clearTimeout(timer);
+        if (res.j && res.j.ok === true) return done();
+        if (res.j && res.j.ok === false) return fail('접수가 되지 않았어요' + (res.j.error ? ' (' + String(res.j.error).slice(0, 60) + ')' : '') + '.');
+        if (res.http) return done();   // 응답 형식만 다른 경우(구글 쪽 변경 등)는 접수된 것으로 본다 — 완료 화면에 '이틀 안에 연락 없으면' 안내가 있다
+        fail('서버가 응답하지 않았어요.');
+      })
+      .catch(function () { clearTimeout(timer); fail('접수됐는지 확인하지 못했어요. 두 번 접수돼도 괜찮으니'); });
   });
 
   // 헤드라인 한 줄 맞춤

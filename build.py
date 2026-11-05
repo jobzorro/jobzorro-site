@@ -102,6 +102,9 @@ APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 �
 # 2026-11-03: 방문 분석(구글 애널리틱스 4) 측정 ID 자리 — 'G-XXXXXXXXXX' 를 넣으면 빌드 끝에 모든 페이지 <head> 에 태그가 붙는다.
 #   빈 값이면 아무것도 넣지 않는다 (지금은 꺼짐: 사장님이 ID 를 아직 안 주심). 관리자 화면(admin/)·이동용 빈 쪽에는 넣지 않는다.
 ANALYTICS_ID = ""
+# 2026-11-05: GA 대신 쓸 수 있는 쿠키 없는 방문 집계 — Cloudflare Web Analytics 토큰(대시보드 > Web Analytics > 사이트 추가 시 받는 값).
+#   빈 값이면 꺼짐(지금). 켜기 전에 개인정보처리방침 '분석 도구를 쓰지 않는다' 문장을 함께 고쳐야 한다.
+CF_BEACON_TOKEN = ""
 GSTATIC = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'   # 구글 글꼴 파일 서버 미리 연결 (모든 페이지)
 STALE_FILES = ("index-v2.html",)   # 예전 시안 — 빌드 때마다 지운다 (2026-11-03)
 LASTMOD_STATE = BASE / ".cache" / "lastmod.json"   # 연봉·회사 쪽별 내용 해시 → 마지막으로 바뀐 날 (Actions 캐시로 이어 간다)
@@ -140,6 +143,8 @@ def head_common(rel_parts: tuple, h: str) -> str:
         tag = (f'<script async src="https://www.googletagmanager.com/gtag/js?id={ANALYTICS_ID}" data-analytics></script>'
                f"<script>window.dataLayer=window.dataLayer||[];function gtag(){{dataLayer.push(arguments)}}gtag('js',new Date());gtag('config','{ANALYTICS_ID}');</script>")
         h = h.replace("</head>", tag + "</head>", 1)
+    if CF_BEACON_TOKEN and "data-cf-beacon" not in h and (not rel_parts or rel_parts[0] != "admin"):
+        h = h.replace("</head>", f'<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\'{{"token": "{CF_BEACON_TOKEN}"}}\'></script></head>', 1)
     return h
 
 
@@ -715,13 +720,18 @@ TAB_ICON = {
 TAB_SHORT = {"salary/index.html": "연봉", "play/index.html": "게임", "company/index.html": "회사", "index.html": "직무", "news/index.html": "뉴스", "zorro/index.html": "상담"}
 
 
+def _clean(root: str, href: str) -> str:
+    """2026-11-05: 메뉴 링크를 '…/index.html' 대신 깔끔한 폴더 주소로 (공유 주소가 지저분해지지 않게). 같은 폴더면 './'"""
+    return (root + href.replace("index.html", "")) or "./"
+
+
 def nav_html(active: str, root: str, logo: str) -> str:
     tabs = "".join(
-        f'<a href="{root}{href}"{" class=\"on\"" if href == active else ""}>{label}</a>' for href, label in TABS
+        f'<a href="{_clean(root, href)}"{" class=\"on\"" if href == active else ""}>{label}</a>' for href, label in TABS
     )
     theme = "<script>try{var t=localStorage.getItem('cb-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>"
     return (
-        theme + f'<header class="zn"><div class="zn-in"><a class="zn-logo" href="{root}index.html"><img src="{logo_src(logo, root)}" alt="TEAM ZORRO"></a>'
+        theme + f'<header class="zn"><div class="zn-in"><a class="zn-logo" href="{_clean(root, "index.html")}"><img src="{logo_src(logo, root)}" alt="TEAM ZORRO"></a>'
         f'<nav class="zn-tabs" aria-label="사이트 탭">{tabs}</nav>'
         f'</div></header>'
         # 2026-10-28 모바일: 지금 탭이 화면 밖이면 보이게 옮기고, 메뉴가 넘치면 오른쪽 끝을 흐리게 (.more)
@@ -729,7 +739,7 @@ def nav_html(active: str, root: str, logo: str) -> str:
         "var a=n.querySelector('a.on');if(a&&a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12;"
         "var f=function(){n.classList.toggle('more',n.scrollWidth-n.scrollLeft-n.clientWidth>4)};f();n.addEventListener('scroll',f,{passive:true});addEventListener('resize',f)})();</script>"
         + '<nav class="zb" aria-label="사이트 탭">' + "".join(
-            f'<a href="{root}{href}"{" class=\"on\" aria-current=\"page\"" if href == active else ""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{TAB_ICON[href]}</svg>'
+            f'<a href="{_clean(root, href)}"{" class=\"on\" aria-current=\"page\"" if href == active else ""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{TAB_ICON[href]}</svg>'
             f'<span>{TAB_SHORT[href]}</span>{"<i class=\"dot\"></i>" if href == "play/index.html" else ""}</a>' for href, _ in TABS) + '</nav>'
         # 2026-10-28: 스크롤하면 탭바를 숨기던 기능은 뺌 (사용자: 뉴스에서 아래 바가 사라지는 버그로 보임) — 탭바는 항상 보인다
         # 2026-10-28 삼성 인터넷: 긴 페이지(뉴스)에서 브라우저 아래 도구 막대가 화면 위에 겹쳐 탭바를 가린다 →
@@ -1254,6 +1264,9 @@ def build(out_dir: Path, with_news: bool) -> None:
         # 카톡 미리보기 설명 (2026-10-27 사용자: 섹션마다 각자의 이야기)
         news_desc = "채용·이직·기업·고용 뉴스 중 내 커리어에 영향을 주는 것만 매일 아침 골라, 취업조로의 한마디와 함께 정리해 드려요. 주간·월간 랭킹도 한눈에."
         n = re.sub(r'(<meta (?:name="description"|property="og:description") content=")[^"]*(")', lambda m: m.group(1) + news_desc + m.group(2), n)
+        # 2026-11-05: 메뉴 이름(취업뉴스)과 페이지 제목을 맞춘다
+        n = re.sub(r"<title>[^<]*</title>", "<title>취업뉴스 · 취업조로의 커리어브리핑</title>", n, count=1)
+        n = re.sub(r'(<meta (?:property="og:title"|name="twitter:title") content=")[^"]*(")', lambda m: m.group(1) + "취업뉴스 · 취업조로의 커리어브리핑" + m.group(2), n)
         if "family=Archivo" not in n:   # 비상용(NEWS_URL) 옛 페이지에만 Archivo 를 더한다 (2026-11-03: 뉴스 글꼴 요청은 news-collector 한 줄로)
             n = n.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&display=swap"></head>', 1)
         n = n.replace("</head>", f'<link rel="canonical" href="{seo.abs_url(base_url, "news/")}"><meta property="og:url" content="{seo.abs_url(base_url, "news/")}"><meta property="og:type" content="website"><meta property="og:site_name" content="취업조로"><meta property="og:locale" content="ko_KR"><meta property="og:image" content="{og_news}"><meta name="twitter:image" content="{og_news}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="author" content="조현빈 (취업조로)">' + seo.verify_tags()
@@ -1312,7 +1325,7 @@ def build(out_dir: Path, with_news: bool) -> None:
             ld = [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/"), (f"{kdate} 지면", f"news/{d}/")]),
                   {"@context": "https://schema.org", "@type": "WebPage", "@id": seo.abs_url(base_url, f"news/{d}/"), "name": f"{kdate} 커리어브리핑",
                    "inLanguage": "ko", "datePublished": d, "isPartOf": {"@id": seo.abs_url(base_url, "#website")}, "author": {"@id": seo.abs_url(base_url, "zorro/#person")}}]
-            if wrap_news_page(news_src.parent / d / "index.html", f"{d}/", f"{kdate} 커리어브리핑 — 취업조로", d, ld, "monthly", "0.5", noindex=d in rep_days):
+            if wrap_news_page(news_src.parent / d / "index.html", f"{d}/", f"{kdate} 취업뉴스 — 취업조로의 커리어브리핑", d, ld, "monthly", "0.5", noindex=d in rep_days):
                 n_day_pages += 1
         has_archive = wrap_news_page(news_src.parent / "archive" / "index.html", "archive/", "지난 지면 전체 보기 — 취업조로의 커리어브리핑", updated,
                                      [seo.breadcrumb_ld(base_url, [("직무사전", ""), ("취업뉴스 커리어브리핑", "news/"), ("지난 지면 전체", "news/archive/")])], "weekly", "0.6")
@@ -1415,12 +1428,16 @@ def build(out_dir: Path, with_news: bool) -> None:
         entries.append(("company/", today, "daily", "0.8"))
         # 회사별 정적 요약 페이지 (company-check build.py static_pages, 2026-10-28): 공용 메뉴·푸터·탭바 + 공유 이미지 주소 + sitemap
         cpages = sorted(p for p in (dst / "c").glob("*/index.html")) if (dst / "c").exists() else []
+        # 2026-11-05 옛 주소 이동 쪽('(주)' 뺀 새 주소로 보내는 noindex 쪽)은 메뉴를 붙이지 않고 sitemap 에서도 뺀다
+        cpages = [p for p in cpages if 'content="noindex"' not in p.read_text(encoding="utf-8")[:400]]
+        _sc = zn_css + "\n" + TABBAR_CSS + "\n"
+        _scv = __import__("hashlib").md5(_sc.encode()).hexdigest()[:8]   # 배포 뒤 옛 저장본이 섞이지 않게 내용 해시를 주소에 붙인다
         if cpages:   # 메뉴·탭바 스타일도 쪽마다 넣지 않고 파일 하나로
-            (dst / "c" / "site.css").write_text(zn_css + "\n" + TABBAR_CSS + "\n", encoding="utf-8")
+            (dst / "c" / "site.css").write_text(_sc, encoding="utf-8")
         for p in cpages:
             h = p.read_text(encoding="utf-8")
             if 'class="zn"' not in h:
-                h = h.replace("</head>", '<link rel="stylesheet" href="../site.css">\n</head>', 1)
+                h = h.replace("</head>", f'<link rel="stylesheet" href="../site.css?v={_scv}">\n</head>', 1)
                 h = h.replace("<body>", "<body>\n" + nav_html("company/index.html", "../../../", logo_nav), 1)
                 h = re.sub(r"<!--FOOT-->.*?<!--/FOOT-->", lambda m: footer_html("../../../", logo, COMPANY_NOTE), h, count=1, flags=re.S)
                 h = h.replace("https://job.jobzorro.kr/assets/og-company.png", og_company)
@@ -1451,6 +1468,13 @@ def build(out_dir: Path, with_news: bool) -> None:
             h = h.replace("</style>", zn_css + "\n</style>", 1)
             h = h.replace("<body>", "<body>\n" + nav_html("play/index.html", "../", logo_nav), 1)
             h = h.replace("</style>", TABBAR_CSS + "</style>", 1)   # 2026-10-29 아래 탭바
+        if 'class="zf"' not in h:   # 2026-11-05 홍보 전 점검: 놀이터에도 공용 푸터(사업자 정보·개인정보처리방침). 게임 화면에선 숨기고 로비에서만
+            zf_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zf", "@media (max-width:480px) { .zf", "@media (max-width:640px) { .zf")))
+            zf_css = ".zf{--paper:var(--bg);--hairline:var(--line);--ink-soft:var(--muted);--mist:var(--card);--fillfg:var(--bg);--shadow-lift:none}\n" + zf_css
+            zf_css += ("\nbody > .zf { margin-left:calc(-1 * max(16px, env(safe-area-inset-left,0px))); margin-right:calc(-1 * max(16px, env(safe-area-inset-right,0px))); }"
+                       "\n:root[data-view=\"game\"] body > .zf, :root[data-view=\"menu\"] body > .zf { display:none; }")
+            h = h.replace("</style>", zf_css + "\n</style>", 1)
+            h = h.replace("</body>", footer_html("../", logo, "") + "\n</body>", 1)
         (dst / "index.html").write_text(h, encoding="utf-8")
         entries.append(("play/", today, "daily", "0.7"))
         with open(out_dir / "llms.txt", "a", encoding="utf-8") as f:
