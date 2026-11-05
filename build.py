@@ -104,7 +104,7 @@ APPLY = "apply/index.html"   # 무료 상담 신청 폼 (모든 "무료 상담 �
 ANALYTICS_ID = ""
 # 2026-11-05: GA 대신 쓸 수 있는 쿠키 없는 방문 집계 — Cloudflare Web Analytics 토큰(대시보드 > Web Analytics > 사이트 추가 시 받는 값).
 #   빈 값이면 꺼짐(지금). 켜기 전에 개인정보처리방침 '분석 도구를 쓰지 않는다' 문장을 함께 고쳐야 한다.
-CF_BEACON_TOKEN = ""
+CF_BEACON_TOKEN = "024bc1b675154de6805d4639132bf745"   # Cloudflare Web Analytics (쿠키 없음, 2026-11-05)
 GSTATIC = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'   # 구글 글꼴 파일 서버 미리 연결 (모든 페이지)
 STALE_FILES = ("index-v2.html",)   # 예전 시안 — 빌드 때마다 지운다 (2026-11-03)
 LASTMOD_STATE = BASE / ".cache" / "lastmod.json"   # 연봉·회사 쪽별 내용 해시 → 마지막으로 바뀐 날 (Actions 캐시로 이어 간다)
