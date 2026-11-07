@@ -56,6 +56,24 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .stats dt small { display:block; font-size:12px; font-weight:500; letter-spacing:0; color:var(--muted); margin-top:3px; }
 .stats dd { margin:0; font-family:var(--display); font-size:30px; font-weight:900; letter-spacing:-.04em; font-variant-numeric:tabular-nums; line-height:1; white-space:nowrap; }
 .stats dd small { font-size:13px; font-weight:700; margin-left:3px; color:var(--muted); letter-spacing:0; }
+/* 2026-11-07 '판정 나온 회사'에 올리면(폰은 누르면) 무엇으로 판정했나가 숫자 위로 겹쳐 뜬다 */
+.stats .jd { position:relative; cursor:help; outline:none; }
+.stats .jd dd { transition:opacity .18s; }
+.stats .jd .basisbox { position:absolute; z-index:30; right:0; top:calc(100% - 6px); width:min(360px, calc(100vw - 32px)); background:var(--paper); color:var(--ink);
+  border:1.5px solid var(--ink); border-radius:16px; padding:16px 18px; display:grid; gap:10px; box-shadow:0 14px 34px rgba(0,0,0,.18);
+  opacity:0; transform:translateY(-6px); pointer-events:none; transition:opacity .18s, transform .18s; }
+.stats .jd:hover .basisbox, .stats .jd:focus .basisbox, .stats .jd:focus-within .basisbox { opacity:1; transform:none; pointer-events:auto; }
+.stats .jd:hover dd, .stats .jd:focus dd { opacity:.25; }
+.basisbox h4 { margin:0; font-size:14px; font-weight:900; }
+.basisbox .bar { display:flex; width:100%; height:12px; border-radius:99px; overflow:hidden; background:var(--mist); }
+.basisbox .bar i { display:block; height:100%; }
+.basisbox .k1 { background:var(--ink); } .basisbox .k2 { background:var(--ink-soft); } .basisbox .k3 { background:var(--muted); } .basisbox .k4 { background:var(--acc); } .basisbox .k5 { background:var(--hairline-2); } .basisbox .k6 { background:var(--faint); } .basisbox .k7 { background:var(--hairline); }
+.basisbox ul { list-style:none; margin:0; padding:0; display:grid; gap:6px; font-size:13.5px; }
+.basisbox li { display:grid; grid-template-columns:12px minmax(0,1fr) auto; gap:10px; align-items:center; }
+.basisbox li > i { width:12px; height:12px; border-radius:3px; }
+.basisbox li b { font-family:var(--display); font-variant-numeric:tabular-nums; }
+.basisbox li small { color:var(--muted); font-size:12px; }
+@media (max-width:900px) { .stats .jd .basisbox { right:auto; left:0; } }
 .stats .hot dd { background:linear-gradient(transparent 60%, var(--mark) 60%); }
 @media (max-width:900px) { .hero-grid { grid-template-columns:minmax(0,1fr); gap:24px; } .stats { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:18px; } }
 @media (max-width:520px) { .stats div { flex-direction:column; align-items:flex-start; gap:6px; padding:10px 0; } .stats dd { font-size:23px; } }
@@ -451,6 +469,22 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 .vtags span { font-size:12.5px; font-weight:800; padding:4px 11px; border-radius:999px; border:1.5px solid var(--ink); background:var(--mist); white-space:nowrap; }
 @media (max-width:720px) { .vtags { justify-content:flex-start; } }
 .v-none strong { background:var(--mist); color:var(--muted); border-color:var(--hairline-2); }
+/* A안 국민연금 신호 (2026-11-07) */
+.nps { border:2px solid var(--ink); border-radius:18px; padding:18px 22px; margin:18px 0; display:grid; gap:12px; }
+.nps .top { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; }
+.nps .top h4 { margin:0; font-size:16px; font-weight:900; letter-spacing:-.02em; }
+.nps .sig { font-size:15px; font-weight:900; padding:4px 14px; border-radius:999px; color:#fff; }
+.nps .sig.g { background:var(--good); } .nps .sig.m { background:var(--mid); } .nps .sig.b { background:var(--bad); }
+.nps .src { font-size:12px; color:var(--muted); margin-left:auto; }
+.nps .row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.nps .it { background:var(--mist); border-radius:12px; padding:12px 14px; }
+.nps .it p { font-size:12.5px; color:var(--muted); font-weight:700; }
+.nps .it b { display:block; font-family:var(--display); font-size:22px; font-weight:900; letter-spacing:-.03em; margin:2px 0; }
+.nps .it span { font-size:12.5px; font-weight:800; }
+.nps .it span.g { color:var(--good); } .nps .it span.m { color:var(--mid); } .nps .it span.b { color:var(--bad); }
+.nps .say { font-size:14px; color:var(--ink-soft); }
+.nps .fine { font-size:12px; color:var(--muted); }
+@media (max-width:640px) { .nps { padding:16px; } .nps .row { grid-template-columns:minmax(0,1fr); } .nps .src { margin-left:0; width:100%; } }
 .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
 .chip { font-size:12px; font-weight:700; border:1px solid var(--hairline-2); border-radius:999px; padding:3px 11px; color:var(--ink-soft); }
 .chip.ai-높음 { border-color:var(--bad); color:var(--bad); } .chip.ai-중간 { border-color:var(--mid); color:var(--mid); } .chip.ai-낮음 { border-color:var(--good); color:var(--good); }
@@ -679,7 +713,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
   <!-- 숫자판 (연봉 연구소·직무사전과 같은 모양, 2026-10-20 사용자 결정) -->
   <dl class="stats" aria-label="회사 판단 연구소 숫자">
     <div><dt>검색 가능 회사</dt><dd id="stCo">-</dd></div>
-    <div><dt>판정 나온 회사<small>자료는 계속 모으는 중</small></dt><dd id="stJudged">-</dd></div>
+    <div id="stJudgedBox"><dt>판정 나온 회사<small id="stJudgedSub">자료는 계속 모으는 중</small></dt><dd id="stJudged">-</dd></div>
     <div class="hot"><dt>현재까지 검색한 사람</dt><dd id="stPeople">-</dd></div>
     <div><dt>기준일</dt><dd id="stDate">2026.11.07</dd></div>
   </dl>
@@ -945,6 +979,9 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     let fail = false;             // 마요 사유
     let cap = null;               // 7단계 판정 상한 (6: 무조건 가세요 … 0: 비추예요). 사이트가 최종 판정에 씌운다
     const add = (rule, text, kind) => { R.push({ rule, text }); if (kind === "cond") cond.push(rule); if (kind === "fail") fail = true; };
+    // 2026-11-07 사용자: 이직하면 연봉 협상을 새로 하니까 '연봉이 덜 오른다'로 '마요'를 박지 않는다
+    //   → 협상 얘기를 붙여 '조건 보고'로, 판정은 '조건 보고 가세요'(7단계 4)까지
+    const pay = (rule, text) => { add(rule, text, "cond"); cap = cap == null ? 4 : Math.min(cap, 4); };
 
     const tn = tier(now.size), tt = tier(to.size);
     const step = tt.n - tn.n;                       // +1 위 급, -1 아래 급
@@ -969,7 +1006,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     // F2 성과급 큰 회사: 계약연봉 삭감 폭 + 총액 인상 둘 다 본다
     if (to.base && to.base < now.salary) {
       const cut = (now.salary - to.base) / now.salary * 100;
-      if (cut > FIT.base_cut_max_pct) add("F2", `계약연봉이 ${cut.toFixed(0)}% 깎여요. 성과급이 커도 ${FIT.base_cut_max_pct}%까지만 괜찮아요.`, "fail");
+      if (cut > FIT.base_cut_max_pct) pay("F2", `계약연봉이 ${cut.toFixed(0)}% 깎여요. 성과급이 커도 ${FIT.base_cut_max_pct}%까지만 괜찮아요. 연봉 협상에서 계약연봉 삭감을 ${FIT.base_cut_max_pct}% 안쪽으로 줄이면 가셔도 돼요.`);
     }
 
     // 1) 돈 + 워라밸
@@ -979,7 +1016,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
       add("F2", `${j(to.how || "갈 회사 연봉", "이", "가")} ${-won}만 원(${(-pct).toFixed(0)}%) 낮지만 ${tt.kind === "public" ? "공기업으로 가는" : "회사 급이 크게 오르는"} 거라 ${FIT.tier_up_cut_pct}%까지는 받아들일 만해요. 연봉 협상으로 차이를 줄여 보세요.`); // 5회차 D4 · 6회차 문구
       cap = 5;   // 6회차 D8·D9: 연봉이 낮아지는데 '무조건 가세요'는 아니다 → '가세요'까지
     } else if (won < 0 && rawWon >= 0) {
-      add("F9", `연봉은 +${rawWon}만 원이지만 지방 공장 근무까지 치면 손해예요.`, "fail");
+      pay("F9", `연봉은 +${rawWon}만 원이지만 지방 공장 근무까지 치면 손해 보는 셈이에요. 공장 근무 값(1천만 원 안팎)까지 연봉 협상에서 더 받아 내면 가셔도 돼요.`);
     } else if (won < 0) {
       // 6회차 B1~B4: 갈 회사 연봉(대부분 직급별 추정치, 오퍼도 같게)이 낮아도 '깎이면 안 됨'으로 막지 않는다
       //   협상으로 비슷하거나 더 받으면 가도 되니 '조건 보고 가세요'까지, 15% 넘게 낮으면 '중립기어'까지 (cap = 7단계 번호)
@@ -991,7 +1028,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
       cap = p > FIT.pay_low_warn_pct || step < 0 ? 3 : 4;   // 아래 급 회사에 연봉까지 낮으면 '중립기어'까지 (4회차 C6 '서울·업종 전환이 꼭 필요할 때만')
     } else if (step > 0) {
       if (eff >= 0) add("F2", `한 단계 위 회사에 연봉 +${won}만 원, 깎이지 않아요.`);
-      else add("F8", `연봉은 +${won}만 원인데 워라밸이 나빠져 체감으로는 손해예요.`, "fail");
+      else pay("F8", `연봉은 +${won}만 원인데 워라밸이 나빠져 체감으로는 손해 보는 셈이에요. 나빠지는 워라밸만큼 연봉 협상에서 더 받아 내면 가셔도 돼요.`);
     } else if (step < 0) {
       // D2: 연봉만으론 14%여도 워라밸까지 치면 기준을 넘을 수 있다
       // 4회차 C3: 업황 꺾인 산업·현장에서 빠져나오면 % 기준은 안 본다
@@ -1007,10 +1044,10 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
       }
       else if (won >= 0 && badField(now) && !badField(to))
         add("F3", "아래 급에 연봉도 그대로예요. 지금 자리에서 더 클 수 없거나, 새 직무 의지·조직문화가 확실할 때만 가세요.", "cond"); // 4회차 C5
-      else add("F3", `아래 급 회사로 옮길 땐 연봉이 확실히 올라야 값이 있어요(+${FIT.down_min_won}만 원 넘게, ${FIT.down_min_pct}% 안팎). 지금 숫자로는 조금 아쉬워요. 오퍼가 더 나오면 다시 넣어 보세요.`, "fail"); // 6회차 B8 부드럽게
+      else pay("F3", `아래 급 회사로 옮길 땐 연봉이 확실히 올라야 값이 있어요. 지금 숫자(+${won}만 원)로는 조금 아쉬워요. 연봉 협상에서 +${FIT.down_min_won}만 원 넘게(${FIT.down_min_pct}% 안팎) 받아 내면 가셔도 돼요.`); // 6회차 B8 · 11-07 협상
     } else {
       if (won >= sameMin || eff >= 15) add("F1", `같은 급에서 +${won}만 원${wlbGain > 0 ? ", 워라밸도 좋아져요" : ""}.`);
-      else add("F1", `같은 급 이동에 ${/추정/.test(to.how || "") ? "추정치로는" : "연봉"} +${won}만 원이에요. 옮길 값으로는 약해요. 오퍼에서 +${sameMin}만 원 이상${prime ? "(30대 초중반 기준)" : ""} 나오거나, 연봉 말고 얻는 게 분명할 때 가세요.`, "fail"); // 6회차 B7
+      else pay("F1", `같은 급 이동에 ${/추정/.test(to.how || "") ? "추정치로는" : "연봉"} +${won}만 원이에요. 이대로면 옮길 값으로는 약하지만, 이직할 땐 연봉 협상을 새로 하니까 +${sameMin}만 원 이상${prime ? "(30대 초중반 기준)" : ""} 받아 내면 가셔도 돼요.`); // 6회차 B7 · 11-07 협상
     }
     if (wlbGain > 0 && step >= 0 && won >= 0) add("F8", `워라밸이 좋아지는 건 연봉이 ${wlbGain >= 15 ? "꽤" : "조금"} 오른 것만큼 값어치 있어요.`); // 6회차 C3: % 숫자 대신 말로
     // 5회차 C10: 육아 등으로 칼퇴가 꼭 필요하면 워라밸이 나빠지는 곳은 연봉이 올라도 안 된다
@@ -1366,7 +1403,8 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 // 회사 데이터는 data/index.json(검색용 이름 목록) + data/co/NNN.json(회사 상세 128조각)으로 나눠 필요할 때만 읽는다
 const SHARDS = 128;
 const PICKS = ["펄어비스", "유풍", "오뚜기", "삼성전자", "현대자동차"];   // 많이 본 회사(/top)를 못 받을 때만 쓰는 기본 5곳
-const VDIST = {"비추예요": 5526, "다시 생각해요": 6736, "조건 보고 가세요": 6084, "스펙 보고 결정하세요": 7039, "가세요": 5109, "무조건 가세요": 611, "중립기어": 1582};   // 판정별 회사 수 (build.py, 2026-10-29 첫 화면 판정 분포 카드)
+const BASIS = {};   // 판정 근거별 회사 수 (build.py, 2026-11-07: 국민연금 판정 켤 때만 채움)
+const VDIST = {"다시 생각해요": 6736, "비추예요": 5526, "스펙 보고 결정하세요": 7039, "조건 보고 가세요": 6084, "가세요": 5109, "무조건 가세요": 611, "중립기어": 1582};   // 판정별 회사 수 (build.py, 2026-10-29 첫 화면 판정 분포 카드)
 const SERIES = [{"k": "must", "t": "무조건 가세요", "d": "붙으면 고민 말고 가라고 한 회사", "r": [["현대자동차", "직원 66,776명 · 연봉 업계 상위 1%"], ["에스케이하이닉스", "직원 37,586명 · 연봉 업계 상위 1%"], ["기아", "직원 31,366명 · 연봉 업계 상위 1%"], ["삼성물산", "직원 12,764명 · 연봉 업계 상위 1%"], ["현대모비스", "직원 12,111명 · 연봉 업계 상위 1%"], ["하나은행", "직원 11,420명 · 연봉 업계 상위 8%"], ["엘지유플러스", "직원 9,321명 · 연봉 업계 상위 1%"], ["한전케이피에스", "직원 6,144명 · 연봉 업계 상위 11%"], ["에스케이텔레콤", "직원 5,018명 · 연봉 업계 상위 1%"], ["현대로템", "직원 4,420명 · 연봉 업계 상위 1%"]]}, {"k": "go", "t": "가세요", "d": "재무·평점·연봉이 고르게 괜찮은 회사", "r": [["삼성전자", "직원 126,132명 · 연봉 업계 상위 1%"], ["이마트", "직원 21,519명 · 연봉 업계 상위 35%"], ["대한항공", "직원 17,907명 · 연봉 업계 상위 1%"], ["엘지이노텍", "직원 13,221명 · 연봉 업계 상위 2%"], ["신한은행", "직원 11,898명 · 연봉 업계 상위 9%"], ["쿠팡", "직원 10,947명 · 연봉 업계 상위 13%"], ["서울아산병원", "직원 9,267명 · 연봉 업계 상위 1%"], ["현대건설", "직원 7,869명 · 연봉 업계 상위 1%"], ["근로복지공단", "직원 6,210명 · 연봉 업계 상위 13%"], ["근로복지공단", "직원 6,210명 · 연봉 업계 상위 13%"]]}, {"k": "wlb", "t": "워라밸 좋은 회사", "d": "현직자 워라밸(잡플래닛·블라인드·캐치 종합) 3.8점 넘고 판정도 '가세요' 이상", "r": [["한국지질자원연구원", "워라밸 4.7점 · 리뷰 160개"], ["신용회복위원회", "워라밸 4.7점 · 리뷰 196개"], ["서울도시가스", "워라밸 4.6점 · 리뷰 193개"], ["한국원자력안전기술원", "워라밸 4.5점 · 리뷰 431개"], ["지엠테크니컬센터코리아", "워라밸 4.5점 · 리뷰 115개"], ["한국철도기술연구원", "워라밸 4.5점 · 리뷰 520개"], ["한국원자력연구원", "워라밸 4.5점 · 리뷰 554개"], ["한국전력기술", "워라밸 4.4점 · 리뷰 1,510개"], ["서울시설공단", "워라밸 4.4점 · 리뷰 960개"], ["한국지엠", "워라밸 4.4점 · 리뷰 1,520개"]]}, {"k": "hidden", "t": "숨은 알짜 중견", "d": "직원 300~1천 명, 대기업집단 소속이 아닌데 연봉은 업계 상위 10% 안", "r": [["티케이지태광", "직원 918명 · 연봉 업계 상위 1%"], ["부산신항만", "직원 903명 · 연봉 업계 상위 1%"], ["동남권원자력의학원", "직원 844명 · 연봉 업계 상위 1%"], ["한국원자력안전기술원", "직원 612명 · 연봉 업계 상위 1%"], ["한국마이크로소프트", "직원 576명 · 연봉 업계 상위 1%"], ["한국교직원공제회", "직원 537명 · 연봉 업계 상위 1%"], ["서울도시가스", "직원 479명 · 연봉 업계 상위 1%"], ["이지스자산운용", "직원 467명 · 연봉 업계 상위 1%"], ["코스맥스비티아이", "직원 375명 · 연봉 업계 상위 1%"], ["사노피-아벤티스 코리아", "직원 349명 · 연봉 업계 상위 1%"]]}, {"k": "newbie", "t": "신입 초봉 높은 회사", "d": "신입 추정 연봉이 높은 순, 판정도 '가세요' 이상", "r": [["에스케이텔레콤", "신입 추정 7,029만 원"], ["한화비전", "신입 추정 6,858만 원"], ["에이치디한국조선해양", "신입 추정 6,855만 원"], ["삼성전자", "신입 추정 6,558만 원"], ["서울보증보험", "신입 추정 6,522만 원"], ["디엘이앤씨", "신입 추정 6,479만 원"], ["한화생명보험", "신입 추정 6,343만 원"], ["（주）삼우종합건축사사무소", "신입 추정 6,316만 원"], ["현대캐피탈", "신입 추정 6,242만 원"], ["법무법인(유한) 세종", "신입 추정 6,207만 원"]]}, {"k": "stay", "t": "오래 다니는 회사", "d": "평균 근속 15년 넘고 퇴사율은 낮은 곳", "r": [["서울도시가스", "평균 근속 23.5년 · 한 해 퇴사 4%"], ["SK인천석유화학", "평균 근속 21.2년 · 한 해 퇴사 9%"], ["대성에너지", "평균 근속 20.7년 · 한 해 퇴사 6%"], ["디와이파워（주）", "평균 근속 18.6년 · 한 해 퇴사 9%"], ["에코플라스틱", "평균 근속 18.5년 · 한 해 퇴사 6%"], ["에이치엘만도", "평균 근속 18.4년 · 한 해 퇴사 8%"], ["케이티앤지", "평균 근속 18.2년 · 한 해 퇴사 9%"], ["삼성에스디에스", "평균 근속 17.2년 · 한 해 퇴사 7%"], ["지엠비코리아", "평균 근속 16.1년 · 한 해 퇴사 8%"], ["엘엑스하우시스", "평균 근속 15.9년 · 한 해 퇴사 7%"]]}, {"k": "grow", "t": "요즘 크는 회사", "d": "매출이 연평균 15% 넘게 크고 성장성 등급 A+ 이상", "r": [["빗썸", "매출 연평균 +852% · 직원 585명"], ["우미건설", "매출 연평균 +178% · 직원 879명"], ["유니투스", "매출 연평균 +158% · 직원 3,249명"], ["에이치에스애드", "매출 연평균 +104% · 직원 696명"], ["토스증권", "매출 연평균 +90% · 직원 595명"], ["스노우", "매출 연평균 +83% · 직원 372명"], ["실리콘투", "매출 연평균 +73% · 직원 407명"], ["시프트업", "매출 연평균 +65% · 직원 377명"], ["버슘머트리얼즈코리아", "매출 연평균 +50% · 직원 432명"], ["에스앤아이코퍼레이션", "매출 연평균 +44% · 직원 2,018명"]]}];  // 첫 화면 시리즈 4개 (build.py series, 주마다 바뀜) — 맨 앞 '많이 본 TOP 10'은 /top 으로
 const TS_KEY = "0x4AAAAAAFpHJtrOG8cQcwBZ";   // Cloudflare Turnstile 사이트 키 (공개값, config turnstile_sitekey). 하루 많이 본 사람에게만 봇 확인 (2026-10-28)
 const API = "https://company-api.jobzorro.workers.dev";  // 비어 있지 않으면 회사 상세는 API에서 한 곳씩 (조각 파일은 사이트에 안 올림)
@@ -1578,6 +1616,35 @@ function repCard(key, label, r, date) {
     <p class="src"><span>기준일 ${esc(date)}</span><a href="${esc(r.url)}" target="_blank" rel="noopener">원문 보기 ↗</a></p></div>`;
 }
 
+// A안 (2026-11-07 사용자 결정): '판단자료 부족' 회사에 국민연금 숫자로 본 참고 신호. 판정은 그대로 둔다.
+// 점수: 업계 연봉 ≤20 +2 · ≤40 +1 · ≤60 0 · ≤80 −1 · 그 아래 −2 / 퇴사율 <15% +1 · <35% 0 · 그 위 −1 / 근속 ≥8년 +1 · ≥3년 0 · 그 아래 −1
+// 합 ≥2 좋음 · ≤−2 주의 · 나머지 보통. 세 숫자 중 하나라도 없으면 상자를 안 띄움.
+function npsSig(c) {
+  const s = c.salary;
+  const byNps = c.basis === "nps";   // R40: 국민연금 숫자로 낸 판정 (2026-11-07)
+  if ((c.verdict !== "판단자료 부족" && !byNps) || !s) return null;
+  const top = s.industryTop ?? s.allTop;
+  if (top == null || s.turnover == null || s.tenure == null) return null;
+  const p = top <= 20 ? 2 : top <= 40 ? 1 : top <= 60 ? 0 : top <= 80 ? -1 : -2;
+  const t = s.turnover < .15 ? 1 : s.turnover < .35 ? 0 : -1;
+  const n = s.tenure >= 8 ? 1 : s.tenure >= 3 ? 0 : -1;
+  const sum = p + t + n, lv = sum >= 2 ? "좋음" : sum <= -2 ? "주의" : "보통";
+  const cl = x => x > 0 ? "g" : x < 0 ? "b" : "m";
+  const pw = ["많이 낮아요", "아래쪽", "중간", "좋은 편", "업계 위쪽"][p + 2];
+  const say = [p > 0 ? "연봉은 업계 위쪽이고" : p < 0 ? "연봉은 업계 아래쪽이고" : "연봉은 업계 중간이고",
+    t > 0 ? "사람이 잘 안 나가고" : t < 0 ? "사람이 많이 나가고" : "퇴사는 보통이고",
+    n > 0 ? "오래 다니는 회사예요." : n < 0 ? "근속이 짧은 회사예요." : "근속은 보통인 회사예요."].join(", ");
+  const html = `<div class="nps"><div class="top"><h4>국민연금으로 본 신호</h4><span class="sig ${{ 좋음: "g", 보통: "m", 주의: "b" }[lv]}">${lv}</span><span class="src">국민연금 가입자 자료</span></div>
+    <div class="row"><div class="it"><p>${s.industryTop != null ? "업계 연봉" : "전체 연봉"}</p><b>상위 ${top}%</b><span class="${cl(p)}">${pw}</span></div>
+      <div class="it"><p>연간 퇴사율</p><b>${Math.round(s.turnover * 100)}%</b><span class="${cl(t)}">${t > 0 ? "사람이 잘 안 나가요" : t < 0 ? "많이 나가요" : "보통"}</span></div>
+      <div class="it"><p>평균 근속</p><b>${s.tenure}년</b><span class="${cl(n)}">${n > 0 ? "오래 다녀요" : n < 0 ? "짧아요" : "보통"}</span></div></div>
+    <p class="say">${say}</p>
+    <p class="fine">${byNps ? "평점·재무 자료가 없어 국민연금 숫자로만 낸 판정이에요" : "평점·재무 자료가 없어 판정 대신 보여 드리는 참고 신호예요"}. 판정이 나온 회사로 맞춰 보니 '좋음'은 10곳 중 8곳이 실제로 '가세요' 쪽, '주의'는 10곳 중 7곳이 '다시 생각해요' 쪽이었어요.</p></div>`;
+  const z = { 좋음: "국민연금 신호는 좋아요. 그래도 면접에서 팀 분위기와 일하는 방식은 직접 확인하세요.",
+    보통: "국민연금 신호는 보통이에요. 연봉 조건과 팀 분위기를 직접 확인하고 정하세요.",
+    주의: "국민연금 신호는 주의예요. 사람이 왜 나가는지, 연봉이 왜 낮은지 면접에서 꼭 물어보세요." }[lv];
+  return { html, z: byNps ? null : z };   // 국민연금 판정은 한마디를 score.py 가 이미 맞춰 씀
+}
 function salarySec(c) {
   const s = c.salary;
   if (!s) return empty("연봉 연구소에 아직 없는 회사예요");
@@ -1827,7 +1894,8 @@ async function render(name) {
   const V = my ? my.v : c.verdict;
   const vcls = {"무조건 가세요":"v-go v-must","가세요":"v-go","조건 보고 가세요":"v-cond","중립기어":"v-neu","스펙 보고 결정하세요":"v-spec","다시 생각해요":"v-stop","비추예요":"v-no","판단자료 부족":"v-none"}[V];
   const s = c.salary, f = c.fin, date = c.rep?.date || "";
-  const z = my ? my.z : c.zorro;
+  const nps = my ? null : npsSig(c);
+  const z = my ? my.z : nps?.z ? [...c.zorro, nps.z] : c.zorro;
   const order = ["평판","연봉","성장성","수익성","안정성"];
   const board = order.map((k, i) => { const x = c.grades[k], g = x?.grade;
     return `<a class="cell" href="#s${i+1}"><p class="t">${k}<em>0${i+1}</em></p><p class="g ${g == null ? "gq" : lcls(x)}">${g == null ? "?" : ltxt(x)}</p><p class="s">${g == null ? "판단자료 부족" : esc(oneLine(c, k) || "")}</p></a>`; }).join("");
@@ -1843,10 +1911,11 @@ async function render(name) {
     <div class="head"><div><p class="kicker"><i></i>${esc(grpName(s, c.name))}</p><h2>${esc(dn(c.name))}</h2>
       <div class="chips"><span class="chip">${esc(c.type)} 회사${c.age != null ? " · 업력 " + c.age + "년" : ""}</span>${c.ai ? `<span class="chip ai-${c.ai.level}">AI 영향 ${c.ai.level}</span>` : ""}</div>
       <div class="meta">${s ? `<span>직원 <b>${won(s.members)}명</b></span>` : ""}${f ? `<span>재무 <b>${f.years[0]}~${f.years.at(-1)}</b> ${esc(f.source)}</span>` : ""}${date ? `<span>평점 <b>${esc(mdOf(date))}</b></span>` : ""}${c.news?.date ? `<span>뉴스 <b>${esc(mdOf(c.news.date))}</b></span>` : ""}</div></div>
-      <p class="disc1">회사에 대한 일반적인 평가예요. 내 스펙·상황에 따라 달라요.</p><div class="verdict ${vcls}"><small>${my ? "내 상황 기준 · " : ""}Zorro's Verdict</small><strong>${V}</strong>${!my && (V === "중립기어" || V === "스펙 보고 결정하세요") ? `<span class="tier" title="중립기어와 스펙 보고 결정하세요는 같은 급이에요. 회사가 보수적이라 성향에 따라 갈리면 중립기어, 내 스펙·다른 카드에 따라 갈리면 스펙 보고예요.">가운데 급 · 중립기어 = 스펙 보고</span>` : ""}${!my && !c.fin && V !== "판단자료 부족" ? `<span class="nofin" title="재무 자료 없이 평점·연봉으로만 낸 판정이에요">재무 미반영</span>` : ""}${!my && (c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}${my?.chips?.length ? `<div class="vtags mchips" title="이 판정이 나온 근거">${my.chips.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
+      <p class="disc1">회사에 대한 일반적인 평가예요. 내 스펙·상황에 따라 달라요.</p><div class="verdict ${vcls}"><small>${my ? "내 상황 기준 · " : ""}Zorro's Verdict</small><strong>${V}</strong>${!my && (V === "중립기어" || V === "스펙 보고 결정하세요") ? `<span class="tier" title="중립기어와 스펙 보고 결정하세요는 같은 급이에요. 회사가 보수적이라 성향에 따라 갈리면 중립기어, 내 스펙·다른 카드에 따라 갈리면 스펙 보고예요.">가운데 급 · 중립기어 = 스펙 보고</span>` : ""}${!my && c.basis === "nps" ? `<span class="nofin" title="평점·재무가 없어 국민연금 숫자(업계 연봉·퇴사율·근속)로만 낸 판정이에요">국민연금 기준</span>` : !my && !c.fin && V !== "판단자료 부족" ? `<span class="nofin" title="재무 자료 없이 평점·연봉으로만 낸 판정이에요">재무 미반영</span>` : ""}${!my && (c.tags || []).length ? `<div class="vtags">${c.tags.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}${my?.chips?.length ? `<div class="vtags mchips" title="이 판정이 나온 근거">${my.chips.map(x => `<span>${esc(x)}</span>`).join("")}</div>` : ""}</div></div>
     ${API ? `<div class="acts"><button class="act heart${hearted.get(c.name) ? " on" : ""}" type="button" id="b-heart" aria-label="이 회사 하트">♥ <b>${(c._s?.hearts || 0).toLocaleString("ko-KR")}</b></button>
       <details class="sharebox"><summary class="act">공유</summary><div class="sharemenu"><button type="button" id="b-share">링크 공유</button><button type="button" id="b-card">결과 카드 저장</button></div></details>
       ${(c._s?.views7 || 0) >= 10 ? `<span class="seen">최근 7일 ${c._s.views7.toLocaleString("ko-KR")}명이 확인했어요</span>` : ""}</div>` : ""}
+    ${nps ? nps.html : ""}
     ${meStrip(c, my)}
     ${meCmp(c, my)}
     ${meRankSlot(c, my)}
@@ -2161,7 +2230,7 @@ function loadMore() {
 fetch("data/index.json").then(r => r.json()).then(d => { IDX_G = d.g; Object.entries(d.d || {}).forEach(([k, v]) => DISP.set(k, v)); IDX_S = new Map(d.s ? d.r.map((x, i) => [x[0], SIDO_L["-abcdefghijklmnopq".indexOf(d.s[i])] || ""]) : []); IDX = d.r.map(([n, v, g, a, x]) => [n, v, d.g[g], a, undefined, undefined, x]);   // [6] = 같은 이름 다른 회사 구분(지역·직원 수), [4]·[5]는 검색 캐시
   const n = IDX.filter(r => r[1]).length, total = d.total || IDX.length;
   $("#stCo").innerHTML = total.toLocaleString("ko-KR") + "<small>곳</small>";
-  $("#stJudged").innerHTML = n.toLocaleString("ko-KR") + "<small>곳</small>"; TK.co = total; TK.judged = n; tick();
+  $("#stJudged").innerHTML = n.toLocaleString("ko-KR") + "<small>곳</small>"; TK.co = total; TK.judged = n; tick(); basisFill();
   });   // 2026-11-03: 4초 뒤 자동으로 받지 않는다 (554KB) — 검색창을 누르거나 칠 때만
 document.addEventListener("focusin", e => { if (e.target.matches?.("#q, #q2")) loadMore(); });
 document.addEventListener("input", e => { if (e.target.matches?.("#q, #q2")) loadMore(); });
@@ -2224,6 +2293,18 @@ function seriesWire(el) {
 }
 // 첫 화면 두 번째 카드: 판정 분포 + '무조건 가세요' 회사 하나 뽑기 (2026-10-29 사용자: 대결 말고 재밌는 것 하나 더) — 검색 목록(IDX)이 오면 채운다
 // 판정별 회사 수는 빌드가 넣는다(VDIST, 숫자만), 뽑기는 이번 주 '무조건 가세요' 시리즈 10곳에서
+function basisFill() {   // 2026-11-07 판정 근거 (국민연금 판정이 켜져 있을 때만 BASIS 가 찬다)
+  const b = BASIS, box = document.getElementById("stJudgedBox"); if (!box || !b || !Object.keys(b).length || box.classList.contains("jd")) return;
+  const rows = [["both", "k1", "재무 + 평점", ""], ["repnps", "k2", "평점 + 국민연금 숫자", "재무 공시 없는 회사"], ["rep", "k6", "평점만", ""], ["finnps", "k3", "재무 + 국민연금 숫자", "공개 평점 없는 회사"], ["fin", "k7", "재무만", ""],
+    ["nps", "k4", "국민연금 숫자", "연봉·퇴사율·근속"], ["none", "k5", "판단자료 부족", ""]];
+  const etc = b.etc || 0, tot = rows.reduce((a, r) => a + (b[r[0]] || 0), 0) + etc; if (!tot) return;
+  const f = x => (x || 0).toLocaleString("ko-KR");
+  box.classList.add("jd"); box.tabIndex = 0; box.setAttribute("aria-label", "판정 나온 회사, 무엇으로 판정했나 보기");
+  $("#stJudgedSub").textContent = `판단자료 부족 ${f(b.none)}곳`;
+  box.insertAdjacentHTML("beforeend", `<aside class="basisbox" role="tooltip"><h4>무엇으로 판정했나</h4>
+    <span class="bar" aria-hidden="true">${rows.map(r => `<i class="${r[1]}" style="width:${((b[r[0]] || 0) / tot * 100).toFixed(1)}%"></i>`).join("")}</span>
+    <ul>${rows.map(r => `<li><i class="${r[1]}"></i><span>${r[2]}${r[3] ? ` <small>${r[3]}</small>` : ""}</span><b>${f(b[r[0]])}</b></li>`).join("")}${etc ? `<li><i></i><span>그 밖 <small>연봉만 등</small></span><b>${f(etc)}</b></li>` : ""}</ul></aside>`);
+}
 const FUN_ORDER = ["무조건 가세요", "가세요", "조건 보고 가세요", "중립기어", "스펙 보고 결정하세요", "다시 생각해요", "비추예요"];
 const FUN_ROWS = [["무조건 가세요"], ["가세요"], ["조건 보고 가세요"], ["중립기어", "스펙 보고 결정하세요"], ["다시 생각해요"], ["비추예요"]];   // 가운데 급은 한 줄 (2026-11-03)
 function funFill() {
