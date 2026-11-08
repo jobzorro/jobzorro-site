@@ -3,7 +3,7 @@
 
 
 
-const RULES = 5;
+const RULES = 6;
 const EPOCH = '2026-10-01';
 const RK = ['사원', '대리', '과장', '차장', '부장'];
 const DAILY = ['higher', 'today', 'sniper', 'road', 'run', 'cup', 'line'];
@@ -34,6 +34,9 @@ function dayMs(day) { return Date.parse(day + 'T00:00:00Z'); }
 function addDays(day, n) { return new Date(dayMs(day) + n * 864e5).toISOString().slice(0, 10); }
 function dayIndex(day) { return Math.round((dayMs(day) - dayMs(EPOCH)) / 864e5); }
 function dow(day) { return new Date(dayMs(day)).getUTCDay(); }
+
+const V6_FROM = '2026-11-09';
+function v6(day) { return day >= V6_FROM || (typeof globalThis !== 'undefined' && globalThis.__V6 === true); }
 function isoWeek(day) {
   const wd = (dow(day) + 6) % 7, thu = dayMs(day) + (3 - wd) * 864e5, y = new Date(thu).getUTCFullYear();
   return y + '-W' + String(1 + Math.floor((thu - Date.UTC(y, 0, 1)) / 864e5 / 7)).padStart(2, '0');
@@ -214,8 +217,10 @@ const T3_PRE2_FROM = '2026-11-02';
 const T3_PRE2 = ['r4:10000', 's0:5000', 'r1:6000', 'ex:30000', 'lad:2', 'tw:1.2', 'my:5', '~my:-3', 'up:15', 'yoy:5', '~yoy:1',
   'tt:15', '~tt:5', '~to:0.1', 'to:0.3', 'pub:0', 'ag:35', 'rt:3.5', '~rt:2.7', 'grp:', 'sido:'];
 const T3_PRE2_TAIL = ['m:10000', '~m:1000'];
+
+const T3_PRE3 = ['r4:10000', 's0:5000', 'r1:6000', 'r2:8000', 'tt:15', '~tt:5', 'pub:0', 'ag:40'];
 function t3Premise(A, day, ctx) {
-  const r = rng('t3pre|' + day), list = shuffleR(r, (day >= T3_PRE2_FROM ? T3_PRE2 : T3_PRE).filter(q => q !== 'grp:' && q !== 'sido:')).concat(day >= T3_PRE2_FROM ? T3_PRE2_TAIL : [], ['grp:' + A.grp, A.sido ? 'sido:' + A.sido : '']).filter(Boolean);
+  const r = rng('t3pre|' + day), list = shuffleR(r, (v6(day) ? T3_PRE3 : day >= T3_PRE2_FROM ? T3_PRE2 : T3_PRE).filter(q => q !== 'grp:' && q !== 'sido:')).concat(day >= T3_PRE2_FROM ? T3_PRE2_TAIL : [], ['grp:' + A.grp, A.sido ? 'sido:' + A.sido : '']).filter(Boolean);
   const key = q => q.replace('~', '').split(':')[0], has = t3Has;
   for (const q of list) {
     const k = key(q);
@@ -227,19 +232,31 @@ function t3Premise(A, day, ctx) {
   }
   return { pre: '', cands: todayCands(A, day, ctx, T3_N, [4, 5, 6][A.tier] || 5) };
 }
-function t3Final(pz, alive, log) {
-  const pool = alive.filter(n => n !== pz.ans), L = pool.length ? pool : pz.cands.filter(n => n !== pz.ans);
+function t3Final(pz, alive, log, ctx) {
+  let pool = alive.filter(n => n !== pz.ans);
+  if (ctx && pz.pre && v6(pz.day)) { const fit = pool.filter(n => t3Ask(ctx.by[n], pz.pre) === true); if (fit.length) pool = fit; }
+  const L = pool.length ? pool : pz.cands.filter(n => n !== pz.ans);
   const h = hash32('t3d|' + pz.day + '|' + log.join('|')), d = L[h % L.length];
   return h & 1 ? [pz.ans, d] : [d, pz.ans];
 }
+
+
+const T3_FIN = 3;
+function t3Seed(pz, qs) { return 't3q|' + pz.day + '|' + qs.join(','); }
+function t3Used(pz, qs) { const U = {}; qs.forEach(q => { U[q] = 1; }); if (pz.pre) U[pz.pre.replace('~', '')] = 1; return U; }
+function t3CanFin(pz, alive, asks, qs, ctx) {
+  if (!v6(pz.day)) return true;
+  return alive.length <= T3_FIN || asks >= T3_MAXQ || !t3Questions(alive, ctx, t3Used(pz, qs), 6, pz.pre, t3Seed(pz, qs)).length;
+}
 function simToday3(pz, log, ctx) {
   if (!Array.isArray(log) || log.length > T3_MAXQ + T3_EARLY_MAX + 1) return null;
-  const A = ctx.by[pz.ans]; let alive = pz.cands.slice(), asks = 0, ew = 0, solved = false, done = false, early = false, fin = null; const steps = [], qs = [], seq = [];
+  const A = ctx.by[pz.ans], nv = v6(pz.day); let alive = pz.cands.slice(), asks = 0, ew = 0, solved = false, done = false, early = false, fin = null; const steps = [], qs = [], seq = [];
   for (let i = 0; i < log.length; i++) {
     const a = log[i];
     if (done || typeof a !== 'string') return null;
     if (a[0] === '?') {
       const q = a.slice(1), yes = t3Ask(A, q); if (yes === null || asks >= T3_MAXQ || qs.indexOf(q) >= 0) return null;
+      if (nv && t3Questions(alive, ctx, t3Used(pz, qs), 6, pz.pre, t3Seed(pz, qs)).indexOf(q) < 0) return null;
       const out = alive.filter(n => t3Ask(ctx.by[n], q) !== yes); alive = alive.filter(n => out.indexOf(n) < 0);
       asks++; qs.push(q); steps.push({ q, yes, out }); seq.push('q'); continue;
     }
@@ -248,11 +265,14 @@ function simToday3(pz, log, ctx) {
       if (n === pz.ans) { solved = done = early = true; seq.push('O'); continue; }
       ew++; alive = alive.filter(x => x !== n); steps.push({ g: n, out: [n] }); seq.push('e'); continue;
     }
-    fin = t3Final(pz, alive, log.slice(0, i));
+    if (nv && !t3CanFin(pz, alive, asks, qs, ctx)) return null;
+    fin = t3Final(pz, alive, log.slice(0, i), nv ? ctx : null);
     if (fin.indexOf(a) < 0) return null;
     solved = a === pz.ans; done = true; seq.push(solved ? 'o' : 'x');
   }
-  return { alive, asks, ew, early, solved, done, steps, fin: fin || t3Final(pz, alive, log), seq: seq.join('') };
+  const R = { alive, asks, ew, early, solved, done, steps, fin: fin || t3Final(pz, alive, log, nv ? ctx : null), seq: seq.join('') };
+  if (nv) { R.qs = qs; R.canFin = t3CanFin(pz, alive, asks, qs, ctx); }
+  return R;
 }
 function today3Pts(asks, ew) { return Math.max(T3_FLOOR, 500 - T3_Q * Math.max(0, asks - T3_FREE) - T3_EARLY * (ew || 0)); }
 
@@ -260,9 +280,19 @@ const T3_VALS = { m: [300, 500, 1000, 2000, 3000, 5000, 10000, 20000, 30000], s0
   r2: [5000, 6000, 7000, 8000, 9000, 10000], r4: [7000, 8000, 9000, 10000, 12000, 15000], tt: [3, 5, 7, 10, 12, 15, 18, 20], to: [.03, .05, .08, .1, .15, .2],
   rt: [3, 3.2, 3.4, 3.6, 3.8, 4], ag: [10, 20, 30, 40, 50], pub: [0], my: [0], jump: [0],
   ex: [10000, 15000, 20000, 30000, 40000], lad: [1.6, 1.8, 2, 2.2], tw: [1], yoy: [2, 3, 5, 7], up: [5, 10, 15, 20] };
-function t3Questions(alive, ctx, used, lim, pre) {
+
+
+const T3_PICK = 5;
+function t3Questions(alive, ctx, used, lim, pre, seed) {
   const C = alive.map(n => ctx.by[n]), N = C.length, cand = [], U = used || {}, PK = String(pre || '').replace('~', '').split(':')[0];
   const bal = q => { const y = C.filter(c => t3Ask(c, q)).length; return y > 0 && y < N ? Math.abs(y - N / 2) / N : null; };
+  if (seed != null) {
+    const r = rng(seed), K = {}, add = (k, x) => { (K[k] = K[k] || []).push(x); };
+    ['grp', 'sido'].forEach(k => { if (k === PK) return; const seen = {}; C.forEach(c => { const v = T3_KEYS[k](c); if (v && !seen[v]) { seen[v] = 1; const q = k + ':' + v, b = bal(q); if (b != null && !U[q]) add(k, [q, b]); } }); });
+    Object.keys(T3_VALS).forEach(k => { if (k === PK || C.some(c => !t3Has(c, k))) return; T3_VALS[k].forEach(v => { const q = k + ':' + v, b = bal(q); if (b != null && !U[q]) add(k, [q, b]); }); });
+    const out = Object.keys(K).sort().map(k => { const L = K[k].sort((a, c) => a[1] - c[1] || (a[0] < c[0] ? -1 : 1)).slice(0, T3_PICK); return L[Math.floor(r() * L.length)][0]; });
+    return shuffleR(r, out).slice(0, lim || 6);
+  }
   ['grp', 'sido'].forEach(k => { if (k === PK) return; const seen = {}; C.forEach(c => { const v = T3_KEYS[k](c); if (v && !seen[v]) { seen[v] = 1; const q = k + ':' + v, b = bal(q); if (b != null && !U[q]) cand.push([q, b]); } }); });
   Object.keys(T3_VALS).forEach(k => {
     if (k === PK || C.some(c => !t3Has(c, k))) return;
@@ -562,7 +592,7 @@ function genRoad2(day, ctx) {
   const mid = P.filter(c => !used[c.n] && c.m >= 300 && c.m < 3000 && !c.pub);
   const spare = [0, 1, 2].map(() => { const c = pickR(r, mid.length ? mid : P); used[c.n] = 1; return c.n; });
   const ed = R2_SLOTS.map(() => r()), u = R2_SLOTS.map(() => [0, 1, 2].map(() => [r(), r(), r()])), yd = Array.from({ length: 20 }, () => r());
-  return Object.assign({}, base, { v: 2, spare, ed, u, yd, v3: road3(day) ? 1 : 0, dk: day });
+  return Object.assign({}, base, { v: 2, spare, ed, u, yd, v3: road3(day) ? 1 : 0, dk: day }, v6(day) ? { v6: 1 } : {});
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function r2Add(S, d) { ['hp', 'cr', 'hap'].forEach(k => { if (d[k]) S[k] = clamp(S[k] + d[k], 0, 100); }); }
@@ -596,7 +626,7 @@ const R2_EV = {
       { lb: '지금 자리에 남는다', h: { hap: 1 }, f: S => { r2Add(S, { hap: 1 }); return '남았다. 바뀐 건 자리 배치 정도였다.'; } }] },
   w_cut: { t: 'work', ch: [1, 3], c: (S, c, pz) => !S.su && !S.retired && roadRiskSc(pz, c) >= .1, w: 2, q: () => '구조조정 소문이 현실이 됐다. "앞으로 2년 연봉 동결"이라는 공지가 붙었다.',
     o: S => [
-      { lb: '버틴다', h: { m: -1, hp: -1 }, f: S => { S.freeze = 2; S.cuts++; r2Add(S, { hp: -5, cr: 1 }); return '2년 동안 연봉이 그대로였다. 그래도 자리는 지켰다.'; } },
+      { lb: '버틴다', h: { m: -1, hp: -1 }, f: S => { S.freeze = 2; S.cuts++; S.cutStay = S.cn; r2Add(S, { hp: -5, cr: 1 }); return '2년 동안 연봉이 그대로였다. 그래도 자리는 지켰다.'; } },
       { lb: '희망퇴직하고 옮긴다', h: { m: 0, hap: -1 }, f: (S, u, ctx, pz) => { S.bonus += S.s * .6; S.mul = .7; S.cuts++; r2Move(S, ctx.by[pz.spare[0]], S.s * .97); r2Add(S, { hap: -3 }); return '위로금을 받고 나왔다. 몇 달 쉬고 ' + S.cname + '에 들어갔다.'; } }] },
   w_head: { t: 'work', ch: [0, 3], c: S => !S.retired && !S.su, q: () => '모르는 번호로 전화가 왔다. 헤드헌터였다. "지금보다 조건 좋은 자리가 있어요."',
     o: () => [
@@ -618,7 +648,7 @@ const R2_EV = {
     o: () => [
       { lb: '끝까지 달린다', h: { cr: 1, hp: -2 }, f: S => { r2Add(S, { cr: 5, hp: -9 }); return '마감은 맞췄다. 거울 속 얼굴이 낯설었다.'; } },
       { lb: '칼퇴를 지킨다', h: { hp: 1, cr: -1 }, f: S => { r2Add(S, { hp: 3, cr: -3 }); return '정시에 나왔다. 눈치는 좀 보였다.'; } }] },
-  w_founder: { t: 'work', ch: [1, 3], w: 1.6, c: S => S.cr >= 45 && !S.su && !S.retired, q: () => '예전 동료가 차린 회사에서 합류 제안이 왔다. 연봉은 깎이지만 지분을 준다고 한다.',
+  w_founder: { t: 'work', ch: [1, 3], ch6: [1, 2], w: 1.6, c: S => S.cr >= 45 && !S.su && !S.retired, q: () => '예전 동료가 차린 회사에서 합류 제안이 왔다. 연봉은 깎이지만 지분을 준다고 한다.',
     o: () => [
       { lb: '합류한다', h: { m: -1, cr: 1, hap: 1 }, f: (S, u, ctx, pz) => { S.su = 1; S.suY = S.y + 3; S.suU = u[0]; S.moves++; S.cname = '동료의 스타트업'; S.s *= .85; r2Add(S, { cr: 4, hap: 4, hp: -4 }); return '명함이 바뀌었다. 3년 뒤에 결판이 난다.'; } },
       { lb: '거절한다', h: { hap: 0 }, f: S => { r2Add(S, { hap: 1 }); return '응원한다고 답했다. 가끔 소식을 찾아본다.'; } }] },
@@ -654,8 +684,8 @@ const R2_EV = {
       { lb: '복귀 준비 공부를 한다', h: { cr: 1, hp: -1 }, f: S => { r2Add(S, { cr: 7, hp: -3 }); return '아이가 잠든 밤마다 강의를 들었다. 업계 소식도 놓치지 않았다.'; } },
       { lb: '아이와의 시간에 집중한다', h: { hap: 2 }, f: S => { r2Add(S, { hap: 6, hp: 2 }); return '이 시간은 다시 오지 않는다고 생각했다.'; } }] },
 
-  w_team: { t: 'work', fixed: 1, q: S => S.cr >= 55 ? '팀장 자리가 비었다. 상무님이 불렀다. "팀 한번 맡아 볼래요?"' : '후배가 먼저 팀장이 됐다. 축하 회식 자리가 조금 길게 느껴졌다.',
-    o: S => S.cr >= 55 ? [
+  w_team: { t: 'work', fixed: 1, q: S => S.cr >= (S.v6 ? 40 : 55) ? '팀장 자리가 비었다. 상무님이 불렀다. "팀 한번 맡아 볼래요?"' : '후배가 먼저 팀장이 됐다. 축하 회식 자리가 조금 길게 느껴졌다.',
+    o: S => S.cr >= (S.v6 ? 40 : 55) ? [
       { lb: '팀장을 맡는다', h: { cr: 2, m: 1, hp: -1 }, f: S => { S.track = 'mgr'; S.raise *= 1.06; r2Add(S, { cr: 12, hp: -6, hap: -2 }); return '팀장이 됐다. 내 일보다 팀원 일을 먼저 보게 됐다.'; } },
       { lb: '실무 전문가로 남는다', h: { cr: 1, hap: 1 }, f: S => { S.track = 'exp'; r2Add(S, { cr: 7, hap: 4 }); return '직접 일하는 쪽을 골랐다. 이 분야에서 내 이름이 알려지기 시작했다.'; } }] : [
       { lb: '축하하고 내 일을 한다', h: { hap: 1, cr: 1 }, f: S => { r2Add(S, { hap: 2, cr: 4 }); return '진심으로 축하했다. 내 속도로 가기로 했다.'; } },
@@ -666,18 +696,18 @@ const R2_EV = {
       { lb: '버틴다', h: { cr: 1, hp: -1 }, f: S => { r2Add(S, { cr: 4, hp: -4 }); return '한 해를 더 버텼다.'; } },
       { lb: '속도를 늦춘다', h: { hp: 1, hap: 1 }, f: S => { r2Add(S, { hp: 4, hap: 3 }); return '일을 조금 줄였다.'; } }]
       : S.track === 'mgr' ? [
-      { lb: '임원에 도전한다', h: { cr: 2, m: 1, hp: -1 }, f: (S, u) => { const p = clamp((S.cr - 40) / 70, .1, .8); if (u[0] < p) { S.exec = 1; S.raise *= 1.1; r2Add(S, { cr: 20, hp: -6 }); return '임원이 됐다. 1년 계약직이라는 말이 실감 났다.'; } r2Add(S, { cr: -3, hap: -4 }); return '이번엔 아니었다. 명단에서 이름이 빠졌다.'; } },
+      { lb: '임원에 도전한다', h: { cr: 2, m: 1, hp: -1 }, f: (S, u) => { const p = S.v6 ? clamp((S.cr - 25) / 50, .15, .8) : clamp((S.cr - 40) / 70, .1, .8); if (u[0] < p) { S.exec = 1; S.raise *= S.v6 ? 1.05 : 1.1; r2Add(S, S.v6 ? { cr: 10, hp: -10, hap: -4 } : { cr: 20, hp: -6 }); return '임원이 됐다. 1년 계약직이라는 말이 실감 났다.'; } r2Add(S, { cr: -3, hap: -4 }); return '이번엔 아니었다. 명단에서 이름이 빠졌다.'; } },
       { lb: '팀장으로 남는다', h: { hap: 1, hp: 1 }, f: S => { r2Add(S, { hap: 4, hp: 3 }); return '팀장 자리가 좋다고 말했다. 진심이었다.'; } }]
       : S.track === 'exp' ? [
       { lb: '책을 쓰고 강연한다', h: { cr: 2, m: 1, hp: -1 }, f: S => { S.bonus += S.s * .05; r2Add(S, { cr: 12, hp: -4 }); return '책 한 권이 나왔다. 이 분야에서 찾는 사람이 됐다.'; } },
       { lb: '조용히 일한다', h: { hap: 1 }, f: S => { r2Add(S, { hap: 3, cr: 2 }); return '말보다 일로 남기기로 했다.'; } }]
       : [
-      { lb: '창업을 준비한다', h: { cr: 1, hp: -1, hap: 1 }, f: S => { r2Add(S, { cr: 6, hp: -5, hap: 3 }); S.prep = 1; return '주말마다 사업 계획서를 고쳤다.'; } },
+      { lb: '창업을 준비한다', h: { cr: 1, hp: -1, hap: 1 }, f: S => { r2Add(S, { cr: 6, hp: -5, hap: 3 }); S.prep = 1; S.prepY = S.y; return '주말마다 사업 계획서를 고쳤다.'; } },
       { lb: '자격·학위를 딴다', h: { cr: 2, hp: -1 }, f: S => { r2Add(S, { cr: 8, hp: -5 }); return '늦은 공부였다. 그래서 더 집중했다.'; } },
       { lb: '지금 자리를 지킨다', h: { hap: 1, hp: 1 }, f: S => { r2Add(S, { hap: 3, hp: 2 }); return '지금 자리에서 할 수 있는 일을 했다.'; } }] },
 
 
-  l_love: { t: 'life', ch: [0, 0], q: () => '친구가 소개팅을 주선하겠다고 한다. 요즘 주말이 조금 허전하긴 했다.',
+  l_love: { t: 'life', ch: [0, 0], ch6: [0, 1], w6: 3, c6: S => !S.dating && !S.married, q: () => '친구가 소개팅을 주선하겠다고 한다. 요즘 주말이 조금 허전하긴 했다.',
     o: () => [
       { lb: '나가 본다', h: { hap: 2 }, f: S => { S.dating = 1; r2Add(S, { hap: 7, hp: -1 }); return '생각보다 말이 잘 통했다. 주말 약속이 생겼다.'; } },
       { lb: '일에 집중한다', h: { cr: 1 }, f: S => { r2Add(S, { cr: 4 }); return '지금은 일이 먼저라고 생각했다.'; } },
@@ -717,7 +747,7 @@ const R2_EV = {
       { lb: '책을 읽는다', h: { cr: 1, hap: 1 }, f: S => { r2Add(S, { cr: 2, hap: 2 }); return '한 해에 스무 권을 읽었다.'; } },
       { lb: '푹 쉰다', h: { hp: 1 }, f: S => { r2Add(S, { hp: 4 }); return '잘 쉬었다.'; } }] },
 
-  l_houseM: { t: 'life', ch: [0, 1], g: 1, c: S => S.dating, w: 2, q: () => '결혼 이야기가 나오자 "집은 남자가 해 와야지"라는 말이 먼저 나왔다.',
+  l_houseM: { t: 'life', ch: [0, 1], ch6: [0, 2], g: 1, c: S => S.dating, c6: S => S.dating && !S.married, w: 2, q: () => '결혼 이야기가 나오자 "집은 남자가 해 와야지"라는 말이 먼저 나왔다.',
     o: () => [
       { lb: '대출로 집을 마련한다', h: { hap: 1, hp: -1 }, f: S => { r2Add(S, { hap: 4, hp: -5 }); return '집이 생겼다. 매달 갚는 숫자도 생겼다.'; } },
       { lb: '둘이 같이 모으자고 한다', h: { hap: 1 }, f: S => { r2Add(S, { hap: 3 }); return '이야기가 길어졌지만, 둘이 같은 계획을 세웠다.'; } }] },
@@ -766,7 +796,7 @@ const R2_EV = {
 
   w_suidea: { t: 'work', ch: [1, 2], v3: 1, w: 1.2, c: S => S.cr >= 40 && !S.su && !S.retired && !S.off && !S.suPlan, q: () => '샤워하다가 떠오른 사업 아이디어가 며칠째 머리에서 떠나지 않는다.',
     o: () => [
-      { lb: '퇴사하고 창업한다', h: { cr: 1, hap: 1, m: -1 }, f: S => { S.suPlan = 1; r2Add(S, { cr: 3, hap: 3, hp: -2 }); return '사표를 품에 넣고 다니기 시작했다. 아이템부터 정하기로 했다.'; } },
+      { lb: '퇴사하고 창업한다', h: { cr: 1, hap: 1, m: -1 }, f: S => { S.suPlan = 1; S.suIdeaY = S.y; r2Add(S, { cr: 3, hap: 3, hp: -2 }); return '사표를 품에 넣고 다니기 시작했다. 아이템부터 정하기로 했다.'; } },
       { lb: '주말에 시제품만 만든다', h: { cr: 1, hp: -1 }, f: (S, u) => { r2Add(S, { cr: 3, hp: -4 }); if (u[0] < .3) { S.bonus += S.s * .15; return '시제품이 입소문을 탔다. 작은 부수입이 생겼다.'; } return '주말이 사라졌다. 그래도 만드는 건 재밌었다.'; } },
       { lb: '접는다', h: { hap: -1 }, f: S => { r2Add(S, { hap: -2, hp: 1 }); return '아이디어 노트를 서랍에 넣었다. 가끔 꺼내 본다.'; } }] },
   w_supick: { t: 'work', ch: [1, 3], v3: 1, w: 40, c: S => (S.suPlan || S.prep) && !S.su && !S.retired && !S.off, q: () => '창업 아이템 최종 후보 세 개. 이 중 하나에 앞으로 3년을 건다.',
@@ -786,7 +816,7 @@ const R2_EV = {
       { lb: '못 본 척한다', h: { hap: -1 }, f: S => { r2Add(S, { hap: -4, hp: -1 }); return '눈을 감았다. 밤에 잠이 잘 안 왔다.'; } }] },
   w_mna: { t: 'work', ch: [1, 3], v3: 1, w: .8, c: S => !S.su && !S.retired && !S.off, q: () => '아침 뉴스에 우리 회사 매각 기사가 떴다. 메신저가 폭발했다.',
     o: () => [
-      { lb: '새 주인 밑에서 기회를 본다', h: { m: 1, cr: 1, hp: -1 }, f: (S, u) => { if (u[0] < .5) { S.raise *= 1.08; r2Add(S, { cr: 6 }); return '새 대주주가 핵심 인력에게 연봉을 올려 줬다. 내가 거기 있었다.'; } S.freeze = 1; r2Add(S, { hap: -4, hp: -3 }); return '통합 작업으로 1년이 갔다. 연봉은 동결이었다.'; } },
+      { lb: '새 주인 밑에서 기회를 본다', h: { m: 1, cr: 1, hp: -1 }, f: (S, u) => { if (u[0] < .5) { S.raise *= 1.08; r2Add(S, { cr: 6 }); return '새 대주주가 핵심 인력에게 연봉을 올려 줬다. 내가 거기 있었다.'; } S.freeze = 1; if (S.v6) { S.cuts++; S.cutStay = S.cn; } r2Add(S, { hap: -4, hp: -3 }); return '통합 작업으로 1년이 갔다. 연봉은 동결이었다.'; } },
       { lb: '위로금 받고 이직을 준비한다', h: { m: 1, cr: 1 }, f: S => { S.bonus += S.s * .3; S.hunt = 1; r2Add(S, { cr: 2, hap: 1 }); return '위로금을 챙겼다. 다음 제안은 협상이 수월할 것 같다.'; } }] },
   w_remote: { t: 'work', ch: [0, 2], v3: 1, q: () => '회사가 주 3일 재택을 시범 운영한다. 신청자를 받는다.',
     o: () => [
@@ -794,7 +824,7 @@ const R2_EV = {
       { lb: '사무실로 나간다', h: { cr: 1 }, f: S => { r2Add(S, { cr: 4, hp: -1 }); return '텅 빈 사무실에서 팀장님과 가까워졌다.'; } }] },
 
 
-  l_spark: { t: 'life', ch: [0, 1], v3: 1, w: 1.3, c: S => !S.married && !S.dating, q: () => '옆 팀 동료와 점심을 같이 먹는 날이 늘었다. 메신저 답장이 유난히 빠르다.',
+  l_spark: { t: 'life', ch: [0, 1], v3: 1, w: 1.3, wk6: [0, 1], c: S => !S.married && !S.dating, q: () => '옆 팀 동료와 점심을 같이 먹는 날이 늘었다. 메신저 답장이 유난히 빠르다.',
     o: () => [
       { lb: '고백한다', h: { hap: 2 }, f: (S, u) => { if (u[0] < .55) { S.dating = 1; r2Add(S, { hap: 10 }); return '사내 연애 시작. 엘리베이터에서 모른 척하는 게 제일 어렵다.'; } r2Add(S, { hap: -6 }); return '"좋은 동료로 지내요." 한동안 회의실이 어색했다.'; } },
       { lb: '친구로 남는다', h: { hap: 0 }, f: S => { r2Add(S, { hap: 1 }); return '좋은 점심 친구가 됐다. 그것도 괜찮았다.'; } },
@@ -830,21 +860,21 @@ const R2_EV = {
       { lb: '다시 사랑해 본다', h: { hap: 2 }, f: (S, u) => { if (u[0] < .6) { S.married = 1; S.wed = 1; r2Add(S, { hap: 12 }); return '두 번째 결혼식은 작고 조용했다. 이번엔 서로 더 많이 묻는다.'; } S.dating = 1; r2Add(S, { hap: 5 }); return '천천히 만나기로 했다. 서두르지 않기로.'; } },
       { lb: '혼자가 편하다', h: { hap: 1, hp: 1 }, f: S => { S.solo = 1; r2Add(S, { hap: 5, hp: 3 }); return '혼자 사는 집에 화분이 늘었다. 이대로 좋다.'; } }] },
 
-  l_babylate: { t: 'life', ch: [2, 3], v3: 1, w: 2.2, c: S => S.married && !S.kids, q: () => '마흔이 가까워지자 아이 생각이 다시 났다.',
+  l_babylate: { t: 'life', ch: [2, 3], v3: 1, w: 2.2, w6: 10, c: S => S.married && !S.kids, q: () => '마흔이 가까워지자 아이 생각이 다시 났다.',
     o: () => [
       { lb: '난임 병원에 다닌다', h: { hap: 1, hp: -1, m: -1 }, f: (S, u) => { S.bonus -= S.s * .05; r2Add(S, { hp: -6 }); if (u[0] < .5) { S.kids = 1; S.kidY = S.y; r2Add(S, { hap: 14 }); return '두 줄! 기다린 만큼 둘이 같이 울었다.'; } r2Add(S, { hap: -4 }); return '이번엔 아니었다. 서로의 손을 오래 잡았다.'; } },
       { lb: '입양을 알아본다', h: { hap: 2, cr: -1 }, f: S => { S.kids = 1; S.kidY = S.y; r2Add(S, { hap: 12, cr: -2, hp: -3 }); return '1년의 서류 끝에 아이가 왔다. 첫날 밤, 셋이 같은 방에서 잤다.'; } },
       { lb: '둘이서 행복하자', h: { hap: 1, hp: 1 }, f: S => { r2Add(S, { hap: 5, hp: 2 }); return '둘만의 여행 계획을 세웠다. 그것도 가족이다.'; } }] },
-  l_second: { t: 'life', ch: [2, 3], v3: 1, w: 1.2, c: S => S.kids && !S.kid2 && S.married, q: () => '첫째가 동생을 갖고 싶다고 조른다. 식탁에서 둘째 이야기가 나왔다.',
+  l_second: { t: 'life', ch: [2, 3], v3: 1, w: 1.2, w6: 2.5, c: S => S.kids && !S.kid2 && S.married, q: () => '첫째가 동생을 갖고 싶다고 조른다. 식탁에서 둘째 이야기가 나왔다.',
     o: () => [
       { lb: '둘째를 낳는다', h: { hap: 2, hp: -2, m: -1 }, f: S => { S.kid2 = 1; S.kidY = S.y; S.mul = .9; r2Add(S, { hap: 10, hp: -7 }); return '집이 두 배로 시끄러워졌다. 웃음도 두 배.'; } },
       { lb: '하나로 충분하다', h: { hap: 1, hp: 1 }, f: S => { r2Add(S, { hap: 3, hp: 2 }); return '첫째에게 더 집중하기로 했다.'; } }] },
-  l_kidsick: { t: 'life', ch: [2, 3], v3: 1, w: 1.6, c: S => S.kids, q: () => '새벽 3시, 아이 열이 40도. 오늘 오전엔 중요한 발표가 있다.',
+  l_kidsick: { t: 'life', ch: [2, 3], v3: 1, w: 1.6, w6: 2.5, c: S => S.kids, q: () => '새벽 3시, 아이 열이 40도. 오늘 오전엔 중요한 발표가 있다.',
     o: () => [
       { lb: '연차 내고 병원에 간다', h: { hap: 1, cr: -1 }, f: S => { r2Add(S, { hap: 6, cr: -3, hp: -2 }); return '응급실에서 아침을 맞았다. 발표는 후배가 했다. 아이는 금방 나았다.'; } },
       { lb: '부모님께 부탁하고 발표한다', h: { cr: 1, hap: -1 }, f: S => { r2Add(S, { cr: 5, hap: -3, hp: -3 }); return '발표는 잘 끝났다. 점심시간에 영상 통화로 아이 얼굴부터 봤다.'; } },
       { lb: '재택으로 바꿔 달라고 한다', h: { hap: 1 }, f: (S, u) => { if (u[0] < .6) { r2Add(S, { hap: 4, cr: 1 }); return '화면을 켜고 발표했다. 무릎엔 아이가 잠들어 있었다.'; } r2Add(S, { hap: -2, cr: -2 }); return '"이번만"이라는 말에 팀장 표정이 굳었다.'; } }] },
-  l_daycare: { t: 'life', ch: [2, 3], v3: 1, w: 1.2, c: S => S.kids && S.y - S.kidY < 6, q: () => '어린이집 대기 번호 87번. 아침 등원 전쟁이 매일 반복된다.',
+  l_daycare: { t: 'life', ch: [2, 3], v3: 1, w: 1.2, w6: 2.5, c: S => S.kids && S.y - S.kidY < 6, q: () => '어린이집 대기 번호 87번. 아침 등원 전쟁이 매일 반복된다.',
     o: () => [
       { lb: '조부모 찬스를 쓴다', h: { hap: 1, hp: 1 }, f: S => { r2Add(S, { hap: 3, hp: 3 }); return '할머니 집이 아이의 두 번째 집이 됐다. 명절 선물이 커졌다.'; } },
       { lb: '등하원 시터를 쓴다', h: { hp: 1, m: -1 }, f: S => { S.bonus -= S.s * .12; r2Add(S, { hp: 5, cr: 2 }); return '월급의 꽤 많은 몫이 나갔다. 대신 아침이 조용해졌다.'; } },
@@ -890,6 +920,10 @@ function r2Move(S, c, start) { S.c = c; S.cn = c.n; S.cname = c.n; S.s = start; 
 
 function r2Slot(pz, ctx, S, k) {
   const [y, t] = R2_SLOTS[k], ch = Math.floor(y / 5);
+
+  if (pz.v6 && t !== 'life' && !S.su && !S.retired && !S.off && (S.suPlan ? y - S.suIdeaY >= 2 : S.prep && y - S.prepY >= 1)) {
+    const E = R2_EV.w_supick; return { k, y, t: 'work', ch, id: 'w_supick', q: E.q(S), opts: E.o(S) };
+  }
   if (t === 'job') {
     const jk = R2_SLOTS.slice(0, k + 1).filter(s => s[1] === 'job').length - 1, st = pz.steps[jk];
     const first = jk === 0 && !pz.home, x = S.x, s = S.s;
@@ -906,30 +940,47 @@ function r2Slot(pz, ctx, S, k) {
   }
   let id = R2_FIXED[y];
   if (pz.v3) {
-    if (id === 'l_marry' && !S.dating) id = null;
+    if (id === 'l_marry' && !S.dating && !(pz.v6 && !S.married && !S.solo)) id = null;
     if (id === 'l_baby' && !S.married && !S.dating) id = null;
     if (id === 'l_parent') id = null;
   }
   if (t === 'work' && S.off) id = 'w_home';
   if (t === 'life' && S.hp < (pz.v3 ? 25 : 35) && id !== 'l_marry' && id !== 'l_baby' && !(pz.v3 && S.used.l_health)) id = 'l_health';
   if (!id) {
-    const L = Object.keys(R2_EV).filter(e => { const E = R2_EV[e]; return E.t === t && (!E.fixed || (pz.v3 && e === 'l_parent' && ch === 3)) && (!E.v3 || pz.v3) && !S.used[e] && ch >= E.ch[0] && ch <= E.ch[1] && (E.g == null || E.g === S.g) && (!E.c || E.c(S, S.c, pz)); });
-    const W = L.map(e => (e === 'l_parent' ? 2 : R2_EV[e].w || 1) * (e === 'w_cut' ? roadRiskSc(pz, S.c) * 6 : 1)), sum = W.reduce((a, b) => a + b, 0);
+    const V = !!pz.v6;
+    const L = Object.keys(R2_EV).filter(e => { const E = R2_EV[e], C = (V && E.ch6) || E.ch, cf = (V && E.c6) || E.c; return (E.t === t || (V && t === 'work' && E.wk6 && ch >= E.wk6[0] && ch <= E.wk6[1])) && (!E.fixed || (pz.v3 && e === 'l_parent' && ch === 3)) && (!E.v3 || pz.v3) && !(V && e === 'w_supick') && !S.used[e] && ch >= C[0] && ch <= C[1] && (E.g == null || E.g === S.g) && (!cf || cf(S, S.c, pz)); });
+    const W = L.map(e => (e === 'l_parent' ? 2 : V && R2_EV[e].w6 != null ? R2_EV[e].w6 : R2_EV[e].w || 1) * (e === 'w_cut' ? roadRiskSc(pz, S.c) * 6 : 1)), sum = W.reduce((a, b) => a + b, 0);
     let d = pz.ed[k] * sum; id = L[L.length - 1];
     for (let i = 0; i < L.length; i++) { d -= W[i]; if (d < 0) { id = L[i]; break; } }
   }
-  const E = R2_EV[id];
-  return { k, y, t, ch, id, q: E.q(S), opts: E.o(S) };
+  const E = R2_EV[id], O = E.o(S);
+
+  return { k, y, t, ch, id, q: E.q(S), opts: pz.v6 ? shuffleR(rng('r2o|' + pz.dk + '|' + id + '|' + y), O) : O };
 }
 
 function r2Re(ctx, T, x) { const O = curve(T, x) * .85, N = ctx.nego; return { O, lo: Math.round(O * negoMul(0, N) / N.p50 / 100) * 100, hi: Math.round(O * negoMul(1, N) / N.p50 / 100) * 100, reach: false }; }
 function r2Picks(picks) { const a = Array.isArray(picks) ? picks : String(picks || '').split(''); return Array.from({ length: R2_N }, (_, i) => { const p = Math.floor(Number(a[i])); return p >= 0 && p <= 2 ? p : -1; }); }
 
+
+function r2Tune(S, op, u, before, L) {
+  const h = op.h || {}, up = (h.cr || 0) > 0 || (h.m || 0) > 0, dc0 = S.cr - before.cr;
+  if (dc0 > 2) r2Add(S, { cr: -Math.round(dc0 * .25) });
+  const dh0 = S.hp - before.hp; if (up && dh0 < -1) r2Add(S, { hp: Math.round(dh0 * .5) });
+  if (!up && ((h.hp || 0) > 0 || (h.cr || 0) < 0)) {
+    const dh = S.hp - before.hp, dp = S.hap - before.hap, dc = S.cr - before.cr;
+    r2Add(S, { hp: dh > 0 ? Math.round(dh * .5) : 0, hap: dp > 0 ? Math.round(dp * .5) : 0, cr: dc < -1 ? -Math.round(dc / 2) : 0 });
+  } else if (up && op.f.length < 2 && u[2] < .35) {
+    const dc = S.cr - before.cr;
+    r2Add(S, { cr: dc > 1 ? -Math.round(dc / 2) : 0, hp: -4 });
+    L.txt += ' 다만 무리한 만큼 몸이 먼저 지쳤다.'; L.over = 1;
+  }
+}
+
 function simRoad2(pz, ctx, picks, stop) {
   picks = r2Picks(picks);
   const g = picks[0] === 1 ? 1 : 0, S0 = roadStart(pz, ctx), N = ctx.nego;
   const S = { g, y: 0, x: S0.x, s: S0.s, c: S0.c, cn: S0.c ? S0.c.n : '', cname: S0.c ? S0.c.n : '', hp: 70, cr: S0.c ? 30 : 25, hap: 55, raise: 1, mul: 1, bonus: 0, freeze: 0, hunt: 0,
-    moves: 0, cuts: 0, burn: 0, fails: 0, used: {}, dk: pz.day || '', dating: 0, married: 0, kids: 0, off: 0, rest: 0, track: '', firstCo: S0.c ? S0.c.n : '', maxS: 0, eokY: 0, starts: [] };
+    moves: 0, cuts: 0, burn: 0, fails: 0, used: {}, dk: pz.day || '', v6: pz.v6 ? 1 : 0, dating: 0, married: 0, kids: 0, off: 0, rest: 0, track: '', firstCo: S0.c ? S0.c.n : '', maxS: 0, eokY: 0, starts: [] };
   const years = [], log = [], notes = [], out = [g];
   let k = 0;
   for (let y = 0; y < 20; y++) {
@@ -970,10 +1021,11 @@ function simRoad2(pz, ctx, picks, stop) {
         }
       } else if (op.stay) {
         if (S.off) { S.reAuto = y + 1; slotLog.txt = 'more'; } else slotLog.txt = 'stay';
-        if (sl.id === 'job' && !S.su && !S.retired) r2Add(S, { hap: 1 });
+        if (sl.id === 'job' && !S.su && !S.retired) { r2Add(S, S.v6 ? { hap: 2, hp: 2 } : { hap: 1 }); if (S.v6 && !S.freeze) S.raise *= 1.03; }
       } else {
         S.used[sl.id] = 1;
         slotLog.txt = op.f(S, u, ctx, pz);
+        if (S.v6) r2Tune(S, op, u, before, slotLog);
       }
       slotLog.co = S.cname; slotLog.d = { hp: S.hp - before.hp, cr: S.cr - before.cr, hap: S.hap - before.hap };
       k++;
@@ -1000,11 +1052,13 @@ function simRoad2(pz, ctx, picks, stop) {
 
     if (c && S.mul > 0) {
       const rt = c.rt || 3.3;
-      r2Add(S, { hp: rt < 3 ? -5 : rt < 3.4 ? -3 : rt >= 3.7 ? 1 : -1, hap: rt < 3 ? -3 : rt >= 3.7 ? 2 : 0, cr: (S.su || c.my >= 8 ? 2 : 1) });
+      if (S.v6 && S.su) r2Add(S, { hp: -2, hap: 1, cr: 1 });
+      else if (S.v6 && S.retired) r2Add(S, { hp: 1, hap: 1 });
+      else r2Add(S, { hp: rt < 3 ? -5 : rt < 3.4 ? -3 : rt >= 3.7 ? 1 : -1, hap: rt < 3 ? -3 : rt >= 3.7 ? 2 : 0, cr: S.v6 ? (rt >= 3.7 ? 1 : 0) : (S.su || c.my >= 8 ? 2 : 1) });
     }
     if (y >= 14) r2Add(S, { hp: -1 });
     if (S.kids && y - S.kidY < 4) r2Add(S, { hp: -2, hap: 1 });
-    r2Add(S, { hap: S.married ? 1 : -1 });
+    r2Add(S, { hap: S.married ? 1 : S.v6 ? 0 : -1 });
     if (S.hp <= 12 && !S.rest) { S.rest = 1; S.burn++; S.hp = 50; r2Add(S, { cr: -5, hap: -5 }); notes[y].push('burn'); }
     if (slotLog) log.push(Object.assign(slotLog, { inc, s: Math.round(S.s), notes: notes[y].slice() }));
     else log.push({ y, x: S.x, quiet: 1, inc, s: Math.round(S.s), co: S.cname, notes: notes[y].slice() });
@@ -1015,13 +1069,23 @@ function simRoad2(pz, ctx, picks, stop) {
   return { years, log, notes, total, S, eok: S.eokY, picks: out, score: r2Score(total, S) };
 }
 
-const ENDINGS2 = [['exec', '임원의 길'], ['startup', '스타트업 대박'], ['boss', '억대 연봉 부장'], ['expert', '업계 전문가'], ['returner', '다시 일어선 사람'],
+
+const ENDINGS2 = [['exec', '임원의 길'], ['startup', '스타트업 대박'], ['boss', '9년 안에 억대 연봉'], ['expert', '업계 전문가'], ['returner', '다시 일어선 사람'],
   ['second', '인생 2막'], ['family', '가족이 1순위'], ['hopper', '이직의 신'], ['lifer', '한 회사 20년'], ['balance', '워라밸 장인'],
   ['solo', '자유로운 싱글'], ['late', '늦게 핀 꽃'], ['survivor', '구조조정 생존자'], ['burnout', '번아웃 퇴사'], ['normal', '무난한 직장인']];
+
+function r2End6(S, ctx, a5, z5) {
+  return S.exec ? 'exec' : S.suWin ? 'startup' : S.eokY && S.eokY <= 9 ? 'boss'
+    : S.track === 'exp' && S.cr >= 60 ? 'expert' : (S.back || S.burn >= 1) && S.cr >= 50 && S.hp >= 42 ? 'returner'
+    : S.retired ? 'second' : S.kids && S.hap >= 70 ? 'family' : S.moves >= 4 ? 'hopper'
+    : S.moves === 0 && S.cn === S.firstCo ? 'lifer'
+    : S.hp >= 50 && S.hap >= 60 ? 'balance' : !S.married && S.hap >= 70 ? 'solo'
+    : z5 >= a5 * 2.6 ? 'late' : S.cuts >= 1 && S.cutStay && S.cutStay === S.cn ? 'survivor' : S.burn >= 2 || (S.burn >= 1 && S.hp < 30) || S.hp < 15 ? 'burnout' : 'normal';
+}
 function roadEnding2(pz, ctx, picks) {
   const R = simRoad2(pz, ctx, picks), S = R.S, Y = R.years;
   const a5 = Y.slice(0, 5).reduce((a, b) => a + b, 0) / 5, z5 = Y.slice(15).reduce((a, b) => a + b, 0) / 5;
-  const id = S.exec ? 'exec' : S.suWin ? 'startup' : S.eokY && S.eokY <= 9 ? 'boss'
+  const id = S.v6 ? r2End6(S, ctx, a5, z5) : S.exec ? 'exec' : S.suWin ? 'startup' : S.eokY && S.eokY <= 9 ? 'boss'
     : S.track === 'exp' && S.cr >= 88 ? 'expert' : (S.back || S.burn >= 1) && S.cr >= 58 && S.hp >= 42 ? 'returner'
     : S.retired ? 'second' : S.kids && S.hap >= 70 ? 'family' : S.moves >= 4 ? 'hopper'
     : S.moves === 0 && !S.fails && ctx.by[S.firstCo] && ctx.by[S.firstCo].m >= 5000 ? 'lifer'
@@ -1041,14 +1105,18 @@ function roadEnding(pz, ctx, picks) { return pz.v === 2 ? roadEnding2(pz, ctx, p
 const ENDINGS = ENDINGS2;
 
 
-const THEMES = { all: '전체', it: 'IT·게임', food: '식품·유통', fin: '금융', pub: '공기업' };
+
+const THEMES = { all: '전체', it: 'IT·게임', food: '식품·유통', fin: '금융', pub: '공기업', rev: '연봉 반전', local: '지방 강자' };
+const CUP_FAR = { 서울: 1, 경기: 1, 인천: 1, '': 1 };
 function cupPool(ctx, theme) {
-  const f = { it: c => c.grp === 'IT·게임' || c.grp === '통신·미디어', food: c => c.grp === '식품' || c.grp === '유통·상사', fin: c => c.grp === '금융', pub: c => !!c.pub }[theme] || (() => true);
+  if (theme === 'rev') { const L = ctx.P.filter(c => c.m >= 1000).sort((a, b) => b.twist - a.twist || (a.n < b.n ? -1 : 1)); return L.slice(0, 24).concat(L.slice(-24)); }
+  const f = { it: c => c.grp === 'IT·게임' || c.grp === '통신·미디어', food: c => c.grp === '식품' || c.grp === '유통·상사', fin: c => c.grp === '금융', pub: c => !!c.pub, local: c => !CUP_FAR[c.sido || ''] }[theme] || (() => true);
   let L = ctx.P.filter(c => c.m >= 2000 && f(c));
+  if (L.length < 32) { const W = ctx.P.filter(c => c.m >= 500 && f(c)); if (W.length > L.length) L = W; }
   if (L.length < 16) L = ctx.P.filter(f);
   return L;
 }
-function cupSize(L) { return L.length >= 16 ? 16 : 8; }
+function cupSize(L) { return L.length >= 32 ? 16 : 8; }
 
 
 
@@ -1068,19 +1136,29 @@ function simCup(all, ans) {
 
 function cupShare(rates, n) { const x = (rates && rates[n]) || [0, 0]; return (Math.max(0, +x[1] || 0) + 5) / (Math.max(0, +x[0] || 0) + 10); }
 function cupMaj(rates, a, b) { const sa = cupShare(rates, a), sb = cupShare(rates, b); return { pa: sa / (sa + sb), maj: sa === sb ? '' : sa > sb ? a : b }; }
-function scoreCupAll(all, ans, ctx, rates) {
+
+
+const CUP_MIN = 5;
+function cupMaj6(rates, a, b) {
+  const xa = (rates && rates[a]) || [0, 0], xb = (rates && rates[b]) || [0, 0], M = cupMaj(rates, a, b);
+  if (!(+xa[0] >= CUP_MIN) || !(+xb[0] >= CUP_MIN) || !M.maj || Math.round(M.pa * 100) === 50) return { pa: M.pa, maj: '', und: 1 };
+  return M;
+}
+function scoreCupAll(all, ans, ctx, rates, six) {
   const S = simCup(all, ans);
   if (!S) return { score: 0, aux: 0, bad: true, perfect: false, seq: '' };
-  let score = 0, agree = 0; const per = S.ms.map(m => { const M = cupMaj(rates, m.a, m.b), ok = !M.maj || M.maj === m.w; if (ok) { agree++; score += CUP_W[m.r] || 100; } return ok ? 1 : 0; });
+  let score = 0, agree = 0;
+  const per = six ? S.ms.map(m => { const M = cupMaj6(rates, m.a, m.b), w = CUP_W[m.r] || 100; if (M.und) { score += Math.round(w / 2); return 2; } if (M.maj === m.w) { agree++; score += w; return 1; } return 0; })
+    : S.ms.map(m => { const M = cupMaj(rates, m.a, m.b), ok = !M.maj || M.maj === m.w; if (ok) { agree++; score += CUP_W[m.r] || 100; } return ok ? 1 : 0; });
   const by = all.map(n => ctx.by[n]).sort((x, y) => y.rk[1] - x.rk[1]), eyeR = by.findIndex(c => c.n === S.champ) + 1, eye = (all.length - eyeR) * CUP_EYE;
   return { score: score + eye, aux: agree, agree, eye, eyeR, champ: S.champ, per, ms: S.ms, perfect: agree === S.ms.length, seq: ans.join('') };
 }
-function scoreCup(pz, ans, ctx, rates) { return scoreCupAll(pz.all, ans, ctx, rates); }
+function scoreCup(pz, ans, ctx, rates) { return scoreCupAll(pz.all, ans, ctx, rates, v6(pz.day)); }
 
 function cupCheck(ctx, theme, picks) {
   if (!THEMES[theme] || !Array.isArray(picks)) return null;
-  const L = cupPool(ctx, theme), ok = new Set(L.map(c => c.n)), n = cupSize(L), agg = {}, alive = new Set();
-  if (picks.length !== n - 1) return null;
+  const L = cupPool(ctx, theme), ok = new Set(L.map(c => c.n)), n = picks.length + 1, agg = {}, alive = new Set();
+  if ((n !== 16 && n !== 8) || n > L.length) return null;
   for (let i = 0; i < picks.length; i++) {
     const w = String((picks[i] || [])[0] || ''), l = String((picks[i] || [])[1] || '');
     if (!ok.has(w) || !ok.has(l) || w === l) return null;
@@ -1120,9 +1198,12 @@ function nickCheck(s) {
 
 
 const LINE_N = [3, 4, 4, 5, 5], LINE_PT = 100, LINE_PERF = 150;
-function lineRounds(seed, ctx) {
+
+const LINE_GAP6 = [.06, .06, .06, .04, .04];
+function lineRounds(seed, ctx, nv) {
   const r = rng('line|' + seed), H = ctx.H.filter(c => c.tier <= 1);
   return LINE_N.map((n, k) => {
+    const GAP = nv ? LINE_GAP6[k] : .04;
     let best = null, ok2 = null, last = null;
     for (let t = 0; t < 200; t++) {
       const ppl = [], used = {}; let guard = 0;
@@ -1133,7 +1214,7 @@ function lineRounds(seed, ctx) {
         ppl.push({ c, ri, v: c.rk[ri] });
       }
       const vs = ppl.map(p => p.v).sort((a, b) => b - a);
-      const gap = vs.every((v, i) => !i || (vs[i - 1] - v) / vs[i - 1] >= .04), span = (vs[0] - vs[n - 1]) / vs[0];
+      const gap = vs.every((v, i) => !i || (vs[i - 1] - v) / vs[i - 1] >= GAP), span = (vs[0] - vs[n - 1]) / vs[0];
       const gs = {}; ppl.forEach(q => { gs[q.c.grp] = 1; });
       last = ppl; if (gap && !ok2) ok2 = ppl;
       if (gap && span < [.75, .65, .55, .5, .45][k] && Object.keys(gs).length >= n - (k % 2)) { best = ppl; break; }
@@ -1142,19 +1223,36 @@ function lineRounds(seed, ctx) {
     return best.map(p => ({ n: p.c.n, ri: p.ri, v: p.v }));
   });
 }
-function genLine(day, ctx) { return { game: 'line', day, R: lineRounds(day, ctx) }; }
+function genLine(day, ctx) { return { game: 'line', day, R: lineRounds(day, ctx, v6(day)) }; }
 
 function lineCheck(P, pick) { const vs = P.map(p => p.v).sort((a, b) => b - a); return pick.map((j, i) => P[j].v === vs[i]); }
 function linePick(a, n) { return Array.isArray(a) && a.length === n && a.every(j => Number.isInteger(j) && j >= 0 && j < n) && new Set(a).size === n; }
+
+
+function linePairs(P, pick) { let ok = 0, tot = 0; for (let i = 0; i < pick.length; i++) for (let j = i + 1; j < pick.length; j++) { tot++; if (P[pick[i]].v > P[pick[j]].v) ok++; } return { ok, tot }; }
+function lineMarks(P, pick, nv) {
+  if (!nv) return lineCheck(P, pick);
+  return pick.map((a, i) => (i === 0 || P[pick[i - 1]].v > P[a].v) && (i === pick.length - 1 || P[a].v > P[pick[i + 1]].v));
+}
+
+function linePts(P, pick, nv) {
+  const perf = lineCheck(P, pick).every(Boolean);
+  const base = nv ? Math.round(linePairs(P, pick).ok / linePairs(P, pick).tot * P.length * LINE_PT) : lineCheck(P, pick).filter(Boolean).length * LINE_PT;
+  return base + (perf ? LINE_PERF : 0);
+}
 function scoreLine(pz, ans) {
   if (!Array.isArray(ans) || ans.length !== pz.R.length || !pz.R.every((P, k) => linePick(ans[k], P.length))) return { bad: 1, score: 0, aux: 0 };
-  let score = 0, ok = 0, perf = 0; const res = [];
+  const nv = v6(pz.day);
+  let score = 0, ok = 0, perf = 0, pairs = 0; const res = [], marks = [];
   pz.R.forEach((P, k) => {
     const r = lineCheck(P, ans[k]), c = r.filter(Boolean).length;
-    ok += c; score += c * LINE_PT + (c === P.length ? LINE_PERF : 0); if (c === P.length) perf++;
+    if (nv) { score += linePts(P, ans[k], true); pairs += linePairs(P, ans[k]).ok; } else score += c * LINE_PT + (c === P.length ? LINE_PERF : 0);
+    ok += c; if (c === P.length) perf++;
     res.push(r.map(x => (x ? 'o' : 'x')).join(''));
+    marks.push(lineMarks(P, ans[k], nv).map(x => (x ? 'o' : 'x')).join(''));
   });
-  return { score, aux: perf, ok, res, seq: res.join('-'), perfect: perf === pz.R.length };
+  return nv ? { score, aux: perf, ok, pairs, res: marks, seq: res.join('-'), perfect: perf === pz.R.length }
+    : { score, aux: perf, ok, res, seq: res.join('-'), perfect: perf === pz.R.length };
 }
 
 
@@ -1173,4 +1271,4 @@ function gen(game, day, ctx) { return game === 'higher' ? genHigher(day, ctx) : 
 
 function score(game, pz, ans, ctx, rates) { return game === 'higher' ? scoreHigher(pz, ans, ctx) : game === 'today' ? scoreToday(pz, ans, ctx) : game === 'sniper' ? scoreSniper(pz, ans, ctx) : game === 'road' ? scoreRoad(pz, ans, ctx) : game === 'run' ? scoreRun(pz, ans) : game === 'cup' ? scoreCup(pz, ans, ctx, rates) : game === 'line' ? scoreLine(pz, ans) : null; }
 
-export { RULES, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, ROAD2_FROM, roadV, WEEK_OFF, weekOff, R2_SLOTS, R2_N, R2_W, R2_EV, ROAD3_FROM, R3_GRAD, R3_SU, r2Score, simRoad2, roadEnding2, ENDINGS1, ENDINGS2, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, CUP_W, CUP_EYE, genCup, simCup, cupShare, cupMaj, scoreCupAll, scoreCup, T3_N, T3_MAXQ, T3_FREE, T3_Q, T3_PRE, T3_PRE2, T3_PRE2_FROM, t3Premise, T3_EARLY, T3_EARLY_MAX, T3_FLOOR, t3Ask, t3Final, simToday3, today3Pts, t3Questions, T4_N, T4_TRIES, T4_STEP, simToday4, today4Pts, TODAY2_FROM, TODAY2_TRIES, TODAY2_STEP, TODAY2_COLS, today2Cell, today2Row, simToday2, today2Pts, today2Emoji, LINE_N, LINE_PT, LINE_PERF, lineRounds, genLine, lineCheck, scoreLine, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
+export { RULES, V6_FROM, v6, EPOCH, RK, DAILY, GAMES, hash32, rng, pickR, shuffleR, kstDay, addDays, dayIndex, dow, isoWeek, weekDays, msToMidnight, load, STATS, HIGHER_N, HIGHER_MS, higherWin, higherBonus, genHigher, endlessQ, scoreHigher, TODAY_N, TODAY_PICKS, TODAY_CLUES, TODAY_BASE, TODAY_CLUE, TODAY_MISS, TODAY_FLOOR, genToday, todayCands, sizeBand, ageBand, todayClues, simToday, todayPts, scoreToday, todayEmoji, firstChar, SNIPER_N, SN_LO, SN_HI, SN_STEP, genSniper, sniperErr, sniperPts, sniperVal, scoreSniper, curve, negoMul, ROAD_SC, ROAD_WEEK, ROAD_SC_FROM, roadScen, ROAD2_FROM, roadV, WEEK_OFF, weekOff, R2_SLOTS, R2_N, R2_W, R2_EV, ROAD3_FROM, R3_GRAD, R3_SU, r2Score, simRoad2, roadEnding2, ENDINGS1, ENDINGS2, devCo, genRoad, roadOffer, roadRisk, roadRiskSc, roadStart, simRoad, scoreRoad, ENDINGS, roadTotals, roadEnding, RUN_MONEY_MAX, RUN_BONUS_MAX, RUN_EL_MIN, genRun, scoreRun, THEMES, cupPool, cupSize, cupCheck, CUP_W, CUP_EYE, genCup, simCup, cupShare, cupMaj, cupMaj6, CUP_MIN, scoreCupAll, scoreCup, T3_N, T3_MAXQ, T3_FREE, T3_Q, T3_PRE, T3_PRE2, T3_PRE2_FROM, t3Premise, T3_EARLY, T3_EARLY_MAX, T3_FLOOR, t3Ask, t3Final, simToday3, today3Pts, t3Questions, T3_PRE3, T3_FIN, T3_PICK, t3Seed, t3Used, t3CanFin, T4_N, T4_TRIES, T4_STEP, simToday4, today4Pts, TODAY2_FROM, TODAY2_TRIES, TODAY2_STEP, TODAY2_COLS, today2Cell, today2Row, simToday2, today2Pts, today2Emoji, LINE_N, LINE_PT, LINE_PERF, lineRounds, genLine, lineCheck, scoreLine, LINE_GAP6, linePairs, lineMarks, linePts, bossOf, makeNick, nickCheck, NICK_A, NICK_B, gen, score };
