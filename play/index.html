@@ -4895,6 +4895,15 @@ function rSpd(M, seg, f) { return M.spd * (1 + R_RAMP * (seg + (f || 0)) / R_SLO
 
 var R_OVH = .8;
 var R_ZONE = { brake: 320, wind: 820, light: 1100, pedal: 450 };
+
+var R_HILL = { up: 240, top: 50, dn: 150, ht: 40 };
+function runHill0(R) { var a = null; (R.ev || []).forEach(function (E) { if (E.k === 'mini' && E.m === 'pedal') a = E.at + 14; }); return a; }
+function runHillH(R, w) {
+  if (!RMAP[R.key] || !RMAP[R.key].bike) return 0; var x0 = runHill0(R); if (x0 == null) return 0;
+  var H = R_HILL, u = w - x0; if (u <= 0) return 0;
+  if (u < H.up) return H.ht * u / H.up; u -= H.up; if (u < H.top) return H.ht; u -= H.top; return u < H.dn ? H.ht * (1 - u / H.dn) : 0;
+}
+function runHillSl(R) { return (runHillH(R, R.dist + 21) - runHillH(R, R.dist + 13)) / 8; }
 function rGen(key, R, seg) {
   var M = RMAP[key], r = PC.rng('run|' + R.seed + '|' + key), L = [], x = 300, cm = M.coin || 1;
   var fork = R.slots[seg + 1] && R.slots[seg + 1].length > 1, end = fork ? M.len - 760 : M.len - 200;
@@ -5460,7 +5469,8 @@ function runMini(k) {
   var R = RUN, X = R_MINI[k], m = { k: k, ph: 'intro', t: 0, g: 0, n: 0, ok: 0, tries: 0, p0: R.pen };
   R.mini = m;
   var go = function () { m.ph = 'play'; m.t = 0; if (RM[k].start) RM[k].start(R, m); runMg(m); };
-  if (X.fr || !R.seen[k]) { R.seen[k] = 1; runCard({ k: '미니게임', e: X.nm.split(' ')[0], t: X.nm.slice(X.nm.indexOf(' ') + 1), r: X.how, dur: 1.7, dark: .6, end: go }); }
+  if (k === 'pedal') { R.seen[k] = 1; runBanner('🚲 오르막! 박자 맞춰 페달', 1500); go(); }
+  else if (X.fr || !R.seen[k]) { R.seen[k] = 1; runCard({ k: '미니게임', e: X.nm.split(' ')[0], t: X.nm.slice(X.nm.indexOf(' ') + 1), r: X.how, dur: 1.7, dark: .6, end: go }); }
   else go();
 }
 
@@ -5551,25 +5561,21 @@ var RM = {
         if (R.held) { runMiniEnd(100, 0, '✊ 손잡이 꽉! 버텼다', 1); return; }
         R.stun = .6; R.combo = 0; runMiniEnd(0, 1, '끼익— 휘청! 급정거'); } } },
 
-  pedal: { start: function (R, m) { m.b0 = .7; m.hit = {}; },
+  pedal: { start: function (R, m) { m.b0 = 1; m.hit = {}; R.stun = 0; m.x0 = R.dist; m.tg = R.dist + 14; m.slide = 0; },
+    miss: function (R, m) { m.slide = .55; m.tg = Math.max(m.x0, m.tg - 20); runPop(R, RPX + 4, RGY - R.h - 52, 'MISS', '#ff9b9b'); },
     press: function (R, m) { var i = Math.round((m.t - m.b0) / .55), d = Math.abs(m.t - m.b0 - i * .55);
       if (i < 0 || i > 9 || m.hit[i]) return; m.hit[i] = 1;
-      if (d < .13) { m.ok++; runPop(R, RPX + 4, RGY - 52, d < .06 ? 'PERFECT' : 'GOOD', '#c6ff3d'); sfx('coin'); } else { m.slide = .5; runPop(R, RPX + 4, RGY - 52, 'MISS', '#ff9b9b'); } },
+      if (d < .13) { var pf = d < .06; m.ok++; m.tg += pf ? 30 : 22; m.slide = 0; runPop(R, RPX + 4, RGY - R.h - 52, pf ? 'PERFECT' : 'GOOD', '#c6ff3d'); sfx('coin'); } else RM.pedal.miss(R, m); },
 
-    zx: function (R, m) { return m.slide > 0 ? -Math.sin(Math.min(1, m.slide / .5) * Math.PI) * 16 : .01; },
-    step: function (R, m, dt) { m.t += dt; var th = Math.max(0, 12 + (R.zx || 0) * .3); R.h += Math.max(-60 * dt, Math.min(60 * dt, th - R.h));
-      var pi = Math.floor((m.t - m.b0 - .13) / .55); if (pi >= 0 && pi <= 9 && !m.hit[pi]) { m.hit[pi] = 2; m.slide = .5; runPop(R, RPX + 4, RGY - 52, 'MISS', '#ff9b9b'); }
-      if (m.slide <= 0) R.dist += 40 * dt * (1 + m.ok * .1); runMg(m, '박자 맞춰 페달! ' + m.ok + ' / 10', m.ok / 10, m.ok >= 7);
-      if (m.t > m.b0 + 9 * .55 + .4) { var g = m.ok >= 7; runMiniEnd(m.ok * 30 + (g ? 200 : 0), m.ok < 4 ? 1 : 0, g ? '🚲 오르막 정복!' : m.ok < 4 ? '🚲 헉헉… 끌고 올라감' : '🚲 오르막 통과', g); } },
-    prop: function (c, R, m) {
-      var sy = function (x) { return RGY - 12 - (x - (RPX + 17)) * .3; }, off = (R.dist * 1.2) % 24;
-      c.fillStyle = '#c95a4a'; c.beginPath(); c.moveTo(0, sy(0)); c.lineTo(RW, sy(RW)); c.lineTo(RW, RH); c.lineTo(0, RH); c.fill();
-      c.fillStyle = '#6d6f73'; c.beginPath(); c.moveTo(0, sy(0) + 8); c.lineTo(RW, sy(RW) + 8); c.lineTo(RW, RH); c.lineTo(0, RH); c.fill();
-      c.fillStyle = '#f2f2f2'; for (var lx = -off; lx < RW; lx += 24) { c.fillRect(Math.round(lx), Math.round(sy(lx) + 3), 8, 2); }
-      rr(c, '#2b2f3a', 230, Math.round(sy(236)) - 26, 2, 26); rr(c, '#ffcf3d', 222, Math.round(sy(236)) - 36, 18, 12); c.font = 'bold 8px sans-serif'; c.fillStyle = '#1b1d18'; c.fillText('⛰', 226, Math.round(sy(236)) - 27);
-    },
-    draw: function (c, R, m) { RM.pedal.prop(c, R, m);
-      if (m.slide > 0) { c.font = 'bold 9px sans-serif'; c.fillStyle = '#ff9b9b'; c.fillText('주르륵…', RPX + R.zx - 4, RGY - R.h - 44); }
+    step: function (R, m, dt) { m.t += dt; m.slide = Math.max(0, m.slide - dt);
+      var pi = Math.floor((m.t - m.b0 - .13) / .55); if (pi >= 0 && pi <= 9 && !m.hit[pi]) { m.hit[pi] = 2; RM.pedal.miss(R, m); }
+      var H = R_HILL, x0 = runHill0(R); if (x0 != null) m.tg = Math.min(m.tg, x0 - 17 + H.up + H.top - 12);
+      R.dist += (m.tg - R.dist) * Math.min(1, dt * (m.slide > 0 ? 5 : 8));
+      R.h = runHillH(R, R.dist + 17); R.v = 0; R.air = 0; R.jumps = 0;
+      runMg(m, '박자 맞춰 페달! ' + m.ok + ' / 10', m.ok / 10, m.ok >= 7);
+      if (m.t > m.b0 + 9 * .55 + .4) { var g = m.ok >= 7; R.easeIn = .7; runMiniEnd(m.ok * 30 + (g ? 200 : 0), m.ok < 4 ? 1 : 0, g ? '🚲 오르막 정복!' : m.ok < 4 ? '🚲 헉헉… 끌고 올라감' : '🚲 오르막 통과', g); } },
+    draw: function (c, R, m) {
+      if (m.slide > 0) { c.font = 'bold 9px sans-serif'; c.fillStyle = '#ff9b9b'; c.fillText('주르륵…', RPX - 6, RGY - R.h - 50); }
       var i = Math.max(0, Math.ceil((m.t - m.b0) / .55 - .25)), nt = m.b0 + i * .55 - m.t, cx = RPX + 17 + Math.round(R.zx), cy = RGY - 30 - R.h;
       if (i <= 9) { c.strokeStyle = '#c6ff3d'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy, 12, 0, Math.PI * 2); c.stroke();
         c.strokeStyle = 'rgba(255,255,255,.9)'; c.beginPath(); c.arc(cx, cy, 12 + Math.max(0, nt) * 60, 0, Math.PI * 2); c.stroke(); }
@@ -5740,6 +5746,8 @@ function runPhys(dt, M, frozen) {
     if (sx > RPX + 24 || sx + o.w < RPX + 10) return;
     if (prevH >= o.y - .5 && R.h <= o.y && o.y > sup) { sup = o.y; so = o; }
   });
+  var hs = M.bike ? runHillH(R, R.dist + 17) : 0;
+  if (hs > 0) { if (wasGround && R.v <= 0 && R.h > hs && R.h - hs < 10) R.h = hs; if (hs > sup) { sup = hs; so = null; } }
   if (R.h <= sup) {
     if (R.air && R.v < -520) { R.shake = REDUCE ? 0 : .12; for (var d = 0; d < 4; d++) R.dust.push({ x: RPX + 8 + d * 6, y: RGY - sup - 1, t: 0, vx: (d - 1.5) * 40 }); }
     if (R.air) R.land = .12;
@@ -5771,7 +5779,7 @@ function runStep(dt) {
     if (R.cd <= 0) { runBanner('GO! 🏢 ' + R.dest.n + ' · ' + R_WX[R.wx][1] + ' ' + R_WX[R.wx][0], 1800); sfx('combo'); if (R.dev) R.devAt = R.t + 1.9; }
     return;
   }
-  ['stun', 'inv', 'boost', 'shake', 'flash', 'magnet', 'lowg', 'fever', 'dark', 'drop', 'buf', 'coy', 'land', 'lift', 'blink', 'slip', 'bstop'].forEach(function (k) { R[k] = Math.max(0, R[k] - dt); });
+  ['stun', 'inv', 'boost', 'shake', 'flash', 'magnet', 'lowg', 'fever', 'dark', 'drop', 'buf', 'coy', 'land', 'lift', 'blink', 'slip', 'bstop', 'easeIn'].forEach(function (k) { R[k] = Math.max(0, R[k] - dt); });
   var zm = R.mini, ztg = zm && zm.ph === 'play' && RM[zm.k].zx && !(R_MINI[zm.k].fr && zm.k !== 'pedal' && R.h > 0) ? RM[zm.k].zx(R, zm) : 0; R.zx += (ztg - R.zx) * Math.min(1, dt * (ztg ? 9 : 14));
   var m = R.mini;
   if (m && (m.ph !== 'play' || R_MINI[m.k].fr)) {
@@ -5785,6 +5793,7 @@ function runStep(dt) {
   var spd = rSpd(M, R.seg, f) * (R.boost > 0 ? 1.35 : 1) * (R.stun > 0 ? .35 : 1) * (R.slip > 0 ? .45 : 1) * (belt ? 1.6 : 1) * (m && m.k === 'wind' ? .6 : 1) * (m && m.k === 'light' && R.held ? 0 : 1) * (R.bstop > 0 ? 0 : m && m.k === 'brake' ? Math.max(.35, 1 - .65 * m.t) : 1);
   if (belt && !R.onBelt) runPop(R, RPX, RGY - 46, '무빙워크 쭉~', '#9fd3ff'); R.onBelt = belt;
   spd *= R.dev && R.dev.fx.spd || 1;
+  if (M.bike) { var sl = runHillSl(R); spd *= (sl > .01 ? .8 : sl < -.01 ? 1.15 : 1) * (1 - .65 * Math.min(1, (R.easeIn || 0) / .7)); }
   R.dist += spd * dt; R.t += dt; R.spdx = spd / M.spd;
   if (M.bike && !R.docked && R.dist > M.len - 70) { R.docked = 1; runPop(R, RPX - 4, RGY - 52, '따릉이 반납 ✔', '#9fd3ff'); sfx('coin'); }
   if (R.key === 'subway' && R.inTrain && R.dist > M.len - 300) { R.inTrain = 0; R.blink = .35; runBanner('🚇 내렸다! 출구로', 1200); }
@@ -6014,6 +6023,18 @@ function runScale(cv) {
   if (cv.width !== RW * k) { cv.width = RW * k; cv.height = RH * k; }
   return k;
 }
+function runHillDraw(c, R) {
+  var x0 = runHill0(R); if (x0 == null) return; var H = R_HILL, L = H.up + H.top + H.dn, sx = x0 - R.dist + RPX; if (sx > RW + 20 || sx + L < -4) return;
+  var P = [[sx, RGY], [sx + H.up, RGY - H.ht], [sx + H.up + H.top, RGY - H.ht], [sx + L, RGY]];
+  var path = function (d) { c.beginPath(); c.moveTo(P[0][0], P[0][1] + d); for (var i = 1; i < 4; i++) c.lineTo(P[i][0], P[i][1] + d); };
+  path(0); c.closePath(); c.fillStyle = '#a77b5c'; c.fill();
+  c.fillStyle = 'rgba(0,0,0,.14)'; for (var bx = Math.ceil(sx / 12) * 12; bx < sx + L; bx += 12) { var bh = runHillH(R, bx - RPX + R.dist); for (var by = RGY - 6, r = 0; by > RGY - bh + 2; by -= 7, r++) c.fillRect(Math.round(bx + (r % 2 ? 6 : 0)), by, 1, 5); }
+  path(-14); for (var j = 3; j >= 0; j--) c.lineTo(P[j][0], P[j][1]); c.closePath(); c.fillStyle = '#c95a4a'; c.fill();
+  path(-14); c.strokeStyle = '#b14a3c'; c.lineWidth = 2; c.stroke();
+  c.fillStyle = '#f2f2f2'; for (var lx = Math.ceil((sx + 6) / 24) * 24; lx < sx + L - 6; lx += 24) { var lh = runHillH(R, lx - RPX + R.dist); c.fillRect(Math.round(lx), Math.round(RGY - lh - 8), 8, 2); }
+  var tx = Math.round(sx - 14); rr(c, '#2b2f3a', tx + 8, RGY - 40, 2, 26); rr(c, '#ffcf3d', tx, RGY - 50, 18, 12); c.font = 'bold 8px sans-serif'; c.fillStyle = '#1b1d18'; c.fillText('⛰', tx + 4, RGY - 41);
+  var fx = Math.round(sx + H.up + H.top / 2); rr(c, '#2b2f3a', fx, RGY - H.ht - 14 - 22, 1, 22); rr(c, '#c6ff3d', fx + 1, RGY - H.ht - 14 - 22, 9, 6);
+}
 function runDraw() {
   var R = RUN, cv = $('rnC'); if (!R || !cv) return;
   var k = runScale(cv), c = cv.getContext('2d'); rHR(c); var sa = Math.min(1, R.shake / .2), sh = R.shake > 0 ? Math.round(Math.sin(R.t * 70) * 4 * sa) : 0, shy = R.shake > 0 ? Math.round(Math.cos(R.t * 55) * 2 * sa) : 0, M = RMAP[R.key], m = R.mini;
@@ -6024,6 +6045,7 @@ function runDraw() {
     c.fillRect(Math.round(x), Math.round(y + 4), Math.round(w), 6); c.fillRect(Math.round(x + w * .2), Math.round(y), Math.round(w * .45), 5); c.fillRect(Math.round(x + w * .55), Math.round(y + 2), Math.round(w * .3), 3); });
   if (R.key === 'subway' && R.inTrain) { var cy = RGY - M.ceil - 40; rr(c, '#aab2bc', 0, 0, RW, cy); rr(c, '#7e848c', 0, cy - 2, RW, 2); tile(R.dist, 1, 26, function (x) { rr(c, '#9aa0a6', x + 12, cy, 1, 5); rr(c, '#f6f6f2', x + 10, cy + 5, 5, 5); }); }
   if (R.fever > 0) rr(c, 'rgba(255,207,61,' + (.12 + .06 * Math.sin(R.t * 12)) + ')', 0, 0, RW, RH);
+  if (M.bike) runHillDraw(c, R);
 
   R.objs.forEach(function (o) {
     if (o.k !== 'belt') return; var sx = Math.round(o.x - R.dist + RPX); if (sx > RW || sx + o.w < 0) return;
@@ -6076,7 +6098,6 @@ function runDraw() {
     c.drawImage(im, Math.round(sx), Math.round(RGY - o.y - im.height + bob - fl));
   });
   R.left = R.left.filter(function (L) { var sh = R.dist - L.x0; if (L.k === 'light') { if (!RM.light.prop(c, R, L.m, 1)) return false; return true; }
-    if (L.k === 'pedal') { if (sh > 60) return false; c.globalAlpha = Math.max(0, 1 - sh / 60); RM.pedal.prop(c, R, L.m); c.globalAlpha = 1; return true; }
     if (sh > RW + 260) return false; c.save(); c.translate(-Math.round(sh), 0); RM[L.k].prop(c, R, L.m, Math.max(1, sh)); c.restore(); return true; });
   if (m && m.ph === 'play' && RM[m.k].draw) RM[m.k].draw(c, R, m);
   if (R.chase > 0) c.drawImage(RIMG.boss, Math.round(RPX - 46 + Math.sin(R.t * 3) * 6), RGY - 37 - (Math.floor(R.t * 8) % 2));
@@ -6102,12 +6123,14 @@ function runDraw() {
     var sx2 = 1, sy2 = 1;
     if (!REDUCE && !bike) { if (R.lift > 0) { sx2 = .9; sy2 = 1.1; } else if (R.land > 0) { sx2 = 1.14; sy2 = .86; } }
     var zx0 = RPX + Math.round(R.zx || 0), shw = Math.max(4, 12 - Math.min(8, R.h / 6));
-    c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(zx0 + 17 - shw, RGY - 2, shw * 2, 2); c.fillRect(zx0 + 19 - shw, RGY - 3, shw * 2 - 4, 1);
+    var hg = M.bike ? Math.round(runHillH(R, R.dist + 17)) : 0; shw = Math.max(4, 12 - Math.min(8, Math.max(0, R.h - hg) / 6)); c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(zx0 + 17 - shw, RGY - 2 - hg, shw * 2, 2); c.fillRect(zx0 + 19 - shw, RGY - 3 - hg, shw * 2 - 4, 1);
+    var tilt = hg > 0 && R.h - hg < 1.5 && !REDUCE ? -Math.atan(runHillSl(R)) : 0; if (tilt) { c.save(); c.translate(zx0 + 17, RGY - R.h); c.rotate(tilt); c.translate(-(zx0 + 17), -(RGY - R.h)); }
     if (sx2 === 1) c.drawImage(im, zx0, zy);
     else { var zw = Math.round(im.width * sx2), zh = Math.round(im.height * sy2); c.drawImage(im, Math.round(zx0 + (im.width - zw) / 2), zy + im.height - zh, zw, zh); }
     var BK = RIMG.obj.bike, bw = BK.width * 2, bh = BK.height * 2;
     if (bike) c.drawImage(BK, zx0 + 2, Math.round(RGY - R.h - bh), bw, bh);
-    else if (onb) { c.save(); c.translate(zx0 - 26, RGY); c.scale(1, -1); c.drawImage(BK, 0, 0, bw, bh); c.restore(); }
+    else if (onb) { c.save(); c.translate(zx0 - 26, RGY - Math.round(R.h)); c.scale(1, -1); c.drawImage(BK, 0, 0, bw, bh); c.restore(); }
+    if (tilt) c.restore();
     if (hold) { var gx = zx0 + 24, top = R.key === 'bus' ? 22 : Math.max(0, zy - 14); rr(c, '#9aa0a6', gx, top, 1, zy + 14 - top); rr(c, '#ffcf3d', gx - 2, zy + 12, 5, 3); }
   }
   if (/^(alley|bike|bridge|park|avenue|market)$/.test(R.key)) tile(R.dist, 1.45, 96, function (x, i) {
