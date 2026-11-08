@@ -441,7 +441,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   // 화면 이름: 법인 표기(（주）·주식회사·유한회사)와 끝의 영문 병기를 뺀다 (2026-10-31, build_site.display_name 과 같은 규칙)
-  function dn(s) { s = String(s == null ? '' : s); var t = s.replace(/\s*[（(][A-Za-z0-9 .,&'\-]+[)）]\s*$/, '').replace(/[（(]\s*[주유]\s*[）)]|㈜|주식회사|유한책임회사|유한회사/g, '').replace(/\s+/g, ' ').trim(); return t || s; }
+  function dn(s) { s = String(s == null ? '' : s); var sh = D.meta && D.meta.show && D.meta.show[s]; if (sh) return sh; var t = s.replace(/\s*[（(][A-Za-z0-9 .,&'\-]+[)）]\s*$/, '').replace(/[（(]\s*[주유]\s*[）)]|㈜|주식회사|유한책임회사|유한회사/g, '').replace(/\s+/g, ' ').trim(); return t || s; }
   function dk(s) { return dn(s).replace(/ \((현장 사업장|협력 정비업체|부속 기관)\)$/, ''); }   // 이름 맞춰 보기용 (표시 이름 ↔ 등록 이름)
   var GOV_RE = /(교육청|교육지원청|도청|시청|군청|구청|공무직|공직노무|육군|해군|공군|국군|국방부|사령부|경찰|소방)/;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -814,7 +814,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     var H = D.meta.hook, S = [], ym = function (s) { return s.slice(0, 4) + '년 ' + (+s.slice(5)) + '월'; };
     var co = function (x, i) { return '<a class="n" href="#" data-co="' + i + '" data-name="' + esc(x) + '">' + esc(dn(x)) + '</a>'; };
     var bars = function (rows, max, fmt, hl, base) { base = base || 0; return '<div class="hb">' + rows.map(function (r) {
-      return '<div class="bar' + (hl && hl(r) ? ' hl' : '') + '">' + (r[3] != null ? co(r[0], r[3]) : '<span class="n">' + esc(r[0]) + '</span>') + '<span class="b"><i style="width:' + Math.max(2, (r[1] - base) / (max - base) * 100).toFixed(1) + '%"></i></span><span class="v">' + fmt(r[1]) + '</span></div>'; }).join('') + '</div>'; };
+      return '<div class="bar' + (hl && hl(r) ? ' hl' : '') + '">' + (r[3] != null ? co(r[0], r[3]) : '<span class="n">' + esc(dn(r[0])) + '</span>') + '<span class="b"><i style="width:' + Math.max(2, (r[1] - base) / (max - base) * 100).toFixed(1) + '%"></i></span><span class="v">' + fmt(r[1]) + '</span></div>'; }).join('') + '</div>'; };
     var won = function (v) { return man(v) + '만'; }, dy = (H && H.dartYears) || ['', ''];
     var hx = function (h4, inner) { return '<div class="hx"><h4>' + h4 + '</h4>' + inner + '</div>'; };   // 장 높이 맞추기용 보조 그래프
     if (H) {   // 2026-10-21 사용자: '내 연봉이면 어디쯤?'을 첫 장으로
