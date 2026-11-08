@@ -56,21 +56,24 @@ p { margin:0; } a { color:inherit; } button,input { font:inherit; color:inherit;
 .stats dt small { display:block; font-size:12px; font-weight:500; letter-spacing:0; color:var(--muted); margin-top:3px; }
 .stats dd { margin:0; font-family:var(--display); font-size:30px; font-weight:900; letter-spacing:-.04em; font-variant-numeric:tabular-nums; line-height:1; white-space:nowrap; }
 .stats dd small { font-size:13px; font-weight:700; margin-left:3px; color:var(--muted); letter-spacing:0; }
-/* 2026-11-08 사용자: '판정 나온 회사'에 올리면(폰은 누르면) 숫자판 아래 한 줄로 길게 펼쳐짐 (숫자 위로 겹치지 않게) */
-.stats .jd { cursor:help; outline:none; } .stats .jd:hover dt, .stats .jd:focus dt, .stats .jd.on dt { color:var(--ink); }
-.basisline { margin-top:0; max-height:0; opacity:0; overflow:hidden; padding-block:0; transition:max-height .22s, opacity .18s, padding .22s, margin .22s; }
-.basisline.on { margin-top:22px; max-height:240px; opacity:1; padding-block:14px; }
-.basisline {  border-top:1px solid var(--ink); border-bottom:1px solid var(--hairline); display:grid; grid-template-columns:auto minmax(0,1fr); gap:10px 22px; align-items:center; }
-.basisline h4 { margin:0; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--muted); white-space:nowrap; }
-.basisline .bar { display:flex; width:100%; height:10px; border-radius:99px; overflow:hidden; background:var(--mist); grid-column:1 / -1; order:3; }
-.basisline .bar i { display:block; height:100%; }
-.basisline .k1 { background:var(--ink); } .basisline .k2 { background:var(--ink-soft); } .basisline .k3 { background:var(--muted); } .basisline .k4 { background:var(--acc); } .basisline .k6 { background:var(--faint); } .basisline .k7 { background:var(--hairline-2); }
-.basisline ul { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:6px 22px; font-size:13.5px; min-width:0; }
-.basisline li { display:flex; align-items:center; gap:7px; white-space:nowrap; }
-.basisline li > i { width:10px; height:10px; border-radius:3px; flex:none; }
-.basisline li b { font-family:var(--display); font-variant-numeric:tabular-nums; }
-.basisline li small { color:var(--muted); font-size:12px; }
-@media (max-width:640px) { .basisline { grid-template-columns:minmax(0,1fr); } .basisline ul { gap:6px 16px; font-size:13px; } }
+/* 2026-11-07 '판정 나온 회사'에 올리면(폰은 누르면) 무엇으로 판정했나가 숫자 위로 겹쳐 뜬다 */
+.stats .jd { position:relative; cursor:help; outline:none; }
+.stats .jd dd { transition:opacity .18s; }
+.stats .jd .basisbox { position:absolute; z-index:30; right:0; top:calc(100% - 6px); width:min(360px, calc(100vw - 32px)); background:var(--paper); color:var(--ink);
+  border:1.5px solid var(--ink); border-radius:16px; padding:16px 18px; display:grid; gap:10px; box-shadow:0 14px 34px rgba(0,0,0,.18);
+  opacity:0; transform:translateY(-6px); pointer-events:none; transition:opacity .18s, transform .18s; }
+.stats .jd:hover .basisbox, .stats .jd:focus .basisbox, .stats .jd:focus-within .basisbox { opacity:1; transform:none; pointer-events:auto; }
+.stats .jd:hover dd, .stats .jd:focus dd { opacity:.25; }
+.basisbox h4 { margin:0; font-size:14px; font-weight:900; }
+.basisbox .bar { display:flex; width:100%; height:12px; border-radius:99px; overflow:hidden; background:var(--mist); }
+.basisbox .bar i { display:block; height:100%; }
+.basisbox .k1 { background:var(--ink); } .basisbox .k2 { background:var(--ink-soft); } .basisbox .k3 { background:var(--muted); } .basisbox .k4 { background:var(--acc); } .basisbox .k5 { background:var(--hairline-2); } .basisbox .k6 { background:var(--faint); } .basisbox .k7 { background:var(--hairline); }
+.basisbox ul { list-style:none; margin:0; padding:0; display:grid; gap:6px; font-size:13.5px; }
+.basisbox li { display:grid; grid-template-columns:12px minmax(0,1fr) auto; gap:10px; align-items:center; }
+.basisbox li > i { width:12px; height:12px; border-radius:3px; }
+.basisbox li b { font-family:var(--display); font-variant-numeric:tabular-nums; }
+.basisbox li small { color:var(--muted); font-size:12px; }
+@media (max-width:900px) { .stats .jd .basisbox { right:auto; left:0; } }
 .stats .hot dd { background:linear-gradient(transparent 60%, var(--mark) 60%); }
 @media (max-width:900px) { .hero-grid { grid-template-columns:minmax(0,1fr); gap:24px; } .stats { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:18px; } }
 @media (max-width:520px) { .stats div { flex-direction:column; align-items:flex-start; gap:6px; padding:10px 0; } .stats dd { font-size:23px; } }
@@ -714,8 +717,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
     <div class="hot"><dt>현재까지 검색한 사람</dt><dd id="stPeople">-</dd></div>
     <div><dt>기준일</dt><dd id="stDate">2026.11.08</dd></div>
   </dl>
-</div>
-<div class="wrap"><div class="basisline" id="basisLine" hidden></div></div></section>
+</div></section>
 
 <div class="ticker" aria-hidden="true"><div class="tr" id="tick"></div></div>
 
@@ -1402,7 +1404,7 @@ details.basis summary::after { content:" +"; } details.basis[open] summary::afte
 const SHARDS = 128;
 const PICKS = ["펄어비스", "유풍", "오뚜기", "삼성전자", "현대자동차"];   // 많이 본 회사(/top)를 못 받을 때만 쓰는 기본 5곳
 const BASIS = {"both": 17008, "repnps": 14533, "finnps": 1670, "nps": 3542, "fin": 48, "rep": 358, "none": 9536};   // 판정 근거별 회사 수 (build.py, 2026-11-07: 국민연금 판정 켤 때만 채움)
-const VDIST = {"다시 생각해요": 9722, "중립기어": 1601, "스펙 보고 결정하세요": 7146, "조건 보고 가세요": 7115, "가세요": 5276, "비추예요": 5679, "무조건 가세요": 620};   // 판정별 회사 수 (build.py, 2026-10-29 첫 화면 판정 분포 카드)
+const VDIST = {"스펙 보고 결정하세요": 7146, "가세요": 5276, "조건 보고 가세요": 7115, "다시 생각해요": 9722, "비추예요": 5679, "중립기어": 1601, "무조건 가세요": 620};   // 판정별 회사 수 (build.py, 2026-10-29 첫 화면 판정 분포 카드)
 const SERIES = [{"k": "must", "t": "무조건 가세요", "d": "붙으면 고민 말고 가라고 한 회사", "r": [["현대자동차", "직원 66,776명 · 연봉 업계 상위 1%"], ["에스케이하이닉스", "직원 37,586명 · 연봉 업계 상위 1%"], ["기아", "직원 31,366명 · 연봉 업계 상위 1%"], ["삼성물산", "직원 12,764명 · 연봉 업계 상위 1%"], ["현대모비스", "직원 12,111명 · 연봉 업계 상위 1%"], ["하나은행", "직원 11,420명 · 연봉 업계 상위 8%"], ["엘지유플러스", "직원 9,321명 · 연봉 업계 상위 1%"], ["한전케이피에스", "직원 6,144명 · 연봉 업계 상위 11%"], ["에스케이텔레콤", "직원 5,018명 · 연봉 업계 상위 1%"], ["현대로템", "직원 4,420명 · 연봉 업계 상위 1%"]]}, {"k": "go", "t": "가세요", "d": "재무·평점·연봉이 고르게 괜찮은 회사", "r": [["삼성전자", "직원 126,132명 · 연봉 업계 상위 1%"], ["이마트", "직원 21,519명 · 연봉 업계 상위 35%"], ["대한항공", "직원 17,907명 · 연봉 업계 상위 1%"], ["엘지이노텍", "직원 13,221명 · 연봉 업계 상위 2%"], ["신한은행", "직원 11,898명 · 연봉 업계 상위 9%"], ["쿠팡", "직원 10,947명 · 연봉 업계 상위 13%"], ["서울아산병원", "직원 9,267명 · 연봉 업계 상위 1%"], ["현대건설", "직원 7,869명 · 연봉 업계 상위 1%"], ["근로복지공단", "직원 6,210명 · 연봉 업계 상위 13%"], ["근로복지공단", "직원 6,210명 · 연봉 업계 상위 13%"]]}, {"k": "wlb", "t": "워라밸 좋은 회사", "d": "현직자 워라밸(잡플래닛·블라인드·캐치 종합) 3.8점 넘고 판정도 '가세요' 이상", "r": [["한국지질자원연구원", "워라밸 4.7점 · 리뷰 160개"], ["신용회복위원회", "워라밸 4.7점 · 리뷰 196개"], ["서울도시가스", "워라밸 4.6점 · 리뷰 193개"], ["한국원자력안전기술원", "워라밸 4.5점 · 리뷰 431개"], ["지엠테크니컬센터코리아", "워라밸 4.5점 · 리뷰 115개"], ["한국철도기술연구원", "워라밸 4.5점 · 리뷰 520개"], ["한국원자력연구원", "워라밸 4.5점 · 리뷰 554개"], ["한국소비자원", "워라밸 4.4점 · 리뷰 333개"], ["서울시설공단", "워라밸 4.4점 · 리뷰 960개"], ["한국중부발전", "워라밸 4.4점 · 리뷰 1,086개"]]}, {"k": "hidden", "t": "숨은 알짜 중견", "d": "직원 300~1천 명, 대기업집단 소속이 아닌데 연봉은 업계 상위 10% 안", "r": [["티케이지태광", "직원 918명 · 연봉 업계 상위 1%"], ["부산신항만", "직원 903명 · 연봉 업계 상위 1%"], ["동남권원자력의학원", "직원 844명 · 연봉 업계 상위 1%"], ["한국원자력안전기술원", "직원 612명 · 연봉 업계 상위 1%"], ["한국마이크로소프트", "직원 576명 · 연봉 업계 상위 1%"], ["한국교직원공제회", "직원 537명 · 연봉 업계 상위 1%"], ["서울도시가스", "직원 479명 · 연봉 업계 상위 1%"], ["이지스자산운용", "직원 467명 · 연봉 업계 상위 1%"], ["코스맥스비티아이", "직원 375명 · 연봉 업계 상위 1%"], ["사노피-아벤티스 코리아", "직원 349명 · 연봉 업계 상위 1%"]]}, {"k": "newbie", "t": "신입 초봉 높은 회사", "d": "신입 추정 연봉이 높은 순, 판정도 '가세요' 이상", "r": [["에스케이텔레콤", "신입 추정 7,029만 원"], ["한화비전", "신입 추정 6,858만 원"], ["에이치디한국조선해양", "신입 추정 6,855만 원"], ["삼성전자", "신입 추정 6,558만 원"], ["서울보증보험", "신입 추정 6,522만 원"], ["디엘이앤씨", "신입 추정 6,479만 원"], ["한화생명보험", "신입 추정 6,343만 원"], ["（주）삼우종합건축사사무소", "신입 추정 6,316만 원"], ["현대캐피탈", "신입 추정 6,242만 원"], ["법무법인(유한) 세종", "신입 추정 6,207만 원"]]}, {"k": "stay", "t": "오래 다니는 회사", "d": "평균 근속 15년 넘고 퇴사율은 낮은 곳", "r": [["서울도시가스", "평균 근속 23.5년 · 한 해 퇴사 4%"], ["SK인천석유화학", "평균 근속 21.2년 · 한 해 퇴사 9%"], ["대성에너지", "평균 근속 20.7년 · 한 해 퇴사 6%"], ["디와이파워（주）", "평균 근속 18.6년 · 한 해 퇴사 9%"], ["에코플라스틱", "평균 근속 18.5년 · 한 해 퇴사 6%"], ["에이치엘만도", "평균 근속 18.4년 · 한 해 퇴사 8%"], ["케이티앤지", "평균 근속 18.2년 · 한 해 퇴사 9%"], ["에쓰-오일", "평균 근속 17.4년 · 한 해 퇴사 6%"], ["STX엔진", "평균 근속 16.1년 · 한 해 퇴사 7%"], ["삼성화재해상보험", "평균 근속 15.9년 · 한 해 퇴사 8%"]]}, {"k": "grow", "t": "요즘 크는 회사", "d": "매출이 연평균 15% 넘게 크고 성장성 등급 A+ 이상", "r": [["빗썸", "매출 연평균 +852% · 직원 585명"], ["우미건설", "매출 연평균 +178% · 직원 879명"], ["유니투스", "매출 연평균 +158% · 직원 3,249명"], ["메리츠화재해상보험", "매출 연평균 +100% · 직원 2,665명"], ["스노우", "매출 연평균 +83% · 직원 372명"], ["델인터내셔널", "매출 연평균 +74% · 직원 584명"], ["한화에어로스페이스", "매출 연평균 +67% · 직원 8,023명"], ["에이피알", "매출 연평균 +61% · 직원 757명"], ["그랜드코리아레저", "매출 연평균 +49% · 직원 1,788명"], ["케이엘에이텐코코리아", "매출 연평균 +43% · 직원 901명"]]}];  // 첫 화면 시리즈 4개 (build.py series, 주마다 바뀜) — 맨 앞 '많이 본 TOP 10'은 /top 으로
 const TS_KEY = "0x4AAAAAAFpHJtrOG8cQcwBZ";   // Cloudflare Turnstile 사이트 키 (공개값, config turnstile_sitekey). 하루 많이 본 사람에게만 봇 확인 (2026-10-28)
 const API = "https://company-api.jobzorro.workers.dev";  // 비어 있지 않으면 회사 상세는 API에서 한 곳씩 (조각 파일은 사이트에 안 올림)
@@ -2291,24 +2293,16 @@ function seriesWire(el) {
 }
 // 첫 화면 두 번째 카드: 판정 분포 + '무조건 가세요' 회사 하나 뽑기 (2026-10-29 사용자: 대결 말고 재밌는 것 하나 더) — 검색 목록(IDX)이 오면 채운다
 // 판정별 회사 수는 빌드가 넣는다(VDIST, 숫자만), 뽑기는 이번 주 '무조건 가세요' 시리즈 10곳에서
-function basisFill() {   // 2026-11-07 판정 근거 · 11-08 숫자판 아래 한 줄로 (판단자료 부족은 판정이 아니라 뺌)
-  const b = BASIS, line = document.getElementById("basisLine"); if (!line || !b || !Object.keys(b).length || !line.hidden) return;
+function basisFill() {   // 2026-11-07 판정 근거 (국민연금 판정이 켜져 있을 때만 BASIS 가 찬다)
+  const b = BASIS, box = document.getElementById("stJudgedBox"); if (!box || !b || !Object.keys(b).length || box.classList.contains("jd")) return;
   const rows = [["both", "k1", "재무 + 평점", ""], ["repnps", "k2", "평점 + 국민연금 숫자", "재무 공시 없는 회사"], ["rep", "k6", "평점만", ""], ["finnps", "k3", "재무 + 국민연금 숫자", "공개 평점 없는 회사"], ["fin", "k7", "재무만", ""],
-    ["nps", "k4", "국민연금 숫자", "연봉·퇴사율·근속"]];
+    ["nps", "k4", "국민연금 숫자", "연봉·퇴사율·근속"], ["none", "k5", "판단자료 부족", ""]];
   const etc = b.etc || 0, tot = rows.reduce((a, r) => a + (b[r[0]] || 0), 0) + etc; if (!tot) return;
   const f = x => (x || 0).toLocaleString("ko-KR");
-  line.innerHTML = `<h4>무엇으로 판정했나</h4>
-    <ul>${rows.map(r => `<li${r[3] ? ` title="${r[3]}"` : ""}><i class="${r[1]}"></i><span>${r[2]}</span><b>${f(b[r[0]])}</b></li>`).join("")}${etc ? `<li title="연봉만 등"><i></i><span>그 밖</span><b>${f(etc)}</b></li>` : ""}</ul>
-    <span class="bar" aria-hidden="true">${rows.map(r => `<i class="${r[1]}" style="width:${((b[r[0]] || 0) / tot * 100).toFixed(1)}%"></i>`).join("")}</span>`;
-  line.hidden = false;
-  const box = document.getElementById("stJudgedBox"); if (!box) return;
-  box.classList.add("jd"); box.tabIndex = 0; box.setAttribute("aria-label", "판정 나온 회사, 무엇으로 판정했나 보기"); box.setAttribute("aria-controls", "basisLine");
-  let pin = false; const show = on => { line.classList.toggle("on", on); box.classList.toggle("on", on); box.setAttribute("aria-expanded", on); };
-  box.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") show(true); });
-  box.addEventListener("pointerleave", e => { if (e.pointerType === "mouse" && !pin) show(false); });
-  box.addEventListener("click", () => { pin = !line.classList.contains("on") || !pin; show(pin); });
-  box.addEventListener("focus", () => show(true)); box.addEventListener("blur", () => { if (!pin) show(false); });
-  show(false);
+  box.classList.add("jd"); box.tabIndex = 0; box.setAttribute("aria-label", "판정 나온 회사, 무엇으로 판정했나 보기");
+  box.insertAdjacentHTML("beforeend", `<aside class="basisbox" role="tooltip"><h4>무엇으로 판정했나</h4>
+    <span class="bar" aria-hidden="true">${rows.map(r => `<i class="${r[1]}" style="width:${((b[r[0]] || 0) / tot * 100).toFixed(1)}%"></i>`).join("")}</span>
+    <ul>${rows.map(r => `<li><i class="${r[1]}"></i><span>${r[2]}${r[3] ? ` <small>${r[3]}</small>` : ""}</span><b>${f(b[r[0]])}</b></li>`).join("")}${etc ? `<li><i></i><span>그 밖 <small>연봉만 등</small></span><b>${f(etc)}</b></li>` : ""}</ul></aside>`);
 }
 const FUN_ORDER = ["무조건 가세요", "가세요", "조건 보고 가세요", "중립기어", "스펙 보고 결정하세요", "다시 생각해요", "비추예요"];
 const FUN_ROWS = [["무조건 가세요"], ["가세요"], ["조건 보고 가세요"], ["중립기어", "스펙 보고 결정하세요"], ["다시 생각해요"], ["비추예요"]];   // 가운데 급은 한 줄 (2026-11-03)
