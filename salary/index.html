@@ -331,7 +331,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     <dl class="stats" aria-label="연봉 연구소 자료 규모">
       <div><dt>회사</dt><dd id="stCo">52,305<small>곳</small></dd></div>
       <div><dt>실제 연봉 검증</dt><dd id="stVal">3,413<small>건</small></dd></div>
-      <div class="hot"><dt>누적 회사 조회</dt><dd id="stViews">-</dd></div>
+      <div class="hot"><dt>누적 연봉 조회</dt><dd id="stViews">-</dd></div>
       <div><dt>기준</dt><dd id="stYm">2026.09</dd></div>
     </dl>
   </div>
@@ -514,9 +514,9 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     $('stCo').innerHTML = nf(m.count) + '<small>곳</small>';
     $('stVal').innerHTML = nf(V.total) + '<small>건</small>';
     $('stYm').textContent = m.ym.replace('-', '.');
-    // 2026-11-09 사용자: 회사판단연구소처럼 누적 회사 조회 (같은 company-api /top 의 views)
+    // 2026-11-09 사용자: 회사판단연구소처럼 누적 조회, 숫자는 연봉 연구소에서 연 회사 수 (company-api /top 의 salViews)
     fetch('https://company-api.jobzorro.workers.dev/top').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-      if (d && d.views) $('stViews').innerHTML = nf(d.views) + '<small>번</small>';
+      if (d && d.salViews != null) $('stViews').innerHTML = nf(d.salViews) + '<small>번</small>';   // 연봉 연구소에서 회사 연봉을 열어 본 수
     }).catch(function () {});
     var items = ['국민연금 가입 회사 ' + nf(m.count) + '곳', '사업보고서·공공기관 공시 ' + nf(m.dartCount) + '곳', '이직자·현직자 실제 연봉 ' + nf(V.nPeople || V.nMatched) + '명으로 검증',
       '사원 · 대리 · 과장 · 차장 · 부장 직급별 추정', '매달 자동 갱신', '실수령액 계산기 · 내 연봉의 위치는? · 연봉협상 잘했나?'];
@@ -661,8 +661,13 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       $('detail').innerHTML = '<div class="empty"><h3>회사 정보를 불러오지 못했어요</h3><p>인터넷 연결을 확인하고 다시 눌러 주세요.</p><div class="picks"><button type="button" data-co="' + i + '" data-name="' + esc(name || '') + '">다시 시도</button></div></div>';
     }
   }
+  var SEEN = {};   // 2026-11-09 연봉 조회 수 세기: 한 화면에서 같은 회사는 한 번만 보냄 (서버도 그날 같은 사람·회사는 1번)
+  function countView(n) {
+    if (!n || SEEN[n]) return; SEEN[n] = 1;
+    try { fetch('https://company-api.jobzorro.workers.dev/ev', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: 'salv', n: n }), keepalive: true }).catch(function () {}); } catch (e) {}
+  }
   function show(r) {
-    CURROW = r;
+    CURROW = r; countView(r.name);
     var capped = r.capped && !r.dart && !r.calAvg, plus = capped ? '+' : '';
     var jx = (D.meta.jobMult || []).filter(function (x) { return x[0] === JOBK; })[0], jf = jx ? jx[2] : 1;   // 개선 4: 내 직무로 보기
     var lock = /-lock/.test(r.how), lockUni = /-lockuni/.test(r.how), lockGov = /-lockgov/.test(r.how);   // 직급 금액 비공개: 데이터에도 없음 → 블록 + 문구 (2026-10-30)
