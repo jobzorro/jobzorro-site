@@ -31,6 +31,7 @@ h1 b { font-weight:900; background:linear-gradient(transparent 62%, var(--mark) 
 .stats div { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:13px 0; border-bottom:1px solid var(--line); }
 .stats dt { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--muted); }
 .stats dd { margin:0; font-family:var(--display); font-size:30px; font-weight:900; letter-spacing:-.04em; font-variant-numeric:tabular-nums; line-height:1; white-space:nowrap; }
+.stats .hot dd { background:linear-gradient(transparent 60%, var(--mark) 60%); }   /* 2026-11-09 회사판단연구소와 같은 초록 밑줄 */
 .stats dd small { font-size:13px; font-weight:700; margin-left:3px; color:var(--muted); letter-spacing:0; }
 
 /* 검은 띠 */
@@ -329,8 +330,8 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     </div>
     <dl class="stats" aria-label="연봉 연구소 자료 규모">
       <div><dt>회사</dt><dd id="stCo">52,305<small>곳</small></dd></div>
-      <div><dt>공시값 반영</dt><dd id="stOff">2,876<small>곳</small></dd></div>
       <div><dt>실제 연봉 검증</dt><dd id="stVal">3,413<small>건</small></dd></div>
+      <div class="hot"><dt>누적 회사 조회</dt><dd id="stViews">-</dd></div>
       <div><dt>기준</dt><dd id="stYm">2026.09</dd></div>
     </dl>
   </div>
@@ -511,9 +512,12 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   function heroFill(m) {
     var V = m.validation || {}, nf = function (v) { return (v || 0).toLocaleString('ko-KR'); };
     $('stCo').innerHTML = nf(m.count) + '<small>곳</small>';
-    $('stOff').innerHTML = nf(m.dartCount) + '<small>곳</small>';   // 공시값이 붙은 회사 수 (검증 배지의 개사 수와 다를 수 있음)
     $('stVal').innerHTML = nf(V.total) + '<small>건</small>';
     $('stYm').textContent = m.ym.replace('-', '.');
+    // 2026-11-09 사용자: 회사판단연구소처럼 누적 회사 조회 (같은 company-api /top 의 views)
+    fetch('https://company-api.jobzorro.workers.dev/top').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (d && d.views) $('stViews').innerHTML = nf(d.views) + '<small>번</small>';
+    }).catch(function () {});
     var items = ['국민연금 가입 회사 ' + nf(m.count) + '곳', '사업보고서·공공기관 공시 ' + nf(m.dartCount) + '곳', '이직자·현직자 실제 연봉 ' + nf(V.nPeople || V.nMatched) + '명으로 검증',
       '사원 · 대리 · 과장 · 차장 · 부장 직급별 추정', '매달 자동 갱신', '실수령액 계산기 · 내 연봉의 위치는? · 연봉협상 잘했나?'];
     var row = items.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('');
