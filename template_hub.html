@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 연구소 입구 (2026-11-11): 사이트 첫 주소 "/". 직무 사전은 /jobs/ 로 옮겼다.
+     옛 주소 넘기기: 전에는 "/" 가 직무 사전이라 /#brand-marketer(직무 상세), /?q= /?ind= /?group= 같은 주소가 돌아다닌다.
+     → 화면을 그리기 전에 /jobs/ 로 같은 꼬리(? 와 #)를 붙여 넘긴다. /?source=app(앱 시작 주소)처럼 다른 꼬리는 그대로 입구에 머문다. -->
+<script>(function(){var I=",/*__JOB_IDS__*/,";function go(){try{var h="";try{h=decodeURIComponent(location.hash.slice(1))}catch(e){h=location.hash.slice(1)}
+var p=new URLSearchParams(location.search);
+if((h&&I.indexOf(","+h+",")>=0)||p.has("q")||p.has("ind")||p.has("group")){document.documentElement.style.visibility="hidden";location.replace("jobs/"+location.search+location.hash)}}catch(e){}}
+go();addEventListener("hashchange",go)})();</script>
+/*__SEO__*/
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/*__SHARED_CSS__*/
+/* ── 입구 화면: 작은 한 줄 + 큰 제목(한 줄 소개) + 검색창 → 검은 띠 → 문 네 개 → 오늘 뉴스 3건 · 놀이터 · 상담 ── */
+.hb { max-width:1120px; margin:0 auto; padding-inline:max(20px, env(safe-area-inset-left,0px)) max(20px, env(safe-area-inset-right,0px)); }
+.hb-hero { padding-block:clamp(22px, 4vw, 56px) clamp(22px, 3vw, 40px); }
+.hb-eye { font-size:13px; font-weight:700; color:var(--ink-soft); display:flex; align-items:center; gap:8px; }
+.hb-eye i { width:8px; height:8px; border-radius:50%; background:var(--acc); border:1px solid var(--ink); flex:none; }
+.hb-hero h1 { margin-top:12px; font-family:var(--display); font-weight:900; font-size:min(46px, 12.4vw); line-height:1.08; letter-spacing:-.05em; text-wrap:initial; }
+.hb-hero h1 .thin { display:block; font-weight:500; font-size:.5em; letter-spacing:-.03em; color:var(--ink-soft); line-height:1.3; margin-bottom:6px; }
+.hb-hero h1 .l { display:block; white-space:nowrap; }
+.hb-hero h1 .mark { background:linear-gradient(transparent 66%, var(--mark) 66%); }
+@media (min-width:900px) { .hb-hero h1 { font-size:clamp(64px, 7.2vw, 84px); line-height:1; } .hb-hero h1 .l { display:inline; } .hb-hero h1 .thin { margin-bottom:12px; } }
+/* 검색창 */
+.hb-find { position:relative; max-width:620px; margin-top:clamp(18px, 2.4vw, 30px); }
+.hb-search { display:flex; align-items:center; gap:8px; height:52px; padding:0 6px 0 18px; border:1.5px solid var(--ink); border-radius:999px; background:var(--paper); }
+.hb-search svg { width:19px; height:19px; flex:none; color:var(--muted); }
+.hb-search input { flex:1; min-width:0; height:100%; border:0; outline:0; background:transparent; color:var(--ink); font:inherit; font-size:16px; }
+.hb-search input::placeholder { color:var(--muted); }
+.hb-search button { flex:none; height:40px; padding:0 18px; border-radius:999px; background:var(--fill); color:var(--fillfg); font-family:var(--display); font-size:14px; font-weight:800; }
+.hb-search button:hover { background:var(--acc); color:var(--acc-ink); }
+.hb-search:focus-within { box-shadow:0 0 0 3px var(--mark); }
+.hb-sug { position:absolute; left:0; right:0; top:58px; z-index:15; background:var(--paper); border:1.5px solid var(--ink); border-radius:16px; padding:6px; box-shadow:var(--shadow-lift); }
+.hb-sug a { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; padding:6px 12px; border-radius:10px; text-decoration:none; font-size:15px; font-weight:700; }
+.hb-sug a small { flex:none; font-size:12px; font-weight:700; color:var(--muted); }
+.hb-sug a:hover, .hb-sug a.on { background:var(--mist); }
+.hb-sug a.more { font-weight:500; color:var(--ink-soft); }
+/* 검은 띠 */
+.hb-ticker { overflow:hidden; background:var(--ink); color:var(--paper); }
+.hb-ticker .v2-ticker-track { display:flex; width:max-content; animation:hbmarquee 40s linear infinite; }
+.hb-ticker span { font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.1em; padding:12px 28px; white-space:nowrap; }
+.hb-ticker span::after { content:"✦"; margin-left:28px; color:var(--acc); }
+@keyframes hbmarquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .hb-ticker .v2-ticker-track { animation:none; } }
+@media (max-width:640px) { .hb-ticker span { padding:7px 18px; font-size:12px; } .hb-ticker span::after { margin-left:18px; } }
+/* 문 네 개 */
+.hb-doors { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; padding-top:clamp(18px, 3vw, 36px); }
+@media (min-width:900px) { .hb-doors { grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px; } }
+.door { position:relative; display:flex; flex-direction:column; min-height:164px; padding:16px 16px 14px; border:1.5px solid var(--ink); border-radius:18px; background:var(--paper); color:var(--ink); text-decoration:none; }
+.door .lab { font-size:14px; font-weight:800; letter-spacing:-.02em; }
+.door .num { margin-top:auto; padding-top:18px; font-family:var(--display); font-weight:900; font-size:clamp(30px, 8.6vw, 44px); line-height:1; letter-spacing:-.04em; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.door .num small { font-size:.42em; font-weight:800; letter-spacing:-.02em; margin-left:3px; }
+.door .sub { margin-top:8px; font-size:13px; font-weight:500; color:var(--ink-soft); line-height:1.35; }
+.door .go { position:absolute; top:12px; right:14px; font-family:var(--display); font-weight:900; font-size:18px; line-height:1; }
+.door.on { background:var(--acc); border-color:var(--acc); color:#0b0b0b; }
+.door.on .sub { color:#0b0b0b; }
+.door:hover { background:var(--fill); border-color:var(--fill); color:var(--fillfg); }
+.door:hover .sub { color:inherit; }
+@media (min-width:900px) { .door { min-height:200px; padding:22px 22px 20px; } .door .lab { font-size:15px; } .door .num { font-size:clamp(34px, 3.9vw, 46px); } .door .go { top:18px; right:20px; } }
+/* 아래: 오늘 뉴스 + 놀이터·상담 */
+.hb-low { display:grid; grid-template-columns:minmax(0,1fr); gap:28px; padding:clamp(28px, 4vw, 52px) 0 0; }
+@media (min-width:900px) { .hb-low { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:44px; } }
+.hb-h { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding-bottom:10px; border-bottom:2px solid var(--ink); }
+.hb-h h2 { font-size:19px; font-weight:900; letter-spacing:-.04em; }
+.hb-h a { flex:none; font-size:13px; font-weight:700; text-decoration:none; color:var(--ink-soft); padding:12px 0; margin:-12px 0; }
+.hb-h a:hover { color:var(--ink); }
+.hb-news li { border-bottom:1px solid var(--hairline); }
+.hb-news a { display:flex; gap:12px; align-items:baseline; padding:13px 0; min-height:48px; text-decoration:none; }
+.hb-news .n { flex:none; width:20px; font-family:var(--display); font-weight:900; font-size:15px; }
+.hb-news b { font-size:15px; font-weight:700; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.hb-news a:hover b { text-decoration:underline; text-underline-offset:3px; }
+.hb-side { display:grid; gap:10px; align-content:start; }
+.hb-card { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:68px; padding:12px 18px; border:1px solid var(--hairline-2); border-radius:16px; text-decoration:none; }
+.hb-card b { display:block; font-size:15.5px; font-weight:800; letter-spacing:-.02em; }
+.hb-card small { display:block; margin-top:2px; font-size:12.5px; color:var(--muted); }
+.hb-card i { flex:none; font-style:normal; font-family:var(--display); font-weight:900; font-size:17px; }
+.hb-card:hover { border-color:var(--ink); background:var(--mist); }
+.hb-card.dark { background:var(--fill); color:var(--fillfg); border-color:var(--fill); }
+.hb-card.dark small { color:inherit; opacity:.72; }
+.hb-card.dark:hover { background:var(--acc); border-color:var(--acc); color:var(--acc-ink); }
+.hb-pills { display:flex; flex-wrap:wrap; gap:8px; padding-top:6px; }
+.hb-pills a { display:inline-flex; align-items:center; min-height:40px; padding:0 15px; border:1px solid var(--ink); border-radius:999px; font-size:13px; font-weight:700; text-decoration:none; }
+.hb-pills a:hover { background:var(--fill); color:var(--fillfg); }
+</style>
+</head>
+<body class="hub">
+
+/*__NAV__*/
+
+<main>
+<section class="hb hb-hero">
+  <p class="hb-eye"><i></i>취업조로가 만든 취업이직연구소</p>
+  <h1><span class="thin">감 말고</span><span class="l">제대로 된 </span><span class="l"><span class="mark">정보와 자료로</span></span></h1>
+  <div class="hb-find">
+    <form class="hb-search" role="search" id="hbForm" action="jobs/" method="get">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="hbQ" name="q" type="search" placeholder="회사 이름이나 직무로 찾기" autocomplete="off" aria-label="회사 이름이나 직무로 찾기" enterkeyhint="search">
+      <button type="submit">찾기</button>
+    </form>
+    <div class="hb-sug" id="hbSug" hidden></div>
+  </div>
+</section>
+
+<div class="v2-ticker hb-ticker" aria-hidden="true"><div class="v2-ticker-track">/*__TICKER__*/</div></div>
+
+<div class="hb">
+  <nav class="hb-doors" aria-label="연구소 둘러보기">
+    /*__DOORS__*/
+  </nav>
+  <div class="hb-low">
+    /*__NEWS__*/
+    <div class="hb-side">
+      <a class="hb-card" href="play/"><span><b>연봉 놀이터</b><small>회사 연봉으로 하는 오늘의 게임 6개</small></span><i>→</i></a>
+      <a class="hb-card dark" href="apply/"><span><b>무료 상담 신청</b><small>취업조로 컨설턴트와 1:1</small></span><i>→</i></a>
+      <div class="hb-pills"><a href="fit/">1분 직무 진단</a><a href="interview/">면접 질문</a><a href="compare/">직무 비교</a><a href="industry/">산업별 직무</a><a href="zorro/">취업조로와 함께하기</a></div>
+    </div>
+  </div>
+</div>
+</main>
+
+/*__FOOTER__*/
+
+<script>
+// 검색창: 큰 회사 목록(1MB 넘음)을 받지 않고, 여기 박아 둔 직무 이름과 많이 찾는 회사 이름만으로 바로 갈 곳을 보여 준다.
+//   직무가 맞으면 → 직무 페이지, 회사가 맞으면 → 회사 판단(#회사이름), 그 밖에는 → 연봉 연구소 검색(#검색어, 이름 일부만 쳐도 찾음) · 직무 검색(/jobs/?q=)
+(function () {
+  var J = /*__HUB_JOBS__*/[], C = /*__HUB_COS__*/[];
+  var f = document.getElementById('hbForm'), q = document.getElementById('hbQ'), box = document.getElementById('hbSug'), sel = -1;
+  function plain(s) { return String(s).toLowerCase().replace(/\s+|\(주\)|주식회사/g, ''); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function rows(v) {
+    var k = plain(v), out = [];
+    if (!k) return out;
+    var cs = C.filter(function (c) { return plain(c[0]).indexOf(k) === 0 || (c[1] && plain(c[1]).indexOf(k) >= 0); });
+    if (cs.length < 3) C.forEach(function (c) { if (cs.length < 3 && cs.indexOf(c) < 0 && plain(c[0]).indexOf(k) > 0) cs.push(c); });
+    cs.slice(0, 3).forEach(function (c) { out.push(['company/#' + encodeURIComponent(c[0]), c[0], '회사 판단']); });
+    J.filter(function (j) { return plain(j[1]).indexOf(k) >= 0; }).slice(0, 3).forEach(function (j) { out.push(['jobs/' + j[0] + '/', j[1], '직무 사전']); });
+    out.push(['salary/#' + encodeURIComponent(v.trim()), '‘' + v.trim() + '’ 회사 찾기', '연봉 연구소', 1]);
+    out.push(['jobs/?q=' + encodeURIComponent(v.trim()), '‘' + v.trim() + '’ 직무 찾기', '직무 사전', 1]);
+    return out;
+  }
+  function draw() {
+    var r = rows(q.value); sel = -1;
+    box.innerHTML = r.map(function (x) { return '<a href="' + x[0] + '"' + (x[3] ? ' class="more"' : '') + '><span>' + esc(x[1]) + '</span><small>' + x[2] + ' →</small></a>'; }).join('');
+    box.hidden = !r.length;
+  }
+  q.addEventListener('input', draw);
+  q.addEventListener('focus', function () { if (q.value.trim()) draw(); });
+  q.addEventListener('keydown', function (e) {
+    var a = box.querySelectorAll('a'); if (box.hidden || !a.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); sel = (sel + (e.key === 'ArrowDown' ? 1 : -1) + a.length) % a.length; a.forEach(function (x, i) { x.classList.toggle('on', i === sel); }); }
+    else if (e.key === 'Escape') { box.hidden = true; }
+  });
+  document.addEventListener('click', function (e) { if (!e.target.closest('.hb-find')) box.hidden = true; });
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = q.value.trim(); if (!v) { q.focus(); return; }
+    var a = box.querySelectorAll('a'), r = rows(v);
+    location.href = sel >= 0 && a[sel] ? a[sel].getAttribute('href') : r[0][0];   // 고른 줄 → 없으면 맨 위 줄(맞는 회사·직무 → 없으면 연봉 연구소 검색)
+  });
+})();
+</script>
+</body>
+</html>

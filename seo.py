@@ -22,6 +22,9 @@ VERIFY = {}   # build.py 가 site.json 의 verification 값을 넣는다 (google
 LOGO_SQ = "assets/app/icon-512.png"   # 구조화 데이터용 정사각 로고 (2026-11-11: 전엔 1200×630 공유 그림을 로고로 넣었다)
 JOB_DATES = {}   # 직무 id → 처음 올린 날. build.py 가 data/job_dates.json 으로 채운다 (없는 직무는 자료 기준일)
 CO_LINKS = {}    # 직무 id → [{"n": 회사 이름, "u": 연봉 페이지 주소(salary/co/…/), "a": 평균 연봉 글자}]. build.py 가 job_links.json 으로 채운다 (없으면 빈 채로)
+SITE_NAME = "취업이직연구소"   # 2026-11-11 사이트 대표 이름 (검색 결과·공유 미리보기·앱 이름·상단 로고). 만든 사람은 취업조로
+TAGLINE = "감 말고 제대로 된 정보와 자료로"   # 한 줄 소개 (첫 화면·공유 그림·검색 설명 공용)
+JOBS_HOME = "jobs/"   # 직무 사전 첫 화면 주소 (2026-11-11: "/" 는 연구소 입구가 되고 직무 사전은 /jobs/ 로 옮김)
 HAS_LIST = {"salary": False, "company": False}   # 회사 목록 쪽(/salary/list/, /company/list/)이 있으면 build.py 가 True 로
 
 
@@ -70,7 +73,7 @@ def seo_head(base: str, title: str, desc: str, path: str, image: str, ld=None, n
         f'<meta name="robots" content="{"noindex,follow" if noindex else "index,follow,max-image-preview:large,max-snippet:-1"}">',
         '<meta name="author" content="조현빈 (취업조로)">',
         '<meta property="og:type" content="website">',
-        '<meta property="og:site_name" content="취업조로">',
+        f'<meta property="og:site_name" content="{SITE_NAME}">',
         '<meta property="og:locale" content="ko_KR">',
         f'<meta property="og:title" content="{e(title)}">',
         f'<meta property="og:description" content="{e(desc)}">',
@@ -126,9 +129,10 @@ def person_ld(base: str) -> dict:
 def website_ld(base: str) -> dict:
     return {
         "@context": "https://schema.org", "@type": "WebSite",
-        "@id": abs_url(base, "#website"), "name": "취업조로 직무사전", "url": base, "inLanguage": "ko",
+        "@id": abs_url(base, "#website"), "name": SITE_NAME, "alternateName": ["취업조로", "취업조로 취업이직연구소"], "url": base, "inLanguage": "ko",
+        "description": TAGLINE,
         "publisher": {"@id": abs_url(base, "#org")},
-        "potentialAction": {"@type": "SearchAction", "target": {"@type": "EntryPoint", "urlTemplate": abs_url(base, "?q={search_term_string}")}, "query-input": "required name=search_term_string"},
+        "potentialAction": {"@type": "SearchAction", "target": {"@type": "EntryPoint", "urlTemplate": abs_url(base, JOBS_HOME + "?q={search_term_string}")}, "query-input": "required name=search_term_string"},
     }
 
 
@@ -206,7 +210,7 @@ def job_ld(base: str, j: dict, by_id: dict, meta: dict, group_name: str, updated
     }
     faq = {"@context": "https://schema.org", "@type": "FAQPage",
            "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in job_faq(j, by_id)]}
-    crumbs = breadcrumb_ld(base, [("직무사전", ""), (group_name, f"?group={j['group']}"), (j["name"], path)])
+    crumbs = breadcrumb_ld(base, [("직무 사전", JOBS_HOME), (group_name, f"{JOBS_HOME}?group={j['group']}"), (j["name"], path)])
     return [occupation, article, faq, crumbs]
 
 
@@ -265,7 +269,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     ev = src_n + pub_n
     h = []
     par = by_id.get(j.get("parent") or "")
-    h.append(f'<nav class="crumbs" aria-label="경로"><a href="../../">직무사전</a> › <a href="../../?group={e(j["group"])}">{e(group_name)}</a> › '
+    h.append(f'<nav class="crumbs" aria-label="경로"><a href="../">직무 사전</a> › <a href="../?group={e(j["group"])}">{e(group_name)}</a> › '
              + (f'<a href="../{e(par["id"])}/">{e(par["name"])}</a> › ' if par else "") + f'<span>{e(j["name"])}</span></nav>')
     _m = re.match(r"^(.*?)\s*\(([^()]+)\)\s*$", j["name"])
     _nm = f'{e(_m.group(1))}<span class="paren">{e(_m.group(2))}</span>' if _m else e(j["name"])
@@ -361,7 +365,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     src += f'<br><span class="upd">작성 취업조로(조현빈) · 최종 수정 {e(updated)}</span></div>'
     h.append(src)
     h.append('<div class="cta"><h2>이 직무로 취업·이직을 고민 중이라면</h2><p>지금 경력에서 이 직무로 가는 가장 빠른 경로를 취업조로 컨설턴트가 1:1로 정리해 드립니다.</p>'
-             f'<div class="cta-row"><a class="btn ghost" href="../../#{e(j["id"])}">직무사전에서 다른 직무 보기</a><a class="btn primary" href="../../apply/index.html#{e(j["id"])}">무료 상담 신청하기 ⚡</a></div></div>')
+             f'<div class="cta-row"><a class="btn ghost" href="../#{e(j["id"])}">직무 사전에서 다른 직무 보기</a><a class="btn primary" href="../../apply/index.html#{e(j["id"])}">무료 상담 신청하기 ⚡</a></div></div>')
     return "\n".join(h)
 
 
@@ -409,7 +413,7 @@ JOB_PAGE_CSS = """
 
 # ───────────────────────── 공유 이미지 ─────────────────────────
 
-FONT_DIRS = [Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "Windows" / "Fonts", Path("C:/Windows/Fonts")]
+FONT_DIRS = [Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "Windows" / "Fonts", Path("C:/Windows/Fonts"), ASSETS / "fonts"]   # assets/fonts: 로고 글자용 Black Han Sans (OFL, 저장소에 둠)
 
 
 def _font(name: str, size: int):
@@ -445,12 +449,68 @@ def _wrap(d, text, font, maxw, n=2):
     return lines
 
 
+HUB_ART = [("회사 판단", "3.9만", "곳"), ("연봉", "5.2만", "곳"), ("직무", "133", "개"), ("취업뉴스", "매일", "")]   # 입구 공유 그림의 네 칸 (build.py 가 지금 숫자로 바꾼다)
+
+
+def brand_mark(h: int, fg=(255, 255, 255), ring=None, text: str = ""):
+    """사이트 표시 한 벌: CI 의 가면 네모(jobzorro_logo.png 왼쪽) + 오른쪽으로 기울인 굵은 글자 '취업이직연구소'. 높이 h 의 투명 바탕 그림(RGBA).
+    상단 로고(assets/brand/lab_logo.png)와 모든 공유 그림 왼쪽 위가 이 함수 하나를 쓴다 → 로고를 바꿀 때 여기만 고치면 둘 다 바뀐다.
+    fg: 글자 색, ring: 네모 테두리 색(어두운 바탕에서 검은 네모가 묻히지 않게, 없으면 안 그림)"""
+    import math
+    from PIL import Image, ImageDraw
+    text = text or SITE_NAME
+    S = 3   # 크게 그린 뒤 줄여 가장자리를 매끈하게
+    H = h * S
+    logo = Image.open(ASSETS / "jobzorro_logo.png").convert("RGBA")
+    badge = logo.crop((15, 9, 78, 72)).resize((H, H), Image.LANCZOS)
+    mask = Image.new("L", (H, H), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, H - 1, H - 1], radius=int(H * 10 / 44), fill=255)
+    badge.putalpha(mask)
+    f = _font("BlackHanSans-Regular.ttf", int(H * 31 / 44)) or _font("GmarketSansBold.otf", int(H * 27 / 44))
+    tmp = ImageDraw.Draw(Image.new("L", (10, 10)))
+    x0, y0, x1, y1 = tmp.textbbox((0, 0), text, font=f)
+    k = math.tan(math.radians(9))
+    tw, pad = x1 - x0, int(H * k) + 4
+    txt = Image.new("L", (tw + pad * 2, H), 0)
+    ImageDraw.Draw(txt).text((pad - x0, (H - (y1 - y0)) / 2 - y0), text, font=f, fill=255)
+    txt = txt.transform(txt.size, Image.AFFINE, (1, k, -k * H / 2, 0, 1, 0), Image.BICUBIC)   # 가운데 높이를 축으로 -9도 기울임
+    bx = txt.getbbox() or (0, 0, txt.width, H)
+    txt = txt.crop((bx[0], 0, bx[2], H))
+    r = max(S, int(H * 1.5 / 44)) if ring else 0
+    gap = int(H * 9 / 44)
+    out = Image.new("RGBA", (r + H + r + gap + txt.width + S, H + r * 2), (0, 0, 0, 0))
+    if ring:
+        ImageDraw.Draw(out).rounded_rectangle([0, 0, H + r * 2 - 1, H + r * 2 - 1], radius=int(H * 10 / 44) + r, fill=tuple(ring) + (255,))
+    out.paste(badge, (r, r), badge)
+    out.paste(Image.new("RGBA", txt.size, tuple(fg) + (255,)), (r + H + r + gap, r), txt)
+    return out.resize((round(out.width / S), round(out.height / S)), Image.LANCZOS)
+
+
+def brand_logo(out: Path, h: int = 96) -> bool:
+    """상단 메뉴 로고 그림(검은 글자, 투명 바탕)을 만든다. 어두운 화면에서는 CSS 가 색을 뒤집는다. 글꼴이 없으면 만들지 않는다(저장소의 기존 파일 사용)."""
+    if not (_font("BlackHanSans-Regular.ttf", 10) or _font("GmarketSansBold.otf", 10)):
+        return False
+    out.parent.mkdir(parents=True, exist_ok=True)
+    brand_mark(h, fg=(11, 11, 11)).save(out, optimize=True)
+    return True
+
+
 def _art(im, d, kind, ACC, INK):
     """공유 이미지 오른쪽 그림 (페이지마다 다르게, 2026-10-27 사용자: 카톡 미리보기를 각자 다르게)."""
     from PIL import Image, ImageDraw
     PAPER, GRAY, DIM = (255, 255, 255), (70, 70, 70), (38, 38, 38)
     x0, x1, y0, y1 = 730, 1130, 110, 470
-    if kind == "salary":      # 직급별 연봉 막대: 사원 → 부장, 마지막만 형광
+    if kind == "hub":         # 연구소 입구: 문 네 개(회사·연봉·직무·뉴스)와 지금 숫자. 숫자는 build.py 가 HUB_ART 에 넣는다
+        f_n = _font("GmarketSansBold.otf", 46); f_l = _font("GmarketSansMedium.otf", 22)
+        tw, th, g = 192, 168, 16
+        for i, (lb, num, unit) in enumerate(HUB_ART[:4]):
+            tx, ty = x0 + 10 + (i % 2) * (tw + g), y0 + 4 + (i // 2) * (th + g)
+            on = i == 0
+            d.rounded_rectangle([tx, ty, tx + tw, ty + th], radius=18, fill=ACC if on else (26, 26, 26), outline=None if on else (55, 55, 55), width=0 if on else 2)
+            d.text((tx + 22, ty + 22), lb, font=f_l, fill=INK if on else (170, 170, 170))
+            d.text((tx + 20, ty + 76), num, font=f_n, fill=INK if on else PAPER)
+            d.text((tx + 24 + d.textlength(num, font=f_n), ty + 98), unit, font=f_l, fill=INK if on else (170, 170, 170))
+    elif kind == "salary":    # 직급별 연봉 막대: 사원 → 부장, 마지막만 형광
         labels, hs = ["사원", "대리", "과장", "차장", "부장"], [0.34, 0.5, 0.66, 0.82, 1.0]
         bw, gap, base = 58, 22, y1 - 34
         f = _font("GmarketSansMedium.otf", 22)
@@ -553,8 +613,9 @@ def _art(im, d, kind, ACC, INK):
         d.rectangle([cx - 4, cy + 36, cx + 4, cy + 60], fill=INK)
 
 
-def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조로 직무사전", light: str = "채용공고엔 안 나오는", accent=None, bg=None, art: str = "") -> bool:
-    """1200x630 공유 이미지. 먹색 바탕, 황동 라벨, 얇은 머리글 + 굵은 헤드라인, 오른쪽에 조로 마스크 워터마크.
+def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "직무 사전", light: str = "채용공고엔 안 나오는", accent=None, bg=None, art: str = "", foot: str = "") -> bool:
+    """1200x630 공유 이미지. 먹색 바탕, 왼쪽 위에 '취업이직연구소' 표시(brand_mark) + 그 옆에 메뉴 이름(kicker), 얇은 머리글 + 굵은 헤드라인, 오른쪽에 조로 마스크 워터마크.
+    2026-11-11: 모든 그림 왼쪽 위에 같은 사이트 표시, 아래 왼쪽에는 한 줄 소개(foot 로 바꿀 수 있음).
     art 를 주면 마스크 대신 오른쪽에 그 페이지 그림(_art)을 그리고 글은 왼쪽 절반에 두 줄까지 접는다.
     글꼴(Gmarket Sans·나눔바른고딕)이 없는 환경(GitHub Actions)에서는 만들지 않고 False 를 돌려준다."""
     from PIL import Image, ImageDraw
@@ -580,13 +641,16 @@ def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조
         _art(im, d, art, BRASS, INK)
     # 위 황동 바
     d.rectangle([0, 0, W, 10], fill=BRASS)
-    # 라벨
-    f_k = _font("GmarketSansMedium.otf", 26)
-    d.text((80, 72), kicker.upper() if kicker.isascii() else kicker, font=f_k, fill=BRASS)
-    kw = d.textlength(kicker, font=f_k)
-    d.rectangle([80 + kw + 16, 85, 80 + kw + 76, 87], fill=BRASS)
+    # 사이트 표시(가면 네모 + 취업이직연구소) + 메뉴 이름
+    bm = brand_mark(52, fg=PAPER, ring=PAPER)
+    im.paste(bm, (78, 50), bm)
+    if kicker:
+        f_k = _font("GmarketSansMedium.otf", 26)
+        kx = 78 + bm.width + 18
+        d.rectangle([kx, 64, kx + 2, 92], fill=(90, 90, 90))
+        d.text((kx + 20, 65), kicker, font=f_k, fill=BRASS)
     # 얇은 머리글
-    y = 130
+    y = 142
     maxw = 600 if art else 1040
     if light:
         f_l = _font("GmarketSansLight.otf", 44 if art else 48)
@@ -629,13 +693,9 @@ def og_image(out: Path, title: str, subtitle: str = "", kicker: str = "취업조
         f_s = _font("NanumBarunGothic.ttf", 28)
         sub = subtitle if d.textlength(subtitle, font=f_s) <= 1000 else subtitle[:int(len(subtitle) * 1000 / d.textlength(subtitle, font=f_s)) - 1] + "…"
         d.text((80, y + 14), sub, font=f_s, fill=MUTED)
-    # 아래: TEAMZORRO 워드마크(흰색) + 주소
-    tz = Image.open(ASSETS / "teamzorro_logo.png").convert("RGBA")
-    tz = tz.resize((int(tz.width * 48 / tz.height), 48), Image.LANCZOS)
-    r, g, bl, al = tz.split()
-    tzw = Image.merge("RGBA", (r.point(lambda v: 255 - v), g.point(lambda v: 255 - v), bl.point(lambda v: 255 - v), al))
-    im.paste(tzw, (80, H - 60 - 48), tzw)
+    # 아래: 한 줄 소개 + 주소
     f_u = _font("GmarketSansMedium.otf", 26)
+    d.text((80, H - 60 - 34), foot or TAGLINE, font=f_u, fill=SOFT)
     d.text((W - 80 - d.textlength("job.jobzorro.kr", font=f_u), H - 60 - 34), "job.jobzorro.kr", font=f_u, fill=BRASS)
     out.parent.mkdir(parents=True, exist_ok=True)
     im.save(out, optimize=True)
@@ -655,13 +715,13 @@ def render_industry_page(ind: dict, jobs, gname: dict, groups) -> str:
         return (f'<a class="indcard" href="../../jobs/{e(j["id"])}/"><b>{e(j["name"])}</b><span>{e(j["tagline"])}</span>'
                 f'<small>{e(gname.get(j["group"], ""))} · 신입 {rng(j["salary"]["junior"])}만원</small></a>')
 
-    h = [f'<nav class="crumbs" aria-label="경로"><a href="../../">직무사전</a> › <a href="../">산업별 직무</a> › <span>{e(ind["name"])}</span></nav>',
+    h = [f'<nav class="crumbs" aria-label="경로"><a href="../../jobs/">직무 사전</a> › <a href="../">산업별 직무</a> › <span>{e(ind["name"])}</span></nav>',
          f'<h1 class="name">{e(ind["name"])} 산업 직무 지도</h1><p class="en">{e(ind["desc"])}</p>',
          f'<p class="summary"><b>{e(ind["name"])}</b> 산업에서 일하는 직무 {len(mine)}개를 모았습니다. '
          + (f'이 산업에만 있는 직무 {len(only)}개, ' if only else "")
          + (f'같은 직무라도 이 산업에서는 어떻게 다른지 {len(diffs)}가지를 현직자 인터뷰로 정리했습니다.' if diffs else '직무를 누르면 하는 일·연봉·들어가는 길을 볼 수 있습니다.')
          + '</p>',
-         f'<p class="parent-link"><a href="../../?ind={e(iid)}">목록에서 이 산업만 걸러 보기 →</a>'
+         f'<p class="parent-link"><a href="../../jobs/?ind={e(iid)}">목록에서 이 산업만 걸러 보기 →</a>'
          f'<a href="../../salary/{"list/" if HAS_LIST["salary"] else ""}">{"연봉 회사 목록" if HAS_LIST["salary"] else "연봉 연구소"} →</a>'
          f'<a href="../../company/{"list/" if HAS_LIST["company"] else ""}">{"회사 판단 목록" if HAS_LIST["company"] else "회사 판단"} →</a></p>']
     if only:
@@ -685,7 +745,7 @@ def render_industry_page(ind: dict, jobs, gname: dict, groups) -> str:
 
 def render_industry_index(inds, jobs) -> str:
     """산업 허브 목록 /industry/"""
-    h = ['<nav class="crumbs" aria-label="경로"><a href="../">직무사전</a> › <span>산업별 직무</span></nav>',
+    h = ['<nav class="crumbs" aria-label="경로"><a href="../jobs/">직무 사전</a> › <span>산업별 직무</span></nav>',
          '<h1 class="name">산업별 직무 지도</h1><p class="en">같은 직무도 산업에 따라 하는 일이 달라집니다</p>',
          f'<p class="summary">산업 {len(inds)}개마다 어떤 직무가 있는지, 그 산업에만 있는 직무는 무엇인지 모았습니다.</p><div class="indcards">']
     for i in inds:
@@ -732,7 +792,7 @@ def write_sitemap(out_dir: Path, base: str, entries) -> list:
 def write_robots(out_dir: Path, base: str) -> None:
     bots = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-User", "anthropic-ai", "PerplexityBot", "Google-Extended", "Googlebot", "Bingbot", "Yeti", "Daum", "NaverBot"]
     # 2026-11-03: 봇 이름을 따로 적은 묶음은 '*' 묶음 규칙을 읽지 않으므로 묶음마다 /admin/ 막기를 같이 적는다
-    txt = "# 취업조로 직무사전 — 검색엔진과 AI 검색(생성형 엔진) 모두 허용\nUser-agent: *\nAllow: /\nDisallow: /admin/\n\n" + "".join(f"User-agent: {b}\nAllow: /\nDisallow: /admin/\n\n" for b in bots)
+    txt = "# 취업이직연구소 (취업조로) — 검색엔진과 AI 검색(생성형 엔진) 모두 허용\nUser-agent: *\nAllow: /\nDisallow: /admin/\n\n" + "".join(f"User-agent: {b}\nAllow: /\nDisallow: /admin/\n\n" for b in bots)
     txt += f"Sitemap: {abs_url(base, 'sitemap.xml')}\n"
     (out_dir / "robots.txt").write_text(txt, encoding="utf-8")
 
@@ -742,15 +802,16 @@ def write_llms(out_dir: Path, base: str, jobs, groups, updated: str, n_docs: int
     gname = {g["id"]: g["name"] for g in groups}
     n_pub = sum((j.get("sources") or {}).get("public", 0) for j in jobs)
     lines = [
-        "# 취업조로 직무사전 (jobzorro)",
+        "# 취업이직연구소 (취업조로 · jobzorro)",
         "",
-        "> 취업·이직 컨설턴트 취업조로(조현빈, 커리어프로젝트 주식회사 대표, 컨설팅 15년 차, 합격자 1,100명 이상)가 현직자 직무 인터뷰 " + f"{n_docs:,}건과 공개 현직자 자료 {n_pub:,}건을" + " 바탕으로 정리한 한국 직무 설명 사이트. "
+        "> " + TAGLINE + ". 취업이직연구소는 취업·이직 컨설턴트 취업조로(조현빈, 커리어프로젝트 주식회사 대표, 컨설팅 15년 차, 합격자 1,100명 이상)가 현직자 직무 인터뷰 " + f"{n_docs:,}건과 공개 현직자 자료 {n_pub:,}건을" + " 바탕으로 만든 한국 취업·이직 자료 사이트(직무 사전·연봉 연구소·회사 판단 연구소·취업뉴스). "
         "직무마다 하는 일·하루 일과·필요 역량·들어가는 길(전공/비전공/경력 전환)·커리어 패스·연봉대(추정)·옮겨갈 수 있는 직무·면접 질문·현직자의 말·AI 영향을 다룬다. 직무 설명에서 인터뷰한 개인은 특정하지 않는다. 회사 판단 연구소·연봉 연구소는 공개 자료(국민연금 가입 통계·DART 공시·평점)로 회사별 판정과 직급 연봉 추정을 보여 준다.",
         "",
         f"최종 수정: {stamp or updated} (직무 자료 기준일 {updated}). 언어: 한국어. 연봉은 만원 단위 세전 기본급 추정치.",
         "",
         "## 주요 페이지",
-        f"- [직무사전 전체]({abs_url(base, '')}): 직군·트랙별로 직무를 고르고 상세를 본다",
+        f"- [취업이직연구소 첫 화면]({abs_url(base, '')}): 직무 사전·연봉 연구소·회사 판단 연구소·취업뉴스로 가는 입구",
+        f"- [직무 사전]({abs_url(base, JOBS_HOME)}): 직군·트랙별로 직무를 고르고 상세를 본다",
         f"- [취업뉴스 · 커리어브리핑]({abs_url(base, 'news/')}): 매일 아침 고용·채용·이직·기업 뉴스를 선별하고 취업조로 관점의 한마디를 붙인다",
         f"- [취업조로와 함께하기]({abs_url(base, 'zorro/')}): 컨설턴트 소개, 상황별(신입·중고신입·경력이직·선퇴사자) 상담 안내",
         f"- [무료 상담 신청]({abs_url(base, 'apply/')})",
@@ -790,7 +851,7 @@ def render_interview_body(j: dict, by_id: dict, group_name: str, updated: str) -
     def li(arr, cls=""):
         return f'<ol class="iq {cls}">' + "".join(f"<li>{e(s)}</li>" for s in arr) + "</ol>"
     h = []
-    h.append(f'<nav class="crumbs" aria-label="경로"><a href="../../">직무사전</a> › <a href="../">면접 질문</a> › <span>{e(j["name"])}</span></nav>')
+    h.append(f'<nav class="crumbs" aria-label="경로"><a href="../../jobs/">직무 사전</a> › <a href="../">면접 질문</a> › <span>{e(j["name"])}</span></nav>')
     h.append(f'<div class="kick">Interview · {e(group_name)}</div>')
     h.append(f'<h1 class="name">{e(j["name"])} 면접 질문과 준비법</h1>')
     h.append(f'<p class="summary"><b>{e(j["name"])}</b> 면접에서 현직자와 컨설턴트가 꼽은 단골 질문·평가 포인트와 준비 방법입니다. {e(j["tagline"])}을(를) 뽑는 자리라는 걸 기억하세요.</p>')
@@ -815,7 +876,7 @@ def render_interview_index(jobs, groups) -> str:
     by_g = {}
     for j in jobs:
         by_g.setdefault(j["group"], []).append(j)
-    h = ['<nav class="crumbs" aria-label="경로"><a href="../">직무사전</a> › <span>면접 질문</span></nav>',
+    h = ['<nav class="crumbs" aria-label="경로"><a href="../jobs/">직무 사전</a> › <span>면접 질문</span></nav>',
          '<div class="kick">Interview · 직무별 면접 질문</div>',
          f'<h1 class="name">직무별 면접 질문 {len(jobs)}개 직무</h1>',
          '<p class="summary">현직자 인터뷰에서 나온 직무별 단골 면접 질문, 평가 포인트, 준비 방법을 모았습니다. 지원할 직무를 골라 보세요.</p>']
@@ -933,7 +994,7 @@ def render_glossary(gl: dict, by_id: dict, gname: dict) -> str:
         if not heads or heads[-1][0] != k:
             heads.append((k, []))
         heads[-1][1].append(t)
-    h = ['<nav class="crumbs" aria-label="경로"><a href="../">직무사전</a> › <span>용어 사전</span></nav>',
+    h = ['<nav class="crumbs" aria-label="경로"><a href="../jobs/">직무 사전</a> › <span>용어 사전</span></nav>',
          '<div class="kick">Glossary · 직무 용어 사전</div>',
          f'<h1 class="name">직무 용어 사전 {len(terms)}개</h1>',
          '<p class="summary">직무 설명과 현직자 인터뷰에 나오는 약어·업계 용어·채용 용어를 한 줄로 풀었습니다. 직무 설명 본문에서도 점선 밑줄이 그어진 단어에 마우스를 올리면 같은 풀이가 뜹니다.</p>',

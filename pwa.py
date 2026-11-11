@@ -33,9 +33,9 @@ def manifest(root: str) -> dict:
     a = root + "assets/app/"
     return {
         "id": root,
-        "name": "취업이직연구소 — 직무사전·회사 판단·연봉",
+        "name": "취업이직연구소 — 회사 판단·연봉·직무 사전",
         "short_name": "취업이직연구소",
-        "description": "직무사전, 이 회사 갈 만한가, 연봉 연구소, 취업뉴스까지. 취업·이직 컨설턴트 취업조로가 만든 커리어 도구.",
+        "description": "감 말고 제대로 된 정보와 자료로. 회사 판단, 연봉 연구소, 직무 사전, 취업뉴스까지 — 취업조로가 만든 취업이직연구소.",
         "lang": "ko",
         "start_url": root + "?source=app",
         "scope": root,
@@ -53,8 +53,8 @@ def manifest(root: str) -> dict:
         "shortcuts": [
             {"name": "이 회사 갈 만한가", "short_name": "회사 판단", "url": root + "company/?source=app"},
             {"name": "연봉 연구소", "short_name": "연봉", "url": root + "salary/?source=app"},
+            {"name": "직무 사전", "short_name": "직무", "url": root + "jobs/?source=app"},   # 2026-11-11: 직무 사전이 / 에서 /jobs/ 로 (앱 시작 주소 /?source=app 은 연구소 입구)
             {"name": "취업뉴스", "short_name": "뉴스", "url": root + "news/?source=app"},
-            {"name": "면접 질문", "short_name": "면접", "url": root + "interview/?source=app"},
         ],
     }
 

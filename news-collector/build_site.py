@@ -37,14 +37,14 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 
 BASE_DIR = Path(__file__).parent
 
-# AI 직무 태그 → 직무사전 직무 페이지 (사이트 루트 기준 상대 경로, "" 는 직무사전 첫 페이지)
+# AI 직무 태그 → 직무사전 직무 페이지 (사이트 루트 기준 상대 경로, "jobs/" 는 직무 사전 첫 화면 — 2026-11-11: 사이트 첫 주소 "/" 는 연구소 입구가 됐다)
 # 뉴스 index(site/news/) 는 "../", 날짜별 지면(site/news/<날짜>/) 은 "../../" 를 앞에 붙인다
 JOB_TAG_LINKS = {
     "인사": "jobs/hr/", "영업": "jobs/b2b-sales/", "재무": "jobs/finance/", "기획": "jobs/strategy/",
     "PM": "jobs/service-planning/", "MD": "jobs/md/", "구매": "jobs/purchasing/",
     "마케팅": "jobs/brand-marketer/", "개발": "jobs/sw-dev/", "디자인": "jobs/ux-designer/",
     "생산": "jobs/production-mgmt/", "연구": "jobs/product-dev/", "품질": "jobs/quality/",
-    "건설": "jobs/construction-mgmt/", "공공": "jobs/public-admin/", "공통": "",
+    "건설": "jobs/construction-mgmt/", "공공": "jobs/public-admin/", "공통": "jobs/",
 }
 
 
