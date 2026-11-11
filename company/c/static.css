@@ -1,14 +1,16 @@
 :root { --paper:#ffffff; --ink:#0b0b0b; --soft:#45483f; --muted:#6f7268; --hairline:#e4e6df; --hairline-2:#cfd2c8; --fill:#f4f5f1; --acc:#c6ff3d; --acc-ink:#0b0b0b; --bad:#c2410c; --logo-filter:none;
+  --font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif;
   --display:"Archivo","Noto Sans KR",sans-serif; color-scheme:light dark; }
+html.wf { --font:"Noto Sans KR",sans-serif; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#9a9d92; --hairline:#26281f; --hairline-2:#3a3c33; --fill:#16170f; --bad:#f08a5d; --logo-filter:invert(1); } }
 :root[data-theme="dark"] { --paper:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#9a9d92; --hairline:#26281f; --hairline-2:#3a3c33; --fill:#16170f; --bad:#f08a5d; --logo-filter:invert(1); }
 * { box-sizing:border-box; }
-body { margin:0; background:var(--paper); color:var(--ink); font-family:"Noto Sans KR",sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; }
+body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--font); line-height:1.6; -webkit-font-smoothing:antialiased; }
 a { color:inherit; }
 .sp { max-width:880px; margin:0 auto; padding:28px 20px 64px; }
-.crumb { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px; }
+.crumb { margin:0; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px; }
 .crumb::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--acc); }
-.crumb a { text-decoration:none; }
+.crumb a { text-decoration:none; display:inline-flex; align-items:center; min-height:40px; }
 .grp { margin:18px 0 2px; font-size:14px; font-weight:700; color:var(--soft); }
 h1 { font-family:var(--display); font-weight:900; font-size:clamp(34px, 7vw, 64px); line-height:1.02; letter-spacing:-.05em; margin:0 0 10px; word-break:keep-all; }
 .meta { font-size:13px; color:var(--muted); margin:0 0 22px; }
@@ -32,10 +34,73 @@ h1 { font-family:var(--display); font-weight:900; font-size:clamp(34px, 7vw, 64p
 .btn.solid { background:var(--ink); color:var(--paper); }
 .rel { margin-top:40px; border-top:1px solid var(--ink); padding-top:16px; }
 .rel h2 { margin:0 0 12px; font-size:15px; font-weight:900; }
-.rel div { display:flex; flex-wrap:wrap; gap:8px; }
-.rel a { font-size:13.5px; font-weight:700; text-decoration:none; padding:8px 14px; border:1px solid var(--hairline-2); border-radius:999px; }
+.say:empty { display:none; }
+/* 2026-11-11 회사만의 숫자: 짧은 제목 + 표 (문단 없음) */
+.facts { margin-top:30px; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:0 32px; }
+.fx { border-top:1px solid var(--ink); padding:14px 0 18px; min-width:0; }
+.fx:has(.fin:not(.mix)), .fx.nws { grid-column:1 / -1; }
+.tb.mix { margin-top:10px; } .tb.mix thead th:first-child, .tb.mix td:first-child { padding-left:0; }
+.tb.mix thead th { font-family:inherit; font-weight:500; }
+.kv + .tw { margin-top:6px; }
+.fx.nws .kv { grid-template-columns:repeat(4, minmax(0,1fr)); }
+.nwl { list-style:none; margin:8px 0 0; padding:0; }
+.nwl li { border-bottom:1px solid var(--hairline); padding:4px 0; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.nwl a { font-size:14px; text-decoration:none; min-height:40px; display:flex; align-items:center; }
+.nwl a:hover { text-decoration:underline; }
+.nwl small { flex:none; font-size:12px; color:var(--muted); white-space:nowrap; }
+.fx h2 { margin:0 0 8px; font-size:15px; font-weight:900; }
+.fx h2 small, .lsec h2 small { font-size:12px; font-weight:500; color:var(--muted); margin-left:6px; }
+.tb { width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; }
+.tb th { text-align:left; font-weight:500; color:var(--soft); padding:7px 8px 7px 0; white-space:nowrap; }
+.tb td { text-align:right; padding:7px 0 7px 10px; white-space:nowrap; }
+.tb tr + tr th, .tb tr + tr td, .tb tbody tr th, .tb tbody tr td { border-top:1px solid var(--hairline); }
+.tb thead th:empty { visibility:hidden; }
+.tb thead th { text-align:right; font-family:var(--display); font-size:12px; font-weight:700; color:var(--muted); padding-left:10px; }
+.tb.rep td:last-child { color:var(--muted); font-size:13px; }
+.tb.rep b, .kv dd { font-family:var(--display); font-weight:900; font-size:16px; letter-spacing:-.02em; }
+.tb .sum th { font-weight:900; color:var(--ink); }
+.tw { overflow-x:auto; }
+.kv { margin:0; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:0 20px; }
+.tw + .kv { margin-top:8px; grid-template-columns:repeat(4, minmax(0,1fr)); }
+.kv div { display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:7px 0; border-bottom:1px solid var(--hairline); min-width:0; }
+.kv div.w { grid-column:1 / -1; }   /* 값이 긴 줄은 한 줄을 다 쓴다 (폰에서 옆으로 넘치지 않게) */
+.kv dd { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.kv dt { font-size:13px; color:var(--soft); white-space:nowrap; }
+.kv dd { margin:0; text-align:right; white-space:nowrap; }
+.kv dd small { font-family:var(--font); font-size:12px; font-weight:500; color:var(--muted); letter-spacing:0; }
+/* 함께 보기: 알약 한 줄 (폰에서는 옆으로 민다) */
+.also { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:26px; }
+.also b { font-size:14px; font-weight:900; margin-right:6px; white-space:nowrap; }
+.also a, .lpills a { display:inline-flex; align-items:center; min-height:40px; padding:0 15px; font-size:13.5px; font-weight:700; text-decoration:none; border:1px solid var(--hairline-2); border-radius:999px; white-space:nowrap; }
+.also a:hover, .lpills a:hover, .rel .co a:hover, .colist a:hover { border-color:var(--ink); }
+/* 규모 비슷한 회사 · 목록 줄: 회사 이름 + 판정 */
+.rel .co, .colist { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+.rel .co a, .colist a { display:flex; justify-content:space-between; align-items:center; gap:10px; min-height:44px; padding:6px 14px; border:1px solid var(--hairline); border-radius:12px; text-decoration:none; font-size:14px; font-weight:700; }
+.rel .co a span, .colist a span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.v { flex:none; font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; border:1px solid var(--hairline-2); white-space:nowrap; }
+.v.go { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
+.v.stop { color:var(--bad); border-color:var(--bad); }
+.lists { margin:14px 0 0; display:flex; flex-wrap:wrap; gap:4px 16px; font-size:13px; }
+.lists a { display:inline-flex; align-items:center; min-height:40px; color:var(--soft); font-weight:700; }
+/* 회사 목록 페이지 (/company/list/) */
+h1.lh { font-size:clamp(28px, 5.5vw, 46px); margin-top:16px; }
+.crumb a + a::before { content:none; }
+.lsec { margin-top:28px; }
+.lsec h2 { margin:0 0 12px; font-size:16px; font-weight:900; border-top:1px solid var(--ink); padding-top:14px; }
+.lpills { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 22px; }
+.lpills a small { margin-left:6px; font-size:12px; font-weight:500; color:var(--muted); }
+.lpills a[aria-current] { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.lpills a[aria-current] small { color:inherit; opacity:.7; }
+.colist { grid-template-columns:repeat(3, minmax(0,1fr)); }
 .note { margin-top:32px; font-size:12.5px; color:var(--muted); }
+@media (max-width:820px) { .colist { grid-template-columns:repeat(2, minmax(0,1fr)); } }
 @media (max-width:560px) {
+  .facts, .rel .co, .colist { grid-template-columns:minmax(0,1fr); }
+  .tw + .kv { grid-template-columns:repeat(2, minmax(0,1fr)); }
+  .fx.nws .kv { grid-template-columns:repeat(2, minmax(0,1fr)); }
+  .nwl li { flex-direction:column; align-items:flex-start; gap:0; padding:2px 0 8px; } .nwl a { min-height:40px; }
+  .tb.fin { font-size:13px; } .tb.fin td, .tb.fin thead th { padding-left:8px; }
+  .also { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin-right:-16px; padding-right:16px; } .also::-webkit-scrollbar { display:none; }
   .sp { padding:18px 16px 48px; }
   .grades li { padding:10px 2px; }
   .grades b { font-size:21px; }
