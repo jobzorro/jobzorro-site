@@ -59,12 +59,17 @@ var COLUMNS = [
 function doPost(e) {
   try {
     var data = parseBody_(e);
+    if (data.kind === "alert") return alert_(data);   // 내 PC 자동 작업이 보내는 실패 알림 (2026-11-11)
     if (data.website) {                      // 봇이 채우는 숨은 칸(허니팟)이 채워져 있으면 조용히 무시
       return json_({ ok: true });
     }
-    if (!data.name || !data.phone) {
-      return json_({ ok: false, error: "이름과 휴대폰은 필수입니다" });
-    }
+    // ---- 방어 (2026-11-11) : 형식 검사 → 수식 막기 → 건수 제한 ----
+    data = clean_(data);                     // 모르는 칸은 버리고, 칸마다 길이를 자르고, 수식으로 읽힐 글자를 막는다
+    var bad = validate_(data);
+    if (bad) return json_({ ok: false, error: bad });
+    var gate = rateGate_(data);
+    if (gate === "dup")  return json_({ ok: true, dup: true });          // 같은 번호로 방금 들어온 신청: 다시 적지 않는다
+    if (gate === "busy") return json_({ ok: false, error: "신청이 몰려 잠시 쉬고 있어요. 10분 뒤 다시 시도해 주세요" });
     var sheet = getSheet_();
     var now = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
     data._received = now;
@@ -88,6 +93,93 @@ function doPost(e) {
   } catch (err) {
     return json_({ ok: false, error: String(err) });
   }
+}
+
+// ---- 방어용 함수 (2026-11-11) ------------------------------------------------
+
+// 칸마다 받을 수 있는 최대 글자 수. 여기 없는 칸은 버린다.
+var LIMITS = { type: 20, name: 30, phone: 13, reason: 300, status: 100, job: 100, region: 60,
+               message: 2000, consent: 4, jobId: 60, page: 200, statConsent: 4 };
+var TYPES  = ["신입", "중고신입", "경력(이직)", "경력(선퇴사자)"];
+var MAX_PER_HOUR  = 40;    // 한 시간에 받는 전체 건수. 넘으면 잠시 받지 않는다 (평소 신청은 하루 몇 건)
+var MAX_PER_PHONE = 3;     // 같은 번호는 하루 3건까지
+
+function clean_(d) {
+  var out = {};
+  for (var k in LIMITS) {
+    var v = String(d[k] == null ? "" : d[k]);
+    v = v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");   // 보이지 않는 제어 글자 제거
+    v = v.replace(/^\s+|\s+$/g, "").slice(0, LIMITS[k]);
+    // 시트는 = + - @ 로 시작하는 값을 수식으로 읽는다 → 앞에 ' 를 붙여 글자로만 보이게 한다
+    if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+    out[k] = v;
+  }
+  return out;
+}
+
+// 문제가 있으면 안내 문구를, 없으면 "" 를 돌려준다
+function validate_(d) {
+  if (!d.name || !d.phone) return "이름과 휴대폰은 필수입니다";
+  if (!/^[가-힣a-zA-Z .·\-]{2,30}$/.test(d.name)) return "이름을 다시 확인해 주세요";
+  if (!/^0\d{1,2}-\d{3,4}-\d{4}$/.test(d.phone)) return "휴대폰 번호를 다시 확인해 주세요";
+  if (d.type && TYPES.indexOf(d.type) < 0) return "취업 형태를 다시 골라 주세요";
+  if (d.consent !== "동의") return "개인정보 수집·이용에 동의해 주세요";
+  if (d.statConsent && d.statConsent !== "동의" && d.statConsent !== "미동의") d.statConsent = "미동의";
+  if (/https?:\/\/\S+[\s\S]*https?:\/\/\S+[\s\S]*https?:\/\/\S+/.test(d.message + " " + d.reason)) return "링크가 너무 많아요";   // 광고 글
+  return "";
+}
+
+// "" = 통과, "dup" = 같은 번호가 10분 안에 또 보냄, "busy" = 한도 초과
+function rateGate_(d) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(5000); } catch (e) { return "busy"; }
+  try {
+    var cache = CacheService.getScriptCache();
+    var pk = "p_" + d.phone.replace(/\D/g, "");
+    if (cache.get(pk + "_10m")) return "dup";
+    var pn = Number(cache.get(pk) || 0);
+    if (pn >= MAX_PER_PHONE) return "dup";
+    var an = Number(cache.get("all_hour") || 0);
+    if (an >= MAX_PER_HOUR) return "busy";
+    cache.put(pk + "_10m", "1", 600);
+    cache.put(pk, String(pn + 1), 21600);          // 캐시는 최대 6시간 — 6시간에 3건
+    cache.put("all_hour", String(an + 1), 3600);
+    return "";
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * 자동 작업 실패 알림을 메일로 보낸다 (2026-11-11).
+ * 내 PC 의 수집·배포 스크립트가 { kind:"alert", key, subject, body } 를 보내면 NOTIFY_EMAIL 로 메일 한 통.
+ * key 는 스크립트 속성 ALERT_KEY 와 같아야 한다 (프로젝트 설정 > 스크립트 속성에 아무 긴 글자나 넣고,
+ * 같은 값을 PC 의 company-check/.env 에 ALERT_KEY=... 로 적는다). 한 시간 20통까지만 보낸다.
+ */
+function alert_(d) {
+  var key = PropertiesService.getScriptProperties().getProperty("ALERT_KEY");
+  if (!key || String(d.key || "") !== key) return json_({ ok: false, error: "key" });
+  var cache = CacheService.getScriptCache();
+  var n = Number(cache.get("alert_hour") || 0);
+  if (n >= 20) return json_({ ok: false, error: "limit" });
+  cache.put("alert_hour", String(n + 1), 3600);
+  MailApp.sendEmail({
+    to: NOTIFY_EMAIL,
+    subject: "[취업조로 자동 작업] " + String(d.subject || "알림").slice(0, 120),
+    body: String(d.body || "").slice(0, 8000)
+  });
+  return json_({ ok: true });
+}
+
+// 편집기에서 ▶ 실행: 방어 코드가 제대로 막는지 확인 (시트에는 아무것도 적지 않는다)
+function testDefense() {
+  var ok = { type: "신입", name: "홍길동", phone: "010-1234-5678", consent: "동의", message: "=IMPORTXML(\"http://x\",\"//a\")" };
+  var c = clean_(ok);
+  Logger.log("수식 막기: " + c.message.slice(0, 12) + "  → 맨 앞이 ' 이면 정상");
+  Logger.log("정상 신청: [" + validate_(c) + "]  → 빈칸이면 정상");
+  Logger.log("전화 오류: " + validate_(clean_({ name: "홍길동", phone: "12345", consent: "동의" })));
+  Logger.log("이름 오류: " + validate_(clean_({ name: "<script>", phone: "010-1234-5678", consent: "동의" })));
+  Logger.log("긴 글 자르기: " + clean_({ message: new Array(5000).join("가") }).message.length + "자  → 2000 이면 정상");
 }
 
 // 브라우저에서 URL을 직접 열었을 때 살아 있는지 확인용

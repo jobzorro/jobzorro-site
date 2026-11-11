@@ -701,6 +701,8 @@ h1 .thin { margin-bottom:8px; }
 .band :focus-visible, .playbar :focus-visible { outline-color:var(--acc); }
 @keyframes bandTick { from { transform:translateX(0); } to { transform:translateX(-50%); } }
 /* 로비: 프로필 한 줄 · 게임 카드 5장 */
+/* 2026-11-11 화면 밀림(CLS) 방지: 게임 목록이 그려지기 전에는 아래 메뉴·푸터를 숨겨 둔다 (자리는 그대로, 보이지만 않게) */
+body:has(#games:empty) #dock, body:has(#games:empty) .zf, body:has(#games:empty) .lobby .lh { visibility:hidden; }
 .lobby { padding-block:14px 0; }
 .me { margin-top:0; padding:6px 0 8px; border-bottom:1px solid var(--line); gap:6px 14px; }
 .me .sp { flex:1 1 0; }
