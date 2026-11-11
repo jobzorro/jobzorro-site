@@ -19,6 +19,10 @@ ASSETS = BASE / "assets"
 AI_LABEL = {1: "낮음", 2: "보통", 3: "큼"}
 IND_NAMES = {}   # 산업 id → 이름. build.py 가 data/industries.json 으로 채운다 (직무 페이지 '이 직무가 있는 산업' 링크)
 VERIFY = {}   # build.py 가 site.json 의 verification 값을 넣는다 (google / naver)
+LOGO_SQ = "assets/app/icon-512.png"   # 구조화 데이터용 정사각 로고 (2026-11-11: 전엔 1200×630 공유 그림을 로고로 넣었다)
+JOB_DATES = {}   # 직무 id → 처음 올린 날. build.py 가 data/job_dates.json 으로 채운다 (없는 직무는 자료 기준일)
+CO_LINKS = {}    # 직무 id → [{"n": 회사 이름, "u": 연봉 페이지 주소(salary/co/…/), "a": 평균 연봉 글자}]. build.py 가 job_links.json 으로 채운다 (없으면 빈 채로)
+HAS_LIST = {"salary": False, "company": False}   # 회사 목록 쪽(/salary/list/, /company/list/)이 있으면 build.py 가 True 로
 
 
 def e(s) -> str:
@@ -41,10 +45,24 @@ def jsonld(obj) -> str:
     return '<script type="application/ld+json">' + json.dumps(obj, ensure_ascii=False).replace("</", "<\\/") + "</script>"
 
 
+def trim_desc(desc: str, limit: int = 155) -> str:
+    """검색 결과 설명문: limit 자를 넘으면 문장이 끝나는 곳에서 자른다 (2026-11-11: 직무 133쪽이 모두 160자에서 말 중간에 끊겼다).
+    limit 안에 끝나는 문장이 너무 짧으면(60자 미만) 띄어쓰기에서 자르고 '…' 를 붙인다 — 조사만 남은 꼬리가 생기지 않게 낱말 단위로만 자른다."""
+    desc = re.sub(r"\s+", " ", desc or "").strip()
+    if len(desc) <= limit:
+        return desc
+    head = desc[:limit + 1]
+    ends = [m.end() for m in re.finditer(r"[.!?](?=\s|$)", head) if m.end() <= limit]
+    if ends and ends[-1] >= 60:
+        return head[:ends[-1]].strip()
+    cut = head[:limit].rsplit(" ", 1)[0].rstrip(" ,·:;/-—(")
+    return cut + "…"
+
+
 def seo_head(base: str, title: str, desc: str, path: str, image: str, ld=None, noindex=False, extra="") -> str:
     """path 는 사이트 루트 기준 ('' = 첫 페이지, 'jobs/hr/' 등). image 는 절대 URL."""
     url = abs_url(base, path)
-    desc = re.sub(r"\s+", " ", desc).strip()[:160]
+    desc = trim_desc(desc)
     parts = [
         f"<title>{e(title)}</title>",
         f'<meta name="description" content="{e(desc)}">',
@@ -85,7 +103,7 @@ def org_ld(base: str, company: dict) -> dict:
         "@context": "https://schema.org", "@type": "Organization",
         "@id": abs_url(base, "#org"),
         "name": company["name"], "alternateName": ["취업조로", "TEAM ZORRO", "커리어프로젝트"],
-        "url": base, "logo": abs_url(base, "assets/og.png"),
+        "url": base, "logo": abs_url(base, LOGO_SQ),
         "founder": {"@type": "Person", "name": company["ceo"]},
         "address": {"@type": "PostalAddress", "streetAddress": company["addr"], "addressRegion": "경기도", "addressLocality": "용인시", "addressCountry": "KR"},
         "sameAs": ["https://jobzorro.kr/", "https://www.instagram.com/career_zorro", "https://www.youtube.com/@ZORROCAREER", "https://blog.naver.com/zorr0"],
@@ -180,8 +198,8 @@ def job_ld(base: str, j: dict, by_id: dict, meta: dict, group_name: str, updated
         "description": desc, "inLanguage": "ko", "url": url,
         "image": image or abs_url(base, f"assets/og/{j['id']}.png"),
         "author": {"@type": "Person", "name": "조현빈", "url": abs_url(base, "zorro/")},
-        "publisher": {"@type": "Organization", "name": "커리어프로젝트 주식회사", "logo": {"@type": "ImageObject", "url": abs_url(base, "assets/og.png")}},
-        "datePublished": "2026-10-15", "dateModified": updated,
+        "publisher": {"@type": "Organization", "name": "커리어프로젝트 주식회사", "logo": {"@type": "ImageObject", "url": abs_url(base, LOGO_SQ), "width": 512, "height": 512}},
+        "datePublished": min(JOB_DATES.get(j["id"]) or updated, updated), "dateModified": updated,
         "about": {"@type": "Occupation", "name": j["name"]},
         "isBasedOn": based_on(j["sources"]) if evidence else "일반 직무 정보(초안)",
         "mainEntityOfPage": url,
@@ -201,6 +219,16 @@ def client_sal_html(j: dict) -> str:
     return (f'<div class="csal"><div class="csal-h">취업조로 이직자 연봉 <small>{e(c["groupName"])} 직군 {c["n"]}명 · 이직 직전</small></div>'
             f'<p>중앙 <b>{c["p50"]:,}만원</b> · 보통 {c["p25"]:,}~{c["p75"]:,}만원</p>' + (f'<ul>{rows}</ul>' if rows else '') +
             '<p class="note">취업조로 경력이직 컨설팅 고객의 실제 연봉 집계(성과급 포함 총액, 올해 기준 환산). 같은 직군 묶음이라 직무마다 차이가 있습니다.</p></div>')
+
+
+def co_links_html(j: dict, root: str = "../../") -> str:
+    """'이 직무, 회사로 보기' 묶음 안쪽: 잘 알려진 회사 최대 5곳(연봉 페이지로) + 연봉 연구소·회사 판단 링크 하나씩.
+    회사 자료(job_links.json)가 없으면 링크 두 개만 나온다."""
+    cos = (CO_LINKS.get(j["id"]) or [])[:5]
+    pills = "".join(f'<a class="btn-link" href="{root}{e(c["u"])}">{e(c["n"])}' + (f' <small>{e(c["a"])}</small>' if c.get("a") else "") + "</a>" for c in cos)
+    more = (f'<a class="btn-link go" href="{root}salary/">연봉 연구소 →</a>'
+            f'<a class="btn-link go" href="{root}company/">이 회사 갈까? 판정 →</a>')
+    return f'<div class="trans colinks">{pills}{more}</div>'
 
 
 def major_dd(j: dict) -> str:
@@ -310,6 +338,8 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     if [i for i in j.get("ind", []) if i in IND_NAMES]:
         h.append(sec("이 직무가 있는 산업", '<div class="trans">' + "".join(
             f'<a class="btn-link" href="../../industry/{e(i)}/">{e(IND_NAMES[i])} →</a>' for i in j["ind"] if i in IND_NAMES) + "</div>", "산업별 직무 지도"))
+    # 2026-11-11: 직무 → 연봉·회사 판단으로 넘어가는 길 (본문에 링크가 하나도 없었다)
+    h.append(sec("이 직무, 회사로 보기", co_links_html(j), "회사별 평균 연봉" if CO_LINKS.get(j["id"]) else ""))
     inds = (j["sources"].get("industries") or [])[:12]
     ws = j.get("webSources") or []
     if j.get("news"):
@@ -346,14 +376,14 @@ JOB_PAGE_CSS = """
 .jobpage .summary { margin-top: 10px; color: var(--fg-soft); max-width: 70ch; }
 .jobpage .sec-h h2 { font-family: var(--display); font-size: 20px; font-weight: 900; letter-spacing: -.03em; }
 .jobpage .sec-h .ic { display: none; }
-.jobpage .trans .btn-link { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 13.5px; color: var(--black); background: var(--surface); text-decoration: none; }
+.jobpage .trans .btn-link { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 7px 12px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 13.5px; color: var(--black); background: var(--surface); text-decoration: none; }
 .jobpage .trans .btn-link:hover { border-color: var(--fill); background: var(--fill); color: var(--fillfg); }
 /* 2026-11-03: 옮겨갈 직무마다 '비교' 링크, 진단 바로가기 */
 .jobpage .tr-cmp li { display: inline-flex; align-items: center; gap: 4px; }
-.jobpage .tr-cmp .cmp-link { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); padding: 6px 8px; text-decoration: underline; text-underline-offset: 3px; }
+.jobpage .tr-cmp .cmp-link { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); padding: 10px 8px; text-decoration: underline; text-underline-offset: 3px; }
 .jobpage .tr-cmp .cmp-link:hover { color: var(--ink); }
 .jobpage .fit-link { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--muted); }
-.jobpage .fit-link a { display: inline-flex; padding: 7px 14px; border-radius: 999px; background: var(--acc); color: var(--acc-ink); font-weight: 800; font-size: 13.5px; text-decoration: none; }
+.jobpage .fit-link a { display: inline-flex; align-items: center; min-height: 40px; padding: 7px 14px; border-radius: 999px; background: var(--acc); color: var(--acc-ink); font-weight: 800; font-size: 13.5px; text-decoration: none; }
 .jobpage .fit-link a:hover { background: var(--ink); color: var(--paper); }
 .jobpage .faqs { display: grid; gap: 8px; }
 .jobpage .faq { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 0 14px; }
@@ -367,8 +397,13 @@ JOB_PAGE_CSS = """
 .jobpage .terms li { counter-increment: tm; position: relative; padding: 14px 16px 14px 46px; border: 1px solid var(--line); border-radius: 12px; }
 .jobpage .terms li::before { content: counter(tm, decimal-leading-zero); position: absolute; left: 14px; top: 14px; font-family: var(--display); font-weight: 900; font-size: 14px; color: var(--ink); }
 .jobpage .terms .tt b { font-family: var(--display); font-size: 16px; font-weight: 900; color: var(--ink); background: linear-gradient(transparent 62%, var(--mark) 62%); }
-.jobpage .terms .te { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.jobpage .terms .te { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
 .jobpage .terms p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--fg-soft); }
+/* 2026-11-11 이 직무, 회사로 보기: 회사 알약 + 연봉 연구소·회사 판단 (라임 알약 둘) */
+.jobpage .colinks .btn-link small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.jobpage .colinks .btn-link.go { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); font-weight: 800; }
+.jobpage .colinks .btn-link.go:hover { background: var(--fill); border-color: var(--fill); color: var(--fillfg); }
+.jobpage .colinks .btn-link:hover small { color: inherit; }
 """
 
 
@@ -626,7 +661,9 @@ def render_industry_page(ind: dict, jobs, gname: dict, groups) -> str:
          + (f'이 산업에만 있는 직무 {len(only)}개, ' if only else "")
          + (f'같은 직무라도 이 산업에서는 어떻게 다른지 {len(diffs)}가지를 현직자 인터뷰로 정리했습니다.' if diffs else '직무를 누르면 하는 일·연봉·들어가는 길을 볼 수 있습니다.')
          + '</p>',
-         f'<p class="parent-link"><a href="../../?ind={e(iid)}">목록에서 이 산업만 걸러 보기 →</a></p>']
+         f'<p class="parent-link"><a href="../../?ind={e(iid)}">목록에서 이 산업만 걸러 보기 →</a>'
+         f'<a href="../../salary/{"list/" if HAS_LIST["salary"] else ""}">{"연봉 회사 목록" if HAS_LIST["salary"] else "연봉 연구소"} →</a>'
+         f'<a href="../../company/{"list/" if HAS_LIST["company"] else ""}">{"회사 판단 목록" if HAS_LIST["company"] else "회사 판단"} →</a></p>']
     if only:
         h.append(f'<section class="sec"><div class="sec-h"><span class="ic"></span><h2>이 산업에만 있는 직무</h2></div><div class="indcards">{"".join(card(j) for j in only)}</div></section>')
     if diffs:
@@ -920,7 +957,7 @@ GLOSSARY_CSS = """
 .gl-list { margin: 0; display: grid; border-top: 1px solid var(--ink); }
 .gl-list > div { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 8px 20px; padding: 14px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 120px; }
 .gl-list dt { font-family: var(--display); font-weight: 900; font-size: 17px; letter-spacing: -.02em; color: var(--ink); }
-.gl-list dt .en { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--muted); margin-top: 2px; }
+.gl-list dt .en { display: block; font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--muted); margin-top: 2px; }
 .gl-list dt .al { display: block; font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--muted); }
 .gl-list dd { margin: 0; color: var(--fg-soft); line-height: 1.65; font-size: 14.5px; }
 .gl-list .jl { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -991,16 +1028,16 @@ INTERVIEW_ALL_CSS = """
 .iq-hero p { margin-top: 16px; max-width: 66ch; color: var(--ink-soft); font-size: 15.5px; line-height: 1.7; }
 .iq-bar { position: sticky; top: calc(54px + env(safe-area-inset-top,0px)); z-index: 15; background: var(--paper); border-bottom: 1px solid var(--line); margin: 0 -20px; padding: 0 20px; }
 .iq-bar-in { display: flex; align-items: center; gap: 10px; padding: 10px 0; min-width: 0; }
-.iq-bar .top { flex: none; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 999px; background: var(--ink); color: var(--paper); text-decoration: none; }
-.iq-bar select { flex: none; font: inherit; font-size: 14px; font-weight: 700; padding: 9px 14px; border-radius: 999px; border: 1.5px solid var(--ink); background: var(--acc); color: var(--acc-ink); max-width: 46vw; }
+.iq-bar .top { flex: none; display: inline-flex; align-items: center; min-height: 40px; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 999px; background: var(--ink); color: var(--paper); text-decoration: none; }
+.iq-bar select { flex: none; min-height: 40px; font: inherit; font-size: 14px; font-weight: 700; padding: 9px 14px; border-radius: 999px; border: 1.5px solid var(--ink); background: var(--acc); color: var(--acc-ink); max-width: 46vw; }
 .iq-gw { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 auto; }
 .iq-g { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1 1 auto; scroll-behavior: smooth; }
-.iq-prev, .iq-next { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); font-size: 20px; line-height: 1; display: grid; place-items: center; cursor: pointer; }
+.iq-prev, .iq-next { position: relative; flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); font-size: 20px; line-height: 1; display: grid; place-items: center; cursor: pointer; }
 .iq-prev:hover, .iq-next:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .iq-gw:not(.scrolled) .iq-prev, .iq-gw:not(.more) .iq-next { display: none; }
 .iq-g a.on { background: var(--ink); color: var(--paper); border-color: var(--ink); font-weight: 700; }
 .iq-g::-webkit-scrollbar { display: none; }
-.iq-g a { flex: none; font-size: 13px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink-soft); text-decoration: none; white-space: nowrap; }
+.iq-g a { flex: none; display: inline-flex; align-items: center; min-height: 40px; font-size: 13px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink-soft); text-decoration: none; white-space: nowrap; }
 .iq-g a:hover { border-color: var(--ink); color: var(--ink); }
 .iq-sec, .iq-group, .iq-job { scroll-margin-top: 130px; }
 .iq-sec { padding-top: 56px; }
@@ -1018,8 +1055,8 @@ INTERVIEW_ALL_CSS = """
 .iq-top .no { font-family: var(--display); font-weight: 900; font-size: 44px; line-height: .9; letter-spacing: -.05em; color: var(--ink); }
 .iq-top .q { margin-top: 6px; font-family: var(--display); font-size: 19px; font-weight: 900; letter-spacing: -.03em; line-height: 1.35; color: var(--ink); }
 .iq-top .meta { display: flex; gap: 10px; align-items: center; }
-.tp { font-family: var(--display); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
-.freq { font-size: 11px; letter-spacing: 1.5px; color: var(--ink); } .freq i { font-style: normal; color: var(--line-strong); }
+.tp { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+.freq { font-size: 12px; letter-spacing: 1px; color: var(--ink); } .freq i { font-style: normal; color: var(--line-strong); }
 .iq-list > li { display: grid; grid-template-columns: 40px minmax(0,1fr) auto; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); align-items: start; }
 .iq-list .no { font-family: var(--display); font-weight: 900; font-size: 18px; color: var(--ink); padding-top: 1px; }
 .iq-list .q { font-size: 16px; font-weight: 700; line-height: 1.5; color: var(--ink); }
@@ -1030,13 +1067,18 @@ INTERVIEW_ALL_CSS = """
 .iq-job.flash { background: var(--mist); }
 .iq-job header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 14px 0 4px; }
 .iq-job h4 { font-family: var(--display); font-size: 24px; font-weight: 900; letter-spacing: -.04em; }
-.iq-job .en { font-family: var(--display); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.iq-job .go { margin-left: auto; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--ink); text-decoration: none; border-bottom: 2px solid var(--ink); }
+.iq-job .en { font-family: var(--display); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.iq-job .go { position: relative; margin-left: auto; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--ink); text-decoration: none; border-bottom: 2px solid var(--ink); }
 .iqpage .cta { margin-top: 48px; }
 .iq-group:not(.show) { display: none; }
 .iq-more summary { margin-top: 18px; padding: 13px 0; text-align: center; border: 1px solid var(--line-strong); border-radius: 12px; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer; list-style: none; }
 .iq-more summary::-webkit-details-marker { display: none; }
 .iq-more[open] summary { display: none; }
+/* 2026-11-11 누르는 곳 40px: 화살표 단추·'직무 설명 →' 는 모양 그대로 두고 투명한 덧판만 키운다 */
+.iq-prev::after, .iq-next::after { content: ""; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.iq-job .go::after { content: ""; position: absolute; left: -8px; right: -8px; top: 50%; height: 42px; transform: translateY(-50%); }
+/* 2026-11-11 화면 밀림: 글꼴이 늦게 와도 제목 줄 높이가 바뀌지 않게 (글꼴이 섞이는 동안 줄 상자가 37px 까지 커졌다가 28px 로 줄었다) */
+.iq-head h2 { height: 1.08em; white-space: nowrap; }
 @media (max-width: 760px) {
   .iq-top { grid-template-columns: 1fr; }
   .iq-top > li { grid-template-columns: 48px minmax(0,1fr); }

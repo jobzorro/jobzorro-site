@@ -35,7 +35,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 
 BASE = Path(__file__).parent
 ASSETS = BASE / "assets"
-NEWS_SRC = BASE / "news-collector" / "site" / "index.html"
+NEWS_SRC = Path(os.environ.get("NEWS_SRC") or BASE / "news-collector" / "site" / "index.html")   # 시험 빌드는 NEWS_SRC=<다른 폴더>/index.html 로 바꿔 쓴다
 # 뉴스 수집기 결과물이 없을 때 배포된 뉴스 페이지를 내려받아 쓰는 비상용 (Actions 워크플로가 첫 실행 때만 사용)
 NEWS_URL = os.environ.get("NEWS_URL", "")  # 예: https://jobzorro.github.io/career-briefing/
 NEWS_ASSET_NAMES = ["logo.png", "logo-dark.png", "teamzorro.png", "mark.png", "mark-dark.png", "favicon-32.png", "favicon-180.png", "archive.json"]
@@ -123,16 +123,45 @@ def save_lastmod(state: dict, seen: set) -> None:
     LASTMOD_STATE.write_text(json.dumps({k: v for k, v in state.items() if k in seen}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
 
-def page_lastmod(state: dict, key: str, text: str, today: str, first: str) -> str:
-    """sitemap lastmod: 쪽 내용(날짜 글자는 빼고)의 해시가 지난 빌드와 같으면 그때 날짜 그대로, 바뀌었으면 오늘.
-    처음 보는 쪽(또는 캐시가 없을 때)은 자료 자체의 기준일(first)을 쓴다 — 매일 모든 쪽이 '오늘'로 바뀌지 않게 (2026-11-03)"""
-    h = hashlib.md5(_DATE_RE.sub("", text).encode("utf-8")).hexdigest()[:12]
+_TAG_RE = re.compile(r"<(script|style)\b.*?</\1>|<[^>]+>", re.S | re.I)
+
+
+def page_lastmod(state: dict, key: str, text: str, today: str, first: str, moved: str = "keep") -> str:
+    """sitemap lastmod: 쪽에 '보이는 글'(날짜 글자는 빼고)의 해시가 지난 빌드와 같으면 그때 날짜 그대로, 바뀌었으면 오늘.
+    처음 보는 쪽(또는 캐시가 없을 때)은 자료 자체의 기준일(first)을 쓴다 — 매일 모든 쪽이 '오늘'로 바뀌지 않게 (2026-11-03)
+    2026-11-11: 전엔 HTML 전체를 해시해서, 스크립트 한 줄만 바꿔도 연봉 6,339쪽이 모두 '오늘'이 됐다 → 태그·스크립트·스타일을 뺀 글만 본다 (기록 3번째 칸 "t").
+      옛 방식 기록(칸 2개)을 처음 만나면 날짜를 '오늘'로 올리지 않고, moved="keep" 이면 그 날짜 그대로, "first" 면 자료 기준일로 되돌린다."""
+    h = hashlib.md5(re.sub(r"\s+", " ", _DATE_RE.sub("", _TAG_RE.sub(" ", text))).encode("utf-8")).hexdigest()[:12]
     old = state.get(key)
+    if old and len(old) < 3:   # 옛 방식(HTML 전체 해시) 기록 → 새 해시로 바꿔 적기만 한다
+        d = min(old[1], first) if moved == "first" else old[1]
+        state[key] = [h, d, "t"]
+        return d
     if old and old[0] == h:
         return old[1]
     d = today if old else first
-    state[key] = [h, d]
+    state[key] = [h, d, "t"]
     return d
+
+
+def load_noindex() -> dict:
+    """다른 묶음이 정한 '검색에서 뺄 회사' 목록 → sitemap 에서 뺀다. 파일이 없으면 빈 목록.
+    연봉: salary/data/noindex.json 또는 salary-lab/site/data/noindex.json / 회사 판단: company/data/noindex.json (환경 변수 NOINDEX_SALARY·NOINDEX_COMPANY 로 다른 파일 지정 가능).
+    모양은 ["삼성전자", …] 또는 {"slugs": […]} 둘 다 받는다."""
+    def read(*cands):
+        for c in cands:
+            if not c or not Path(c).exists():
+                continue
+            try:
+                d = json.loads(Path(c).read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if isinstance(d, dict):
+                d = d.get("slugs") or d.get("noindex") or d.get("co") or list(d.keys())
+            return {urllib.parse.unquote(str(x)).strip("/") for x in d}
+        return set()
+    return {"salary": read(os.environ.get("NOINDEX_SALARY"), BASE / "salary" / "data" / "noindex.json", BASE.parent / "salary-lab" / "site" / "data" / "noindex.json"),
+            "company": read(os.environ.get("NOINDEX_COMPANY"), BASE / "company" / "data" / "noindex.json", BASE / "company" / "noindex.json")}
 
 
 def head_common(rel_parts: tuple, h: str) -> str:
@@ -390,26 +419,43 @@ GLOSS = {"terms": []}
 
 SHARED_CSS = """
 /* 취업뉴스(커리어브리핑)와 같은 편집 디자인 톤: 먹색 글자, 종이색 바탕, 황동색 포인트, 라벨·숫자는 모노 글꼴, 다크모드 지원 */
-:root { --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#6f6f6f; --faint:#a3a3a3; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d;
+:root { --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#666666; --faint:#a3a3a3; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d;
   --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2;
   /* 아래는 기존 템플릿이 쓰는 이름 → 위 토큰에 연결 */
   --bg:var(--ground); --surface:var(--paper); --surface-2:var(--mist); --black:var(--ink); --fg-soft:var(--ink-soft); --line:var(--hairline); --line-strong:var(--hairline-2);
-  --red:var(--ink); --red-soft:var(--mist); --yellow:var(--acc); --green:#1b8f63; --green-soft:rgba(27,143,99,.12);
+  --red:var(--ink); --red-soft:var(--mist); --yellow:var(--acc); --green:#15754f; --green-soft:rgba(27,143,99,.12);
   --lvl1:#1b8f63; --lvl2:#c98500; --lvl3:#b4453a;
+  /* 2026-11-11 흐린 글씨 고침: 글자로 쓸 때는 흰 바탕·회색 칸에서도 읽히게 조금 어두운 색 (막대 그림은 위 색 그대로) */
+  --lvl1-t:#15754f; --lvl2-t:#8f5e00; --lvl3-t:#a83d33;
   /* 먹색으로 채운 큰 카드(히어로 옆 카드·CTA·상담 박스)와 작은 채움 요소(칩·아이콘·버튼) */
   --inkbg:#0b0b0b; --inkfg:#ffffff; --inkfg-soft:rgba(255,255,255,.72); --inkline:rgba(255,255,255,.28);
   --fill:#0b0b0b; --fillfg:#ffffff; --logo-filter:none;
   --shadow:none; --shadow-lift:0 18px 50px rgba(0,0,0,.18);
-  --font:"Noto Sans KR","Archivo",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-  --display:"Archivo","Noto Sans KR",sans-serif; --serif:var(--display); --mono:var(--display); color-scheme: light dark; }
+  /* 2026-11-11 글꼴: 폰·맥은 기기 글꼴(내려받는 글꼴 용량 줄이기), 윈도우 PC 만 웹 글꼴(맑은 고딕 대신) — <head> 의 한 줄 스크립트가 윈도우면 html 에 class "wf" 를 붙인다.
+     주의: 아래 기본 묶음에는 "Noto Sans KR" 을 넣지 않는다 (뒤쪽에라도 있으면 안드로이드가 한글을 웹 글꼴로 받아 버린다). 영문·숫자만 Archivo */
+  --font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif;
+  --display:"Archivo",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif; --serif:var(--display); --mono:var(--display); color-scheme: light dark; }
+html.wf { --font:"Noto Sans KR","Archivo","JZ Fallback",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --display:"Archivo","Noto Sans KR","JZ Fallback D",sans-serif; --serif:var(--display); --mono:var(--display); }
+/* 큰 제목(h1·h2·직무 이름·검은 띠)은 모든 기기에서 웹 글꼴 그대로 — 이 요소들 안에서만 글꼴 토큰을 웹 글꼴로 바꿔 준다 */
+h1, h2, .name, .v2-ticker, .z-ticker, .big { --font:"Noto Sans KR","Archivo","JZ Fallback",sans-serif; --display:"Archivo","Noto Sans KR","JZ Fallback D",sans-serif;
+  --serif:var(--display); --mono:var(--display); --v-display:var(--display); --v-font:var(--font); }
+h1, h2 { font-family:var(--font); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --faint:#6a6a6a; --brass:#f3f3f3; --brass-tint:#161616; --brass-bar:rgba(198,255,61,.32); --mark:rgba(198,255,61,.32);
-  --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; --green:#3fbf8a; --lvl2:#d9a441; --lvl3:#e0796c;
+  --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; --green:#3fbf8a; --lvl2:#d9a441; --lvl3:#e0796c; --lvl1-t:#3fbf8a; --lvl2-t:#d9a441; --lvl3-t:#e0796c;
   --inkbg:#f3f3f3; --inkfg:#0b0b0b; --inkfg-soft:rgba(11,11,11,.7); --inkline:rgba(11,11,11,.25); --fill:#f3f3f3; --fillfg:#0b0b0b; --logo-filter:invert(1);
   --shadow:none; --shadow-lift:0 18px 50px rgba(0,0,0,.5); } }
 :root[data-theme="dark"] { --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --faint:#6a6a6a; --brass:#f3f3f3; --brass-tint:#161616; --brass-bar:rgba(198,255,61,.32); --mark:rgba(198,255,61,.32);
-  --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; --green:#3fbf8a; --lvl2:#d9a441; --lvl3:#e0796c;
+  --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; --green:#3fbf8a; --lvl2:#d9a441; --lvl3:#e0796c; --lvl1-t:#3fbf8a; --lvl2-t:#d9a441; --lvl3-t:#e0796c;
   --inkbg:#f3f3f3; --inkfg:#0b0b0b; --inkfg-soft:rgba(11,11,11,.7); --inkline:rgba(11,11,11,.25); --fill:#f3f3f3; --fillfg:#0b0b0b; --logo-filter:invert(1);
   --shadow:none; --shadow-lift:0 18px 50px rgba(0,0,0,.5); }
+/* 2026-11-11 화면 밀림(CLS): 웹 글꼴이 오기 전에 잠깐 쓰는 맑은 고딕은 한글 폭이 약 9% 넓어 줄 수가 달라졌다 → 같은 폭이 되게 92% 로 줄여 쓴다.
+   (맑은 고딕이 없는 폰·맥에서는 이 규칙이 그냥 건너뛰어진다. 내려받는 글꼴·굵기는 그대로) */
+@font-face { font-family:"JZ Fallback"; src:local("Malgun Gothic"); size-adjust:92%; }
+@font-face { font-family:"JZ Fallback"; src:local("Malgun Gothic Bold"), local("Malgun Gothic"); font-weight:700 900; size-adjust:92%; }
+/* 제목 글꼴 묶음(Archivo + Noto)은 숫자·영문·띄어쓰기가 더 좁아 89% */
+@font-face { font-family:"JZ Fallback D"; src:local("Malgun Gothic"); size-adjust:89%; }
+@font-face { font-family:"JZ Fallback D"; src:local("Malgun Gothic Bold"), local("Malgun Gothic"); font-weight:700 900; size-adjust:89%; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word; padding-bottom:24px; }
@@ -420,16 +466,18 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .wrap { max-width:1120px; margin:0 auto; padding-inline:20px; }
 /* 라벨(모노·대문자 느낌)과 숫자 */
 .kicker { font-family:var(--font); font-size:12px; font-weight:600; letter-spacing:.01em; color:var(--ink-soft); }
-.badge { display:inline-flex; align-items:center; gap:4px; font-family:var(--display); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:4px 9px; border-radius:999px; background:var(--ink); color:var(--paper); white-space:nowrap; }
+.badge { display:inline-flex; align-items:center; gap:4px; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:4px 9px; border-radius:999px; background:var(--ink); color:var(--paper); white-space:nowrap; }
 .badge.soft { background:var(--ink); color:var(--paper); } .badge.green { background:var(--green-soft); color:var(--green); } .badge.gray { background:var(--mist); color:var(--muted); border:1px solid var(--hairline); }
 .btn { display:inline-flex; align-items:center; gap:6px; padding:10px 16px; border-radius:8px; font-size:14px; font-weight:700; text-decoration:none; }
 .btn { border-radius:999px; font-family:var(--display); letter-spacing:.02em; }
 .btn.primary { background:var(--inkfg); color:var(--inkbg); } .btn.primary:hover { background:var(--acc); color:var(--acc-ink); }
 .btn.ghost { border:1px solid var(--inkline); color:var(--inkfg); }
 /* 공용 상단 탭 (취업뉴스 페이지에도 끼워 넣으므로 .zn 규칙은 뉴스 페이지에도 있는 토큰만 쓴다: --paper --ink --muted --hairline --brass) */
-.zn { position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--paper); color:var(--ink); border-bottom:1px solid var(--hairline); font-family:"Inter","Noto Sans KR",sans-serif; }
+.zn { position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--paper); color:var(--ink); border-bottom:1px solid var(--hairline); font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif; }
+.zn:is(html.wf *) { font-family:"Noto Sans KR","Archivo",sans-serif; }   /* 윈도우 PC 만 웹 글꼴 */
+.zn-tabs a:is(html:not(.wf) *) { font-family:"Archivo",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif; }
 .zn-in { max-width:1120px; margin:0 auto; padding:0 20px; display:flex; align-items:center; gap:16px; height:54px; }
-.zn-logo { display:flex; align-items:center; flex:none; }
+.zn-logo { display:flex; align-items:center; flex:none; align-self:stretch; }
 .zn-logo img { height:22px; width:auto; filter:var(--logo-filter,none); display:block; }
 .zn-logo img[src$="_halo.png"] { height:25.3px; margin:-1.65px; }   /* 테두리 여백(위아래 6px/80px)만큼 키우고 당겨 글자 크기는 그대로 */
 .zn-tabs { display:flex; gap:2px; height:100%; margin-left:6px; min-width:0; overflow-x:auto; scrollbar-width:none; }
@@ -449,13 +497,14 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 .zf { margin-top:72px; background:var(--paper); color:var(--ink); border-top:1px solid var(--ink); font-family:var(--font); }
 .zf-in { max-width:1120px; margin:0 auto; padding:36px 20px 44px; }
 .zf-logo img { height:20px; width:auto; filter:var(--logo-filter,none); display:block; }
-.zf-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px 22px; }   /* 로고와 링크 한 줄 */
-.zf-links { display:flex; flex-wrap:wrap; gap:16px; font-size:12.5px; color:var(--ink-soft); }
-.zf-links a { color:inherit; text-decoration:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; } .zf-links a:hover { color:var(--muted); }
+.zf-logo { display:block; padding:10px 0; margin:-10px 0; }   /* 2026-11-11 누르는 곳 40px (모양은 그대로) */
+.zf-row { display:flex; flex-wrap:wrap; align-items:center; gap:22px 22px; }   /* 로고와 링크 한 줄 */
+.zf-links { display:flex; flex-wrap:wrap; gap:22px 16px; font-size:12.5px; color:var(--ink-soft); }
+.zf-links a { color:inherit; text-decoration:none; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; display:inline-block; padding:11px 0; margin:-11px 0; } .zf-links a:hover { color:var(--muted); }
 .zf-box { margin-top:18px; background:var(--mist); border:1px solid var(--hairline); border-radius:10px; padding:14px 16px; font-size:12px; line-height:1.9; color:var(--muted); }
 .zf-box b { color:var(--ink-soft); font-weight:600; }
 .zf-note { margin-top:14px; font-size:12px; color:var(--muted); line-height:1.75; max-width:80ch; }
-.zf-note summary { cursor:pointer; font-weight:600; color:var(--ink-soft); } .zf-note p { margin-top:6px; }
+.zf-note summary { cursor:pointer; font-weight:600; color:var(--ink-soft); padding:10px 0; margin:-10px 0; } .zf-note p { margin-top:6px; }
 .zf-outro { padding-bottom:30px; margin-bottom:30px; border-bottom:1px solid var(--hairline); }
 .zf-big { display:block; width:100%; height:auto; overflow:visible; }
 .zf-big text { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; font-size:150px; letter-spacing:-.04em; }
@@ -477,12 +526,13 @@ TABBAR_CSS = """.zb { display:none; }
   .zb { display:grid; grid-template-columns:repeat(6,1fr); position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--paper, var(--bg, #fff)); border-top:1px solid var(--hairline, var(--line, #e5e5e5));
     padding:6px max(4px, env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(4px, env(safe-area-inset-right,0px)); transition:transform .25s ease; }
   html { scroll-behavior:auto !important; }   /* 2026-10-28: 폰에선 부드러운 스크롤 끔 (삼성 인터넷이 뉴스에서 아래 바를 도구 막대 뒤로 숨김) */
-  .zb a { position:relative; display:grid; justify-items:center; gap:2px; padding:2px 0; color:var(--muted, #777); text-decoration:none; font-family:"Noto Sans KR",sans-serif; font-size:11px; font-weight:700; -webkit-tap-highlight-color:transparent; }
+  .zb a { position:relative; display:grid; justify-items:center; gap:2px; padding:2px 0; color:var(--muted, #777); text-decoration:none; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif; font-size:12px; font-weight:700; -webkit-tap-highlight-color:transparent; }
   .zb a svg { width:23px; height:23px; box-sizing:content-box; padding:3px 14px; border-radius:999px; transition:background .15s ease; }
   .zb a.on { color:var(--ink, #0b0b0b); }
   /* 2026-11-05 사용자: 아래 탭 글자 크기·굵기가 직무사전/연봉 연구소/회사 판단마다 달라 보임 → 페이지 글꼴·글자 간격·폰 글자 자동 확대에 흔들리지 않게 고정. 굵기는 모든 탭·모든 상태 700 하나로 */
   .zb, .zb a { -webkit-text-size-adjust:100% !important; text-size-adjust:100% !important; }
-  .zb a, .zb a.on { font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif !important; font-size:11px !important; font-weight:700 !important;
+  html.wf .zb a, html.wf .zb a.on { font-family:system-ui,"Noto Sans KR","Malgun Gothic",sans-serif !important; }   /* 윈도우에서 창을 좁혔을 때만 */
+  .zb a, .zb a.on { font-family:system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; font-size:12px !important; font-weight:700 !important;
     line-height:1.2 !important; letter-spacing:-0.02em !important; white-space:nowrap !important; font-style:normal !important; text-transform:none !important; }   /* 2026-10-29 사용자: 눌린 탭이 확실히 보이게 — 밝은·어두운 모드 모두 형광 알약 + 검은 아이콘 */
   .zb a.on svg { background:#c6ff3d; color:#0b0b0b; stroke-width:2.3; }
   .zb .dot { position:absolute; top:3px; right:calc(50% - 20px); width:7px; height:7px; border-radius:50%; background:#c6ff3d; border:1px solid var(--ink, #0b0b0b); }
@@ -533,7 +583,11 @@ def ticker_spans(items: list) -> str:
 
 NEWS_MASTHEAD_CSS = """
 /* v2 톤: 황동 포인트 → 검정, 명조 → Archivo, 라임은 배경 강조에만 */
-:root { --mark:#c6ff3d; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --serif:"Archivo","Noto Sans KR",sans-serif; --sans:"Noto Sans KR","Archivo",-apple-system,sans-serif; --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#6f6f6f; --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2; }
+/* 2026-11-11 글꼴: 폰·맥은 기기 글꼴, 윈도우 PC(html.wf)만 웹 글꼴. 큰 제목(h1·h2·검은 띠)은 어디서나 웹 글꼴 */
+html.wf { --serif:"Archivo","Noto Sans KR","JZ Fallback D",sans-serif; --sans:"Noto Sans KR","Archivo","JZ Fallback",-apple-system,sans-serif; --mono:var(--sans); }
+h1, h2, .v2-ticker { --serif:"Archivo","Noto Sans KR","JZ Fallback D",sans-serif; --sans:"Noto Sans KR","Archivo","JZ Fallback",sans-serif; --mono:var(--sans); --font:var(--sans); }
+h1, h2 { font-family:var(--sans); }
+:root { --mark:#c6ff3d; --brass:#0b0b0b; --brass-tint:#f4f4f4; --brass-bar:#c6ff3d; --serif:"Archivo",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif; --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif; --mono:var(--sans); --ink:#0b0b0b; --ink-soft:#3a3a3a; --muted:#666666; --paper:#ffffff; --ground:#ffffff; --mist:#f4f4f4; --hairline:#e9e9e9; --hairline-2:#d2d2d2; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mark:rgba(198,255,61,.32); --brass-bar:rgba(198,255,61,.32); --brass:#f3f3f3; --brass-tint:#161616; --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; } }
 :root[data-theme="dark"] { --mark:rgba(198,255,61,.32); --brass-bar:rgba(198,255,61,.32); --brass:#f3f3f3; --brass-tint:#161616; --ink:#f3f3f3; --ink-soft:#cfcfcf; --muted:#8f8f8f; --paper:#0b0b0b; --ground:#0b0b0b; --mist:#161616; --hairline:#242424; --hairline-2:#3a3a3a; }
 .masthead .brand-name { font-family:"Archivo","Noto Sans KR",sans-serif; font-weight:900; letter-spacing:-.04em; font-size:22px; }
@@ -549,7 +603,7 @@ NEWS_MASTHEAD_CSS = """
 .eyebrow { font-family:"Inter","Noto Sans KR",sans-serif; font-size:12.5px; font-weight:600; letter-spacing:0; color:var(--ink-soft); padding:8px 15px; }
 .funnel-num { font-family:"Inter","Noto Sans KR",sans-serif; font-size:28px; font-weight:800; letter-spacing:-.03em; }
 .funnel-label { font-family:"Inter","Noto Sans KR",sans-serif; font-size:12px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--ink-soft); margin-top:5px; }
-.picks-note, .pick-sector, .foot-label { font-family:"Inter","Noto Sans KR",sans-serif; font-size:11.5px; font-weight:700; letter-spacing:.02em; text-transform:none; }
+.picks-note, .pick-sector, .foot-label { font-family:"Inter","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.02em; text-transform:none; }
 .picks-note, .foot-label { color:var(--muted); }
 .stamp, .foot-note { font-family:"Inter","Noto Sans KR",sans-serif; font-size:12px; font-weight:500; letter-spacing:0; text-transform:none; color:var(--muted); }
 
@@ -572,7 +626,7 @@ NEWS_MASTHEAD_CSS = """
   .masthead .brand-ko { margin-left:-4px; }
 }
 .stamp { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
-.theme-btn { font-family:"Archivo",sans-serif; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; border-radius:999px; }
+.theme-btn { font-family:"Archivo",sans-serif; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; border-radius:999px; }
 .hero { background:var(--paper); border-bottom:1px solid var(--hairline); }
 .hero-inner { max-width:1320px; padding:18px 20px 40px; gap:48px; align-items:end; }
 .eyebrow { display:none; }
@@ -605,17 +659,17 @@ NEWS_MASTHEAD_CSS = """
 .v2-ticker span::after { content:"✦"; margin-left:28px; color:#c6ff3d; }
 @keyframes v2marquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .v2-ticker-track { animation:none; } }
-@media (max-width:640px) { .v2-ticker span { padding:7px 18px; font-size:11.5px; } .v2-ticker span::after { margin-left:18px; } }   /* 2026-10-28 모바일: 검은 띠 높이 절반 */
+@media (max-width:640px) { .v2-ticker span { padding:7px 18px; font-size:12px; } .v2-ticker span::after { margin-left:18px; } }   /* 2026-10-28 모바일: 검은 띠 높이 절반 */
 /* 고정 컨트롤 바 = 직무사전 필터 바 */
 .controls { top:calc(54px + env(safe-area-inset-top,0px)); border-bottom:1px solid var(--hairline); box-shadow:none; }
 .controls-inner { max-width:1320px; padding:10px 20px; gap:12px; overflow-x:auto; scrollbar-width:none; }
 .controls-inner::-webkit-scrollbar { display:none; }
 .segmented { border:0; border-radius:0; gap:4px; overflow:visible; }
-.seg { border:1px solid transparent; border-radius:999px; padding:9px 14px; font-family:"Archivo","Noto Sans KR",sans-serif; font-size:13px; font-weight:700; color:var(--muted); background:transparent; }
+.seg { border:1px solid transparent; border-radius:999px; min-height:40px; padding:9px 14px; font-family:"Archivo","Noto Sans KR",sans-serif; font-size:13px; font-weight:700; color:var(--muted); background:transparent; }
 .seg:hover { color:var(--ink); border-color:var(--hairline-2); }
 .seg[aria-selected="true"], .seg.on { background:var(--ink) !important; color:var(--paper) !important; border-color:var(--ink) !important; }
 .datenav { gap:6px; }
-.datebtn, .dateselect { border-radius:999px; border:1px solid var(--hairline-2); font-family:"Archivo","Noto Sans KR",sans-serif; font-size:13px; font-weight:700; padding:8px 12px; background:transparent; color:var(--ink); }
+.datebtn, .dateselect { border-radius:999px; border:1px solid var(--hairline-2); min-width:40px; min-height:40px; font-family:"Archivo","Noto Sans KR",sans-serif; font-size:13px; font-weight:700; padding:8px 12px; background:transparent; color:var(--ink); }
 .datebtn:hover { background:var(--ink); color:var(--paper); border-color:var(--ink); }
 /* 섹션: 번호 아웃라인 + 큰 제목 */
 .container { max-width:1320px; padding:0 20px; }
@@ -639,7 +693,7 @@ NEWS_MASTHEAD_CSS = """
 .news-source, .news-meta { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
 .news-why { border-left:2px solid #c6ff3d; padding-left:12px; }
 .news-why b { color:var(--ink); }
-.job-tag { background:var(--ink); color:var(--paper); border-radius:999px; font-family:"Archivo","Noto Sans KR",sans-serif; font-size:11.5px; font-weight:700; letter-spacing:.04em; }
+.job-tag { background:var(--ink); color:var(--paper); border-radius:999px; font-family:"Archivo","Noto Sans KR",sans-serif; font-size:12px; font-weight:700; letter-spacing:.04em; }
 .tag { border-radius:999px; font-family:"Archivo","Noto Sans KR",sans-serif; }
 .sec-badge { background:#c6ff3d; color:#0b0b0b; border-radius:999px; font-family:"Archivo","Noto Sans KR",sans-serif; }
 /* 랭킹·키워드 */
@@ -704,12 +758,22 @@ NEWS_MASTHEAD_CSS = """
   .masthead-inner { flex-wrap:nowrap; align-items:center; justify-content:space-between; }
   .masthead .stamp { display:none; }
   /* 360px 폰에서도 한 줄에 들어가게 테마 버튼은 글자 대신 ◐ 아이콘만 (글자는 화면 읽기용으로 남김) */
-  .theme-btn { flex:0 0 auto; width:32px; height:32px; padding:0; font-size:0; display:inline-flex; align-items:center; justify-content:center; }
+  .theme-btn { position:relative; flex:0 0 auto; width:32px; height:32px; padding:0; font-size:0; display:inline-flex; align-items:center; justify-content:center; }
+  .theme-btn::after { content:""; position:absolute; left:50%; top:50%; width:44px; height:44px; transform:translate(-50%,-50%); }   /* 2026-11-11 누르는 곳만 44px (모양은 32px 그대로) */
   .theme-btn::before { content:"◐"; font-size:15px; line-height:1; }
   .hero-inner { padding-top:0; }
   .hero h1 { margin-top:5px; }
 }
 """
+
+
+# 2026-11-11 화면 밀림: 뉴스에도 같은 대체 글꼴(맑은 고딕을 본 글꼴 폭에 맞춘 것)을 쓴다 + 폰에서 큰 제목 줄은 줄바꿈 대신 글자를 줄인다(FIT_JS)
+NEWS_MASTHEAD_CSS = ('@font-face { font-family:"JZ Fallback"; src:local("Malgun Gothic"); size-adjust:92%; }\n'
+                     '@font-face { font-family:"JZ Fallback"; src:local("Malgun Gothic Bold"), local("Malgun Gothic"); font-weight:700 900; size-adjust:92%; }\n'
+                     '@font-face { font-family:"JZ Fallback D"; src:local("Malgun Gothic"); size-adjust:89%; }\n'
+                     '@font-face { font-family:"JZ Fallback D"; src:local("Malgun Gothic Bold"), local("Malgun Gothic"); font-weight:700 900; size-adjust:89%; }\n'
+                     + NEWS_MASTHEAD_CSS.replace('"Archivo","Noto Sans KR",sans-serif', 'var(--serif)').replace('"Inter","Noto Sans KR",sans-serif', 'var(--sans)')
+                     + '@media (max-width: 900px) { .hero h1 .line { white-space:nowrap; } }\n')
 
 
 # 2026-10-29 모바일: 폰(640px 이하)에선 위 메뉴 대신 화면 아래 탭바 (메뉴 순서는 TABS 그대로). 아이콘은 선 하나짜리 SVG
@@ -729,13 +793,29 @@ def _clean(root: str, href: str) -> str:
     return (root + href.replace("index.html", "")) or "./"
 
 
+_WH = {}
+
+
+def img_wh(logo: str) -> str:
+    """로고 그림의 실제 크기를 width/height 속성으로 (화면 크기는 CSS 가 정하고, 이 값은 그림이 오기 전에 자리 비율을 잡는 데만 쓰인다)"""
+    name = logo.rsplit("/", 1)[-1]
+    if name not in _WH:
+        try:
+            from PIL import Image
+            with Image.open(ASSETS / name) as im:
+                _WH[name] = f' width="{im.width}" height="{im.height}"'
+        except Exception:
+            _WH[name] = ""
+    return _WH[name]
+
+
 def nav_html(active: str, root: str, logo: str) -> str:
     tabs = "".join(
         f'<a href="{_clean(root, href)}"{" class=\"on\"" if href == active else ""}>{label}</a>' for href, label in TABS
     )
     theme = "<script>try{var t=localStorage.getItem('cb-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>"
     return (
-        theme + f'<header class="zn"><div class="zn-in"><a class="zn-logo" href="{_clean(root, "index.html")}"><img src="{logo_src(logo, root)}" alt="TEAM ZORRO"></a>'
+        theme + f'<header class="zn"><div class="zn-in"><a class="zn-logo" href="{_clean(root, "index.html")}"><img src="{logo_src(logo, root)}" alt="TEAM ZORRO"{img_wh(logo)}></a>'
         f'<nav class="zn-tabs" aria-label="사이트 탭">{tabs}</nav>'
         f'</div></header>'
         # 2026-10-28 모바일: 지금 탭이 화면 밖이면 보이게 옮기고, 메뉴가 넘치면 오른쪽 끝을 흐리게 (.more)
@@ -763,9 +843,13 @@ def footer_html(root: str, logo: str, note: str) -> str:
         f'<div class="zf-outro"><svg class="zf-big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg>'
         f'<p class="zf-slogan">TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.</p></div>'
         # 2026-10-31 사용자: '취업조로 홈' 링크 삭제, 로고(CI) 바로 옆에 링크 2개(무료 상담 신청·개인정보처리방침)를 한 줄로
-        f'<div class="zf-row"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"></a>'
+        f'<div class="zf-row"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"{img_wh(logo)} loading="lazy"></a>'
         f'<div class="zf-links"><a href="{root}{APPLY}">무료 상담 신청</a>'
-        f'<a href="{root}privacy/index.html">개인정보처리방침</a></div></div>'
+        f'<a href="{root}privacy/index.html">개인정보처리방침</a>'
+        # 2026-11-11: 회사 목록 쪽이 있을 때만 (연봉 묶음이 salary/list/, 회사 판단 묶음이 company/list/ 를 만든다)
+        + (f'<a href="{root}salary/list/">연봉 회사 목록</a>' if seo.HAS_LIST["salary"] else "")
+        + (f'<a href="{root}company/list/">회사 판단 목록</a>' if seo.HAS_LIST["company"] else "")
+        + '</div></div>'
         f'<div class="zf-box"><b>법인명(상호)</b> {c["name"]} &nbsp;·&nbsp; <b>대표자</b> {c["ceo"]} &nbsp;·&nbsp; <b>개인정보보호책임자</b> {c["privacy"]}<br>'
         f'<b>사업자등록번호</b> {c["reg"]}<br><b>주소</b> {c["addr"]}<br>© Copyright 2026 All rights reserved by CAREERPROJECT inc.</div>'
         f'{f"<details class=\"zf-note\"><summary>자료 안내</summary><p>{note}</p></details>" if note else ""}'
@@ -799,6 +883,59 @@ def attach_major(data: dict) -> None:
         deg = DEG_LABEL.get(m.get("degree", ""), "")
         j["mj"] = {"lv": lv, "card": card, "box": box, "names": names, "deg": deg, "prep": m.get("prep", "")}
         j["nonmajorOk"] = lv == "open"
+
+
+def _won(avg) -> str:
+    """평균 연봉을 '1억 2,800만' 처럼. 단위는 만원(1,000,000 이상이면 원으로 보고 바꾼다)"""
+    try:
+        v = float(avg)
+    except (TypeError, ValueError):
+        return ""
+    if v >= 1_000_000:
+        v /= 10000
+    v = int(round(v, -2)) if v >= 1000 else int(v)
+    if v <= 0:
+        return ""
+    eok, man = divmod(v, 10000)
+    return ((f"{eok}억 " if eok else "") + (f"{man:,}만" if man else "")).strip()
+
+
+def attach_co_links(data: dict) -> int:
+    """직무 → 잘 알려진 회사(연봉 페이지) 연결. 연봉 묶음이 만드는 job_links.json({직무 id: [{name, slug, avg}]})을 읽는다.
+    찾는 순서: 환경 변수 JOB_LINKS → 배포 폴더 salary/data/job_links.json → salary-lab/site/data/job_links.json. 없으면 아무것도 안 한다.
+    회사 쪽(salary/co/<slug>/index.html)이 실제로 없거나 다른 이름으로 옮겨진 쪽이면 뺀다 (죽은 링크 방지). 직무마다 최대 5곳."""
+    seo.HAS_LIST["salary"] = (BASE / "salary" / "list" / "index.html").exists()
+    seo.HAS_LIST["company"] = (BASE / "company" / "list" / "index.html").exists()
+    cands = [os.environ.get("JOB_LINKS"), BASE / "salary" / "data" / "job_links.json", BASE.parent / "salary-lab" / "site" / "data" / "job_links.json"]
+    src = next((Path(c) for c in cands if c and Path(c).exists()), None)
+    if not src:
+        return 0
+    try:
+        raw = json.loads(src.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return 0
+    raw = raw.get("jobs", raw) if isinstance(raw, dict) else {}
+    co_dir, links, n = BASE / "salary" / "co", {}, 0
+    for j in data["jobs"]:
+        out = []
+        for c in raw.get(j["id"]) or []:
+            slug = str((c or {}).get("slug") or "").strip("/")
+            pg = co_dir / slug / "index.html"
+            if not slug or not c.get("name") or not pg.exists():
+                continue
+            with open(pg, encoding="utf-8") as f:
+                if 'http-equiv="refresh"' in f.read(1500):   # 옮겨진 회사의 이동용 빈 쪽
+                    continue
+            out.append({"n": c["name"], "u": f"salary/co/{urllib.parse.quote(slug)}/", "a": _won(c.get("avg"))})
+            if len(out) == 5:
+                break
+        if out:
+            links[j["id"]] = out
+            j["coLinks"] = out   # 홈 상세 창(template.html detail)이 읽는다 — 전체 자료(data/jobs.json)에만 들어가고 첫 화면 요약에는 안 들어간다
+            n += 1
+    seo.CO_LINKS = links
+    print(f"직무 → 회사 연결: 직무 {n}개 ({src})")
+    return n
 
 
 def attach_industries(data: dict) -> None:
@@ -924,6 +1061,11 @@ def build(out_dir: Path, with_news: bool) -> None:
     attach_client_salary(data)   # 취업조로 이직자 연봉(직군별 집계, 5명 이상만) — salary-lab/job_link_stats.py 가 만든다
     attach_news(data)
     attach_industries(data)
+    attach_co_links(data)   # 2026-11-11: 직무 → 회사 연봉 페이지 (자료가 없으면 건너뜀)
+    try:   # 직무별 처음 올린 날 (구조화 데이터 datePublished)
+        seo.JOB_DATES = json.loads((BASE / "data" / "job_dates.json").read_text(encoding="utf-8")).get("dates", {})
+    except (OSError, ValueError):
+        seo.JOB_DATES = {}
     # 2026-11-03: 원문 주소에 공백 등이 그대로 있던 것(comento) → % 인코딩 (직무 페이지·홈 상세 모두)
     for j in data["jobs"]:
         for w in j.get("webSources") or []:
@@ -1131,7 +1273,7 @@ def build(out_dir: Path, with_news: bool) -> None:
 
     # 직무 비교 / 직무 진단
     for tpl_name, sub, title, desc in (
-        ("template_compare.html", "compare", "직무 비교 — 두 직무를 나란히 | 취업조로 직무사전", "연봉대·필요 역량·들어가는 길·커리어 패스를 한 화면에서 비교합니다."),
+        ("template_compare.html", "compare", "직무 비교 — 두 직무를 나란히 | 취업조로 직무사전", f"고민되는 두 직무를 골라 연봉대·전공·필요 역량·들어가는 길·커리어 패스·AI 영향을 한 화면에 나란히 비교합니다. 현직자 인터뷰로 정리한 직무 {len(data['jobs'])}개 중에서 고를 수 있어요."),
         ("template_fit.html", "fit", "1분 직무 진단 — 내 전공·학력으로 갈 수 있는 직무 | 취업조로 직무사전", f"학력·전공 학과(복수전공·부전공)·성향·원하는 것으로 직무 {len(data['jobs'])}개 중 바로 지원할 직무와 준비하면 열리는 직무를 골라 드립니다."),
     ):
         tp = BASE / tpl_name
@@ -1350,6 +1492,8 @@ def build(out_dir: Path, with_news: bool) -> None:
             shutil.rmtree(news_src.parent, ignore_errors=True)
 
     lm_state, lm_seen = load_lastmod(), set()   # sitemap lastmod: 쪽 내용이 바뀐 날 (연봉·회사 쪽)
+    no_idx = load_noindex()                      # 2026-11-11: 다른 묶음이 정한 검색 제외 회사 → sitemap 에서 뺀다
+    n_noidx = {"salary": 0, "company": 0}
     # ---- 연봉 연구소 (/salary/): salary-lab/publish_to_site.py 가 만든 salary/ 를 복사하고 상단 메뉴를 붙인다
     sal = BASE / ("_skip" if PREVIEW else "salary")
     if sal.exists():
@@ -1361,7 +1505,8 @@ def build(out_dir: Path, with_news: bool) -> None:
         # '숫자로 보는 회사들' 01·02 같은 테두리 숫자: 폰에서 1.5px 선이 다크·'웹사이트 어둡게'에서 흐려 보여 굵게 (2026-10-22 사용자)
         zn_css += "\n.sec-head .num:not(.sym) { -webkit-text-stroke-width:2px; }"
         # 2026-10-29 공용 푸터(큰 TEAM ZORRO·사업자 상자)도 붙인다 — 연봉 연구소 토큰 이름(--bg·--soft·--fill)을 푸터 토큰에 연결
-        zn_css += ("\n.zf{--paper:var(--bg);--hairline:var(--line);--mist:var(--fill);--ink-soft:var(--soft);--font:\"Noto Sans KR\",system-ui,sans-serif;--display:\"Archivo\",\"Noto Sans KR\",sans-serif}\n"
+        zn_css += ("\n.zf{--paper:var(--bg);--hairline:var(--line);--mist:var(--fill);--ink-soft:var(--soft);--font:-apple-system,BlinkMacSystemFont,\"Apple SD Gothic Neo\",system-ui,sans-serif;--display:\"Archivo\",-apple-system,BlinkMacSystemFont,\"Apple SD Gothic Neo\",system-ui,sans-serif}\n"
+                   ".zf:is(html.wf *){--font:\"Noto Sans KR\",system-ui,sans-serif;--display:\"Archivo\",\"Noto Sans KR\",sans-serif}\n"
                    + "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith(".zf")))
         def add_nav(path, root):
             h = path.read_text(encoding="utf-8")
@@ -1402,12 +1547,29 @@ def build(out_dir: Path, with_news: bool) -> None:
                 p.write_text(h.replace("</head>", og_tags + "</head>", 1), encoding="utf-8")
             sal_live.append(d)
         entries.append(("salary/", sal_updated, "monthly", "0.8"))
+        # 2026-11-11 회사 목록 쪽(업종별·가나다별): 메뉴·푸터를 붙이고 sitemap 에 넣는다
+        n_list = 0
+        if (dst / "list" / "index.html").exists():
+            for p in [dst / "list" / "index.html"] + sorted((dst / "list").glob("*/index.html")):
+                sub = p.parent.name if p.parent.name != "list" else ""
+                add_nav(p, "../../" + ("../" if sub else ""))
+                h = p.read_text(encoding="utf-8")
+                if 'property="og:image"' not in h:
+                    p.write_text(h.replace("</head>", og_tags + "</head>", 1), encoding="utf-8")
+                _k = "salary/list/" + (sub + "/" if sub else "")
+                entries.append((_k, page_lastmod(lm_state, _k, h, today, sal_updated, moved="first"), "monthly", "0.4"))
+                lm_seen.add(_k); n_list += 1
+            print(f"연봉 연구소: 회사 목록 쪽 {n_list}개 (메뉴·sitemap 포함)")
         for d in sal_live:
             _k = f"salary/co/{urllib.parse.quote(d.name)}/"
             _src = sal / "co" / d.name / "index.html"
-            entries.append((_k, page_lastmod(lm_state, _k, _src.read_text(encoding="utf-8"), today, sal_updated), "monthly", "0.5"))
+            _t = _src.read_text(encoding="utf-8")
+            if d.name in no_idx["salary"] or re.search(r'<meta name="robots" content="noindex', _t[:3000]):   # 검색 제외 쪽은 sitemap 에 넣지 않는다
+                n_noidx["salary"] += 1
+                continue
+            entries.append((_k, page_lastmod(lm_state, _k, _t, today, sal_updated, moved="first"), "monthly", "0.5"))
             lm_seen.add(_k)
-        print(f"연봉 연구소: /salary/ + 회사 페이지 {len(sal_live):,}개 (이동용 빈 쪽 {n_redirect}개는 메뉴·sitemap 제외)")
+        print(f"연봉 연구소: /salary/ + 회사 페이지 {len(sal_live):,}개 (이동용 빈 쪽 {n_redirect}개는 메뉴·sitemap 제외, 검색 제외 {n_noidx['salary']}개는 sitemap 제외)")
     # 2026-10-21 사용자: 법적·평판 리스크 대비 안내 (판정은 공개 자료 기반 참고용 의견, 출처·기준일 표기, 정정 창구)
     COMPANY_NOTE = ("해당사항은 회사의 공식 입장과 사실확정은 아니며, 항목마다 출처와 기준일을 표기합니다. "   # 2026-10-29 사용자 문구로 줄임
                     "사실과 다른 내용은 회사 화면 아래 '정정 요청하기'로 알려주시면 확인 후 고치거나 내려드리겠습니다.")
@@ -1449,6 +1611,9 @@ def build(out_dir: Path, with_news: bool) -> None:
         for p in cpages:
             _k = f"company/c/{urllib.parse.quote(p.parent.name)}/"
             _t = (comp / "c" / p.parent.name / "index.html").read_text(encoding="utf-8")
+            if p.parent.name in no_idx["company"] or re.search(r'<meta name="robots" content="noindex', _t[:3000]):   # 검색 제외 쪽은 sitemap 에 넣지 않는다
+                n_noidx["company"] += 1
+                continue
             _b = re.search(r"기준일\s*(\d{4})\.(\d{2})\.(\d{2})", _t)   # 처음 보는 쪽은 그 쪽의 자료 기준일
             entries.append((_k, page_lastmod(lm_state, _k, _t, today, "-".join(_b.groups()) if _b else today), "weekly", "0.6"))
             lm_seen.add(_k)
@@ -1499,6 +1664,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     audit_links(data, BASE / "assets" / "share")
     print(f"인앱 브라우저 → 기본 브라우저 전환: {add_inapp(out_dir)}개 페이지")
     print(f"다크모드 지원 표시(color-scheme): {add_color_scheme(out_dir)}개 페이지")
+    print(f"윈도우 PC 만 웹 글꼴(wf 표시): {add_wf(out_dir)}개 페이지")
     print(f"화면 끝까지(viewport-fit=cover) 맞춤: {add_viewport_fit(out_dir)}개 페이지")
     print(f"단순화(영어 꼬리표 숨김): {add_simple(out_dir)}개 페이지")
     print(f"앱(PWA) 설치 연결: {pwa.add_pwa(out_dir, base_url)}개 페이지 (manifest·sw.js)")
@@ -1523,6 +1689,21 @@ def add_inapp(out_dir: Path) -> int:
         if "data-inapp" in h or "<head>" not in h:
             continue
         f.write_text(h.replace("<head>", "<head>\n" + INAPP_JS, 1), encoding="utf-8")
+        n += 1
+    return n
+
+
+# 2026-11-11 글꼴: 윈도우 PC 면 html 에 class "wf" → 본문도 웹 글꼴 (폰·맥은 기기 글꼴). 글꼴 link 보다 앞, <head> 맨 앞에 넣는다
+WF_JS = "<script data-wf>(function(){try{if(/Windows/i.test(navigator.userAgent))document.documentElement.classList.add('wf')}catch(e){}})();</script>"
+
+
+def add_wf(out_dir: Path) -> int:
+    n = 0
+    for f in out_dir.rglob("*.html"):
+        h = f.read_text(encoding="utf-8")
+        if "classList.add('wf')" in h or "<head>" not in h:   # 다른 묶음(연봉·회사·놀이터)이 이미 넣은 쪽은 건너뛴다
+            continue
+        f.write_text(h.replace("<head>", "<head>" + WF_JS, 1), encoding="utf-8")
         n += 1
     return n
 

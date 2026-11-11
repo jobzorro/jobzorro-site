@@ -26,6 +26,7 @@ import io
 import shutil
 import html
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -76,10 +77,14 @@ STYLE = """
   --down:       #2f6fb0;
   --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
 
-  --serif: "Archivo", "Noto Sans KR", Georgia, serif;
-  --sans:  "Inter", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --mono:  "Inter", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* 2026-11-11 글꼴: 폰·맥은 기기 글꼴, 윈도우 PC(html.wf — 상위 build.py 가 <head> 에 표시 스크립트를 넣는다)만 웹 글꼴. Inter 는 뺐다.
+     기본 묶음에는 "Noto Sans KR" 을 넣지 않는다 (안드로이드가 한글을 웹 글꼴로 받아 버린다) */
+  --serif: "Archivo", -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif;
+  --sans:  -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif;
+  --mono:  -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif;
 }
+html.wf { --serif: "Archivo", "Noto Sans KR", sans-serif; --sans: "Noto Sans KR", "Archivo", -apple-system, sans-serif; --mono: var(--sans); }
+h1, h2 { --serif: "Archivo", "Noto Sans KR", sans-serif; --sans: "Noto Sans KR", "Archivo", sans-serif; --mono: var(--sans); }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -445,7 +450,7 @@ a { color: inherit; text-decoration: none; }
 .mast-right { display: flex; align-items: center; gap: 14px; }
 .theme-btn {
   display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px;
-  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  font-family: var(--mono); font-size: 12px; color: var(--muted);
   background: transparent; border: 1px solid var(--hairline-2); border-radius: 99px;
   cursor: pointer; transition: background .18s, color .18s;
 }
@@ -460,7 +465,7 @@ a { color: inherit; text-decoration: none; }
 }
 .brief-label {
   display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
-  font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--brass); font-weight: 700;
+  font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--brass); font-weight: 700;
 }
 .brief-list { margin: 0; padding: 0; list-style: none; counter-reset: b; }
 .brief-list li {
@@ -469,11 +474,11 @@ a { color: inherit; text-decoration: none; }
 }
 .brief-list li::before {
   content: counter(b); position: absolute; left: 0; top: 1px;
-  font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--brass);
+  font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--brass);
 }
 .ai-tag {
-  font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .06em;
-  padding: 1px 6px; border-radius: 3px; border: 1px solid var(--brass-bar); color: var(--brass);
+  font-family: var(--mono); font-size: 12px; line-height: 1.3; font-weight: 700; letter-spacing: .04em;
+  padding: 0 5px; border-radius: 3px; border: 1px solid var(--brass-bar); color: var(--brass);
 }
 
 /* ---------------- 카드 안의 AI 문장 · 관련 기사 ---------------- */
@@ -488,23 +493,26 @@ a { color: inherit; text-decoration: none; }
 .news-related {
   position: relative; z-index: 1; margin-top: 9px;
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
-  font-size: 11.5px; color: var(--faint);
+  font-size: 12px; color: var(--muted);
 }
 .news-related a { color: var(--muted); text-decoration: underline; text-decoration-color: var(--hairline-2); text-underline-offset: 2px; }
 .news-related a:hover { color: var(--brass); }
 .tag { cursor: pointer; position: relative; z-index: 1; background: transparent; font: inherit; }
 .tag:hover { border-color: var(--brass); color: var(--brass); }
-.news-tags .tag { font-family: var(--mono); font-size: 9.5px; }
+.news-tags .tag { font-family: var(--mono); font-size: 12px; }
 /* 직무 태그 링크: 카드 전체 링크(::after) 위에 올려야 태그 클릭이 원문으로 새지 않는다 */
 a.job-tag { position: relative; z-index: 1; text-decoration: none; cursor: pointer; transition: background .15s ease, color .15s ease; }
 a.job-tag:hover, a.job-tag:focus-visible { background: #c6ff3d; color: #0b0b0b; }
+/* 2026-11-11 폰에서 누르는 곳 40px: 직무 태그(24px)는 모양 그대로 두고 위아래로 투명한 덧판만 키운다. 태그끼리 덧판이 겹치지 않게 줄 간격은 조금 넓힌다 */
+a.job-tag::after { content: ""; position: absolute; left: -3px; right: -3px; top: 50%; height: 40px; transform: translateY(-50%); }
+.howto-more a { display: inline-block; padding: 10px 0; margin: -10px 0; }
 
 /* ---------------- 키워드 추이 차트 ---------------- */
 
 .trend { margin-top: 30px; padding: 20px 20px 14px; background: var(--paper); border: 1px solid var(--hairline); border-radius: 12px; }
 .trend-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
 .trend-title { margin: 0; font-family: var(--serif); font-size: 16px; font-weight: 700; }
-.trend-note { font-size: 11.5px; color: var(--muted); }
+.trend-note { font-size: 12px; color: var(--muted); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 0 4px; font-size: 12px; color: var(--ink-soft); }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; }
 .legend-swatch { width: 14px; height: 3px; border-radius: 2px; }
@@ -521,14 +529,14 @@ a.job-tag:hover, a.job-tag:focus-visible { background: #c6ff3d; color: #0b0b0b; 
   box-shadow: 0 8px 22px var(--shadow-lift); font-size: 12px; color: var(--ink-soft);
 }
 .tip[hidden] { display: none; }
-.tip-date { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-bottom: 5px; }
+.tip-date { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 5px; }
 .tip-row { display: flex; align-items: center; gap: 7px; justify-content: space-between; }
 .tip-row span:first-child { display: inline-flex; align-items: center; gap: 6px; }
 .tip-row b { font-family: var(--mono); font-weight: 600; color: var(--ink); }
 .trend details { margin-top: 8px; font-size: 12px; color: var(--muted); }
 .trend summary { cursor: pointer; }
 .trend-table-wrap { overflow-x: auto; margin-top: 8px; }
-.trend table { border-collapse: collapse; font-family: var(--mono); font-size: 11px; color: var(--ink-soft); }
+.trend table { border-collapse: collapse; font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
 .trend th, .trend td { padding: 4px 8px; border-bottom: 1px solid var(--hairline); text-align: right; white-space: nowrap; }
 .trend th:first-child, .trend td:first-child { text-align: left; font-family: var(--sans); }
 .kw:hover .kw-name { color: var(--brass); }
@@ -551,7 +559,7 @@ mark { background: var(--brass-tint); color: inherit; padding: 0 1px; border-rad
 
 /* ---------------- 수집 상태 ---------------- */
 
-.health { margin-top: 14px; font-size: 11.5px; line-height: 1.7; color: var(--faint); }
+.health { margin-top: 14px; font-size: 12px; line-height: 1.7; color: var(--muted); }
 .health b { color: var(--up); font-weight: 600; }
 
 /* ---------------- 반응형 ---------------- */
@@ -623,9 +631,12 @@ STATIC_STYLE = """
 .day-head { padding: 44px 0 16px; border-bottom: 1px solid var(--ink); }
 .day-kicker { font-family: var(--mono); font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brass); margin-bottom: 10px; }
 .day-title { margin: 0; font-size: clamp(26px, 3.6vw, 40px); font-weight: 800; letter-spacing: -.04em; line-height: 1.15; }
+.day-title span { display: inline-block; white-space: nowrap; }
+@media (max-width: 520px) { .day-title span { display: block; } }   /* 2026-11-11 화면 밀림: 폰에서는 늘 두 줄 */
 .day-sub { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.daynav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 12px 0; border-bottom: 1px solid var(--hairline); font-size: 13.5px; font-weight: 600; }
-.daynav a { color: var(--ink-soft); white-space: nowrap; }
+.daynav { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; padding: 3px 0; border-bottom: 1px solid var(--hairline); font-size: 13.5px; font-weight: 600; }
+.daynav a { color: var(--ink-soft); white-space: nowrap; padding: 9px 0; }   /* 누르는 곳 40px (줄 여백을 링크 안으로 옮김 — 전체 높이는 그대로) */
+.daynav .disabled { padding: 9px 0; }
 .daynav a:hover { color: var(--brass); }
 .daynav .spacer { flex: 1 1 auto; }
 .daynav .disabled { color: var(--faint); opacity: .5; }
@@ -636,6 +647,7 @@ STATIC_STYLE = """
 .archive-month h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -.03em; padding-bottom: 10px; border-bottom: 1px solid var(--ink); }
 .archive-list { display: flex; flex-direction: column; }
 .archive-row { display: grid; grid-template-columns: 118px 56px minmax(0,1fr); gap: 16px; align-items: baseline; padding: 12px 14px; margin: 0 -14px; border-bottom: 1px solid var(--hairline); border-radius: 8px; transition: background .2s ease, box-shadow .2s ease; }
+.archive-row { min-height: 44px; }
 .archive-row:hover { background: var(--paper); box-shadow: 0 8px 20px var(--shadow); }
 .archive-row:hover .archive-date { color: var(--brass); }
 .archive-date { font-family: var(--mono); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; transition: color .2s ease; }
@@ -1228,7 +1240,7 @@ SCRIPT = r"""
   function searchRow(hit, terms) {
     var a = link(hit.a.url, 'chart-row');
     var d = el('div', 'chart-rank');
-    d.style.cssText = 'font-size:11px;text-align:left;font-weight:600';
+    d.style.cssText = 'font-size:12px;text-align:left;font-weight:600';
     d.textContent = hit.date.slice(5);
     a.appendChild(d);
     var main = el('div', 'chart-main');
@@ -1501,7 +1513,7 @@ def day_description(day):
 
 # 2026-11-03: 글꼴 요청 한 줄로 합치고 쓰는 굵기만 (전엔 4개 글꼴 17굵기 + 상위 build.py 가 Noto·Archivo 를 한 번 더)
 FONT_LINK = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900'
-             '&family=Inter:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">')
+             '&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">')
 
 
 def static_head(title, desc, root="../", noindex=False):
@@ -1601,6 +1613,32 @@ def _keys(day):
     return {a.get("url") for a in arts if a.get("url")} | {a.get("title") for a in arts if a.get("title")}
 
 
+def _plain(s):
+    return re.sub(r"[\W_]+", "", s or "")
+
+
+def drop_title_repeats(day):
+    """요약이 제목(+언론사 이름)을 그대로 되풀이하면 지운다 (2026-11-11: 구글 뉴스에서 온 기사 3건 중 1건이 제목을 두 번 찍고 있었다).
+    화면에 낼 때만 지운다 — archive/*.json 원본은 그대로. 지운 기사 수를 돌려준다."""
+    n = 0
+    for a in day_articles(day):
+        body = _plain((a.get("lead") or "") + (a.get("summary") or ""))
+        if not body or a.get("ai_line"):
+            continue
+        title, src = _plain(a.get("title")), _plain(a.get("source"))
+        rest = body.replace(src, "") if src else body
+        if rest in title or (title and title in body and len(body) <= len(title) + len(src) + 8):
+            a["lead"], a["summary"] = "", ""
+            n += 1
+    return n
+
+
+def thin_days(days):
+    """기사마다 제목·언론사만 있고 'Zorro의 한마디'(ai_why)·AI 요약(ai_line)이 하나도 없는 옛 지면 (2026-10-12 이전 54일).
+    읽을거리가 없는 쪽이라 검색에서 빼고(noindex,follow) sitemap 에도 넣지 않는다 — 지난 지면 목록에서는 그대로 열 수 있다."""
+    return [d["date"] for d in days if day_articles(d) and not any(a.get("ai_why") or a.get("ai_line") for a in day_articles(d))]
+
+
 def repeat_days(days):
     """앞 지면을 거의 그대로 되풀이한 날 (2026-11-03: 주말·휴일 지면이 전날과 같은 기사·설명으로 나가던 것 — 10-10, 08-30 등).
     새 기사가 없거나 기사 절반 이상이 앞 지면과 같으면 그날 쪽은 검색에서 빼고(noindex) sitemap 에도 넣지 않는다."""
@@ -1626,7 +1664,7 @@ def render_day_page(day, prev_date, next_date, noindex=False):
 
     out = [static_head(title, desc, noindex=noindex), '<main class="container">',
            f'  <div class="day-head"><div class="day-kicker">Career Briefing · Daily</div>'
-           f'<h1 class="day-title">{e(kdate)} 커리어브리핑</h1>'
+           f'<h1 class="day-title"><span>{e(kdate)}</span> <span>커리어브리핑</span></h1>'
            f'<p class="day-sub">{e(date)} 지면 · 기사 {total}건 · 취업조로가 고른 채용·이직·기업·고용·커리어 뉴스</p></div>',
            render_daynav(prev_date, next_date)]
 
@@ -1903,6 +1941,9 @@ def main():
         n_merged += merge_same_story(d_)
     if n_merged:
         print(f"같은 사건 기사 {n_merged}건을 관련 기사로 묶음")
+    n_rep = drop_title_repeats(today) + sum(drop_title_repeats(d_) for d_ in days)
+    if n_rep:
+        print(f"제목만 되풀이하는 요약 {n_rep}건 숨김")
     archive = rankings.build(days)
     archive["full_days"] = days
     if not archive["days"]:
@@ -1936,6 +1977,10 @@ def main():
     full_days = archive["full_days"]
     dates = [d["date"] for d in full_days]
     rep_days = set(repeat_days(full_days))
+    thin = set(thin_days(full_days))   # 2026-11-11: 한마디 없는 옛 지면도 같은 방식으로 검색 제외 (repeat_days.json 에 함께 적는다 → 상위 build.py 가 noindex · sitemap 제외)
+    if thin - rep_days:
+        print(f"  한마디 없는 옛 지면 {len(thin)}일 -> noindex: {min(thin)} ~ {max(thin)}")
+    rep_days |= thin
     for i, day in enumerate(full_days):
         page_dir = site_dir / day["date"]
         page_dir.mkdir(parents=True, exist_ok=True)
@@ -1944,8 +1989,8 @@ def main():
             encoding="utf-8")
     # 상위 build.py 가 읽어 이 날짜들은 noindex + sitemap 제외
     (site_dir / "repeat_days.json").write_text(json.dumps(sorted(rep_days)), encoding="utf-8")
-    if rep_days:
-        print(f"  앞 지면 반복 {len(rep_days)}일 -> noindex: {', '.join(sorted(rep_days))}")
+    if rep_days - thin:
+        print(f"  앞 지면 반복 {len(rep_days - thin)}일 -> noindex: {', '.join(sorted(rep_days - thin))}")
     (site_dir / "archive").mkdir(exist_ok=True)
     (site_dir / "archive" / "index.html").write_text(render_archive_page(full_days), encoding="utf-8")
     (site_dir / "days.json").write_text(json.dumps(dates), encoding="utf-8")

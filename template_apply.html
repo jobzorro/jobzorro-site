@@ -15,6 +15,7 @@
 .a-hero { padding: clamp(20px, 2.6vw, 36px) 0 28px; border-bottom:1px solid var(--line); }
 .a-hero h1 { margin-top:12px; font-family:var(--display); font-weight:900; font-size:clamp(34px, 5.6vw, 80px); line-height:.98; letter-spacing:-.05em; }
 .a-hero h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--ink-soft); margin-bottom:12px; line-height:1.15; }
+.a-hero h1 .line { display:block; white-space:nowrap; max-width:100%; min-width:0; }   /* 2026-11-11: 글꼴이 늦게 와도 줄 수가 바뀌지 않게 (넘치면 data-fit 이 글자를 줄인다) */
 .a-hero h1 .mark { background:linear-gradient(transparent 68%, var(--mark) 68%); }
 .a-hero .sub { margin-top:18px; font-size:16px; color:var(--ink-soft); max-width:60ch; line-height:1.7; }
 .a-hero .jobpill { display:inline-flex; align-items:center; gap:8px; margin-top:16px; font-family:var(--display); font-size:12.5px; font-weight:700; letter-spacing:.04em; padding:8px 14px; border-radius:999px; background:var(--ink); color:var(--paper); }
@@ -27,7 +28,7 @@
 .f:first-of-type { border-top:1px solid var(--ink); }
 legend { float:left; width:100%; padding:0; margin:0 0 14px; display:flex; gap:14px; align-items:baseline; font-size:16px; font-weight:700; color:var(--ink); line-height:1.45; }
 legend .num { font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.08em; color:var(--muted); flex:none; }
-legend .req { color:var(--acc-ink); background:var(--acc); font-family:var(--display); font-size:10px; font-weight:700; letter-spacing:.08em; padding:2px 7px; border-radius:999px; margin-left:auto; flex:none; }
+legend .req { color:var(--acc-ink); background:var(--acc); font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; padding:1px 7px; border-radius:999px; margin-left:auto; flex:none; }
 legend .opt { color:var(--muted); font-weight:500; font-size:13px; }
 .f > *:not(legend) { clear:both; }
 .radios { display:flex; flex-wrap:wrap; gap:8px; }
@@ -44,19 +45,19 @@ textarea { min-height:96px; resize:vertical; line-height:1.6; }
 .phone input { text-align:center; font-family:var(--display); font-weight:700; font-size:20px; letter-spacing:.04em; }
 .phone span { color:var(--muted); font-weight:700; }
 .sub3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; }
-.sub3 label { display:block; font-family:var(--display); font-size:11.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+.sub3 label { display:block; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
 .hint { display:block; font-size:12.5px; color:var(--muted); margin-top:8px; }
 .err { display:none; font-size:12.5px; color:#b4453a; font-weight:700; margin-top:8px; }
 .f.bad .err { display:block; }
 .f.bad input, .f.bad textarea { border-bottom-color:#b4453a; }
 .f.bad .radio { border-color:#b4453a; }
-.policy-wrap summary { cursor:pointer; font-size:13px; font-weight:700; color:var(--ink-soft); margin-bottom:8px; }   /* 2026-10-29 동의 전문은 접어 둔다 */
+.policy-wrap summary { cursor:pointer; font-size:13px; font-weight:700; color:var(--ink-soft); padding:10px 0; margin:-10px 0 -2px; }   /* 2026-10-29 동의 전문은 접어 둔다 */
 .policy { height:150px; overflow-y:auto; background:var(--mist); border:1px solid var(--line); color:var(--ink-soft); border-radius:10px; padding:14px 16px; font-size:12.5px; line-height:1.65; }
 .policy h4 { margin:10px 0 2px; font-size:12.5px; color:var(--ink); }
 .policy p { margin:0; }
 .policy a { color:var(--ink); }
-.consent { display:flex; align-items:center; gap:10px; margin-top:14px; font-size:14.5px; font-weight:700; color:var(--ink); cursor:pointer; }
-.consent input { width:18px; height:18px; accent-color:var(--ink); }
+.consent { display:flex; align-items:center; gap:10px; min-height:40px; margin-top:8px; padding:4px 0; font-size:14.5px; font-weight:700; color:var(--ink); cursor:pointer; }
+.consent input { width:18px; height:18px; flex:none; accent-color:var(--ink); }
 .consent.opt { font-weight:500; font-size:13.5px; color:var(--ink-soft); align-items:flex-start; }
 .consent.opt input { margin-top:2px; flex:none; }
 .opt-note { margin:6px 0 0 28px; font-size:12.5px; color:var(--muted); }

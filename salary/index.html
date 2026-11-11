@@ -5,12 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>연봉 연구소</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<script>/* 윈도우 PC만 웹 글꼴(맑은 고딕 대신), 폰·맥은 기기 글꼴 — 2026-11-11 */(function(){try{if(/Windows/i.test(navigator.userAgent))document.documentElement.classList.add('wf')}catch(e){}})();</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
 /* 연봉 연구소 Ver 0.5 — 직무사전 v2와 같은 체계: 넓은 폭(1320) · 히어로(얇은 윗줄+굵은 제목+형광 밑줄) · 오른쪽 숫자판 · 검은 띠 · 알약 탭 · 번호 섹션
    보는 순서: ① 회사 검색(첫 화면) ② 회사 상세(PC 오른쪽 고정, 폰 아래에서 올라오는 창) ③ 순위 두 개 ④ 계산기 세 개(탭) */
 :root { --bg:#ffffff; --ink:#0b0b0b; --soft:#45483f; --muted:#6b6e64; --line:#e4e6df; --line2:#cfd2c8; --fill:#f4f5f1; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d; --warn:#b4453a; --up:#b4453a;
-  --display:"Archivo","Noto Sans KR",system-ui,sans-serif; --font:"Noto Sans KR",system-ui,sans-serif; }
+  --display:"Archivo","Noto Sans KR",system-ui,sans-serif; --font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif; }
+:root.wf { --font:"Noto Sans KR",system-ui,sans-serif; }   /* 윈도우 PC: 본문도 웹 글꼴 */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#8d9085; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; --up:#ff8f7d; color-scheme:dark } }
 :root[data-theme="dark"] { --bg:#0b0b0b; --ink:#f2f3ee; --soft:#c3c6bb; --muted:#8d9085; --line:#26281f; --line2:#3a3c33; --fill:#16170f; --mark:rgba(198,255,61,.32); --warn:#e0796c; --up:#ff8f7d; color-scheme:dark }
 * { box-sizing:border-box; }
@@ -52,7 +54,7 @@ h1 b { font-weight:900; background:linear-gradient(transparent 62%, var(--mark) 
 .tabs button:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
 .tabs .sm { display:none; }
 /* 2026-10-28 모바일: 탭 이름을 줄여 네 개가 한 줄에, 카드 넘김은 옆 카드가 비치지 않게 한 장씩 (아래 01/09 ← → 로 넘김), 검은 띠 높이 절반 */
-@media (max-width:640px) { .tabs .lg { display:none; } .tabs .sm { display:inline; } .ticker span { padding:7px 18px; font-size:11.5px; } .ticker span::after { margin-left:18px; } }
+@media (max-width:640px) { .tabs .lg { display:none; } .tabs .sm { display:inline; } .ticker span { padding:7px 18px; font-size:12px; } .ticker span::after { margin-left:18px; } }
 .panel { padding-block:28px 0; scroll-margin-top:calc(54px + 72px + env(safe-area-inset-top,0px)); }
 
 /* 검색 */
@@ -83,7 +85,7 @@ h1 b { font-weight:900; background:linear-gradient(transparent 62%, var(--mark) 
 .detail .avg .v small { font-size:.36em; font-weight:700; margin-left:4px; letter-spacing:0; }
 .detail .avg .l { font-size:12px; color:var(--muted); margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:flex-end; }
 .detail .hint { font-size:12px; margin-top:8px; line-height:1.55; }
-.vbadge { display:inline-flex; margin:12px 0 0; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:999px; background:var(--acc); color:var(--acc-ink); line-height:1.4; }
+.vbadge { display:inline-flex; margin:12px 0 0; font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px; background:var(--acc); color:var(--acc-ink); line-height:1.4; }
 .warnbox { margin-top:14px; font-size:13.5px; color:var(--warn); border-left:3px solid var(--warn); padding:2px 0 2px 10px; }
 .ranks.lock { position:relative; }
 .ranks.lock .rk { filter:blur(3px); opacity:.55; }
@@ -92,7 +94,7 @@ h1 b { font-weight:900; background:linear-gradient(transparent 62%, var(--mark) 
 .ranks { margin-top:14px; display:grid; gap:8px; padding-top:12px; border-top:1px solid var(--line); }
 .rk { display:grid; grid-template-columns:52px minmax(0,1fr) 124px; gap:12px; align-items:center; }
 .rk .n { font-weight:900; font-size:15px; line-height:1.2; }
-.rk .n .yr { display:block; font-size:10.5px; font-weight:700; color:var(--muted); letter-spacing:0; }
+.rk .n .yr { display:block; font-size:12px; font-weight:700; color:var(--muted); letter-spacing:0; }
 .rk .bar { height:10px; border-radius:999px; background:var(--fill); overflow:hidden; }
 .rk .bar i { display:block; height:100%; border-radius:999px; background:var(--ink); }
 .rk:first-child .bar i { background:var(--acc); box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
@@ -116,25 +118,26 @@ h1 b { font-weight:900; background:linear-gradient(transparent 62%, var(--mark) 
 .cmpco th { font-size:12px; color:var(--muted); }
 .cmpco .up { color:var(--ink); font-weight:800; } .cmpco .dn { color:var(--warn); font-weight:800; }
 .cmpco .tw { overflow-x:auto; }
+.lstlk { display:inline-flex; align-items:center; min-height:40px; font-size:13.5px; font-weight:700; color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
 .cmplink { display:inline-flex; gap:6px; align-items:center; font-size:13.5px; font-weight:700; color:var(--ink); }
 .myyr input { width:72px; font:inherit; font-family:var(--display); font-weight:700; font-size:16px; padding:6px 8px; border-radius:8px; border:1px solid var(--line2); background:var(--bg); color:var(--ink); }
 .myyr output { margin-left:auto; font-family:var(--display); font-weight:900; font-size:18px; font-variant-numeric:tabular-nums; }
 .exrow { border-top:1px dashed var(--line2); padding-top:10px; margin-top:2px; }
 .exrow .exd { font-size:12px; color:var(--muted); min-width:0; }
-.rk .v small.rb { display:block; font-family:var(--font); font-size:11.5px; font-weight:500; color:var(--muted); }
+.rk .v small.rb { display:block; font-family:var(--font); font-size:12px; font-weight:500; color:var(--muted); }
 .facts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; margin:14px 0 0; border-top:1px solid var(--ink); }
 .facts div { padding:8px 12px 8px 0; border-bottom:1px solid var(--line); min-width:0; }
-.facts dt { font-family:var(--display); font-size:11.5px; font-weight:700; letter-spacing:.04em; color:var(--muted); }
+.facts dt { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.04em; color:var(--muted); }
 .facts dd { margin:2px 0 0; font-family:var(--display); font-weight:900; font-size:17px; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
 details.how { margin-top:12px; font-size:13.5px; color:var(--soft); }
 details.how summary { cursor:pointer; font-weight:700; color:var(--ink); }
 details.how ol { padding-left:20px; margin:8px 0 0; } details.how li { margin-top:4px; }
-.gchip { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; vertical-align:1px; white-space:nowrap; line-height:1.6; }
+.gchip { display:inline-block; font-size:12px; font-weight:700; padding:1px 8px; border-radius:999px; vertical-align:1px; white-space:nowrap; line-height:1.6; }
 .gchip.g-hi { background:var(--acc); color:var(--acc-ink); }
 .gchip.g-mid { background:var(--fill); color:var(--ink); }
 .gchip.g-est { background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
 .gchip.g-low { background:transparent; color:var(--muted); box-shadow:inset 0 0 0 1px var(--muted); }
-.legend { display:grid; grid-template-columns:repeat(4,auto); justify-content:start; gap:8px 10px; margin-top:12px; font-size:11.5px; color:var(--muted); }   /* 네 칩을 한 줄에 (폰은 두 줄 두 칸) */
+.legend { display:grid; grid-template-columns:repeat(4,auto); justify-content:start; gap:8px 10px; margin-top:12px; font-size:12px; color:var(--muted); }   /* 네 칩을 한 줄에 (폰은 두 줄 두 칸) */
 .legend > span { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
 
 /* 회사를 고르기 전 오른쪽 칸 */
@@ -189,20 +192,25 @@ details.how ol { padding-left:20px; margin:8px 0 0; } details.how li { margin-to
 .slide .hook { margin:0; font-size:14.5px; color:var(--soft); }
 .slide .hook b { color:var(--ink); }
 .slide .src { margin:0; font-size:12px; color:var(--muted); border-top:1px solid var(--line); padding-top:10px; }
-.car-dots { display:flex; gap:6px; justify-content:center; padding-top:18px; }
-.car-dots button { width:28px; height:4px; border-radius:2px; border:0; padding:0; background:var(--line2); cursor:pointer; position:relative; overflow:hidden; }
+.car-dots { display:flex; gap:6px; justify-content:center; padding-top:0; margin-bottom:-18px; }
+.car-dots button { width:28px; height:40px; border:0; padding:0; background:linear-gradient(var(--line2),var(--line2)) center / 100% 4px no-repeat; cursor:pointer; position:relative; }   /* 막대는 4px 그대로, 누르는 높이만 40px */
 .car-dots button.on { width:56px; }
-.car-dots button i { position:absolute; inset:0 auto 0 0; width:var(--p,0%); background:var(--ink); }
+.car-dots button i { position:absolute; left:0; top:18px; height:4px; width:var(--p,0%); background:var(--ink); }
 .hb { display:grid; gap:7px; }
 .hb .bar { display:grid; grid-template-columns:minmax(0,9em) minmax(0,1fr) 4.8em; gap:10px; align-items:center; font-size:13.5px; }
 .hb .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; color:inherit; text-decoration:none; }
 .hb a.n:hover { text-decoration:underline; }
+/* 2026-11-11 폰에서 누르기 쉽게: 보이는 모양은 그대로 두고 누르는 높이만 40px 로 */
+.hb a.n, .hsp a.n { padding-block:10px; margin-block:-10px; }
+.rank-list .t a { position:relative; }
+.rank-list .t a::after { content:""; position:absolute; inset:-9px 0; }
+.hme input { height:40px; margin-block:-12px; }
 .hb .b { height:14px; background:var(--fill); border-radius:2px; overflow:hidden; }
 .hb .b i { display:block; height:100%; background:var(--ink); }
 .hb .hl .b i { background:var(--acc); box-shadow:inset 0 0 0 1px var(--ink); }
 .hb .v { text-align:right; font-family:var(--display); font-weight:900; font-variant-numeric:tabular-nums; }
 .hbig { font-family:var(--display); font-weight:900; font-size:clamp(44px,5vw,68px); letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
-.hbig small { font-size:.3em; letter-spacing:0; color:var(--muted); margin-left:4px; }
+.hbig small { font-size:max(.3em, 12px); letter-spacing:0; color:var(--muted); margin-left:4px; }
 .hduo { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
 .hx { margin-top:22px; } .hx h4 { margin:0 0 8px; font-family:var(--display); font-size:12px; letter-spacing:.08em; color:var(--muted); }   /* 장 아래 덧붙인 그래프 (2026-10-29 장 높이 맞추기) */
 .hbig.s { font-size:clamp(34px,3.6vw,48px); }
@@ -296,7 +304,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   .lead { font-size:14px; margin-top:12px; }
   .lead .opt { display:none; }   /* 폰에서는 설명 뒷문장을 줄여 검색창을 첫 화면에 */
   .stats div { padding:10px 0; }
-  .stats dt { font-size:11px; }
+  .stats dt { font-size:12px; }
   .stats dd { font-size:21px; }
   .tabs button { padding:9px 14px; font-size:13.5px; }
   .panel { padding-top:20px; }
@@ -359,6 +367,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
           <input id="q" type="search" placeholder="회사 이름 (포스코, 카카오…)" autocomplete="off" aria-label="회사 검색">
         </label>
         <p class="hint" id="qHint">불러오는 중…</p>
+        <a class="lstlk" href="list/">업종별 · 가나다별 회사 목록 →</a>
         <div class="legend" aria-label="신뢰도 표시">
           <span><span class="gchip g-hi">공시값</span>회사·기관 공시</span>
           <span><span class="gchip g-mid">국민연금 기준</span>신고 소득</span>
@@ -563,6 +572,21 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   }
   var tm; $('q').addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(search, 120); });
   $('q').addEventListener('compositionupdate', function () { clearTimeout(tm); tm = setTimeout(search, 120); });   // 한글 조합 중('ㄱ'→'기')에도 따라오게
+  // 2026-11-11 엔터: 목록 맨 위(이름이 정확히 같은 회사가 있으면 그 회사, 없으면 첫 결과)를 연다. 한글은 조합이 끝난 뒤에 연다
+  function enterOpen() {
+    clearTimeout(tm);
+    if (!$('q').value.trim() || !D.meta) return;
+    loadIndex().then(function () { search(); var b = $('results').querySelector('.res'); if (b) { b.click(); if (isPhone()) $('q').blur(); } }).catch(function () {});
+  }
+  var enterWait = false;
+  $('q').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (e.isComposing || e.keyCode === 229) { enterWait = true; return; }   // 마지막 글자 조합 중 → compositionend 뒤에
+    enterOpen();
+  });
+  $('q').addEventListener('compositionend', function () { if (enterWait) { enterWait = false; setTimeout(enterOpen, 0); } });
+  $('q').addEventListener('keyup', function (e) { if (e.key !== 'Enter') enterWait = false; });
   $('results').addEventListener('click', function (e) { var b = e.target.closest('.res'); if (b) openCo(+b.getAttribute('data-i'), b.querySelector('.nm') && IDX && IDX[+b.getAttribute('data-i')] ? IDX[+b.getAttribute('data-i')].n : ''); });
   document.addEventListener('click', function (e) {
     var a = e.target.closest('[data-co]'); if (!a) return; e.preventDefault();
@@ -621,15 +645,26 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     }
     return h + '</section>';
   }
-  document.addEventListener('input', function (e) {
-    if (e.target.id !== 'cmpQ') return;
-    var Q = qOf(e.target.value), q = Q.q, box = $('cmpOpts');
-    if (!q) { box.innerHTML = ''; return; }
-    loadIndex().then(function (idx) {
+  function cmpFill(val) {   // 비교할 회사 후보 목록을 그린다 (엔터 때도 같이 쓰려고 함수로 뺌)
+    var Q = qOf(val), q = Q.q, box = $('cmpOpts');
+    if (!box) return Promise.resolve();
+    if (!q) { box.innerHTML = ''; return Promise.resolve(); }
+    return loadIndex().then(function (idx) {
       var list = idx.filter(function (x) { return x.i !== CUR && !x.att && match(x, Q) >= 0; }).sort(function (a, b) { return match(a, Q) - match(b, Q) || b.m - a.m; }).slice(0, 6);
       box.innerHTML = list.map(function (x) { return '<button type="button" data-cmp-i="' + x.i + '">' + esc(x.al || x.n) + ' <small>' + x.m.toLocaleString('ko-KR') + '명</small></button>'; }).join('');
     }).catch(function () { box.innerHTML = '<p class="hint">회사 목록을 불러오지 못했어요. 다시 입력해 주세요.</p>'; });
+  }
+  document.addEventListener('input', function (e) { if (e.target.id === 'cmpQ') cmpFill(e.target.value); });
+  // 2026-11-11 비교 검색창도 엔터 → 첫 후보로 비교
+  function cmpEnter() { var el = $('cmpQ'); if (!el) return; cmpFill(el.value).then(function () { var b = $('cmpOpts') && $('cmpOpts').querySelector('[data-cmp-i]'); if (b) b.click(); }); }
+  var cmpWait = false;
+  document.addEventListener('keydown', function (e) {
+    if (e.target.id !== 'cmpQ' || e.key !== 'Enter') return;
+    e.preventDefault();
+    if (e.isComposing || e.keyCode === 229) { cmpWait = true; return; }
+    cmpEnter();
   });
+  document.addEventListener('compositionend', function (e) { if (e.target.id === 'cmpQ' && cmpWait) { cmpWait = false; setTimeout(cmpEnter, 0); } });
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-cmp-i]');
     if (b) { loadRow(+b.getAttribute('data-cmp-i')).then(function (r2) { if (r2) { CMP = r2; show(CURROW); } }).catch(function () { b.textContent = '불러오지 못했어요 · 다시 누르기'; }); return; }
@@ -890,12 +925,12 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     rankings();
     if (H) { drawHist(); $('hMe').addEventListener('input', drawHist); $('hSc').innerHTML = scatter(H.pts); }
     function drawHist() {
-      var v = +$('hMe').value, B = H.dist, W = 520, Hh = 230, bw = W / 8, mx = Math.max.apply(null, B), g = '', pos = Math.min(v, 7999) / 1000, below = 0;
+      var ph = isPhone(), v = +$('hMe').value, B = H.dist, W = ph ? 360 : 520, Hh = ph ? 160 : 230, bw = W / 8, mx = Math.max.apply(null, B), g = '', pos = Math.min(v, 7999) / 1000, below = 0;
       B.forEach(function (p, i) {
         var h = p / mx * (Hh - 40), on = i === Math.min(7, Math.floor(v / 1000));
         g += '<rect x="' + (i * bw + 4) + '" y="' + (Hh - 22 - h) + '" width="' + (bw - 8) + '" height="' + h + '" fill="' + (on ? 'var(--acc)' : 'var(--ink)') + '" stroke="var(--ink)" stroke-width="' + (on ? 1 : 0) + '"/>' +
-          '<text x="' + (i * bw + bw / 2) + '" y="' + (Hh - 6) + '" text-anchor="middle" font-size="11" fill="var(--muted)">' + (i === 7 ? '7천+' : i ? i + '천' : '~1천') + '</text>' +
-          '<text x="' + (i * bw + bw / 2) + '" y="' + (Hh - 27 - h) + '" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">' + p + '%</text>';
+          '<text x="' + (i * bw + bw / 2) + '" y="' + (Hh - 6) + '" text-anchor="middle" font-size="12" fill="var(--muted)">' + (i === 7 ? '7천+' : i ? i + '천' : '~1천') + '</text>' +
+          '<text x="' + (i * bw + bw / 2) + '" y="' + (Hh - 27 - h) + '" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">' + p + '%</text>';
         if (i < Math.floor(pos)) below += p; else if (i === Math.floor(pos)) below += p * (pos - i);
       });
       $('hHist').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" role="img" aria-label="회사 평균 연봉 분포">' + g + '</svg>';
@@ -903,23 +938,23 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       $('hMeT').innerHTML = v >= 7000 ? '직장인 <b>상위 ' + Math.round(B[7]) + '%</b> 회사의 평균 이상이에요. (그 위는 국민연금 상한이라 구분이 안 돼요)' : '직장인 <b>' + Math.round(below) + '%</b>가 평균 연봉이 이보다 낮은 회사에 다녀요.';
     }
     function scatter(P) {
-      var W = 520, Hh = 300, L = 40, Bt = 26, tx = function (t) { return L + t / 27 * (W - L - 10); }, ty = function (a) { return Hh - Bt - a / 21000 * (Hh - Bt - 10); }, g = '';
+      var ph = isPhone(), W = ph ? 360 : 520, Hh = ph ? 208 : 300, L = 40, Bt = 26, tx = function (t) { return L + t / 27 * (W - L - 10); }, ty = function (a) { return Hh - Bt - a / 21000 * (Hh - Bt - 10); }, g = '';
       // 이름을 붙일 회사: 근속 7년 이하 중 연봉 상위 2곳 + 근속 1위 + 잘 알려진 회사 (폰에서도 읽히게 적게)
       var lab = {}, fam = /^(삼성전자|에스케이하이닉스|기아|카카오뱅크|（주）비바리퍼블리카|무신사)$/;
       P.filter(function (p) { return p[1] <= 7; }).sort(function (a, b) { return b[2] - a[2]; }).slice(0, 2).forEach(function (p) { lab[p[0]] = 1; });
       P.slice().sort(function (a, b) { return b[1] - a[1]; }).slice(0, 1).forEach(function (p) { lab[p[0]] = 1; });
       P.forEach(function (p) { if (fam.test(p[0])) lab[p[0]] = 1; });
-      [5000, 10000, 15000, 20000].forEach(function (a) { g += '<line x1="' + L + '" x2="' + W + '" y1="' + ty(a) + '" y2="' + ty(a) + '" stroke="var(--line)"/><text x="' + (L - 6) + '" y="' + (ty(a) + 4) + '" text-anchor="end" font-size="10" fill="var(--muted)">' + (a / 10000) + '억</text>'; });
-      [0, 5, 10, 15, 20, 25].forEach(function (t) { g += '<text x="' + tx(t) + '" y="' + (Hh - 8) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + t + '년</text>'; });
+      [5000, 10000, 15000, 20000].forEach(function (a) { g += '<line x1="' + L + '" x2="' + W + '" y1="' + ty(a) + '" y2="' + ty(a) + '" stroke="var(--line)"/><text x="' + (L - 6) + '" y="' + (ty(a) + 4) + '" text-anchor="end" font-size="12" fill="var(--muted)">' + (a / 10000) + '억</text>'; });
+      [0, 5, 10, 15, 20, 25].forEach(function (t) { g += '<text x="' + tx(t) + '" y="' + (Hh - 8) + '" text-anchor="middle" font-size="12" fill="var(--muted)">' + t + '년</text>'; });
       P.forEach(function (p) { if (!lab[p[0]]) g += '<circle cx="' + tx(p[1]).toFixed(1) + '" cy="' + ty(p[2]).toFixed(1) + '" r="3" fill="var(--muted)" fill-opacity=".45"><title>' + esc(p[0]) + ' · 근속 ' + p[1] + '년 · ' + man(p[2]) + '만원</title></circle>'; });
       // 이름은 늘 자기 점 바로 옆(오른쪽·왼쪽·위·아래 중 다른 이름·점과 안 겹치는 첫 자리)에 둔다
       var used = [], dotsL = P.filter(function (p) { return lab[p[0]]; }).map(function (p) { return [tx(p[1]), ty(p[2])]; });
       var hit = function (b) { return b[0] < L || b[1] < 0 || b[0] + b[2] > W || b[1] + b[3] > Hh - Bt || used.some(function (u) { return b[0] < u[0] + u[2] && u[0] < b[0] + b[2] && b[1] < u[1] + u[3] && u[1] < b[1] + b[3]; }) ||
         dotsL.some(function (d) { return d[0] > b[0] - 5 && d[0] < b[0] + b[2] + 5 && d[1] > b[1] - 5 && d[1] < b[1] + b[3] + 5; }); };
       P.forEach(function (p) { if (!lab[p[0]]) return; var x = tx(p[1]), y = ty(p[2]), nm = p[0].replace('（주）비바리퍼블리카', '토스').replace(/^에스케이/, 'SK').replace(/^에이치디/, 'HD').replace(/^케이지/, 'KG').replace(/^케이티$/, 'KT');
-        var w = nm.length * 13 + 4, opt = [[x + 9, y + 5, 'start', [x + 8, y - 9, w, 17]], [x - 9, y + 5, 'end', [x - 8 - w, y - 9, w, 17]], [x, y - 10, 'middle', [x - w / 2, y - 24, w, 17]], [x, y + 21, 'middle', [x - w / 2, y + 8, w, 17]]];
+        var w = nm.length * (ph ? 12.5 : 13) + 4, opt = [[x + 9, y + 5, 'start', [x + 8, y - 9, w, 17]], [x - 9, y + 5, 'end', [x - 8 - w, y - 9, w, 17]], [x, y - 10, 'middle', [x - w / 2, y - 24, w, 17]], [x, y + 21, 'middle', [x - w / 2, y + 8, w, 17]]];
         var o = opt.filter(function (c) { return !hit(c[3]); })[0] || opt[x > W - 140 ? 1 : 0]; used.push(o[3]);
-        g += '<a href="#" data-co="' + p[3] + '" data-name="' + esc(p[0]) + '"><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="5" fill="var(--acc)" stroke="var(--ink)"/><text x="' + o[0].toFixed(1) + '" y="' + o[1].toFixed(1) + '" text-anchor="' + o[2] + '" font-size="14" font-weight="700" fill="var(--ink)">' + esc(dn(nm)) + '</text></a>'; });
+        g += '<a href="#" data-co="' + p[3] + '" data-name="' + esc(p[0]) + '"><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="5" fill="var(--acc)" stroke="var(--ink)"/><text x="' + o[0].toFixed(1) + '" y="' + o[1].toFixed(1) + '" text-anchor="' + o[2] + '" font-size="' + (ph ? 12 : 14) + '" font-weight="700" fill="var(--ink)">' + esc(dn(nm)) + '</text></a>'; });
       return '<svg viewBox="0 0 ' + W + ' ' + Hh + '" role="img" aria-label="평균 근속연수와 평균 연봉">' + g + '</svg>';
     }
     // 넘기기: 8초 자동 · 화살표·막대 · 손으로 밀기 · 보는 동안(마우스 올림·만짐·초점) 멈춤
