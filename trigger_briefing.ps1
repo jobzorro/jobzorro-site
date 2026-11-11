@@ -16,4 +16,6 @@ if ($LASTEXITCODE -eq 0) {
     Add-Content $log "[$stamp] $today 지면 없음 - 워크플로 수동 실행 요청함"
 } else {
     Add-Content $log "[$stamp] 워크플로 실행 요청 실패 (gh 로그인 상태 확인): $out"
+    # 2026-11-11 실패하면 메일 알림 (하루 한 번)
+    python (Join-Path $PSScriptRoot "..\shared\notify.py") --once briefing-trigger-fail "[취업뉴스] 브리핑 워크플로 실행 요청 실패" ("gh 로그인 상태를 확인해 주세요. " + ("$out" -replace '"', "'"))
 }
