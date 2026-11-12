@@ -39,6 +39,7 @@ dd{margin:0;font-weight:800}
 .rk b small,.rk .v small{display:block;font-size:12px;font-weight:500;color:var(--muted)}
 .rk .bar{height:10px;border-radius:999px;background:var(--fill);overflow:hidden}
 .rk .bar i{display:block;height:100%;border-radius:999px;background:var(--ink)}
+.rk.thin .bar i{opacity:.45}
 .rk:first-child .bar i{background:var(--acc);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
 .rk .v{min-width:92px;text-align:right;font-weight:900;font-size:15.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .tr{display:block;width:100%;max-width:520px;height:auto;margin-top:8px}

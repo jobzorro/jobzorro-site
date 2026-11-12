@@ -94,6 +94,9 @@ h1 b { font-weight:900; background:linear-gradient(transparent 62%, var(--mark) 
 .ranks { margin-top:14px; display:grid; gap:8px; padding-top:12px; border-top:1px solid var(--line); }
 .rk { display:grid; grid-template-columns:52px minmax(0,1fr) 124px; gap:12px; align-items:center; }
 .rk .n { font-weight:900; font-size:15px; line-height:1.2; }
+.rk.thin .v { font-size:13.5px; letter-spacing:-.3px; }   /* 표본 적은 직급: 범위 표시 (2026-11-12) */
+.rk.thin .bar i { opacity:.45; }
+.rk.thin .n .yr { white-space:nowrap; }   /* '표본 적음'이 두 줄로 꺾이지 않게 */
 .rk .n .yr { display:block; font-size:12px; font-weight:700; color:var(--muted); letter-spacing:0; }
 .rk .bar { height:10px; border-radius:999px; background:var(--fill); overflow:hidden; }
 .rk .bar i { display:block; height:100%; border-radius:999px; background:var(--ink); }
@@ -324,6 +327,8 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   .detail h2 { font-size:24px; }
   .ranks { gap:6px; }
   .rk .v { font-size:15px; }
+  .rk.thin .v { font-size:12.5px; }
+  .rk.thin .n .yr { font-size:11px; letter-spacing:-.5px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition:none !important; } .ticker .tr { animation:none; } }
 </style>
@@ -338,7 +343,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     </div>
     <dl class="stats" aria-label="연봉 연구소 자료 규모">
       <div><dt>회사</dt><dd id="stCo">52,305<small>곳</small></dd></div>
-      <div><dt>실제 연봉 검증</dt><dd id="stVal">3,413<small>건</small></dd></div>
+      <div><dt>실제 연봉 검증</dt><dd id="stVal">543<small>명</small></dd></div>
       <div class="hot"><dt>누적 연봉 조회</dt><dd id="stViews">-</dd></div>
       <div><dt>기준</dt><dd id="stYm">2026.09</dd></div>
     </dl>
@@ -521,7 +526,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   function heroFill(m) {
     var V = m.validation || {}, nf = function (v) { return (v || 0).toLocaleString('ko-KR'); };
     $('stCo').innerHTML = nf(m.count) + '<small>곳</small>';
-    $('stVal').innerHTML = nf(V.total) + '<small>건</small>';
+    $('stVal').innerHTML = nf(V.nPeople || V.nMatched) + '<small>명</small>';   // 2026-11-12: 사람 수만 (예전 3,413건 = 사람 543명 + 사업보고서·공시 회사 2,870곳을 더한 숫자)
     $('stYm').textContent = m.ym.replace('-', '.');
     // 2026-11-09 사용자: 회사판단연구소처럼 누적 조회, 숫자는 연봉 연구소에서 연 회사 수 (company-api /top 의 salViews)
     fetch('https://company-api.jobzorro.workers.dev/top').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
@@ -714,6 +719,8 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       ['평균 근속', r.tT.toFixed(1) + '년']];
     var trend = (!r.capped && r.trend && r.trend.length > 1 && D.meta.trendYears) ? '<p class="hint">연도별 평균 연봉(국민연금, 매년 같은 달): ' +
       r.trend.map(function (v, k) { return D.meta.trendYears[k] + '년 ' + man(v) + '만원'; }).join(' → ') + '</p>' : '';
+    var RN = V && V.rankN, thin = function (k) { return !!(RN && RN[k] != null && RN[k] < 30); };   // 검증 표본이 적은 직급 (2026-11-12 S2)
+    var thinNote = RN && (thin(3) || thin(4)) ? '<p class="hint">차장·부장 금액은 실제 연봉으로 맞춰 본 사람이 적어(차장 ' + RN[3] + '명 · 부장 ' + RN[4] + '명) 한 숫자 대신 <b>범위</b>로 보여 드려요. 과장 이상 연봉 제보가 모이면 범위를 좁힙니다.</p>' : '';
     var capcal = r.how === 'capcal';   // 상한 보정 회사: 상한에 걸리는 직급만 총보상 추정
     var v2 = String(r.how).indexOf('v2') === 0, holding = String(r.how).indexOf('v2-holding') === 0, ptime = String(r.how).indexOf('v2-parttime') === 0, firm = String(r.how).indexOf('v2-firm') === 0,
       fk = r.fld ? (r.fld[4] || '현장') : '', hq = /^(매장직|급식 현장|극장 단기 근로|호텔 현장|물류 현장|급식·휴게소 현장|파견 인력)$/.test(fk), fpro = fk === '조종사' || fk === '의사' || hq, skew = /-skew$/.test(r.how), ex = (GOV_RE.test(r.name) && !r.dart) ? null : r.ex;   // 공무직·군 사업장은 임원 줄을 빼요 (2026-10-31)
@@ -725,16 +732,17 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       : r.how === 'split' ? '<li>직급별: 성과급·주식보상 비중이 큰 회사라 두 가지로 보여 줍니다. 기본연봉은 국민연금으로 추정한 입사자 연봉에서 직급 배수로 올렸고, 총보상은 여기에 이 회사의 성과급 배율(' + r.factor + '배)을 곱했습니다.</li>'
       : r.how === 'fit' ? '<li>직급별: 사원은 국민연금 월별 변화로 추정한 입사자 평균 연봉이고, 평균 근속 연차에서 회사 평균이 되도록 연차별 곡선을 맞췄습니다. 입사자에는 경력직도 섞여 있습니다.</li>'
       : '<li>직급별: 평균 연봉을 평균 근속 연차의 연봉으로 보고, 직급별 연봉 조사의 사원 대비 배수(대리 1.25, 과장 1.54, 차장 1.82, 부장 2.04)로 나눴습니다.</li>';
+    var CZ = D.meta.calib && D.meta.calib.zone;   // 2026-11-12: 상한 보정이 실제로 붙는 구간만의 검증 오차 (전체 오차는 보정 안 하는 회사까지 합쳐 실제보다 좋게 보였다)
     var dNote = r.dart && r.dart[5] ? String(r.dart[5]) : '', dNps = dNote.indexOf('nps:') === 0;   // 사업연도 중 설립 보정 (dart_merge.annualize)
     var how = '<li>평균 연봉: ' + (dNps ? '국민연금 기준 평균입니다. ' + r.dart[2] + '년 중에 생긴 회사라 사업보고서 평균에 ' + dNote.slice(4) + '개월 치만 들어가 있고, 1년 치로 늘려도 국민연금보다 낮아 국민연금 값을 썼습니다.' : dNote.indexOf('ann:') === 0 ? r.dart[2] + '년 중에 생긴 회사라 사업보고서 직원 1인 평균 급여(' + dNote.slice(4) + '개월 치)를 1년 치로 늘린 값입니다(성과급 포함).' : r.dart ? r.bSrc + '의 직원 1인 평균 ' + (String(r.dart[4]).indexOf('OFF:') === 0 ? '보수입니다(정규직, 성과상여금 포함).' : '급여입니다(성과급 포함).') : r.calAvg ? '총보상 추정입니다. 국민연금 기준 평균(' + man(r.avgAnnual) + '만원)에 상한 초과분·최근 성과급처럼 국민연금에 안 잡히는 몫을 업종·수준별 비율로 더했습니다.' : '국민연금 고지금액 ÷ 가입자 수 ÷ 보험료율 ' + (D.meta.rate * 100).toFixed(1) + '% × 12개월로 계산했습니다.') + '</li>' +
       '<li>평균 근속 ' + r.tT.toFixed(1) + '년: ' + r.tSrc + ' 기준입니다.</li>' + howRank +
-      (V ? '<li>검증: 취업조로 경력이직 고객 ' + V.nMatched + '명의 실제 연봉(이직 직전)과 비교해 직급별 치우침을 보정했습니다(개인별 오차 중앙값 약 ' + Math.round(V.errAfter) + '%, 같은 회사·직급 안에서도 사람마다 차이가 큽니다). 평균 연봉 보정은 사업보고서 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사의 실제 평균 급여로 검증했습니다(오차 중앙값 약 ' + (V.dartErr || '') + '%).</li>' : '') +
+      (V ? '<li>검증: 취업조로 경력이직 고객 ' + V.nMatched + '명의 실제 연봉(이직 직전)과 비교해 직급별 치우침을 보정했습니다(개인별 오차 중앙값 약 ' + Math.round(V.errAfter) + '%, 같은 회사·직급 안에서도 사람마다 차이가 큽니다). 국민연금 상한 때문에 평균을 올려 잡는 보정(총보상 추정)은 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사의 실제 평균 급여로 배수를 정했습니다. ' + (CZ && CZ.errPct ? '실제로 보정이 붙는 구간의 공시 회사 ' + CZ.n.toLocaleString('ko-KR') + '곳으로 맞춰 보면 오차 중앙값은 약 ' + CZ.errPct + '%' + (CZ.errSmallPct ? '이고, 직원 100명 미만 회사는 약 ' + CZ.errSmallPct + '%로 더 큽니다.' : '입니다.') : '(오차 중앙값 약 ' + (V.dartErr || '') + '%).') + '</li>' : '') +
       '<li>계열사·지점이 다른 법인으로 등록돼 있으면 따로 나옵니다.</li>';
     $('detail').innerHTML = '<article class="detail" aria-live="polite">' +
       '<div class="top"><div><h2>' + esc(IDX && IDX[r.i] && IDX[r.i].al || dn(r.name)) + '</h2><div class="meta">' + esc([r.industry, r.sido, '사업자번호 앞자리 ' + r.biz6].filter(Boolean).join(' · ')) + '</div></div>' +
       '<div class="avg"><div class="v">' + man(r.bAvg) + plus + '<small>만원</small></div><div class="l">평균 연봉' + (/^(국민연금 기준|총보상 추정)$/.test(r.bSrc) ? '' : ' · ' + esc(r.bSrc)) + ' ' + gradeChip(r.dart && !dNps ? 2 : r.calAvg ? 4 : r.capped ? 1 : 0) + '</div></div></div>' +
       (r.avgNote ? '<p class="hint">' + esc(r.avgNote) + '</p>' : '') +   // 2026-11-03 평균이 직급표 밖일 때 까닭 한 줄
-      (V ? '<p class="vbadge">실제 연봉 ' + V.total.toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명' + (V.nReports ? ' + 현직자 제보 ' + V.nReports + '건' : '') + ' + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
+      (V ? '<p class="vbadge">실제 연봉 ' + (V.nPeople || V.nMatched).toLocaleString('ko-KR') + '명 + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사로 검증 · 이직자 ' + V.nMatched + '명' + (V.nReports ? ' · 현직자 제보 ' + V.nReports + '건' : '') + (V.nMe ? ' · 회사 판단 입력 ' + V.nMe + '건' : '') + '</p>' : '') +
       (r.cfN ? '<p class="hint">취업조로 경력이직 고객 <b>' + r.cfN + '명</b>의 실제 연봉으로 이 회사 직급별 금액을 보정했습니다(개인 값은 공개하지 않습니다).</p>' : '') +
       (skew ? '<p class="hint">평균 연봉에는 성과급·주식보상이 크게 들어 있어, 직급별 금액은 <b>통상 연봉(기본 + 일반 성과급)</b> 기준입니다.</p>' : '') +
       (firm ? '<p class="hint">전문직 펌이라 직급별 금액은 변호사·회계사·컨설턴트 기준에 가깝고, 지원 인력은 이보다 낮습니다.</p>' : '') +
@@ -742,11 +750,11 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       (holding ? '<p class="warnbox">지주회사라 직원이 적고 임원·고참 비중이 높습니다. 직급별 금액은 참고용이며 실제와 차이가 클 수 있습니다.</p>' : '') +
       (capped ? '<p class="warnbox">이 회사는 1인 평균이 국민연금 소득 상한(월 ' + D.meta.cap + '만원)에 가까워 실제 연봉은 이보다 높을 가능성이 큽니다. 아래 직급별 금액도 "최소 이 정도"로 보세요.</p>' : '') +
       (r.dart && r.avgAnnual ? '<p class="hint">참고: 국민연금 기준 추정 평균은 ' + man(r.avgAnnual) + '만원입니다. 공시 평균에는 상한 위 몫과 올해 성과급까지 들어갑니다.</p>' : '') +
-      (!r.dart && r.calAvg ? '<p class="hint"><b>국민연금 기준 ' + man(r.avgAnnual) + '만원</b> · 국민연금에는 작년 성과급까지 들어가지만 한 사람당 연 ' + man(D.meta.cap * 12) + '만원(상한)까지만 보입니다. 큰 숫자는 그 위 몫(상한 초과분·최근 성과급)을 사업보고서 ' + (D.meta.calib ? D.meta.calib.n.toLocaleString('ko-KR') : '') + '개사 비율로 더한 총보상 추정이고, 작은 숫자가 국민연금 기준입니다.</p>' : '') +
+      (!r.dart && r.calAvg ? '<p class="hint"><b>국민연금 기준 ' + man(r.avgAnnual) + '만원</b> · 국민연금에는 작년 성과급까지 들어가지만 한 사람당 연 ' + man(D.meta.cap * 12) + '만원(상한)까지만 보입니다. 큰 숫자는 그 위 몫(상한 초과분·최근 성과급)을 사업보고서 ' + (D.meta.calib ? D.meta.calib.n.toLocaleString('ko-KR') : '') + '개사 비율로 더한 총보상 추정이고, 작은 숫자가 국민연금 기준입니다.' + (CZ && CZ.errPct ? ' 이런 추정은 공시 회사로 맞춰 보면 약 ' + CZ.errPct + '% 어긋납니다(오차 중앙값).' : '') + '</p>' : '') +
       (base && capcal ? '' : base ? '<p class="hint"><b>성과급 포함 총보상</b> 기준입니다. 작은 숫자는 기본연봉 추정이고, 성과급은 해마다 크게 달라집니다.</p>' : '') +
       (r.fld && r.fld[5] ? '<p class="hint">' + esc(r.fld[5]) + '</p>' : '') +
       (r.rkNote ? '<p class="hint"><b>' + esc(r.rkNote) + '</b></p>' : '') +
-      (!lock && !ptime && r.rk && Math.round(r.rk[0]) === Math.round(r.rk[1]) && r.members < 300 ? '<p class="hint">작은 회사는 사원·대리 구분이 약해 같은 값으로 추정했어요.</p>' : '') +
+      (!lock && !ptime && r.rk ? thinNote : '') +
       (r.members < 100 && !ptime ? '<p class="hint">직원 100명 미만 회사라 몇 사람의 입·퇴사에도 평균이 크게 흔들립니다. 직급별 금액은 <b>개인차가 큰 참고값</b>으로 보세요.</p>' : '') +
       (r.divs ? '<p class="hint"><b>부문마다 달라요</b> (국민연금 사업장별 평균, 상한 때문에 위쪽은 실제로 더 큼): ' + r.divs.map(function (d) { return esc(d[0]) + ' ' + man(d[2]) + '만원'; }).join(' · ') + '</p>' : '') +
       (r.jump ? '<p class="hint">사업보고서 평균 연봉이 전년보다 <b>' + r.jump + '%</b> 올랐습니다. 성과급이 특히 컸던 해일 수 있어 다음 해에는 다시 내려갈 수 있습니다.</p>' : '') +
@@ -754,7 +762,9 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       (lock ? '<div class="ranks lock">' + RANK_NAMES.map(function (n, k) { return '<div class="rk"><span class="n">' + n + '</span><span class="bar"><i style="width:' + (40 + k * 15) + '%"></i></span><span class="v"><i class="ph"></i></span></div>'; }).join('') +
         '<p class="lockmsg">' + (lockUni ? '교수·교직원은 사학연금·공무원연금에 가입해 국민연금에는 연구원·조교 등 계약 인력만 잡힙니다.<br>정확한 직급별 연봉 추정이 어려운 사업장입니다.' : lockGov ? '공무원은 공무원연금에 가입해 국민연금에는 공무직·교육공무직·기간제 근로자만 잡힙니다.<br>정확한 직급별 연봉 추정이 어려운 사업장입니다.' : '현장직·파트타임·인력파견·경비 등 인원 비율이 높아<br>정확한 직급별 연봉 추정이 어려운 회사입니다.') + '</p></div>' + trend :
       '<div class="ranks">' + (ptime ? [] : main).map(function (v, k) {
-        return '<div class="rk"><span class="n">' + RANK_NAMES[k] + '</span><span class="bar"><i style="width:' + (v / max * 100).toFixed(1) + '%"></i></span><span class="v">' + man(v) + plus + '만원' +
+        // 2026-11-12 S2: 실제 연봉으로 맞춰 본 사람이 30명 미만인 직급(지금은 차장·부장)은 한 숫자 대신 ±10% 범위(100만원 단위)로 보여 준다
+        var th = thin(k), vv = th ? man(Math.floor(v * 0.9 / 100) * 100) + '~' + man(Math.ceil(v * 1.1 / 100) * 100) : man(v);
+        return '<div class="rk' + (th ? ' thin' : '') + '"><span class="n">' + RANK_NAMES[k] + (th ? '<small class="yr">표본 적음</small>' : '') + '</span><span class="bar"><i style="width:' + (v / max * 100).toFixed(1) + '%"></i></span><span class="v">' + vv + plus + '만원' +
           (base && base[k] < v - 1 ? '<small class="rb">' + (capcal ? '국민연금 ' + man(base[k]) + (base[k] >= D.meta.cap * 12 ? ' (상한)' : '') : '기본 약 ' + man(base[k]) + '만원') + '</small>' : '') + '</span></div>';
       }).join('') + (ex ? '<div class="rk exrow"><span class="n">임원<small class="yr">' + (ex[2] === '추정' ? '추정' : '공시') + '</small></span><span class="exd">' + (ex[0] ? (ex[2] === '추정' ? '약 ' : '') + ex[0] + '명 · ' : '') + esc(ex[2]) + (ex[3] ? ' <span class="gchip g-est">임원 비중 높음</span>' : '') + '</span><span class="v">' + man(ex[1]) + '만원</span></div>' : '') +
         (r.fld && !ptime ? '<div class="rk exrow"><span class="n">' + fk + '<small class="yr">' + (r.fld[2] === '공시' ? '공시' : '추정') + '</small></span><span class="exd">직원의 약 ' + r.fld[0] + '% · 직급별 금액은 ' + (hq ? '본사' : fpro ? '일반직' : /^(시간제 경마 종사원|학생연구원·위촉 인력)$/.test(fk) ? '정규직' : '사무직') + ' 평균 ' + man(r.fld[3]) + '만원 기준</span><span class="v">' + man(r.fld[1]) + '만원</span></div>' : '') + '</div>' + trend) +
