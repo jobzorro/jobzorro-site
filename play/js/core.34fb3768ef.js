@@ -1349,7 +1349,7 @@ function ac(inp, box, list, onPick) {
 
 
 
-var LAZY = {"today":"js/today.05fb3ee64b.js","sniper":"js/sniper.32405265cb.js","road":"js/road.81ad68fcc0.js","cup":"js/cup.37a5d0b472.js","run":"js/run.e5d3c375ce.js","line":"js/line.2f6a68aea2.js"};
+var LAZY = {"today":"js/today.05fb3ee64b.js","sniper":"js/sniper.32405265cb.js","road":"js/road.81ad68fcc0.js","cup":"js/cup.37a5d0b472.js","run":"js/run.6260fac3ad.js","line":"js/line.2f6a68aea2.js"};
 var LAZY_ST = {}, LAZY_CB = {};
 function lazyReady(k) { return !LAZY[k] || LAZY_ST[k] === 2; }
 function lazyLoad(k, cb) {

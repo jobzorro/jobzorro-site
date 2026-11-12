@@ -103,7 +103,7 @@ ICON.rbike = RSPR.bike; ICON.rtteok = RSPR.tteok; ICON.rcat = RSPR.cat; ICON.rca
 
 (function () {
   var st = document.createElement('style');
-  st.textContent = '.rn{max-width:760px;margin:12px auto 0;position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}' +
+  st.textContent = '.rn{max-width:760px;margin:12px auto 0;position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.rn,.rn *{-webkit-tap-highlight-color:transparent}' +
     'html.rn-play,html.rn-play body{touch-action:none;overscroll-behavior:none}html.rn-play #p-run{touch-action:none}' +
     '.rn-hud{display:flex;gap:8px;align-items:center;font-family:var(--display);font-weight:800;font-size:14px;margin-bottom:6px}' +
     '.rn-hud .ck{background:var(--ink);color:var(--bg);border-radius:8px;padding:3px 8px;font-variant-numeric:tabular-nums}.rn-hud .ck.late{background:var(--truth);color:#fff}' +
@@ -1828,7 +1828,7 @@ function r3Mix(a, b, t) { return a + (b - a) * t; }
 var R3_WX = {
   rain: [.86, .4, '#9db4cf', 330, 1500, '#6887ad', '#b3c6db', [.82, .9, 1], [.86, .92, 1]],
   snow: [.86, .55, '#e4edf6', 320, 1500, '#a9c4e0', '#edf4fa', [.95, .97, 1], [1, .97, .93]],
-  fog: [.8, .4, '#e6eaee', 235, 640, '', '', [1, 1, 1], [1, 1, 1]],
+  fog: [.74, .46, '#c9d1d8', 300, 980, '#9aa7b4', '#cfd6dc', [.97, .98, 1], [1, .98, .95]],
   dust: [.8, .58, '#e0d4b0', 280, 1300, '#cdbf93', '#eadfbd', [1, .97, .9], [1, .93, .8]]
 };
 function r3EnvApply(R) {
@@ -1842,7 +1842,7 @@ function r3EnvApply(R) {
   var sd = out ? [-.5, 1, .62] : [-.12, 1, .5]; R3.sun.position.set(140 + sd[0] * 520, 20 + sd[1] * 520, -30 + sd[2] * 520);
   R3.pt.intensity = k * 2.1; R3.pt.position.set(RPX + 17 + (R.zx || 0) + (M.dim ? 22 : 0), R.h + 30, 26);
   R3.sc.fog.color.setRGB(r3Mix(c0[0], dc[0], k), r3Mix(c0[1], dc[1], k), r3Mix(c0[2], dc[2], k)); R3.sc.fog.near = r3Mix(fn, 215, k); R3.sc.fog.far = r3Mix(ff, 470, k);
-  var sky = out && wx !== 'fog';
+  var sky = out;
   R3.sky.visible = sky && !R3.only;
   if (sky) { var a = R3.sky.geometry.attributes.color, t = r3Col(W ? W[5] : E.top), b = r3Col(W ? W[6] : E.bot), d = [t[0] * .72, t[1] * .82, t[2] * .96];
     [d, d, t, t, b, b].forEach(function (q, i) { a.setXYZ(i, r3Mix(q[0], dc[0], k), r3Mix(q[1], dc[1], k), r3Mix(q[2], dc[2], k)); }); a.needsUpdate = true; }
@@ -2213,9 +2213,9 @@ function r3Draw() {
     if (p.s.length > 5 && p.s.indexOf(' ') > 0) { oc.fillStyle = 'rgba(13,15,10,.72)'; oc.beginPath(); if (oc.roundRect) oc.roundRect(-w / 2 - 5, -12, w + 10, 16, 8); else oc.rect(-w / 2 - 5, -12, w + 10, 16); oc.fill(); }
     oc.strokeStyle = 'rgba(13,15,10,.85)'; oc.lineWidth = 3; oc.strokeText(p.s, 0, 0); oc.fillStyle = p.c; oc.fillText(p.s, 0, 0); oc.restore(); });
   oc.restore();
-  if (R.fever > 0) rr(oc, 'rgba(255,207,61,' + (.1 + .05 * Math.sin(R.t * 12)) + ')', 0, 0, RW, RH);
+  if (R.fever > 0) rr(oc, 'rgba(255,207,61,' + (.035 + .015 * Math.sin(R.t * 6)) + ')', 0, 0, RW, RH);
   if (R.wx === 'rain' && R3.env.kind === 'out') rr(oc, 'rgba(30,60,110,.07)', 0, 0, RW, RH);
-  if (R.flash > 0) rr(oc, 'rgba(232,65,44,' + (R.flash * 2) + ')', 0, 0, RW, RH);
+  if (R.flash > 0) rr(oc, 'rgba(232,65,44,' + Math.min(.3, R.flash * 2) + ')', 0, 0, RW, RH);
   if (R.card) { var C = R.card, a = C.t < .28 ? C.t / .28 : 1; if (C.t > C.dur - .28) a = Math.min(a, Math.max(0, (C.dur - C.t) / .28)); rr(oc, 'rgba(13,15,10,' + (a * C.dark) + ')', 0, 0, RW, RH); }
   if (R.blink > 0) rr(oc, 'rgba(13,15,10,' + Math.min(1, R.blink / .3) + ')', 0, 0, RW, RH); runFadeDraw(oc);
   r3End(R);
@@ -2237,7 +2237,7 @@ renderRun = function () { renderRun2D(); if (R3.want && !R3.fail) r3Load(functio
 
 
 var R3P = { n: 0, sum: 0, last: 0, done: 0, skip: 30 }; R3.perf = R3P;
-try { if (store.get('slp-run3dq') === '1') R3.dpr = 1; } catch (e) {}
+try { if (store.get('slp-run3dq') === '1') R3.dpr = 1.5; } catch (e) {}
 function r3Perf() {
   var R = RUN, P = R3P; if (P.done) return; if (!R || !R.on || R.pause || R.card || R.tr || R.out) { P.last = 0; return; }
   var now = performance.now(), d = P.last ? now - P.last : 0; P.last = now;
@@ -2246,7 +2246,7 @@ function r3Perf() {
   P.n++; P.sum += d; if (P.sum < 3000) return;
   P.avg = P.sum / P.n;
   if (P.avg <= 55 || store.get('slp-run3dk') === '1') { P.done = 1; return; }
-  if (!(R3.dpr <= 1) && (window.devicePixelRatio || 1) > 1.2) { R3.dpr = 1; store.set('slp-run3dq', '1'); P.n = 0; P.sum = 0; P.skip = 10; P.last = 0; return; }
+  if (!(R3.dpr <= 1.5) && (window.devicePixelRatio || 1) > 1.6) { R3.dpr = 1.5; store.set('slp-run3dq', '1'); P.n = 0; P.sum = 0; P.skip = 10; P.last = 0; return; }
   P.done = 1; R3.want = false; store.set('slp-run3d', '0'); r3Mount(); toast('기기가 느려서 도트 그래픽으로 바꿨어요');
 }
 runDraw = function () {
