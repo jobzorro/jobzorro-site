@@ -1100,7 +1100,7 @@ function renderMe(edit) {
 
   var h = '<button type="button" class="mylk" data-go="look" aria-label="내 조로 열기 · ' + esc(nameRank(NICK, r)) + '">' + (PX.ok ? zorro(r, 'normal', 1.5, '', { bg: 1, head: 1 }) : '') +
     '<span class="nk2">' + (b ? '<span class="badge1">' + esc(b) + '</span>' : '') + '<span class="nick">' + esc(NICK) + '</span></span><span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span></button>' +
-    '<span class="fire" title="이어서 출석한 날">' + em('flame', '🔥') + (s ? ' ' + s + '일 연속' : ' 0일') + '</span><span class="sp"></span>' +
+    '<span class="fire" title="이어서 출석한 날">' + em('flame', '🔥') + (s ? ' ' + s + '일<span class="pc"> 연속</span>' : ' 0일') + '</span><span class="sp"></span>' +
     '<button class="lnk" id="nickEd" type="button" aria-label="닉네임 바꾸기 · 내 조로 꾸미기"><span class="pc">닉네임 · 조로 꾸미기</span><span class="ph" aria-hidden="true">' + em('pencil', '✎', 2) + '</span></button>' + sndBtn('sndM');
   if (edit) h += '<div class="nickf" style="width:100%"><label for="nickIn" style="font-size:13px;font-weight:700">닉네임</label><input id="nickIn" maxlength="10" value="' + esc(NICK) + '" autocomplete="off">' +
     '<button class="btn sm" id="nickOk" type="button">저장</button><button class="btn sm ghost" id="nickRnd" type="button">새로 지어 주기</button><button class="btn sm ghost" id="nickNo" type="button">그만두기</button>' +
@@ -2137,39 +2137,33 @@ function firstVisit() {
   try { for (i = 0; i < localStorage.length && !seen; i++) { k = localStorage.key(i) || ''; if (k.indexOf('slp-r-') === 0 || k.indexOf('slp-cupw-') === 0 || NEW_KEYS.indexOf(k) >= 0) seen = true; } } catch (e) {}
   NEWB = !seen; return NEWB;
 }
-function renderLobbyNew(st, feat) {
-  var tno = PC.genToday(TODAY, ctx).no, crs = ['line', 'today', 'sniper'].filter(function (k) { return !(st[k] && st[k].done); })[0] || 'line';
-  $('games').innerHTML = G5.map(function (k) {
-    var S = st[k], I = GINFO[k], nm = k === 'today' ? '스무고개 퀴즈 #' + tno : PNAME[k];
-    return '<button type="button" class="gl" id="t-' + k + '" data-go="' + k + '">' + (PX.ok ? '<span class="gli">' + icon(I[0], 2) + '</span>' : '<span class="gli" aria-hidden="true">0' + (G5.indexOf(k) + 1) + '</span>') +
-      '<b class="gn">' + esc(nm) + '</b><small>' + esc(S ? S.meta : I[2]) + '</small><span class="gla" aria-hidden="true">' + (S ? '이어서 ▶' : '▶') + '</span></button>';
-  }).join('');
-  $('lobbyN').innerHTML = '';
-  $('course').innerHTML = todPicker() + '<p class="nbhi">회사·직급별 연봉을 맞혀 보는 게임이에요. 처음이면 이것부터 해 보세요.</p>' +
-    '<button type="button" class="btn big crs nbgo" data-go="' + crs + '">▶ 오늘의 3분 코스 ' + (st[crs] && st[crs].prog ? '이어서 하기' : '시작하기') + '<small>줄서기 → 스무고개 → 스나이퍼 · 가입 없이 바로</small></button>' +
-    '<p class="nbor">게임 하나만 골라서 해도 돼요</p>';
-}
+
+
+
+
+var GLINE = { line: '연봉 높은 순서로 줄 세우기', today: '질문으로 숨은 회사 찾기', sniper: '회사·직급 보고 연봉 맞히기',
+  road: '20년 직장 생활 살아 보기', cup: '가고 싶은 회사 16강 대결', run: '미니게임 출근 질주' };
 function renderLobby() {
-  var st = {}, nDone = 0, feat = '', ph = (window.innerWidth || 400) <= 640;
+  var st = {}, nDone = 0, feat = '';
   G5.forEach(function (k) { st[k] = gState(k); if (st[k] && st[k].done) nDone++; else if (!feat) feat = k; });
   RPZ = RPZ || PC.genRoad(TODAY, ctx);
   var nb = firstVisit();
   if (nb) document.documentElement.setAttribute('data-new', '1'); else document.documentElement.removeAttribute('data-new');
-  $('games').className = 'games' + (nb ? ' nb' : '');
-  if (nb) { renderLobbyNew(st, feat); dockSubs(); lazyIdle(feat); return; }
-  var tno = PC.genToday(TODAY, ctx).no, order = G5;
-  $('games').innerHTML = order.map(function (k) {
+  $('games').className = 'games nb';
+  var tno = PC.genToday(TODAY, ctx).no;
+  $('games').innerHTML = G5.map(function (k) {
     var S = st[k], f = k === feat, I = GINFO[k], nm = k === 'today' ? '스무고개 퀴즈 #' + tno : PNAME[k];
-    var meta = esc(S ? S.meta : k === 'road' ? '오늘 팩: ' + PC.ROAD_SC[RPZ.sc || 'new'] : I[2]) + (!S && k === 'today' && TTOP ? '<span class="pc"> · 정답자 ' + man(TTOP.todayGame.ok) + '명</span>' : !S && k === 'road' ? '<span class="pc"> · ' + I[2] + '</span>' : '');
-    return '<button type="button" class="gc' + (f ? ' feat' : '') + (S && S.done ? ' done' : '') + '" id="t-' + k + '" data-go="' + k + '">' +
-      '<span class="no" aria-hidden="true">0' + (G5.indexOf(k) + 1) + '</span>' + (PX.ok ? '<span class="gi">' + icon(I[0], ph ? 2.5 : 3) + '</span>' : '') +
-      (f ? '<span class="ft">' + (nDone ? '추천 · 아직 안 한 게임' : '오늘의 추천') + '</span>' : k === 'line' && TODAY < '2026-11-15' ? '<span class="ft">NEW</span>' : '') +
-      '<b class="gn">' + esc(nm) + '</b><span class="d">' + esc(I[1]) + '</span><span class="meta">' + meta + ' ' + giftTag(k) + '</span>' +
-      '<span class="go" aria-hidden="true">' + (S ? S.go : '시작하기 ▶') + '</span></button>';
+    var meta = esc(S ? S.meta : k === 'road' ? '오늘 팩: ' + PC.ROAD_SC[RPZ.sc || 'new'] + ' · ' + I[2] : I[2]);
+    var tag = f ? '<span class="glt">추천</span>' : k === 'line' && TODAY < '2026-11-15' ? '<span class="glt">NEW</span>' : '';
+    return '<button type="button" class="gl' + (S && S.done ? ' done' : '') + '" id="t-' + k + '" data-go="' + k + '">' +
+      (PX.ok ? '<span class="gli">' + icon(I[0], 3) + '</span>' : '<span class="gli" aria-hidden="true">0' + (G5.indexOf(k) + 1) + '</span>') +
+      '<b class="gn">' + esc(nm) + tag + '</b><span class="gd">' + esc(GLINE[k] || '') + '</span><small>' + meta + ' ' + giftTag(k) + '</small><span class="gla" aria-hidden="true">' + (S ? S.go : '시작 ▶') + '</span></button>';
   }).join('');
   var gl = giftLeft(), crs = ['line', 'today', 'sniper'].filter(function (k) { return !(st[k] && st[k].done); })[0];
   $('lobbyN').innerHTML = G5.length + '개 중 ' + nDone + '개 했어요 · ' + em('gift', '🎁') + (gl ? ' 선물 상자까지 <b>' + gl + '개</b>' : ' 오늘 선물 받음');
-  $('course').innerHTML = todPicker() + (crs ? '<button type="button" class="btn big crs" data-go="' + crs + '">▶ 오늘의 3분 코스' + (crs === 'line' ? '' : ' 이어서') + '<small>줄서기 → 스무고개 → 스나이퍼</small></button>' : '');
+  $('course').innerHTML = todPicker() + (nb ? '<p class="nbhi">회사·직급별 연봉을 맞혀 보는 게임이에요. 처음이면 이것부터 해 보세요.</p>' : '') +
+    (crs ? '<button type="button" class="btn big crs nbgo" data-go="' + crs + '">▶ 오늘의 3분 코스' + (crs !== 'line' || (st[crs] && st[crs].prog) ? ' 이어서 하기' : nb ? ' 시작하기' : '') +
+      '<small>줄서기 → 스무고개 → 스나이퍼' + (nb ? ' · 가입 없이 바로' : '') + '</small></button>' : '');
   dockSubs();
   lazyIdle(feat);
 }
