@@ -59,6 +59,7 @@ def e(text):
 
 STYLE = """
 :root {
+  color-scheme: light dark;   /* 브라우저 강제 다크 방지: 직접 만든 어두운 화면을 쓰게 한다 */
   --ink:        #111827;
   --ink-soft:   #374151;
   --muted:      #6b7280;
@@ -88,6 +89,7 @@ h1, h2 { --serif: "Archivo", "Noto Sans KR", sans-serif; --sans: "Noto Sans KR",
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --ink:        #e9ecf3;
     --ink-soft:   #c3c9d6;
     --muted:      #939bab;
@@ -108,7 +110,9 @@ h1, h2 { --serif: "Archivo", "Noto Sans KR", sans-serif; --sans: "Noto Sans KR",
   }
 }
 
+:root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --ink:        #e9ecf3;
   --ink-soft:   #c3c9d6;
   --muted:      #939bab;
@@ -1523,6 +1527,7 @@ def static_head(title, desc, root="../", noindex=False):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>{e(title)}</title>
 <meta name="description" content="{e(desc)}">{'<meta name="robots" content="noindex,follow">' if noindex else ''}
 <link rel="icon" type="image/png" sizes="32x32" href="{root}assets/favicon-32.png">
@@ -1840,6 +1845,7 @@ def render(today, archive):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>취업조로의 커리어브리핑</title>
 <meta name="description" content="커리어를 읽는 남자, 취업조로(TEAM ZORRO)가 매일 아침 고르는 채용·이직·기업·고용·커리어 변화 뉴스 — 일간 지면과 주간·월간 랭킹">
 <meta property="og:title" content="취업조로의 커리어브리핑">
