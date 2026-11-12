@@ -963,7 +963,7 @@ def footer_html(root: str, logo: str, note: str) -> str:
     return (
         f'<footer class="zf"><div class="zf-in">'
         f'<div class="zf-outro"><svg class="zf-big" viewBox="0 0 1000 150" preserveAspectRatio="xMinYMid meet" aria-hidden="true" focusable="false"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs"><tspan class="o">TEAM</tspan><tspan class="s">ZORRO</tspan></text></svg>'
-        f'<p class="zf-slogan">TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.<br><b class="zf-made">{SITE_NAME}는 취업조로가 만듭니다</b></p></div>'
+        f'<p class="zf-slogan">TEAM ZORRO는 여러분을 좀 더 나은 회사, 옳은 커리어로 인도하겠습니다.</p></div>'
         # 2026-10-31 사용자: '취업조로 홈' 링크 삭제, 로고(CI) 바로 옆에 링크 2개(무료 상담 신청·개인정보처리방침)를 한 줄로
         f'<div class="zf-row"><a class="zf-logo" href="{c["home"]}" target="_blank" rel="noopener"><img src="{logo_src(logo, root)}" alt="취업조로"{img_wh(logo)} loading="lazy"></a>'
         f'<div class="zf-links"><a href="{root}{APPLY}">무료 상담 신청</a>'
