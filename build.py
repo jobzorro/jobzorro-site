@@ -500,7 +500,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,a:focus-visibl
 /* 공용 푸터 (뉴스 푸터처럼 먹색 윗선 + 종이색) */
 .zf { margin-top:72px; background:var(--paper); color:var(--ink); border-top:1px solid var(--ink); font-family:var(--font); }
 .zf-in { max-width:1120px; margin:0 auto; padding:36px 20px 44px; }
-.zf-logo img { height:20px; width:auto; filter:var(--logo-filter,none); display:block; }
+.zf-logo img { height:20px; width:auto; filter:invert(1); mix-blend-mode:difference; display:block; }
 .zf-logo { display:block; padding:10px 0; margin:-10px 0; }   /* 2026-11-11 누르는 곳 40px (모양은 그대로) */
 .zf-row { display:flex; flex-wrap:wrap; align-items:center; gap:22px 22px; }   /* 로고와 링크 한 줄 */
 .zf-links { display:flex; flex-wrap:wrap; gap:22px 16px; font-size:12.5px; color:var(--ink-soft); }
@@ -555,12 +555,11 @@ SHARED_CSS += TABBAR_CSS
 NAV_LOGO_FILE = "lab_logo.png"                 # 밝은 화면용. 원본: assets/brand/lab_logo.png → site/assets/lab_logo.<해시>.png
 NAV_LOGO_DARK_FILE = "lab_logo_white.png"      # 검은 화면용(흰색). 2026-11-12 사용자: 색 뒤집기 대신 흰색 로고를 따로 만들어 쓴다
 NAV_LOGO_ALT = SITE_NAME
-# 그림 두 장(.ll 밝은 화면용, .ld 검은 화면용)을 다 넣어 두고 화면 색에 맞는 한 장만 보인다 (폰·PC 같음). 기기가 어두운 모드거나 data-theme="dark" 면 흰색 로고
+# 2026-11-12 저녁: 흰색 로고(.ld) 한 장만 쓰고 "바탕과 반대색으로 보이기"(mix-blend-mode:difference)로 둔다 → 밝은 바탕에선 검게, 어두운 바탕에선 희게.
+#   폰 브라우저가 화면을 강제로 어둡게 칠할 때(사이트는 밝은 모드인 줄 앎) 검은 로고가 그대로 남던 문제 때문. .ll(검은 로고)은 자리만 남겨 둔다
 NAV_LOGO_CSS = """.zn-logo img { height:30px; width:auto; filter:none; display:block; }
-.zn-logo .ld { display:none; }
-.zn-logo .ll:is([data-theme="dark"] *) { display:none; }
-.zn-logo .ld:is([data-theme="dark"] *) { display:block; }
-@media (prefers-color-scheme: dark) { .zn-logo .ll:not([data-theme="light"] *) { display:none; } .zn-logo .ld:not([data-theme="light"] *) { display:block; } }
+.zn-logo .ll { display:none; }
+.zn-logo .ld { display:block; mix-blend-mode:difference; }
 @media (max-width:640px) { .zn-logo img { height:28px; } }"""
 NAV_PICK = (".zn", "@media (max-width:640px) { .zn", "@media (max-width:480px) { .zn", "@media (prefers-color-scheme: dark) { .zn")   # 다른 페이지(뉴스·연봉·회사·놀이터)에 메뉴 모양을 옮길 때 고르는 줄
 SHARED_CSS = SHARED_CSS.replace("/*__NAV_LOGO_CSS__*/", NAV_LOGO_CSS)
@@ -797,7 +796,7 @@ h1, h2 { font-family:var(--sans); }
 .container { max-width:1320px; padding:0 20px; }
 .sector { padding-top:64px; }
 .sector-head { align-items:end; border-bottom:1px solid var(--ink); padding-bottom:18px; margin-bottom:24px; }
-.sector-numeral { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(36px, 4.6vw, 64px); font-weight:900; line-height:.9; letter-spacing:-.05em; color:transparent; -webkit-text-stroke:1.5px var(--ink); }
+.sector-numeral { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(36px, 4.6vw, 64px); font-weight:900; line-height:.9; letter-spacing:-.05em; color:transparent; -webkit-text-stroke:1.5px #fff; mix-blend-mode:difference; }   /* 흰 테두리 + 바탕과 반대색: 브라우저 강제 다크에서도 보이게 (2026-11-12) */
 .sector-title { font-family:"Archivo","Noto Sans KR",sans-serif; font-size:clamp(22px, 2.8vw, 36px); font-weight:900; letter-spacing:-.05em; line-height:1; }
 .sector-desc { font-size:14px; color:var(--muted); }
 .sector-count { font-family:"Archivo",sans-serif; font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
