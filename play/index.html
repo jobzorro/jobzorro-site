@@ -8,7 +8,7 @@
 <meta property="og:type" content="website"><meta property="og:site_name" content="취업조로"><meta property="og:title" content="연봉 놀이터 · 오늘의 도전"><meta property="og:description" content="회사 연봉으로 하는 매일 게임 6개. 연봉 줄서기, 스무고개 퀴즈, 연봉 스나이퍼, 커리어 로드 20년, 조로 출근길, 드림 컴퍼니 월드컵. 오늘의 도전 순위와 명예의 전당."><meta property="og:url" content="https://job.jobzorro.kr/play/">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="연봉 놀이터 · 오늘의 도전"><meta name="twitter:description" content="회사 연봉으로 하는 매일 게임 6개. 연봉 줄서기, 스무고개 퀴즈, 연봉 스나이퍼, 커리어 로드 20년, 조로 출근길, 드림 컴퍼니 월드컵. 오늘의 도전 순위와 명예의 전당.">
 <script>window.__playD = fetch('data/play.json', { cache: 'no-cache' }).then(function (r) { return r.json(); });</script>
-<link rel="modulepreload" href="./play_core.js?v=87b224125a"><link rel="preload" as="script" href="js/core.492c24ed09.js">
+<link rel="modulepreload" href="./play_core.js?v=87b224125a"><link rel="preload" as="script" href="js/core.9918efe648.js">
 <title>연봉 놀이터</title>
 <style>
 :root { --bg:#ffffff; --ink:#0b0b0b; --soft:#45483f; --muted:#6f7268; --line:#e4e6df; --line2:#cfd2c8; --fill:#f4f5f1; --acc:#c6ff3d; --acc-ink:#0b0b0b; --mark:#c6ff3d; --warn:#b4453a; --good:#3f7d00; --card:#ffffff;
@@ -535,6 +535,47 @@ img.px, .pxs { image-rendering:crisp-edges; image-rendering:pixelated; display:b
 .r2ch.mini .r2story p { font-size:14.5px; line-height:1.6; }
 .r2rg { margin:0; font-size:14.5px; background:var(--fill); border-radius:12px; padding:8px 12px; }
 .r2rg small { color:var(--muted); }
+/* ── 2026-11-12 커리어 로드: 첫 고르기(누구로 시작) · 위 띠의 조로 얼굴(직급 따라 나이 듦) · 상태 아이콘 · 제안 꼬리표 정리 · 짧은 판 ── */
+#road .r2start { display:grid; gap:10px; margin-top:12px; justify-items:start; }
+#road .r2start > * { margin:0; }
+#road .r2lead { font-size:15px; color:var(--soft); }
+#road .r2start .qline { font-size:22px; }
+#road .r2start .r2sex { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; width:100%; max-width:520px; }
+#road .r2who { display:grid; justify-items:center; align-content:end; gap:2px; padding:12px 6px 10px; border:1.5px solid var(--ink); border-radius:16px; background:var(--card); color:var(--ink); font:inherit; cursor:pointer; min-height:132px; transition:transform .12s, box-shadow .12s; }
+#road .r2who:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 5px 0 var(--ink); }
+#road .r2who:not(:disabled):active { transform:translateY(1px); box-shadow:0 2px 0 var(--ink); }
+#road .r2who b { font-family:var(--display); font-weight:900; font-size:18px; }
+#road .r2who small { font-size:12px; color:var(--muted); }
+#road .r2start .r2modes { justify-content:flex-start; gap:8px; flex-wrap:wrap; }
+#road .r2start .rules { width:100%; }
+#road .r2hud.wf { grid-template-columns:auto minmax(0,1fr); align-items:center; gap:4px 12px; }
+#road .r2hb { display:grid; gap:8px; min-width:0; }
+#road .r2me { position:relative; display:grid; justify-items:center; gap:1px; }
+#road .r2me b { font-size:11.5px; font-weight:800; line-height:1.2; white-space:nowrap; }
+#road .r2me i { position:absolute; top:-7px; right:-12px; font-style:normal; font-family:var(--px-font); font-size:10.5px; padding:0 5px; background:var(--acc); color:var(--acc-ink); border:1.5px solid var(--ink); transform:rotate(6deg); white-space:nowrap; }
+#road .r2me.up .zr { animation:okPop .5s ease-out both; }
+#road .r2lf { display:inline-flex; margin-left:5px; vertical-align:-3px; }
+#road .r2lf img.px { pointer-events:auto; }
+#road img.r2li { display:inline-block; vertical-align:-3px; margin-right:5px; }
+#road .offer .sigm { font-size:12px; color:var(--muted); }
+#road .offer .r2h span { border:0; padding:0 8px 0 0; }   /* 제안 카드: 화살표(연봉·체력…)는 테두리 없는 글, 알약은 경고·좋은 신호만 */
+#road .r2quit { justify-content:flex-start; margin-top:14px; }
+#road .r2pp { display:inline-flex; flex-wrap:wrap; gap:3px; justify-content:center; align-items:center; }
+#road .r2faces { display:flex; align-items:flex-end; justify-content:center; gap:4px; flex-wrap:wrap; }
+#road .r2faces span { display:grid; justify-items:center; gap:1px; }
+#road .r2faces small { font-size:11px; color:var(--muted); font-weight:700; }
+#road .r2faces i { font-style:normal; color:var(--line2); align-self:center; }
+@media (max-width:760px) {
+  :root[data-view="game"] #road .r2hud.wf { gap:2px 10px; }
+  :root[data-view="game"] #road .r2hb { gap:5px; }
+  :root[data-view="game"] #road .r2q { grid-template-columns:minmax(0,1fr); }
+  :root[data-view="game"] #road .r2q .pxst { display:none; }   /* 폰: 작은 무대 대신 위 띠의 조로 얼굴이 표정을 보여 줌 */
+  :root[data-view="game"] #road .offer .om { flex:0 0 auto; margin-right:6px; }
+  :root[data-view="game"] #road .offer .sigm { flex:0 1 auto; min-width:0; max-width:100%; font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  :root[data-view="game"] #road .offer .ot { flex-basis:calc(100% - 30px); }
+  :root[data-view="game"] #road .offer .r2h { display:flex; flex-basis:100%; }
+  :root[data-view="game"] #road .offer .r2h span { padding:0 8px 0 0; font-size:11.5px; }
+}
 .dogam small.dgh { font-size:11px; line-height:1.35; font-weight:600; color:var(--muted); }
 /* 2026-11-08 월드컵: 테마 탭 끝 페이드(밀어서 더 보기) · 연봉으로 다시 치른 대진표 */
 .cupthw { position:relative; min-width:0; max-width:100%; }
@@ -733,6 +774,26 @@ body:has(#games:empty) #dock, body:has(#games:empty) .zf, body:has(#games:empty)
 .gc.done { background:var(--fill); border-color:var(--line2); }
 .gc.done .meta { color:var(--good); }
 .gc.done .go { background:transparent; color:var(--ink); box-shadow:none; }   /* 2026-10-29 사용자: 6개 시작 버튼 모두 같은 크기 (색만 다름) */
+/* ── 처음 온 기기 로비 (2026-11-12): 끝낸 판이 없으면(:root[data-new], page/09 firstVisit) 제목 → 3분 코스 큰 버튼 → 게임 6개 짧은 목록만.
+   숫자 기둥·검은 띠·직급/불꽃·'n개 했어요' 줄·아래 메뉴(순위·내 조로·도구)는 첫 판을 끝낸 뒤부터 보임 */
+:root[data-new] .band, :root[data-new] .lobby .lh, :root[data-new] .me .myrk, :root[data-new] .me .fire, :root[data-new][data-view="lobby"] .dock { display:none; }
+:root[data-new] .me { border-bottom:0; }
+.nbhi { margin:10px 0; font-size:15px; line-height:1.5; color:var(--soft); word-break:keep-all; }
+.btn.big.crs.nbgo { flex-direction:column; align-items:center; gap:4px; min-height:84px; padding:14px 16px; font-size:21px; margin:0 0 20px; }
+.btn.big.crs.nbgo small { font-size:13px; }
+.nbor { margin:0 0 8px; font-size:13px; font-weight:700; color:var(--muted); }
+.games.nb { gap:8px; }
+.gl { display:grid; grid-template-columns:30px minmax(0,1fr) auto; gap:0 10px; align-items:center; text-align:left; min-height:54px; min-width:0; padding:6px 12px; border:1px solid var(--line2); border-radius:12px; background:var(--card); color:var(--ink); }
+.gl:hover { border-color:var(--ink); }
+.gl .gli { grid-row:1 / span 2; display:grid; place-items:center; font-family:var(--display); font-weight:900; color:var(--muted); }
+.gl .gn { grid-column:2; font-size:15px; font-weight:900; letter-spacing:-.02em; line-height:1.3; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gl small { grid-column:2; font-size:12px; color:var(--muted); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gl .gla { grid-column:3; grid-row:1 / span 2; font-size:12px; font-weight:700; color:var(--muted); white-space:nowrap; }
+@media (max-width:640px) { .games.nb { grid-template-columns:minmax(0,1fr); gap:6px; } :root[data-new][data-view="lobby"] body { padding-bottom:28px; } }
+/* 글 속 작은 도트 아이콘 (2026-11-12 이모지 대신, page/01b em) */
+img.px.emi { display:inline-block; vertical-align:-.18em; }
+.sndb img.px.emi, .me .lnk img.px.emi { vertical-align:middle; }
+.share img.px.emi { border:0; border-radius:0; max-width:none; }   /* .share img(결과 카드 그림) 테두리가 아이콘에 붙지 않게 */
 /* 순위·내 조로·도구: PC 는 게임 카드 아래 작은 칸 3개, 폰은 아래 고정 탭바(게임 칸 더해 4개) */
 .dock { display:none; }
 :root[data-view="lobby"] .dock, :root:not([data-view]) .dock { display:block; }
@@ -845,6 +906,39 @@ button.dk small { font-size:12.5px; color:var(--muted); grid-column:2; min-width
   .t3talk { margin:4px 0 8px; }
   .t3talk .t3bub { font-size:15px; padding:10px 12px; min-height:58px; }
 }
+/* ── 2026-11-12 스무고개: 수사 보드(코르크판 · 핀 쪽지 · 탈락 X) · 조로 답 도장 · 도트 아이콘 · 아래 규칙 보기 ── */
+#today img.t3i { display:inline-block; vertical-align:-3px; margin-right:5px; flex:none; }
+#today .t3q .t3i { margin-right:4px; }
+#today .t3cat .t3i { margin-right:3px; vertical-align:-2px; }
+#today .t3talk .t3z { position:relative; }
+#today .t3mg { position:absolute; right:-7px; bottom:8px; }
+#today .t3st { display:inline-block; font-style:normal; font-family:var(--px-font); font-size:13px; line-height:1.5; padding:0 7px; border:2px solid currentColor; border-radius:4px; transform:rotate(-4deg); margin:0 3px; white-space:nowrap; }
+#today .t3st.y { color:var(--good); } #today .t3st.n, #today .t3st.x { color:var(--warn); }
+#today .t3talk.pop .t3st { animation:okPop .4s ease-out .1s both; }
+#today .t3res { display:flex; flex-wrap:wrap; gap:6px 2px; align-items:center; justify-content:center; margin:0; }
+#today .t3board { border:2px solid #6b4a2b; border-radius:8px; padding:5px 4px 8px; margin:0 0 8px; background:#c9a26b radial-gradient(#b48a52 1px, transparent 1.6px) 0 0 / 7px 7px; box-shadow:3px 3px 0 var(--ink); }
+#today .t3bh { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0 1px 7px; color:#2b1d0e; font-size:12.5px; }
+#today .t3bh .t3bt { font-family:var(--px-font); letter-spacing:.04em; white-space:nowrap; }
+#today .t3bh .stat { display:flex; gap:10px; align-items:baseline; white-space:nowrap; }
+#today .t3bh .stat b { font-family:var(--display); font-weight:900; font-size:18px; letter-spacing:-.03em; }
+#today .t3bh.solo { color:var(--ink); justify-content:flex-end; margin:0 0 6px; }
+#today .t3board .cands { margin-top:0; }
+#today .t3c .cand { border-radius:3px; box-shadow:1px 2px 0 rgba(0,0,0,.28); padding-top:9px; }
+#today .t3c .cand:nth-child(odd) { transform:rotate(-.7deg); } #today .t3c .cand:nth-child(3n) { transform:rotate(.8deg); }
+#today .t3c .cand[aria-pressed="true"] { transform:translateY(-2px) scale(1.03); z-index:1; }
+#today .t3pin { position:absolute; top:-4px; left:50%; margin-left:-3px; width:7px; height:7px; background:#e8412c; border:1.5px solid #1b1d18; }
+#today .t3c .cand.out { opacity:1; background:#e9dcc3; border-style:solid; border-color:#8a7354; box-shadow:none; }
+#today .t3c .cand.out .cn, #today .t3c .cand.out .lg, #today .t3c .cand.out small { opacity:.6; }
+#today .t3c .cand.out .cn { color:#2b1d0e; }
+#today .t3c .cand.out .t3pin { background:#8a7354; }
+#today .t3c .cand.out::after { content:""; position:absolute; inset:4px 10px; opacity:.75; pointer-events:none; background:linear-gradient(to top right, transparent calc(50% - 1px), #e8412c calc(50% - 1px), #e8412c calc(50% + 1px), transparent calc(50% + 1px)), linear-gradient(to bottom right, transparent calc(50% - 1px), #e8412c calc(50% - 1px), #e8412c calc(50% + 1px), transparent calc(50% + 1px)); }
+#today .t3c .cand.flip { animation:t3cross .45s ease-out both; }
+@keyframes t3cross { 0% { transform:scale(1.08) rotate(-3deg); } 40% { transform:scale(.94) rotate(3deg); } 100% { transform:none; } }
+#today .t3foot { margin-top:10px; }
+#today .t3foot .rules { border-top:0; }
+#today .t3foot .rules b.warn { color:var(--warn); }
+@media (prefers-reduced-motion: reduce) { #today .t3c .cand, #today .t3st { transform:none; } }
+@media (max-width:640px) { #today .cands.t3c .cand { padding:9px 4px 5px 7px; } #today .cands.t3c { gap:6px 5px; } }
 /* 월드컵 오늘의 16강: 민심 점수 */
 .cuphow { list-style:none; margin:4px 0 10px; padding:0; display:grid; gap:6px; }
 .cuphow li { font-size:14px; padding:8px 12px; border-radius:12px; background:var(--fill); }
@@ -858,6 +952,40 @@ button.dk small { font-size:12.5px; color:var(--muted); grid-column:2; min-width
 .cupem { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:17px; letter-spacing:1px; }
 .cupem span { display:inline-flex; align-items:center; gap:6px; }
 .cupem small { font-size:11px; color:var(--muted); letter-spacing:0; }
+/* ── 2026-11-12 월드컵: 대진표 그림(아래 16곳 → 위 트로피) · 로고 큰 카드 · 가운데 VS · 결과 색 칸 · 아래 규칙 보기 ── */
+#cup img.cpi { display:inline-block; vertical-align:-3px; margin-right:5px; }
+#cup .cbk { display:grid; gap:7px; padding:8px 6px 6px; margin:0 0 10px; border:1.5px dashed var(--line2); border-radius:12px; }
+#cup .cbr { display:grid; align-items:end; }
+#cup .cbc { position:relative; display:flex; justify-content:center; align-items:flex-end; min-height:19px; }
+#cup .cbr.up .cbc::after { content:""; position:absolute; top:100%; left:25%; right:25%; height:4px; margin-top:1px; border:1.5px solid var(--line2); border-bottom:0; }
+#cup .cbc.tbd i { width:9px; height:13px; border:1.5px dashed var(--line2); border-radius:2px; }
+#cup .cbc.gone .px { opacity:.22; filter:grayscale(1); }
+#cup .cbc.now .px { outline:2px solid var(--ink); outline-offset:1px; background:var(--acc); }
+#cup .cbc.top { min-height:0; }
+#cup .cpk { text-align:center; justify-items:center; align-content:stretch; grid-template-rows:auto auto 1fr auto; gap:5px; min-height:0; padding:14px 12px 10px; }
+#cup .cpk .cpl { display:grid; place-items:center; width:100%; height:66px; }
+#cup .cpk .lg.l { height:56px; max-width:100%; margin:0; justify-content:center; }
+#cup .cpk .lg.l img { max-height:56px; }
+#cup .cpk .lg.l.mono { width:56px; font-size:28px; }
+#cup .cpk .lg.l.dk { padding:8px 12px; }
+#cup .cpk .nm { font-size:clamp(18px,2.4vw,28px); }
+#cup .cpk .cpb { align-self:end; display:flex; align-items:flex-end; justify-content:space-between; gap:8px; width:100%; margin-top:4px; }
+#cup .cpk .pb { margin:0; }
+#cup .cpk .cps { font-size:12px; color:var(--muted); font-weight:700; }
+#cup .cpk .cps b { font-family:var(--display); font-size:20px; color:var(--line2); margin-left:2px; }
+#cup .cpk.win .cps, #cup .cpk.win .cps b { color:var(--acc-ink); }
+#cup .duel { position:relative; }
+#cup .cuprl { margin-top:10px; border-top:0; }
+#cup .cupem .cq { display:inline-block; width:13px; height:13px; margin-right:2px; border:1.5px solid var(--ink); background:var(--card); }
+#cup .cupem .cq.g { background:#3f9a4a; } #cup .cupem .cq.r { background:#e8412c; }
+@media (max-width:620px) {
+  #cup .duel .vs { display:grid; place-items:center; position:absolute; left:50%; top:50%; width:34px; height:34px; margin:-17px 0 0 -17px; z-index:2; border-radius:50%; background:var(--ink); color:var(--bg); font-family:var(--px-font); font-size:12px; font-weight:400; pointer-events:none; }
+  #cup .cpk { padding:12px 10px 9px; }
+  #cup .cpk .cpl { height:58px; }
+  #cup .cpk .lg.l, #cup .cpk .lg.l img { height:auto; max-height:50px; }
+  #cup .cpk .lg.l.mono { height:50px; width:50px; }
+}
+@media (min-width:621px) { #cup .cbk { zoom:1.5; } }
 /* ── 07 연봉 줄서기 (2026-11-01) */
 .lnq { list-style:none; margin:0 0 10px; padding:0; display:grid; gap:6px; }
 .lnslot { display:flex; align-items:center; gap:8px; min-height:44px; padding:4px 10px; border:1.5px dashed var(--line2); border-radius:12px; }
@@ -1218,6 +1346,11 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
 .over > .nxrow { order:1; }
 .over > .gotbox, .over > .nxitem { order:2; }
 .over > .share, .over > .wk7, .over > details, .over > .row, .over > p.crowd { order:3; }   /* 새 소품·공유·이번 주·접기는 '다음 게임' 아래로 */
+/* 2026-11-12 결과 순서 바꿈: 점수·순위 → 공유(카드·도전장·글 복사) → 다음 게임 → 새 소품·다음 소품 → 이번 주·접기·그 밖 (위 세 줄을 덮어씀) */
+.over > .share { order:1; }
+.over > .nxrow { order:2; }
+.over > .gotbox, .over > .nxitem { order:3; }
+.over > .wk7, .over > details, .over > .row, .over > p.crowd { order:4; }
 @media (max-width:640px) {
   :root[data-view="game"] body > .zn, :root[data-view="game"] .zb { display:none !important; }
   :root[data-view="game"] body:has(> .zn) .playbar { top:env(safe-area-inset-top,0px); }
@@ -1436,7 +1569,7 @@ button:not(:disabled):active, a.btn:active { transform:translateY(1px) scale(.97
 <script type="module">
 import * as PC from './play_core.js?v=87b224125a';
 window.PC = PC; window.D = await window.__playD;
-const s = document.createElement('script'); s.src = 'js/core.492c24ed09.js'; document.head.appendChild(s);
+const s = document.createElement('script'); s.src = 'js/core.9918efe648.js'; document.head.appendChild(s);
 </script>
 
 </body>

@@ -10,7 +10,7 @@ function todayInfo() {
 }
 function renderToday() {
   TPZ = TPZ || PC.genToday(TODAY, ctx);
-  if (!TTOP) getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); if (!$('p-today').hidden && !prog('today')) renderToday(); } });
+  if (!TTOP) getTop('today').then(function (t) { if (t) { TTOP = t; renderBoard(t); if (TPZ.v === 3) { var ti = document.querySelector('#today .tinfo'); if (ti && !TPRAC) ti.outerHTML = todayInfo(); return; } if (!$('p-today').hidden && !prog('today')) renderToday(); } });
   if (TPZ.v === 2 || TPZ.v === 4) return renderToday2();
   if (TPZ.v === 3) return renderToday3();
   var x = rec(TODAY, 'today'), p = prog('today');
@@ -213,7 +213,23 @@ function resultToday2(x) {
 
 
 
-var T3_EMO = { grp: '🏷', sido: '📍', pub: '🏛', m: '👥', s0: '🌱', r1: '💰', r2: '💼', r4: '👔', tt: '⏳', to: '🏃', rt: '⭐', ag: '🎂', my: '📈', jump: '🎁', ex: '👑', lad: '🪜', tw: '🏆', yoy: '🔥', up: '🚀' };
+
+Object.assign(ICON, {
+  q_tag: [['..yyyyy', '.yyyyyy', 'yywyyyy', 'yyyyyyy', '.yyyyyy', '..yyyyy'], { y: '#ffb020', w: '#ffffff' }],
+  q_pin: [['.rrr.', 'rrwrr', 'rrrrr', '.rrr.', '..r..', '..r..'], { r: '#e8412c', w: '#ffffff' }],
+  q_bank: [['...g...', '..ggg..', '.ggggg.', 'ggggggg', '.w.w.w.', '.w.w.w.', 'ggggggg'], { g: '#8796ab', w: '#e8edf5' }],
+  q_sprout: [['gg...gg', 'ggg.ggg', '.ggggg.', '...g...', '...g...', '.bbbbb.'], { g: '#5aa04a', b: '#8a5a1c' }],
+  q_hour: [['bbbbbbb', '.wyyyw.', '..wyw..', '...w...', '..w.w..', '.wyyyw.', 'bbbbbbb'], { b: '#8a5a1c', w: '#e8edf5', y: '#ffcf3d' }],
+  q_door: [['bbbbb..', 'bdddb..', 'bdddb.r', 'bdyrrrr', 'bdddb.r', 'bdddb..'], { b: '#6b4a2b', d: '#b98a55', y: '#ffcf3d', r: '#e8412c' }],
+  q_cake: [['...y...', '...r...', '.ppppp.', '.wwwww.', 'ppppppp', 'ppppppp'], { y: '#ffcf3d', r: '#e8412c', p: '#ff9bc4', w: '#fff3e0' }],
+  q_up: [['......g', '....g.g', '..g.g.g', 'g.g.g.g', 'g.g.g.g'], { g: '#3f9a4a' }],
+  q_down: [['r......', 'r.r....', 'r.r.r..', 'r.r.r.r', 'r.r.r.r'], { r: '#e8412c' }],
+  q_ladder: [['b...b', 'bbbbb', 'b...b', 'bbbbb', 'b...b', 'bbbbb', 'b...b'], { b: '#8a5a1c' }],
+  q_pinhead: [['.rr.', 'rRrr', 'rrrr', '.rr.'], { r: '#e8412c', R: '#ffb3a8' }]
+});
+var T3_ICO = { grp: 'q_tag', sido: 'q_pin', pub: 'q_bank', m: 'queue', s0: 'q_sprout', r1: 'coin', r2: 'money', r4: 'boss', tt: 'q_hour', to: 'q_door', rt: 'star', ag: 'q_cake', my: 'q_up', jump: 'chest', ex: 'crown', lad: 'q_ladder', tw: 'trophy', yoy: 'flame', up: 'rocket' };
+function t3Ico(q, s) { q = String(q || ''); var neg = q[0] === '~', b = neg ? q.slice(1) : q, k = b.slice(0, b.indexOf(':')); return icon(k === 'my' && neg ? 'q_down' : T3_ICO[k] || 'quest', s || 1.5, 't3i'); }
+function t3Q(q) { return t3Ico(q) + esc(t3Label(q)); }
 var T3SEL = '', T3ARM = 0;
 function t3Label(q) {
   var i = q.indexOf(':'), k = q.slice(0, i), v = q.slice(i + 1), n = +v, won = function (x) { return x >= 10000 ? (x % 10000 ? (x / 10000).toFixed(1) : x / 10000) + '억' : man(x) + '만'; };
@@ -222,7 +238,7 @@ function t3Label(q) {
     : k === 'tt' ? '평균 ' + v + '년 넘게 다녀?' : k === 'to' ? '1년 안에 ' + Math.round(n * 100) + '% 넘게 그만둬?' : k === 'rt' ? '직원 평점 ' + v + ' 넘어?' : k === 'ag' ? v + '년 넘은 회사야?'
     : k === 'my' ? '작년보다 직원이 늘었어?' : k === 'ex' ? '임원 연봉 ' + won(n) + ' 넘어?' : k === 'lad' ? '부장 연봉이 사원의 ' + v + '배 넘어?'
     : k === 'tw' ? '업종 평균보다 과장 연봉 많이 줘?' : k === 'yoy' ? '올해 연봉 ' + v + '% 넘게 올랐어?' : k === 'up' ? '3년 새 연봉 ' + v + '% 넘게 올랐어?' : '성과급 대박 난 해가 있어?';
-  return (T3_EMO[k] || '❓') + ' ' + t;
+  return t;
 }
 
 function t3PreParts(q) {
@@ -253,7 +269,7 @@ function t3PreParts(q) {
 function t3PreTxt(q) { var P = t3PreParts(q); return P ? '이 회사는 <b>' + esc(P[1]) + '</b> 회사입니다. 맞춰 보세요!' : ''; }
 function t3PreBox() {
   var P = t3PreParts(TPZ.pre); if (!P) return '';
-  return '<div class="t3pre"><span class="t3pk">✨ 스페셜 힌트 <i class="t3cat">' + esc(P[0]) + '</i></span><p>' + t3PreTxt(TPZ.pre) + '</p>' +
+  return '<div class="t3pre"><span class="t3pk">' + icon('star', 1.5, 't3i') + '스페셜 힌트 <i class="t3cat">' + t3Ico(TPZ.pre, 1) + esc(P[0].replace(/^\S+\s/, '')) + '</i></span><p>' + t3PreTxt(TPZ.pre) + '</p>' +
     (P[2] ? '<span class="t3quip">조로: “' + esc(P[2]) + '”</span>' : '') + '<small>후보 12장 중 몇 장만 이 힌트에 맞아요. 나머지는 스스로 걸러 보세요!</small></div>';
 }
 function t3Cost(asks) { return asks < PC.T3_FREE ? '무료' : '−' + PC.T3_Q; }
@@ -261,7 +277,23 @@ function t3Cost(asks) { return asks < PC.T3_FREE ? '무료' : '−' + PC.T3_Q; }
 
 
 function t3V6() { return PC.v6(TPZ.day); }
-function t3Save(p) { if (!p.prac) setProg('today', p); }
+function t3Save(p) {
+  if (p.prac) return;
+  if (p.lazy) {
+    if (PC.kstDay() !== TODAY) { location.reload(); return; }
+    delete p.lazy; p.t0 = Date.now(); setProg('today', p);
+    startDaily('today').then(function (st) { p.tok = st.tok; var q = prog('today'); if (q) { q.tok = st.tok; setProg('today', q); } });
+    return;
+  }
+  setProg('today', p);
+}
+function t3Rules() {
+  return '<details class="rules"><summary>규칙 보기</summary><ul>' +
+    '<li>후보 카드 12장 중 숨은 회사 하나를 찾아요. <b>질문</b>을 누르면 조로가 응 / 아니로 답하고 안 맞는 카드는 탈락해요. 질문 하나에 −' + PC.T3_Q + '점, 5번까지.</li>' +
+    '<li><b>먼저 찍기</b>: 답을 알면 카드를 눌러 바로 찍어요. 2번까지, 틀리면 <b class="warn">−' + PC.T3_EARLY + '점</b>이고 그 카드는 탈락해요.</li>' +
+    '<li><b>최종 선택</b>: ' + (t3V6() ? '남은 카드가 ' + PC.T3_FIN + '장 이하일 때 열려요(질문을 다 쓰면 그때도). 정답과, 스페셜 힌트에 맞는 미끼 한 곳이 나와요.' : '누르면 남은 카드에서 정답과 미끼 한 곳이 나와요.') + ' 한 번뿐이고 틀리면 0점이에요.</li>' +
+    '<li>500점에서 시작하고, 맞히면 최소 ' + PC.T3_FLOOR + '점은 받아요. 모두에게 같은 12장·같은 정답이고, 숫자는 연봉 연구소 추정치예요.</li></ul></details>';
+}
 function t3PastDays() { var a = []; for (var k = 1; k <= 7; k++) { var d = PC.addDays(TODAY, -k); if (d >= PC.TODAY2_FROM && PC.genToday(d, ctx).v === 3) a.push(d); } return a; }
 function t3PastBox() {
   var L = t3PastDays(); if (!L.length) return '';
@@ -284,18 +316,7 @@ function renderToday3() {
   if (TPRAC) { var Qp = PC.simToday3(TPZ, TPRAC.log, ctx); return Qp && Qp.done ? t3PracResult(TPRAC) : drawToday3(TPRAC); }
   var x = rec(TODAY, 'today'), p = prog('today');
   if (x) return resultToday3(x);
-  if (!p) {
-    $('today').innerHTML = todayInfo() + '<div class="intro"><h3>스무고개 퀴즈 #' + TPZ.no + '</h3>' +
-      t3PreBox() + '<p class="sum">후보 카드 12장 중 숨은 회사 하나. <b>스페셜 힌트</b>로 먼저 추리하고, 모르겠으면 질문! 조로가 <b>응 / 아니</b>로 답하고 안 맞는 카드는 넘어가요.</p>' +
-      '<ul class="cuphow"><li><b>질문</b> 하나에 −' + PC.T3_Q + '점 · 5번까지</li><li><b>먼저 찍기</b> 답을 알면 바로 찍어요. 틀리면 <b class="warn">−' + PC.T3_EARLY + '점</b>!</li><li><b>최종 선택</b> ' + (t3V6() ? '카드가 ' + PC.T3_FIN + '장 이하로 줄면 두 회사 중 하나 (한 번, 틀리면 0점)' : '아니면 마지막에 두 회사 중 하나 (한 번, 틀리면 0점)') + '</li></ul>' +
-      '<button class="btn big" id="tGo" type="button">시작하기 ▶</button><details class="rules"><summary>규칙 보기</summary><ul>' +
-      '<li>질문은 대리·과장·부장 연봉, 신입 연봉, 직원 수, 근속, 퇴사율, 평점, 회사 나이, 업종, 지역 등에서 지금 남은 카드를 나눌 수 있는 것만 나와요.' + (t3V6() ? ' 어떤 질문이 카드를 반으로 잘 나눌지 골라 보세요.' : '') + '</li>' +
-      '<li>500점에서 시작해요. 먼저 찍기는 2번까지, 틀린 카드는 탈락하고 ' + PC.T3_EARLY + '점이 깎여요. 맞히면 최소 ' + PC.T3_FLOOR + '점은 받아요.</li>' +
-      '<li>' + (t3V6() ? '최종 선택은 남은 카드가 ' + PC.T3_FIN + '장 이하일 때 열려요(질문을 다 쓰면 그때도). 정답과, 스페셜 힌트에 맞는 미끼 한 곳이 나와요.' : '최종 선택을 누르면 남은 카드에서 정답과 미끼 한 곳이 나와요.') + ' 카드를 한 장만 남겼다면 미끼는 이미 탈락한 카드예요.</li>' +
-      '<li>모두에게 같은 12장·같은 정답이고, 숫자는 연봉 연구소 추정치예요.</li></ul></details>' + t3PastBox() + '</div>';
-    $('tGo').onclick = function () { $('tGo').disabled = true; startDaily('today').then(function (st) { setProg('today', { tok: st.tok, t0: st.t0, log: [], v: 3 }); T3SEL = ''; T3ARM = 0; renderToday(); }); };
-    return;
-  }
+  if (!p) { return drawToday3({ tok: '', log: [], v: 3, lazy: 1 }); }
   if (!Array.isArray(p.log) || p.v !== 3 || !PC.simToday3(TPZ, p.log, ctx)) { p.log = []; p.v = 3; p.fin = 0; setProg('today', p); }
   if (PC.simToday3(TPZ, p.log, ctx).done) return finishToday3(p);
   drawToday3(p);
@@ -308,25 +329,28 @@ function drawToday3(p, flash) {
   var canFin = Q.canFin !== false;
   var fin = p.fin && canFin || Q.asks >= PC.T3_MAXQ && Q.ew >= PC.T3_EARLY_MAX, now = PC.today3Pts(Q.asks, Q.ew), qs = fin || Q.asks >= PC.T3_MAXQ ? [] : PC.t3Questions(Q.alive, ctx, used, (window.innerWidth || 400) <= 640 ? 4 : 6, TPZ.pre, t3V6() ? PC.t3Seed(TPZ, Q.qs) : undefined);
   var canEarly = Q.ew < PC.T3_EARLY_MAX;
-  var bub = fin ? '자, 마지막! <b>둘 중 하나</b>가 범인이야. 한 번에 찍어!' : !last ? '스페셜 힌트부터 봐! 질문은 하나에 −' + PC.T3_Q + '점이야.'
+  var bub = fin ? '자, 마지막! <b>둘 중 하나</b>가 범인이야. 한 번에 찍어!' : !last ? '숨은 회사 하나를 찾아봐! <b>질문</b>을 누르면 내가 응 / 아니로 답할게.'
     : last.g ? '<b>' + esc(last.g) + '</b>? 땡! 아니야. <small>−' + PC.T3_EARLY + '점</small>'
-    : '<b>' + esc(t3Label(last.q)) + '</b> → ' + (last.yes ? '응!' : '아니!') + ' <small>' + (last.out.length ? '카드 ' + last.out.length + '장 탈락' : '탈락 없음') + '</small>';
-  var h = (p.prac ? '<p class="t3prac">지난 회차 연습 <b>#' + TPZ.no + '</b> · ' + mmdd(TPZ.day) + ' · 순위 없음 <button class="btn ghost sm" type="button" id="tPracX">그만하기</button></p>' : '') + t3PreBox() + '<div class="gbar"><span class="lv">질문 ' + Q.asks + ' / ' + PC.T3_MAXQ + '</span><span class="stat"><span>남은 카드 <b>' + Q.alive.length + '</b></span><span>맞히면 <b>' + man(now) + '</b>점</span></span></div>' +
-    '<div class="t3talk' + (flash ? ' pop' : '') + '"><span class="t3z" aria-hidden="true">' + (PX.ok ? zorro(myRank(), fin ? 'normal' : last ? (last.g ? 'shock' : last.yes ? 'happy' : 'sad') : 'normal', 2, flash ? (last && !last.g && last.yes ? 'jump' : 'oops') : 'idle', { hat: 1 }) : '') + '</span><p class="t3bub" aria-live="polite"><span class="t3who">조로 탐정</span>' + bub + '</p></div>';
+    : '<b>' + t3Q(last.q) + '</b> <i class="t3st ' + (last.yes ? 'y">응!' : 'n">아니!') + '</i> <small>' + (last.out.length ? '카드 ' + last.out.length + '장 탈락' : '탈락 없음') + '</small>';
+  var stat = '<span class="stat"><span>남은 카드 <b>' + Q.alive.length + '</b></span><span>맞히면 <b>' + man(now) + '</b>점</span></span>';
+  var h = (p.prac ? '<p class="t3prac">지난 회차 연습 <b>#' + TPZ.no + '</b> · ' + mmdd(TPZ.day) + ' · 순위 없음 <button class="btn ghost sm" type="button" id="tPracX">그만하기</button></p>' : '') + t3PreBox() +
+    '<div class="t3talk' + (flash ? ' pop' : '') + '"><span class="t3z" aria-hidden="true">' + (PX.ok ? zorro(myRank(), fin ? 'normal' : last ? (last.g ? 'shock' : last.yes ? 'happy' : 'sad') : 'normal', 2, flash ? (last && !last.g && last.yes ? 'jump' : 'oops') : 'idle', { hat: 1 }) + icon('magnifier', 2, 't3mg') : '') + '</span><p class="t3bub" aria-live="polite"><span class="t3who">조로 탐정</span>' + bub + '</p></div>';
   if (fin) {
-    h += '<div class="duel t3fin">' + Q.fin.map(function (n) { var c = BYN[n]; return '<button class="pick" type="button" data-n="' + esc(n) + '">' + logo(c) + '<span class="nm">' + esc(n) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
+    h += '<div class="t3bh solo">' + stat + '</div><div class="duel t3fin">' + Q.fin.map(function (n) { var c = BYN[n]; return '<button class="pick" type="button" data-n="' + esc(n) + '">' + logo(c) + '<span class="nm">' + esc(n) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
       '<p class="src">' + (Q.alive.length <= 1 ? '카드를 한 장만 남겼어요. 남은 그 카드가 정답이에요!' : '남은 카드 ' + Q.alive.length + '장 중 두 곳이 나왔어요.') + '</p>';
   } else {
-    h += (T3SEL ? '<p class="t3warn" role="alert">⚠ <b>' + esc(T3SEL) + '</b> 먼저 찍기 · 틀리면 <b>−' + PC.T3_EARLY + '점</b>이에요! ' + (T3ARM ? '정말 찍으려면 한 번 더 눌러요.' : '확실할 때만! (카드를 다시 누르면 취소)') + '</p>' : (Q.asks < PC.T3_MAXQ ? '<div class="t3qs" role="group" aria-label="질문 고르기 (' + t3Cost(Q.asks) + ')">' + (qs.length ? qs.map(function (q) { return '<button type="button" class="t3q" data-q="' + esc(q) + '">' + esc(t3Label(q)) + '</button>'; }).join('') : '<span class="src" style="margin:0">더 나눌 질문이 없어요.</span>') + '</div>' +
+    h += (T3SEL ? '<p class="t3warn" role="alert"><b>' + esc(T3SEL) + '</b> 먼저 찍기 · 틀리면 <b>−' + PC.T3_EARLY + '점</b>이에요! ' + (T3ARM ? '정말 찍으려면 한 번 더 눌러요.' : '확실할 때만! (카드를 다시 누르면 취소)') + '</p>' : (Q.asks < PC.T3_MAXQ ? '<div class="t3qs" role="group" aria-label="질문 고르기 (' + t3Cost(Q.asks) + ')">' + (qs.length ? qs.map(function (q) { return '<button type="button" class="t3q" data-q="' + esc(q) + '">' + t3Q(q) + '</button>'; }).join('') : '<span class="src" style="margin:0">더 나눌 질문이 없어요.</span>') + '</div>' +
       '<p class="t3cost">이번 질문 <b>' + t3Cost(Q.asks) + '</b> · 남은 질문 ' + (PC.T3_MAXQ - Q.asks) + '번' + (canEarly ? ' · 카드를 누르면 먼저 찍기' : '') + '</p>' : '<p class="t3cost">질문을 다 썼어요. ' + (canEarly ? '먼저 찍거나 ' : '') + '최종 선택으로 가요.</p>')) +
+      '<div class="t3board"><div class="t3bh"><span class="t3bt">' + icon('magnifier', 1.5, 't3i') + '수사 보드</span>' + stat + '</div>' +
       '<div class="cands t3c" role="group" aria-label="후보 카드 12장">' + TPZ.cands.map(function (n) {
         var c = BYN[n], out = Q.alive.indexOf(n) < 0, nw = out && last && last.out.indexOf(n) >= 0 && flash;
         return '<button type="button" class="cand' + (out ? ' out' : '') + (nw ? ' flip' : '') + '" data-n="' + esc(n) + '"' + (out || !canEarly ? ' disabled' : ' aria-pressed="' + (T3SEL === n) + '"') + (out ? ' aria-label="' + esc(n) + ', 탈락"' : '') + '>' +
-          logo(c, 'm') + '<span class="cn">' + esc(n) + '</span>' + (out ? '<small>탈락</small>' : '') + '</button>';
-      }).join('') + '</div>' +
+          '<i class="t3pin" aria-hidden="true"></i>' + logo(c, 'm') + '<span class="cn">' + esc(n) + '</span>' + (out ? '<small>탈락</small>' : '') + '</button>';
+      }).join('') + '</div></div>' +
       '<div class="row tact">' + (T3SEL ? '<button class="btn' + (T3ARM ? ' danger' : '') + '" id="tEarly" type="button">' + (T3ARM ? '정말 찍기! (틀리면 −' + PC.T3_EARLY + ')' : '먼저 찍기: ' + esc(T3SEL)) + '</button>' : '') +
-      (canFin ? '<button class="btn ' + (T3SEL ? 'ghost' : '') + '" id="tFin" type="button">' + (T3SEL ? '최종 선택 ▶' : '최종 선택 ▶ 두 회사 중 하나') + '</button>' : (T3SEL ? '' : '<span class="src t3lock">🔒 최종 선택은 카드 ' + PC.T3_FIN + '장 이하에서 열려요</span>')) + '</div>';
+      (canFin ? '<button class="btn ' + (T3SEL ? 'ghost' : '') + '" id="tFin" type="button">' + (T3SEL ? '최종 선택 ▶' : '최종 선택 ▶ 두 회사 중 하나') + '</button>' : (T3SEL ? '' : '<span class="src t3lock">' + icon('lock', 1.5, 't3i') + '최종 선택은 카드 ' + PC.T3_FIN + '장 이하에서 열려요</span>')) + '</div>';
   }
+  if (!p.prac) h += '<div class="t3foot">' + t3Rules() + (p.lazy ? t3PastBox() + todayInfo() : '') + '</div>';
   $('today').innerHTML = h; window.scrollTo(0, 0);
   document.querySelectorAll('#today .t3q').forEach(function (bt) { bt.onclick = function () { T3SEL = ''; T3ARM = 0; p.log.push('?' + bt.dataset.q); t3Save(p); sfx('coin'); drawToday3(p, 1); }; });
   $('today').querySelectorAll('.t3c .cand:not([disabled])').forEach(function (bt) { bt.onclick = function () { T3SEL = T3SEL === bt.dataset.n ? '' : bt.dataset.n; T3ARM = 0; drawToday3(p); }; });
@@ -363,9 +387,9 @@ function resultToday3(x) {
   $('today').innerHTML = todayInfo() + '<div class="over"><span class="lv">스무고개 퀴즈 #' + TPZ.no + ' · ' + (ok ? '성공' : '다음 기회에') + '</span>' + scene + vsScene('today', x) + logo(A, 'l') +
     '<div class="ttl"><b>' + esc(A.n) + '</b></div><div class="big">' + Q.asks + '<small> 질문</small></div>' +
     '<p>' + (ok ? '질문 ' + Q.asks + '번' + (Q.early ? ', 먼저 찍어서' : '') + ' 찾았어요' + (Q.ew ? ' (먼저 찍기 ' + Q.ew + '번 빗나감)' : '') + '. ' + man(x.score) + '점' : '마지막 두 곳에서 아쉽게 빗나갔어요. 0점') + '</p>' +
-    '<p class="t2em">' + line + '</p>' + t3PreBox() +
+    '<p class="t3res" aria-label="질문 결과">' + icon('magnifier', 1.5, 't3i') + Q.steps.map(function (s) { return '<i class="t3st ' + (s.g ? 'x">땡' : s.yes ? 'y">응' : 'n">아니') + '</i>'; }).join('') + '<i class="t3st ' + (ok ? 'y">' + (Q.early ? '먼저 찍어 정답' : '정답') : 'x">실패') + '</i></p>' + t3PreBox() +
     rankBox('today', x) + gotBox('today') + shareBox('shT', vsBox('today', x)) + nextBtn('today') + week7('today') +
-    '<details class="more"><summary>내 질문 다시 보기</summary><ol class="t3log">' + Q.steps.map(function (s) { return '<li>' + (s.g ? esc(s.g) + ' 먼저 찍기 → <b>땡</b> (−' + PC.T3_EARLY + ')' : esc(t3Label(s.q)) + ' → <b>' + (s.yes ? '응' : '아니') + '</b> · ' + s.out.length + '장 탈락') + '</li>'; }).join('') +
+    '<details class="more"><summary>내 질문 다시 보기</summary><ol class="t3log">' + Q.steps.map(function (s) { return '<li>' + (s.g ? esc(s.g) + ' 먼저 찍기 → <b>땡</b> (−' + PC.T3_EARLY + ')' : t3Q(s.q) + ' → <b>' + (s.yes ? '응' : '아니') + '</b> · ' + s.out.length + '장 탈락') + '</li>'; }).join('') +
     (Q.early ? '<li>' + esc(A.n) + ' 먼저 찍기 → <b>정답!</b></li>' : '<li>최종 두 곳: ' + Q.fin.map(esc).join(' vs ') + ' → <b>' + (ok ? '정답!' : '땡') + '</b></li>') + '</ol>' +
     '<div class="row"><a class="btn ghost sm" href="' + link(A) + '" target="_blank" rel="noopener">직급별 연봉 보기</a><a class="btn ghost sm" href="' + coLink(A) + '" target="_blank" rel="noopener">이 회사 가도 될까?</a></div></details>' +
     t3PastBox() + '<details class="more"><summary>오늘 · 이번 주 순위 전체</summary><div id="lbT"></div></details><div class="row">' + againBtn('today', function () { T3SEL = ''; T3ARM = 0; renderToday(); }) + '</div></div>';

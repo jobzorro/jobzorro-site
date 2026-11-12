@@ -27,8 +27,13 @@ function cupSnapGet(d) {
   return call('/play/cup?snap=1&d=' + d + '&dev=' + DEV).catch(function () { return null; });
 }
 var CUP_RL = ['16강', '8강', '4강', '결승'];
+
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden || PC.kstDay() === TODAY || !CUP || CUP.mode !== 'day' || CUP.ans.length || prog('cup')) return;
+  CUP = null; if (!dayBusy()) location.reload(); else if (CUR === 'cup') renderCup();
+});
 function themeBar() {
-  return '<div class="toolbar"><div class="cupthw"><div class="seg" id="cupTh" aria-label="월드컵 고르기"><button type="button" data-v="day" aria-pressed="' + (CMODE === 'day') + '">🏆 오늘의 16강</button>' +
+  return '<div class="toolbar"><div class="cupthw"><div class="seg" id="cupTh" aria-label="월드컵 고르기"><button type="button" data-v="day" aria-pressed="' + (CMODE === 'day') + '">' + icon('trophy', 1.5, 'cpi') + '오늘의 16강</button>' +
     Object.keys(PC.THEMES).map(function (k) { return '<button type="button" data-v="' + k + '" aria-pressed="' + (k === CMODE) + '">' + (k === 'all' ? '연습 · ' : '') + PC.THEMES[k] + '</button>'; }).join('') + '</div></div>' +
     '<span class="src" style="margin:0">오늘 <b>' + man(CTODAY) + '판</b>' + mockTag() + '</span></div>';
 }
@@ -51,23 +56,10 @@ function cupRoute() {
   CPZ = CPZ || PC.genCup(TODAY, ctx);
   var x = rec(TODAY, 'cup'), p = prog('cup');
   if (x) return cupReport({ mode: 'day', theme: 'all', names: CPZ.all, ans: x.ans, x: x });
-  if (!p) {
-    $('cup').innerHTML = themeBar() + '<div class="intro"><h3>오늘의 16강 · ' + mmdd(TODAY) + '</h3>' +
-      (SIX ? '<p class="sum">모두 같은 16곳, 같은 대진이에요. 가고 싶은 회사를 고르세요. 고른 쪽이 <b>전국 민심</b>과 같을수록 점수가 올라가요.<br>민심은 다 고른 뒤에 한꺼번에 공개돼요.</p>'
-        : '<p class="sum">모두 같은 16곳, 같은 대진이에요. 가고 싶은 회사를 고르면 그 대결의 <b>전국 민심</b>이 바로 공개돼요.<br>민심과 같은 쪽을 고를수록 점수가 올라가요.</p>') +
-      '<ul class="cuphow"><li><b>민심 맞히기</b> 16강 40 · 8강 60 · 4강 80 · 결승 100점</li><li><b>안목 보너스</b> 우승 회사의 대리 연봉이 16곳 중 높을수록 최대 +180점</li><li><b>만점 1,000점</b> · 하루 첫 판만 순위에 올라요</li></ul>' +
-      '<button class="btn big" id="cGo" type="button">시작하기 ▶</button><details class="rules"><summary>규칙 보기</summary><ul>' +
-      (SIX ? '<li>민심 = 오늘의 16강에서 전국 사람들이 그 회사를 고른 비율로 만든 인기 지수예요. 오늘 하루는 0시에 정한 값으로 모두 똑같이 채점해요.</li>' +
-        '<li>두 회사 중 하나라도 기록이 ' + PC.CUP_MIN + '번이 안 되거나 인기 지수가 같으면 \'민심 미정\'이에요. 어느 쪽을 골라도 절반 점수를 받아요.</li>'
-        : '<li>민심 = 지금까지 전국 사람들이 그 회사를 고른 비율(선택률)이 더 높은 쪽이에요. 기록이 적은 회사는 50%에 가깝게 쳐요.</li>') +
-      '<li>연봉은 끝날 때까지 비밀이에요. 우승 회사의 대리 연봉이 16곳 중 r위면 (16 − r) × 12점을 더해요.</li>' +
-      '<li>위 테마 버튼(연습)은 무작위 대진으로 몇 번이든 할 수 있고 순위에는 안 올라가요. 후보가 32곳이 안 되는 테마는 8강이에요.</li></ul></details></div>';
-    $('cGo').onclick = function () { $('cGo').disabled = true; startDaily('cup').then(function (st) { setProg('cup', { tok: st.tok, t0: st.t0, ans: [] }); renderCup(); }); };
-    wireTheme(); return;
-  }
+  if (!p) p = { ans: [] };
   if (!Array.isArray(p.ans)) { p.ans = []; setProg('cup', p); }
   CUP = cupState('day', 'all', CPZ.all.map(function (n) { return BYN[n]; }), p.ans);
-  if (!CUP) { p.ans = []; setProg('cup', p); CUP = cupState('day', 'all', CPZ.all.map(function (n) { return BYN[n]; }), []); }
+  if (!CUP) { p.ans = []; if (prog('cup')) setProg('cup', p); CUP = cupState('day', 'all', CPZ.all.map(function (n) { return BYN[n]; }), []); }
   cupDraw();
 }
 function newCup() {
@@ -95,9 +87,25 @@ function cupPick(st, j, R) {
 
 function cupBrk() {
   if (!PX.ok) return '';
-  var lost = {}, a = CUP.round[CUP.i], b = CUP.round[CUP.i + 1];
+  var N = CUP.all.length, rows = [CUP.all], i = 0, lost = {}, a = CUP.round[CUP.i], b = CUP.round[CUP.i + 1];
   CUP.picks.forEach(function (p) { lost[p[1]] = 1; });
-  return '<div class="brk8" aria-hidden="true">' + CUP.all.map(function (c) { return bld(c, 2, { blind: 1 }, lost[c.n] ? 'gone' : c === a || c === b ? 'now' : ''); }).join('') + '</div>';
+  for (var m = N / 2; m >= 1; m /= 2) { var w = CUP.picks.slice(i, i + m).map(function (p) { return BYN[p[0]]; }); while (w.length < m) w.push(null); rows.push(w); i += m; }
+  return '<div class="cbk" aria-hidden="true">' + rows.map(function (r, ri) {
+    var top = ri === rows.length - 1;
+    return '<div class="cbr' + (ri ? ' up' : '') + '" style="grid-template-columns:repeat(' + r.length + ',minmax(0,1fr))">' + r.map(function (c) {
+      var now = c && ri === CUP.r && a && b && (c.n === a.n || c.n === b.n);
+      return '<span class="cbc' + (top ? ' top' : !c ? ' tbd' : lost[c.n] ? ' gone' : now ? ' now' : '') + '">' + (top ? icon('trophy', 2) : c ? bld(c, 1, { blind: 1 }) : '<i></i>') + '</span>';
+    }).join('') + '</div>';
+  }).reverse().join('') + '</div>';
+}
+function cupRules() {
+  return '<details class="rules cuprl"><summary>규칙 보기</summary><ul>' +
+    '<li>모두 같은 16곳, 같은 대진이에요. 고른 쪽이 <b>전국 민심</b>과 같으면 16강 40 · 8강 60 · 4강 80 · 결승 100점.</li>' +
+    '<li><b>안목 보너스</b>: 우승 회사의 대리 연봉이 16곳 중 r위면 (16 − r) × 12점, 최대 +180점. 연봉은 끝날 때까지 비밀이에요.</li>' +
+    (SIX ? '<li>민심 = 오늘의 16강에서 전국 사람들이 그 회사를 고른 비율로 만든 인기 지수예요. 오늘 하루는 0시에 정한 값으로 모두 똑같이 채점하고, 다 고른 뒤에 공개해요.</li>' +
+      '<li>두 회사 중 하나라도 기록이 ' + PC.CUP_MIN + '번이 안 되거나 인기 지수가 같으면 \'민심 미정\'이에요. 어느 쪽을 골라도 절반 점수를 받아요.</li>'
+      : '<li>민심 = 지금까지 전국 사람들이 그 회사를 고른 비율(선택률)이 더 높은 쪽이에요. 기록이 적은 회사는 50%에 가깝게 쳐요.</li>') +
+    '<li>만점 1,000점 · 하루 첫 판만 순위에 올라요. 위 테마 버튼(연습)은 무작위 대진으로 몇 번이든 할 수 있고 순위에는 안 올라가요. 후보가 32곳이 안 되는 테마는 8강이에요.</li></ul></details>';
 }
 
 function cupBkt(all, picks) {
@@ -116,20 +124,24 @@ function cupLastLine(L) {
     : '민심은 <b>' + esc(L.l.n) + '</b> 쪽이었어요 (인기 지수 ' + (100 - pw) + ' : ' + pw + ') · <b class="no">0점</b>';
 }
 function cupDraw() {
-  var R = CUP.round, n = R.length, lv = n === 2 ? '결승' : n + '강', a = R[CUP.i], b = R[CUP.i + 1], dots = '', day = CUP.mode === 'day', hide = cupHide(CUP);
-  for (var k = 0; k < n / 2; k++) dots += '<i class="' + (k < CUP.i / 2 ? 'on' : '') + '"></i>';
+  var R = CUP.round, n = R.length, lv = n === 2 ? '결승' : n + '강', a = R[CUP.i], b = R[CUP.i + 1], day = CUP.mode === 'day', hide = cupHide(CUP);
   $('cup').innerHTML = themeBar() + '<div class="cupbar"><span class="lv">' + (day ? '오늘의 ' : '연습 · ') + lv + '</span><span class="pg">' + (CUP.i / 2 + 1) + ' / ' + n / 2 + '</span>' +
-    (hide ? '<span class="cupsc">' + CUP.ans.length + ' / ' + (CUP.all.length - 1) + '판 골랐어요</span>' : '<span class="cupsc">민심 <b>' + CUP.agree + '</b>/' + CUP.ans.length + ' · <b>' + CUP.pts + '</b>점</span>') + '<span class="dots">' + dots + '</span></div>' +
+    (hide ? '<span class="cupsc">' + CUP.ans.length + ' / ' + (CUP.all.length - 1) + '판 골랐어요</span>' : '<span class="cupsc">민심 <b>' + CUP.agree + '</b>/' + CUP.ans.length + ' · <b>' + CUP.pts + '</b>점</span>') + '</div>' +
     cupBrk() + '<p class="qline">어디로 <b>가고 싶어요?</b></p><p class="qsub">' + (hide ? '민심과 같으면 <b>+' + (PC.CUP_W[CUP.r] || 100) + '</b> · 민심·연봉은 다 고른 뒤 공개' : '고르면 전국 민심 공개 · 같으면 <b>+' + (PC.CUP_W[CUP.r] || 100) + '</b> · 연봉은 아직 비밀') + '</p>' +
-    '<div class="duel">' + [a, b].map(function (c, j) { return '<button class="pick" type="button" data-j="' + j + '">' + bld(c, 3, { blind: 1 }, 'pb') + logo(c) + '<span class="nm">' + esc(c.n) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + '</span><span class="amt q">?</span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
-    '<p class="prate" aria-live="polite"></p>';
+    '<div class="duel">' + [a, b].map(function (c, j) { return '<button class="pick cpk" type="button" data-j="' + j + '"><span class="cpl">' + logo(c, 'l') + '</span><span class="nm">' + esc(c.n) + '</span><span class="ind">' + esc(c.grp) + ' · 직원 ' + man(c.m) + '명' + (c.sido ? ' · ' + esc(c.sido) : '') + '</span><span class="cpb">' + bld(c, 2, { blind: 1 }, 'pb') + '<span class="cps">연봉 <b>?</b></span></span></button>'; }).join('<span class="vs">VS</span>') + '</div>' +
+    '<p class="prate" aria-live="polite"></p>' + (day ? cupRules() : '');
   wireTheme();
   document.querySelectorAll('#cup .pick').forEach(function (el) { el.onclick = function () {
+    if (day && !prog('cup') && PC.kstDay() !== TODAY) { CUP = null; location.reload(); return; }
     if (!day && !CUP.started) { CUP.started = true; call('/play/start', { game: 'cup', dev: DEV }).catch(function () {}); }
     document.querySelectorAll('#cup .pick').forEach(function (z) { z.disabled = true; z.classList.add(z === el ? 'win' : 'lose'); });
     cupPick(CUP, +el.dataset.j, cupRates()); sfx(hide ? 'coin' : CUP.last.ok || CUP.last.und ? 'coin' : 'wrong');
     var pr = document.querySelector('#cup .prate'); if (pr) { pr.className = 'prate' + (hide || CUP.last.und ? '' : CUP.last.ok ? ' ok' : ' no'); pr.innerHTML = cupLastLine(CUP.last); }
-    if (day) { var p = prog('cup') || {}; p.ans = CUP.ans.slice(); setProg('cup', p); }
+    if (day) {
+      var p = prog('cup'), first = !p; if (first) p = { tok: '', t0: Date.now() };
+      p.ans = CUP.ans.slice(); setProg('cup', p);
+      if (first) startDaily('cup').then(function (st) { var q = prog('cup'); if (q) { q.tok = st.tok; setProg('cup', q); } });
+    }
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     var C0 = CUP; setTimeout(function () { if (CUP !== C0) return; CUP.round.length === 1 ? cupEnd() : cupDraw(); }, hide ? (reduce ? 300 : 650) : (reduce ? 700 : 1000));
   }; });
@@ -201,7 +213,7 @@ function cupReport(o) {
     logo(w, 'l') + '<span class="nm"><b>' + esc(w.n) + '</b></span>' +
     '<div class="big">' + man(x.score) + '<small>점 / 1,000' + (day ? '' : ' · 연습') + '</small></div>' +
     '<p class="cupln">민심 일치 <b>' + agree + '/' + M + '</b>' + (und ? ' · 민심 미정 <b>' + und + '</b> <small>(절반 점수)</small>' : '') + ' · 안목 보너스 <b>+' + eye + '</b> <small>(대리 연봉 ' + N + '곳 중 ' + r + '위)</small></p>' +
-    '<div class="cupem" aria-label="라운드별 민심 일치">' + em.map(function (e, i) { return '<span><small>' + (CUP_RL[4 - Math.log2(N) + i] || '') + '</small>' + e + '</span>'; }).join('') + '</div>' +
+    '<div class="cupem" aria-label="라운드별 민심 일치">' + em.map(function (e, i) { return '<span><small>' + (CUP_RL[4 - Math.log2(N) + i] || '') + '</small>' + e.replace(/🟩/g, '<i class="cq g"></i>').replace(/🟥/g, '<i class="cq r"></i>').replace(/⬜/g, '<i class="cq w"></i>') + '</span>'; }).join('') + '</div>' +
     (day && SIX && !x.snap && !x.sent ? '<p class="src">판마다의 민심은 점수를 보낸 뒤에 받아 와요. 연결이 되면 다시 열어 주세요.</p>' : '') +
     payBox +
     (day ? rankBox('cup', x) : '') + gotBox('cup') + shareBox('shC', day ? vsBox('cup', x) : '') + nextBtn('cup') +

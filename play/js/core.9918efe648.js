@@ -347,9 +347,18 @@ var ICON = {
   target: [['..rrr..', '.rwwwr.', 'rwrrrwr', 'rwrkrwr', 'rwrrrwr', '.rwwwr.', '..rrr..'], { r: '#e8412c', w: '#ffffff', k: '#2b2b2b' }],
   horns: [['r.......r', 'rr.....rr', '.rr...rr.', '..rrrrr..'], { r: '#e8412c' }],
   queue: [['hhh.hhh.hhh', 'sss.sss.sss', 'sss.sss.sss', '...........', 'bbb.rrr.ggg', 'bbb.rrr.ggg', 'b.b.r.r.g.g'], { h: '#4a3322', s: '#f6cfa6', b: '#4f7dff', r: '#e8412c', g: '#3f9a4a' }],
-  boss: [['.kkkkk.', 'kyyyyyk', 'kyykyyk', 'kyyyyyk', '.kkkkk.'], { k: '#8a5a1c', y: '#ffcf3d' }]
+  boss: [['.kkkkk.', 'kyyyyyk', 'kyykyyk', 'kyyyyyk', '.kkkkk.'], { k: '#8a5a1c', y: '#ffcf3d' }],
+
+  gift: [['.yy...yy.', '..yy.yy..', 'rrrryrrrr', 'rrrryrrrr', '.RRRyRRR.', '.RRRyRRR.', '.RRRyRRR.', '.RRRyRRR.'], { r: '#ff6a4d', R: '#e8412c', y: '#ffcf3d' }],
+  sword: [['.......ww', '......wsw', '.....wsw.', '....wsw..', 'y..wsw...', '.ywsw....', '..yw.....', '.b.y.....', 'b...y....'], { w: '#e8edf5', s: '#aeb7c6', y: '#ffcf3d', b: '#8a5a1c' }],
+  spkon: [['...g..b..', '..gg...b.', 'gggg.b.b.', 'gggg.b.b.', 'gggg.b.b.', '..gg...b.', '...g..b..'], { g: '#b8bec9', b: '#5b9dff' }],
+  spkoff: [['...g......', '..gg.r...r', 'gggg..r.r.', 'gggg...r..', 'gggg..r.r.', '..gg.r...r', '...g......'], { g: '#b8bec9', r: '#e8412c' }],
+  pencil: [['.....pp', '....ypp', '...yyy.', '..yyy..', '.yyy...', 'tyy....', 'kt.....'], { y: '#ffcf3d', p: '#ff8fa3', t: '#f2c79b', k: '#2b2b2b' }],
+  idtag: [['..bbb..', 'wwwwwww', 'wssswww', 'wssswkw', 'wssswww', 'wwwwwww', 'wkkkkkw', 'wwwwwww'], { w: '#f4f4f4', s: '#f2c79b', k: '#7a7d74', b: '#3550b8' }]
 };
 function icon(name, s, cls, alt) { var d = ICON[name]; return d ? PX.img('i|' + name, PX.outline(d[0]), d[1], s, 'ico ' + (cls || ''), alt) : ''; }
+
+function em(name, fb, s) { return PX.ok ? icon(name, s || 1.5, 'emi') : (fb || ''); }
 
 function pxDraw(g, kind, a, x, y, s, o) {
   var rows, pal;
@@ -413,7 +422,7 @@ function sfx(name) {
   } catch (e) {}
 }
 
-function sndLbl() { return (SND.on ? '🔊' : '🔇') + '<span class="sl">' + (SND.on ? ' 효과음 켬' : ' 효과음 끔') + '</span>'; }
+function sndLbl() { return (SND.on ? em('spkon', '🔊', 2) : em('spkoff', '🔇', 2)) + '<span class="sl">' + (SND.on ? ' 효과음 켬' : ' 효과음 끔') + '</span>'; }
 function sndBtn(id) { if (!SND_UI) return ''; return '<button class="sndb" id="' + (id || 'sndT') + '" type="button" aria-label="효과음" aria-pressed="' + SND.on + '">' + sndLbl() + '</button>'; }
 function wireSnd() { document.querySelectorAll('.sndb').forEach(function (b) { b.onclick = function () {
   SND.on = !SND.on; store.set('slp-sound', SND.on ? '1' : '0');
@@ -430,6 +439,8 @@ function countUp(el, to, fmt, ms) {
 function stage(inner, cls, label) { return PX.ok ? '<div class="pxst ' + (cls || '') + '"' + (label ? ' role="img" aria-label="' + esc(label) + '"' : ' aria-hidden="true"') + '>' + inner + '</div>' : ''; }
 
 function bS(big) { var w = window.innerWidth || 400; return big ? (w < 560 ? 4 : 5) : (w < 560 ? 3 : 4); }
+
+ICON.bus = [['gggggggggg', 'gLLgLLgLLg', 'gLLgLLgLLg', 'gggggggggg', 'wggggggggw', '.kk....kk.'], { g: '#3f9a4a', L: '#bfe6ff', w: '#ffe27a', k: '#2b2b2b' }];
 
 
 
@@ -1089,10 +1100,11 @@ function renderMe(edit) {
 
   var h = '<button type="button" class="mylk" data-go="look" aria-label="내 조로 열기 · ' + esc(nameRank(NICK, r)) + '">' + (PX.ok ? zorro(r, 'normal', 1.5, '', { bg: 1, head: 1 }) : '') +
     '<span class="nk2">' + (b ? '<span class="badge1">' + esc(b) + '</span>' : '') + '<span class="nick">' + esc(NICK) + '</span></span><span class="myrk" title="오늘의 도전을 끝낼 때마다 경험치 +1, 칭호 +3. 10문제 다 맞히면 특진">' + RK[r] + '<small>' + (nx ? '승진까지 ' + nx + '판' : '만렙') + '</small></span></button>' +
-    '<span class="fire" title="이어서 출석한 날">' + (s ? '🔥 ' + s + '일 연속' : '🔥 0일') + '</span><span class="sp"></span>' +
-    '<button class="lnk" id="nickEd" type="button" aria-label="닉네임 바꾸기"><span class="pc">닉네임 바꾸기</span><span class="ph" aria-hidden="true">✎</span></button>' + sndBtn('sndM');
+    '<span class="fire" title="이어서 출석한 날">' + em('flame', '🔥') + (s ? ' ' + s + '일 연속' : ' 0일') + '</span><span class="sp"></span>' +
+    '<button class="lnk" id="nickEd" type="button" aria-label="닉네임 바꾸기 · 내 조로 꾸미기"><span class="pc">닉네임 · 조로 꾸미기</span><span class="ph" aria-hidden="true">' + em('pencil', '✎', 2) + '</span></button>' + sndBtn('sndM');
   if (edit) h += '<div class="nickf" style="width:100%"><label for="nickIn" style="font-size:13px;font-weight:700">닉네임</label><input id="nickIn" maxlength="10" value="' + esc(NICK) + '" autocomplete="off">' +
     '<button class="btn sm" id="nickOk" type="button">저장</button><button class="btn sm ghost" id="nickRnd" type="button">새로 지어 주기</button><button class="btn sm ghost" id="nickNo" type="button">그만두기</button>' +
+    '<button class="btn sm" id="nickLook" type="button" style="margin-left:auto">내 조로 꾸미기 ▶</button>' +
     '<span class="err" id="nickErr" aria-live="polite">2~10자 한글·영문·숫자. 순위표에 이 이름으로 나와요.</span></div>';
   $('me').innerHTML = h;
   wireSnd();
@@ -1107,6 +1119,7 @@ function renderMe(edit) {
   $('nickIn').onkeydown = function (e) { if (e.key === 'Enter') ok(); };
   $('nickRnd').onclick = function () { $('nickIn').value = PC.makeNick(PC.rng(Math.random())); };
   $('nickNo').onclick = function () { renderMe(); };
+  $('nickLook').onclick = function () { renderMe(); go('look'); };
 }
 function tickCd() {
   var el = $('cd'); if (!el) return;
@@ -1285,7 +1298,7 @@ function hallCol(rows, game) {
     if (!i) return '<li class="hof1"><div class="idc"><span class="idh">명예의 전당 · ' + esc(wk) + '</span>' + (PX.ok ? '<span class="hz">' + zorro(P.rk, 'happy', 2.5, 'idle', { look: P.look, bg: 1 }) + '</span>' : '') +
       (P.title ? '<span class="hft">' + esc(P.title) + '</span>' : '') + '<span class="n">' + esc(r[1]) + (r[3] ? ' <small class="lbr">' + RK[P.rk] + '</small>' : '') + '</span><span class="s">' + fmtScore(game, r[2]) + '</span><span class="idbar" aria-hidden="true"></span></div></li>';
     return '<li>' + (PX.ok ? '<span class="hz">' + zorro(P.rk, 'happy', 1.5, '', { look: P.look, bg: 1 }) + '</span>' : '') +
-      '<span class="hw">👑 ' + esc(wk) + '</span>' + (P.title ? '<span class="hft">' + esc(P.title) + '</span>' : '') + '<span class="n">' + esc(r[1]) + (r[3] ? ' <small class="lbr">' + RK[P.rk] + '</small>' : '') + '</span><span class="s">' + fmtScore(game, r[2]) + '</span></li>'; }).join('') + '</ol>' : '<p class="empty">첫 주가 끝나면 1위가 여기 올라요.</p>') + '</div>';
+      '<span class="hw">' + em('crown', '👑', 1) + ' ' + esc(wk) + '</span>' + (P.title ? '<span class="hft">' + esc(P.title) + '</span>' : '') + '<span class="n">' + esc(r[1]) + (r[3] ? ' <small class="lbr">' + RK[P.rk] + '</small>' : '') + '</span><span class="s">' + fmtScore(game, r[2]) + '</span></li>'; }).join('') + '</ol>' : '<p class="empty">첫 주가 끝나면 1위가 여기 올라요.</p>') + '</div>';
 }
 function myWeek(game, days) { var s = 0, any = false; days.forEach(function (d) { var x = rec(d, game); if (x && x.sent) { s += x.score; any = true; } }); return any ? s : null; }
 function lbAll(t, game) {
@@ -1336,7 +1349,7 @@ function ac(inp, box, list, onPick) {
 
 
 
-var LAZY = {"today":"js/today.7e7127a1aa.js","sniper":"js/sniper.32405265cb.js","road":"js/road.f4b6a97e3a.js","cup":"js/cup.05f899fc51.js","run":"js/run.20a55a6162.js","line":"js/line.2f6a68aea2.js"};
+var LAZY = {"today":"js/today.05fb3ee64b.js","sniper":"js/sniper.32405265cb.js","road":"js/road.81ad68fcc0.js","cup":"js/cup.37a5d0b472.js","run":"js/run.e5d3c375ce.js","line":"js/line.2f6a68aea2.js"};
 var LAZY_ST = {}, LAZY_CB = {};
 function lazyReady(k) { return !LAZY[k] || LAZY_ST[k] === 2; }
 function lazyLoad(k, cb) {
@@ -1688,7 +1701,7 @@ function fmtVs(game, s) { return game === 'road' ? fmtScore(game, s) : game === 
 function vsLink(game, code) { return SITE + '?vs=' + encodeURIComponent(code) + '#' + game; }
 function vsBox(game, x) {
   if (!x || !x.vs) return '';
-  return '<div class="vsbox"><button class="btn" type="button" data-vs="' + game + '">⚔ 도전장 보내기</button><p class="msg2" aria-live="polite"></p><input class="vslink" readonly hidden aria-label="도전장 주소"></div>';
+  return '<div class="vsbox"><button class="btn" type="button" data-vs="' + game + '">' + em('sword', '⚔') + ' 도전장 보내기</button><p class="msg2" aria-live="polite"></p><input class="vslink" readonly hidden aria-label="도전장 주소"></div>';
 }
 document.addEventListener('click', function (e) {
   var b = e.target.closest && e.target.closest('[data-vs]'); if (!b) return;
@@ -1736,6 +1749,7 @@ function vsScene(game, x) {
 
 
 
+
 function rankBox(game, x) {
   if (!x) return '';
   if (!x.sent && x.retry) return '<div class="rkbox rkfail" role="alert"><p class="rkl">점수를 못 보냈어요 · <small>' + esc(x.err || '연결이 안 돼요') + '</small></p>' +
@@ -1767,7 +1781,7 @@ function nextBtn(game) {
 
 function tmrLine() {
   var gl = giftLeft(), no = PC.genToday(PC.addDays(TODAY, 1), ctx).no;
-  return '<p class="tmr">' + (gl ? '🎁 선물 상자까지 <b>' + gl + '게임</b> · ' : '') + '내일 0시: 스무고개 퀴즈 <b>#' + no + '</b> · 오늘 정답 공개 · 🔥 출석 <b>' + (streak() + 1) + '일째</b></p>';
+  return '<p class="tmr">' + (gl ? em('gift', '🎁') + ' 선물 상자까지 <b>' + gl + '게임</b> · ' : '') + '내일 0시: 스무고개 퀴즈 <b>#' + no + '</b> · 오늘 정답 공개 · ' + em('flame', '🔥') + ' 출석 <b>' + (streak() + 1) + '일째</b></p>';
 }
 
 var DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
@@ -1803,7 +1817,7 @@ function lookTop() {
     '<p class="lkrk">경험치 ' + x + (r >= 4 ? ' · 만렙' : ' · ' + RK[r + 1] + ' 승진까지 ' + nx + '판') + '</p>' +
     '<div class="xpbar" role="progressbar" aria-label="다음 직급까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' +
     '<p class="src" style="margin:4px 0 0">오늘의 도전·조로 출근길을 끝낼 때마다(게임마다 하루 한 번) 경험치 +1, 칭호마다 +3. 10문제 다 맞히면 특진.</p>' +
-    (PX.ok ? '<div><button type="button" class="btn sm" id="myIdBtn">🪪 내 명함(사원증) 만들기</button><div id="myIdOut" aria-live="polite"></div></div>' : '') + '</div></div>';
+    (PX.ok ? '<div><button type="button" class="btn sm" id="myIdBtn">' + em('idtag', '🪪') + ' 내 명함(사원증) 만들기</button><div id="myIdOut" aria-live="polite"></div></div>' : '') + '</div></div>';
 }
 
 function lookBase() {
@@ -1858,7 +1872,7 @@ var LOOK_SECS = [
   ['lkBase', '기본 <b>모습</b>', function () { return '<p class="src" style="margin:0 0 10px">처음부터 무료예요. 직급(재킷·안경·머리색)은 남녀 똑같이 따라가요.</p>' + lookBase(); }],
   ['lkItems', '소품 <b>꾸미기</b>', function () { var n = Object.keys(itemsOwned()).filter(function (k) { return ITEM_BY[k]; }).length;
     return '<p class="src" style="margin:0 0 10px">모은 소품 <b>' + n + ' / ' + ITEMS.length + '</b> · 칸마다 하나씩. 게임마다 얻는 소품이 따로 있고, 하루 3게임을 하면 선물 상자가 열려요(이 기기에 저장, 점수와는 상관없어요).</p>' + lookItems(); }],
-  ['lkBadges', '<b>칭호</b>', function () { return '<p class="src" style="margin:0 0 10px">얻은 칭호를 누르면 닉네임 앞에 달아요 (순위표·명예의 전당에도 같이). 고르지 않으면 가장 최근 칭호. 연속 출석 🔥 ' + streak() + '일.</p>' + lookBadges(); }],
+  ['lkBadges', '<b>칭호</b>', function () { return '<p class="src" style="margin:0 0 10px">얻은 칭호를 누르면 닉네임 앞에 달아요 (순위표·명예의 전당에도 같이). 고르지 않으면 가장 최근 칭호. 연속 출석 ' + em('flame', '🔥', 1) + ' ' + streak() + '일.</p>' + lookBadges(); }],
   ['lkEnd', '엔딩 <b>도감</b>', function () { return '<p class="src" style="margin:0 0 6px">커리어 로드에서 본 엔딩이 모여요.</p>' + endDogam(null).replace(/<p class="h3"[^>]*>[^<]*<\/p>/, ''); }]
 ];
 function renderLook() {
@@ -1930,7 +1944,7 @@ document.addEventListener('click', function (e) {
   setTimeout(function () { var f = $('look').querySelector('.itemb[data-id="' + it[0] + '"]'); if (f) { f.scrollIntoView({ block: 'center' }); f.focus({ preventScroll: true }); } }, 60);
 });
 
-function giftTag(g) { var L = gameItems(g), own = itemsOwned(); return L.length ? '<span class="gft" title="이 게임에서 얻는 소품">🎁 ' + L.filter(function (it) { return own[it[0]]; }).length + '/' + L.length + '</span>' : ''; }
+function giftTag(g) { var L = gameItems(g), own = itemsOwned(); return L.length ? '<span class="gft" title="이 게임에서 얻는 소품">' + em('gift', '🎁', 1) + ' ' + L.filter(function (it) { return own[it[0]]; }).length + '/' + L.length + '</span>' : ''; }
 
 
 
@@ -2112,10 +2126,37 @@ function gState(k) {
   if (prog(k)) return { prog: 1, meta: '하던 판이 있어요', go: '이어서 하기 ▶' };
   return null;
 }
+
+
+
+var NEWB = null, NEW_KEYS = ['slp-streak', 'slp-runst', 'slp-ln-best', 'slp-sn-best', 'slp-cupwins', 'slp-endings', 'slp-r2st', 'slp-badges', 'slp-xpb', 'slp-today1', 'slp-gift'];
+function firstVisit() {
+  if (NEWB === false) return false;
+  var seen = false, k, i;
+  for (k in MEMS) if (k.indexOf('slp-r-') === 0) seen = true;
+  try { for (i = 0; i < localStorage.length && !seen; i++) { k = localStorage.key(i) || ''; if (k.indexOf('slp-r-') === 0 || k.indexOf('slp-cupw-') === 0 || NEW_KEYS.indexOf(k) >= 0) seen = true; } } catch (e) {}
+  NEWB = !seen; return NEWB;
+}
+function renderLobbyNew(st, feat) {
+  var tno = PC.genToday(TODAY, ctx).no, crs = ['line', 'today', 'sniper'].filter(function (k) { return !(st[k] && st[k].done); })[0] || 'line';
+  $('games').innerHTML = G5.map(function (k) {
+    var S = st[k], I = GINFO[k], nm = k === 'today' ? '스무고개 퀴즈 #' + tno : PNAME[k];
+    return '<button type="button" class="gl" id="t-' + k + '" data-go="' + k + '">' + (PX.ok ? '<span class="gli">' + icon(I[0], 2) + '</span>' : '<span class="gli" aria-hidden="true">0' + (G5.indexOf(k) + 1) + '</span>') +
+      '<b class="gn">' + esc(nm) + '</b><small>' + esc(S ? S.meta : I[2]) + '</small><span class="gla" aria-hidden="true">' + (S ? '이어서 ▶' : '▶') + '</span></button>';
+  }).join('');
+  $('lobbyN').innerHTML = '';
+  $('course').innerHTML = todPicker() + '<p class="nbhi">회사·직급별 연봉을 맞혀 보는 게임이에요. 처음이면 이것부터 해 보세요.</p>' +
+    '<button type="button" class="btn big crs nbgo" data-go="' + crs + '">▶ 오늘의 3분 코스 ' + (st[crs] && st[crs].prog ? '이어서 하기' : '시작하기') + '<small>줄서기 → 스무고개 → 스나이퍼 · 가입 없이 바로</small></button>' +
+    '<p class="nbor">게임 하나만 골라서 해도 돼요</p>';
+}
 function renderLobby() {
   var st = {}, nDone = 0, feat = '', ph = (window.innerWidth || 400) <= 640;
   G5.forEach(function (k) { st[k] = gState(k); if (st[k] && st[k].done) nDone++; else if (!feat) feat = k; });
   RPZ = RPZ || PC.genRoad(TODAY, ctx);
+  var nb = firstVisit();
+  if (nb) document.documentElement.setAttribute('data-new', '1'); else document.documentElement.removeAttribute('data-new');
+  $('games').className = 'games' + (nb ? ' nb' : '');
+  if (nb) { renderLobbyNew(st, feat); dockSubs(); lazyIdle(feat); return; }
   var tno = PC.genToday(TODAY, ctx).no, order = G5;
   $('games').innerHTML = order.map(function (k) {
     var S = st[k], f = k === feat, I = GINFO[k], nm = k === 'today' ? '스무고개 퀴즈 #' + tno : PNAME[k];
@@ -2127,7 +2168,7 @@ function renderLobby() {
       '<span class="go" aria-hidden="true">' + (S ? S.go : '시작하기 ▶') + '</span></button>';
   }).join('');
   var gl = giftLeft(), crs = ['line', 'today', 'sniper'].filter(function (k) { return !(st[k] && st[k].done); })[0];
-  $('lobbyN').innerHTML = G5.length + '개 중 ' + nDone + '개 했어요 · ' + (gl ? '🎁 선물 상자까지 <b>' + gl + '개</b>' : '🎁 오늘 선물 받음');
+  $('lobbyN').innerHTML = G5.length + '개 중 ' + nDone + '개 했어요 · ' + em('gift', '🎁') + (gl ? ' 선물 상자까지 <b>' + gl + '개</b>' : ' 오늘 선물 받음');
   $('course').innerHTML = todPicker() + (crs ? '<button type="button" class="btn big crs" data-go="' + crs + '">▶ 오늘의 3분 코스' + (crs === 'line' ? '' : ' 이어서') + '<small>줄서기 → 스무고개 → 스나이퍼</small></button>' : '');
   dockSubs();
   lazyIdle(feat);
