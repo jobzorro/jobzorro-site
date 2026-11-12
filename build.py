@@ -552,33 +552,41 @@ SHARED_CSS += TABBAR_CSS
 #   · 그림만 바꿀 때: assets/brand/lab_logo.png 를 새 그림으로 바꾸거나 seo.brand_mark() 를 고친다 (공유 그림 왼쪽 위 표시도 같이 바뀜)
 #   · 모양(글자·두 줄 등)을 바꿀 때: 아래 NAV_LOGO_CSS 와 nav_logo_html() 을 고친다
 # 주의: CSS 는 줄마다 ".zn" 또는 "@media (max-width:640px) { .zn" 로 시작해야 한다 (뉴스·연봉·회사·놀이터에는 그렇게 시작하는 줄만 골라 붙인다)
-NAV_LOGO_FILE = "lab_logo.png"                 # 원본: assets/brand/lab_logo.png → site/assets/lab_logo.<해시>.png
+NAV_LOGO_FILE = "lab_logo.png"                 # 밝은 화면용. 원본: assets/brand/lab_logo.png → site/assets/lab_logo.<해시>.png
+NAV_LOGO_DARK_FILE = "lab_logo_white.png"      # 검은 화면용(흰색). 2026-11-12 사용자: 색 뒤집기 대신 흰색 로고를 따로 만들어 쓴다
 NAV_LOGO_ALT = SITE_NAME
-NAV_LOGO_CSS = """.zn-logo img { height:30px; width:auto; filter:var(--logo-filter,none); display:block; }
+# 그림 두 장(.ll 밝은 화면용, .ld 검은 화면용)을 다 넣어 두고 화면 색에 맞는 한 장만 보인다 (폰·PC 같음). 기기가 어두운 모드거나 data-theme="dark" 면 흰색 로고
+NAV_LOGO_CSS = """.zn-logo img { height:30px; width:auto; filter:none; display:block; }
+.zn-logo .ld { display:none; }
+.zn-logo .ll:is([data-theme="dark"] *) { display:none; }
+.zn-logo .ld:is([data-theme="dark"] *) { display:block; }
+@media (prefers-color-scheme: dark) { .zn-logo .ll:not([data-theme="light"] *) { display:none; } .zn-logo .ld:not([data-theme="light"] *) { display:block; } }
 @media (max-width:640px) { .zn-logo img { height:28px; } }"""
+NAV_PICK = (".zn", "@media (max-width:640px) { .zn", "@media (max-width:480px) { .zn", "@media (prefers-color-scheme: dark) { .zn")   # 다른 페이지(뉴스·연봉·회사·놀이터)에 메뉴 모양을 옮길 때 고르는 줄
 SHARED_CSS = SHARED_CSS.replace("/*__NAV_LOGO_CSS__*/", NAV_LOGO_CSS)
-_NAV_LOGO = {"rel": "", "wh": ""}   # 빌드 시작 때 prepare_nav_logo() 가 채운다
+_NAV_LOGO = {"rel": "", "wh": "", "rel_d": ""}   # 빌드 시작 때 prepare_nav_logo() 가 채운다
 
 
 def prepare_nav_logo(out_dir: Path) -> None:
-    """로고 그림을 (글꼴이 있는 PC 면) 다시 만들고 site/assets/ 에 내용 해시 이름으로 복사한다."""
-    src = ASSETS / "brand" / NAV_LOGO_FILE
-    seo.brand_logo(src)   # 글꼴이 없으면(Actions) 저장소에 있는 그림 그대로
-    body = src.read_bytes()
-    stem, ext = NAV_LOGO_FILE.rsplit(".", 1)
-    _NAV_LOGO["rel"] = "assets/" + _hashed(out_dir / "assets", stem, "." + ext, body)
+    """로고 그림 두 장(밝은·검은 화면용)을 (글꼴이 있는 PC 면) 다시 만들고 site/assets/ 에 내용 해시 이름으로 복사한다."""
+    for key, name, dark in (("rel", NAV_LOGO_FILE, False), ("rel_d", NAV_LOGO_DARK_FILE, True)):
+        src = ASSETS / "brand" / name
+        seo.brand_logo(src, dark=dark)   # 글꼴이 없으면(Actions) 저장소에 있는 그림 그대로
+        stem, ext = name.rsplit(".", 1)
+        _NAV_LOGO[key] = "assets/" + _hashed(out_dir / "assets", stem, "." + ext, src.read_bytes())
     try:
         from PIL import Image
-        with Image.open(src) as im:
+        with Image.open(ASSETS / "brand" / NAV_LOGO_FILE) as im:
             _NAV_LOGO["wh"] = f' width="{im.width}" height="{im.height}"'
     except Exception:
         _NAV_LOGO["wh"] = ""
 
 
 def nav_logo_html(root: str) -> str:
-    """상단 왼쪽 로고 (누르면 연구소 입구 "/" 로)"""
+    """상단 왼쪽 로고 (누르면 연구소 입구 "/" 로). 밝은 화면용·검은 화면용 그림을 같이 넣는다"""
     return (f'<a class="zn-logo" href="{_clean(root, "index.html")}" aria-label="{NAV_LOGO_ALT} 첫 화면">'
-            f'<img src="{root}{_NAV_LOGO["rel"]}" alt="{NAV_LOGO_ALT}"{_NAV_LOGO["wh"]}></a>')
+            f'<img class="ll" src="{root}{_NAV_LOGO["rel"]}" alt="{NAV_LOGO_ALT}"{_NAV_LOGO["wh"]}>'
+            f'<img class="ld" src="{root}{_NAV_LOGO["rel_d"]}" alt="" aria-hidden="true"{_NAV_LOGO["wh"]}></a>')
 
 
 # 취업뉴스 페이지에 끼울 때 덮어쓰는 스타일 (보조 글자 선명하게). 제호는 build_site.py 의 .hero-top 이 그린다
@@ -1523,7 +1531,7 @@ def build(out_dir: Path, with_news: bool) -> None:
             raise SystemExit(f"뉴스 결과물이 없습니다: {NEWS_SRC} (news-collector/build_site.py 를 먼저 실행하거나 NEWS_URL 설정, 또는 --no-news)")
         n = news_src.read_text(encoding="utf-8")
         nav_css = "<style>" + "".join(
-            line + "\n" for line in SHARED_CSS.splitlines() if line.startswith((".zn", ".zf", "@media (max-width:640px) { .zn", "@media (max-width:480px) { .zn"))) + TABBAR_CSS + (
+            line + "\n" for line in SHARED_CSS.splitlines() if line.startswith(NAV_PICK + (".zf",))) + TABBAR_CSS + (
             "@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) { --logo-filter: invert(1); } } :root[data-theme=\"dark\"] { --logo-filter: invert(1); }\n"
         ) + NEWS_MASTHEAD_CSS + "</style>"
         # 공용 푸터·하단 버튼이 쓰는 토큰 중 뉴스 페이지에 없는 것들을 뉴스 토큰에 연결
@@ -1630,7 +1638,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     sal = BASE / ("_skip" if PREVIEW else "salary")
     if sal.exists():
         dst = out_dir / "salary"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(sal, dst)
-        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
+        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith(NAV_PICK))
         zn_css = ".zn{--paper:var(--bg);--hairline:var(--line);--acc-ink:#0b0b0b}\n" + zn_css
         # 다크모드에서 검은 TEAM ZORRO 로고가 안 보이지 않게 흰색으로 (뉴스 페이지와 같은 규칙)
         zn_css += "\n@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) { --logo-filter: invert(1); } } :root[data-theme=\"dark\"] { --logo-filter: invert(1); }"
@@ -1716,7 +1724,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     if comp.exists():
         dst = out_dir / "company"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(comp, dst)
         # 이 페이지는 자체 토큰(--paper·--hairline·--logo-filter)을 이미 갖고 있어 공용 .zn(메뉴)·.zf(푸터) 규칙만 더한다
-        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", ".zf", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
+        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith(NAV_PICK + (".zf",)))
         h = (dst / "index.html").read_text(encoding="utf-8")
         h = re.sub(r'<title>[^<]*</title>|<meta (name="description"|property="og:[^"]+"|name="twitter:[^"]+")[^>]*>|<link rel="canonical"[^>]*>', "", h)
         h = h.replace('<meta charset="utf-8">', '<meta charset="utf-8">' + seo.seo_head(base_url, "회사 판단 연구소 — 이직할까 말까, 내 상황으로 판단" + TITLE_TAIL,
@@ -1770,7 +1778,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     play = BASE / ("_skip" if PREVIEW else "play")
     if (play / "index.html").exists():
         dst = out_dir / "play"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(play, dst)
-        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith((".zn", "@media (max-width:480px) { .zn", "@media (max-width:640px) { .zn")))
+        zn_css = "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith(NAV_PICK))
         zn_css = ".zn{--paper:var(--bg);--hairline:var(--line)}\n" + zn_css
         zn_css += "\n@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) { --logo-filter: invert(1); } } :root[data-theme=\"dark\"] { --logo-filter: invert(1); }"
         h = (dst / "index.html").read_text(encoding="utf-8")

@@ -452,10 +452,11 @@ def _wrap(d, text, font, maxw, n=2):
 HUB_ART = [("회사 판단", "3.9만", "곳"), ("연봉", "5.2만", "곳"), ("직무", "133", "개"), ("취업뉴스", "매일", "")]   # 입구 공유 그림의 네 칸 (build.py 가 지금 숫자로 바꾼다)
 
 
-def brand_mark(h: int, fg=(255, 255, 255), ring=None, text: str = ""):
+def brand_mark(h: int, fg=(255, 255, 255), ring=None, text: str = "", white_badge: bool = False):
     """사이트 표시 한 벌: CI 의 가면 네모(jobzorro_logo.png 왼쪽) + 오른쪽으로 기울인 굵은 글자 '취업이직연구소'. 높이 h 의 투명 바탕 그림(RGBA).
     상단 로고(assets/brand/lab_logo.png)와 모든 공유 그림 왼쪽 위가 이 함수 하나를 쓴다 → 로고를 바꿀 때 여기만 고치면 둘 다 바뀐다.
-    fg: 글자 색, ring: 네모 테두리 색(어두운 바탕에서 검은 네모가 묻히지 않게, 없으면 안 그림)"""
+    fg: 글자 색, ring: 네모 테두리 색(어두운 바탕에서 검은 네모가 묻히지 않게, 없으면 안 그림)
+    white_badge: 검은 바탕용 — 네모를 흰색으로 칠하고 가면 자리는 뚫어 바탕색이 비치게 (취업조로 CI 의 어두운 화면용 로고와 같은 방식)"""
     import math
     from PIL import Image, ImageDraw
     text = text or SITE_NAME
@@ -465,6 +466,11 @@ def brand_mark(h: int, fg=(255, 255, 255), ring=None, text: str = ""):
     badge = logo.crop((15, 9, 78, 72)).resize((H, H), Image.LANCZOS)
     mask = Image.new("L", (H, H), 0)
     ImageDraw.Draw(mask).rounded_rectangle([0, 0, H - 1, H - 1], radius=int(H * 10 / 44), fill=255)
+    if white_badge:   # 흰 네모 + 가면 모양으로 뚫린 구멍 (원본의 밝기를 뒤집어 투명도로 쓴다)
+        from PIL import ImageChops, ImageOps
+        hole = ImageChops.multiply(mask, ImageOps.invert(badge.convert("L")))
+        badge = Image.new("RGBA", (H, H), (255, 255, 255, 255))
+        mask = hole
     badge.putalpha(mask)
     f = _font("BlackHanSans-Regular.ttf", int(H * 31 / 44)) or _font("GmarketSansBold.otf", int(H * 27 / 44))
     tmp = ImageDraw.Draw(Image.new("L", (10, 10)))
@@ -486,12 +492,13 @@ def brand_mark(h: int, fg=(255, 255, 255), ring=None, text: str = ""):
     return out.resize((round(out.width / S), round(out.height / S)), Image.LANCZOS)
 
 
-def brand_logo(out: Path, h: int = 96) -> bool:
-    """상단 메뉴 로고 그림(검은 글자, 투명 바탕)을 만든다. 어두운 화면에서는 CSS 가 색을 뒤집는다. 글꼴이 없으면 만들지 않는다(저장소의 기존 파일 사용)."""
+def brand_logo(out: Path, h: int = 96, dark: bool = False) -> bool:
+    """상단 메뉴 로고 그림(투명 바탕)을 만든다. dark=False: 밝은 화면용(검은 네모·검은 글자), dark=True: 검은 화면용(흰 네모·흰 글자).
+    글꼴이 없으면 만들지 않는다(저장소의 기존 파일 사용)."""
     if not (_font("BlackHanSans-Regular.ttf", 10) or _font("GmarketSansBold.otf", 10)):
         return False
     out.parent.mkdir(parents=True, exist_ok=True)
-    brand_mark(h, fg=(11, 11, 11)).save(out, optimize=True)
+    (brand_mark(h, fg=(255, 255, 255), white_badge=True) if dark else brand_mark(h, fg=(11, 11, 11))).save(out, optimize=True)
     return True
 
 
