@@ -1,4 +1,5 @@
-// 내 상황 판단 엔진 (F 규칙) — v0.6 (2026-10-31, 6회차 문답지: 연봉 낮은 회사는 협상 조건·문구 정리. 워라밸 강하게는 사이트 meWlb)
+// 내 상황 판단 엔진 (F 규칙) — v0.7 (2026-11-12 판단 로직 검토 반영: 자료 부족 상한·공기업 나이 규칙·연봉 역전·금융 회사 수준·평균만 있는 회사·나이 완충. rules/fit_rules.md 13장)
+//   v0.6 (2026-10-31, 6회차 문답지: 연봉 낮은 회사는 협상 조건·문구 정리. 워라밸 강하게는 사이트 meWlb)
 // 규칙 설명은 rules/fit_rules.md 6장. 숫자는 아래 FIT 한곳에만 둔다.
 // 브라우저(사이트)와 node(fit_test.js) 둘 다에서 돈다. 입력은 서버로 보내지 않는다.
 (function (root) {
@@ -34,6 +35,11 @@
     pay_low_light_pct: 5,       // 6회차 B3: 갈 회사 연봉이 5%까지 낮으면 '조금 낮아요'로만 가볍게
     wlb_big_pay_pct: 20,        // 6회차 A6: 워라밸 중요한 사람도 연봉 20% 이상 오르면 한 단계 덜 내림
     pay_low_warn_pct: 15,       //           5~15%는 '협상이 관건', 15% 넘으면 '기대치가 높거나 빡셀 수 있어요' + 판정 '중립기어'까지
+    est_same_pct: 5,            // 11-12 F8: 추정 연봉이 5%까지 낮은 건 '지금과 비슷'으로 본다 (추정치 1% 차이로 판정이 뛰지 않게)
+    newbie_years_max: 4,        // 11-12 F11: 신입·중고신입 칸은 경력 4년까지만. 넘으면 경력 이직 기준으로 안내
+    avg_low_pct: 30,            // 11-12 F8 보완: 평균만 있는 회사의 전 직원 평균이 내 연봉보다 이만큼(%) 이상 낮으면 '조건 보고 가세요'까지 (버거킹 평균 1,530만에 5,000만인 사람이 '가세요'가 나오던 것)
+    lack_cap: 5,                // 11-12 F1: 판단자료 부족 회사는 '가세요'까지만 ('무조건 가세요' 없음)
+    fin_avg: [7000, 5000],      // 11-12 F7: 금융사 회사 수준은 인원 말고 평균 연봉으로 — 7,000만 이상 대기업 수준(3), 5,000만 이상 중견 수준(2), 그 아래 1 (사이트 coLevel 이 씀). 중견 기준은 사용자 결정: 6,000만으로 했다가 같은 날 5,000만으로 넓힘
   };
 
   // 받침 따라 조사 고르기: j("건설", "은", "는") → "건설은"
@@ -49,6 +55,8 @@
     if (/중견/.test(size)) return { n: 2, kind: "" };
     return { n: 1, kind: "" }; // 중소·모르면
   }
+  // 11-12 F7: 사이트가 회사 자료로 정한 수준(tier_n)이 있으면 그 값을 쓴다 (금융사는 인원이 아니라 평균 연봉으로 수준을 본다)
+  function tierOf(o = {}) { const t = tier(o.size); return o.tier_n != null ? { ...t, n: o.tier_n } : t; }
 
   // 워라밸 단계: 1 칼퇴 ~ 4 매일 야근
   function wlb(w = "") {
@@ -98,13 +106,17 @@
   // 지금 업황이 꺾인 산업 (오르내림이 있어 자주 바꾼다) — 3회차 C1·B1
   const DOWN_INDUSTRY = [/화학/, /건설/];
   // 2026-10-27: 업황은 뉴스 자동 판정(industry_trend.py) → 조로 확인값(config industry_trend_confirm)을 build.py 가 아래 표로 넣는다. 표에 없는 업계만 위 정규식
-  const IND_TREND = {"화학·소재": "down", "건설": "down", "2차전지": "up", "반도체·전자": "up", "통신·미디어·광고": "down"};
-  const trendOf = o => IND_TREND[o.industry || ""];
-  function downInd(o = {}) { const t = trendOf(o); return t ? t === "down" : DOWN_INDUSTRY.some(re => re.test(o.industry || "")); }
+  const IND_TREND = {"화학": "down", "건설": "down", "2차전지": "up", "반도체·전자": "up", "통신·미디어·광고": "down"};
+  // 11-12 사용자: '화학·소재·에너지' 묶음을 통째로 '업황 꺾임'으로 보지 않는다 — 화학 회사에만. 사이트가 세부 업종으로 가른 값(ind_sub: 화학·소재·에너지·모름)을 넘기면 그걸로 본다
+  //   모름(세부 업종을 알 수 없음)은 꺾임도 호황도 아닌 것으로. 문장에도 '화학·소재' 대신 '화학'이라고 쓴다(indName)
+  const trendKey = o => o.ind_sub || o.industry || "";
+  const indName = o => o.ind_sub && o.ind_sub !== "모름" ? o.ind_sub : o.industry;
+  const trendOf = o => o.ind_sub === "모름" ? "flat" : IND_TREND[trendKey(o)];
+  function downInd(o = {}) { const t = trendOf(o); return t ? t === "down" : DOWN_INDUSTRY.some(re => re.test(trendKey(o))); }
   // 꺾였다가 올라가는 / 호황인 산업 — 많이 뽑아 옮기기 쉽고, 있는 사람은 옮길 이유가 적다 (4회차 B2·B3·C1)
   // 4회차 A5: 나중엔 뉴스·채용 수로 자동 판단 후 조로가 확인
   const UP_INDUSTRY = [/2차전지|배터리/];
-  function upInd(o = {}) { const t = trendOf(o); return t ? t === "up" : UP_INDUSTRY.some(re => re.test(o.industry || "")); }
+  function upInd(o = {}) { const t = trendOf(o); return t ? t === "up" : UP_INDUSTRY.some(re => re.test(trendKey(o))); }
   const FACTORY = /공장|산단|현장/;   // 4회차 C3: 지방 현장 순환에서 빠져나오는 것도 공장과 같이 본다
   const PLANT_JOB = /생산|공정|품질|설비|R&D|연구/;  // 공장에 있는 게 자연스러운 직무
   const lowRating = o => o.rating != null && o.rating < FIT.rating_min;
@@ -164,21 +176,30 @@
     const R = [], cond = [];      // R: 이유, cond: '조건 보고'로 만드는 것
     let fail = false;             // 마요 사유
     let cap = null;               // 7단계 판정 상한 (6: 무조건 가세요 … 0: 비추예요). 사이트가 최종 판정에 씌운다
-    const add = (rule, text, kind) => { R.push({ rule, text }); if (kind === "cond") cond.push(rule); if (kind === "fail") fail = true; };
+    // nSoft: 연봉 쪽 조건의 개수 (연봉 협상 조건 pay() + '돈 + 워라밸' 블록 안에서 붙은 조건). 조건이 이것뿐이면 soft → 사이트가 '조건 보고 가세요'를 지켜 준다 (11-12 F3)
+    let nSoft = 0, money = false;
+    const add = (rule, text, kind) => { R.push({ rule, text }); if (kind === "cond") { cond.push(rule); if (money) nSoft++; } if (kind === "fail") fail = true; };
     // 2026-11-07 사용자: 이직하면 연봉 협상을 새로 하니까 '연봉이 덜 오른다'로 '마요'를 박지 않는다
     //   → 협상 얘기를 붙여 '조건 보고'로, 판정은 '조건 보고 가세요'(7단계 4)까지
-    const pay = (rule, text) => { add(rule, text, "cond"); cap = cap == null ? 4 : Math.min(cap, 4); };
+    const pay = (rule, text) => { const m = money; money = true; add(rule, text, "cond"); money = m; cap = cap == null ? 4 : Math.min(cap, 4); };
 
-    const tn = tier(now.size), tt = tier(to.size);
-    const step = tt.n - tn.n;                       // +1 위 급, -1 아래 급
-    let won = (to.salary || 0) - (now.salary || 0);
+    const tn = tierOf(now), tt = tierOf(to);
+    const noTier = !!(now.size_unknown || to.size_unknown);   // 11-12 F7: 규모를 모르면 급 비교를 건너뛴다 (전에는 '중견'으로 가정)
+    const step = noTier ? 0 : tt.n - tn.n;          // +1 위 급, -1 아래 급
+    const finTo = tt.kind === "finance";            // 11-12 F7: 금융사는 '급' 대신 '회사 수준(평균 연봉 기준)'으로 말한다
+    const payUnknown = !!to.pay_unknown;            // 11-12 F8: 직급 연봉 없이 회사 평균만 있으면 연봉으로 판정을 움직이지 않는다
+    let won = payUnknown ? 0 : (to.salary || 0) - (now.salary || 0);
+    const est = /추정/.test(to.how || "");
+    let nearGap = 0;                                // 11-12 F8: 추정 연봉이 5%까지 낮은 건 '비슷'으로 (0으로 놓고 본다)
+    if (est && won < 0 && now.salary && -won / now.salary * 100 <= FIT.est_same_pct) { nearGap = -won; won = 0; }
     const rawWon = won;
     const upIn = upInd(to) && tt.n >= 3;                   // 4회차 C1: 호황 산업 대기업이면 공장 근무 손해를 따지지 않는다
-    if (/공장|산단/.test(to.place || "") && !FACTORY.test(now.place || "") && !upIn) won -= FIT.factory_won; // F9 (현장은 빠져나올 때만 본다)
+    if (/공장|산단/.test(to.place || "") && !FACTORY.test(now.place || "") && !upIn && !payUnknown) won -= FIT.factory_won; // F9 (현장은 빠져나올 때만 본다)
     const outFactory = FACTORY.test(now.place || "") && !FACTORY.test(to.place || "");
-    if (outFactory) won += FIT.factory_won;                // F9 반대: 지방 공장 → 본사는 +1천만 원으로 본다 (3회차 A5)
+    if (outFactory && !payUnknown) won += FIT.factory_won; // F9 반대: 지방 공장 → 본사는 +1천만 원으로 본다 (3회차 A5)
     const pct = now.salary ? won / now.salary * 100 : 0;
-    const wlbGain = (wlb(now.wlb) - wlb(to.wlb)) * FIT.wlb_pct_per_step; // +면 좋아짐
+    // 11-12 F9: 워라밸 자료가 없는 쪽이 있으면 '보통'으로 단정하지 않고 워라밸 손익을 0으로 둔다
+    const wlbGain = now.wlb_unknown || to.wlb_unknown ? 0 : (wlb(now.wlb) - wlb(to.wlb)) * FIT.wlb_pct_per_step; // +면 좋아짐
     const eff = pct + wlbGain;                      // 워라밸까지 친 체감 인상률
 
     // F11 선퇴사면 연봉 기준을 낮춘다
@@ -196,10 +217,31 @@
     }
 
     // 1) 돈 + 워라밸
-    if (won < 0 && now.left && (now.years || 0) >= 4 && (now.gap || 0) > 1 && -pct <= FIT.left_gap_cut_pct) {
+    money = true;   // 이 블록에서 붙는 조건은 연봉 쪽 조건으로 센다 (연봉이 오를수록 판정이 나빠지는 역전을 막는다)
+    const cutOk = step >= 2 || (tt.kind === "public" && tn.kind !== "public");   // 5회차 D4: 삭감도 10%까지 받아들이는 이동
+    const sg = x => (x >= 0 ? "+" : "-") + Math.abs(x);
+    const adj = won !== rawWon;   // 공장 근무 값을 쳤나
+    // 11-12 F9: 문장엔 실제 차이를 쓰고, 공장 근무 값을 쳤으면 그 계산을 같이 보여 준다 (전에는 보정한 숫자만 말해 실제와 달랐음)
+    const A = nearGap ? `지금과 비슷한 연봉(추정치로는 ${nearGap}만 원 낮지만, 추정치라 ${FIT.est_same_pct}% 안쪽 차이는 같다고 봤어요)`
+      : adj ? `실제 연봉 ${sg(rawWon)}만 원(${won > rawWon ? "지방 공장·현장에서 나오는 값" : "지방 공장 근무 값"} ${FIT.factory_won}만 원을 치면 ${sg(won)}만 원)` : `연봉 +${won}만 원`;
+    const A0 = nearGap || adj ? A : `+${won}만 원`;
+    // 협상에서 받아 내야 할 실제 금액: 보정한 기준(th)을 실제 연봉 차이로 되돌린다
+    const need = (th, more) => { const v = Math.round(th + rawWon - won); return v > 0 ? `+${v}만 원 ${more}` : v === 0 ? "지금 연봉 이상으로" : `삭감 폭을 ${-v}만 원 안쪽으로`; };
+    // 11-12 F7: 금융사는 '급'이 아니라 '회사 수준(평균 연봉 기준)'으로, 규모를 모르면 급 얘기를 뺀다
+    const T = finTo ? { up: "회사 수준(평균 연봉 기준)이 지금보다 높은 금융사", upBig: "회사 수준(평균 연봉 기준)이 훨씬 높은 금융사로 가는", downGo: "회사 수준(평균 연봉 기준)은 지금보다 낮은 금융사지만", downBut: "회사 수준(평균 연봉 기준)은 지금보다 낮은 금융사지만",
+        downAt: "회사 수준(평균 연봉 기준)이 지금보다 낮은 금융사에", downMove: "회사 수준(평균 연봉 기준)이 지금보다 낮은 금융사로 옮길 땐", downTo: "회사 수준이 지금보다 낮은 금융사로", same: "회사 수준이 비슷한 금융사로 옮기면서", sameMove: "회사 수준이 비슷한 금융사로 옮기는데" }
+      : { up: "한 단계 위 회사", upBig: "회사 급이 크게 오르는", downGo: "아래 급으로 가지만", downBut: "아래 급이지만", downAt: "아래 급에", downMove: "아래 급 회사로 옮길 땐", downTo: "아래 급으로",
+        same: noTier ? "지금 회사 규모를 몰라 회사 급 비교는 빼고 보면" : "같은 급에서", sameMove: noTier ? "지금 회사 규모를 몰라 회사 급 비교는 뺐어요. 연봉만 보면" : "같은 급 이동에" };
+    // 11-12 F8 보완: 평균이 내 연봉보다 크게 낮으면(avg_low_pct 이상) 내 연봉을 맞춰 줄 회사인지 알 수 없으니 '조건 보고 가세요'까지만.
+    //   판정을 '다시 생각해요' 쪽으로 내리지는 않는다 (11-07: 연봉 숫자만으로는 말리지 않는다) — 조건·마요를 달지 않고 상한만 건다
+    const avgLow = payUnknown && now.salary > 0 && to.salary > 0 && (now.salary - to.salary) / now.salary * 100 >= FIT.avg_low_pct;
+    if (payUnknown) {
+      add("F2", avgLow ? `이 회사는 직급별 연봉 자료가 없고 전 직원 평균만 있어요. 그 평균이 내 연봉보다 ${Math.round((now.salary - to.salary) / now.salary * 100)}% 낮아서, 내 연봉을 맞춰 줄 수 있는 자리인지 확인되기 전에는 '조건 보고 가세요'까지만 드려요. 제시받은 연봉을 넣으면 내 연봉과 비교해 드려요.`
+        : "이 회사는 직급별 연봉 자료가 없고 전 직원 평균만 있어서, 연봉으로는 판정을 올리지도 내리지도 않았어요. 제시받은 연봉을 넣으면 내 연봉과 비교해 드려요.");
+    } else if (won < 0 && now.left && (now.years || 0) >= 4 && (now.gap || 0) > 1 && -pct <= FIT.left_gap_cut_pct && !cutOk) {   // 11-12 F4: 10%까지 삭감을 받아들이는 이동(공기업·급 크게 오름)이면 그 규칙이 먼저 (5% 삭감이 6% 삭감보다 나쁜 판정을 받던 역전)
       add("F11", `이미 퇴사하고 공백이 ${now.gap}년 넘었으니 ${-won}만 원(${(-pct).toFixed(0)}%) 삭감은 받아들일 만해요. 갈 회사 평판이 나쁘지 않을 때만요.`, "cond"); // 3회차 C3
-    } else if (won < 0 && -pct <= FIT.tier_up_cut_pct && (step >= 2 || (tt.kind === "public" && tn.kind !== "public"))) {
-      add("F2", `${j(to.how || "갈 회사 연봉", "이", "가")} ${-won}만 원(${(-pct).toFixed(0)}%) 낮지만 ${tt.kind === "public" ? "공기업으로 가는" : "회사 급이 크게 오르는"} 거라 ${FIT.tier_up_cut_pct}%까지는 받아들일 만해요. 연봉 협상으로 차이를 줄여 보세요.`); // 5회차 D4 · 6회차 문구
+    } else if (won < 0 && -pct <= FIT.tier_up_cut_pct && cutOk) {
+      add("F2", `${j(to.how || "갈 회사 연봉", "이", "가")} ${-won}만 원(${(-pct).toFixed(0)}%) 낮지만 ${tt.kind === "public" ? "공기업으로 가는" : T.upBig} 거라 ${FIT.tier_up_cut_pct}%까지는 받아들일 만해요. 연봉 협상으로 차이를 줄여 보세요.`); // 5회차 D4 · 6회차 문구
       cap = 5;   // 6회차 D8·D9: 연봉이 낮아지는데 '무조건 가세요'는 아니다 → '가세요'까지
     } else if (won < 0 && rawWon >= 0) {
       pay("F9", `연봉은 +${rawWon}만 원이지만 지방 공장 근무까지 치면 손해 보는 셈이에요. 공장 근무 값(1천만 원 안팎)까지 연봉 협상에서 더 받아 내면 가셔도 돼요.`);
@@ -208,52 +250,60 @@
       //   협상으로 비슷하거나 더 받으면 가도 되니 '조건 보고 가세요'까지, 15% 넘게 낮으면 '중립기어'까지 (cap = 7단계 번호)
       const p = -rawWon / now.salary * 100, how = j(to.how || "갈 회사 연봉", "은", "는");
       const w = `${how} 지금보다 ${-rawWon}만 원(${p.toFixed(0)}%) 낮아요.`;
-      if (p <= FIT.pay_low_light_pct) add("F2", `${how} 지금보다 조금 낮아요. 협상으로 충분히 맞출 수 있는 차이예요.`, "cond");
+      if (rawWon >= 0) add("F9", `지방 공장·현장에서 나오는 값(${FIT.factory_won}만 원)을 쳐도 손해예요.`, "cond");
+      else if (p <= FIT.pay_low_light_pct) add("F2", `${how} 지금보다 조금 낮아요. 협상으로 충분히 맞출 수 있는 차이예요.`, "cond");
       else if (p <= FIT.pay_low_warn_pct) add("F2", `${w} 이직 시 연봉 협상이 관건이에요.`, "cond");
       else add("F2", `${w} 연봉 협상을 잘 하셔서 비슷하거나 더 높게 받으실 수 있다면 가셔도 됩니다. 다만 평균 연봉이 이 정도로 차이 난다면 역량 기대치가 너무 높거나 일을 빡세게 줄 수도 있어요.`, "cond");
+      if (adj && won < rawWon) add("F9", `여기에 지방 공장 근무(연봉 ${FIT.factory_won}만 원 손해로 봐요)까지 겹쳐요.`, "cond");   // 11-12 F9
       cap = p > FIT.pay_low_warn_pct || step < 0 ? 3 : 4;   // 아래 급 회사에 연봉까지 낮으면 '중립기어'까지 (4회차 C6 '서울·업종 전환이 꼭 필요할 때만')
     } else if (step > 0) {
-      if (eff >= 0) add("F2", `한 단계 위 회사에 연봉 +${won}만 원, 깎이지 않아요.`);
-      else pay("F8", `연봉은 +${won}만 원인데 워라밸이 나빠져 체감으로는 손해 보는 셈이에요. 나빠지는 워라밸만큼 연봉 협상에서 더 받아 내면 가셔도 돼요.`);
+      if (eff >= 0) add("F2", `${T.up}에 ${A}${rawWon < 0 ? ", 이 정도는 받아들일 만해요" : ", 깎이지 않아요"}.`);
+      // 11-12 F4: 삭감도 받아들이는 이동(급이 크게 오름)인데 연봉이 그대로·오르는 쪽이 더 나쁜 판정을 받던 역전을 없앤다
+      else if (cutOk) { add("F2", `${T.up}에 ${A}. 워라밸은 나빠지지만 ${T.upBig} 거라 받아들일 만해요.`); cap = 5; }
+      else pay("F8", `${A}인데 워라밸이 나빠져 체감으로는 손해 보는 셈이에요. 나빠지는 워라밸만큼 연봉 협상에서 더 받아 내면 가셔도 돼요.`);
     } else if (step < 0) {
       // D2: 연봉만으론 14%여도 워라밸까지 치면 기준을 넘을 수 있다
       // 4회차 C3: 업황 꺾인 산업·현장에서 빠져나오면 % 기준은 안 본다
       const pctOk = eff >= FIT.down_min_pct * k || (escape && !badField(now));
       if (won > FIT.down_min_won * k && pctOk) {
-        add("F3", `아래 급으로 가지만 +${won}만 원${wlbGain > 0 ? "에 워라밸까지 좋아지면 " : "(" + pct.toFixed(0) + "%)이면 "}생각해 볼 만해요.`);
+        add("F3", `${T.downGo} ${A0}${wlbGain > 0 ? "에 워라밸까지 좋아지면 " : "(" + pct.toFixed(0) + "%)이면 "}생각해 볼 만해요.`);
         // D5 중견 안정성: 빠져나오는 거면 평점·재무가 나쁠 때만 '조건 보고' (4회차 A1)
-        if (tt.n === 2) add("F3", "중견도 중견 나름이에요. 갈 회사가 안정적인지 확인하세요.", !escape || lowRating(to) ? "cond" : "");
+        if (tt.n === 2 && !finTo) add("F3", "중견도 중견 나름이에요. 갈 회사가 안정적인지 확인하세요.", !escape || lowRating(to) ? "cond" : "");
+        else if (tt.n === 2) add("F3", "금융사도 회사마다 차이가 커요. 갈 회사가 안정적인지 확인하세요.", !escape || lowRating(to) ? "cond" : "");
       }
       else if (won > FIT.down_min_won * k && eff >= FIT.down_cond_pct * k) {   // 4회차 C2: 애매 구간은 평점으로 가른다
-        if (now.rating != null && to.rating != null && to.rating > now.rating) add("F3", `아래 급이지만 +${won}만 원에 평점도 지금 회사보다 좋아요. 가도 돼요.`);
-        else add("F3", `아래 급에 +${won}만 원은 애매해요. 지금 회사 평점이 갈 회사보다 낮다면 가도 돼요.`, "cond");
+        if (now.rating != null && to.rating != null && to.rating > now.rating) add("F3", `${T.downBut} ${A0}에 평점도 지금 회사보다 좋아요. 가도 돼요.`);
+        else add("F3", `${T.downAt} ${A0}은 애매해요. 지금 회사 평점이 갈 회사보다 낮다면 가도 돼요.`, "cond");
       }
       else if (won >= 0 && badField(now) && !badField(to))
-        add("F3", "아래 급에 연봉도 그대로예요. 지금 자리에서 더 클 수 없거나, 새 직무 의지·조직문화가 확실할 때만 가세요.", "cond"); // 4회차 C5
-      else pay("F3", `아래 급 회사로 옮길 땐 연봉이 확실히 올라야 값이 있어요. 지금 숫자(+${won}만 원)로는 조금 아쉬워요. 연봉 협상에서 +${FIT.down_min_won}만 원 넘게(${FIT.down_min_pct}% 안팎) 받아 내면 가셔도 돼요.`); // 6회차 B8 · 11-07 협상
+        add("F3", `${T.downAt} 연봉도 그대로예요. ${now.left ? "전 직무로는 더 클 수 없었거나" : "지금 자리에서 더 클 수 없거나"}, 새 직무 의지·조직문화가 확실할 때만 가세요.`, "cond"); // 4회차 C5
+      else pay("F3", `${T.downMove} 연봉이 확실히 올라야 값이 있어요. 지금 숫자(${A0})로는 조금 아쉬워요. 연봉 협상에서 ${need(FIT.down_min_won, "넘게")}(${FIT.down_min_pct}% 안팎) 받아 내면 가셔도 돼요.`); // 6회차 B8 · 11-07 협상
     } else {
-      if (won >= sameMin || eff >= 15) add("F1", `같은 급에서 +${won}만 원${wlbGain > 0 ? ", 워라밸도 좋아져요" : ""}.`);
-      else pay("F1", `같은 급 이동에 ${/추정/.test(to.how || "") ? "추정치로는" : "연봉"} +${won}만 원이에요. 이대로면 옮길 값으로는 약하지만, 이직할 땐 연봉 협상을 새로 하니까 +${sameMin}만 원 이상${prime ? "(30대 초중반 기준)" : ""} 받아 내면 가셔도 돼요.`); // 6회차 B7 · 11-07 협상
+      if (won >= sameMin || eff >= 15) add("F1", `${T.same} ${A0}${wlbGain > 0 ? ", 워라밸도 좋아져요" : ""}.`);
+      // 11-12 F4: 공기업으로 가면 10% 삭감도 받아들이는데, 동결·소폭 인상이 그보다 나쁜 판정을 받던 역전을 없앤다
+      else if (cutOk) { add("F2", `공기업으로 가는 거라 ${won === 0 && !nearGap && !adj ? "연봉이 그대로여도" : A + "이어도"} 받아들일 만해요. 연봉 협상으로 조금 더 받아 보세요.`); cap = 5; }
+      else pay("F1", `${T.sameMove} ${nearGap || adj ? A : (est ? "추정치로는" : "연봉") + " +" + won + "만 원"}이에요. 이대로면 옮길 값으로는 약하지만, 이직할 땐 연봉 협상을 새로 하니까 ${need(sameMin, "이상")}${prime ? "(30대 초중반 기준)" : ""} 받아 내면 가셔도 돼요.`); // 6회차 B7 · 11-07 협상
     }
+    money = false;
     if (wlbGain > 0 && step >= 0 && won >= 0) add("F8", `워라밸이 좋아지는 건 연봉이 ${wlbGain >= 15 ? "꽤" : "조금"} 오른 것만큼 값어치 있어요.`); // 6회차 C3: % 숫자 대신 말로
     // 5회차 C10: 육아 등으로 칼퇴가 꼭 필요하면 워라밸이 나빠지는 곳은 연봉이 올라도 안 된다
     if (now.must_off && wlb(to.wlb) >= 3) add("F8", `칼퇴가 꼭 필요하신데 갈 회사는 '${to.wlb}' 쪽이에요. 연봉이 올라도 이건 안 돼요.`, "fail");
     // 5회차 B4·C9: 팀장 자리. 아래 급으로 가면서 팀장을 다는 건 욕심이 있을 때만
     if (to.lead) {
       if (now.lead_want === "있음") add("F34", "팀장을 달고 싶다면 가야 할 자리예요. 회사가 건실한지만 확인하세요.", lowRating(to) ? "cond" : "");
-      else if (step < 0) add("F34", now.lead_want === "없음" ? "팀장 욕심이 없다면 아래 급으로 옮길 이유가 약해요." : "팀장 자리예요. 팀장 욕심이 있고 회사가 건실하면 가고, 아니면 지금 자리를 추천해요.", "cond");
+      else if (step < 0) add("F34", now.lead_want === "없음" ? `팀장 욕심이 없다면 ${T.downTo} 옮길 이유가 약해요.` : `팀장 자리예요. 팀장 욕심이 있고 회사가 건실하면 가고, 아니면 ${now.left ? "다른 카드를 더 보세요" : "지금 자리를 추천해요"}.`, "cond");
       else add("F34", "팀장 자리로 가는 거라 커리어로도 한 단계 올라가요.");
     }
     if (outFactory) {
       add("F9", `지방 ${/현장/.test(now.place) ? "현장" : "공장"}에서 본사로 오는 건 연봉 1천만 원 오른 것과 같아요.`);
       if (rawWon < 0) add("F9", `다만 실제 연봉은 ${-rawWon}만 원 깎여요. 서울 근무를 정말 원할 때만 가세요.`, "cond"); // 3회차 C4
     }
-    if (upIn) add("F26", `${j(to.industry, "은", "는")} 업황이 올라오는 중이고 대기업은 좋은 곳뿐이에요. 공장 근무여도 갈 만해요.`);
-    else if (upInd(now) && !upInd(to)) add("F26", `${j(now.industry, "은", "는")} 지금 호황이라 옮길 이유가 적어요.`, "cond"); // 4회차 B3
+    if (upIn) add("F26", `${j(indName(to), "은", "는")} 업황이 올라오는 중이고 대기업은 좋은 곳뿐이에요. 공장 근무여도 갈 만해요.`);
+    else if (upInd(now) && !upInd(to)) add("F26", `${j(indName(now), "은", "는")} 지금 호황이라 옮길 이유가 적어요.`, "cond"); // 4회차 B3
     // 4회차 C2: 갈 회사 평점이 낮아도 지금 회사보다 높으면 괜찮다
     if (lowRating(to) && !(now.rating != null && to.rating >= now.rating)) add("F12", `갈 회사 평점 ${to.rating}은 ${FIT.rating_min} 아래예요. 지금 회사보다 나은지 확인하세요.`, "cond");
-    if (outDown) add("F26", `${j(now.industry, "은", "는")} 지금 업황이 꺾여 있어요. 다른 조건이 더 좋다면 옮길 때예요.`);
-    else if (downInd(to) && !downInd(now)) add("F26", `${j(to.industry, "은", "는")} 지금 업황이 안 좋아요. 회사 사정을 확인하세요.`, "cond");
+    if (outDown) add("F26", `${j(indName(now), "은", "는")} 지금 업황이 꺾여 있어요. 다른 조건이 더 좋다면 옮길 때예요.`);
+    else if (downInd(to) && !downInd(now)) add("F26", `${j(indName(to), "은", "는")} 지금 업황이 안 좋아요. 회사 사정을 확인하세요.`, "cond");
 
     // 2) 사람마다 갈리는 조건 → 조건 보고
     const close = closeJob(now.job, to.job);
@@ -267,7 +317,7 @@
     else if (jobChange) {
       if ((now.years || 0) > FIT.job_change_max_years) add("F6", `총 ${now.years}년 차 직무 전환은 늦은 편이에요.`, "cond");
       add("F28", "직무가 바뀌어요. 지금 직무가 안 맞고 새 직무에 관심·스펙이 충분할 때만 가세요.", "cond");
-      if (won < 0) fail = false; // F2 예외 ③: 직무 전환이면 삭감이 바로 '마요'는 아니다
+      // 11-12 F5: 여기 있던 'if (won < 0) fail = false' 를 지움 — 삭감이 '마요'가 아니게 된 뒤(6회차) 남은 잔재라, 칼퇴 필수(F8)의 '마요'만 지우고 있었다
     }
     // 4회차 C4: 중소에서 투자 많이 받은(시리즈B 이상·흑자) 스타트업으로 가면 회사 상황이 더 나은 것
     if ((tn.kind === "finance") !== (tt.kind === "finance"))   // 금융권 ↔ 일반 기업: 연봉 구조가 다르다
@@ -287,7 +337,9 @@
     const bigGain = step >= 0 && won >= 0 && eff >= FIT.big_gain_pct && tenure >= FIT.tenure_min;
     if (firstJob && bigGain && tenure < tmin) add("F4", `근속 ${tenure}년이지만 연봉·워라밸이 이만큼 좋아지면 3년 기준은 넘겨도 돼요.`);
     else if (tenure != null && tenure < tmin) {
-      add(tenure < 1 ? "F19" : "F4", `지금 회사 ${tenure}년은 짧은 편이에요(권장은 ${tmin}년). 이번에 옮기신다면, 다음 회사는 4년 이상 다닐 각오로 가셔야 그 이후 이력이 버텨집니다.`, "cond"); // 6회차 C5
+      add(tenure < 1 ? "F19" : "F4", now.left   // 11-12 F9: 이미 퇴사한 사람에게 '지금 회사·옮기신다면'이라고 하지 않는다
+        ? `전 회사 ${tenure}년은 짧은 편이에요(권장은 ${tmin}년). 이미 나오셨으니, 다음 회사는 4년 이상 다닐 각오로 가셔야 그 이후 이력이 버텨집니다.`
+        : `지금 회사 ${tenure}년은 짧은 편이에요(권장은 ${tmin}년). 이번에 옮기신다면, 다음 회사는 4년 이상 다닐 각오로 가셔야 그 이후 이력이 버텨집니다.`, "cond"); // 6회차 C5
     }
     // 2026-10-27 사용자: 게임업계 → 게임업계, 게임기획 → 게임기획처럼 지금도 같은 판이면 '전망 어려워요'로 말리지 않는다
     if (badField(to) && badField(now)) add("F26", family(now.job) === family(to.job)
@@ -296,7 +348,7 @@
     else if (badField(to)) add("F26", "가려는 산업·직무의 전망이 어두워요.", "fail");
     else if (badField(now)) add("F26", "전망 어두운 산업에서 빠져나오는 기회예요. 다만 AI 시대 대비는 계속하세요."); // D2
     else if (now.industry && to.industry && now.industry !== to.industry && !jobChange && !bigGain && !outDown && !upIn)
-      add("F30", `같은 ${j(to.job || "직무", "이라도", "라도")} ${j(now.industry, "과", "와")} ${j(to.industry, "은", "는")} 일하는 방식이 달라요. 어느 쪽이 맞는지 보고 정하세요.`, "cond"); // D1
+      add("F30", `같은 ${j(to.job || "직무", "이라도", "라도")} ${j(indName(now), "과", "와")} ${j(indName(to), "은", "는")} 일하는 방식이 달라요. 어느 쪽이 맞는지 보고 정하세요.`, "cond"); // D1
 
     // F32 지금 회사와 갈 회사의 회사 자체 평가 비교 (2026-10-27 사용자: 지금 회사 이름을 알면 두 회사 평가를 같이 본다)
     //     grade = 일반 판정 단계 0(비추예요)~6(무조건 가세요), rating = 현직자 평점. 둘 다 있을 때만 본다
@@ -315,8 +367,12 @@
     const tl = (now.prev_tenures || []).concat(now.tenure != null ? [now.tenure] : []);
     if (tl.length >= 2 && tl.reduce((a, b) => a + b, 0) / tl.length < FIT.job_hop_avg) add("F5", "이직이 잦은 편이에요. 다음 회사에선 끝장을 본다는 생각으로 가세요.");
 
+    if (payUnknown) cap = cap == null ? (avgLow ? 4 : 5) : Math.min(cap, avgLow ? 4 : 5);   // 11-12 F8: 내 연차에 맞는 연봉을 모르는 회사에 '무조건 가세요'는 아니다
+    if (nearGap) cap = cap == null ? 5 : Math.min(cap, 5);   // 11-12 F8: 추정 연봉이 조금 낮은 걸 '비슷'으로 봐 줬어도 '무조건 가세요'는 아니다 (6회차 D8·D9와 같게)
+    if (to.lack) cap = cap == null ? FIT.lack_cap : Math.min(cap, FIT.lack_cap);   // 11-12 F1: 판단자료 부족 회사는 '가세요'까지
     let verdict = fail ? "마요" : cond.length ? "조건 보고" : "가요";
-    return { verdict, reasons: R, cap };
+    // soft: 조건이 연봉 쪽(11-07 협상 규칙·삭감·아래 급 애매 구간)뿐 → 사이트가 '조건 보고 가세요'를 지켜 준다. 그 밖의 조건이 있으면 판정을 낮춘다 (11-12 F3)
+    return { verdict, reasons: R, cap, soft: cond.length > 0 && cond.length === nSoft, noTier, fin: finTo, payUnknown, avgLow, near: nearGap > 0 };
   }
 
   // ── B. 지원 결정 ───────────────────────────────────
@@ -398,6 +454,7 @@
   const FIN_JOB = /재무|회계|세무/;                          // 5회차 B2: 재경관리사
   function track(m = {}) {
     const jb = m.job || "";
+    if (/영업|세일즈/.test(jb) && !/기술 ?영업|엔지니어/.test(jb)) return "lib";   // 11-12 F9: '반도체 영업'·'화학 영업'은 산업 이름일 뿐 문과 직무 (기술영업만 이공계)
     if (jb) return SCI_JOB.test(jb) && !LIB_JOB.test(jb) ? "sci" : "lib";
     return String(m.major || "").startsWith("sci") ? "sci" : "lib";
   }
@@ -458,7 +515,7 @@
   // 5회차 A2: '보통 붙는 스펙'은 회사 급 + 직무 난이도(2회차 합격 쉬운 순: 영업·생산관리 > 재무·연구개발·품질 > 기획·인사·환경안전 > 나머지 > 홍보·IT개발·데이터)
   //   좋은 스타트업·공기업·외국계는 회사마다 편차가 커서 C~A 폭으로 본다
   function specNeed(co = {}, jb = "") {
-    const t = tier(co.size);
+    const t = tierOf(co);
     if (t.kind === "public" || t.kind === "foreign" || (t.kind === "startup" && co.good)) return { lo: 1, hi: 3 };
     const ease = /영업|생산관리/.test(jb) ? -1 : /재무|회계|연구|R&D|품질|공정/.test(jb) ? -0.5 : /홍보|IT ?개발|개발자|데이터/.test(jb) ? 0.5 : 0;
     const n = (t.kind === "startup" ? 1 : t.n) + ease;
@@ -474,12 +531,16 @@
     // go: '잡으세요·들어가서' 쪽 말 — 마지막 판정이 말리는 쪽(스펙 보고 이하)이면 빼거나 바꾼다 (2026-10-28 문장 검수)
     const add = (rule, text, go) => R.push(go ? { rule, text, go } : { rule, text });
     const base = co.base ?? 4, y = me.years || 0, age = me.age || 0, lim = newbieLimit(me), old = age > 0 && age >= lim;
-    const t = tier(co.size), sp = spec(me, co);
+    const t = tierOf(co), sp = spec(me, co);
+    // 11-12 F11 나이 완충: '스펙이 아까우니 다음 시즌'(어린 쪽)과 '나이 있으니 잡으세요'(나이 든 쪽)가 한 살 차이로 맞붙어 3단계씩 뛰던 것을 계단으로 만든다
+    //   기준 나이 한 살 전(near)은 '다음 시즌' 권유를 한 단계 약하게, 기준 나이 딱 그 해(half)는 올림을 절반만. 그 밖의 사람은 전과 같다
+    const near = age > 0 && age === lim - 1;
+    let half = false;
     let liftAt = -1, lifted = 0;   // 스펙으로 올린 말의 자리 (뒤에서 낮추는 규칙이 이기면 말을 바꾼다)
     let n = base, cap = 6;   // 올리는 규칙(나이·스펙)보다 낮추는 규칙(전망 어두운 직무·다음 시즌)이 늘 이긴다
     // F26 전망 어두운 직무 지원, F21 어리고 스펙 좋은데 회사가 약하면 계속 준비
     const apply = judgeApply({ me: { years: y }, target: { size: co.size, job: me.job } });
-    const offerOf = ind => judgeOffers({ me: { sex: me.sex, age, years: y, spec: sp && sp.lv >= 3 ? "가능성" : "" },
+    const offerOf = (ind, a = age) => judgeOffers({ me: { sex: me.sex, age: a, years: y, spec: sp && sp.lv >= 3 ? "가능성" : "" },
       a: { size: co.size, industry: ind, job: me.job, rep: co.rating != null && co.rating < 2.8 ? "하" : "" } });
     let offer = offerOf(co.industry);
     // 게임사 ②안: 회사 판정 '가세요' 이상이면 업계 전망 때문에 '계속 준비'로 말리지 않고 '조건 보고 가세요'까지만
@@ -488,9 +549,15 @@
     if (apply.verdict === "마요") { cap = 2; apply.reasons.forEach(x => add(x.rule, x.text.replace(/ 다른 직무를 보세요\.$/, " 합격했더라도 다른 직무를 같이 알아보세요."))); tags.push("직무 전망 주의"); }
     const prep = offer.verdict === "계속 준비";
     if (prep) {
-      cap = 2; offer.reasons.forEach(x => { if (!R.some(r => r.text === x.text)) R.push(x); });
+      cap = near ? 3 : 2;   // 11-12 F11 완충: 기준 나이 한 살 전이면 '계속 준비' 권유를 한 단계 약하게
+      offer.reasons.forEach(x => { if (!R.some(r => r.text === x.text)) R.push(x); });
       if (co.rating != null && co.rating < 2.8) add("F21", `현직자 평점이 ${co.rating.toFixed(2)}점으로 낮은 편이에요.`);   // 왜 '계속 준비'인지 말해 준다 (2026-10-28 문장 검수)
       add("F21", "급하지 않다면 더 좋은 카드를 노려 보세요."); tags.push("계속 준비 쪽");
+    }
+    // 11-12 F11 완충: 한 살만 어렸으면 '계속 준비'를 권했을 사람(스펙 좋은데 평점 낮은 회사·전망 어두운 직무)은 기준 나이 그 해엔 '가세요'까지만
+    if (!prep && age > 0 && age === lim && offerOf(gameSoft ? "" : co.industry, age - 1).verdict === "계속 준비") {
+      cap = Math.min(cap, 5);
+      add("F21", `스펙에 비해 아쉬운 점(낮은 평점이나 직무 전망)이 있는 회사예요. ${age}세라 잡을 만하지만, 고민 없이 갈 자리까지는 아니에요.`);
     }
     // 스펙 vs 회사 수준
     if (sp) {
@@ -498,11 +565,14 @@
       const nd = specNeed(co, me.job || ""), gap = lv > nd.hi ? lv - nd.hi : lv < nd.lo ? lv - nd.lo : 0;
       const fill = sp.fill.length ? `${j(sp.fill.join("·"), "을", "를")} 채우고` : sp.lv >= 4 ? "" : sp.plant ? "기사 자격증을 더 따고" : "인턴·자격증을 더 쌓고";
       const tail = sp.fill.length ? ` ${j(sp.fill.join("·"), "을", "를")} 채우면 한 단계 위도 노려볼 수 있어요.` : "";
+      half = age > 0 && age === lim && base === 3 && (gap >= 2 || (gap >= 1 && schoolV(me) >= 3));   // 한 살만 어렸으면 '다음 시즌'을 권했을 사람
       if (prep && gap >= 0) add("N1", `스펙 ${sp.g}(${sp.word})면 선택지가 많으니 서두를 필요 없어요.`);
       else if ((gap >= 2 || (gap >= 1 && schoolV(me) >= 3)) && !old && base <= 3) {   // 5회차 C3·C4: 아직 나이 여유 있고 회사가 약하면 한 시즌 더 (C3 "학벌이 좋으니까" → 학교 상위면 1단계 위로도)
-        cap = Math.min(cap, 1);
-        add("N1", `스펙 ${sp.g}(${sp.word})면 이 회사는 아까워요. ${age}세면 아직 나이 여유가 있으니 ${fill ? fill + " " : ""}다음 시즌에 한 단계 위 회사에 지원해 보세요.`);
-        tags.push("다음 시즌 추천");
+        const nr = near && base === 3;
+        cap = Math.min(cap, nr ? 2 : 1);
+        add("N1", nr ? `스펙 ${sp.g}(${sp.word})면 이 회사는 아까워요. 다만 ${age}세면 신입으로 지원할 수 있는 시간이 많이 남진 않았어요. ${fill ? fill + " " : ""}한 시즌만 더 도전해 볼지, 이 카드를 잡고 경력으로 꺾을지 비교해서 정하세요.`
+          : `스펙 ${sp.g}(${sp.word})면 이 회사는 아까워요. ${age}세면 아직 나이 여유가 있으니 ${fill ? fill + " " : ""}다음 시즌에 한 단계 위 회사에 지원해 보세요.`);
+        tags.push(nr ? "한 시즌 더 볼지 비교" : "다음 시즌 추천");
       } else if (gap >= 2 && base <= 5) {
         n = Math.min(n, base - 1);
         add("N1", `스펙 ${sp.g}(${sp.word})면 이 회사보다 한두 단계 위도 충분히 노려볼 만해요.${sp.strong.length ? ` 특히 ${j(sp.strong.join("·"), "이", "가")} 강점이에요.` : ""}`);
@@ -529,10 +599,13 @@
     else if (PLANT_SPEC_JOB.test(jb) && !(Number(me.cert) >= 2)) add("N3", "생산·공정·품질·안전은 기사 자격증이 여러 개(3기사·4기사)면 절대적으로 유리해요.");
     // 나이 (F21) · 공기업 (A8) · 취준 기간 (B5)
     if (old) {
-      if (t.kind === "public") { n = Math.max(n, 6); add("N4", `공기업은 안정성을 보고 가는 곳이에요. ${age}세면 고민 없이 잡으세요.`, true); }   // 5회차 A8·C8
+      // 5회차 A8·C8 공기업은 나이 있으면 '무조건' — 11-12 F2: 회사 자체 판정이 '조건 보고 가세요' 이상일 때만 (나쁜 회사·중립기어는 안 올림)
+      if (t.kind === "public" && base >= 4) { n = Math.max(n, 6); add("N4", `공기업은 안정성을 보고 가는 곳이에요. ${age}세면 고민 없이 잡으세요.`, true); }
       else {
-        if (base >= 3 && base <= 4) n = Math.max(n, base + 1);   // 조건 보고·중립기어만 한 단계 올린다
-        add("F21", y > 0 ? `${age}세면 신입 공채보다 경력 지원이 맞는 나이예요. 이 카드가 괜찮다면 잡고 경력을 이어 가세요.` : `${age}세면 신입 지원이 점점 어려워져요. 갈 만한 곳이면 잡으세요.`, true);
+        if (t.kind === "public") add("N4", "공기업이라도 회사 자체 판정이 낮으면 안정성만 믿고 가긴 어려워요. 재무·평판부터 확인하세요.");
+        if (base >= 3 && base <= 4) n = Math.max(n, half ? base : base + 1);   // 조건 보고·중립기어만 한 단계 올린다 (기준 나이 딱 그 해는 스펙으로 내린 것만 되돌림)
+        add("F21", y > 0 ? `${age}세면 신입 공채보다 경력 지원이 맞는 나이예요. 이 카드가 괜찮다면 잡고 경력을 이어 가세요.`
+          : half ? `${age}세면 신입 지원이 어려워지기 시작하는 나이예요. 갈 만한 곳이면 잡는 쪽으로 보세요.` : `${age}세면 신입 지원이 점점 어려워져요. 갈 만한 곳이면 잡으세요.`, true);
       }
       tags.push("신입 나이 넘김");
     } else if (age && age <= lim - 3 && base <= 3 && liftAt < 0 && !(Number(me.search) >= 12) && !R.some(x => /나이 여유|지원이 가능한 나이/.test(x.text))) { add("F21", `${age}세면 아직 시간이 있어요. 서두르지 말고 더 맞는 곳을 찾아도 돼요.`); tags.push("시간 여유 있음"); }
@@ -542,12 +615,12 @@
     }
     // 중고신입: 지금 회사보다 위 급이면 올리고, 연봉이 깎이면 급·직무로 가른다 (5회차 A5·C7)
     if (y > 0 && me.salary && co.salary) {
-      const up = me.prevSize ? t.n - tier(me.prevSize).n : 0, gap = co.salary - me.salary, cut = -gap / me.salary * 100;
-      if (up >= 1 && gap >= 0) { n = Math.max(n, Math.min(6, base + 1)); add("N6", "지금 회사보다 위 급 회사로 다시 들어가는 거라 좋은 선택이에요."); }
+      const up = me.prevSize ? t.n - tier(me.prevSize).n : 0, gap = co.salary - me.salary, cut = -gap / me.salary * 100, fin = t.kind === "finance";
+      if (up >= 1 && gap >= 0) { n = Math.max(n, Math.min(6, base + 1)); add("N6", fin ? "지금 회사보다 회사 수준(평균 연봉 기준)이 높은 금융사로 다시 들어가는 거라 좋은 선택이에요." : "지금 회사보다 위 급 회사로 다시 들어가는 거라 좋은 선택이에요."); }
       if (gap < 0) {
-        if (up >= 1) add("N6", "회사 급이 오르니 연봉이 좀 깎여도 괜찮아요.");
+        if (up >= 1) add("N6", fin ? "회사 수준(평균 연봉 기준)이 더 높은 금융사로 가는 거라 연봉이 좀 깎여도 괜찮아요." : "회사 급이 오르니 연봉이 좀 깎여도 괜찮아요.");
         else if (me.prevSame === "다른") add("N6", "직무를 바꾸는 거라, 그 직무로 가려는 의지가 확실하다면 깎여도 괜찮아요.");
-        else { cap = Math.min(cap, 4); add("N6", "회사 급도 직무도 그대로인데 연봉이 깎여요. 이 회사를 꼭 가야 할 이유가 있을 때만 가세요."); }
+        else { cap = Math.min(cap, 4); add("N6", me.prevSize ? "회사 급도 직무도 그대로인데 연봉이 깎여요. 이 회사를 꼭 가야 할 이유가 있을 때만 가세요." : "직무는 그대로인데 연봉이 깎여요. 이 회사를 꼭 가야 할 이유가 있을 때만 가세요."); }
         if (cut > 10) add("N6", `다만 ${Math.round(cut)}%나 깎이는 건 아쉬워요.`);
       }
     }
@@ -563,6 +636,9 @@
     if (co.salary && co.salary < 3500 && t.kind !== "startup") add("N9", `신입 연봉 ${co.salary.toLocaleString()}만 원은 짠 편이에요.`);   // 5회차 C4
     if (/지방/.test(co.place || "") && !PLANT_JOB.test(jb)) add("N9", "근무지가 지방이에요. 사는 곳에서 다닐 만한지 먼저 보세요.");   // 5회차 C5
     if (gameSoft) { cap = Math.min(cap, 4); add("F26", "게임 업계는 전망이 밝은 편이 아니라 '조건 보고 가세요'까지만 드려요. 회사가 좋아서 잡아도 되지만, 다른 업계에서도 통하는 경력으로 키워 두세요."); tags.push("게임 업계 전망 주의"); }
+    // 11-12 F11: 신입·중고신입 칸은 경력 4년까지. 넘는 값이 들어오면 '조건 보고 가세요'까지만 주고 경력 이직 쪽으로 안내
+    if (y > FIT.newbie_years_max) { cap = Math.min(cap, 4); add("N10", `경력 ${y}년이면 신입이 아니라 경력 이직 기준으로 봐야 정확해요. '내 상황 고치기'에서 '경력 이직'으로 바꿔 다시 보세요.`); tags.push("경력 이직 기준으로 보세요"); }
+    if (co.lack) cap = Math.min(cap, FIT.lack_cap);   // 11-12 F1: 판단자료 부족 회사는 '가세요'까지
     n = Math.max(0, Math.min(6, Math.min(n, cap)));
     if (liftAt >= 0 && n < Math.min(lifted, 5)) R[liftAt] = { rule: "N1", text: `스펙 ${sp.g}(${sp.word}) 기준으로는 좋은 회사지만, 다른 걸리는 점 때문에 판정을 올리지 않았어요.` };
     if (n <= 2) {   // 말리는 판정이면 '잡으세요·들어가서' 말을 빼고, 나이 있는 사람에겐 한 줄로 바꿔 준다
@@ -570,7 +646,7 @@
       for (let i = R.length - 1; i >= 0; i--) if (R[i].go) R.splice(i, 1);
       if (goes && old) add("F21", `${age}세라 서두르고 싶겠지만, 이 카드는 아니에요. 갈 만한 다른 곳을 잡으세요.`);
     }
-    return { verdict: STEPS[n], n, reasons: R, tags, spec: sp, lim, old, gameSoft };
+    return { verdict: STEPS[n], n, reasons: R, tags, spec: sp, lim, old, near, half, gameSoft };
   }
 
   function judge(c) {
@@ -580,7 +656,7 @@
     return judgeOffers(c);
   }
 
-  const api = { FIT, STEPS, judge, tier, family, badField, spec, specNeed, newbieLimit, wlbAdjust, wlbApply, TB };
+  const api = { FIT, STEPS, judge, tier, tierOf, track, downInd, family, badField, spec, specNeed, newbieLimit, wlbAdjust, wlbApply, TB };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FitEngine = api;
 })(this);
@@ -819,7 +895,8 @@ function npsSig(c) {
   const p = top <= 20 ? 2 : top <= 40 ? 1 : top <= 60 ? 0 : top <= 80 ? -1 : -2;
   const t = s.turnover < .15 ? 1 : s.turnover < .35 ? 0 : -1;
   const n = s.tenure >= 8 ? 1 : s.tenure >= 3 ? 0 : -1;
-  const sum = p + t + n, lv = sum >= 2 ? "좋음" : sum <= -2 ? "주의" : "보통";
+  const odd = s.turnover > 1;   // 11-12 C13: 퇴사율 100% 초과는 집계 이상값 → 그 때문에 '주의'가 되지는 않게 (score.py nps_sig 와 같게)
+  const sum = p + t + n, lv = sum >= 2 ? "좋음" : (odd ? sum + 1 : sum) <= -2 ? "주의" : "보통";
   const cl = x => x > 0 ? "g" : x < 0 ? "b" : "m";
   const pw = ["많이 낮아요", "아래쪽", "중간", "좋은 편", "업계 위쪽"][p + 2];
   const say = [p > 0 ? "연봉은 업계 위쪽이고" : p < 0 ? "연봉은 업계 아래쪽이고" : "연봉은 업계 중간이고",
@@ -830,7 +907,7 @@ function npsSig(c) {
       <div class="it"><p>연간 퇴사율</p><b>${Math.round(s.turnover * 100)}%</b><span class="${cl(t)}">${t > 0 ? "사람이 잘 안 나가요" : t < 0 ? "많이 나가요" : "보통"}</span></div>
       <div class="it"><p>평균 근속</p><b>${s.tenure}년</b><span class="${cl(n)}">${n > 0 ? "오래 다녀요" : n < 0 ? "짧아요" : "보통"}</span></div></div>
     <p class="say">${say}</p>
-    <p class="fine">${c.repEmpty ? `${esc(c.repEmpty.join("·"))}에 회사 페이지는 있지만 리뷰가 0개예요. ` : ""}${byNps ? "평점·재무 자료가 없어 국민연금 숫자로만 낸 판정이에요" : "평점·재무 자료가 없어 판정 대신 보여 드리는 참고 신호예요"}. 판정이 나온 회사로 맞춰 보니 '좋음'은 10곳 중 8곳이 실제로 '가세요' 쪽, '주의'는 10곳 중 7곳이 '다시 생각해요' 쪽이었어요.</p></div>`;
+    <p class="fine">${c.repEmpty ? `${esc(c.repEmpty.join("·"))}에 회사 페이지는 있지만 리뷰가 0개예요. ` : ""}${byNps ? "평점·재무 자료가 없어 국민연금 숫자로만 낸 판정이에요" : "평점·재무 자료가 없어 판정 대신 보여 드리는 참고 신호예요"}. 국민연금 자료만으로 낸 판정은 맞는 비율이 66% 정도라, 신호가 아주 셀 때만 판정으로 내고 있어요. 참고로만 봐 주세요.</p></div>`;
   const z = { 좋음: "국민연금 신호는 좋아요. 그래도 면접에서 팀 분위기와 일하는 방식은 직접 확인하세요.",
     보통: "국민연금 신호는 보통이에요. 연봉 조건과 팀 분위기를 직접 확인하고 정하세요.",
     주의: "국민연금 신호는 주의예요. 사람이 왜 나가는지, 연봉이 왜 낮은지 면접에서 꼭 물어보세요." }[lv];
@@ -1109,7 +1186,7 @@ async function render(name) {
   const warn = (c.type === "스타트업" || abuse.length) ? `<div class="warn"><b>${abuse.length ? "평점에 눈여겨볼 신호가 있어요 · 실제로 좋아졌거나, 평점 관리를 했거나" : "스타트업 평점은 한 번 더 의심하고 보세요"}</b>
       ${abuse.length ? `<ul>${abuse.map(a => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
       <p style="margin-top:6px">스타트업은 인사팀이 리뷰 작성을 독려하거나 관리하는 경우가 있어요. 원문 링크에서 ① 최근 몇 달 사이 5점 리뷰가 몰렸는지 ② 장점만 길고 단점이 '없음'·'딱히'로 끝나는 리뷰가 많은지 ③ 인사·채용 직군 리뷰가 유독 후한지 ④ 블라인드와 잡플래닛·캐치 점수 차이가 큰지 직접 확인해 보세요.</p></div>` : "";
-  const repsum = rg.score == null ? "" : `<div class="repsum"><span>종합 <b>${rg.score.toFixed(2)}</b> / 5</span><span>${esc(c.type)} 회사 기준 · A ${rg.good} 이상 · B ${rg.ok} 이상 · F 2.0 미만</span>${fl.inflation ? `<span class="flag">점수 뻥튀기 의심 (블라인드보다 ${fl.inflation}점 높음)</span>` : ""}${fl.few ? `<span class="flag">평가 ${fl.few}명뿐 · 참고만</span>` : ""}</div>`;
+  const repsum = rg.score == null ? "" : `<div class="repsum"><span>종합 <b>${rg.score.toFixed(2)}</b> / 5</span><span>${esc(c.type)} 회사 기준 · A ${rg.good} 이상 · B ${rg.ok} 이상 · F 2.0 미만</span>${fl.inflation ? `<span class="flag">점수 뻥튀기 의심 (블라인드보다 ${fl.inflation}점 높음)</span>` : ""}${fl.few ? `<span class="flag">평가 ${fl.few}명뿐 · ${fl.w != null ? `평판 ${Math.round(fl.w * 100)}%만 반영` : "참고만"}</span>` : ""}</div>`;
   const secH = (i, k) => { const x = c.grades[k], g = x?.grade, has = k in c.grades, src = srcOf(c, k);
     return `<div class="sec-h"><span class="no">0${i}</span><h3>${k}</h3>${has ? `<span class="gr ${g == null ? "gq" : lcls(x)}">${g == null ? "?" : ltxt(x)}</span>` : ""}${src ? `<p class="why"><small class="asof">자료 기준 · ${esc(src)}</small></p>` : ""}</div>`; };   // 2026-10-29 Simple is Best: 칸 설명(WHY)은 빼고 기준일만
   $("#out").innerHTML = `
@@ -1613,6 +1690,18 @@ function engInd(g, detail, name) {
   if (g === "건설·부동산") return "건설";
   return g || "";
 }
+// 11-12 사용자 "업황 꺾임은 화학에만, 소재랑 에너지는 빼기": '화학·소재·에너지' 묶음 안 회사를 세부 업종 이름(국민연금 업종)으로 가른다
+//   화학 = 화학물질·화학제품을 만드는 곳(기초 유기·무기화학, 합성수지·합성고무, 도료, 비료·농약, 산업용 가스, 세제 등)
+//   에너지 = 발전·원자력·연료용 가스·원유·정제·연료 판매, 발전 설비 정비
+//   소재 = 그 밖 전부(철강·비철·금속 가공, 유리·시멘트, 플라스틱·고무 가공제품, 화학섬유 직조 등)
+//   돌려주는 값: 이 묶음이 아니면 undefined, 세부 업종을 모르면 "모름"(업황을 말하지 않음)
+const IND_CHEM = /화학|합성수지|합성고무|플라스틱 (소재 )?물질|도료 및 관련|비료|농업용 약제|산업용 가스|세제|감광|안료/, IND_CHEM_NOT = /직조|방적|성형기|연구개발/;
+const IND_ENERGY = /발전업|발전 설비|원자력|연료용 가스|가스집단|가스 충전|원유|천연가스|연료 소매|송전|배전|정제/;
+function indSub(g, detail) {
+  if (g !== "화학·소재·에너지") return undefined;
+  if (!detail || /업종 정보 없음/.test(detail)) return "모름";
+  return IND_CHEM.test(detail) && !IND_CHEM_NOT.test(detail) ? "화학" : IND_ENERGY.test(detail) ? "에너지" : "소재";
+}
 // 화면에 보이는 업계 이름: '게임·소프트웨어' 묶음을 그대로 쓰면 IT 솔루션 회사도 게임사처럼 보여서 (트러스테이 2026-10-27) 게임사만 '게임'
 function grpName(s, name) {
   if (s?.group !== "게임·소프트웨어") return s?.group || "";
@@ -1621,10 +1710,24 @@ function grpName(s, name) {
 function coSize(c) {
   if (c.type === "스타트업") return "스타트업";
   if (/공공|공단/.test(c.salary?.group || "")) return "공기업·공공";
-  if (c.salary?.group === "은행·증권·보험" || /은행|증권|보험|카드|캐피탈|저축은행|자산운용/.test(c.name || "")) return "금융";   // 금융권은 대기업과 따로
+  if (c.salary?.group === "은행·증권·보험" || (/은행|증권|보험|카드|캐피탈|저축은행|자산운용/.test(c.name || "") && !FIN_NOT.test(c.name || ""))) return "금융";   // 금융권은 대기업과 따로
   const n = c.salary?.members || 0;
   return n >= 1000 ? "대기업" : n >= 300 ? "중견" : "중소";
 }
+// 11-12 F7: 이름에 '은행·보험·카드'가 들어가도 금융사가 아닌 곳 (은행고등학교, 건강보험 어린이집, 조직은행, 카드 고객센터 등)
+const FIN_NOT = /어린이집|요양원|병원|학교|협회|연수원|재단|고객서비스|손해사정|개발원|조직은행|건강보험|카드밴/;
+// 11-12 F7: 금융사의 회사 수준은 인원이 아니라 평균 연봉으로 본다 (사용자: "금융 중에는 인원수가 적어도 좋은 곳이 있어")
+//   평균 연봉 7,000만 이상 = 대기업 수준(3), 5,000만 이상 = 중견 수준(2), 그 아래 = 1. 추정 연봉뿐인 300명 미만 회사는 2까지만 (추정치만 믿고 '급이 크게 오른다'고 하지 않게)
+//   돌려주는 값: 금융사가 아니면 undefined(인원 기준 그대로), 연봉 자료가 없으면 null(수준 모름 → 급 비교를 건너뜀)
+function coLevel(c) {
+  if (!c || coSize(c) !== "금융") return undefined;
+  const a = c.salary?.avg; if (!a) return null;
+  const [hi, mid] = FitEngine.FIT.fin_avg, lv = a >= hi ? 3 : a >= mid ? 2 : 1;
+  return /추정/.test(c.salary.avgSrc || "") && (c.salary.members || 0) < 300 ? Math.min(lv, 2) : lv;
+}
+// 제시 연봉·내 연봉 입력 범위 (만 원): 원 단위(65000000)나 58 같은 값을 걸러 낸다 (11-12 F9)
+const ME_PAY_MIN = 1000, ME_PAY_MAX = 99999;
+const mePayOk = v => typeof v === "number" && v >= ME_PAY_MIN && v <= ME_PAY_MAX;
 function coSido(c) {
   const a = c.fin?.addr || "";
   return (a && SIDO_L.find(k => k && a.startsWith(k))) || (a && ({ 충청북: "충북", 충청남: "충남", 전라북: "전북", 전라남: "전남", 경상북: "경북", 경상남: "경남" })[a.slice(0, 3)]) || IDX_S.get(c.name) || "";
@@ -1641,7 +1744,7 @@ function coSalary(c, years) {
   const s = c.salary; if (!s) return null;
   const rank = RANK_BY_YEARS.find(([y]) => (years || 0) < y)[1];
   const v = s.ranks?.[rank];
-  return v ? { v, how: `이 회사 ${rank}급 추정 연봉` } : s.avg ? { v: s.avg, how: "이 회사 평균 연봉" } : null;
+  return v ? { v, how: `이 회사 ${rank}급 추정 연봉` } : s.avg ? { v: s.avg, how: "이 회사 평균 연봉", avg: true } : null;   // avg: 직급 연봉 없이 전 직원 평균뿐 (11-12 F8)
 }
 // 회사 워라밸 점수(잡플래닛·블라인드·캐치를 평판과 같은 비율로 종합) → 워라밸 단계
 function coWlb(c) {
@@ -1687,16 +1790,25 @@ document.addEventListener("click", e => { const b = e.target.closest("#meCoHit [
 // 사람이 넣은 값이 먼저, 안 넣은 것만 회사 정보로 채운다 (2026-10-27 사용자: 회사 워라밸이 나빠도 그 사람 워라밸은 좋을 수 있다)
 function meCase(c) {
   const o = meOver[c.name] || {}, est = coSalary(c, ME.years), nc = meNow.c;
+  const offer = mePayOk(o.salary) ? o.salary : undefined;   // 범위 밖 값은 안 쓴다 (11-12 F9)
+  // 11-12 F7: 규모를 모르면 '중견'으로 가정하지 않고 급 비교를 건너뛴다. 금융사는 평균 연봉으로 본 회사 수준(coLevel)을 넘긴다
+  const nowSize = ME.size || (nc ? coSize(nc) : ""), nowLv = nc && (!ME.size || ME.size === coSize(nc)) ? coLevel(nc) : undefined, toLv = o.size ? undefined : coLevel(c);
+  const nowWlb = ME.wlb || coWlb(nc) || "보통", toWlb = coWlb(c) || "";   // 11-12 F9: 갈 회사 워라밸 자료가 없으면 '보통'으로 단정하지 않는다 (내 쪽은 안 넣으면 전처럼 보통)
   const now = { sex: ME.sex, age: ME.age, years: ME.years, tenure: ME.tenure, moves: ME.moves, left: !!ME.left, gap: ME.left ? ME.gap : undefined,
-    size: ME.size || (nc ? coSize(nc) : "중견"), industry: ME.industry ? engInd(ME.industry) : engInd(nc?.salary?.group, nc?.salary?.industry, nc?.name), job: ME.job, salary: o.salary && ME.contract ? ME.contract : ME.salary,   // E2: 제시 연봉(계약연봉)은 내 계약연봉과 비교
-    wlb: ME.wlb || coWlb(nc) || "보통", place: ME.place || (nc ? coPlace(nc) : "수도권"),
+    size: nowSize, size_unknown: !nowSize || nowLv === null, tier_n: nowLv ?? undefined,
+    industry: ME.industry ? engInd(ME.industry) : engInd(nc?.salary?.group, nc?.salary?.industry, nc?.name),
+    ind_sub: indSub(ME.industry || nc?.salary?.group, nc && (!ME.industry || ME.industry === nc.salary?.group) ? nc.salary?.industry : ""),   // 내가 고른 업종이 '화학·소재·에너지'인데 회사 이름을 못 찾았으면 '모름'
+    job: ME.job, salary: offer && ME.contract ? ME.contract : ME.salary,   // E2: 제시 연봉(계약연봉)은 내 계약연봉과 비교
+    wlb: nowWlb, place: ME.place || (nc ? coPlace(nc) : "수도권"),
     rating: nc?.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[nc.verdict] : undefined,
     must_off: !!ME.mustOff, lead_want: ME.leadWant || "", why: ME.why || "" };
-  const target = { size: o.size || coSize(c), industry: engInd(c.salary?.group, c.salary?.industry, c.name), job: ME.want || ME.job,
-    salary: o.salary || est?.v, wlb: coWlb(c) || "보통", place: o.place || coPlace(c),   // 옮길 회사 워라밸은 그 회사 현직자 점수로 (입력 안 받음)
+  const target = { size: o.size || coSize(c), size_unknown: toLv === null, tier_n: toLv ?? undefined, industry: engInd(c.salary?.group, c.salary?.industry, c.name), ind_sub: indSub(c.salary?.group, c.salary?.industry), job: ME.want || ME.job,
+    salary: offer || est?.v, pay_unknown: !offer && !!est?.avg,   // 11-12 F8: 직급 연봉 없이 평균만 있으면 연봉으로 판정을 움직이지 않는다
+    wlb: toWlb, wlb_unknown: !toWlb, place: o.place || coPlace(c),   // 옮길 회사 워라밸은 그 회사 현직자 점수로 (입력 안 받음)
     rating: c.grades?.["평판"]?.score ?? undefined, grade: nc ? ME_GRADE[c.verdict] : undefined, lead: !!ME.lead,
-    how: o.salary ? "제시 연봉" : est?.how, basis: o.salary && ME.contract ? "계약" : "" };   // 6회차: 연봉 문구에 '이 회사 대리급 추정 연봉은 …'
-  return { c: { type: "A", now, target }, est };
+    lack: c.verdict === "판단자료 부족",   // 11-12 F1: 자료 부족 회사는 '가세요'까지
+    how: offer ? "제시 연봉" : est?.how, basis: offer && ME.contract ? "계약" : "" };   // 6회차: 연봉 문구에 '이 회사 대리급 추정 연봉은 …'
+  return { c: { type: "A", now, target }, est, offer };
 }
 // 이유 문장을 + ? ! 로 나눠 보이게
 function meTone(t) {
@@ -1710,12 +1822,20 @@ let meGeneral = false;     // '일반 판정 보기'를 누르면 이번 접속 
 const ME_STEPS = ["비추예요", "다시 생각해요", "스펙 보고 결정하세요", "중립기어", "조건 보고 가세요", "가세요", "무조건 가세요"];
 // up: 내 위치(지금 회사 급·연봉)가 이 회사보다 낮을수록 올려 줄 단계 수 (0~2)
 //   2026-10-27 사용자: "내 스펙이 낮으면 기존 판정보다 높아져야 정상. 연봉 2천 오르는데 중립기어 박으면 어떡해"
-function meLevel(v, gen, gain, up = 0) {
+// 11-12 F3: '조건 보고'는 판정을 실제로 낮춘다 — '조건 보고 가세요'까지 (ME_COND_CAP = [연봉 20% 이상일 때 상한, 그 밖의 상한])
+//   전에는 뒤 항(Math.min(5, base + lift))이 늘 이겨서 문구만 붙고 판정은 그대로였다. 올림은 내 위치보다 좋은 자리(lift > 0)일 때만
+//   o.soft: 조건이 연봉 협상뿐(11-07 규칙) → '조건 보고 가세요'를 지킨다.  o.noPay: 연봉을 비교할 수 없는 회사(평균만 있음, F8) → 연봉으로 올리지 않는다
+const ME_COND_CAP = [4, 4];   // 11-12 사용자 "한 단계 약하게": 처음엔 [4, 3](연봉 20% 미만이면 중립기어)였으나, 조건이 붙으면 연봉과 관계없이 '조건 보고 가세요'까지로
+function meLevel(v, gen, gain, up = 0, o = {}) {
   const base = { "무조건 가세요": 6, "가세요": 5, "조건 보고 가세요": 4, "중립기어": 3, "스펙 보고 결정하세요": 2, "다시 생각해요": 1, "비추예요": 0 }[gen] ?? 4;   // 판단자료 부족은 중간
   const lift = base >= 2 ? up : 0;   // 회사 자체가 나쁘면(다시 생각해요·비추) 내 조건으로 끌어올리지 않는다
   let n;
-  if (v === "가요") n = Math.max(Math.max(base, 4) + (gain >= 30 ? 1 : 0) - (base <= 1 ? 1 : 0), Math.min(6, base + lift));   // 내 조건이 좋으면 회사 판정보다 올라가거나 그대로, 크게 오르면 한 단계 더
-  else if (v === "조건 보고") n = Math.max(Math.min(base, gain >= 20 ? 4 : 3), Math.min(5, base + lift));                       // 사람마다 갈림. 내 위치보다 한참 좋은 자리면 회사 판정보다 올린다(최대 '가세요')
+  if (v === "가요") n = o.noPay ? (base <= 1 ? base : Math.min(6, base + lift))
+    : Math.max(Math.max(base, 4) + (gain >= 30 ? 1 : 0) - (base <= 1 ? 1 : 0), Math.min(6, base + lift));   // 내 조건이 좋으면 회사 판정보다 올라가거나 그대로, 크게 오르면 한 단계 더
+  else if (v === "조건 보고") {                                                                                                  // 사람마다 갈림. 내 위치보다 한참 좋은 자리면 회사 판정보다 올린다(최대 '가세요')
+    n = Math.min(base, o.soft || gain >= 20 ? ME_COND_CAP[0] : ME_COND_CAP[1]);
+    if (lift > 0) n = Math.max(n, Math.min(5, base + lift));
+  }
   else n = Math.min(base, base >= 2 ? 1 : 0);                                                                                    // 마요: 다시 생각해요, 회사도 나쁘면 비추
   return ME_STEPS[Math.max(0, Math.min(6, n))];
 }
@@ -1742,25 +1862,30 @@ function meSend(x) {
 }
 function meJudgeNew(c) {
   const o = meOver[c.name] || {}, sl = c.salary || {}, rg = c.grades?.["평판"]?.score;
-  const est = o.salary ? { v: o.salary, how: "제시 연봉" } : sl.newHire ? { v: sl.newHire, how: "이 회사 신입 추정 연봉" } : coSalary(c, 0);
+  const est0 = mePayOk(o.salary) ? { v: o.salary, how: "제시 연봉" } : sl.newHire ? { v: sl.newHire, how: "이 회사 신입 추정 연봉" } : coSalary(c, 0);
+  // 11-12 F8: 신입 연봉도 직급 연봉도 없이 전 직원 평균만 있으면 그 평균을 '신입 연봉' 자리에 쓰지 않는다
+  const avgOnly = !!est0?.avg, est = avgOnly ? null : est0, lack = c.verdict === "판단자료 부족", lv = coLevel(c);
   // 판정은 엔진(fit_engine.js judgeNewbie, 5회차 문답지 기준)에서 — 사례 검사(node fit_test.js)와 같은 계산
   const r = FitEngine.judge({ type: "N", me: { ...ME, salary: ME.nstat === "재직 중" ? ME.salary : undefined },
-    target: { size: coSize(c), industry: engInd(sl.group, sl.industry, c.name), base: ME_GRADE[c.verdict] ?? 4, rating: rg, wlb: coWlb(c) || "", place: coPlace(c), salary: est?.v } });
+    target: { size: coSize(c), tier_n: lv ?? undefined, industry: engInd(sl.group, sl.industry, c.name), base: ME_GRADE[c.verdict] ?? 4, rating: rg, wlb: coWlb(c) || "", place: coPlace(c), salary: est?.v, lack } });
   const V = r.verdict, n = r.n, age = ME.age || 0;
   const why = r.reasons.map(x => x.text);
   if (/비추예요|다시 생각해요/.test(c.verdict)) why.push(`회사 자체 판정은 '${c.verdict}'예요. 재무·평판을 꼭 확인하세요.`);
   else if (c.verdict === "판단자료 부족") why.push("이 회사는 재무·평판 자료가 부족해요. 회사 자체는 따로 확인하세요.");
   const guess = est && /추정/.test(est.how) ? " (추정이라 실제 오퍼와 다를 수 있어요)" : "";   // 6회차 C2
-  let pay = est ? `${est.how} ${won(est.v)}만 원이에요.${guess}` : "이 회사는 연봉 자료가 없어요. 제시 연봉을 넣어 보세요.";
+  let pay = est ? `${est.how} ${won(est.v)}만 원이에요.${guess}`
+    : avgOnly ? `이 회사는 신입 연봉 자료가 없어요. 전 직원 평균 연봉은 ${won(est0.v)}만 원인데, 신입 연봉은 보통 이보다 낮아요. 제시 연봉을 넣어 보세요.` : "이 회사는 연봉 자료가 없어요. 제시 연봉을 넣어 보세요.";
   if (est && ME.salary && ME.nstat === "재직 중") {
     const g = est.v - ME.salary;
     pay = `${est.how} ${won(est.v)}만 원 — 지금보다 ${g >= 0 ? "+" : ""}${won(g)}만 원이에요.${guess}`;
   }
   meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
   const z = meCompose(c, V, why, pay, { y: ME.years || 0, age, v: n >= 5 ? "가요" : n >= 3 ? "조건 보고" : "마요", est, left: false, newbie: true,
-    working: ME.nstat === "재직 중", wlb: "", tenure: sl.tenure, sameInd: false }, rg != null ? [`현직자 평점은 종합 ${rg.toFixed(2)}점이에요.`] : [], { newbie: true, working: ME.nstat === "재직 중" });
+    working: ME.nstat === "재직 중", wlb: "", tenure: sl.tenure, sameInd: false }, rg != null ? [`현직자 평점은 종합 ${rg.toFixed(2)}점이에요.`] : [], { newbie: true, working: ME.nstat === "재직 중", lack, fin: coSize(c) === "금융" });
   const sp = r.spec;
-  const chips = [sp && `스펙 ${sp.g}`, `회사 급 ${coSize(c)}`, ...r.tags, est && `신입 ${won(est.v)}만`, `회사 판정 ${c.verdict}`].filter(Boolean);
+  // 11-12 F7·F8: 금융사는 '급' 대신 평균 연봉 수준으로, 평균만 있는 회사는 '신입 ○○만'이 아니라 '회사 평균'으로 적는다
+  const chips = [sp && `스펙 ${sp.g}`, coSize(c) === "금융" ? `금융${sl.avg ? ` · 평균 연봉 ${won(sl.avg)}만` : ""}` : `회사 급 ${coSize(c)}`, ...r.tags,
+    est && `${/제시/.test(est.how) ? "제시" : "신입"} ${won(est.v)}만`, avgOnly && `회사 평균 ${won(est0.v)}만(신입 연봉 아님)`, `회사 판정 ${c.verdict}`].filter(Boolean);
   return { v: V, z, est, chips };
 }
 // 회사 일반 한마디를 내 연차·나이·상황에 맞게 고친다 (2026-10-27 사용자: "그대로 붙이지 말고 15년 차면 '인생 마지막 회사'처럼")
@@ -1804,19 +1929,21 @@ function meJudge(c) {
   meCo = c;
   if (!ME || meGeneral) return null;
   if (meNew()) return meJudgeNew(c);
-  const { c: kase, est } = meCase(c);
+  const { c: kase, est, offer } = meCase(c);
   if (!kase.now.salary || !kase.target.salary) return null;
+  if (!mePayOk(kase.now.salary)) return null;   // 11-12 F9: 예전에 저장된 이상한 연봉(58 등)으로는 판정하지 않는다
+  const noPay = !!kase.target.pay_unknown, fin = FitEngine.tier(kase.target.size).kind === "finance";
   let r = FitEngine.judge(kase);
   // 게임사 ②안 (2026-10-27 사용자 결정): 회사 자체 판정이 '가세요' 이상인 게임사는 업계 전망만으로 말리지 않고 '조건 보고 가세요'까지만 낮춘다
   const gameSoft = kase.target.industry === "게임" && (ME_GRADE[c.verdict] ?? 0) >= 5 && r.reasons.some(x => x.rule === "F26" && /전망이 어두워요\.$/.test(x.text));
-  const kj = gameSoft ? { ...kase, target: { ...kase.target, industry: "" } } : kase;   // 엔진에만 업계를 빼고 넘긴다 (칩·문구는 그대로 게임)
+  const kj = gameSoft ? { ...kase, target: { ...kase.target, industry: "", ind_sub: undefined } } : kase;   // 엔진에만 업계를 빼고 넘긴다 (칩·문구는 그대로 게임)
   if (gameSoft) r = FitEngine.judge(kj);
   // 직무를 바꾸는 사람은 이미 바꾸기로 하고 가는 것 → 직무 전환은 판정에서 덜 본다 (2026-10-27 사용자: "일반 판정 무조건 가세요인데 직무 바뀐다고 죽여 놓냐")
   //   같은 직무로 옮긴다고 치고 다시 봐서 그쪽이 더 좋으면 그 판정을 쓰고, 직무 전환은 '알고 가세요' 한 줄로만 남긴다
   const jobMove = FitEngine.family(kase.now.job) !== FitEngine.family(kase.target.job);
   if (jobMove && !FitEngine.badField({ job: kase.target.job })) {
     const r2 = FitEngine.judge({ ...kj, target: { ...kj.target, job: kase.now.job } }), rk = { "마요": 0, "조건 보고": 1, "가요": 2 };
-    if (rk[r2.verdict] > rk[r.verdict]) r = { ...r, verdict: r2.verdict, reasons: r.reasons.filter(x => !/^F(6|28)$/.test(x.rule) || !x.text.includes("직무")) };
+    if (rk[r2.verdict] > rk[r.verdict]) r = { ...r, verdict: r2.verdict, soft: r2.soft, reasons: r.reasons.filter(x => !/^F(6|28)$/.test(x.rule) || !x.text.includes("직무")) };
   }
   let v = r.verdict;
   const why = r.reasons.map(x => x.rule === "F28" && /직무가 바뀌어요/.test(x.text) ? "직무가 바뀌는 건 이미 정하고 가시는 거라 판정엔 크게 넣지 않았어요." : x.text);
@@ -1829,9 +1956,11 @@ function meJudge(c) {
     why.push(`회사 자체 판정은 '${c.verdict}'예요. 재무·평판을 꼭 확인하고 가세요.`);
   } else if (c.verdict === "판단자료 부족") why.push("이 회사는 재무·평판 자료가 부족해요. 회사 자체는 따로 확인하세요.");
   // 내 연봉과 비교한 숫자 한 줄
-  const gap = kase.target.salary - kase.now.salary, pct = Math.round(gap / kase.now.salary * 100);
+  // 11-12 F8: 평균만 있는 회사는 내 연봉과 비교하지 않는다 (15년 차도 전 직원 평균과 비교돼 크게 깎이는 것처럼 나오던 문제)
+  const gap = noPay ? 0 : kase.target.salary - kase.now.salary, pct = noPay ? 0 : Math.round(gap / kase.now.salary * 100);
   const tg = kase.target.salary - ME.salary, tp = Math.round(tg / ME.salary * 100);   // E2: 계약연봉끼리 비교했을 때 원천징수 총액 기준도 함께
-  const pay = `${meOver[c.name]?.salary ? "제시 연봉" : est.how} ${won(kase.target.salary)}만 원 — 지금${kase.target.basis ? ` 계약연봉(${won(kase.now.salary)}만 원)` : ""}보다 ${gap >= 0 ? "+" : ""}${won(gap)}만 원(${pct >= 0 ? "+" : ""}${pct}%)이에요.${kase.target.basis ? ` 원천징수 총액(${won(ME.salary)}만 원)과 비교하면 ${tp >= 0 ? "+" : ""}${tp}%${tp < 10 ? "라, 성과급이 얼마나 나오는지는 꼭 확인해 보세요." : "예요."}` : meOver[c.name]?.salary ? "" : " (추정이라 실제 오퍼와 다를 수 있어요)"}`;
+  const pay = noPay ? `이 회사 평균 연봉은 ${won(kase.target.salary)}만 원이에요. 전 직원 평균이라 ${ME.years != null ? `${ME.years}년 차인 ` : ""}내 연봉과 바로 비교하긴 어려워요. 제시받은 연봉을 넣으면 정확히 비교해 드려요.${r.avgLow ? " 다만 전 직원 평균이 내 연봉보다 많이 낮은 회사라, 내 연봉을 맞춰 줄 수 있는 곳인지는 미리 확인하세요." : ""}`
+    : `${offer ? "제시 연봉" : est.how} ${won(kase.target.salary)}만 원 — 지금${kase.target.basis ? ` 계약연봉(${won(kase.now.salary)}만 원)` : ""}보다 ${gap >= 0 ? "+" : ""}${won(gap)}만 원(${pct >= 0 ? "+" : ""}${pct}%)이에요.${kase.target.basis ? ` 원천징수 총액(${won(ME.salary)}만 원)과 비교하면 ${tp >= 0 ? "+" : ""}${tp}%${tp < 10 ? "라, 성과급이 얼마나 나오는지는 꼭 확인해 보세요." : "예요."}` : offer ? "" : " (추정이라 실제 오퍼와 다를 수 있어요)"}`;
   // 회사 일반 판정의 한마디를 이어 붙여 최소 5줄 (2026-10-27 사용자 요청)
   const sl = c.salary || {}, rg = c.grades?.["평판"]?.score;
   const facts = [];
@@ -1839,25 +1968,29 @@ function meJudge(c) {
   if (sl.tenure != null) facts.push(`직원 ${won(sl.members)}명, 평균 근속 ${sl.tenure}년인 회사예요.`);
   if (sl.newHire && (ME.years || 0) <= 1) facts.push(`신입 추정 연봉은 ${won(sl.newHire)}만 원이에요.`);
   // 내 위치가 낮을수록 올린다: 한 단계 위 회사(또는 회사 판정이 지금 회사보다 2단계 이상 좋음) +1, 연봉 25% 이상 오름 +1
-  const step = FitEngine.tier(kase.target.size).n - FitEngine.tier(kase.now.size).n;
+  const step = r.noTier ? 0 : FitEngine.tierOf(kase.target).n - FitEngine.tierOf(kase.now).n;   // 11-12 F7: 규모·수준을 모르면 급 비교 없음
   const better = step >= 1 || (kase.now.grade != null && kase.target.grade != null && kase.target.grade - kase.now.grade >= 2);
   const up = (better ? 1 : 0) + (pct >= 25 ? 1 : 0);
-  let V = meLevel(v, c.verdict, pct, up);
+  // 올린 까닭 말: 금융사는 '급'이 아니라 회사 수준(평균 연봉 기준)으로 말한다 (11-12 F7)
+  const upWhy = step >= 1 ? (fin ? "지금 회사보다 회사 수준(평균 연봉 기준)이 높은 금융사라" : "지금 내 자리보다 위 급이라") : better ? "지금 회사보다 회사 자체 평가가 확실히 좋아서" : "연봉이 크게 오르는 자리라";
+  let V = meLevel(v, c.verdict, pct, up, { soft: r.soft, noPay });
   // 업계 전망만으로 말리는데 다른 조건이 압도적이면(연봉 +1,000만 원 이상·+25% 이상·위 급) 한 단계만 올린다 (2026-10-27 사용자: "연봉 1000 이상 차이나는데 가지 말라는 건 이상")
   //   업계를 빼고 다시 본 판정이 더 좋을 때만 = 업계가 원인일 때만. 업계 뺀 판정보다 높이 올리지는 않는다
   if (!gameSoft && (gap >= 1000 || pct >= 25 || better)) {
-    const r0 = FitEngine.judge({ ...kj, target: { ...kj.target, industry: "" } });
-    const V0 = meLevel(r0.verdict, c.verdict, pct, up), i = ME_STEPS.indexOf(V), i0 = ME_STEPS.indexOf(V0);
+    const r0 = FitEngine.judge({ ...kj, target: { ...kj.target, industry: "", ind_sub: undefined } });
+    const V0 = meLevel(r0.verdict, c.verdict, pct, up, { soft: r0.soft, noPay }), i = ME_STEPS.indexOf(V), i0 = ME_STEPS.indexOf(V0);
     if (i0 > i) {
       V = ME_STEPS[i + 1];
-      why.push(`${meJ(kase.target.industry || "이 업계", "은", "는")} 전망이 밝지 않지만, ${gap >= 1000 ? `연봉이 ${won(gap)}만 원 오르는` : better ? "지금보다 위 급인" : "연봉이 크게 오르는"} 조건이라 업계 걱정만으로 말리진 않고 한 단계 올렸어요.`);
+      // 11-12: 이 줄은 업황·전망 때문이 아니라 그냥 업계가 바뀌는 조건(F30)일 때도 나온다 → 그때는 '전망이 밝지 않지만'이라고 하지 않는다 (소재·에너지·유통 등에 잘못 붙던 말)
+      const indNm = (kase.target.ind_sub && kase.target.ind_sub !== "모름" ? kase.target.ind_sub : kase.target.industry) || "이 업계", dim = FitEngine.downInd(kase.target) || FitEngine.badField(kase.target);
+      why.push(`${dim ? meJ(indNm, "은", "는") + " 전망이 밝지 않지만" : "업계가 바뀌는 이동이지만"}, ${gap >= 1000 ? `연봉이 ${won(gap)}만 원 오르는` : step >= 1 ? (fin ? "회사 수준(평균 연봉 기준)이 지금보다 높은" : "지금보다 위 급인") : better ? "회사 자체 평가가 지금 회사보다 좋은" : "연봉이 크게 오르는"} 조건이라 ${dim ? "업계 걱정만으로" : "그것만으로"} 말리진 않고 한 단계 올렸어요.`);
     }
   }
   if (gameSoft) {
     V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), 4)];
     why.push("게임 업계는 전망이 밝은 편이 아니라 '조건 보고 가세요'까지만 드려요. 회사 자체가 좋아서 가도 되지만, 길게 보면 다른 업계에서도 통하는 경력으로 키워 두세요.");
   }
-  const upLine = `회사 일반 판정은 '${c.verdict}'지만, ${better ? "지금 내 자리보다 위 급이라" : "연봉이 크게 오르는 자리라"} 내 기준에선 더 좋은 카드예요.`;
+  const upLine = `회사 일반 판정은 '${c.verdict}'지만, ${upWhy} 내 기준에선 더 좋은 카드예요.`;
   if (ME_GRADE[V] > (ME_GRADE[c.verdict] ?? 4)) why.unshift(upLine);
   // 옮기려는 가장 큰 이유: 그 이유를 이 회사가 풀어 주는지 회사 자료로 본다. 못 풀어 주면 '조건 보고 가세요'까지만
   const reason = meReason(c, kase, pct);
@@ -1874,13 +2007,19 @@ function meJudge(c) {
     V = ME_STEPS[Math.min(FitEngine.wlbApply(ME_STEPS.indexOf(V), wa), 5)];   // 워라밸이 나빠지는데 '고민할 이유가 없어요'는 아니다 (6회차 D1)
     why.unshift(...wa.lines);
   } else if (ME.mustOff && ME.why !== "워라밸" && kase.target.wlb === "칼퇴" && kase.now.wlb !== "칼퇴") why.push(`칼퇴가 꼭 필요하시면 맞는 방향이에요(현직자 워라밸 '칼퇴' 쪽). ${FitEngine.TB}`);   // 6회차 D3
+  else if (ME.mustOff && kase.target.wlb_unknown) why.push("칼퇴가 꼭 필요하신데 이 회사는 현직자 워라밸 자료가 없어요. 들어갈 팀의 퇴근 문화를 면접에서 꼭 확인하세요.");   // 11-12 F9: 자료 없음을 '보통'으로 단정하지 않는다
+  // 워라밸이 중요한 사람(칼퇴 필수·이유=워라밸)인데 갈 회사 워라밸을 모르면 '무조건 가세요'는 아니다 (전에는 '보통'으로 쳐서 같은 상한이 걸렸음)
+  if (!wa && kase.target.wlb_unknown && (ME.mustOff || ME.why === "워라밸")) V = ME_STEPS[Math.min(ME_STEPS.indexOf(V), 5)];
   // 마지막에: 낮춘 뒤 '더 좋은 카드' 말은 빼고, 이유=연봉 말과 겹치는 연봉 낮음 말은 하나만
   if (ME_GRADE[V] <= (ME_GRADE[c.verdict] ?? 4)) { const i = why.indexOf(upLine); if (i >= 0) why.splice(i, 1); }
   if (reason?.cap === 2) { const i = why.findIndex(t => /낮아요\. (이직 시|협상으로|연봉 협상을)/.test(t)); if (i >= 0) why.splice(i, 1); }
   meSend({ t: "v", co: c.name, v: V, gen: c.verdict });
-  const z = meCompose(c, V, why, pay, { y: ME.years || 0, age: ME.age || 0, v: ME_GRADE[V] >= 5 ? "가요" : ME_GRADE[V] >= 3 ? "조건 보고" : "마요", est, left: !!ME.left,
-    wlb: kase.now.wlb, tenure: sl.tenure, sameInd: kase.now.industry === kase.target.industry }, facts, { pct, cap: reason?.cap, now: kase.now.salary, first: wa?.first, wlbTop: wa?.lines });
-  const chips = [step > 0 ? "한 단계 위 회사" : step < 0 ? "아래 급 회사" : "같은 급", `연봉 ${pct >= 0 ? "+" : ""}${pct}%`,
+  //   연봉을 비교 못 한 회사(noPay)에는 '이런 조건이면 마지막 회사'처럼 조건이 좋다는 전제의 말을 붙이지 않는다
+  const z = meCompose(c, V, why, pay, { y: ME.years || 0, age: ME.age || 0, v: ME_GRADE[V] >= 5 && !noPay ? "가요" : ME_GRADE[V] >= 3 ? "조건 보고" : "마요", est: noPay ? null : est, left: !!ME.left,
+    wlb: kase.now.wlb, tenure: sl.tenure, sameInd: kase.now.industry === kase.target.industry }, facts,
+    { pct, cap: reason?.cap, now: kase.now.salary, first: wa?.first, wlbTop: wa?.lines, left: !!ME.left, offer: !!offer, lack: !!kase.target.lack, fin, noPay, avgLow: !!r.avgLow });
+  const chips = [r.noTier ? (kase.now.size_unknown ? "지금 회사 규모 모름" : "회사 수준 모름") : fin ? (step > 0 ? "회사 수준 높음(평균 연봉 기준)" : step < 0 ? "회사 수준 낮음(평균 연봉 기준)" : "회사 수준 비슷(평균 연봉 기준)")
+      : step > 0 ? "한 단계 위 회사" : step < 0 ? "아래 급 회사" : "같은 급", noPay ? "연봉 비교 안 함(평균만 있음)" : `연봉 ${pct >= 0 ? "+" : ""}${pct}%`,
     kase.now.industry && kase.target.industry ? (kase.now.industry === kase.target.industry ? "같은 업계" : "업계 바뀜") : "",
     FitEngine.family(kase.now.job) === FitEngine.family(kase.target.job) ? "같은 직무" : "직무 전환",
     reason ? `이유(${ME.why}) ${reason.cap || reason.wlb ? "안 풀림" : "풀림"}` : "", wa && wa.drop + (wa.fix != null ? 1 : 0) > 0 ? "워라밸로 낮춤" : wa ? "워라밸 나빠짐" : "", `회사 판정 ${c.verdict}`].filter(Boolean);
@@ -1891,7 +2030,7 @@ function meJudge(c) {
 //   2) 남은 회사 말은 좋은 점(+)·걸리는 점(-)·사실(0)로 나눠, 내 판정 방향에 맞게 고른다
 //      말리는 판정이면 걸리는 점 위주·좋은 점은 1줄, 가라는 판정이면 좋은 점 위주·걸리는 점은 '알고 가세요'로
 //   3) 회사 자체 판정과 내 판정이 2단계 넘게 다르면 왜 다른지 한 줄로 이어 준다
-const ZK = [["이건\\ 고민할\\ 질문이\\ 아니라\\ 축하할\\ 일이에요\\ ㅎㅎ", "v"], ["합격했다면\\ 무조건\\ 가세요\\.\\ 지금\\ 다니는\\ 회사엔\\ 감사\\ 인사만\\ 남기고\\ 오세요\\.", "v"], ["올해\\ 성과급\\ 시즌에\\ 웃고\\ 계실\\ 거예요\\.\\ 당장\\ 사인하세요!", "v"], ["이\\ 카드\\ 놓치면\\ 두고두고\\ 이불킥합니다\\.\\ 가세요\\.", "v"], ["제가\\ 말릴\\ 이유를\\ 하나도\\ 못\\ 찾았어요\\.\\ 축하드려요!", "v"], ["여긴\\ '갈까\\ 말까'가\\ 아니라\\ '언제\\ 출근하지'를\\ 고민하실\\ 곳이에요\\ ㅎㅎ", "v"], ["이\\ 정도\\ 회사는\\ 커리어에\\ 오래\\ 남는\\ 이름이에요\\.\\ 망설이지\\ 마세요\\.", "v"], ["합격\\ 문자\\ 캡처해\\ 두세요\\.\\ 무조건\\ 가셔야\\ 하는\\ 곳이에요\\.", "v"], ["돈도\\ 챙겨주고\\ 사람들\\ 평가도\\ 좋아요\\.\\ 이\\ 정도면\\ 고민은\\ 사치예요\\ ㅎㅎ", "v"], ["연봉도\\ 평판도\\ 위쪽이에요\\.\\ 둘\\ 다\\ 잡기\\ 쉽지\\ 않은데\\ 이\\ 회사는\\ 잡았어요\\.", "v"], ["주는\\ 만큼\\ 갈아\\ 넣는\\ 회사가\\ 아니라,\\ 많이\\ 주고\\ 다닐\\ 만한\\ 회사예요\\.", "v"], ["통장도\\ 멘탈도\\ 덜\\ 털릴\\ 회사예요\\.\\ 고민\\ 끝\\.", "v"], ["오래\\ 다닐\\ 회사를\\ 찾으셨다면\\ 여기예요\\.\\ 크게\\ 튀진\\ 않아도\\ 크게\\ 흔들리지도\\ 않는\\ 곳이에요\\.", "v"], ["롱런하기\\ 좋은\\ 회사예요\\.\\ 체력\\ 좋은\\ 회사에\\ 평판까지\\ 받쳐\\ 주네요\\.", "v"], ["회사가\\ 쉽게\\ 안\\ 무너지고,\\ 안에서도\\ 나쁜\\ 소리가\\ 적어요\\.\\ 안정\\ 원하시면\\ 정답이에요\\.", "v"], ["화려하진\\ 않아도\\ 든든한\\ 회사예요\\.\\ 이런\\ 곳이\\ 길게\\ 보면\\ 남는\\ 장사예요\\.", "v"], ["꺼지지\\ 않고\\ 조금씩\\ 크는\\ 회사,\\ 제가\\ 제일\\ 좋아하는\\ 타입이에요\\.", "v"], ["급하게\\ 크지도,\\ 멈춰\\ 있지도\\ 않아요\\.\\ 딱\\ 다니기\\ 좋은\\ 속도로\\ 크는\\ 회사예요\\.", "v"], ["규모\\ 갖추고\\ 꾸준히\\ 크는\\ 회사예요\\.\\ 자리도\\ 조금씩\\ 늘어나는\\ 곳이에요\\.", "v"], ["타이밍이\\ 좋아요\\.\\ 올라가는\\ 엘리베이터에\\ 타는\\ 느낌이에요\\.", "v"], ["지금\\ 들어가면\\ 좋은\\ 흐름에\\ 올라타는\\ 거예요\\.\\ 지금\\ 합류할\\ 수\\ 있다면\\ 합류하세요!", "v"], ["요즘\\ 분위기가\\ 좋은\\ 회사예요\\.\\ 이럴\\ 때\\ 들어가는\\ 사람이\\ 성과급\\ 덕을\\ 봐요\\.", "v"], ["바람이\\ 등\\ 뒤에서\\ 불고\\ 있는\\ 회사예요\\.\\ 가세요\\.", "v"], ["고민할\\ 시간에\\ 사인하세요\\ ㅎㅎ", "v"], ["이\\ 카드는\\ 쥐고\\ 가셔도\\ 돼요\\.", "v"], ["합격\\ 축하드려요\\.\\ 이건\\ 가는\\ 게\\ 맞아요\\.", "v"], ["숫자도\\ 평판도\\ 크게\\ 걸리는\\ 게\\ 없어요\\.\\ 가세요\\.", "v"], ["제\\ 기준표에서\\ 대부분\\ 통과한\\ 회사예요\\.\\ 자신\\ 있게\\ 가셔도\\ 돼요\\.", "v"], ["좋은\\ 회사\\ 맞아요\\.\\ 들어가서\\ 잘\\ 버티기만\\ 하면\\ 돼요\\.", "v"], ["회사는\\ 괜찮아요\\.\\ 문제는\\ 돈이에요\\.", "v"], ["다닐\\ 만한데\\ 연봉이\\ 발목\\ 잡아요\\.\\ 협상에서\\ 승부\\ 보세요\\.", "v"], ["회사\\ 점수는\\ 되는데\\ 연봉\\ 점수가\\ 박해요\\.\\ 여긴\\ 협상이\\ 반이에요\\.", "v"], ["좋은\\ 회사\\ 조건에서\\ '돈'만\\ 쏙\\ 빠져\\ 있어요\\.\\ 그걸\\ 감수할지가\\ 관건이에요\\.", "v"], ["갈\\ 만은\\ 한데,\\ 저녁\\ 있는\\ 삶은\\ 내려놓고\\ 가셔야\\ 해요\\.", "v"], ["회사는\\ 좋은데\\ 일\\ 많기로\\ 유명한\\ 쪽이에요\\.\\ 체력\\ 자신\\ 없으면\\ 비추\\.", "v"], ["배우는\\ 건\\ 많을\\ 거예요\\.\\ 대신\\ 퇴근\\ 시간은\\ 회사가\\ 정해요\\ ㅎㅎ", "v"], ["크는\\ 회사라\\ 배울\\ 건\\ 많아요\\.\\ 대신\\ 체력이랑\\ 멘탈\\ 다\\ 털릴\\ 각오\\ 하세요\\.", "v"], ["성장\\ 속도가\\ 빨라서\\ 기회도\\ 많고\\ 혼돈도\\ 많아요\\.", "v"], ["로켓은\\ 맞는데\\ 안전벨트는\\ 없어요\\.\\ 본인이\\ 매고\\ 타셔야\\ 해요\\.", "v"], ["나쁘진\\ 않아요\\.\\ 근데\\ '좋다'까진\\ 아니에요\\.\\ 팀\\ 분위기\\ 따로\\ 꼭\\ 알아보세요\\.", "v"], ["평판\\ 딱\\ 중간이에요\\.\\ 이런\\ 데는\\ 회사보다\\ 어느\\ 팀\\ 가느냐가\\ 전부예요\\.", "v"], ["회사\\ 전체로는\\ 무난해요\\.\\ 결국\\ 내\\ 팀장이\\ 누구냐가\\ 반이에요\\.", "v"], ["갈\\ 만한\\ 회사예요\\.\\ 다만\\ 조건은\\ 꼼꼼히\\ 보세요\\.", "v"], ["70점짜리\\ 회사예요\\.\\ 나머지\\ 30점은\\ 들어갈\\ 팀과\\ 연봉이\\ 채워요\\.", "v"], ["가도\\ 되는\\ 회사예요\\.\\ 다만\\ '무조건'은\\ 아니에요\\.", "v"], ["괜찮은\\ 회사인데\\ 한두\\ 군데\\ 걸리는\\ 게\\ 있어요\\.\\ 아래\\ 내용\\ 보고\\ 판단하세요\\.", "v"], ["합격은\\ 잘하셨어요\\.\\ 사인\\ 전에\\ 체크리스트\\ 한\\ 번만\\ 돌려\\ 보세요\\.", "v"], ["여긴\\ 중립기어\\ 박을게요\\.\\ 회사는\\ 탄탄한데,\\ 사람마다\\ 맞고\\ 안\\ 맞고가\\ 갈리는\\ 곳이에요\\.", "v"], ["저는\\ 깜빡이만\\ 켜\\ 둘게요\\.\\ 안정이냐\\ 연봉\\ 상승이냐,\\ 뭘\\ 더\\ 원하시냐에\\ 따라\\ 답이\\ 갈려요\\.", "v"], ["이\\ 회사는\\ 좋다,\\ 나쁘다보다\\ '나랑\\ 맞냐'의\\ 문제예요\\.", "v"], ["추천도\\ 비추도\\ 아니에요\\.\\ 이건\\ 본인\\ 성향이\\ 정답을\\ 정하는\\ 회사예요\\.", "v"], ["브레이크도\\ 액셀도\\ 안\\ 밟을게요\\.\\ 아래\\ 특성\\ 읽어\\ 보고\\ 끌리면\\ 가세요\\.", "v"], ["스타트업은\\ 회사보다\\ 사람\\ 보고\\ 가는\\ 곳이에요\\.\\ 대표랑\\ 팀\\ 직접\\ 안\\ 보고\\ 가면\\ 후회해요\\.", "v"], ["평점\\ 낮은\\ 스타트업이에요\\.\\ 지분·연봉\\ 확실하지\\ 않으면\\ 절대\\ 서두르지\\ 마세요\\.", "v"], ["스타트업\\ 롤러코스터\\ 제대로\\ 타는\\ 곳이에요\\.\\ 버틸\\ 이유가\\ 분명할\\ 때만\\ 가세요\\.", "v"], ["회사\\ 체력은\\ 괜찮은데,\\ 다니는\\ 사람들\\ 평가가\\ 별로예요\\.", "v"], ["회사는\\ 멀쩡한데\\ 안에서\\ 들리는\\ 얘기가\\ 안\\ 좋아요\\.\\ 지금\\ 쥔\\ 카드랑\\ 꼭\\ 비교하세요\\.", "v"], ["경력\\ 한\\ 줄\\ 만들기엔\\ 괜찮아요\\.\\ 오래\\ 다닐\\ 곳은\\ 아니에요\\.", "v"], ["급하면\\ 가세요\\.\\ 급하지\\ 않으면\\ 한\\ 템포\\ 쉬어\\ 가세요\\.", "v"], ["이\\ 회사가\\ 지금\\ 내\\ 최선인지가\\ 먼저예요\\.\\ 회사만\\ 보면\\ 추천\\ 못\\ 해요\\.", "v"], ["징검다리로는\\ 써도\\ 돼요\\.\\ 오래\\ 밟고\\ 서\\ 있을\\ 돌은\\ 아니에요\\.", "v"], ["회사\\ 체력이\\ 약해요\\.\\ 업황\\ 한\\ 번\\ 꺾이면\\ 제일\\ 먼저\\ 휘청할\\ 곳이에요\\.", "v"], ["빚이\\ 많아요\\.\\ 좋을\\ 땐\\ 모르는데\\ 나빠지면\\ 사람부터\\ 자릅니다\\.", "v"], ["재무\\ 안전벨트가\\ 헐렁해요\\.\\ 입사\\ 전에\\ 다시\\ 생각하세요\\.", "v"], ["성장이\\ 멈췄어요\\.\\ 들어가서\\ 키울\\ 커리어가\\ 안\\ 보여요\\.", "v"], ["매출이\\ 뒷걸음질\\ 중이에요\\.\\ 줄어드는\\ 회사에선\\ 승진도\\ 성과급도\\ 같이\\ 줄어요\\.", "v"], ["내리막\\ 회사예요\\.\\ 반등\\ 신호\\ 보일\\ 때까지\\ 기다리는\\ 게\\ 나아요\\.", "v"], ["몇\\ 년째\\ 적자예요\\.\\ 성과급\\ 얘기는\\ 당분간\\ 없다고\\ 보세요\\.", "v"], ["돈을\\ 못\\ 버는\\ 회사예요\\.\\ 적자가\\ 길면\\ 복지부터\\ 깎여요\\.", "v"], ["적자가\\ 반복돼요\\.\\ 월급은\\ 나와도\\ 성장\\ 얘기는\\ 듣기\\ 힘들어요\\.", "v"], ["합격은\\ 축하드리지만,\\ 사인은\\ 잠깐\\ 미뤄\\ 두세요\\.", "v"], ["한\\ 번\\ 더\\ 생각해\\ 보세요\\.\\ 이대로\\ 가면\\ 후회할\\ 확률\\ 높아요\\.", "v"], ["급하게\\ 결정할\\ 회사\\ 아니에요\\.\\ 다른\\ 카드부터\\ 확인하세요\\.", "v"], ["제\\ 기준표에서\\ 빨간불이\\ 여러\\ 개\\ 켜졌어요\\.\\ 아래\\ 꼭\\ 보세요\\.", "v"], ["가지\\ 말란\\ 건\\ 아닌데,\\ '여기가\\ 최선이다'\\ 확신\\ 있을\\ 때만\\ 가세요\\.", "v"], ["솔직히\\ 말립니다\\.\\ 회사는\\ 크는데\\ 사람이\\ 못\\ 버티는\\ 곳이에요\\.", "v"], ["숫자는\\ 화려한데\\ 평판이\\ 박살\\ 나\\ 있어요\\.\\ 사람\\ 갈아서\\ 크는\\ 전형적인\\ 패턴이에요\\.", "v"], ["성장\\ 그래프에\\ 속지\\ 마세요\\.\\ 그\\ 그래프\\ 밑에\\ 사람들이\\ 깔려\\ 있어요\\.", "v"], ["숫자도\\ 평판도\\ 다\\ 빨간불이에요\\.\\ 저라면\\ 안\\ 갑니다\\.", "v"], ["이\\ 카드는\\ 버리셔도\\ 돼요\\.\\ 더\\ 좋은\\ 카드\\ 충분히\\ 나와요\\.", "v"], ["들어가는\\ 날부터\\ 탈출\\ 계획\\ 세워야\\ 하는\\ 곳이에요\\.", "v"], ["냉정하게\\ 말할게요\\.\\ 비추예요\\.", "v"], ["여기\\ 가려고\\ 지금\\ 회사\\ 그만두는\\ 거면\\ 무조건\\ 말립니다\\.", "v"], ["회사는\\ 괜찮은데\\ 워라밸은\\ 시망이에요\\.\\ 엄청\\ 빡셀\\ 각오\\ 하셔야\\ 해요\\.", "v"], ["숫자는\\ 좋은데\\ 사람이\\ 갈려요\\.\\ 워라밸\\ 있는\\ 회사\\ 다니던\\ 분이면\\ 포기도\\ 고려하세요\\.", "v"], ["여긴\\ 커리어\\ 받고\\ 저녁을\\ 내주는\\ 회사예요\\.\\ 그\\ 거래가\\ 괜찮으면\\ 가세요\\.", "v"], ["숫자만\\ 보면\\ 괜찮아\\ 보여요\\.\\ 근데\\ 이\\ 회사는\\ '누구의\\ 계열사인지'부터\\ 봐야\\ 해요\\.", "v"], ["점수표는\\ 나쁘지\\ 않아요\\.\\ 문제는\\ 점수표에\\ 안\\ 나오는\\ 모회사\\ 그림자예요\\.", "v"], ["겉보기\\ 성적은\\ 괜찮은데,\\ 고스펙이라면\\ 한\\ 번\\ 멈춰서\\ 보세요\\.", "v"], ["지금\\ 조건만\\ 보면\\ 무조건\\ 가세요\\.\\ 다만\\ 미래는\\ 쪼끔\\ 걱정돼요\\.", "v"], ["돈도\\ 평판도\\ 최상급이에요\\.\\ 고민\\ 말고\\ 가세요\\.\\ 근데\\ 10년\\ 뒤까지\\ 장담하긴\\ 어려워요\\.", "v"], ["들어가면\\ 행복할\\ 회사예요\\.\\ 가세요\\.\\ 다만\\ 회사의\\ 앞날은\\ 살짝\\ 지켜봐야\\ 해요\\.", "v"], ["이\\ 조건이면\\ 안\\ 갈\\ 이유가\\ 없어요\\.\\ 미래\\ 걱정은\\ 들어가서\\ 해도\\ 늦지\\ 않아요\\.", "v"], ["지금\\ 이\\ 회사는\\ 꿀이에요\\.\\ 무조건\\ 가세요\\.\\ 단,\\ 이\\ 꿀이\\ 영원할지는\\ 조금\\ 물음표예요\\.", "v"], ["가세요\\.\\ 지금\\ 처우와\\ 분위기는\\ 확실한데,\\ 앞날은\\ 조금\\ 걱정돼요\\.", "v"], ["돈도\\ 주고\\ 다니기도\\ 좋은\\ 회사예요\\.\\ 가세요\\.\\ 다만\\ 회사\\ 성장\\ 쪽은\\ 살짝\\ 불안해요\\.", "v"], ["지금\\ 기준으론\\ 충분히\\ 갈\\ 만한\\ 회사예요\\.\\ 미래까지\\ 꽃길인지는\\ 조금\\ 지켜봐야\\ 해요\\.", "v"], ["현재만\\ 보면\\ 좋은\\ 카드예요\\.\\ 가세요\\.\\ 근데\\ 5년\\ 뒤\\ 그림은\\ 조금\\ 흐릿해요\\.", "v"], ["평점·연봉은\\ 좋은데\\ 회사\\ 지갑이\\ 비어\\ 있어요\\.\\ 그래서\\ '가세요'까진\\ 못\\ 드려요\\.", "v"], ["다니기\\ 좋다는\\ 평은\\ 많은데\\ 숫자가\\ 빨간불이에요\\.\\ 조건부로만\\ 추천해요\\.", "v"], ["사람들\\ 평가는\\ 괜찮아요\\.\\ 문제는\\ 회사가\\ 아직\\ 돈을\\ 못\\ 번다는\\ 거예요\\.", "v"], ["좋은\\ 카드처럼\\ 보여도\\ 재무가\\ 받쳐\\ 주질\\ 않아요\\.\\ 감수할\\ 수\\ 있을\\ 때만\\ 가세요\\.", "v"], ["회사\\ 분위기는\\ 나쁘지\\ 않은데\\ 연봉이\\ 아쉬워요\\.\\ 내\\ 스펙이면\\ 더\\ 받을\\ 수\\ 있는지가\\ 관건이에요\\.", "v"], ["다니기엔\\ 괜찮은\\ 회사인데\\ 돈이\\ 약해요\\.\\ 지금\\ 쥔\\ 카드보다\\ 나은지\\ 꼭\\ 비교하세요\\.", "v"], ["사람들\\ 평가는\\ 무난해요\\.\\ 연봉을\\ 감수할\\ 이유가\\ 있으면\\ 가셔도\\ 돼요\\.", "v"], ["평점·연봉은\\ 그럭저럭인데\\ 회사\\ 체력이\\ 걸려요\\.\\ 내\\ 스펙으로\\ 더\\ 탄탄한\\ 곳이\\ 가능한지\\ 먼저\\ 보세요\\.", "v"], ["다니는\\ 사람\\ 평가는\\ 괜찮은데\\ 숫자가\\ 약해요\\.\\ 오래\\ 다닐\\ 곳인지는\\ 따져\\ 보고\\ 정하세요\\.", "v"], ["딱\\ 중간\\ 회사예요\\.\\ 내\\ 스펙이\\ 이보다\\ 높으면\\ 더\\ 보고,\\ 비슷하면\\ 가셔도\\ 돼요\\.", "v"], ["좋다\\ 나쁘다\\ 하기\\ 애매한\\ 곳이에요\\.\\ 결국\\ 내\\ 다른\\ 카드가\\ 답을\\ 정해요\\.", "v"], ["무난한\\ 회사예요\\.\\ 더\\ 나은\\ 카드가\\ 나올\\ 스펙인지\\ 냉정하게\\ 보고\\ 정하세요\\.", "v"], ["평점\\ 자료가\\ 없어\\ 회사\\ 숫자로만\\ 봤어요\\.\\ 좋다\\ 나쁘다보다\\ 내\\ 스펙과\\ 다른\\ 카드가\\ 답을\\ 정하는\\ 자리예요\\.", "v"], ["다니는\\ 사람\\ 평가를\\ 못\\ 찾았어요\\.\\ 숫자는\\ 중간이라,\\ 지금\\ 쥔\\ 카드와\\ 비교해\\ 보고\\ 정하세요\\.", "v"], ["들어가서\\ 이\\ 회사\\ 이름값을\\ 최대한\\ 이력서에\\ 녹이세요\\.\\ 다음\\ 이직\\ 때\\ 든든한\\ 무기예요\\.", "v"], ["입사\\ 전까지\\ 건강\\ 챙기시고,\\ 들어가선\\ 첫\\ 1년\\ 평가만\\ 잘\\ 받으세요\\.\\ 나머진\\ 회사가\\ 해\\ 줘요\\ ㅎㅎ", "v"], ["이런\\ 회사는\\ 오래\\ 다녀도\\ 손해\\ 없어요\\.\\ 자리\\ 잡고\\ 길게\\ 보세요\\.", "v"], ["들어가서\\ 2\\~3년\\ 제대로\\ 경력\\ 쌓으면\\ 다음\\ 이직\\ 카드도\\ 좋아져요\\.", "v"], ["입사\\ 첫해에\\ 굵직한\\ 프로젝트\\ 하나\\ 잡으세요\\.\\ 그게\\ 다음\\ 이직의\\ 무기예요\\.", "v"], ["좋은\\ 회사일수록\\ 첫\\ 평가가\\ 중요해요\\.\\ 첫\\ 1년은\\ 전력\\ 질주하세요\\.", "v"], ["들어가면\\ 사내\\ 네트워크부터\\ 넓히세요\\.\\ 좋은\\ 회사는\\ 사람이\\ 자산이에요\\.", "v"], ["들어가신다면\\ 2\\~3년\\ 확실히\\ 경력\\ 쌓고,\\ 더\\ 좋은\\ 곳으로\\ 환승\\ 이직하는\\ 발판으로\\ 쓰세요\\.", "v"], ["연봉\\ 협상은\\ 사인\\ 전이\\ 제일\\ 세요\\.\\ 한\\ 번\\ 더\\ 밀어\\ 보세요\\.", "v"], ["면접\\ 역질문으로\\ 팀\\ 분위기랑\\ 야근\\ 문화는\\ 꼭\\ 확인하세요\\.", "v"], ["여기서\\ 버티는\\ 게\\ 목표가\\ 아니라,\\ 여기를\\ 발판으로\\ 쓰는\\ 게\\ 목표예요\\.", "v"], ["결국\\ '내가\\ 회사에서\\ 뭘\\ 제일\\ 원하냐'에\\ 답하면\\ 이\\ 회사\\ 답도\\ 나와요\\.", "v"], ["현직자\\ 한\\ 명만\\ 만나\\ 보셔도\\ 판단이\\ 확\\ 쉬워질\\ 거예요\\.", "v"], ["안정을\\ 원하면\\ 가고,\\ 빠른\\ 연봉\\ 상승을\\ 원하면\\ 다른\\ 카드를\\ 기다리세요\\.", "v"], ["지금\\ 회사가\\ 있다면\\ 먼저\\ 그만두지\\ 마시고,\\ 합격\\ 카드를\\ 들고\\ 환승\\ 이직으로\\ 움직이세요\\.", "v"], ["선퇴사는\\ 절대\\ 금지!\\ 합격\\ 카드\\ 쥐고\\ 다른\\ 회사\\ 결과까지\\ 보고\\ 정하세요\\.", "v"], ["가신다면\\ 경력\\ 한\\ 줄\\ 만들고\\ 빠르게\\ 다음\\ 카드를\\ 준비하세요\\.", "v"], ["내\\ 연차·스펙에서\\ 이보다\\ 나은\\ 카드가\\ 나올지\\ 냉정하게\\ 따져\\ 보세요\\.", "v"], ["지금\\ 회사가\\ 있다면\\ 먼저\\ 그만두지\\ 마시고,\\ 더\\ 나은\\ 카드가\\ 나올\\ 때까지\\ 환승\\ 이직\\ 원칙\\ 지키세요\\.", "v"], ["선퇴사는\\ 절대\\ 금지!\\ 이\\ 카드는\\ 보험으로만\\ 들고\\ 계세요\\.", "v"], ["합격했다는\\ 건\\ 시장에서\\ 통한다는\\ 뜻이에요\\.\\ 더\\ 좋은\\ 곳도\\ 충분히\\ 노려\\ 보세요\\.", "v"], ["급할수록\\ 돌아가세요\\.\\ 다음\\ 시즌에\\ 더\\ 좋은\\ 카드가\\ 나올\\ 수\\ 있어요\\.", "v"], ["합격했다는\\ 건\\ 실력이\\ 된다는\\ 뜻이에요\\.\\ 그\\ 실력이면\\ 더\\ 좋은\\ 곳\\ 갑니다\\.", "v"], ["지금\\ 회사가\\ 있다면\\ 절대\\ 먼저\\ 그만두지\\ 마세요\\.\\ 여긴\\ 버티는\\ 회사보다\\ 나을\\ 게\\ 없어요\\.", "v"], ["정\\ 가셔야\\ 한다면\\ 1년\\ 안에\\ 나올\\ 계획까지\\ 세우고\\ 들어가세요\\.", "v"], ["회사는\\ 합격점인데\\ 연봉이\\ 업계\\ 아래쪽이에요\\.\\ 여긴\\ 협상이\\ 반이에요\\.\\ 사인\\ 전에\\ 무조건\\ 한\\ 번\\ 더\\ 미세요\\.", "v"], ["들어갈\\ 만한\\ 회사인데\\ 숫자가\\ 아쉬워요\\.\\ 입사\\ 후엔\\ 올리기\\ 어려우니\\ 지금\\ 협상에서\\ 끝을\\ 보세요\\.", "v"], ["연봉만\\ 빼면\\ 다\\ 괜찮아요\\.\\ 직전\\ 연봉·경쟁\\ 오퍼를\\ 근거로\\ 처우부터\\ 끌어올리고\\ 가세요\\.", "v"], ["이름값과\\ 규모가\\ 있는\\ 회사라\\ 경력\\ 한\\ 줄로는\\ 확실해요\\.\\ 2\\~3년\\ 쌓고\\ 환승\\ 이직하는\\ 발판으로\\ 쓰세요\\.", "v"], ["오래\\ 다닐\\ 곳이라기보다\\ 커리어를\\ 한\\ 단계\\ 올려\\ 주는\\ 돌다리예요\\.\\ 밟고\\ 다음으로\\ 건너가세요\\.", "v"], ["이력서에\\ 남는\\ 이름이\\ 좋은\\ 회사예요\\.\\ 여기서\\ 굵직한\\ 프로젝트\\ 하나\\ 들고\\ 다음\\ 카드를\\ 노리세요\\.", "v"], ["요즘\\ 신작·신제품\\ 반응이\\ 좋아요\\.\\ 재무에\\ 반영되기\\ 전인\\ 지금이\\ 들어가기\\ 좋은\\ 타이밍이에요\\.", "v"], ["분위기가\\ 올라오는\\ 중이에요\\.\\ 성과급이\\ 오르기\\ 전에\\ 들어가는\\ 사람이\\ 제일\\ 이득이에요\\.", "v"], ["좋은\\ 뉴스가\\ 쌓이는\\ 시기예요\\.\\ 타이밍은\\ 지금이\\ 제일\\ 좋아요\\.", "v"], ["평가한\\ 사람이\\ 적어서\\ 숫자만으론\\ 판단이\\ 불안해요\\.\\ 현직자\\ 한\\ 명만\\ 만나\\ 보셔도\\ 답이\\ 확\\ 나와요\\.", "v"], ["자료가\\ 얇은\\ 회사예요\\.\\ 면접\\ 때\\ 팀원·팀장\\ 분위기를\\ 꼭\\ 직접\\ 보고\\ 판단하세요\\.", "v"], ["평점이\\ 충분히\\ 쌓이지\\ 않았어요\\.\\ 링크드인이나\\ 지인으로\\ 현직자\\ 이야기를\\ 꼭\\ 들어\\ 보세요\\.", "v"], ["스펙이\\ 되는\\ 분이면\\ 모회사·경쟁사를\\ 직접\\ 노리세요\\.\\ 여기는\\ 그\\ 다음\\ 선택지예요\\.", "v"], ["들어간다면\\ 1\\~2년\\ 안에\\ 모회사·경쟁사\\ 경력직으로\\ 넘어가는\\ 징검다리로만\\ 쓰세요\\.", "v"], ["모회사\\ 전환\\ 제도가\\ 실제로\\ 몇\\ 명에게\\ 열렸는지\\ 면접에서\\ 꼭\\ 물어보세요\\.", "v"], ["연봉은\\ .+?\\ 상위\\ .+?%라\\ 돈\\ 걱정은\\ 덜어도\\ 돼요\\.", "+"], ["연봉은\\ .+?\\ 상위\\ .+?%예요\\.\\ 이\\ 부분은\\ 자신\\ 있게\\ 자랑해도\\ 돼요\\ ㅎㅎ", "+"], [".+?\\ 상위\\ .+?%\\ 연봉이에요\\.\\ 처우는\\ 확실히\\ 챙겨\\ 주는\\ 회사예요\\.", "+"], ["5년\\ 평균\\ 영업이익률\\ .+?%,\\ 남는\\ 장사를\\ 꾸준히\\ 하는\\ 회사예요\\.", "+"], ["5년\\ 평균\\ 영업이익률이\\ .+?%예요\\.\\ 돈\\ 버는\\ 구조가\\ 잡혀\\ 있는\\ 회사예요\\.", "+"], ["영업이익률\\ 5년\\ 평균\\ .+?%,\\ 이익\\ 체력이\\ 좋아서\\ 성과급\\ 재원도\\ 넉넉한\\ 편이에요\\.", "+"], ["부채비율\\ .+?%로\\ 재무\\ 체력은\\ 탄탄해요\\.", "+"], ["부채비율\\ .+?%,\\ 회사가\\ 쉽게\\ 흔들릴\\ 걱정은\\ 적어요\\.", "+"], ["부채비율이\\ .+?%라\\ 빚\\ 걱정\\ 없는\\ 회사예요\\.", "+"], ["매출이\\ 제자리라\\ 자리가\\ 안\\ 늘어요\\.\\ 승진은\\ 느릴\\ 각오\\ 하세요\\.", "-"], ["매출이\\ 안\\ 늘어서\\ 위로\\ 올라갈\\ 자리가\\ 빡빡해요\\.", "-"], ["성장이\\ 정체돼\\ 있어요\\.\\ 승진\\ 속도는\\ 기대\\ 접으세요\\.", "-"], ["빚이\\ 많아서\\ 업황\\ 꺾이면\\ 구조조정\\ 리스크가\\ 있어요\\.", "-"], ["부채가\\ 무거워요\\.\\ 경기\\ 나빠지면\\ 제일\\ 먼저\\ 허리띠\\ 졸라맬\\ 회사예요\\.", "-"], ["레버리지가\\ 큰\\ 회사라\\ 업황\\ 따라\\ 분위기가\\ 크게\\ 출렁여요\\.", "-"], ["현직자\\ 워라밸\\ .+?점\\(잡플래닛·블라인드·캐치\\ 종합\\),\\ 야근은\\ 기본값이라고\\ 보세요\\.", "-"], ["워라밸\\ .+?점이에요\\.\\ 저녁\\ 약속은\\ 줄이셔야\\ 해요\\ ㅎㅎ", "-"], ["현직자\\ 워라밸\\ .+?점\\(잡플래닛·블라인드·캐치\\ 종합\\),\\ 칼퇴는\\ 기대\\ 안\\ 하시는\\ 게\\ 정신\\ 건강에\\ 좋아요\\.", "-"], ["연봉은\\ 업계\\ 아래쪽이라\\ 처우\\ 협상에서\\ 최대한\\ 끌어올리고\\ 들어가세요\\.", "-"], ["연봉이\\ 업계\\ 하위권이에요\\.\\ 입사\\ 후엔\\ 안\\ 올라요\\.\\ 지금\\ 협상에서\\ 끝장\\ 보세요\\.", "-"], ["처우는\\ 업계\\ 아래쪽이에요\\.\\ 직전\\ 연봉\\ 대비\\ 최소\\ 인상률은\\ 꼭\\ 지키고\\ 들어가세요\\.", "-"], ["성과급\\ 비중이\\ 큰\\ 회사라\\ 오퍼를\\ 비교할\\ 땐\\ '기본연봉'끼리\\ 비교하세요\\.", "0"], ["성과급이\\ 커서\\ 연봉이\\ 해마다\\ 출렁여요\\.\\ 비교는\\ 꼭\\ 기본연봉으로\\ 하세요\\.", "0"], ["총보상\\ 숫자에\\ 속지\\ 마세요\\.\\ 성과급\\ 비중이\\ 커서\\ 기본연봉부터\\ 따로\\ 보셔야\\ 해요\\.", "0"], ["회사가\\ 산업단지\\ 안에\\ 있어요\\.\\ 통근·편의시설·공기질은\\ 꼭\\ 직접\\ 확인하세요\\.", "0"], ["산업단지\\ 근무예요\\.\\ 출퇴근\\ 동선이랑\\ 주변\\ 환경은\\ 면접\\ 가는\\ 길에\\ 꼭\\ 보세요\\.", "0"], ["근무지가\\ 산업단지예요\\.\\ 통근버스·기숙사\\ 여부까지\\ 꼭\\ 물어보세요\\.", "0"], ["평점이\\ 낮아서\\ 무조건\\ 추천은\\ 못\\ 해요\\.\\ 내\\ 스펙·연차·다른\\ 카드랑\\ 비교해서\\ 이\\ 회사가\\ 최선이면\\ 가고,\\ 더\\ 나은\\ 카드\\ 보이면\\ 기다리세요\\.", "-"], ["평점이\\ 낮아요\\.\\ 내\\ 스펙에서\\ 이\\ 회사가\\ 최선인지부터\\ 따지고,\\ 아니면\\ 다음\\ 카드\\ 기다리세요\\.", "-"], ["다니는\\ 사람들\\ 평가가\\ 박해요\\.\\ 지금\\ 연차·스펙에서\\ 더\\ 나은\\ 선택지\\ 있는지\\ 먼저\\ 보세요\\.", "-"], ["AI\\ 영향이\\ 큰\\ 업종이에요\\.\\ .+?\\.\\ 들어간다면\\ AI를\\ 쓰는\\ 쪽\\ 역할을\\ 잡으세요\\.", "-"], ["AI\\ 바람을\\ 정면으로\\ 맞는\\ 업종이에요\\.\\ .+?\\.\\ AI\\ 못\\ 다루면\\ 자리\\ 위험해요\\.", "-"], ["AI로\\ 일하는\\ 방식이\\ 크게\\ 바뀔\\ 업종이에요\\.\\ .+?\\.\\ 대체되는\\ 쪽\\ 말고\\ 활용하는\\ 쪽에\\ 서세요\\.", "-"], ["AI\\ 영향은\\ 중간이에요\\.\\ .+?\\.", "0"], ["AI\\ 영향은\\ 적당히\\ 받는\\ 업종이에요\\.\\ .+?\\.", "0"], ["AI가\\ 일을\\ 일부\\ 바꾸겠지만\\ 통째로\\ 대체하긴\\ 어려운\\ 업종이에요\\.\\ .+?\\.", "0"], ["AI\\ 대체\\ 걱정은\\ 적은\\ 업종이에요\\.\\ .+?\\.", "+"], ["AI가\\ 쉽게\\ 못\\ 들어오는\\ 업종이에요\\.\\ .+?\\.", "+"], ["AI\\ 걱정은\\ 상대적으로\\ 덜어도\\ 되는\\ 업종이에요\\.\\ .+?\\.", "+"], ["현직자\\ 워라밸\\ .+?점\\(잡플래닛·블라인드·캐치\\ 종합\\),\\ 여긴\\ 그냥\\ 시망이에요\\.\\ 엄청\\ 빡셀\\ 테니\\ 워라밸\\ 있던\\ 회사\\ 다니던\\ 분은\\ 포기도\\ 고려하세요\\.", "-"], ["워라밸\\ .+?점이면\\ 저녁은\\ 없다고\\ 보셔야\\ 해요\\.\\ 지금\\ 칼퇴하는\\ 회사\\ 다니시면\\ 진지하게\\ 다시\\ 생각하세요\\.", "-"], ["워라밸\\ .+?점,\\ 갈려\\ 나갈\\ 각오\\ 없으면\\ 못\\ 버팁니다\\.\\ 체력·멘탈\\ 자신\\ 있을\\ 때만\\ 가세요\\.", "-"], ["연봉은\\ 업계\\ 바닥권이에요\\.\\ 이\\ 돈\\ 받고\\ 가는\\ 거면\\ 경력\\ 말고는\\ 남는\\ 게\\ 없어요\\.", "-"], ["업계\\ 하위\\ 10%\\ 연봉이에요\\.\\ 여기\\ 오래\\ 있으면\\ 다음\\ 이직\\ 때\\ 연봉\\ 기준점까지\\ 같이\\ 깎여요\\.", "-"], ["연봉이\\ 많이\\ 짜요\\.\\ 이\\ 회사가\\ 아니면\\ 안\\ 되는\\ 이유가\\ 없다면\\ 패스하세요\\.", "-"], ["평점\\ .+?점,\\ 1점대예요\\.\\ 안에\\ 있는\\ 사람들이\\ 회사를\\ 포기했다는\\ 뜻이에요\\.\\ 정말\\ 다른\\ 카드가\\ 없을\\ 때만\\ 보세요\\.", "-"], ["평점\\ .+?점이면\\ 조직이\\ 망가졌다고\\ 봐야\\ 해요\\.\\ 웬만하면\\ 피하세요\\.", "-"], ["평점\\ .+?점,\\ 이\\ 정도면\\ 리뷰\\ 읽기\\ 전에\\ 결론\\ 나요\\.\\ 비추입니다\\.", "-"], [".+?의\\ .+?\\ 맡는\\ 계열사예요\\.\\ 숫자가\\ 괜찮아\\ 보여도\\ 실제론\\ .+?\\ 정직원과\\ 같은\\ 현장에서\\ 한\\ 단계\\ 아래\\ 대우를\\ 받는\\ '모회사의\\ 그림자'\\ 구조예요\\.", "0"], [".+?\\ 직접\\ 하던\\ .+?\\ 떼어\\ 내\\ 만든\\ 계열사예요\\.\\ 일은\\ .+?\\ 일인데\\ 처우·승진·의사결정은\\ 늘\\ 모회사\\ 다음\\ 순서예요\\.", "0"], ["간판에\\ .+?\\ 붙어\\ 있지만\\ .+?\\ 아니에요\\.\\ .+?\\ 맡는\\ 계열사라\\ 모회사\\ 그림자에서\\ 벗어나기\\ 어려워요\\.", "0"], ["평균\\ 연봉이\\ .+?의\\ .+?%\\ 수준이에요\\(.+?만원\\ vs\\ .+?만원\\)\\.\\ 같은\\ 이름\\ 아래서\\ 이\\ 차이를\\ 매일\\ 보게\\ 돼요\\.", "0"], [".+?\\ 평균\\ .+?만원,\\ 여긴\\ .+?만원\\.\\ 모회사의\\ .+?%예요\\.\\ 이\\ 격차는\\ 입사\\ 후에도\\ 거의\\ 안\\ 좁혀져요\\.", "0"], ["연봉은\\ .+?의\\ .+?%\\(.+?만원\\ vs\\ .+?만원\\)\\.\\ 같은\\ 일을\\ 해도\\ 이\\ 숫자는\\ 계열사\\ 몫이에요\\.", "0"], ["스펙이\\ 좋은\\ 분이면\\ 냉정하게\\ 비추에\\ 가까워요\\.\\ 경력도\\ '.+?'.+?\\ 아니라\\ '.+?\\ 계열사'로\\ 읽혀서\\ 다음\\ 이직\\ 때\\ 몸값이\\ 잘\\ 안\\ 올라가요\\.", "0"], ["고스펙이면\\ 여기서\\ 시간\\ 쓰지\\ 마세요\\.\\ 모회사로\\ 넘어가는\\ 길은\\ 좁고,\\ 이력서엔\\ 계열사\\ 이름만\\ 남아요\\.", "0"], ["취업이\\ 급하거나\\ 이\\ 분야\\ 첫\\ 경력이\\ 필요하면\\ 괜찮지만,\\ 고스펙이면\\ .+?\\ 경쟁사\\ 경력직을\\ 직접\\ 노리는\\ 게\\ 맞아요\\.", "0"], ["이렇게\\ 빨리\\ 크면\\ 새로\\ 들어오는\\ 사람들이\\ 기존\\ 인력보다\\ 레벨이\\ 높은\\ 경우가\\ 많아요\\.\\ '원래\\ 있던\\ 사람\\ vs\\ 새로\\ 온\\ 사람'\\ 갈등이\\ 생기기\\ 쉬우니,\\ 조직문화가\\ 부서지고\\ 있지\\ 않은지\\ 꼭\\ 확인하세요\\.", "-"], ["급하게\\ 클\\ 때는\\ 기존\\ 인력보다\\ 스펙\\ 좋은\\ 사람들이\\ 한꺼번에\\ 들어와요\\.\\ 그\\ 틈에서\\ 조직문화가\\ 금\\ 가는\\ 회사가\\ 많으니,\\ 현직자에게\\ '요즘\\ 분위기'를\\ 꼭\\ 물어보세요\\.", "-"], ["성장\\ 속도가\\ 빠른\\ 회사는\\ 위에\\ 새로\\ 온\\ 고스펙\\ 인력,\\ 아래에\\ 원래\\ 있던\\ 인력이\\ 섞이면서\\ 삐걱대기\\ 쉬워요\\.\\ 숫자보다\\ 조직\\ 분위기를\\ 먼저\\ 확인하세요\\.", "-"], ["다만\\ 업력이\\ .+?년으로\\ 짧아서,\\ 처음부터\\ 스펙\\ 좋은\\ 사람들로\\ 세팅된\\ 회사일\\ 수도\\ 있어요\\.\\ 그런\\ 곳은\\ 기존·신규\\ 인력\\ 갈등은\\ 덜한\\ 편이에요\\.", "-"], ["업력\\ .+?년의\\ 젊은\\ 회사라\\ 처음\\ 멤버부터\\ 스펙이\\ 좋은\\ 경우가\\ 많아요\\.\\ 그럼\\ '기존\\ vs\\ 신규'\\ 갈등은\\ 상대적으로\\ 적어요\\.", "-"], ["그런데\\ 뉴스에\\ 내부\\ 인력\\ 출신·스펙\\ 자랑이\\ 보여요\\.\\ 이런\\ 회사는\\ 서로\\ 눈이\\ 너무\\ 높아서\\ 평가가\\ 박하고\\ 조직문화가\\ 날카로운\\ 경우가\\ 많아요\\.", "-"], ["뉴스에\\ '어디\\ 출신\\ 인재들'\\ 자랑이\\ 나와요\\.\\ 잘난\\ 사람끼리\\ 모인\\ 회사는\\ 눈이\\ 높아서\\ 서로에게\\ 박하고,\\ 조직문화가\\ 피곤할\\ 수\\ 있어요\\.", "-"], ["워라밸\\ 점수가\\ .+?점이에요\\.\\ 칼퇴·휴가\\ 눈치는\\ 덜\\ 보는\\ 곳이라는\\ 평이\\ 많아요\\.", "+"], ["현직자들이\\ 워라밸을\\ .+?점으로\\ 줬어요\\.\\ 저녁\\ 있는\\ 삶을\\ 원하면\\ 점수\\ 하나는\\ 확실히\\ 챙기는\\ 곳이에요\\.", "+"], ["워라밸\\ .+?점,\\ 이\\ 부분은\\ 칭찬해\\ 줄\\ 만해요\\.\\ 일과\\ 삶의\\ 균형은\\ 크게\\ 걱정\\ 안\\ 하셔도\\ 돼요\\.", "+"], ["워라밸\\ 점수가\\ .+?점이에요\\.\\ 야근·주말\\ 업무는\\ 어느\\ 정도\\ 각오하고\\ 가세요\\.", "-"], ["현직자들이\\ 워라밸을\\ .+?점밖에\\ 안\\ 줬어요\\.\\ 퇴근\\ 시간은\\ 기대치를\\ 낮추세요\\.", "-"], ["사내문화\\ 점수가\\ .+?점으로\\ 높아요\\.\\ 사람\\ 때문에\\ 힘든\\ 곳은\\ 아닐\\ 가능성이\\ 커요\\.", "+"], ["사내문화\\ 평이\\ 좋아요\\(.+?점\\)\\.\\ 분위기\\ 좋은\\ 회사라는\\ 말이\\ 많아요\\.", "+"], ["사내문화를\\ 나쁘게\\ 생각하는\\ 사람이\\ 많네요\\(.+?점\\)\\.\\ 팀\\ 분위기는\\ 면접\\ 때\\ 꼭\\ 확인하세요\\.", "-"], ["사내문화\\ 점수가\\ .+?점이에요\\.\\ 꼰대\\ 문화·보고\\ 문화가\\ 있을\\ 수\\ 있으니\\ 현직자\\ 얘기를\\ 들어\\ 보세요\\.", "-"], ["급여·복지\\ 만족도가\\ .+?점이에요\\.\\ 처우에\\ 대한\\ 불만은\\ 적은\\ 편이에요\\.", "+"], ["현직자들이\\ 급여·복지에\\ .+?점을\\ 줬어요\\.\\ 돈과\\ 복지로\\ 서운할\\ 일은\\ 적어요\\.", "+"], ["급여·복지\\ 만족도가\\ .+?점으로\\ 낮아요\\.\\ 연봉\\ 협상\\ 때\\ 최대한\\ 끌어올리고\\ 들어가세요\\.", "-"], ["급여·복지를\\ 아쉬워하는\\ 사람이\\ 많아요\\(.+?점\\)\\.\\ 처우는\\ 입사\\ 전에\\ 끝장\\ 보세요\\.", "-"], ["경영진\\ 평가가\\ .+?점으로\\ 좋아요\\.\\ 위에서\\ 내려오는\\ 방향이\\ 크게\\ 흔들리지\\ 않는\\ 회사예요\\.", "+"], ["경영진\\ 평가가\\ .+?점으로\\ 낮아요\\.\\ 윗선\\ 결정에\\ 휘둘리는\\ 일이\\ 생길\\ 수\\ 있어요\\.", "-"], ["경영진에\\ 대한\\ 불만이\\ 커요\\(.+?점\\)\\.\\ 회사\\ 방향이\\ 자주\\ 바뀌는지\\ 꼭\\ 물어보세요\\.", "-"], ["커리어·승진\\ 점수가\\ .+?점이에요\\.\\ 여기서\\ 쌓는\\ 경력이\\ 다음\\ 이직\\ 때\\ 힘이\\ 된다는\\ 평이\\ 많아요\\.", "+"], ["커리어·승진\\ 점수가\\ .+?점이에요\\.\\ 승진이\\ 막혀\\ 있다는\\ 얘기가\\ 있으니\\ 연차별\\ 직급을\\ 꼭\\ 확인하세요\\.", "-"], ["평균\\ 근속이\\ .+?년이에요\\.\\ 한번\\ 들어가면\\ 오래\\ 다니는\\ 회사예요\\.", "+"], ["직원들이\\ 평균\\ .+?년을\\ 다녀요\\.\\ 쉽게\\ 그만두지\\ 않는\\ 회사라는\\ 뜻이에요\\.", "+"], ["평균\\ 근속이\\ .+?년으로\\ 짧아요\\.\\ 사람이\\ 자주\\ 바뀌는\\ 곳일\\ 수\\ 있어요\\.", "-"], ["1년에\\ 직원의\\ 약\\ .+?%가\\ 나가요\\.\\ 들어가기\\ 전에\\ 왜\\ 나가는지\\ 꼭\\ 알아보세요\\.", "-"], ["연간\\ 퇴사율이\\ 약\\ .+?%예요\\.\\ 이직이\\ 잦은\\ 회사라\\ 인수인계가\\ 부실할\\ 수\\ 있어요\\.", "-"], ["연간\\ 퇴사율이\\ 약\\ .+?%로\\ 낮아요\\.\\ 사람이\\ 잘\\ 안\\ 나가는\\ 회사예요\\.", "+"], ["매출은\\ 5년\\ 동안\\ 연평균\\ .+?%\\ 바뀌었어요\\.", "0"], ["최근\\ 5년\\ 매출\\ 흐름은\\ 연평균\\ .+?%예요\\.", "0"], ["연봉은\\ .+?\\ 상위\\ .+?%\\ 수준이에요\\.", "0"], ["같은\\ 업계에서\\ 연봉\\ 순위는\\ 상위\\ .+?%예요\\.", "0"], [".+?\\ .+?점이에요\\.\\ 좋지도\\ 나쁘지도\\ 않은\\ 평범한\\ 수준이에요\\.", "0"], [".+?\\ 점수는\\ .+?점,\\ 업계\\ 평균\\ 정도예요\\.\\ 팀마다\\ 차이가\\ 클\\ 거예요\\.", "0"], ["평균\\ 연봉은\\ .+?만원이에요\\(.+?\\)\\.", "0"], ["직원\\ 평균\\ 연봉은\\ .+?만원\\ 수준이에요\\(.+?\\)\\.", "0"], ["최근\\ 입사자\\ 평균\\ 연봉은\\ 약\\ .+?만원이에요\\.\\ 협상\\ 기준선으로\\ 쓰세요\\.", "0"], ["새로\\ 들어온\\ 사람들은\\ 평균\\ .+?만원\\ 정도\\ 받았어요\\.\\ 이\\ 숫자를\\ 협상\\ 바닥으로\\ 잡으세요\\.", "0"], ["직원은\\ .+?명\\ 규모예요\\.", "0"], [".+?명이\\ 다니는\\ 회사예요\\.", "0"], ["연봉이\\ .+?\\ 업계\\ 안에선\\ 상위\\ .+?%예요\\.\\ 이\\ 업계에\\ 묶이는\\ 직무라면\\ 최선의\\ 선택이에요\\.\\ 근데\\ 전체\\ 회사로\\ 보면\\ 상위\\ .+?%라,\\ 재무·인사·마케팅·개발처럼\\ 업계를\\ 옮길\\ 수\\ 있는\\ 직무면\\ 좀\\ 아쉬운\\ 연봉이에요\\.", "+"], [".+?\\ 업계에선\\ 상위\\ .+?%로\\ 잘\\ 주는\\ 편인데,\\ 업계\\ 밖까지\\ 놓고\\ 보면\\ 상위\\ .+?%예요\\.\\ 업계\\ 경력이\\ 곧\\ 무기인\\ 직무면\\ 여기가\\ 맞고,\\ 어디서든\\ 통하는\\ 직무면\\ 다른\\ 업계\\ 연봉도\\ 한번\\ 보고\\ 결정하세요\\.", "+"], ["업계\\ 안에서는\\ 상위\\ .+?%,\\ 전체\\ 회사\\ 기준으론\\ 상위\\ .+?%예요\\.\\ 업계를\\ 못\\ 옮기는\\ 직무면\\ 여기가\\ 꼭대기에\\ 가깝고,\\ 옮길\\ 수\\ 있는\\ 직무면\\ 솔직히\\ 돈은\\ 다른\\ 업계가\\ 더\\ 줘요\\.", "+"], ["이\\ 회사\\ 연봉은\\ '.+?\\ 업계\\ 기준'으로만\\ 좋아요\\ \\(업계\\ 상위\\ .+?%\\ ·\\ 전체\\ 상위\\ .+?%\\)\\.\\ 업계\\ 고정\\ 직무면\\ 고민\\ 없이\\ 좋은\\ 조건이고,\\ 범용\\ 직무면\\ 연봉\\ 하나만\\ 보고\\ 오기엔\\ 아쉬워요\\.", "+"], [".+?\\ 업계\\ 안에선\\ 상위\\ .+?%로\\ 위쪽인데,\\ 업계\\ 자체가\\ 연봉이\\ 짠\\ 동네라\\ 전체로는\\ 상위\\ .+?%예요\\.\\ 업계를\\ 옮길\\ 생각이\\ 있는\\ 직무면\\ 이\\ 숫자에\\ 너무\\ 감동하지\\ 마세요\\.", "+"], ["업계\\ 안에선\\ 상위\\ .+?%로\\ 평범해\\ 보이는데,\\ .+?\\ 자체가\\ 연봉이\\ 센\\ 업계라\\ 전체\\ 회사\\ 기준으론\\ 상위\\ .+?%예요\\.\\ 업계\\ 밖에서\\ 보면\\ 꽤\\ 받는\\ 편이에요\\.", "0"], [".+?\\ 업계\\ 안에선\\ 중간쯤\\(상위\\ .+?%\\)이지만\\ 전체\\ 회사로\\ 놓으면\\ 상위\\ .+?%예요\\.\\ 업계\\ 비교만\\ 보고\\ '연봉\\ 별로네'\\ 하고\\ 버리기엔\\ 아까워요\\.", "0"], ["업계\\ 순위\\(상위\\ .+?%\\)만\\ 보면\\ 아쉬운데,\\ 원래\\ 돈\\ 잘\\ 주는\\ 업계라\\ 전체\\ 기준\\ 상위\\ .+?%예요\\.\\ 다른\\ 업계에서\\ 넘어오는\\ 거라면\\ 연봉은\\ 오히려\\ 오르는\\ 쪽이에요\\.", "0"], ["연봉이\\ 업계\\ 안에선\\ 상위\\ .+?%,\\ 전체\\ 회사로는\\ 상위\\ .+?%예요\\.\\ 업계\\ 안\\ 경쟁이\\ 세서\\ 그렇지\\ 절대\\ 금액은\\ 충분히\\ 센\\ 편이에요\\.", "0"], [".+?\\ 인력이\\ .+?%라\\ 회사\\ 평균\\(.+?만\\)이\\ 낮게\\ 잡혀요\\.\\ 본사·사무직만\\ 보면\\ .+?만\\ 원대예요\\.\\ 등급은\\ 둘의\\ 중간값으로\\ 매겼으니,\\ 내가\\ 지원한\\ 자리가\\ 어느\\ 쪽인지부터\\ 확인하세요\\.", "0"], ["평균\\ .+?만은\\ .+?\\ 인력\\ .+?%가\\ 섞인\\ 숫자예요\\.\\ 사무직\\ 기준으론\\ .+?만\\ 원\\ 근처라\\ 등급은\\ 둘의\\ 중간값으로\\ 봤어요\\.\\ 현장\\ 직무로\\ 가는\\ 거면\\ 평균\\ 쪽\\ 숫자를\\ 믿으세요\\.", "0"], ["이\\ 회사\\ 평균\\ 연봉은\\ .+?\\ 인력이\\ 다\\ 깎아\\ 먹은\\ 숫자예요\\(.+?%\\)\\.\\ 본사\\ 직군은\\ .+?만\\ 원대로\\ 보여요\\.\\ 직무가\\ 본사냐\\ 현장이냐에\\ 따라\\ 완전히\\ 다른\\ 회사예요\\.", "0"], ["본사\\ 인력\\ 중에\\ 매장\\ 출신이\\ 꽤\\ 섞여\\ 있어서\\ 평균\\ 연봉이\\ 낮게\\ 잡혔어요\\.\\ 공채로\\ 들어가는\\ 본사\\ 직군\\ 기준이면\\ 업계\\ 상위권이에요\\.\\ 숫자만\\ 보고\\ 겁먹지\\ 마세요\\.", "0"], ["평균이\\ 낮아\\ 보이는\\ 건\\ 매장에서\\ 올라온\\ 본사\\ 인력이\\ 많아서예요\\.\\ 본사\\ 공채\\ 직군\\ 처우는\\ 이\\ 숫자보다\\ 위예요\\.\\ 대신\\ 매장\\ 직무로\\ 가는\\ 거면\\ 얘기가\\ 달라요\\.", "0"], ["국내\\ 사업보고서가\\ 없어서\\ 감사보고서의\\ 주식보상\\(RSU\\)\\ 몫과\\ 연봉\\ 제보를\\ 섞어\\ 잡은\\ 추정치예요\\.\\ RSU는\\ 직군·연차마다\\ 편차가\\ 커요\\.\\ 오퍼\\ 받을\\ 때\\ RSU\\ 금액과\\ 베스팅\\ 일정을\\ 꼭\\ 숫자로\\ 받으세요\\.", "0"], ["쿠팡\\ 연봉은\\ 현금만\\ 보면\\ 안\\ 돼요\\.\\ RSU가\\ 꽤\\ 크게\\ 붙는데,\\ 그\\ 몫을\\ 반쯤\\ 넣어\\ 잡은\\ 숫자예요\\.\\ 오퍼\\ 레터에서\\ RSU\\ 총액·베스팅\\ 일정\\ 확인\\ 필수예요\\.", "0"], ["상담·현장\\ 인력이\\ 대부분이라\\ 평균\\ 연봉이\\ 저연차\\ 값에\\ 가까워요\\.\\ 관리자급\\(과장\\ 이상\\)은\\ 이보다\\ 높지만\\ 그\\ 자리\\ 자체가\\ 많지\\ 않아요\\.\\ 몇\\ 년\\ 안에\\ 관리자로\\ 올라갈\\ 길이\\ 있는지\\ 면접에서\\ 꼭\\ 물어보세요\\.", "0"], ["이\\ 업종은\\ 신입·저연차가\\ 바글바글해서\\ 평균이\\ 낮게\\ 깔려요\\.\\ 과장\\ 이상\\ 가면\\ 확\\ 오르긴\\ 하는데,\\ 위로\\ 가는\\ 문이\\ 좁아요\\.\\ 승진\\ 구조부터\\ 확인하세요\\.", "0"], ["평균\\ 연봉은\\ 상담·현장\\ 직원\\ 위주\\ 숫자예요\\.\\ 관리자\\ 트랙이면\\ 꽤\\ 올라가지만\\ TO가\\ 적어요\\.\\ 들어가서\\ 3년\\ 뒤\\ 내\\ 자리가\\ 어딘지\\ 그려지는지\\ 보세요\\.", "0"], ["학습지\\ 선생님은\\ 대부분\\ 위탁\\ 계약이라\\ 이\\ 연봉에\\ 안\\ 들어가요\\.\\ 여기\\ 숫자는\\ 본사·지점\\ 정직원\\ 기준이에요\\.\\ 선생님\\ 직군으로\\ 가는\\ 거라면\\ 수수료\\ 구조를\\ 따로\\ 꼭\\ 확인하세요\\.", "0"], ["이\\ 연봉은\\ 본사·지점\\ 정직원\\ 숫자예요\\.\\ 교사\\(선생님\\)\\ 직군은\\ 위탁\\ 계약이라\\ 수수료로\\ 벌어요\\.\\ 어느\\ 쪽으로\\ 들어가는지에\\ 따라\\ 완전히\\ 다른\\ 얘기예요\\.", "0"], ["기관\\ 특성\\(비정규직·공무직\\ 위주\\)상\\ 회사\\ 연봉과\\ 비교하기\\ 어려워요\\.\\ 여기\\ 숫자는\\ 계약직·공무직이\\ 섞인\\ 평균이라,\\ 내가\\ 들어갈\\ 자리의\\ 고용\\ 형태와\\ 급여표를\\ 따로\\ 확인하세요\\.", "0"], ["비정규\\ 연구원·공무직이\\ 대부분인\\ 기관이라\\ 일반\\ 회사\\ 연봉과\\ 나란히\\ 놓고\\ 보면\\ 안\\ 돼요\\(기관\\ 특성상\\ 비교\\ 어려움\\)\\.\\ 정규직인지,\\ 몇\\ 년\\ 계약인지부터\\ 확인하세요\\.", "0"], ["평균\\ 근속이\\ .+?년밖에\\ 안\\ 되는\\ 젊은\\ 조직이라\\ 평균\\ 연봉이\\ 낮아\\ 보여요\\.\\ 같은\\ 연차끼리\\ 비교하면\\ 차이가\\ 확\\ 줄어요\\.\\ 숫자보다\\ 내\\ 연차\\ 기준\\ 오퍼를\\ 보세요\\.", "0"], ["사원·대리급이\\ 대부분인\\ 회사라\\ 평균이\\ 낮게\\ 깔려요\\(평균\\ 근속\\ .+?년\\)\\.\\ 경력직이면\\ 평균\\ 말고\\ 직급별\\ 금액을\\ 보세요\\.", "0"], ["직원\\ .+?%가\\ .+?\\ 인력이라\\ 평균\\ 연봉\\(.+?만\\)은\\ 사실상\\ 현장\\ 직원\\ 연봉이에요\\.\\ 본사·관리직은\\ 이보다\\ 높지만\\ 숫자로\\ 딱\\ 잘라\\ 말하긴\\ 어려워서\\ 등급은\\ 한\\ 칸만\\ 올려\\ 잡았어요\\.\\ 지원\\ 직무가\\ 본사인지\\ 현장인지부터\\ 확인하세요\\.", "0"], ["평균\\ .+?만은\\ .+?\\ 인력\\(.+?%\\)\\ 숫자라고\\ 보시면\\ 돼요\\.\\ 본사\\ 직군은\\ 더\\ 받지만\\ 규모가\\ 작아\\ 평균엔\\ 거의\\ 안\\ 보여요\\.\\ 본사\\ 오퍼라면\\ 이\\ 평균에\\ 기죽지\\ 말고\\ 협상하세요\\.", "0"], ["걱정\\ 포인트는\\ 이익이에요\\.\\ 5년\\ 평균\\ 영업이익률이\\ .+?%로\\ 얇아서,\\ 업황이\\ 꺾이면\\ 지금\\ 같은\\ 처우가\\ 흔들릴\\ 수\\ 있어요\\.", "-"], ["남는\\ 게\\ 많은\\ 장사는\\ 아니에요\\(5년\\ 평균\\ 영업이익률\\ .+?%\\)\\.\\ 지금\\ 연봉은\\ 좋지만\\ 성과급은\\ 해마다\\ 출렁일\\ 수\\ 있어요\\.", "-"], ["이익률이\\ .+?%\\ 수준이라\\ 쿠션이\\ 얇아요\\.\\ 불황\\ 한\\ 번\\ 오면\\ 제일\\ 먼저\\ 성과급·채용부터\\ 줄어드는\\ 구조예요\\.", "-"], ["걱정\\ 포인트는\\ 성장이에요\\.\\ 매출이\\ 제자리라\\ 자리가\\ 잘\\ 안\\ 늘고,\\ 회사랑\\ 같이\\ 크는\\ 그림은\\ 기대하기\\ 어려워요\\.", "-"], ["회사가\\ 크지\\ 않는\\ 중이에요\\.\\ 지금\\ 처우는\\ 좋아도\\ 승진\\ 자리는\\ 위에서\\ 안\\ 비면\\ 안\\ 생겨요\\.", "-"], ["성장이\\ 멈춘\\ 회사는\\ 지금은\\ 편해도,\\ 몇\\ 년\\ 뒤\\ 구조조정·사업\\ 재편\\ 얘기가\\ 나오기\\ 쉬워요\\.", "-"], ["최근\\ 실적\\ 기사\\ 흐름이\\ 좋지\\ 않아요\\.\\ 당장\\ 흔들릴\\ 회사는\\ 아니지만,\\ 면접에서\\ 사업\\ 전망은\\ 꼭\\ 물어보세요\\.", "-"], ["요즘\\ 기사\\ 분위기가\\ 썩\\ 밝진\\ 않아요\\.\\ 들어가기\\ 전에\\ 주력\\ 사업이\\ 앞으로\\ 뭘로\\ 먹고살지\\ 한번\\ 확인하세요\\.", "-"], ["뉴스만\\ 보면\\ 실적이\\ 꺾이는\\ 구간이에요\\.\\ 지금\\ 들어가면\\ '좋은\\ 시절\\ 끝물'일\\ 수도\\ 있다는\\ 것만\\ 알고\\ 가세요\\.", "-"], ["지금\\ 받는\\ 돈과\\ 분위기는\\ 누리되,\\ 이\\ 회사\\ 밖에서도\\ 통하는\\ 경력을\\ 꾸준히\\ 쌓아\\ 두세요\\.", "-"], ["들어가서\\ 편하게\\ 안주하지만\\ 마세요\\.\\ 회사가\\ 흔들려도\\ 나는\\ 안\\ 흔들리게\\ 포트폴리오는\\ 계속\\ 챙기세요\\.", "-"], ["정년까지\\ 여기라고\\ 생각하기보단,\\ 좋은\\ 조건에서\\ 몸값\\ 키우는\\ 곳으로\\ 쓰면\\ 딱이에요\\.", "-"], ["미래\\ 걱정은\\ 회사\\ 몫으로\\ 두고,\\ 나는\\ 3년\\ 단위로\\ 시장에서\\ 내\\ 가치를\\ 체크하세요\\.", "-"], ["여긴\\ 지주사예요\\.\\ 지주사\\ 자체\\(별도\\)\\ 매출은\\ .+?뿐이고\\ 그마저\\ 배당·로열티라\\ 회사\\ 체력이\\ 안\\ 보여요\\.\\ 그래서\\ 재무는\\ 자회사까지\\ 합친\\ 연결\\(.+?\\)\\ 기준으로\\ 봤어요\\.", "0"], ["지주사라\\ 별도\\ 재무제표는\\ 배당금\\ 장부에\\ 가까워요\\(매출\\ .+?\\)\\.\\ 그룹\\ 전체\\ 실적이\\ 곧\\ 지주사\\ 실적이라,\\ 성장·수익·안정성은\\ 연결\\ 매출\\ .+?\\ 기준으로\\ 판단했어요\\.", "0"], ["참고로\\ 지주사예요\\.\\ 지주사는\\ 계열사\\ 실적이\\ 좋아야\\ 배당이\\ 들어오고\\ 성과급도\\ 나오는\\ 구조라,\\ 별도\\(매출\\ .+?\\)\\ 말고\\ 연결\\(.+?\\)\\ 숫자로\\ 봤어요\\.", "0"], ["여긴\\ 금융지주예요\\.\\ 성장·수익은\\ 은행·카드\\ 등\\ 자회사까지\\ 합친\\ 연결\\ 기준으로\\ 봤고,\\ 연결\\ 부채엔\\ 고객\\ 예금이\\ 섞여\\ 있어서\\ 안정성만\\ 지주사\\ 자체\\(별도\\)\\ 기준으로\\ 봤어요\\.", "0"], ["장부상\\ 자본이\\ 바닥난\\ 자본잠식\\ 상태예요\\(자본총계\\ \\-.+?\\)\\.\\ 투자금이나\\ 모회사\\ 지원이\\ 끊기면\\ 버티기\\ 어려운\\ 구조라\\ '조건\\ 보고\\ 가세요'까지만\\ 드려요\\.", "v"], ["자본총계가\\ \\-.+?인\\ 자본잠식\\ 회사예요\\.\\ 다음\\ 투자\\ 유치나\\ 모회사\\ 지원\\ 계획이\\ 있는지\\ 면접에서\\ 꼭\\ 물어보세요\\.\\ 그래서\\ '조건\\ 보고\\ 가세요'까지예요\\.", "v"], ["최근\\ .+?년\\ 연속\\ 영업적자예요\\.\\ 평판·연봉이\\ 좋아도\\ 적자가\\ 길어지면\\ 처우부터\\ 흔들려서\\ '조건\\ 보고\\ 가세요'까지만\\ 드려요\\.", "v"], [".+?년째\\ 영업적자가\\ 이어지고\\ 있어요\\.\\ 지금\\ 처우가\\ 언제까지\\ 갈지\\ 장담하기\\ 어려워\\ '조건\\ 보고\\ 가세요'까지예요\\.", "v"], ["최근\\ 영업이익률이\\ .+?%예요\\.\\ 버는\\ 것보다\\ 쓰는\\ 게\\ 훨씬\\ 많은\\ 회사라\\ '조건\\ 보고\\ 가세요'까지만\\ 드려요\\.", "v"], ["작년\\ 영업이익률이\\ .+?%,\\ 적자\\ 폭이\\ 커요\\.\\ 투자금으로\\ 버티는\\ 구간이라\\ '조건\\ 보고\\ 가세요'까지예요\\.", "v"], ["수익성\\ 등급이\\ F예요\\.\\ 돈\\ 버는\\ 구조가\\ 아직\\ 안\\ 잡혀서\\ '조건\\ 보고\\ 가세요'까지만\\ 드려요\\.", "v"], ["이익을\\ 거의\\ 못\\ 내는\\ 회사예요\\(수익성\\ F\\)\\.\\ 평판이\\ 좋아도\\ '조건\\ 보고\\ 가세요'까지예요\\.", "v"], ["현직자들이\\ 매긴\\ 경영진\\ 점수가\\ 아주\\ 높아요\\(.+?\\)\\.\\ 대표이사에\\ 대한\\ 신뢰가\\ 참\\ 좋은\\ 회사예요\\.", "0"], ["경영진\\ 점수가\\ 업계를\\ 통틀어\\ 손꼽히게\\ 높아요\\(.+?\\)\\.\\ 직원들이\\ 대표이사를\\ 믿고\\ 따르는\\ 회사예요\\.", "0"], ["대표이사에\\ 대한\\ 신뢰가\\ 참\\ 좋은\\ 회사예요\\.\\ 경영진\\ 점수가\\ 상위권이에요\\(.+?\\)\\.", "0"], ["현직자들이\\ 매긴\\ 경영진\\ 점수가\\ 아주\\ 높아요\\(.+?\\)\\.\\ 기관장·경영진에\\ 대한\\ 신뢰가\\ 좋은\\ 곳이에요\\.", "0"], ["경영진\\ 점수가\\ 손꼽히게\\ 높아요\\(.+?\\)\\.\\ 직원들이\\ 윗선을\\ 믿고\\ 일하는\\ 곳이에요\\.", "0"], [".+?은\\ 업계\\ 평균\\ 정도예요\\.\\ 좋지도\\ 나쁘지도\\ 않은\\ 평범한\\ 수준이라\\ 팀마다\\ 차이가\\ 클\\ 거예요\\.", "0"], ["현직자\\ 점수로\\ 보면\\ .+?,\\ 딱\\ 중간이에요\\.\\ 결국\\ 어느\\ 팀에\\ 가느냐가\\ 더\\ 중요해요\\.", "0"]];
+const ZK = [["이건\\ 고민할\\ 질문이\\ 아니라\\ 축하할\\ 일이에요\\ ㅎㅎ", "v"], ["합격했다면\\ 무조건\\ 가세요\\.\\ 지금\\ 다니는\\ 회사엔\\ 감사\\ 인사만\\ 남기고\\ 오세요\\.", "v"], ["올해\\ 성과급\\ 시즌에\\ 웃고\\ 계실\\ 거예요\\.\\ 당장\\ 사인하세요!", "v"], ["이\\ 카드\\ 놓치면\\ 두고두고\\ 이불킥합니다\\.\\ 가세요\\.", "v"], ["제가\\ 말릴\\ 이유를\\ 하나도\\ 못\\ 찾았어요\\.\\ 축하드려요!", "v"], ["여긴\\ '갈까\\ 말까'가\\ 아니라\\ '언제\\ 출근하지'를\\ 고민하실\\ 곳이에요\\ ㅎㅎ", "v"], ["이\\ 정도\\ 회사는\\ 커리어에\\ 오래\\ 남는\\ 이름이에요\\.\\ 망설이지\\ 마세요\\.", "v"], ["합격\\ 문자\\ 캡처해\\ 두세요\\.\\ 무조건\\ 가셔야\\ 하는\\ 곳이에요\\.", "v"], ["돈도\\ 챙겨주고\\ 사람들\\ 평가도\\ 좋아요\\.\\ 이\\ 정도면\\ 고민은\\ 사치예요\\ ㅎㅎ", "v"], ["연봉도\\ 평판도\\ 위쪽이에요\\.\\ 둘\\ 다\\ 잡기\\ 쉽지\\ 않은데\\ 이\\ 회사는\\ 잡았어요\\.", "v"], ["주는\\ 만큼\\ 갈아\\ 넣는\\ 회사가\\ 아니라,\\ 많이\\ 주고\\ 다닐\\ 만한\\ 회사예요\\.", "v"], ["통장도\\ 멘탈도\\ 덜\\ 털릴\\ 회사예요\\.\\ 고민\\ 끝\\.", "v"], ["오래\\ 다닐\\ 회사를\\ 찾으셨다면\\ 여기예요\\.\\ 크게\\ 튀진\\ 않아도\\ 크게\\ 흔들리지도\\ 않는\\ 곳이에요\\.", "v"], ["롱런하기\\ 좋은\\ 회사예요\\.\\ 체력\\ 좋은\\ 회사에\\ 평판까지\\ 받쳐\\ 주네요\\.", "v"], ["회사가\\ 쉽게\\ 안\\ 무너지고,\\ 안에서도\\ 나쁜\\ 소리가\\ 적어요\\.\\ 안정\\ 원하시면\\ 정답이에요\\.", "v"], ["화려하진\\ 않아도\\ 든든한\\ 회사예요\\.\\ 이런\\ 곳이\\ 길게\\ 보면\\ 남는\\ 장사예요\\.", "v"], ["꺼지지\\ 않고\\ 조금씩\\ 크는\\ 회사,\\ 제가\\ 제일\\ 좋아하는\\ 타입이에요\\.", "v"], ["급하게\\ 크지도,\\ 멈춰\\ 있지도\\ 않아요\\.\\ 딱\\ 다니기\\ 좋은\\ 속도로\\ 크는\\ 회사예요\\.", "v"], ["규모\\ 갖추고\\ 꾸준히\\ 크는\\ 회사예요\\.\\ 자리도\\ 조금씩\\ 늘어나는\\ 곳이에요\\.", "v"], ["타이밍이\\ 좋아요\\.\\ 올라가는\\ 엘리베이터에\\ 타는\\ 느낌이에요\\.", "v"], ["지금\\ 들어가면\\ 좋은\\ 흐름에\\ 올라타는\\ 거예요\\.\\ 지금\\ 합류할\\ 수\\ 있다면\\ 합류하세요!", "v"], ["요즘\\ 분위기가\\ 좋은\\ 회사예요\\.\\ 이럴\\ 때\\ 들어가는\\ 사람이\\ 성과급\\ 덕을\\ 봐요\\.", "v"], ["바람이\\ 등\\ 뒤에서\\ 불고\\ 있는\\ 회사예요\\.\\ 가세요\\.", "v"], ["고민할\\ 시간에\\ 사인하세요\\ ㅎㅎ", "v"], ["이\\ 카드는\\ 쥐고\\ 가셔도\\ 돼요\\.", "v"], ["합격\\ 축하드려요\\.\\ 이건\\ 가는\\ 게\\ 맞아요\\.", "v"], ["숫자도\\ 평판도\\ 크게\\ 걸리는\\ 게\\ 없어요\\.\\ 가세요\\.", "v"], ["제\\ 기준표에서\\ 대부분\\ 통과한\\ 회사예요\\.\\ 자신\\ 있게\\ 가셔도\\ 돼요\\.", "v"], ["좋은\\ 회사\\ 맞아요\\.\\ 들어가서\\ 잘\\ 버티기만\\ 하면\\ 돼요\\.", "v"], ["회사는\\ 괜찮아요\\.\\ 문제는\\ 돈이에요\\.", "v"], ["다닐\\ 만한데\\ 연봉이\\ 발목\\ 잡아요\\.\\ 협상에서\\ 승부\\ 보세요\\.", "v"], ["회사\\ 점수는\\ 되는데\\ 연봉\\ 점수가\\ 박해요\\.\\ 여긴\\ 협상이\\ 반이에요\\.", "v"], ["좋은\\ 회사\\ 조건에서\\ '돈'만\\ 쏙\\ 빠져\\ 있어요\\.\\ 그걸\\ 감수할지가\\ 관건이에요\\.", "v"], ["갈\\ 만은\\ 한데,\\ 저녁\\ 있는\\ 삶은\\ 내려놓고\\ 가셔야\\ 해요\\.", "v"], ["회사는\\ 좋은데\\ 일\\ 많기로\\ 유명한\\ 쪽이에요\\.\\ 체력\\ 자신\\ 없으면\\ 비추\\.", "v"], ["배우는\\ 건\\ 많을\\ 거예요\\.\\ 대신\\ 퇴근\\ 시간은\\ 회사가\\ 정해요\\ ㅎㅎ", "v"], ["크는\\ 회사라\\ 배울\\ 건\\ 많아요\\.\\ 대신\\ 체력이랑\\ 멘탈\\ 다\\ 털릴\\ 각오\\ 하세요\\.", "v"], ["성장\\ 속도가\\ 빨라서\\ 기회도\\ 많고\\ 혼돈도\\ 많아요\\.", "v"], ["로켓은\\ 맞는데\\ 안전벨트는\\ 없어요\\.\\ 본인이\\ 매고\\ 타셔야\\ 해요\\.", "v"], ["나쁘진\\ 않아요\\.\\ 근데\\ '좋다'까진\\ 아니에요\\.\\ 팀\\ 분위기\\ 따로\\ 꼭\\ 알아보세요\\.", "v"], ["평판\\ 딱\\ 중간이에요\\.\\ 이런\\ 데는\\ 회사보다\\ 어느\\ 팀\\ 가느냐가\\ 전부예요\\.", "v"], ["회사\\ 전체로는\\ 무난해요\\.\\ 결국\\ 내\\ 팀장이\\ 누구냐가\\ 반이에요\\.", "v"], ["갈\\ 만한\\ 회사예요\\.\\ 다만\\ 조건은\\ 꼼꼼히\\ 보세요\\.", "v"], ["70점짜리\\ 회사예요\\.\\ 나머지\\ 30점은\\ 들어갈\\ 팀과\\ 연봉이\\ 채워요\\.", "v"], ["가도\\ 되는\\ 회사예요\\.\\ 다만\\ '무조건'은\\ 아니에요\\.", "v"], ["괜찮은\\ 회사인데\\ 한두\\ 군데\\ 걸리는\\ 게\\ 있어요\\.\\ 아래\\ 내용\\ 보고\\ 판단하세요\\.", "v"], ["합격은\\ 잘하셨어요\\.\\ 사인\\ 전에\\ 체크리스트\\ 한\\ 번만\\ 돌려\\ 보세요\\.", "v"], ["여긴\\ 중립기어\\ 박을게요\\.\\ 회사는\\ 탄탄한데,\\ 사람마다\\ 맞고\\ 안\\ 맞고가\\ 갈리는\\ 곳이에요\\.", "v"], ["저는\\ 깜빡이만\\ 켜\\ 둘게요\\.\\ 안정이냐\\ 연봉\\ 상승이냐,\\ 뭘\\ 더\\ 원하시냐에\\ 따라\\ 답이\\ 갈려요\\.", "v"], ["이\\ 회사는\\ 좋다,\\ 나쁘다보다\\ '나랑\\ 맞냐'의\\ 문제예요\\.", "v"], ["추천도\\ 비추도\\ 아니에요\\.\\ 이건\\ 본인\\ 성향이\\ 정답을\\ 정하는\\ 회사예요\\.", "v"], ["브레이크도\\ 액셀도\\ 안\\ 밟을게요\\.\\ 아래\\ 특성\\ 읽어\\ 보고\\ 끌리면\\ 가세요\\.", "v"], ["스타트업은\\ 회사보다\\ 사람\\ 보고\\ 가는\\ 곳이에요\\.\\ 대표랑\\ 팀\\ 직접\\ 안\\ 보고\\ 가면\\ 후회해요\\.", "v"], ["평점\\ 낮은\\ 스타트업이에요\\.\\ 지분·연봉\\ 확실하지\\ 않으면\\ 절대\\ 서두르지\\ 마세요\\.", "v"], ["스타트업\\ 롤러코스터\\ 제대로\\ 타는\\ 곳이에요\\.\\ 버틸\\ 이유가\\ 분명할\\ 때만\\ 가세요\\.", "v"], ["회사\\ 체력은\\ 괜찮은데,\\ 다니는\\ 사람들\\ 평가가\\ 별로예요\\.", "v"], ["회사는\\ 멀쩡한데\\ 안에서\\ 들리는\\ 얘기가\\ 안\\ 좋아요\\.\\ 지금\\ 쥔\\ 카드랑\\ 꼭\\ 비교하세요\\.", "v"], ["경력\\ 한\\ 줄\\ 만들기엔\\ 괜찮아요\\.\\ 오래\\ 다닐\\ 곳은\\ 아니에요\\.", "v"], ["급하면\\ 가세요\\.\\ 급하지\\ 않으면\\ 한\\ 템포\\ 쉬어\\ 가세요\\.", "v"], ["이\\ 회사가\\ 지금\\ 내\\ 최선인지가\\ 먼저예요\\.\\ 회사만\\ 보면\\ 추천\\ 못\\ 해요\\.", "v"], ["징검다리로는\\ 써도\\ 돼요\\.\\ 오래\\ 밟고\\ 서\\ 있을\\ 돌은\\ 아니에요\\.", "v"], ["회사\\ 체력이\\ 약해요\\.\\ 업황\\ 한\\ 번\\ 꺾이면\\ 제일\\ 먼저\\ 휘청할\\ 곳이에요\\.", "v"], ["빚이\\ 많아요\\.\\ 좋을\\ 땐\\ 모르는데\\ 나빠지면\\ 사람부터\\ 자릅니다\\.", "v"], ["재무\\ 안전벨트가\\ 헐렁해요\\.\\ 입사\\ 전에\\ 다시\\ 생각하세요\\.", "v"], ["성장이\\ 멈췄어요\\.\\ 들어가서\\ 키울\\ 커리어가\\ 안\\ 보여요\\.", "v"], ["매출이\\ 뒷걸음질\\ 중이에요\\.\\ 줄어드는\\ 회사에선\\ 승진도\\ 성과급도\\ 같이\\ 줄어요\\.", "v"], ["내리막\\ 회사예요\\.\\ 반등\\ 신호\\ 보일\\ 때까지\\ 기다리는\\ 게\\ 나아요\\.", "v"], ["몇\\ 년째\\ 적자예요\\.\\ 성과급\\ 얘기는\\ 당분간\\ 없다고\\ 보세요\\.", "v"], ["돈을\\ 못\\ 버는\\ 회사예요\\.\\ 적자가\\ 길면\\ 복지부터\\ 깎여요\\.", "v"], ["적자가\\ 반복돼요\\.\\ 월급은\\ 나와도\\ 성장\\ 얘기는\\ 듣기\\ 힘들어요\\.", "v"], ["합격은\\ 축하드리지만,\\ 사인은\\ 잠깐\\ 미뤄\\ 두세요\\.", "v"], ["한\\ 번\\ 더\\ 생각해\\ 보세요\\.\\ 이대로\\ 가면\\ 후회할\\ 확률\\ 높아요\\.", "v"], ["급하게\\ 결정할\\ 회사\\ 아니에요\\.\\ 다른\\ 카드부터\\ 확인하세요\\.", "v"], ["제\\ 기준표에서\\ 빨간불이\\ 여러\\ 개\\ 켜졌어요\\.\\ 아래\\ 꼭\\ 보세요\\.", "v"], ["가지\\ 말란\\ 건\\ 아닌데,\\ '여기가\\ 최선이다'\\ 확신\\ 있을\\ 때만\\ 가세요\\.", "v"], ["솔직히\\ 말립니다\\.\\ 회사는\\ 크는데\\ 사람이\\ 못\\ 버티는\\ 곳이에요\\.", "v"], ["숫자는\\ 화려한데\\ 평판이\\ 박살\\ 나\\ 있어요\\.\\ 사람\\ 갈아서\\ 크는\\ 전형적인\\ 패턴이에요\\.", "v"], ["성장\\ 그래프에\\ 속지\\ 마세요\\.\\ 그\\ 그래프\\ 밑에\\ 사람들이\\ 깔려\\ 있어요\\.", "v"], ["숫자도\\ 평판도\\ 다\\ 빨간불이에요\\.\\ 저라면\\ 안\\ 갑니다\\.", "v"], ["이\\ 카드는\\ 버리셔도\\ 돼요\\.\\ 더\\ 좋은\\ 카드\\ 충분히\\ 나와요\\.", "v"], ["들어가는\\ 날부터\\ 탈출\\ 계획\\ 세워야\\ 하는\\ 곳이에요\\.", "v"], ["냉정하게\\ 말할게요\\.\\ 비추예요\\.", "v"], ["여기\\ 가려고\\ 지금\\ 회사\\ 그만두는\\ 거면\\ 무조건\\ 말립니다\\.", "v"], ["회사는\\ 괜찮은데\\ 워라밸은\\ 시망이에요\\.\\ 엄청\\ 빡셀\\ 각오\\ 하셔야\\ 해요\\.", "v"], ["숫자는\\ 좋은데\\ 사람이\\ 갈려요\\.\\ 워라밸\\ 있는\\ 회사\\ 다니던\\ 분이면\\ 포기도\\ 고려하세요\\.", "v"], ["여긴\\ 커리어\\ 받고\\ 저녁을\\ 내주는\\ 회사예요\\.\\ 그\\ 거래가\\ 괜찮으면\\ 가세요\\.", "v"], ["숫자만\\ 보면\\ 괜찮아\\ 보여요\\.\\ 근데\\ 이\\ 회사는\\ '누구의\\ 계열사인지'부터\\ 봐야\\ 해요\\.", "v"], ["점수표는\\ 나쁘지\\ 않아요\\.\\ 문제는\\ 점수표에\\ 안\\ 나오는\\ 모회사\\ 그림자예요\\.", "v"], ["겉보기\\ 성적은\\ 괜찮은데,\\ 고스펙이라면\\ 한\\ 번\\ 멈춰서\\ 보세요\\.", "v"], ["지금\\ 조건만\\ 보면\\ 무조건\\ 가세요\\.\\ 다만\\ 미래는\\ 쪼끔\\ 걱정돼요\\.", "v"], ["돈도\\ 평판도\\ 최상급이에요\\.\\ 고민\\ 말고\\ 가세요\\.\\ 근데\\ 10년\\ 뒤까지\\ 장담하긴\\ 어려워요\\.", "v"], ["들어가면\\ 행복할\\ 회사예요\\.\\ 가세요\\.\\ 다만\\ 회사의\\ 앞날은\\ 살짝\\ 지켜봐야\\ 해요\\.", "v"], ["이\\ 조건이면\\ 안\\ 갈\\ 이유가\\ 없어요\\.\\ 미래\\ 걱정은\\ 들어가서\\ 해도\\ 늦지\\ 않아요\\.", "v"], ["지금\\ 이\\ 회사는\\ 꿀이에요\\.\\ 무조건\\ 가세요\\.\\ 단,\\ 이\\ 꿀이\\ 영원할지는\\ 조금\\ 물음표예요\\.", "v"], ["가세요\\.\\ 지금\\ 처우와\\ 분위기는\\ 확실한데,\\ 앞날은\\ 조금\\ 걱정돼요\\.", "v"], ["돈도\\ 주고\\ 다니기도\\ 좋은\\ 회사예요\\.\\ 가세요\\.\\ 다만\\ 회사\\ 성장\\ 쪽은\\ 살짝\\ 불안해요\\.", "v"], ["지금\\ 기준으론\\ 충분히\\ 갈\\ 만한\\ 회사예요\\.\\ 미래까지\\ 꽃길인지는\\ 조금\\ 지켜봐야\\ 해요\\.", "v"], ["현재만\\ 보면\\ 좋은\\ 카드예요\\.\\ 가세요\\.\\ 근데\\ 5년\\ 뒤\\ 그림은\\ 조금\\ 흐릿해요\\.", "v"], ["평점·연봉은\\ 좋은데\\ 회사\\ 지갑이\\ 비어\\ 있어요\\.\\ 그래서\\ '가세요'까진\\ 못\\ 드려요\\.", "v"], ["다니기\\ 좋다는\\ 평은\\ 많은데\\ 숫자가\\ 빨간불이에요\\.\\ 조건부로만\\ 추천해요\\.", "v"], ["사람들\\ 평가는\\ 괜찮아요\\.\\ 문제는\\ 회사가\\ 아직\\ 돈을\\ 못\\ 번다는\\ 거예요\\.", "v"], ["좋은\\ 카드처럼\\ 보여도\\ 재무가\\ 받쳐\\ 주질\\ 않아요\\.\\ 감수할\\ 수\\ 있을\\ 때만\\ 가세요\\.", "v"], ["회사\\ 분위기는\\ 나쁘지\\ 않은데\\ 연봉이\\ 아쉬워요\\.\\ 내\\ 스펙이면\\ 더\\ 받을\\ 수\\ 있는지가\\ 관건이에요\\.", "v"], ["다니기엔\\ 괜찮은\\ 회사인데\\ 돈이\\ 약해요\\.\\ 지금\\ 쥔\\ 카드보다\\ 나은지\\ 꼭\\ 비교하세요\\.", "v"], ["사람들\\ 평가는\\ 무난해요\\.\\ 연봉을\\ 감수할\\ 이유가\\ 있으면\\ 가셔도\\ 돼요\\.", "v"], ["평점·연봉은\\ 그럭저럭인데\\ 회사\\ 체력이\\ 걸려요\\.\\ 내\\ 스펙으로\\ 더\\ 탄탄한\\ 곳이\\ 가능한지\\ 먼저\\ 보세요\\.", "v"], ["다니는\\ 사람\\ 평가는\\ 괜찮은데\\ 숫자가\\ 약해요\\.\\ 오래\\ 다닐\\ 곳인지는\\ 따져\\ 보고\\ 정하세요\\.", "v"], ["딱\\ 중간\\ 회사예요\\.\\ 내\\ 스펙이\\ 이보다\\ 높으면\\ 더\\ 보고,\\ 비슷하면\\ 가셔도\\ 돼요\\.", "v"], ["좋다\\ 나쁘다\\ 하기\\ 애매한\\ 곳이에요\\.\\ 결국\\ 내\\ 다른\\ 카드가\\ 답을\\ 정해요\\.", "v"], ["무난한\\ 회사예요\\.\\ 더\\ 나은\\ 카드가\\ 나올\\ 스펙인지\\ 냉정하게\\ 보고\\ 정하세요\\.", "v"], ["평점\\ 자료가\\ 없어\\ 회사\\ 숫자로만\\ 봤어요\\.\\ 좋다\\ 나쁘다보다\\ 내\\ 스펙과\\ 다른\\ 카드가\\ 답을\\ 정하는\\ 자리예요\\.", "v"], ["다니는\\ 사람\\ 평가를\\ 못\\ 찾았어요\\.\\ 숫자는\\ 중간이라,\\ 지금\\ 쥔\\ 카드와\\ 비교해\\ 보고\\ 정하세요\\.", "v"], ["들어가서\\ 이\\ 회사\\ 이름값을\\ 최대한\\ 이력서에\\ 녹이세요\\.\\ 다음\\ 이직\\ 때\\ 든든한\\ 무기예요\\.", "v"], ["입사\\ 전까지\\ 건강\\ 챙기시고,\\ 들어가선\\ 첫\\ 1년\\ 평가만\\ 잘\\ 받으세요\\.\\ 나머진\\ 회사가\\ 해\\ 줘요\\ ㅎㅎ", "v"], ["이런\\ 회사는\\ 오래\\ 다녀도\\ 손해\\ 없어요\\.\\ 자리\\ 잡고\\ 길게\\ 보세요\\.", "v"], ["들어가서\\ 2\\~3년\\ 제대로\\ 경력\\ 쌓으면\\ 다음\\ 이직\\ 카드도\\ 좋아져요\\.", "v"], ["입사\\ 첫해에\\ 굵직한\\ 프로젝트\\ 하나\\ 잡으세요\\.\\ 그게\\ 다음\\ 이직의\\ 무기예요\\.", "v"], ["좋은\\ 회사일수록\\ 첫\\ 평가가\\ 중요해요\\.\\ 첫\\ 1년은\\ 전력\\ 질주하세요\\.", "v"], ["들어가면\\ 사내\\ 네트워크부터\\ 넓히세요\\.\\ 좋은\\ 회사는\\ 사람이\\ 자산이에요\\.", "v"], ["들어가신다면\\ 2\\~3년\\ 확실히\\ 경력\\ 쌓고,\\ 더\\ 좋은\\ 곳으로\\ 환승\\ 이직하는\\ 발판으로\\ 쓰세요\\.", "v"], ["연봉\\ 협상은\\ 사인\\ 전이\\ 제일\\ 세요\\.\\ 한\\ 번\\ 더\\ 밀어\\ 보세요\\.", "v"], ["면접\\ 역질문으로\\ 팀\\ 분위기랑\\ 야근\\ 문화는\\ 꼭\\ 확인하세요\\.", "v"], ["여기서\\ 버티는\\ 게\\ 목표가\\ 아니라,\\ 여기를\\ 발판으로\\ 쓰는\\ 게\\ 목표예요\\.", "v"], ["결국\\ '내가\\ 회사에서\\ 뭘\\ 제일\\ 원하냐'에\\ 답하면\\ 이\\ 회사\\ 답도\\ 나와요\\.", "v"], ["현직자\\ 한\\ 명만\\ 만나\\ 보셔도\\ 판단이\\ 확\\ 쉬워질\\ 거예요\\.", "v"], ["안정을\\ 원하면\\ 가고,\\ 빠른\\ 연봉\\ 상승을\\ 원하면\\ 다른\\ 카드를\\ 기다리세요\\.", "v"], ["지금\\ 회사가\\ 있다면\\ 먼저\\ 그만두지\\ 마시고,\\ 합격\\ 카드를\\ 들고\\ 환승\\ 이직으로\\ 움직이세요\\.", "v"], ["선퇴사는\\ 절대\\ 금지!\\ 합격\\ 카드\\ 쥐고\\ 다른\\ 회사\\ 결과까지\\ 보고\\ 정하세요\\.", "v"], ["가신다면\\ 경력\\ 한\\ 줄\\ 만들고\\ 빠르게\\ 다음\\ 카드를\\ 준비하세요\\.", "v"], ["내\\ 연차·스펙에서\\ 이보다\\ 나은\\ 카드가\\ 나올지\\ 냉정하게\\ 따져\\ 보세요\\.", "v"], ["지금\\ 회사가\\ 있다면\\ 먼저\\ 그만두지\\ 마시고,\\ 더\\ 나은\\ 카드가\\ 나올\\ 때까지\\ 환승\\ 이직\\ 원칙\\ 지키세요\\.", "v"], ["선퇴사는\\ 절대\\ 금지!\\ 이\\ 카드는\\ 보험으로만\\ 들고\\ 계세요\\.", "v"], ["합격했다는\\ 건\\ 시장에서\\ 통한다는\\ 뜻이에요\\.\\ 더\\ 좋은\\ 곳도\\ 충분히\\ 노려\\ 보세요\\.", "v"], ["급할수록\\ 돌아가세요\\.\\ 다음\\ 시즌에\\ 더\\ 좋은\\ 카드가\\ 나올\\ 수\\ 있어요\\.", "v"], ["합격했다는\\ 건\\ 실력이\\ 된다는\\ 뜻이에요\\.\\ 그\\ 실력이면\\ 더\\ 좋은\\ 곳\\ 갑니다\\.", "v"], ["지금\\ 회사가\\ 있다면\\ 절대\\ 먼저\\ 그만두지\\ 마세요\\.\\ 여긴\\ 버티는\\ 회사보다\\ 나을\\ 게\\ 없어요\\.", "v"], ["정\\ 가셔야\\ 한다면\\ 1년\\ 안에\\ 나올\\ 계획까지\\ 세우고\\ 들어가세요\\.", "v"], ["회사는\\ 합격점인데\\ 연봉이\\ 업계\\ 아래쪽이에요\\.\\ 여긴\\ 협상이\\ 반이에요\\.\\ 사인\\ 전에\\ 무조건\\ 한\\ 번\\ 더\\ 미세요\\.", "v"], ["들어갈\\ 만한\\ 회사인데\\ 숫자가\\ 아쉬워요\\.\\ 입사\\ 후엔\\ 올리기\\ 어려우니\\ 지금\\ 협상에서\\ 끝을\\ 보세요\\.", "v"], ["연봉만\\ 빼면\\ 다\\ 괜찮아요\\.\\ 직전\\ 연봉·경쟁\\ 오퍼를\\ 근거로\\ 처우부터\\ 끌어올리고\\ 가세요\\.", "v"], ["이름값과\\ 규모가\\ 있는\\ 회사라\\ 경력\\ 한\\ 줄로는\\ 확실해요\\.\\ 2\\~3년\\ 쌓고\\ 환승\\ 이직하는\\ 발판으로\\ 쓰세요\\.", "v"], ["오래\\ 다닐\\ 곳이라기보다\\ 커리어를\\ 한\\ 단계\\ 올려\\ 주는\\ 돌다리예요\\.\\ 밟고\\ 다음으로\\ 건너가세요\\.", "v"], ["이력서에\\ 남는\\ 이름이\\ 좋은\\ 회사예요\\.\\ 여기서\\ 굵직한\\ 프로젝트\\ 하나\\ 들고\\ 다음\\ 카드를\\ 노리세요\\.", "v"], ["요즘\\ 신작·신제품\\ 반응이\\ 좋아요\\.\\ 재무에\\ 반영되기\\ 전인\\ 지금이\\ 들어가기\\ 좋은\\ 타이밍이에요\\.", "v"], ["분위기가\\ 올라오는\\ 중이에요\\.\\ 성과급이\\ 오르기\\ 전에\\ 들어가는\\ 사람이\\ 제일\\ 이득이에요\\.", "v"], ["좋은\\ 뉴스가\\ 쌓이는\\ 시기예요\\.\\ 타이밍은\\ 지금이\\ 제일\\ 좋아요\\.", "v"], ["평가한\\ 사람이\\ 적어서\\ 숫자만으론\\ 판단이\\ 불안해요\\.\\ 현직자\\ 한\\ 명만\\ 만나\\ 보셔도\\ 답이\\ 확\\ 나와요\\.", "v"], ["자료가\\ 얇은\\ 회사예요\\.\\ 면접\\ 때\\ 팀원·팀장\\ 분위기를\\ 꼭\\ 직접\\ 보고\\ 판단하세요\\.", "v"], ["평점이\\ 충분히\\ 쌓이지\\ 않았어요\\.\\ 링크드인이나\\ 지인으로\\ 현직자\\ 이야기를\\ 꼭\\ 들어\\ 보세요\\.", "v"], ["스펙이\\ 되는\\ 분이면\\ 모회사·경쟁사를\\ 직접\\ 노리세요\\.\\ 여기는\\ 그\\ 다음\\ 선택지예요\\.", "v"], ["들어간다면\\ 1\\~2년\\ 안에\\ 모회사·경쟁사\\ 경력직으로\\ 넘어가는\\ 징검다리로만\\ 쓰세요\\.", "v"], ["모회사\\ 전환\\ 제도가\\ 실제로\\ 몇\\ 명에게\\ 열렸는지\\ 면접에서\\ 꼭\\ 물어보세요\\.", "v"], ["연봉은\\ .+?\\ 상위\\ .+?%라\\ 돈\\ 걱정은\\ 덜어도\\ 돼요\\.", "+"], ["연봉은\\ .+?\\ 상위\\ .+?%예요\\.\\ 이\\ 부분은\\ 자신\\ 있게\\ 자랑해도\\ 돼요\\ ㅎㅎ", "+"], [".+?\\ 상위\\ .+?%\\ 연봉이에요\\.\\ 처우는\\ 확실히\\ 챙겨\\ 주는\\ 회사예요\\.", "+"], ["5년\\ 평균\\ 영업이익률\\ .+?%,\\ 남는\\ 장사를\\ 꾸준히\\ 하는\\ 회사예요\\.", "+"], ["5년\\ 평균\\ 영업이익률이\\ .+?%예요\\.\\ 돈\\ 버는\\ 구조가\\ 잡혀\\ 있는\\ 회사예요\\.", "+"], ["영업이익률\\ 5년\\ 평균\\ .+?%,\\ 이익\\ 체력이\\ 좋아서\\ 성과급\\ 재원도\\ 넉넉한\\ 편이에요\\.", "+"], ["부채비율\\ .+?%로\\ 재무\\ 체력은\\ 탄탄해요\\.", "+"], ["부채비율\\ .+?%,\\ 회사가\\ 쉽게\\ 흔들릴\\ 걱정은\\ 적어요\\.", "+"], ["부채비율이\\ .+?%라\\ 빚\\ 걱정\\ 없는\\ 회사예요\\.", "+"], ["매출이\\ 제자리라\\ 자리가\\ 안\\ 늘어요\\.\\ 승진은\\ 느릴\\ 각오\\ 하세요\\.", "-"], ["매출이\\ 안\\ 늘어서\\ 위로\\ 올라갈\\ 자리가\\ 빡빡해요\\.", "-"], ["성장이\\ 정체돼\\ 있어요\\.\\ 승진\\ 속도는\\ 기대\\ 접으세요\\.", "-"], ["빚이\\ 많아서\\ 업황\\ 꺾이면\\ 구조조정\\ 리스크가\\ 있어요\\.", "-"], ["부채가\\ 무거워요\\.\\ 경기\\ 나빠지면\\ 제일\\ 먼저\\ 허리띠\\ 졸라맬\\ 회사예요\\.", "-"], ["레버리지가\\ 큰\\ 회사라\\ 업황\\ 따라\\ 분위기가\\ 크게\\ 출렁여요\\.", "-"], ["현직자\\ 워라밸\\ .+?점\\(잡플래닛·블라인드·캐치\\ 종합\\),\\ 야근은\\ 기본값이라고\\ 보세요\\.", "-"], ["워라밸\\ .+?점이에요\\.\\ 저녁\\ 약속은\\ 줄이셔야\\ 해요\\ ㅎㅎ", "-"], ["현직자\\ 워라밸\\ .+?점\\(잡플래닛·블라인드·캐치\\ 종합\\),\\ 칼퇴는\\ 기대\\ 안\\ 하시는\\ 게\\ 정신\\ 건강에\\ 좋아요\\.", "-"], ["연봉은\\ 업계\\ 아래쪽이라\\ 처우\\ 협상에서\\ 최대한\\ 끌어올리고\\ 들어가세요\\.", "-"], ["연봉이\\ 업계\\ 하위권이에요\\.\\ 입사\\ 후엔\\ 안\\ 올라요\\.\\ 지금\\ 협상에서\\ 끝장\\ 보세요\\.", "-"], ["처우는\\ 업계\\ 아래쪽이에요\\.\\ 직전\\ 연봉\\ 대비\\ 최소\\ 인상률은\\ 꼭\\ 지키고\\ 들어가세요\\.", "-"], ["성과급\\ 비중이\\ 큰\\ 회사라\\ 오퍼를\\ 비교할\\ 땐\\ '기본연봉'끼리\\ 비교하세요\\.", "0"], ["성과급이\\ 커서\\ 연봉이\\ 해마다\\ 출렁여요\\.\\ 비교는\\ 꼭\\ 기본연봉으로\\ 하세요\\.", "0"], ["총보상\\ 숫자에\\ 속지\\ 마세요\\.\\ 성과급\\ 비중이\\ 커서\\ 기본연봉부터\\ 따로\\ 보셔야\\ 해요\\.", "0"], ["회사가\\ 산업단지\\ 안에\\ 있어요\\.\\ 통근·편의시설·공기질은\\ 꼭\\ 직접\\ 확인하세요\\.", "0"], ["산업단지\\ 근무예요\\.\\ 출퇴근\\ 동선이랑\\ 주변\\ 환경은\\ 면접\\ 가는\\ 길에\\ 꼭\\ 보세요\\.", "0"], ["근무지가\\ 산업단지예요\\.\\ 통근버스·기숙사\\ 여부까지\\ 꼭\\ 물어보세요\\.", "0"], ["평점·재무\\ 없이\\ 국민연금\\ 자료만으로\\ 낸\\ 판정이에요\\.\\ 평점이\\ 있는\\ 회사로\\ 맞춰\\ 보면\\ 이런\\ 판정이\\ 맞는\\ 비율은\\ .+?%\\ 정도라,\\ 참고로만\\ 보세요\\.", "0"], ["국민연금\\ 숫자만\\ 보고\\ 한\\ 판정이라\\ 확신은\\ 낮아요\\.\\ 평점\\ 있는\\ 회사로\\ 대\\ 보면\\ 이런\\ 신호가\\ 실제로\\ 나쁜\\ 회사였던\\ 건\\ .+?%\\ 정도예요\\.", "0"], ["평점·재무\\ 없이\\ 국민연금\\ 자료만으로\\ 낸\\ 판정이에요\\.\\ 평점이\\ 있는\\ 회사로\\ 맞춰\\ 보면\\ 이런\\ 신호의\\ 회사\\ 중\\ .+?%\\ 정도가\\ 실제로\\ '조건\\ 보고\\ 가세요'\\ 이상이었고,\\ .+?%는\\ 나쁜\\ 판정이\\ 아니었어요\\.", "+"], ["국민연금\\ 숫자만\\ 보고\\ 한\\ 판정이에요\\.\\ 평점\\ 있는\\ 회사로\\ 대\\ 보면\\ 이\\ 신호는\\ .+?%\\ 정도가\\ 실제로\\ 갈\\ 만한\\ 회사였어요\\(나쁜\\ 회사가\\ 아니었던\\ 건\\ .+?%\\)\\.\\ 참고로\\ 보세요\\.", "+"], ["평가한\\ 사람이\\ .+?명뿐이라\\ 평판은\\ .+?%만\\ 반영했어요\\.\\ 평가자가\\ 적을수록\\ 평판\\ 비중을\\ 낮추고,\\ 낮춘\\ 만큼은\\ 보통\\ 수준으로\\ 봐요\\.\\ 현직자\\ 한\\ 명만\\ 만나\\ 보셔도\\ 판단이\\ 확\\ 쉬워져요\\.", "0"], ["평가자가\\ .+?명이라\\ 평점을\\ 다\\ 믿긴\\ 일러요\\.\\ 그래서\\ 평판\\ 비중을\\ .+?%로\\ 낮추고\\ 나머지는\\ 보통으로\\ 쳤어요\\.\\ 현직자\\ 한\\ 명\\ 만나\\ 보는\\ 게\\ 제일\\ 빨라요\\.", "0"], ["평점을\\ 남긴\\ 사람이\\ .+?명뿐이에요\\.\\ 한두\\ 명\\ 기분에\\ 판정이\\ 흔들리지\\ 않게\\ 평판은\\ .+?%만\\ 반영했어요\\.\\ 현직자\\ 얘기를\\ 직접\\ 들어\\ 보세요\\.", "0"], ["평점이\\ 낮아서\\ 무조건\\ 추천은\\ 못\\ 해요\\.\\ 내\\ 스펙·연차·다른\\ 카드랑\\ 비교해서\\ 이\\ 회사가\\ 최선이면\\ 가고,\\ 더\\ 나은\\ 카드\\ 보이면\\ 기다리세요\\.", "-"], ["평점이\\ 낮아요\\.\\ 내\\ 스펙에서\\ 이\\ 회사가\\ 최선인지부터\\ 따지고,\\ 아니면\\ 다음\\ 카드\\ 기다리세요\\.", "-"], ["다니는\\ 사람들\\ 평가가\\ 박해요\\.\\ 지금\\ 연차·스펙에서\\ 더\\ 나은\\ 선택지\\ 있는지\\ 먼저\\ 보세요\\.", "-"], ["AI\\ 영향이\\ 큰\\ 업종이에요\\.\\ .+?\\.\\ 들어간다면\\ AI를\\ 쓰는\\ 쪽\\ 역할을\\ 잡으세요\\.", "-"], ["AI\\ 바람을\\ 정면으로\\ 맞는\\ 업종이에요\\.\\ .+?\\.\\ AI\\ 못\\ 다루면\\ 자리\\ 위험해요\\.", "-"], ["AI로\\ 일하는\\ 방식이\\ 크게\\ 바뀔\\ 업종이에요\\.\\ .+?\\.\\ 대체되는\\ 쪽\\ 말고\\ 활용하는\\ 쪽에\\ 서세요\\.", "-"], ["AI\\ 영향은\\ 중간이에요\\.\\ .+?\\.", "0"], ["AI\\ 영향은\\ 적당히\\ 받는\\ 업종이에요\\.\\ .+?\\.", "0"], ["AI가\\ 일을\\ 일부\\ 바꾸겠지만\\ 통째로\\ 대체하긴\\ 어려운\\ 업종이에요\\.\\ .+?\\.", "0"], ["AI\\ 대체\\ 걱정은\\ 적은\\ 업종이에요\\.\\ .+?\\.", "+"], ["AI가\\ 쉽게\\ 못\\ 들어오는\\ 업종이에요\\.\\ .+?\\.", "+"], ["AI\\ 걱정은\\ 상대적으로\\ 덜어도\\ 되는\\ 업종이에요\\.\\ .+?\\.", "+"], ["현직자\\ 워라밸\\ .+?점\\(잡플래닛·블라인드·캐치\\ 종합\\),\\ 여긴\\ 그냥\\ 시망이에요\\.\\ 엄청\\ 빡셀\\ 테니\\ 워라밸\\ 있던\\ 회사\\ 다니던\\ 분은\\ 포기도\\ 고려하세요\\.", "-"], ["워라밸\\ .+?점이면\\ 저녁은\\ 없다고\\ 보셔야\\ 해요\\.\\ 지금\\ 칼퇴하는\\ 회사\\ 다니시면\\ 진지하게\\ 다시\\ 생각하세요\\.", "-"], ["워라밸\\ .+?점,\\ 갈려\\ 나갈\\ 각오\\ 없으면\\ 못\\ 버팁니다\\.\\ 체력·멘탈\\ 자신\\ 있을\\ 때만\\ 가세요\\.", "-"], ["연봉은\\ 업계\\ 바닥권이에요\\.\\ 이\\ 돈\\ 받고\\ 가는\\ 거면\\ 경력\\ 말고는\\ 남는\\ 게\\ 없어요\\.", "-"], ["업계\\ 하위\\ 10%\\ 연봉이에요\\.\\ 여기\\ 오래\\ 있으면\\ 다음\\ 이직\\ 때\\ 연봉\\ 기준점까지\\ 같이\\ 깎여요\\.", "-"], ["연봉이\\ 많이\\ 짜요\\.\\ 이\\ 회사가\\ 아니면\\ 안\\ 되는\\ 이유가\\ 없다면\\ 패스하세요\\.", "-"], ["평점\\ .+?점,\\ 1점대예요\\.\\ 안에\\ 있는\\ 사람들이\\ 회사를\\ 포기했다는\\ 뜻이에요\\.\\ 정말\\ 다른\\ 카드가\\ 없을\\ 때만\\ 보세요\\.", "-"], ["평점\\ .+?점이면\\ 조직이\\ 망가졌다고\\ 봐야\\ 해요\\.\\ 웬만하면\\ 피하세요\\.", "-"], ["평점\\ .+?점,\\ 이\\ 정도면\\ 리뷰\\ 읽기\\ 전에\\ 결론\\ 나요\\.\\ 비추입니다\\.", "-"], [".+?의\\ .+?\\ 맡는\\ 계열사예요\\.\\ 숫자가\\ 괜찮아\\ 보여도\\ 실제론\\ .+?\\ 정직원과\\ 같은\\ 현장에서\\ 한\\ 단계\\ 아래\\ 대우를\\ 받는\\ '모회사의\\ 그림자'\\ 구조예요\\.", "0"], [".+?\\ 직접\\ 하던\\ .+?\\ 떼어\\ 내\\ 만든\\ 계열사예요\\.\\ 일은\\ .+?\\ 일인데\\ 처우·승진·의사결정은\\ 늘\\ 모회사\\ 다음\\ 순서예요\\.", "0"], ["간판에\\ .+?\\ 붙어\\ 있지만\\ .+?\\ 아니에요\\.\\ .+?\\ 맡는\\ 계열사라\\ 모회사\\ 그림자에서\\ 벗어나기\\ 어려워요\\.", "0"], ["평균\\ 연봉이\\ .+?의\\ .+?%\\ 수준이에요\\(.+?만원\\ vs\\ .+?만원\\)\\.\\ 같은\\ 이름\\ 아래서\\ 이\\ 차이를\\ 매일\\ 보게\\ 돼요\\.", "0"], [".+?\\ 평균\\ .+?만원,\\ 여긴\\ .+?만원\\.\\ 모회사의\\ .+?%예요\\.\\ 이\\ 격차는\\ 입사\\ 후에도\\ 거의\\ 안\\ 좁혀져요\\.", "0"], ["연봉은\\ .+?의\\ .+?%\\(.+?만원\\ vs\\ .+?만원\\)\\.\\ 같은\\ 일을\\ 해도\\ 이\\ 숫자는\\ 계열사\\ 몫이에요\\.", "0"], ["스펙이\\ 좋은\\ 분이면\\ 냉정하게\\ 비추에\\ 가까워요\\.\\ 경력도\\ '.+?'.+?\\ 아니라\\ '.+?\\ 계열사'로\\ 읽혀서\\ 다음\\ 이직\\ 때\\ 몸값이\\ 잘\\ 안\\ 올라가요\\.", "0"], ["고스펙이면\\ 여기서\\ 시간\\ 쓰지\\ 마세요\\.\\ 모회사로\\ 넘어가는\\ 길은\\ 좁고,\\ 이력서엔\\ 계열사\\ 이름만\\ 남아요\\.", "0"], ["취업이\\ 급하거나\\ 이\\ 분야\\ 첫\\ 경력이\\ 필요하면\\ 괜찮지만,\\ 고스펙이면\\ .+?\\ 경쟁사\\ 경력직을\\ 직접\\ 노리는\\ 게\\ 맞아요\\.", "0"], ["이렇게\\ 빨리\\ 크면\\ 새로\\ 들어오는\\ 사람들이\\ 기존\\ 인력보다\\ 레벨이\\ 높은\\ 경우가\\ 많아요\\.\\ '원래\\ 있던\\ 사람\\ vs\\ 새로\\ 온\\ 사람'\\ 갈등이\\ 생기기\\ 쉬우니,\\ 조직문화가\\ 부서지고\\ 있지\\ 않은지\\ 꼭\\ 확인하세요\\.", "-"], ["급하게\\ 클\\ 때는\\ 기존\\ 인력보다\\ 스펙\\ 좋은\\ 사람들이\\ 한꺼번에\\ 들어와요\\.\\ 그\\ 틈에서\\ 조직문화가\\ 금\\ 가는\\ 회사가\\ 많으니,\\ 현직자에게\\ '요즘\\ 분위기'를\\ 꼭\\ 물어보세요\\.", "-"], ["성장\\ 속도가\\ 빠른\\ 회사는\\ 위에\\ 새로\\ 온\\ 고스펙\\ 인력,\\ 아래에\\ 원래\\ 있던\\ 인력이\\ 섞이면서\\ 삐걱대기\\ 쉬워요\\.\\ 숫자보다\\ 조직\\ 분위기를\\ 먼저\\ 확인하세요\\.", "-"], ["다만\\ 업력이\\ .+?년으로\\ 짧아서,\\ 처음부터\\ 스펙\\ 좋은\\ 사람들로\\ 세팅된\\ 회사일\\ 수도\\ 있어요\\.\\ 그런\\ 곳은\\ 기존·신규\\ 인력\\ 갈등은\\ 덜한\\ 편이에요\\.", "-"], ["업력\\ .+?년의\\ 젊은\\ 회사라\\ 처음\\ 멤버부터\\ 스펙이\\ 좋은\\ 경우가\\ 많아요\\.\\ 그럼\\ '기존\\ vs\\ 신규'\\ 갈등은\\ 상대적으로\\ 적어요\\.", "-"], ["그런데\\ 뉴스에\\ 내부\\ 인력\\ 출신·스펙\\ 자랑이\\ 보여요\\.\\ 이런\\ 회사는\\ 서로\\ 눈이\\ 너무\\ 높아서\\ 평가가\\ 박하고\\ 조직문화가\\ 날카로운\\ 경우가\\ 많아요\\.", "-"], ["뉴스에\\ '어디\\ 출신\\ 인재들'\\ 자랑이\\ 나와요\\.\\ 잘난\\ 사람끼리\\ 모인\\ 회사는\\ 눈이\\ 높아서\\ 서로에게\\ 박하고,\\ 조직문화가\\ 피곤할\\ 수\\ 있어요\\.", "-"], ["워라밸\\ 점수가\\ .+?점이에요\\.\\ 칼퇴·휴가\\ 눈치는\\ 덜\\ 보는\\ 곳이라는\\ 평이\\ 많아요\\.", "+"], ["현직자들이\\ 워라밸을\\ .+?점으로\\ 줬어요\\.\\ 저녁\\ 있는\\ 삶을\\ 원하면\\ 점수\\ 하나는\\ 확실히\\ 챙기는\\ 곳이에요\\.", "+"], ["워라밸\\ .+?점,\\ 이\\ 부분은\\ 칭찬해\\ 줄\\ 만해요\\.\\ 일과\\ 삶의\\ 균형은\\ 크게\\ 걱정\\ 안\\ 하셔도\\ 돼요\\.", "+"], ["워라밸\\ 점수가\\ .+?점이에요\\.\\ 야근·주말\\ 업무는\\ 어느\\ 정도\\ 각오하고\\ 가세요\\.", "-"], ["현직자들이\\ 워라밸을\\ .+?점밖에\\ 안\\ 줬어요\\.\\ 퇴근\\ 시간은\\ 기대치를\\ 낮추세요\\.", "-"], ["사내문화\\ 점수가\\ .+?점으로\\ 높아요\\.\\ 사람\\ 때문에\\ 힘든\\ 곳은\\ 아닐\\ 가능성이\\ 커요\\.", "+"], ["사내문화\\ 평이\\ 좋아요\\(.+?점\\)\\.\\ 분위기\\ 좋은\\ 회사라는\\ 말이\\ 많아요\\.", "+"], ["사내문화를\\ 나쁘게\\ 생각하는\\ 사람이\\ 많네요\\(.+?점\\)\\.\\ 팀\\ 분위기는\\ 면접\\ 때\\ 꼭\\ 확인하세요\\.", "-"], ["사내문화\\ 점수가\\ .+?점이에요\\.\\ 꼰대\\ 문화·보고\\ 문화가\\ 있을\\ 수\\ 있으니\\ 현직자\\ 얘기를\\ 들어\\ 보세요\\.", "-"], ["급여·복지\\ 만족도가\\ .+?점이에요\\.\\ 처우에\\ 대한\\ 불만은\\ 적은\\ 편이에요\\.", "+"], ["현직자들이\\ 급여·복지에\\ .+?점을\\ 줬어요\\.\\ 돈과\\ 복지로\\ 서운할\\ 일은\\ 적어요\\.", "+"], ["급여·복지\\ 만족도가\\ .+?점으로\\ 낮아요\\.\\ 연봉\\ 협상\\ 때\\ 최대한\\ 끌어올리고\\ 들어가세요\\.", "-"], ["급여·복지를\\ 아쉬워하는\\ 사람이\\ 많아요\\(.+?점\\)\\.\\ 처우는\\ 입사\\ 전에\\ 끝장\\ 보세요\\.", "-"], ["경영진\\ 평가가\\ .+?점으로\\ 좋아요\\.\\ 위에서\\ 내려오는\\ 방향이\\ 크게\\ 흔들리지\\ 않는\\ 회사예요\\.", "+"], ["경영진\\ 평가가\\ .+?점으로\\ 낮아요\\.\\ 윗선\\ 결정에\\ 휘둘리는\\ 일이\\ 생길\\ 수\\ 있어요\\.", "-"], ["경영진에\\ 대한\\ 불만이\\ 커요\\(.+?점\\)\\.\\ 회사\\ 방향이\\ 자주\\ 바뀌는지\\ 꼭\\ 물어보세요\\.", "-"], ["커리어·승진\\ 점수가\\ .+?점이에요\\.\\ 여기서\\ 쌓는\\ 경력이\\ 다음\\ 이직\\ 때\\ 힘이\\ 된다는\\ 평이\\ 많아요\\.", "+"], ["커리어·승진\\ 점수가\\ .+?점이에요\\.\\ 승진이\\ 막혀\\ 있다는\\ 얘기가\\ 있으니\\ 연차별\\ 직급을\\ 꼭\\ 확인하세요\\.", "-"], ["평균\\ 근속이\\ .+?년이에요\\.\\ 한번\\ 들어가면\\ 오래\\ 다니는\\ 회사예요\\.", "+"], ["직원들이\\ 평균\\ .+?년을\\ 다녀요\\.\\ 쉽게\\ 그만두지\\ 않는\\ 회사라는\\ 뜻이에요\\.", "+"], ["평균\\ 근속이\\ .+?년으로\\ 짧아요\\.\\ 사람이\\ 자주\\ 바뀌는\\ 곳일\\ 수\\ 있어요\\.", "-"], ["1년에\\ 직원의\\ 약\\ .+?%가\\ 나가요\\.\\ 들어가기\\ 전에\\ 왜\\ 나가는지\\ 꼭\\ 알아보세요\\.", "-"], ["연간\\ 퇴사율이\\ 약\\ .+?%예요\\.\\ 이직이\\ 잦은\\ 회사라\\ 인수인계가\\ 부실할\\ 수\\ 있어요\\.", "-"], ["연간\\ 퇴사율이\\ 약\\ .+?%로\\ 낮아요\\.\\ 사람이\\ 잘\\ 안\\ 나가는\\ 회사예요\\.", "+"], ["매출은\\ 5년\\ 동안\\ 연평균\\ .+?%\\ 바뀌었어요\\.", "0"], ["최근\\ 5년\\ 매출\\ 흐름은\\ 연평균\\ .+?%예요\\.", "0"], ["연봉은\\ .+?\\ 상위\\ .+?%\\ 수준이에요\\.", "0"], ["같은\\ 업계에서\\ 연봉\\ 순위는\\ 상위\\ .+?%예요\\.", "0"], [".+?\\ .+?점이에요\\.\\ 좋지도\\ 나쁘지도\\ 않은\\ 평범한\\ 수준이에요\\.", "0"], [".+?\\ 점수는\\ .+?점,\\ 업계\\ 평균\\ 정도예요\\.\\ 팀마다\\ 차이가\\ 클\\ 거예요\\.", "0"], ["평균\\ 연봉은\\ .+?만원이에요\\(.+?\\)\\.", "0"], ["직원\\ 평균\\ 연봉은\\ .+?만원\\ 수준이에요\\(.+?\\)\\.", "0"], ["최근\\ 입사자\\ 평균\\ 연봉은\\ 약\\ .+?만원이에요\\.\\ 협상\\ 기준선으로\\ 쓰세요\\.", "0"], ["새로\\ 들어온\\ 사람들은\\ 평균\\ .+?만원\\ 정도\\ 받았어요\\.\\ 이\\ 숫자를\\ 협상\\ 바닥으로\\ 잡으세요\\.", "0"], ["직원은\\ .+?명\\ 규모예요\\.", "0"], [".+?명이\\ 다니는\\ 회사예요\\.", "0"], ["연봉이\\ .+?\\ 업계\\ 안에선\\ 상위\\ .+?%예요\\.\\ 이\\ 업계에\\ 묶이는\\ 직무라면\\ 최선의\\ 선택이에요\\.\\ 근데\\ 전체\\ 회사로\\ 보면\\ 상위\\ .+?%라,\\ 재무·인사·마케팅·개발처럼\\ 업계를\\ 옮길\\ 수\\ 있는\\ 직무면\\ 좀\\ 아쉬운\\ 연봉이에요\\.", "+"], [".+?\\ 업계에선\\ 상위\\ .+?%로\\ 잘\\ 주는\\ 편인데,\\ 업계\\ 밖까지\\ 놓고\\ 보면\\ 상위\\ .+?%예요\\.\\ 업계\\ 경력이\\ 곧\\ 무기인\\ 직무면\\ 여기가\\ 맞고,\\ 어디서든\\ 통하는\\ 직무면\\ 다른\\ 업계\\ 연봉도\\ 한번\\ 보고\\ 결정하세요\\.", "+"], ["업계\\ 안에서는\\ 상위\\ .+?%,\\ 전체\\ 회사\\ 기준으론\\ 상위\\ .+?%예요\\.\\ 업계를\\ 못\\ 옮기는\\ 직무면\\ 여기가\\ 꼭대기에\\ 가깝고,\\ 옮길\\ 수\\ 있는\\ 직무면\\ 솔직히\\ 돈은\\ 다른\\ 업계가\\ 더\\ 줘요\\.", "+"], ["이\\ 회사\\ 연봉은\\ '.+?\\ 업계\\ 기준'으로만\\ 좋아요\\ \\(업계\\ 상위\\ .+?%\\ ·\\ 전체\\ 상위\\ .+?%\\)\\.\\ 업계\\ 고정\\ 직무면\\ 고민\\ 없이\\ 좋은\\ 조건이고,\\ 범용\\ 직무면\\ 연봉\\ 하나만\\ 보고\\ 오기엔\\ 아쉬워요\\.", "+"], [".+?\\ 업계\\ 안에선\\ 상위\\ .+?%로\\ 위쪽인데,\\ 업계\\ 자체가\\ 연봉이\\ 짠\\ 동네라\\ 전체로는\\ 상위\\ .+?%예요\\.\\ 업계를\\ 옮길\\ 생각이\\ 있는\\ 직무면\\ 이\\ 숫자에\\ 너무\\ 감동하지\\ 마세요\\.", "+"], ["업계\\ 안에선\\ 상위\\ .+?%로\\ 평범해\\ 보이는데,\\ .+?\\ 자체가\\ 연봉이\\ 센\\ 업계라\\ 전체\\ 회사\\ 기준으론\\ 상위\\ .+?%예요\\.\\ 업계\\ 밖에서\\ 보면\\ 꽤\\ 받는\\ 편이에요\\.", "0"], [".+?\\ 업계\\ 안에선\\ 중간쯤\\(상위\\ .+?%\\)이지만\\ 전체\\ 회사로\\ 놓으면\\ 상위\\ .+?%예요\\.\\ 업계\\ 비교만\\ 보고\\ '연봉\\ 별로네'\\ 하고\\ 버리기엔\\ 아까워요\\.", "0"], ["업계\\ 순위\\(상위\\ .+?%\\)만\\ 보면\\ 아쉬운데,\\ 원래\\ 돈\\ 잘\\ 주는\\ 업계라\\ 전체\\ 기준\\ 상위\\ .+?%예요\\.\\ 다른\\ 업계에서\\ 넘어오는\\ 거라면\\ 연봉은\\ 오히려\\ 오르는\\ 쪽이에요\\.", "0"], ["연봉이\\ 업계\\ 안에선\\ 상위\\ .+?%,\\ 전체\\ 회사로는\\ 상위\\ .+?%예요\\.\\ 업계\\ 안\\ 경쟁이\\ 세서\\ 그렇지\\ 절대\\ 금액은\\ 충분히\\ 센\\ 편이에요\\.", "0"], [".+?\\ 인력이\\ .+?%라\\ 회사\\ 평균\\(.+?만\\)이\\ 낮게\\ 잡혀요\\.\\ 본사·사무직만\\ 보면\\ .+?만\\ 원대예요\\.\\ 등급은\\ 둘의\\ 중간값으로\\ 매겼으니,\\ 내가\\ 지원한\\ 자리가\\ 어느\\ 쪽인지부터\\ 확인하세요\\.", "0"], ["평균\\ .+?만은\\ .+?\\ 인력\\ .+?%가\\ 섞인\\ 숫자예요\\.\\ 사무직\\ 기준으론\\ .+?만\\ 원\\ 근처라\\ 등급은\\ 둘의\\ 중간값으로\\ 봤어요\\.\\ 현장\\ 직무로\\ 가는\\ 거면\\ 평균\\ 쪽\\ 숫자를\\ 믿으세요\\.", "0"], ["이\\ 회사\\ 평균\\ 연봉은\\ .+?\\ 인력이\\ 다\\ 깎아\\ 먹은\\ 숫자예요\\(.+?%\\)\\.\\ 본사\\ 직군은\\ .+?만\\ 원대로\\ 보여요\\.\\ 직무가\\ 본사냐\\ 현장이냐에\\ 따라\\ 완전히\\ 다른\\ 회사예요\\.", "0"], ["본사\\ 인력\\ 중에\\ 매장\\ 출신이\\ 꽤\\ 섞여\\ 있어서\\ 평균\\ 연봉이\\ 낮게\\ 잡혔어요\\.\\ 공채로\\ 들어가는\\ 본사\\ 직군\\ 기준이면\\ 업계\\ 상위권이에요\\.\\ 숫자만\\ 보고\\ 겁먹지\\ 마세요\\.", "0"], ["평균이\\ 낮아\\ 보이는\\ 건\\ 매장에서\\ 올라온\\ 본사\\ 인력이\\ 많아서예요\\.\\ 본사\\ 공채\\ 직군\\ 처우는\\ 이\\ 숫자보다\\ 위예요\\.\\ 대신\\ 매장\\ 직무로\\ 가는\\ 거면\\ 얘기가\\ 달라요\\.", "0"], ["국내\\ 사업보고서가\\ 없어서\\ 감사보고서의\\ 주식보상\\(RSU\\)\\ 몫과\\ 연봉\\ 제보를\\ 섞어\\ 잡은\\ 추정치예요\\.\\ RSU는\\ 직군·연차마다\\ 편차가\\ 커요\\.\\ 오퍼\\ 받을\\ 때\\ RSU\\ 금액과\\ 베스팅\\ 일정을\\ 꼭\\ 숫자로\\ 받으세요\\.", "0"], ["쿠팡\\ 연봉은\\ 현금만\\ 보면\\ 안\\ 돼요\\.\\ RSU가\\ 꽤\\ 크게\\ 붙는데,\\ 그\\ 몫을\\ 반쯤\\ 넣어\\ 잡은\\ 숫자예요\\.\\ 오퍼\\ 레터에서\\ RSU\\ 총액·베스팅\\ 일정\\ 확인\\ 필수예요\\.", "0"], ["상담·현장\\ 인력이\\ 대부분이라\\ 평균\\ 연봉이\\ 저연차\\ 값에\\ 가까워요\\.\\ 관리자급\\(과장\\ 이상\\)은\\ 이보다\\ 높지만\\ 그\\ 자리\\ 자체가\\ 많지\\ 않아요\\.\\ 몇\\ 년\\ 안에\\ 관리자로\\ 올라갈\\ 길이\\ 있는지\\ 면접에서\\ 꼭\\ 물어보세요\\.", "0"], ["이\\ 업종은\\ 신입·저연차가\\ 바글바글해서\\ 평균이\\ 낮게\\ 깔려요\\.\\ 과장\\ 이상\\ 가면\\ 확\\ 오르긴\\ 하는데,\\ 위로\\ 가는\\ 문이\\ 좁아요\\.\\ 승진\\ 구조부터\\ 확인하세요\\.", "0"], ["평균\\ 연봉은\\ 상담·현장\\ 직원\\ 위주\\ 숫자예요\\.\\ 관리자\\ 트랙이면\\ 꽤\\ 올라가지만\\ TO가\\ 적어요\\.\\ 들어가서\\ 3년\\ 뒤\\ 내\\ 자리가\\ 어딘지\\ 그려지는지\\ 보세요\\.", "0"], ["학습지\\ 선생님은\\ 대부분\\ 위탁\\ 계약이라\\ 이\\ 연봉에\\ 안\\ 들어가요\\.\\ 여기\\ 숫자는\\ 본사·지점\\ 정직원\\ 기준이에요\\.\\ 선생님\\ 직군으로\\ 가는\\ 거라면\\ 수수료\\ 구조를\\ 따로\\ 꼭\\ 확인하세요\\.", "0"], ["이\\ 연봉은\\ 본사·지점\\ 정직원\\ 숫자예요\\.\\ 교사\\(선생님\\)\\ 직군은\\ 위탁\\ 계약이라\\ 수수료로\\ 벌어요\\.\\ 어느\\ 쪽으로\\ 들어가는지에\\ 따라\\ 완전히\\ 다른\\ 얘기예요\\.", "0"], ["기관\\ 특성\\(비정규직·공무직\\ 위주\\)상\\ 회사\\ 연봉과\\ 비교하기\\ 어려워요\\.\\ 여기\\ 숫자는\\ 계약직·공무직이\\ 섞인\\ 평균이라,\\ 내가\\ 들어갈\\ 자리의\\ 고용\\ 형태와\\ 급여표를\\ 따로\\ 확인하세요\\.", "0"], ["비정규\\ 연구원·공무직이\\ 대부분인\\ 기관이라\\ 일반\\ 회사\\ 연봉과\\ 나란히\\ 놓고\\ 보면\\ 안\\ 돼요\\(기관\\ 특성상\\ 비교\\ 어려움\\)\\.\\ 정규직인지,\\ 몇\\ 년\\ 계약인지부터\\ 확인하세요\\.", "0"], ["평균\\ 근속이\\ .+?년밖에\\ 안\\ 되는\\ 젊은\\ 조직이라\\ 평균\\ 연봉이\\ 낮아\\ 보여요\\.\\ 같은\\ 연차끼리\\ 비교하면\\ 차이가\\ 확\\ 줄어요\\.\\ 숫자보다\\ 내\\ 연차\\ 기준\\ 오퍼를\\ 보세요\\.", "0"], ["사원·대리급이\\ 대부분인\\ 회사라\\ 평균이\\ 낮게\\ 깔려요\\(평균\\ 근속\\ .+?년\\)\\.\\ 경력직이면\\ 평균\\ 말고\\ 직급별\\ 금액을\\ 보세요\\.", "0"], ["직원\\ .+?%가\\ .+?\\ 인력이라\\ 평균\\ 연봉\\(.+?만\\)은\\ 사실상\\ 현장\\ 직원\\ 연봉이에요\\.\\ 본사·관리직은\\ 이보다\\ 높지만\\ 숫자로\\ 딱\\ 잘라\\ 말하긴\\ 어려워서\\ 등급은\\ 한\\ 칸만\\ 올려\\ 잡았어요\\.\\ 지원\\ 직무가\\ 본사인지\\ 현장인지부터\\ 확인하세요\\.", "0"], ["평균\\ .+?만은\\ .+?\\ 인력\\(.+?%\\)\\ 숫자라고\\ 보시면\\ 돼요\\.\\ 본사\\ 직군은\\ 더\\ 받지만\\ 규모가\\ 작아\\ 평균엔\\ 거의\\ 안\\ 보여요\\.\\ 본사\\ 오퍼라면\\ 이\\ 평균에\\ 기죽지\\ 말고\\ 협상하세요\\.", "0"], ["걱정\\ 포인트는\\ 이익이에요\\.\\ 5년\\ 평균\\ 영업이익률이\\ .+?%로\\ 얇아서,\\ 업황이\\ 꺾이면\\ 지금\\ 같은\\ 처우가\\ 흔들릴\\ 수\\ 있어요\\.", "-"], ["남는\\ 게\\ 많은\\ 장사는\\ 아니에요\\(5년\\ 평균\\ 영업이익률\\ .+?%\\)\\.\\ 지금\\ 연봉은\\ 좋지만\\ 성과급은\\ 해마다\\ 출렁일\\ 수\\ 있어요\\.", "-"], ["이익률이\\ .+?%\\ 수준이라\\ 쿠션이\\ 얇아요\\.\\ 불황\\ 한\\ 번\\ 오면\\ 제일\\ 먼저\\ 성과급·채용부터\\ 줄어드는\\ 구조예요\\.", "-"], ["걱정\\ 포인트는\\ 성장이에요\\.\\ 매출이\\ 제자리라\\ 자리가\\ 잘\\ 안\\ 늘고,\\ 회사랑\\ 같이\\ 크는\\ 그림은\\ 기대하기\\ 어려워요\\.", "-"], ["회사가\\ 크지\\ 않는\\ 중이에요\\.\\ 지금\\ 처우는\\ 좋아도\\ 승진\\ 자리는\\ 위에서\\ 안\\ 비면\\ 안\\ 생겨요\\.", "-"], ["성장이\\ 멈춘\\ 회사는\\ 지금은\\ 편해도,\\ 몇\\ 년\\ 뒤\\ 구조조정·사업\\ 재편\\ 얘기가\\ 나오기\\ 쉬워요\\.", "-"], ["최근\\ 실적\\ 기사\\ 흐름이\\ 좋지\\ 않아요\\.\\ 당장\\ 흔들릴\\ 회사는\\ 아니지만,\\ 면접에서\\ 사업\\ 전망은\\ 꼭\\ 물어보세요\\.", "-"], ["요즘\\ 기사\\ 분위기가\\ 썩\\ 밝진\\ 않아요\\.\\ 들어가기\\ 전에\\ 주력\\ 사업이\\ 앞으로\\ 뭘로\\ 먹고살지\\ 한번\\ 확인하세요\\.", "-"], ["뉴스만\\ 보면\\ 실적이\\ 꺾이는\\ 구간이에요\\.\\ 지금\\ 들어가면\\ '좋은\\ 시절\\ 끝물'일\\ 수도\\ 있다는\\ 것만\\ 알고\\ 가세요\\.", "-"], ["지금\\ 받는\\ 돈과\\ 분위기는\\ 누리되,\\ 이\\ 회사\\ 밖에서도\\ 통하는\\ 경력을\\ 꾸준히\\ 쌓아\\ 두세요\\.", "-"], ["들어가서\\ 편하게\\ 안주하지만\\ 마세요\\.\\ 회사가\\ 흔들려도\\ 나는\\ 안\\ 흔들리게\\ 포트폴리오는\\ 계속\\ 챙기세요\\.", "-"], ["정년까지\\ 여기라고\\ 생각하기보단,\\ 좋은\\ 조건에서\\ 몸값\\ 키우는\\ 곳으로\\ 쓰면\\ 딱이에요\\.", "-"], ["미래\\ 걱정은\\ 회사\\ 몫으로\\ 두고,\\ 나는\\ 3년\\ 단위로\\ 시장에서\\ 내\\ 가치를\\ 체크하세요\\.", "-"], ["여긴\\ 지주사예요\\.\\ 지주사\\ 자체\\(별도\\)\\ 매출은\\ .+?뿐이고\\ 그마저\\ 배당·로열티라\\ 회사\\ 체력이\\ 안\\ 보여요\\.\\ 그래서\\ 재무는\\ 자회사까지\\ 합친\\ 연결\\(.+?\\)\\ 기준으로\\ 봤어요\\.", "0"], ["지주사라\\ 별도\\ 재무제표는\\ 배당금\\ 장부에\\ 가까워요\\(매출\\ .+?\\)\\.\\ 그룹\\ 전체\\ 실적이\\ 곧\\ 지주사\\ 실적이라,\\ 성장·수익·안정성은\\ 연결\\ 매출\\ .+?\\ 기준으로\\ 판단했어요\\.", "0"], ["참고로\\ 지주사예요\\.\\ 지주사는\\ 계열사\\ 실적이\\ 좋아야\\ 배당이\\ 들어오고\\ 성과급도\\ 나오는\\ 구조라,\\ 별도\\(매출\\ .+?\\)\\ 말고\\ 연결\\(.+?\\)\\ 숫자로\\ 봤어요\\.", "0"], ["여긴\\ 금융지주예요\\.\\ 성장·수익은\\ 은행·카드\\ 등\\ 자회사까지\\ 합친\\ 연결\\ 기준으로\\ 봤고,\\ 연결\\ 부채엔\\ 고객\\ 예금이\\ 섞여\\ 있어서\\ 안정성만\\ 지주사\\ 자체\\(별도\\)\\ 기준으로\\ 봤어요\\.", "0"], ["장부상\\ 자본이\\ 바닥난\\ 자본잠식\\ 상태예요\\(자본총계\\ \\-.+?\\)\\.\\ 투자금이나\\ 모회사\\ 지원이\\ 끊기면\\ 버티기\\ 어려운\\ 구조라\\ '조건\\ 보고\\ 가세요'까지만\\ 드려요\\.", "v"], ["자본총계가\\ \\-.+?인\\ 자본잠식\\ 회사예요\\.\\ 다음\\ 투자\\ 유치나\\ 모회사\\ 지원\\ 계획이\\ 있는지\\ 면접에서\\ 꼭\\ 물어보세요\\.\\ 그래서\\ '조건\\ 보고\\ 가세요'까지예요\\.", "v"], ["최근\\ .+?년\\ 연속\\ 영업적자예요\\.\\ 평판·연봉이\\ 좋아도\\ 적자가\\ 길어지면\\ 처우부터\\ 흔들려서\\ '조건\\ 보고\\ 가세요'까지만\\ 드려요\\.", "v"], [".+?년째\\ 영업적자가\\ 이어지고\\ 있어요\\.\\ 지금\\ 처우가\\ 언제까지\\ 갈지\\ 장담하기\\ 어려워\\ '조건\\ 보고\\ 가세요'까지예요\\.", "v"], ["최근\\ 영업이익률이\\ .+?%예요\\.\\ 버는\\ 것보다\\ 쓰는\\ 게\\ 훨씬\\ 많은\\ 회사라\\ '조건\\ 보고\\ 가세요'까지만\\ 드려요\\.", "v"], ["작년\\ 영업이익률이\\ .+?%,\\ 적자\\ 폭이\\ 커요\\.\\ 투자금으로\\ 버티는\\ 구간이라\\ '조건\\ 보고\\ 가세요'까지예요\\.", "v"], ["수익성\\ 등급이\\ F예요\\.\\ 돈\\ 버는\\ 구조가\\ 아직\\ 안\\ 잡혀서\\ '조건\\ 보고\\ 가세요'까지만\\ 드려요\\.", "v"], ["이익을\\ 거의\\ 못\\ 내는\\ 회사예요\\(수익성\\ F\\)\\.\\ 평판이\\ 좋아도\\ '조건\\ 보고\\ 가세요'까지예요\\.", "v"], ["현직자들이\\ 매긴\\ 경영진\\ 점수가\\ 아주\\ 높아요\\(.+?\\)\\.\\ 대표이사에\\ 대한\\ 신뢰가\\ 참\\ 좋은\\ 회사예요\\.", "0"], ["경영진\\ 점수가\\ 업계를\\ 통틀어\\ 손꼽히게\\ 높아요\\(.+?\\)\\.\\ 직원들이\\ 대표이사를\\ 믿고\\ 따르는\\ 회사예요\\.", "0"], ["대표이사에\\ 대한\\ 신뢰가\\ 참\\ 좋은\\ 회사예요\\.\\ 경영진\\ 점수가\\ 상위권이에요\\(.+?\\)\\.", "0"], ["현직자들이\\ 매긴\\ 경영진\\ 점수가\\ 아주\\ 높아요\\(.+?\\)\\.\\ 기관장·경영진에\\ 대한\\ 신뢰가\\ 좋은\\ 곳이에요\\.", "0"], ["경영진\\ 점수가\\ 손꼽히게\\ 높아요\\(.+?\\)\\.\\ 직원들이\\ 윗선을\\ 믿고\\ 일하는\\ 곳이에요\\.", "0"], [".+?은\\ 업계\\ 평균\\ 정도예요\\.\\ 좋지도\\ 나쁘지도\\ 않은\\ 평범한\\ 수준이라\\ 팀마다\\ 차이가\\ 클\\ 거예요\\.", "0"], ["현직자\\ 점수로\\ 보면\\ .+?,\\ 딱\\ 중간이에요\\.\\ 결국\\ 어느\\ 팀에\\ 가느냐가\\ 더\\ 중요해요\\.", "0"]];
 let ZKRE = null;
 function zKind(t, i, len) {
   if (i === 0 || i === len - 1) return "v";
@@ -1908,12 +2047,18 @@ function meTail(V, o = {}) {
     if (V === "중립기어") return o.working ? "결국 지금 회사보다 나아지는 게 분명한지가 답이에요. 분명하면 가고, 아니면 남으세요." : "결국 이 회사에서 3년 뒤 내 모습이 그려지는지가 답이에요. 그려지면 가고, 아니면 다음 카드를 보세요.";
     if (V === "다시 생각해요") return o.working ? "지금 자리에서 버틸 만하다면, 이 카드보다 내 조건에 맞는 곳을 조금 더 기다려 보세요." : "급하지 않다면 이 카드보다 내 조건에 맞는 곳을 조금 더 기다려 보세요.";
   }
-  if (V === "무조건 가세요") return "오퍼 받으면 망설이지 말고 사인하세요. 지금 회사엔 인수인계만 깔끔하게 하고 오세요.";
+  // 11-12 F9: 이미 퇴사한 사람에게 '지금 회사·남으세요·버틸 만하다면' 같은 재직자 말을 하지 않는다
+  if (o.left) {
+    if (V === "무조건 가세요") return o.offer ? "망설이지 말고 사인하세요." : "오퍼 받으면 망설이지 말고 사인하세요.";
+    if (V === "중립기어") return "결국 전 회사에서 제일 싫었던 게 여기서 풀리는지가 답이에요. 풀리면 가고, 아니면 다른 카드를 더 보세요.";
+    if (V === "다시 생각해요" && !(o.now && o.pct != null && o.pct < 10 && !o.offer && !o.noPay)) return "공백이 길어지는 게 부담되더라도, 이 카드보다 내 조건에 맞는 곳을 조금 더 찾아보세요.";
+  }
+  if (V === "무조건 가세요") return (o.offer ? "망설이지 말고 사인하세요." : "오퍼 받으면 망설이지 말고 사인하세요.") + " 지금 회사엔 인수인계만 깔끔하게 하고 오세요.";
   if (V === "가세요") return "가기 전에 입사 직급과 연봉만 확실히 맞추고 가세요.";
   if (V === "조건 보고 가세요") return "위 조건 중 하나라도 안 맞으면 미련 없이 접어도 되는 카드예요.";
   if (V === "중립기어") return "결국 지금 회사에서 제일 싫은 게 여기서 풀리는지가 답이에요. 풀리면 가고, 아니면 남으세요.";
   if (V === "스펙 보고 결정하세요") return "다른 카드와 나란히 놓고 정하세요. 이 카드 하나만 보고 서두를 필요는 없어요.";
-  if (o.now && o.pct != null && o.pct < 10) return "실제 오퍼를 받으면 '제시 연봉'에 넣어 다시 보세요. 추정치와 실제 오퍼는 꽤 달라요. 다만, 성과급과 현금성 복지까지 넣어 꼼꼼히 살피셔야 해요. " + mePayWarn();   // 6회차 B5
+  if (o.now && o.pct != null && o.pct < 10 && !o.offer && !o.noPay) return "실제 오퍼를 받으면 '제시 연봉'에 넣어 다시 보세요. 추정치와 실제 오퍼는 꽤 달라요. 다만, 성과급과 현금성 복지까지 넣어 꼼꼼히 살피셔야 해요. " + mePayWarn();   // 6회차 B5
   if (V === "다시 생각해요") return "지금 자리에서 버틸 만하다면, 이 카드보다 내 조건에 맞는 곳을 조금 더 기다려 보세요.";
   return "이 카드는 접고 다른 곳을 보세요.";
 }
@@ -1935,7 +2080,12 @@ function meCompose(c, V, why, pay, ctx, facts = [], o = {}) {
   const reasons = [...top, ...why.filter(t => !top.includes(t)).map((t, i) => [t, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0])];
   // 6회차 C6: 경력은 첫 줄에 내 연봉을 안 보인다(캡처 공유). A13: 워라밸로 낮췄으면 첫 줄에 그 얘기
   const head = o.newbie ? `지금 ${meWho()} 기준이면,` : "말씀하신 연봉 기준이면,";
-  const z = [`${head} ${o.first ? o.first + " " : ""}${ME_FIRST[V]}`, ...reasons, pay];
+  // 11-12 F1: 판단자료 부족 회사는 첫 줄에서 무엇만 보고 한 말인지 밝힌다
+  const lackHead = !o.lack ? "" : o.newbie ? `자료가 부족한 회사라 내 스펙·나이와 회사 ${o.fin ? "연봉 수준" : "급"}만 보고 한 말이에요. `
+    : o.noPay ? "자료가 부족하고 내 연차에 맞는 연봉 자료도 없는 회사라 회사 급만 보고 한 말이에요. " : `자료가 부족한 회사라 연봉과 회사 ${o.fin ? "수준" : "급"}만 보고 한 말이에요. `;
+  // 11-12 F8 보완: 평균만 있는 회사인데 그 평균이 내 연봉보다 크게 낮으면 첫 줄에서 직접 비교를 못 했다고 밝힌다 (자료 부족 회사는 위 문장이 이미 같은 말을 함)
+  const avgHead = o.avgLow && !o.lack ? "이 회사는 평균 연봉 자료뿐이라 내 연봉과 직접 비교하지 못했어요. " : "";
+  const z = [`${lackHead}${avgHead}${head} ${o.first ? o.first + " " : ""}${ME_FIRST[V]}`, ...reasons, pay];
   let co;
   if (base != null && n <= 2 && base >= 4) co = [`회사 자체는 일반 판정 '${c.verdict}'일 만큼 괜찮은 곳이에요. ${o.newbie ? "판정이 낮은 건 내 나이·스펙·직무로 봤을 때 더 맞는 길이 있어서예요." : "걸리는 건 회사가 아니라 지금 내 조건이에요."}`, ...plus.slice(0, 1), ...minus.slice(0, 2)];
   else if (n <= 2) co = [...minus.slice(0, 3), ...plus.slice(0, 1)];
@@ -1959,6 +2109,12 @@ function meReason(c, kase, pct) {
   if (!r) return null;
   const W = ["칼퇴", "보통", "야근 잦음", "매일 야근"], wn = W.indexOf(kase.now.wlb), wt = W.indexOf(kase.target.wlb);
   const how = /추정/.test(kase.target.how || "") ? "추정치로는" : "제시 연봉으로는";
+  if (r === "연봉" && kase.target.pay_unknown) return { text: "연봉 때문에 옮기시는데 이 회사는 내 연차에 맞는 연봉 자료가 없어요(전 직원 평균뿐). 제시받은 연봉을 넣어야 이유가 풀리는지 볼 수 있어요.", cap: true };   // 11-12 F8
+  // 11-12 F8: 추정치가 5%까지 낮은 건 '비슷'으로 묶는다 (추정치 -1%에 '스펙 보고', 0%에 '조건 보고'로 뛰던 것)
+  const nearPay = /추정/.test(kase.target.how || "") && kase.target.salary < kase.now.salary && (kase.now.salary - kase.target.salary) / kase.now.salary * 100 <= FitEngine.FIT.est_same_pct;
+  //   이유=연봉이면 0% 이상은 '조건 보고 가세요'까지, 5% 안쪽으로 낮으면 '중립기어'까지, 그보다 낮으면 '스펙 보고'(6회차 D6) → 한 단계씩
+  if (r === "연봉" && nearPay) return { text: `연봉 때문에 옮기시는 건데 추정치로는 지금과 비슷하거나 조금 낮아요(${pct}%). 추정치라 이 정도 차이는 실제 오퍼에서 뒤집힐 수 있으니, 연봉 협상 결과를 보고 정하세요. ${mePayWarn()}`, cap: 3 };
+  if (r === "워라밸" && kase.target.wlb_unknown) return { text: "워라밸 때문에 옮기시는데 이 회사는 현직자 워라밸 자료가 없어 확인하지 못했어요. 면접에서 야근·퇴근 문화를 꼭 물어보세요." };   // 11-12 F9
   if (r === "연봉") return pct >= 10 ? { text: `연봉이 가장 큰 이유라면 +${pct}%는 이유를 풀어 주는 카드예요.` }
     : pct < 0 ? { text: `연봉 때문에 옮기시는데 ${how} 오히려 ${-pct}% 낮아요. 회사 급이나 다른 조건이 좋아도, 연봉 협상 결과를 보고 갈지 말지 정하세요.`, cap: 2 }   // 6회차 D6
     : { text: `연봉 때문에 옮기시는 건데 ${how} +${pct}%예요. 연봉 이직이 되려면 실제 오퍼에서 지금보다 확실히 오른다면 좋겠습니다. 추정되는 성과급과 현금성 복지까지 넣어서 충분히 올라간다면 가시기 바랍니다. ${mePayWarn()}`, cap: true };   // 6회차 B6
@@ -2034,18 +2190,18 @@ function meStrip(c, my) {
   if (!ME) return `<div class="mecta" id="meSlot"><p><b>내 상황에 맞춰 볼까요?</b> 연차·연봉을 넣으면 위 판정과 한마디가 전부 내 기준으로 바뀌어요.</p><button type="button" data-me-open>내 상황 넣기</button></div>`;
   if (meGeneral) return `<div class="mestrip" id="meSlot"><span>지금은 <b>일반 판정</b>을 보고 있어요.</span><button class="lnk" type="button" data-me-mine>내 상황으로 보기</button></div>`;
   if (meNew()) {
-    const o = meOver[c.name] || {}, sl = c.salary || {}, nh = sl.newHire || coSalary(c, 0)?.v;
+    const o = meOver[c.name] || {}, sl = c.salary || {}, cs = coSalary(c, 0), nh = sl.newHire || (cs && !cs.avg ? cs.v : null);   // 11-12 F8: 전 직원 평균을 신입 연봉 자리에 쓰지 않는다
     return `<div class="mestrip" id="meSlot"><span class="tag">신입 기준</span><span>지금 <b>${esc(meWho())}</b>${nh ? ` → 신입 추정 연봉 <b>${won(o.salary || nh)}만 원</b>` : ""}</span>
       <label>제시 연봉<input id="meOff" type="number" inputmode="numeric" step="100" value="${o.salary || ""}" placeholder="${nh ? won(nh) : "만 원"}"></label>
       <span class="lnks">${mePickBtn(c)}<button class="lnk" type="button" data-me-open>내 상황 고치기</button><button class="lnk" type="button" data-me-general>일반 판정 보기</button></span></div>`;
   }
-  const { c: kase, est } = meCase(c), o = meOver[c.name] || {};
+  const { c: kase, est, offer: off } = meCase(c), o = meOver[c.name] || {};
   const opt = (list, v) => list.map(x => `<option${x === v ? " selected" : ""}>${esc(x)}</option>`).join("");
   const offer = `<label>제시 연봉<input id="meOff" type="number" inputmode="numeric" step="100" value="${o.salary || ""}" placeholder="${est ? won(est.v) : "만 원"}"></label>`;
   if (!kase.target.salary) return `<div class="mestrip need" id="meSlot"><span>이 회사는 연봉 자료가 없어요. <b>제시받은 연봉</b>을 넣으면 내 기준으로 판정해요.</span>${offer}</div>`;
   const nowInfo = ME.co ? (meNow.c ? `<span class="nowco">지금 회사 <b>${esc(dn(meNow.c.name))}</b> 정보 반영</span>` : `<span class="nowco">'${esc(ME.co)}' 정보를 못 찾아 넣은 내용으로만 판단했어요</span>`) : "";
   return `<div class="mestrip" id="meSlot"><span class="tag">내 상황 기준</span>${nowInfo}
-    <span>지금 <b>${esc(meWho())}</b> → ${o.salary ? "제시 연봉" : esc(est.how)} <b>${won(kase.target.salary)}만 원</b> · ${esc(kase.target.size)}${kase.target.rating != null ? " · 평점 " + kase.target.rating.toFixed(2) : ""}</span>
+    <span>지금 <b>${esc(meWho())}</b> → ${off ? "제시 연봉" : esc(est.how)} <b>${won(kase.target.salary)}만 원</b> · ${esc(kase.target.size)}${kase.target.rating != null ? " · 평점 " + kase.target.rating.toFixed(2) : ""}</span>
     ${offer}<label>근무지<select id="mePlace">${opt(ME_PLACES, kase.target.place)}</select></label>
     <span class="lnks">${mePickBtn(c)}<button class="lnk" type="button" data-me-open>내 상황 고치기</button><button class="lnk" type="button" data-me-general>일반 판정 보기</button></span></div>`;
 }
@@ -2059,7 +2215,7 @@ function meCmp(c, my) {
   const rows = [
     ["일반 판정", nc ? nc.verdict : null, c.verdict, (a, b) => (ME_GRADE[b] ?? -1) - (ME_GRADE[a] ?? -1)],
     ["연봉", now.salary && `${won(now.salary)}만 원`, target.salary && `${won(target.salary)}만 원`, () => num(target.salary) - num(now.salary)],
-    ["규모", now.size, target.size, () => FitEngine.tier(target.size).n - FitEngine.tier(now.size).n],
+    ["규모", now.size, target.size, () => now.size_unknown || target.size_unknown ? 0 : FitEngine.tierOf(target).n - FitEngine.tierOf(now).n],
     ["현직자 평점", now.rating != null && now.rating.toFixed(2), target.rating != null && target.rating.toFixed(2), () => now.rating == null || target.rating == null ? 0 : target.rating - now.rating],
     ["워라밸", now.wlb, target.wlb, () => W.indexOf(now.wlb) - W.indexOf(target.wlb)],
     ["근무지", now.place, target.place, () => 0],
@@ -2128,7 +2284,12 @@ function meRefresh() {
 // 카드 안 입력 (제시 연봉·근무지)
 document.addEventListener("change", e => {
   if (!meCo) return;
-  if (e.target.id === "meOff") { (meOver[meCo.name] ||= {}).salary = Number(e.target.value) || undefined; meRefresh(); }
+  if (e.target.id === "meOff") {
+    const v = e.target.value === "" ? undefined : Number(e.target.value);
+    // 11-12 F9: 만 원 단위가 아닌 값(원 단위 65000000, 58 등)은 받지 않는다 — 전에는 '+1083233%', '무조건 가세요'가 나왔다
+    if (v !== undefined && !mePayOk(v)) { toast(`제시 연봉은 만 원 단위로 넣어 주세요 (예: 6,500만 원이면 6500 · ${won(ME_PAY_MIN)}~${won(ME_PAY_MAX)})`); e.target.value = meOver[meCo.name]?.salary || ""; return; }
+    (meOver[meCo.name] ||= {}).salary = v; meRefresh();
+  }
   if (e.target.id === "mePlace") { (meOver[meCo.name] ||= {}).place = e.target.value; meRefresh(); }
 });
 document.addEventListener("click", e => {
@@ -2209,6 +2370,18 @@ meEl("me_years").addEventListener("change", () => {
     toast("경력이 0년이라 신입·중고신입으로 바꿨어요");
   }
 });
+// 11-12 F11: 신입·중고신입 칸에 경력 4년 넘게 넣으면 경력 이직으로 넘긴다 (경력 8년을 신입 칸에 넣어 '무조건 가세요'가 나오던 것)
+meEl("me_nyears").addEventListener("change", () => {
+  const y = Number(meEl("me_nyears").value);
+  if (meKind === "new" && y > FitEngine.FIT.newbie_years_max) {
+    meEl("me_years").value = String(y);
+    if (!meEl("me_job").value) meEl("me_job").value = meEl("me_njob").value;
+    if (!meEl("me_sal").value && meEl("me_nsal").value) meEl("me_sal").value = meEl("me_nsal").value;
+    meEl("me_nyears").value = "";
+    meSetKind("career");
+    toast(`경력이 ${FitEngine.FIT.newbie_years_max}년을 넘어 '경력 이직'으로 바꿨어요`);
+  }
+});
 // 신입 스펙 등급 S~D: 엔진(FitEngine.spec)이 지원 직무 기준 무게로 계산 (5회차: 학점·직무 자격증·학위 추가)
 const meSpec = m => FitEngine.spec(m);
 // 받침 따라 조사: meJ("어학", "이", "가") → "어학이"
@@ -2235,8 +2408,15 @@ meEl("meSave").onclick = () => {
     else if (el.value.trim() && el.value !== ME_UNK) m[k] = el.value.trim();
   });
   if (m.kind === "new" && m.nstat !== "재직 중") { delete m.salary; delete m.prevSize; delete m.prevSame; }
-  const err = m.kind === "new" ? (!m.age ? "나이를 넣어 주세요." : !m.job ? "지원 직무를 넣어 주세요." : "")
-    : !m.salary ? "지금 연봉을 넣어 주세요." : m.contract > m.salary ? "계약연봉은 연봉(총액)보다 클 수 없어요. 총액에는 성과급까지 넣어 주세요." : m.years == null ? "총 경력을 넣어 주세요." : !m.job ? "직무를 넣어 주세요." : "";
+  // 11-12 F9·F11: 입력 범위 검사 (연봉은 만 원 단위, 신입 칸 경력은 4년까지)
+  const payBad = v => v != null && v !== 0 && !mePayOk(v), payMsg = k => `${k}은 만 원 단위로 넣어 주세요 (예: 5,800만 원이면 5800).`;
+  const err = (m.age != null && m.age !== 0 && (m.age < 15 || m.age > 80)) ? "만 나이를 다시 확인해 주세요."
+    : m.years > 50 ? "경력 연수를 다시 확인해 주세요."
+    : m.kind === "new" ? (!m.age ? "나이를 넣어 주세요." : !m.job ? "지원 직무를 넣어 주세요."
+      : m.years > FitEngine.FIT.newbie_years_max ? `경력이 ${FitEngine.FIT.newbie_years_max}년을 넘으면 위에서 '경력 이직'을 골라 주세요. 신입·중고신입은 경력 ${FitEngine.FIT.newbie_years_max}년까지만 봐요.`
+      : payBad(m.salary) ? payMsg("지금 연봉") : "")
+    : !m.salary ? "지금 연봉을 넣어 주세요." : payBad(m.salary) ? payMsg("연봉") : payBad(m.contract) ? payMsg("계약연봉")
+    : m.contract > m.salary ? "계약연봉은 연봉(총액)보다 클 수 없어요. 총액에는 성과급까지 넣어 주세요." : m.years == null ? "총 경력을 넣어 주세요." : !m.job ? "직무를 넣어 주세요." : "";
   if (err) { meEl("meErr").textContent = err; meEl("meErr").hidden = false; return; }
   ME = m; try { localStorage.setItem("cc-me", JSON.stringify(m)); } catch (e) {}
   // 연봉 보태기: 체크한 사람만, 같은 내용은 한 번만 보낸다
