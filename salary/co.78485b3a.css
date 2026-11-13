@@ -55,3 +55,20 @@ dd{margin:0;font-weight:800}
 .cos span{min-width:0;font-weight:700;line-height:1.35}
 .cos small{display:block;font-size:12px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cos em{font-style:normal;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pq{margin:10px 0 0;padding:0;border:0;min-width:0}
+.pq legend{padding:0;font-size:16px;font-weight:800;letter-spacing:-.02em}
+.pq div{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.pq input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.pq label{display:flex;flex-direction:column;justify-content:center;min-height:64px;box-sizing:border-box;padding:10px 14px;border:1.5px solid var(--line);border-radius:14px;font-weight:800;line-height:1.3;word-break:keep-all;overflow-wrap:anywhere;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pq label small{font-size:12px;font-weight:500;color:var(--muted)}
+.pq label:hover{border-color:var(--ink)}
+.pq .a:focus-visible~.a,.pq .b:focus-visible~.b{outline:2px solid var(--ink);outline-offset:2px}
+.pq :checked~label{pointer-events:none;color:var(--muted)}
+.pq .a:checked~.a:not(.ok),.pq .b:checked~.b:not(.ok){border-color:var(--ink);color:var(--ink)}
+.pq :checked~label.ok{background:var(--acc);border-color:var(--acc);color:#0b0b0b}
+.pq :checked~.ok small{color:#0b0b0b}
+.pq p{grid-column:1/-1;display:none;margin:4px 0 0}
+.pq :checked~p{display:block}
+.pq .y,.pq .ok:checked~p .n{display:none}
+.pq .ok:checked~p .y{display:inline}
+.pq .pills{margin-top:10px}
