@@ -4,7 +4,7 @@
 """
 import json, glob, re, sys, collections
 sys.stdout.reconfigure(encoding="utf-8")
-sys.path.insert(0, r"C:\Users\hb038\Desktop\claude-code-study\news-collector")
+sys.path.insert(0, r"C:\Users\zorr0\Desktop\Claude Code\news-collector")
 from sources import source_bonus
 
 # ---------- 제안 섹션 ----------
@@ -109,7 +109,7 @@ def classify(title, body="", src=0):
 
 
 if __name__ == "__main__":
-    days = [json.load(open(f, encoding="utf-8")) for f in sorted(glob.glob(r"C:\Users\hb038\Desktop\claude-code-study\news-collector\archive\*.json"))]
+    days = [json.load(open(f, encoding="utf-8")) for f in sorted(glob.glob(r"C:\Users\zorr0\Desktop\Claude Code\news-collector\archive\*.json"))]
     rows = []
     for d in days:
         for s in d["sections"]:

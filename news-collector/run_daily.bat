@@ -4,7 +4,7 @@ chcp 65001 >nul
 :: Notion에도 저장하려면 아래 collect_news.py 줄 끝에 --notion 을 붙이세요.
 
 cd /d "%~dp0"
-set PY="C:\Users\hb038\AppData\Local\Programs\Python\Python312\python.exe"
+set PY="C:\Users\zorr0\AppData\Local\Programs\Python\Python312\python.exe"
 set PYTHONIOENCODING=utf-8
 
 echo [%date% %time%] 수집 시작
