@@ -1,0 +1,452 @@
+{
+  "title": "CAREER BRIEFING",
+  "date": "2026-11-17",
+  "generated_at": "2026-11-17 07:55",
+  "stats": {
+    "collected": 1391,
+    "deduped": 1323,
+    "recent": 760,
+    "fresh": 719,
+    "relevant": 114,
+    "published": 20,
+    "feeds": 30,
+    "dead_feeds": [
+      "대기업 공채 OR 수시채용 OR 신입 채용",
+      "공채 일정 OR 서류 접수 OR 채용설명회",
+      "이직 OR 헤드헌팅 OR 인재 영입 경쟁",
+      "공장 신설 OR 증설 OR 인수합병 대기업"
+    ]
+  },
+  "sections": [
+    {
+      "key": "hiring",
+      "name": "채용 시즌·공고",
+      "en": "HIRING NOW",
+      "desc": "대기업·계열사·중견·외국계·공기업이 지금 사람을 뽑는 공고와 일정",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "기업들, 경력 15년 이상 베테랑 찾는다…채용공고 30%↑",
+          "lead": "(서울=연합뉴스) 강태우 기자 = 기업들이 오랜 실무 경험과 전문성을 갖춘 베테랑 인재 채용을 확대하는 것으로 나타났다.",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261116027300003",
+          "source": "연합뉴스",
+          "published": "2026-11-16 09:00",
+          "score": 23,
+          "keywords": [
+            "채용공고",
+            "채용"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "기업들, 15년 이상 베테랑 인재 찾는다 … 경력직 채용공고 30% 증가",
+              "source": "워크투데이",
+              "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE10TkxDRVoxTVdKUW93V2xibTZrZ2lZZXJNeFF2VGF5T3hFY3ZEQkdzNmRFMUtUV0x1M2EteGhfZV9YV3VjckhyODV6Wmcya203bmxua2JEN2NfbmU0MzBnYnRZakxqb3JueVZSUQ?oc=5"
+            },
+            {
+              "title": "\"15년차 이상 베테랑 모십니다\"…기업들, 시니어 경력직 채용 공고 30% 급증",
+              "source": "Queen 이코노미퀸",
+              "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE1FM09yR3FhekFvdlB5dEZFZ3ptQzkwcWNvNzFsRWgxd1pvbXN4VzBVUnVxSDZ3c1Z2MUtMamJ6MmxWUnd5UmJNTEZxWjhZNkExWDFURmdkaXctbVhvWkhrb0Y5MExucUxBcVE?oc=5"
+            },
+            {
+              "title": "경력직 채용 줄어도 베테랑은 찾는다…15년 이상 공고 64% 증가",
+              "source": "경기일보",
+              "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5TYTBlVGZEcVFpRVZVS1ZKYVdDTnRBaFZqSUI5XzZ3WlVabVpNa2lUSVRCUmZ0REVZZURqSEdzclU4UENPTjFfNTdKelg1UzRybTgyY19YaWdRUHc?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "거래소, 6월 신입사원 채용시험서 스마트안경 착용 적발",
+          "lead": "(서울=연합뉴스) 임은진 김유향 기자 = 세무사 시험 수석 합격자의 인공지능(AI) 활용 부정행위가 큰 파장을 낳고 있는 가운데 한국거래소는 올...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261116143700008",
+          "source": "연합뉴스",
+          "published": "2026-11-16 16:40",
+          "score": 21,
+          "keywords": [
+            "신입사원",
+            "채용",
+            "신입"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "우리 조직의 고질병을 고칠 사람을 찾습니다.. 박지웅 대표는 왜 이런 채용 공고를 썼을까",
+          "lead": "최근 한 채용 공고를 인상 깊게 봤습니다",
+          "summary": "박지웅 패스트트랙아시아 대표가 직접 쓴 데이원컴퍼니의 채용 공고였습니다. (참조- 아웃스탠딩 스타트업 DB - 패스트트랙아시아) (참조 - 데이원컴퍼니 고질병 치료해주실 분 찾습니다) 위 링크로 직접 보시길 추천하는데요. 요약하자면 데이원컴퍼니가",
+          "url": "https://outstanding.kr/day120261116/",
+          "source": "아웃스탠딩",
+          "published": "2026-11-16 13:01",
+          "score": 20,
+          "keywords": [
+            "채용 공고",
+            "채용"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "moves",
+      "name": "이직·연봉·HR",
+      "en": "MOVES & PAY",
+      "desc": "경력직 수요, 연봉·성과급, 희망퇴직, 평가·승진, 면접과 채용 프로세스의 변화",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "해고에도 품격이 있다?…1271명 구조조정에 쏟아진 찬사 [한명현의 오피스로그]",
+          "lead": "",
+          "summary": "",
+          "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE1GOXBEc3Zkb2NTMmJvbXhmWTMtY1psc3ozWG9CTU9xNXJicWYxd2RmQW9aRGtlT2dHNUV5SmdGb3JUTGtzX3NSV3N2X3R1UDVfN1FWQ0dvVTVvZw?oc=5",
+          "source": "한국경제",
+          "published": "2026-11-15 14:00",
+          "score": 29,
+          "keywords": [
+            "구조조정",
+            "해고"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "경력직 선호·AI 확산에…청년 근로자 46%가 비정규직",
+          "lead": "① 2026년 8월 기준 15~29세 임금근로자의 비정규직 비율이 46.1%로 2003년 이후 최고치였습니다.",
+          "summary": "② 20대 비정규직 비율은 30대보다 높았고 2003년 이후 증가 속도도 더 빨랐습니다. ③ 정규직과 비정규직의 임금 격차가 커졌으며 경력직 선호와 AI 확산이 청년 초급 일자리를 줄이고 있다고 분석됐습니다.",
+          "url": "https://www.hankookilbo.com/news/article/A2026111515110005215",
+          "source": "한국일보",
+          "published": "2026-11-15 16:05",
+          "score": 26,
+          "keywords": [
+            "경력직",
+            "경력"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "청년층 비정규직 46% ‘역대 최대’…경력직 선호·수시채용 확산에 높아진 `문턱`",
+              "source": "부산일보",
+              "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE45Z0hjdmFjMGFZbGp1YVpoZFlBdjA5U0RrUGFoamx1cDUtVks4Q2dveTYtNUFQdVkzTnFwR1RQZ0RWWG9HTVcySzl2OEpWeXZFeGg4Tl9BcG9QSk9TQUdMaEd0clhGRWxSbElzWllVdUpRTFNl?oc=5"
+            },
+            {
+              "title": "경력직 선호·수시채용 확산에 청년 비정규직 46% 달해",
+              "source": "천지일보",
+              "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE9POWVzV0JYU1A3aUJ0N0pqRkVJWnc1eXAzZkdQcHNLbWotdU9mSld0SjlGRE41QV80VUh3WEJpZE9Ca2ZfcGNaZktobU5HRm9LaDJ2dU12eUxDQkZiZGgyNHlLYW1GNUVPZ0E?oc=5"
+            },
+            {
+              "title": "경력직 선호·수시채용 확산에…‘청년 비정규직’ 46% 사상 최고",
+              "source": "이투데이",
+              "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTFB3WnhRTThzR1dheFpjLTJCTm44UktoeHMyUFZNbnBkTkNyNm1RUzVRY2NFbk9NeUhTelRBRUVIWUZYZ3F5RVJTYjQ3dVhRTDVoWUI2Qw?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "요즘 “술 퍼마시고 싶은” 주류회사 직원들···주류 시장 위축에 3개 업체 희망퇴직 실시",
+          "lead": "하이트진로와 오비맥주, 롯데칠성음료 등 국내 주요 주류업체들이 올해 모두 희망퇴직을 실시했다.",
+          "summary": "하이트진로의 올해 1~3분기 맥주 부문 매출은 5408억원, 영업이익은 177억원으로 전년 동기보다 각각 11.1%, 31.2% 감소했다. 롯데칠성의 올해 1~3분기 내수 맥주 매출은 301억원으로 전년 동기 대비 27.7% 감소했다.",
+          "url": "https://www.khan.co.kr/article/202611161705001/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news",
+          "source": "경향신문",
+          "published": "2026-11-16 17:05",
+          "score": 22,
+          "keywords": [
+            "희망퇴직",
+            "회사"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 4,
+          "title": "“입사만 하면 보너스 4000만원·휴가비 1300만원”…추천한 직원에도 같은 돈 준다는 회사",
+          "lead": "미국 기술업계에서 구조조정이 잇따르고 있지만, 인공지능(AI) 분야에서는 전문 인력을 선점하기 위한 기업들의 경쟁이 한층 뜨거워지고 있다.",
+          "summary": "일부 업체는 수천만원대 채용 장려금에 여행 경비까지 지원하며 인재 영입에 나섰다. 11일(현지시간) 월스트리트저널(WSJ)에 따르면 미국 AI 스타트업 서벌(Serval)은 올가을 엔지니어 100명을 뽑기 위해 이례적인 보상 조건을 제시했다. 서벌은 새로 합류하는 직원에게 3만달러(약 4020만원)의 입사",
+          "url": "https://www.etnews.com/20261116000509",
+          "source": "전자신문",
+          "published": "2026-11-17 06:00",
+          "score": 20,
+          "keywords": [
+            "회사"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 5,
+          "title": "비주류 된 주류시장…희망퇴직만 넘친다",
+          "lead": "하이트진로와 오비맥주, 롯데칠성음료 등 국내 주요 주류업체들이 올해 모두 희망퇴직을 실시했다.",
+          "summary": "하이트진로의 올해 1~3분기 맥주 부문 매출은 5408억원, 영업이익은 177억원으로 전년 동기보다 각각 11.1%, 31.2% 감소했다. 롯데칠성음료의 올해 1~3분기 내수 맥주 매출은 301억원으로 전년 동기 대비 27.7% 줄었다.",
+          "url": "https://www.khan.co.kr/article/202611162038015/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news",
+          "source": "경향신문",
+          "published": "2026-11-16 20:38",
+          "score": 20,
+          "keywords": [
+            "희망퇴직"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 6,
+          "title": "기업 외면받는 자율구조조정지원…1년새 40% 급감",
+          "lead": "기업 외면받는 자율구조조정지원…1년새 40% 급감, 기업 회생지원 '유명무실' 자금 상환 구체적 대안 없으면 채권자와 협의 사실상 어려워 실효성 떨어지고 낙인 효과도",
+          "summary": "",
+          "url": "https://www.hankyung.com/article/2026111601181",
+          "source": "한국경제",
+          "published": "2026-11-16 17:45",
+          "score": 20,
+          "keywords": [
+            "구조조정"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 7,
+          "title": "“노조 가입자에 노트북·갤폴드 뿌립니다”…경품에만 1억 썼다는 이 회사",
+          "lead": "삼성 초기업노조, 조합원 확보 총력전 테슬라 모델Y는 과도하단 지적에 취소",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/business/12210264",
+          "source": "매일경제",
+          "published": "2026-11-16 18:50",
+          "score": 19,
+          "keywords": [
+            "노조",
+            "회사"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "company",
+      "name": "기업·산업 레이더",
+      "en": "COMPANY WATCH",
+      "desc": "실적·적자·사업재편·증설·폐점 — 지원해도 되는 회사인지 가르는 신호",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "빗썸, 3Q 영업손실 81억원...가상자산 거래대금 감소에 적자 전환",
+          "lead": "빗썸이 올해 3분기 거래대금 감소 여파로 매출이 급감하고 영업손익과 당기순손익 모두 적자를 기록했다.",
+          "summary": "글로벌 금융시장으로의 자금 이동과 투자심리 위축 등이 겹치면서 거래 수수료 중심의 수익 구조에 부담이 커진 것으로 풀이된다.빗썸은 올해 3분기 영업손실 81억원을 기록해 적자 전환했다고 16일 밝혔다. 매출액은 594억원으로 전년 동기 대비 69.% 감소했다. 3분기 누적 매출은 2282억원으로 전년 동기 대비 56.6% 줄었으며 영업이익은 68억원에 그쳤다. 빗썸은 실적 부진의 주요 원인으로 가상자산 거래대금 감소를 꼽았다. 전",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=157411",
+          "source": "테크M",
+          "published": "2026-11-17 03:58",
+          "score": 37,
+          "keywords": [
+            "영업손실",
+            "적자"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "두나무, 3분기 영업·당기 손익 모두 적자 전환…매출 60% 감소",
+              "source": "한겨레",
+              "url": "https://www.hani.co.kr/arti/economy/finance/1287566.html"
+            },
+            {
+              "title": "온코닉 3분기 매출 170억원…연구비 증가에 적자 전환",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261116143500017"
+            },
+            {
+              "title": "올해 두나무 흑자·빗썸 적자…\"배경엔 회계기준 차이\"",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261116167600002"
+            }
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "티맵, 3Q 영업이익 33억원 2분기 연속 '흑자'...AI·데이터 기여",
+          "lead": "티맵모빌리티가 방대한 데이터와 인공지능(AI) 기술력을 기반으로 연이은 흑자 성과를 기록했다.",
+          "summary": "이러한 호실적을 바탕으로 티맵은 이익 창출 창구를 확대해 나간다는 방침이다. 16일 티맵모빌리티는 올해 3분기 연결 기준 매출 776억원, 영업이익 33억원을 기록했다고 밝혔다. 상각전영업이익(EBITDA)은 90억원이다. 매출은 전년 동기 대비 5.2%, 영업이익과 EBITDA는 모두 흑자를 기록했다. AI와 모빌리티 데이터를 앞세운 사업 전환의 성과가 영업 단계의 흑자로 입증되며, 수익성 개선을 넘어 이익 창출력이 숫자로 확인되는 단계",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=157406",
+          "source": "테크M",
+          "published": "2026-11-17 01:19",
+          "score": 36,
+          "keywords": [
+            "영업이익",
+            "흑자"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "티맵모빌리티, 3분기 영업이익 33억원…분기 기준 흑자",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261116160200017"
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "SK증권, 3분기 영업손실 38억원…전 분기 대비 적자전환",
+          "lead": "(서울=연합뉴스) 곽윤아 기자 = SK증권[001510]은 올해 3분기 38억원의 영업손실이 발생했다고 16일 공시했다.",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261116147300008",
+          "source": "연합뉴스",
+          "published": "2026-11-16 16:43",
+          "score": 36,
+          "keywords": [
+            "영업손실",
+            "적자",
+            "증권",
+            "SK"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 4,
+          "title": "SK스퀘어, 3분기 영업익 7조9406억원…4.3조원 이상 주주환원",
+          "lead": "SK스퀘어가 SK하이닉스 실적 호조에 힘입어 올해 3분기 영업이익 7조9406억원을 기록했다.",
+          "summary": "SK하이닉스 배당수입을 기반으로 최소 4조3000억원 이상을 주주에게 환원할 계획이다. 인공지능(AI)·반도체 중심으로 투자 포트폴리오 재편도 이어간다. SK스퀘어는 16일 연결재무제표 기준 3분기 매출 3048억원, 영업이익 7조9406억원, 당기순이익 12조5344억원을 기록했다고 밝혔다. SK스퀘어는 SK하이닉스의 실적 호조가 이번 실적에 반영됐",
+          "url": "https://www.etnews.com/20261116000532",
+          "source": "전자신문",
+          "published": "2026-11-16 19:07",
+          "score": 34,
+          "keywords": [
+            "영업익",
+            "SK"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "SK스퀘어, 3분기 영업익 7조9천406억원…전년 대비 3배↑",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261116117900017"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "macro",
+      "name": "고용지표·정책",
+      "en": "MACRO",
+      "desc": "통계청 고용동향, 청년고용, 최저임금·실업급여, 노동법 — 시장 전체의 온도",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "10월 청년 고용률 42.9%, 6년 만에 최저…20대 취업자 20만3000명 감소, 전체는 13만9000명↑",
+          "lead": "",
+          "summary": "",
+          "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE1lWnl1LVpnS2U1OExRZy1BWmMzcU9WV3lCRnl4YUxLVTJfRjJ3dFNnb0thdGkxREJEYWdyMXJ3b3VGYWRocERJdWk5LXo1aXk1dXBCYXdCZkNaTWhuX0tqOWQ5VzBVUlBiVFFR?oc=5",
+          "source": "ISSUE ON (이슈온)",
+          "published": "2026-11-16 10:14",
+          "score": 34,
+          "keywords": [
+            "고용률",
+            "취업자",
+            "청년 고용",
+            "고용"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "‘롯데 3세’ 신유열, 입사 6년 만에 사장 승진…그룹 경영전략 총괄",
+              "source": "한겨레",
+              "url": "https://www.hani.co.kr/arti/economy/marketing/1287567.html"
+            }
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "청년 비정규직 비율 46% '역대 최고'…취업자 수는 48개월째 감소",
+          "lead": "",
+          "summary": "",
+          "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE50ZWVsb1lWdGRvWVh0N0pYWS1sT2phSTRSUENINXVXaF8zdjg2TkU4M3cxNTJpTUZIazFJM3h0cEQtbTJKVE1hVnBUUUpCRnNpMk96RG1KWWtId1k?oc=5",
+          "source": "경기일보",
+          "published": "2026-11-15 14:57",
+          "score": 19,
+          "keywords": [
+            "취업자",
+            "정규직",
+            "비정규직",
+            "청년"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "청년 취업자 절반이 비정규직…고용 불안 ‘심화’",
+              "source": "남도일보",
+              "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5UNUhiSWo5bWk2OWwzcG93SFNHdDB3a2lQR21RRk1lWXZ3QnU0WUFLdlZFZ2QwN3QwUzJhWGoyVWc5UERRQTZYWFNLNm5xMW02cDZQdHNHRl9kNXhINDVQVjlzbi1RRmFzZjBWYtIBcEFVX3lxTE9zcDQtNWs3UGFFNUxxS090VjZCRWVfTlR2VjVZdmdEYzEwTFhUZHdielJrd2VzS29aVjQ1VUl5NUxrYUxicEdrb2ctSnJ2bXNKZ05xMlZYcEM4a3pwY2N3X3RLckVEMk1IY1NKal9FaUc?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "퇴직연금 합의는 노동입법의 교본[청계광장/이정식]",
+          "lead": "지난달 29일 정부는 2월 노사정 공동선언에서 합의한 퇴직연금 개혁의 기본 방향의 구체적 방안을 발표했다.",
+          "summary": "법 개정이 연내 이뤄지면 1년의 준비를 거쳐 2028년 100인 이상, 2029년 10~99인, 2030년 10인 미만 사업장 순으로 사외적립이 의무화된다.",
+          "url": "https://www.mt.co.kr/opinion/2026/11/17/2026111614063933803",
+          "source": "머니투데이",
+          "published": "2026-11-17 02:00",
+          "score": 16,
+          "keywords": [],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "future",
+      "name": "커리어의 변화",
+      "en": "CAREER SHIFT",
+      "desc": "AI가 바꾸는 직무, 40대 이후의 생존, 중장년 재이직, N잡과 멀티커리어",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "“노후 어쩌나, 퇴직금 잘못 받았다가 1억9000만원 손해”…김부장, 무슨 일",
+          "lead": "5억 일시금 수령 시 퇴직소득세 4500만원 떼 IRP 계좌 활용하면 실수령액 6억4142만원 ‘껑충’ 이미 일시금 받았어도 60일 내 계좌 입금 시 환급",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/economy/12209849",
+          "source": "매일경제",
+          "published": "2026-11-16 13:10",
+          "score": 27,
+          "keywords": [
+            "퇴직금"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "같은 퇴직금, 20년 뒤엔 1억6천 차이…50대 여유 있다면 ‘보증형 보험’이 대안",
+          "lead": "입사 동기인 A씨와 B씨는 지난해까지 20년간 개인형 퇴직연금에 매년 1000만원씩 납입해 운용했다.",
+          "summary": "당장 퇴직연금을 받지 않아도 될 만큼 여유가 있는 경우라면 생명보험사가 최근 선보이고 있는 '보증형 실적배당보험' 가입이 대안이 될 수 있다고 금감원은 설명했다. 보증형 실적배당보험은 실적배당형 펀드에 투자해 이익을 추구하지만 약정된 연금액을 보장하는...",
+          "url": "https://www.khan.co.kr/article/202611170600051/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news",
+          "source": "경향신문",
+          "published": "2026-11-17 06:00",
+          "score": 26,
+          "keywords": [
+            "퇴직금"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "\"월 1억 번다더니 환불도 안 돼\"…부업 강의 피해 '눈덩이'",
+          "lead": "\"하루 몇 시간만 투자하면 큰돈 벌 수 있다\", 요즘 유튜브에서 흔히 볼 수 있는 '부업 강의' 광고입니다.",
+          "summary": "그런데 이런 광고 보고 몇백만 원씩 냈다가 원하는 강의 듣지도 못하고, 환불까지 제대로 못 받는 피해가 속출하고 있습니다.",
+          "url": "https://news.sbs.co.kr/news/endPage.do?news_id=N1008846762",
+          "source": "SBS 뉴스",
+          "published": "2026-11-15 20:38",
+          "score": 20,
+          "keywords": [
+            "부업"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    }
+  ]
+}
