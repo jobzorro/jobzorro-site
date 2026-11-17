@@ -10,6 +10,7 @@
 var RW = 280, RH = 180, RGY = 158, RPX = 52;
 var RG = 1500, RJ1 = 480, RJ2 = 420, RJCUT = 290;
 var R_T1 = 48, R_T2 = 92, R_RAMP = .4;
+var R_SKY = 120;
 var R_BUF = .14, R_COY = .1;
 var R_T0 = 7 * 60 + 40, R_RATE = 70 / 72, R_DUE = 9 * 60;
 var R_VAL = { coin: 40, cash: 200, bonus: 600 };
@@ -639,11 +640,12 @@ function runStart(prac) {
   var ranked = !prac && runRanked(), seed = ranked ? 'day|' + TODAY : Date.now().toString(36) + Math.random().toString(36).slice(2, 7), P = runPlan(seed);
   if (!ranked && runMyDest()) P.dest = runMyDest();
   RIMG = rImgs(P.dest, PC.rng('runbld|' + seed));
+  R_PTR = {};
   RUN = { on: 1, ranked: ranked, seed: seed, rnd: PC.rng('runev|' + seed), dest: P.dest, wx: P.wx, slots: P.slots, seg: 0, key: 'alley', route: ['alley'], dist: 0, t: 0, el: 0, pen: 0,
     h: 0, v: 0, jumps: 0, air: 0, drop: 0, buf: 0, coy: 0, held: 0, jumpHeld: 0, jt: -9, jh: 0,
     money: 0, got: 0, hits: 0, combo: 0, maxCombo: 0, kills: 0, near: 0, esc: 0, cd: 1.8, cdn: 0, warned: 0, mini: null, card: null, seen: {}, mres: [],
     dev: runDayEv(P.wx),
-    stun: 0, slip: 0, slips: 0, left: [], bstop: 0, inv: 0, boost: 0, land: 0, lift: 0, hs: 0, acc: 0, zx: 0, blink: 0, fade: null, carry: null, nudge: 0, coast: 0, crem: 0, easeIn: 0, shake: 0, flash: 0, magnet: 0, lowg: 0, chase: 0, fever: 0, dark: 0, fx: [], dust: [], pops: [], log: [], pause: '', last: 0, raf: 0, bn: 0, step: 0 };
+    stun: 0, slip: 0, slips: 0, left: [], bstop: 0, inv: 0, nj: 0, boost: 0, land: 0, lift: 0, hs: 0, acc: 0, zx: 0, blink: 0, fade: null, carry: null, nudge: 0, coast: 0, crem: 0, easeIn: 0, shake: 0, flash: 0, magnet: 0, lowg: 0, chase: 0, fever: 0, dark: 0, fx: [], dust: [], pops: [], log: [], pause: '', last: 0, raf: 0, bn: 0, step: 0 };
   if (ranked) { var T = runTry(); T.n = runTries() + 1; T.open = 1; store.setJ('slp-runtry', T); RUN.try = T.n;
     var X0 = runRec(); RUN.ref = T.n > 1 && X0 && X0.sg ? X0.sg : null; RUN.sg = [];
     setProg('run', { tok: '', t0: Date.now() }); startDaily('run').then(function (t) { var p = prog('run'); if (p) { p.tok = t.tok; setProg('run', p); } }); }
@@ -711,9 +713,11 @@ document.addEventListener('pointerdown', function (e) {
   e.preventDefault(); RUN.py = e.clientY; RUN.pt = performance.now(); RUN.swiped = 0;
   var cv = $('rnC'), r = cv && cv.getBoundingClientRect(); var ty = r ? r.top + R_XT.t * r.width / RW : 0; RUN.tapX = r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= ty && e.clientY <= (R_XT.e ? ty + RH * r.width / RW : r.bottom) ? (e.clientX - r.left) / r.width * RW : null;
   var m = RUN.mini; if (m && m.k === 'shell' && m.p2 === 'pick' && RUN.tapX == null) return;
+  if (e.isPrimary !== false) R_PTR = {};
   R_PTR[e.pointerId] = 1;
   runPress();
 }, { passive: false });
+window.addEventListener('blur', function () { R_PTR = {}; if (RUN && RUN.on) runRelease(); });
 var R_PTR = {};
 document.addEventListener('pointermove', function (e) {
   var R = RUN; if (!runOn() || !R.held || R.swiped || R.py == null) return;
@@ -742,6 +746,7 @@ function runPress() {
   if (R.cd > 0) return;
   var m = R.mini;
   if (m) { if (m.ph !== 'play') return; if (RM[m.k].press) RM[m.k].press(R, m); if (R_MINI[m.k].nj) return; }
+  if (R.nj > 0) return;
   runJump();
 }
 function runRelease() {
@@ -837,6 +842,7 @@ function runMg(m, h, g, hot) {
 function runMiniEnd(money, pen, msg, good) {
   var R = RUN, m = R.mini; if (!m) return;
   R.mini = null; runMg(null); if (R_MINI[m.k].fr) R.easeIn = .6;
+  if (/^(chase|board|sale|elev)$/.test(m.k)) R.nj = .35;
   if (RM[m.k].prop) R.left.push({ k: m.k, m: m, x0: R.dist });
   if (money) { R.money = Math.max(0, R.money + money); }
   if (pen) R.pen += pen;
@@ -1097,6 +1103,7 @@ function runPhys(dt, M, frozen) {
   if (R.air) g *= R.jumpHeld && Math.abs(R.v) < 80 ? .6 : R.v < 0 ? 1.15 : 1;
   R.v -= g * dt; R.h += R.v * dt;
   var ce = rCeil(R, M); if (ce && R.h > ce) { R.h = ce; if (R.v > 0) R.v = -40; }
+  if (!ce && R.h > R_SKY) { R.h = R_SKY; if (R.v > 0) R.v = 0; }
   var sup = 0, so = null;
   if (!frozen && R.drop <= 0 && R.v <= 0) R.objs.forEach(function (o) {
     if (o.k !== 'plat') return; var sx = o.x - R.dist + RPX;
@@ -1109,7 +1116,8 @@ function runPhys(dt, M, frozen) {
     if (R.air && R.v < -520) { R.shake = REDUCE ? 0 : .12; for (var d = 0; d < 4; d++) R.dust.push({ x: RPX + 8 + d * 6, y: RGY - sup - 1, t: 0, vx: (d - 1.5) * 40 }); }
     if (R.air) R.land = .12;
     R.h = sup; R.v = 0; R.jumps = 0; R.air = 0; R.jumpHeld = 0;
-    if (so && so.b) { R.v = 470; R.air = 1; R.jumps = 1; sfx('jump'); return prevH; }
+
+    if (so && so.b && (R.held || R.buf > 0)) { R.buf = 0; R.v = 470; R.air = 1; R.jumps = 1; R.jumpHeld = R.held ? 1 : 0; sfx('jump'); return prevH; }
     if (R.buf > 0) runJump();
   } else {
     if (wasGround && R.v <= 0) { R.coy = R_COY; R.jumps = 0; }
@@ -1142,7 +1150,7 @@ function runStep(dt) {
     if (R.cd <= 0) { R.easeIn = .6; runBanner('GO! 🏢 ' + R.dest.n + ' · ' + R_WX[R.wx][1] + ' ' + R_WX[R.wx][0], 1800); sfx('combo'); if (R.dev) R.devAt = R.t + 1.9; }
     return;
   }
-  ['stun', 'inv', 'boost', 'shake', 'flash', 'magnet', 'lowg', 'fever', 'dark', 'drop', 'buf', 'coy', 'land', 'lift', 'blink', 'slip', 'bstop', 'easeIn'].forEach(function (k) { R[k] = Math.max(0, R[k] - dt); });
+  ['stun', 'inv', 'boost', 'shake', 'flash', 'magnet', 'lowg', 'fever', 'dark', 'drop', 'buf', 'coy', 'land', 'lift', 'blink', 'slip', 'bstop', 'easeIn', 'nj'].forEach(function (k) { R[k] = Math.max(0, R[k] - dt); });
   var zm = R.mini, ztg = zm && zm.ph === 'play' && RM[zm.k].zx && !(R_MINI[zm.k].fr && zm.k !== 'pedal' && R.h > 0) ? RM[zm.k].zx(R, zm) : 0; R.zx += (ztg - R.zx) * Math.min(1, dt * (ztg ? 9 : 14));
   var m = R.mini;
   if (m && (m.ph !== 'play' || R_MINI[m.k].fr)) {
