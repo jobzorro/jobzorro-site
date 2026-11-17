@@ -304,7 +304,9 @@ textarea { min-height:96px; resize:vertical; line-height:1.6; }
       btn.disabled = false; st.className = 'st bad';
       st.innerHTML = (msg || '전송에 실패했어요.') + ' 잠시 후 다시 시도하거나 <a href="' + CFG.kakaoOpen + '" target="_blank" rel="noopener">카카오톡 오픈프로필</a>로 "상담 신청"이라고 보내 주세요.';
     }
-    function done() { form.hidden = true; $('notice').hidden = true; $('done').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    function done() {
+      try { if (location.hostname === 'job.jobzorro.kr') fetch('https://company-api.jobzorro.workers.dev/ev', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: 'apply', n: (location.hash.slice(1).match(/^[a-z0-9-]{2,40}$/) || [''])[0] }), keepalive: true }).catch(function () {}); } catch (x) {}   // 2026-11-17 상담 신청 완료 1건 (어느 직무에서 왔는지 id만)
+      form.hidden = true; $('notice').hidden = true; $('done').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); }
     if (navigator.onLine === false) { fail(); return; }
     var ac = window.AbortController ? new AbortController() : null, timer = ac ? setTimeout(function () { ac.abort(); }, 20000) : 0;
     fetch(CFG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data), signal: ac ? ac.signal : undefined })

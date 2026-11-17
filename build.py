@@ -1060,6 +1060,24 @@ def attach_co_links(data: dict) -> int:
     return n
 
 
+def attach_cover(data: dict) -> int:
+    """2026-11-17 직무별 '이 직무 자소서 이렇게' 칸 (data/cover.json {직무id: {core, comps[5], motive, avoid, career}}) → j["cover"].
+    상세 창(template.html coverHtml)과 직무 페이지(seo.py)가 읽는다. 파일이 없으면 건너뜀."""
+    p = BASE / "data" / "cover.json"
+    if not p.exists():
+        return 0
+    cov = json.loads(p.read_text(encoding="utf-8"))
+    n = 0
+    for j in data["jobs"]:
+        c = cov.get(j["id"])
+        if c and len(c.get("comps") or []) >= 3:
+            j["cover"] = {k: c[k] for k in ("core", "comps", "motive", "avoid", "career") if k in c}
+            for x in j["cover"]["comps"]:
+                x.pop("title", None)   # 2026-11-17 사용자: 소제목 예시는 안 씀
+            n += 1
+    return n
+
+
 def attach_industries(data: dict) -> None:
     """v2 산업 축 (data/industries.json). 직무마다 j["ind"] = 산업 id 목록을 붙인다 (목록 필터·산업 허브용).
     근거 업종 문구(sources.industries)에 산업 키워드가 들어 있거나, 산업별 차이(byIndustry)·산업 전용(industryOnly)에 있으면 그 산업.
@@ -1184,6 +1202,7 @@ def build(out_dir: Path, with_news: bool) -> None:
     attach_news(data)
     attach_industries(data)
     attach_co_links(data)   # 2026-11-11: 직무 → 회사 연봉 페이지 (자료가 없으면 건너뜀)
+    attach_cover(data)      # 2026-11-17: 직무별 자소서 칸
     try:   # 직무별 처음 올린 날 (구조화 데이터 datePublished)
         seo.JOB_DATES = json.loads((BASE / "data" / "job_dates.json").read_text(encoding="utf-8")).get("dates", {})
     except (OSError, ValueError):
@@ -1460,6 +1479,8 @@ def build(out_dir: Path, with_news: bool) -> None:
                 + nav_html(JOBS, "../../", logo_nav)
                 + "<main class=\"jobpage\"><div class=\"d-body\">" + body + "</div></main>\n"
                 + footer_html("../../", logo, "") + fab_html("../../")
+                # 2026-11-17 직무 조회 기록 (상세 창과 같은 jobv, 그날 같은 사람·같은 직무는 1번)
+                + f"<script>try{{if(location.hostname==='job.jobzorro.kr')fetch('https://company-api.jobzorro.workers.dev/ev',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{k:'jobv',n:'{jid}'}}),keepalive:true}}).catch(function(){{}})}}catch(e){{}}</script>"
                 + "\n</body>\n</html>\n")
         d = out_dir / "jobs" / jid
         d.mkdir(parents=True, exist_ok=True)

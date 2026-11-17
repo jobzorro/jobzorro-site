@@ -330,6 +330,16 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
     if trans:
         h.append(sec("옮겨갈 수 있는 직무", '<ul class="trans tr-cmp">' + "".join(
             f'<li><a class="btn-link" href="../{t}/">{e(by_id[t]["name"])} →</a><a class="cmp-link" href="../../compare/?a={e(j["id"])}&amp;b={e(t)}" aria-label="{e(j["name"])}와 {e(by_id[t]["name"])} 비교">비교</a></li>' for t in trans) + "</ul>"))
+    c = j.get("cover")
+    if c:   # 2026-11-17 이 직무 자소서 칸 (template.html coverHtml 과 같은 모양)
+        h.append(sec(f"{j['name']} 자소서 이렇게",
+                     f'<p class="cov-core">인사팀이 먼저 보는 것: <mark>{e(c["core"])}</mark></p><ol class="cov-list">'
+                     + "".join(f'<li><b>{e(x["c"])}</b><p class="why">{e(x["why"])}</p><div><div class="src">' + "".join(f"<span>{e(s)}</span>" for s in x["src"]) + f'</div><p class="q">넣을 문항: {e(x["q"])}</p></div></li>' for x in c["comps"])
+                     + f'</ol><div class="cov-two"><div><h4>지원동기</h4><p>{e(c["motive"]["view"])}</p><p>{e(c["motive"]["tip"])}</p></div>'
+                     + '<div><h4>이건 피하세요</h4><ul>' + "".join(f"<li>{e(a)}</li>" for a in c["avoid"]) + '</ul></div></div>'
+                     + f'<p class="cov-career"><b>경력 이직이라면</b> {e(c["career"])}</p>'
+                     + f'<a class="more" href="../../apply/index.html#{e(j["id"])}">내 경험을 이 역량에 맞추는 건 1:1 상담에서 →</a>',
+                     "역량 하나 = 경험 하나 = 문항 하나"))
     h.append(sec("면접에서 꼭 묻는 것", li(j["interview"], "mark") + f'<a class="more" href="../../interview/#{e(j["id"])}">이 직무 단골 면접 질문 5개 →</a>'))
     if j.get("prep"):
         h.append(sec("현직자가 권하는 준비", li(j["prep"])))

@@ -197,6 +197,23 @@
 .ai-box .lvl { font-size: 12px; font-weight: 800; padding: 4px 9px; border-radius: 999px; background: var(--surface); white-space: nowrap; }
 .ai-box .lvl.l1 { color: var(--lvl1-t); } .ai-box .lvl.l2 { color: var(--lvl2-t); } .ai-box .lvl.l3 { color: var(--lvl3-t); }
 .ai-box p { font-size: 14px; color: var(--fg-soft); line-height: 1.6; }
+/* 2026-11-17 이 직무 자소서 칸 (data/cover.json → j.cover) */
+.cov-core { font-size: 15px; font-weight: 700; margin-bottom: 12px; line-height: 1.55; }
+.cov-core mark { background: linear-gradient(transparent 58%, var(--mark) 58%); color: inherit; }
+.cov-list { display: grid; gap: 0; border-top: 1px solid var(--line); counter-reset: cov; }
+.cov-list > li { display: grid; grid-template-columns: 26px 1fr; gap: 2px 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.cov-list > li::before { counter-increment: cov; content: counter(cov); font-family: var(--display); font-weight: 800; font-size: 17px; grid-row: span 3; }
+.cov-list b { font-size: 15px; }
+.cov-list .why { font-size: 14px; color: var(--fg-soft); line-height: 1.55; }
+.cov-list .src { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.cov-list .src span { font-size: 12.5px; padding: 3px 8px; border-radius: 6px; background: var(--surface-2); }
+.cov-list .q { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.cov-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.cov-two > div { padding: 12px 14px; border-radius: 10px; background: var(--surface-2); font-size: 14px; line-height: 1.55; }
+.cov-two h4 { font-size: 13px; margin: 0 0 4px; }
+.cov-two ul { margin: 0; padding-left: 16px; }
+.cov-career { font-size: 14px; margin-top: 10px; }
+@media (max-width: 560px) { .cov-two { grid-template-columns: 1fr; } }
 .src { margin-top: 26px; padding: 14px 16px; border-radius: 10px; border: 1px dashed var(--line-strong); font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; }
 .src b { color: var(--black); font-weight: 700; }
 .src ul { margin-top: 6px; display: grid; gap: 2px; }
@@ -706,6 +723,9 @@ function jzHome(DATA) {
 
   // ---- 전체 데이터 지연 로딩: 성공하면 fullById 가 채워지고 이후엔 재요청하지 않는다. 실패하면 다음 클릭 때 다시 시도.
   var FULL_URL = '/*__ROOT__*/data/jobs.json' + (META.dataVersion ? '?v=' + META.dataVersion : '');
+  // 2026-11-17 조회 기록: 회사 판단 API(/ev)에 직무 조회·결과 없는 검색어만 보냄 (쿠키·개인정보 없음, 실패해도 무시)
+  var missT = 0;
+  function track(k, n) { try { if (location.hostname !== 'job.jobzorro.kr') return; fetch('https://company-api.jobzorro.workers.dev/ev', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: k, n: n }), keepalive: true }).catch(function () {}); } catch (e) {} }
   var fullById = null, fullWaiting = null;   // fullWaiting: 응답을 기다리는 콜백 목록(동시 요청 1번으로 합침)
   function loadFull(cb) {
     if (fullById) { cb(null); return; }
@@ -936,6 +956,8 @@ function jzHome(DATA) {
     if (cut) $('grid').insertAdjacentHTML('afterend', '<button type="button" class="more-jobs" id="moreJobs">직무 ' + (list.length - PHONE_N) + '개 더 보기</button>');
     $('empty').hidden = list.length > 0;
     if (!list.length) $('empty').innerHTML = emptyHtml();
+    clearTimeout(missT);   // 검색했는데 0개면 1.5초 멈춘 뒤 검색어 하나 기록 (관리 화면 '없던 검색어')
+    if (!list.length && state.q && state.q.trim().length >= 2) { var mq = state.q.trim(); missT = setTimeout(function () { track('jmiss', mq); }, 1500); }
     var label = state.group === '전체' ? (state.track === '전체' ? '전체' : (TRACKS.filter(function (t) { return t.id === state.track; })[0] || {}).name) : gname(state.group);
     $('count').innerHTML = '<b>' + esc(label) + '</b> ' + list.length + '개 직무' + (state.q ? ' · "' + esc(state.q) + '" 검색' : '');
     favSync();
@@ -1002,6 +1024,18 @@ function jzHome(DATA) {
       return '<a href="/*__ROOT__*/' + esc(c.u) + '">' + esc(c.n) + (c.a ? ' <small>' + esc(c.a) + '</small>' : '') + '</a>';
     }).join('') + '<a class="go" href="/*__ROOT__*/salary/">연봉 연구소 →</a><a class="go" href="/*__ROOT__*/company/">이 회사 갈까? 판정 →</a></div>';
   }
+  // 2026-11-17 이 직무 자소서 칸 (seo.py cover_html 과 같은 모양)
+  function coverHtml(j) {
+    var c = j.cover;
+    return '<p class="cov-core">인사팀이 먼저 보는 것: <mark>' + esc(c.core) + '</mark></p>' +
+      '<ol class="cov-list">' + c.comps.map(function (x) {
+        return '<li><b>' + esc(x.c) + '</b><p class="why">' + esc(x.why) + '</p><div><div class="src">' + x.src.map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('') + '</div><p class="q">넣을 문항: ' + esc(x.q) + '</p></div></li>';
+      }).join('') + '</ol>' +
+      '<div class="cov-two"><div><h4>지원동기</h4><p>' + esc(c.motive.view) + '</p><p>' + esc(c.motive.tip) + '</p></div>' +
+      '<div><h4>이건 피하세요</h4><ul>' + c.avoid.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul></div></div>' +
+      '<p class="cov-career"><b>경력 이직이라면</b> ' + esc(c.career) + '</p>' +
+      '<a class="more" href="/*__ROOT__*/apply/index.html#' + j.id + '">내 경험을 이 역량에 맞추는 건 1:1 상담에서 →</a>';
+  }
   var lastFocus = null, current = null;
   function detail(j) {
     var h = '';
@@ -1044,6 +1078,7 @@ function jzHome(DATA) {
     h += sec('trans', '옮겨갈 수 있는 직무', '<div class="trans">' + j.transitions.filter(function (id) { return byId[id]; }).map(function (id) {
       return '<button type="button" data-open="' + id + '">' + esc(byId[id].name) + I.arrow + '</button>';
     }).join('') + '</div>');
+    if (j.cover) h += sec('fit', '이 직무 자소서 이렇게', coverHtml(j), '역량 하나 = 경험 하나 = 문항 하나');
     h += sec('interview', '면접에서 꼭 묻는 것', li(j.interview, 'mark') + '<a class="more" href="/*__ROOT__*/interview/#' + j.id + '">이 직무 단골 면접 질문 5개 →</a>');
     if (j.prep && j.prep.length) h += sec('certs', '현직자가 권하는 준비', li(j.prep));
     h += sec('fit', '이런 분에게 맞습니다', li(j.fit));
@@ -1095,6 +1130,7 @@ function jzHome(DATA) {
     var s = byId[id]; if (!s) return;   // 슬림 목록에 없는 id 는 무시 (해시가 잘못됐을 때 등)
     var wasOpen = !!current;
     current = id;
+    track('jobv', id);
     if (!fromHash) lastFocus = document.activeElement;
     $('dGroup').textContent = gname(s.group);
     var full = fullById && fullById[id];
