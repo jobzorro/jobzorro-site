@@ -1413,6 +1413,17 @@ def build(out_dir: Path, with_news: bool) -> None:
           .replace("/*__JOB_NAMES__*/", json.dumps(job_names, ensure_ascii=False).replace("</", "<\\/")))
     (out_dir / "apply").mkdir(exist_ok=True)
     (out_dir / "apply" / "index.html").write_text(a, encoding="utf-8")
+    # 2-2) 2026-11-17 현직자 3분 인터뷰 (jobs/voice/): company-api /voice 로 보냄, 이름·연락처 안 받음. 답은 관리 화면 '직무사전' 탭
+    _gn = {g["id"]: g["name"] for g in data["meta"]["groups"]}
+    vlist = [[j["id"], j["name"], _gn.get(j["group"], j["group"]), bool(j.get("draftOnly"))] for j in data["jobs"]]
+    v = (BASE / "template_voice.html").read_text(encoding="utf-8")
+    v = v.replace("/*__SEO__*/", seo.seo_head(base_url, "현직자 3분 인터뷰 — 취업조로 직무사전" + TITLE_TAIL, "현직자세요? 하루 일과, 몰랐던 점, 신입 준비, 면접 질문을 3분만 남겨 주세요. 익명이고 이름·연락처는 받지 않아요.", "jobs/voice/", og_apply, []))
+    v = (v.replace("/*__SHARED_CSS__*/", SHARED_CSS)
+          .replace("/*__NAV__*/", nav_html(JOBS, "../../", logo_nav))
+          .replace("/*__FOOTER__*/", footer_html("../../", logo, ""))
+          .replace("/*__JOB_LIST__*/", json.dumps(vlist, ensure_ascii=False).replace("</", "<\\/")))
+    (out_dir / "jobs" / "voice").mkdir(parents=True, exist_ok=True)
+    (out_dir / "jobs" / "voice" / "index.html").write_text(v, encoding="utf-8")
     # 개인정보처리방침
     pv = (BASE / "template_privacy.html").read_text(encoding="utf-8")
     pv = pv.replace("/*__SEO__*/", seo.seo_head(base_url, "개인정보처리방침 — 취업조로 · 커리어프로젝트 주식회사" + TITLE_TAIL, "커리어프로젝트 주식회사(취업조로)의 개인정보처리방침. 상담 신청 시 수집 항목, 목적, 보유 기간, 위탁, 정보주체의 권리.", "privacy/", og_page["privacy"], [], noindex=True))

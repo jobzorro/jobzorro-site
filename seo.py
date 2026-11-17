@@ -374,6 +374,7 @@ def render_job_body(j: dict, by_id: dict, group_name: str, updated: str, base: s
         src += "<ul>" + "".join(f'<li><a href="{e(safe_url(w["url"]))}" target="_blank" rel="noopener nofollow">{e(w["title"])}</a></li>' for w in ws[:8]) + "</ul>"
     src += f'<br><span class="upd">작성 취업조로(조현빈) · 최종 수정 {e(updated)}</span></div>'
     h.append(src)
+    h.append(f'<a class="voice-ask{" draft" if j.get("draftOnly") else ""}" href="../voice/#{e(j["id"])}"><b>{"이 직무는 아직 현직자 말이 없어요. 현직자세요?" if j.get("draftOnly") else "이 직무 현직자세요?"}</b><span>3분만 남겨 주세요 · 익명 →</span></a>')   # 2026-11-17 현직자 3분 인터뷰
     h.append('<div class="cta"><h2>이 직무로 취업·이직을 고민 중이라면</h2><p>지금 경력에서 이 직무로 가는 가장 빠른 경로를 취업조로 컨설턴트가 1:1로 정리해 드립니다.</p>'
              f'<div class="cta-row"><a class="btn ghost" href="../#{e(j["id"])}">직무 사전에서 다른 직무 보기</a><a class="btn primary" href="../../apply/index.html#{e(j["id"])}">무료 상담 신청하기 ⚡</a></div></div>')
     return "\n".join(h)

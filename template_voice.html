@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+/*__SEO__*/
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/*__SHARED_CSS__*/
+/* 2026-11-17 현직자 짧은 인터뷰 (상담 신청 페이지와 같은 문법) — 키커 + 큰 헤드라인, 번호 붙은 항목을 가는 선으로 구획, 밑줄 입력창, 라임 제출 버튼, 오른쪽 고정 안내 */
+.a-in { max-width:1320px; margin:0 auto; padding-inline:max(20px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-right, 0px)); }
+.kicker { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; gap:12px; align-items:center; }
+.kicker i { width:8px; height:8px; border-radius:50%; background:var(--acc); display:inline-block; }
+.a-hero { padding: clamp(20px, 2.6vw, 36px) 0 28px; border-bottom:1px solid var(--line); }
+.a-hero h1 { margin-top:12px; font-family:var(--display); font-weight:900; font-size:clamp(34px, 5.6vw, 80px); line-height:.98; letter-spacing:-.05em; }
+.a-hero h1 .thin { display:block; font-weight:500; font-size:.46em; letter-spacing:-.03em; color:var(--ink-soft); margin-bottom:12px; line-height:1.15; }
+.a-hero h1 .line { display:block; white-space:nowrap; max-width:100%; min-width:0; }   /* 2026-11-11: 글꼴이 늦게 와도 줄 수가 바뀌지 않게 (넘치면 data-fit 이 글자를 줄인다) */
+.a-hero h1 .mark { background:linear-gradient(transparent 68%, var(--mark) 68%); }
+.a-hero .sub { margin-top:18px; font-size:16px; color:var(--ink-soft); max-width:60ch; line-height:1.7; }
+.a-hero .jobpill { display:inline-flex; align-items:center; gap:8px; margin-top:16px; font-family:var(--display); font-size:12.5px; font-weight:700; letter-spacing:.04em; padding:8px 14px; border-radius:999px; background:var(--ink); color:var(--paper); }
+.a-hero .jobpill b { color:var(--acc); }
+.layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:48px; align-items:start; padding-top:32px; }
+.notice { padding:14px 16px; border-radius:10px; background:var(--mist); border:1px solid var(--line); font-size:14px; color:var(--ink-soft); line-height:1.6; margin-bottom:18px; }
+
+/* 항목 */
+.f { border:0; margin:0; padding:26px 0 24px; border-top:1px solid var(--ink); min-width:0; }
+.f:first-of-type { border-top:1px solid var(--ink); }
+legend { float:left; width:100%; padding:0; margin:0 0 14px; display:flex; gap:14px; align-items:baseline; font-size:16px; font-weight:700; color:var(--ink); line-height:1.45; }
+legend .num { font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.08em; color:var(--muted); flex:none; }
+legend .req { color:var(--acc-ink); background:var(--acc); font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.06em; padding:1px 7px; border-radius:999px; margin-left:auto; flex:none; }
+legend .opt { color:var(--muted); font-weight:500; font-size:13px; }
+.f > *:not(legend) { clear:both; }
+.radios { display:flex; flex-wrap:wrap; gap:8px; }
+.radio { display:inline-flex; align-items:center; gap:10px; cursor:pointer; font-size:15px; padding:10px 16px; border:1px solid var(--line-strong); border-radius:999px; color:var(--ink-soft); transition:background .15s, color .15s, border-color .15s; }
+.radio input { position:absolute; opacity:0; width:0; height:0; }
+.radio .dot { width:10px; height:10px; border-radius:50%; border:1.5px solid currentColor; }
+.radio:hover { border-color:var(--ink); color:var(--ink); }
+.radio:has(input:checked) { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.radio:has(input:checked) .dot { background:var(--acc); border-color:var(--acc); }
+input[type=text], input[type=tel], textarea { width:100%; font:inherit; font-size:17px; color:var(--ink); background:transparent; border:0; border-bottom:1.5px solid var(--line-strong); border-radius:0; padding:10px 2px; outline:none; transition:border-color .15s; }
+input[type=text]:focus, input[type=tel]:focus, textarea:focus { border-bottom-color:var(--ink); }
+textarea { min-height:96px; resize:vertical; line-height:1.6; }
+.phone { display:flex; align-items:center; gap:10px; max-width:420px; }
+.phone input { text-align:center; font-family:var(--display); font-weight:700; font-size:20px; letter-spacing:.04em; }
+.phone span { color:var(--muted); font-weight:700; }
+.sub3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; }
+.sub3 label { display:block; font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+.hint { display:block; font-size:12.5px; color:var(--muted); margin-top:8px; }
+.err { display:none; font-size:12.5px; color:#b4453a; font-weight:700; margin-top:8px; }
+.f.bad .err { display:block; }
+.f.bad input, .f.bad textarea { border-bottom-color:#b4453a; }
+.f.bad .radio { border-color:#b4453a; }
+.policy-wrap summary { cursor:pointer; font-size:13px; font-weight:700; color:var(--ink-soft); padding:10px 0; margin:-10px 0 -2px; }   /* 2026-10-29 동의 전문은 접어 둔다 */
+.policy { height:150px; overflow-y:auto; background:var(--mist); border:1px solid var(--line); color:var(--ink-soft); border-radius:10px; padding:14px 16px; font-size:12.5px; line-height:1.65; }
+.policy h4 { margin:10px 0 2px; font-size:12.5px; color:var(--ink); }
+.policy p { margin:0; }
+.policy a { color:var(--ink); }
+.consent { display:flex; align-items:center; gap:10px; min-height:40px; margin-top:8px; padding:4px 0; font-size:14.5px; font-weight:700; color:var(--ink); cursor:pointer; }
+.consent input { width:18px; height:18px; flex:none; accent-color:var(--ink); }
+.consent.opt { font-weight:500; font-size:13.5px; color:var(--ink-soft); align-items:flex-start; }
+.consent.opt input { margin-top:2px; flex:none; }
+.opt-note { margin:6px 0 0 28px; font-size:12.5px; color:var(--muted); }
+.hp { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+.submit { margin-top:12px; padding-top:24px; border-top:1px solid var(--ink); display:flex; flex-wrap:wrap; align-items:center; gap:16px; }
+.submit button { font-family:var(--display); font-weight:700; font-size:14px; letter-spacing:.06em; text-transform:uppercase; padding:18px 32px; border-radius:999px; background:var(--ink); color:var(--paper); border:0; cursor:pointer; }
+.submit button:hover { background:var(--acc); color:var(--acc-ink); }
+.submit button:disabled { opacity:.5; cursor:default; }
+.st { font-size:13.5px; color:var(--muted); } .st.bad { color:#b4453a; font-weight:700; }
+.done { padding:40px 0; border-top:1px solid var(--ink); }
+.done .big { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.done h2 { font-family:var(--display); font-size:clamp(30px, 4vw, 52px); letter-spacing:-.05em; margin-top:12px; line-height:1; }
+.done h2 .mark { background:linear-gradient(transparent 68%, var(--mark) 68%); }
+.done .done-alt { font-size:13.5px; color:var(--muted); margin-top:10px; }
+.done p { margin-top:16px; color:var(--ink-soft); font-size:15px; max-width:52ch; line-height:1.7; }
+.row2 { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
+.z-btn { display:inline-flex; align-items:center; gap:10px; font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:14px 22px; border-radius:999px; text-decoration:none; border:1px solid var(--ink); color:var(--ink); }
+.z-btn.solid { background:var(--ink); color:var(--paper); }
+.z-btn.solid:hover { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
+.z-btn:not(.solid):hover { background:var(--mist); }
+
+.sub3 select { width:100%; font:inherit; font-size:16px; color:var(--ink); background:transparent; border:0; border-bottom:1.5px solid var(--line-strong); border-radius:0; padding:10px 2px; outline:none; }
+input[type=number] { width:100%; font:inherit; font-size:17px; color:var(--ink); background:transparent; border:0; border-bottom:1.5px solid var(--line-strong); border-radius:0; padding:10px 2px; outline:none; }
+.side { position:sticky; top:calc(54px + 24px + env(safe-area-inset-top, 0px)); display:grid; gap:0; border-top:1px solid var(--ink); }
+.side > div { padding:22px 0; border-bottom:1px solid var(--line); }
+.side h3 { font-family:var(--display); font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+.side ul { margin-top:12px; display:grid; gap:8px; padding-left:18px; font-size:14px; color:var(--ink-soft); line-height:1.55; }
+.side p { margin-top:10px; font-size:14px; color:var(--ink-soft); line-height:1.6; }
+@media (max-width: 960px) { .layout { grid-template-columns:1fr; gap:32px; } .side { position:static; } .sub3 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+/*__NAV__*/
+
+<section class="a-hero">
+  <div class="a-in">
+    <div class="kicker"><i></i>Voice · 현직자 3분 인터뷰</div>
+    <h1><span class="thin">후배들이 제일 궁금한 건 현직자의 진짜 말</span><span class="line" data-fit>현직자세요? <span class="mark">3분만 남겨 주세요.</span></span></h1>
+    <p class="sub">익명이에요. 이름·연락처는 받지 않아요. 아는 것만 두 문항 이상 써 주시면 직무사전에 반영할게요.</p>
+    <span class="jobpill" id="jobPill" hidden>직무사전에서 넘어온 직무 · <b id="jobPillName"></b></span>
+  </div>
+</section>
+
+<main class="a-in">
+  <div class="layout">
+    <section>
+      <form id="voiceForm" novalidate>
+        <fieldset class="f" id="f-job">
+          <legend><span class="num">00</span>직무 · 연차 · 업종<span class="req">필수</span></legend>
+          <div class="sub3">
+            <div><label for="job">직무</label><select id="job"></select></div>
+            <div><label for="years">연차</label><input type="number" id="years" min="0" max="40" inputmode="numeric" placeholder="예: 4"></div>
+            <div><label for="ind">업종·규모 (회사명 말고)</label><input type="text" id="ind" maxlength="60" placeholder="예: 캐피탈사, 반도체 대기업"></div>
+          </div>
+          <span class="err">직무를 골라 주세요.</span>
+        </fieldset>
+        <fieldset class="f"><legend><span class="num">01</span><label for="a1">하루 일과</label><span class="opt">출근부터 퇴근까지 시간 순서로 짧게</span></legend><textarea id="a1" maxlength="800"></textarea></fieldset>
+        <fieldset class="f"><legend><span class="num">02</span><label for="a2">들어오기 전엔 몰랐던 점, 힘든 점</label></legend><textarea id="a2" maxlength="800"></textarea></fieldset>
+        <fieldset class="f"><legend><span class="num">03</span><label for="a3">신입이 준비하면 진짜 도움 되는 것</label><span class="opt">자격증·경험·공부</span></legend><textarea id="a3" maxlength="800"></textarea></fieldset>
+        <fieldset class="f"><legend><span class="num">04</span><label for="a4">면접에서 실제로 받은 질문</label></legend><textarea id="a4" maxlength="800"></textarea></fieldset>
+        <fieldset class="f" id="f-ans"><legend><span class="num">05</span><label for="a5">후배에게 한마디</label></legend><textarea id="a5" maxlength="800"></textarea>
+          <span class="err">두 문항 이상, 10자 넘게 적어 주세요.</span></fieldset>
+        <div class="submit">
+          <button type="submit" id="submitBtn">보내기 →</button>
+          <span class="st" id="status-msg"></span>
+        </div>
+      </form>
+
+      <div class="done" id="done" hidden>
+        <div class="big">Thank you</div>
+        <h2>고맙습니다! <span class="mark">잘 받았어요.</span></h2>
+        <p>실명·회사명은 가리고 업종으로 바꿔서 직무사전에 반영할게요. 다른 직무도 아시면 한 번 더 남겨 주셔도 돼요 ㅎㅎ</p>
+        <div class="row2"><a class="z-btn solid" href="./">하나 더 남기기</a><a class="z-btn" href="../">직무 사전 둘러보기</a></div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div>
+        <h3>약속</h3>
+        <ul>
+          <li>이름·연락처는 받지 않아요</li>
+          <li>회사명을 쓰셔도 반영할 때 업종으로 바꿔요</li>
+          <li>답은 취업조로가 직접 읽고 골라서 반영해요</li>
+        </ul>
+      </div>
+      <div>
+        <h3>특히 기다리는 직무</h3>
+        <p>목록 맨 위 '현직자 말이 아직 없는 직무'예요. 이 직무 현직자분은 정말 환영이에요.</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+/*__FOOTER__*/
+
+<script id="job-list" type="application/json">/*__JOB_LIST__*/</script>
+<script>
+(function () {
+  var JOBS = JSON.parse(document.getElementById('job-list').textContent);   // [[id, 이름, 직군, 초안 여부], ...]
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $('voiceForm'), sel = $('job');
+  var groups = {}, order = [], TOP = '★ 현직자 말이 아직 없는 직무';
+  JOBS.forEach(function (j) { var g = j[3] ? TOP : j[2]; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(j); });
+  order.sort(function (a, b) { return (b === TOP) - (a === TOP); });
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  sel.innerHTML = '<option value="">직무 고르기</option>' + order.map(function (g) {
+    return '<optgroup label="' + esc(g) + '">' + groups[g].map(function (j) { return '<option value="' + j[0] + '">' + esc(j[1]) + '</option>'; }).join('') + '</optgroup>';
+  }).join('') + '<option value="etc">목록에 없음</option>';
+  var hid = location.hash.slice(1), hit = JOBS.filter(function (j) { return j[0] === hid; })[0];
+  if (hit) { sel.value = hid; $('jobPillName').textContent = hit[1]; $('jobPill').hidden = false; }
+  form.addEventListener('input', function (e) { var f = e.target.closest('.f'); if (f) f.classList.remove('bad'); $('f-ans').classList.remove('bad'); });
+  form.addEventListener('change', function () { $('f-job').classList.remove('bad'); });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ans = ['a1', 'a2', 'a3', 'a4', 'a5'].map(function (id) { return $(id).value.trim(); });
+    var okJob = !!sel.value, okAns = ans.filter(function (a) { return a.length >= 10; }).length >= 2;
+    $('f-job').classList.toggle('bad', !okJob); $('f-ans').classList.toggle('bad', !okAns);
+    if (!okJob) { $('f-job').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (!okAns) { $('f-ans').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    var opt = sel.options[sel.selectedIndex];
+    var data = { job: opt.textContent, jid: sel.value === 'etc' ? '' : sel.value, years: $('years').value, ind: $('ind').value.trim() };
+    ans.forEach(function (a, i) { data['a' + (i + 1)] = a; });
+    var btn = $('submitBtn'), st = $('status-msg');
+    btn.disabled = true; st.className = 'st'; st.textContent = '보내는 중...';
+    fetch('https://company-api.jobzorro.workers.dev/voice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        if (res.ok && res.j.ok) { form.hidden = true; $('done').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+        btn.disabled = false; st.className = 'st bad'; st.textContent = (res.j && res.j.error) || '보내지 못했어요. 잠시 후 다시 눌러 주세요.';
+      })
+      .catch(function () { btn.disabled = false; st.className = 'st bad'; st.textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
+  });
+  function fit(el) { el.style.fontSize = ''; var size = parseFloat(getComputedStyle(el).fontSize), min = 22, guard = 40; var avail = Math.min(el.clientWidth, el.parentElement ? el.parentElement.clientWidth : el.clientWidth, document.documentElement.clientWidth - 32); while (el.scrollWidth > avail + 1 && size > min && guard-- > 0) { size -= 2; el.style.fontSize = size + 'px'; } }
+  function all() { document.querySelectorAll('[data-fit]').forEach(fit); }
+  all(); window.addEventListener('resize', all); if (document.fonts && document.fonts.ready) document.fonts.ready.then(all);
+})();
+</script>
+</body>
+</html>

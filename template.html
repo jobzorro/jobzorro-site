@@ -214,6 +214,10 @@
 .cov-two ul { margin: 0; padding-left: 16px; }
 .cov-career { font-size: 14px; margin-top: 10px; }
 @media (max-width: 560px) { .cov-two { grid-template-columns: 1fr; } }
+.voice-ask { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; margin: 18px 0 0; padding: 14px 16px; border-radius: 10px; border: 1px dashed var(--line-strong); text-decoration: none; color: inherit; font-size: 14.5px; }
+.voice-ask span { font-size: 13px; color: var(--muted); }
+.voice-ask.draft { border-style: solid; background: var(--surface-2); }
+.voice-ask:hover b { text-decoration: underline; text-underline-offset: 3px; }
 .src { margin-top: 26px; padding: 14px 16px; border-radius: 10px; border: 1px dashed var(--line-strong); font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; }
 .src b { color: var(--black); font-weight: 700; }
 .src ul { margin-top: 6px; display: grid; gap: 2px; }
@@ -1097,6 +1101,7 @@ function jzHome(DATA) {
       (inds.length ? '<br><b>인터뷰 현직자 업종</b> ' + esc(inds.join(', ')) : '') +
       (ws.length ? '<ul>' + ws.slice(0, 8).map(function (w) { return '<li><a href="' + esc(w.url) + '" target="_blank" rel="noopener">' + esc(w.title) + '</a></li>'; }).join('') + '</ul>' : '') +
       '</div>';
+    h += '<a class="voice-ask' + (j.draftOnly ? ' draft' : '') + '" href="/*__ROOT__*/jobs/voice/#' + j.id + '"><b>' + (j.draftOnly ? '이 직무는 아직 현직자 말이 없어요. 현직자세요?' : '이 직무 현직자세요?') + '</b><span>3분만 남겨 주세요 · 익명 →</span></a>';
     h += '<div class="cta"><h3>이 직무로 취업·이직을 고민 중이라면</h3><p>지금 경력에서 이 직무로 가는 가장 빠른 경로를 취업조로 컨설턴트가 1:1로 정리해 드립니다.</p>' +
       '<div class="cta-row"><a class="btn ghost" href="/*__ROOT__*/jobs/' + j.id + '/">이 직무 페이지 열기</a><button class="btn ghost" type="button" data-cmp="1">비교에 담기</button><button class="btn ghost fav-btn" type="button" data-fav="' + j.id + '">' + (favHas(j.id) ? '★ 저장됨' : '☆ 저장') + '</button><button class="btn ghost" type="button" data-copy="1">링크 복사</button><a class="btn primary" href="/*__ROOT__*/apply/index.html#' + j.id + '">무료 상담 신청하기 ⚡</a></div></div>';
     return h;
