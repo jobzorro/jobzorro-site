@@ -343,7 +343,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     </div>
     <dl class="stats" aria-label="연봉 연구소 자료 규모">
       <div><dt>회사</dt><dd id="stCo">52,305<small>곳</small></dd></div>
-      <div><dt>실제 연봉 검증</dt><dd id="stVal">642<small>명</small></dd></div>
+      <div><dt>실제 연봉 검증</dt><dd id="stVal">3,488<small>건</small></dd></div>
       <div class="hot"><dt>누적 연봉 조회</dt><dd id="stViews">-</dd></div>
       <div><dt>기준</dt><dd id="stYm">2026.09</dd></div>
     </dl>
@@ -526,7 +526,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   function heroFill(m) {
     var V = m.validation || {}, nf = function (v) { return (v || 0).toLocaleString('ko-KR'); };
     $('stCo').innerHTML = nf(m.count) + '<small>곳</small>';
-    $('stVal').innerHTML = nf(V.nPeople || V.nMatched) + '<small>명</small>';   // 2026-11-12: 사람 수만 (예전 3,413건 = 사람 543명 + 사업보고서·공시 회사 2,870곳을 더한 숫자)
+    $('stVal').innerHTML = nf(V.total || V.nPeople || V.nMatched) + '<small>건</small>';   // 2026-11-17 사용자: 큰 숫자 다시 (사람 + 사업보고서·공시 회사 수). 11-12~11-16 은 사람 수만 보여 줬음
     $('stYm').textContent = m.ym.replace('-', '.');
     // 2026-11-09 사용자: 회사판단연구소처럼 누적 조회, 숫자는 연봉 연구소에서 연 회사 수 (company-api /top 의 salViews)
     fetch('https://company-api.jobzorro.workers.dev/top').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
@@ -742,7 +742,7 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
       '<div class="top"><div><h2>' + esc(IDX && IDX[r.i] && IDX[r.i].al || dn(r.name)) + '</h2><div class="meta">' + esc([r.industry, r.sido, '사업자번호 앞자리 ' + r.biz6].filter(Boolean).join(' · ')) + '</div></div>' +
       '<div class="avg"><div class="v">' + man(r.bAvg) + plus + '<small>만원</small></div><div class="l">평균 연봉' + (/^(국민연금 기준|총보상 추정)$/.test(r.bSrc) ? '' : ' · ' + esc(r.bSrc)) + ' ' + gradeChip(r.dart && !dNps ? 2 : r.calAvg ? 4 : r.capped ? 1 : 0) + '</div></div></div>' +
       (r.avgNote ? '<p class="hint">' + esc(r.avgNote) + '</p>' : '') +   // 2026-11-03 평균이 직급표 밖일 때 까닭 한 줄
-      (V ? '<p class="vbadge">실제 연봉 ' + (V.nPeople || V.nMatched).toLocaleString('ko-KR') + '명 + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사로 검증 · 이직자 ' + V.nMatched + '명' + (V.nReports ? ' · 현직자 제보 ' + V.nReports + '건' : '') + (V.nMe ? ' · 회사 판단 입력 ' + V.nMe + '건' : '') + '</p>' : '') +
+      (V ? '<p class="vbadge">실제 연봉 ' + (V.total || V.nPeople || V.nMatched).toLocaleString('ko-KR') + '건으로 검증 · 이직자 ' + V.nMatched + '명' + (V.nReports ? ' + 현직자 제보 ' + V.nReports + '건' : '') + (V.nMe ? ' + 회사 판단 입력 ' + V.nMe + '건' : '') + ' + 사업보고서·공시 ' + (V.dartN || 0).toLocaleString('ko-KR') + '개사</p>' : '') +
       (r.cfN ? '<p class="hint">취업조로 경력이직 고객 <b>' + r.cfN + '명</b>의 실제 연봉으로 이 회사 직급별 금액을 보정했습니다(개인 값은 공개하지 않습니다).</p>' : '') +
       (skew ? '<p class="hint">평균 연봉에는 성과급·주식보상이 크게 들어 있어, 직급별 금액은 <b>통상 연봉(기본 + 일반 성과급)</b> 기준입니다.</p>' : '') +
       (firm ? '<p class="hint">전문직 펌이라 직급별 금액은 변호사·회계사·컨설턴트 기준에 가깝고, 지원 인력은 이보다 낮습니다.</p>' : '') +
