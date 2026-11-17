@@ -1679,15 +1679,17 @@ def build(out_dir: Path, with_news: bool) -> None:
         zn_css += ("\n.zf{--paper:var(--bg);--hairline:var(--line);--mist:var(--fill);--ink-soft:var(--soft);--font:-apple-system,BlinkMacSystemFont,\"Apple SD Gothic Neo\",system-ui,sans-serif;--display:\"Archivo\",-apple-system,BlinkMacSystemFont,\"Apple SD Gothic Neo\",system-ui,sans-serif}\n"
                    ".zf:is(html.wf *){--font:\"Noto Sans KR\",system-ui,sans-serif;--display:\"Archivo\",\"Noto Sans KR\",sans-serif}\n"
                    + "\n".join(l for l in SHARED_CSS.splitlines() if l.startswith(".zf")))
-        def add_nav(path, root):
-            h = path.read_text(encoding="utf-8")
+        def nav_text(h, root):   # 2026-11-17: 글만 고쳐 돌려준다 (회사 쪽마다 두 번 쓰던 것을 한 번으로)
             if 'class="zn"' in h:
-                return
+                return h
             h = h.replace("</style>", zn_css + "\n</style>", 1)
             h = h.replace("</body>", footer_html(root, logo, "") + "</body>", 1)
             h = h.replace("<body>", "<body>\n" + nav_html("salary/index.html", root, logo_nav), 1) if "<body>" in h else nav_html("salary/index.html", root, logo_nav) + h
-            h = h.replace("</style>", TABBAR_CSS + "</style>", 1)   # 2026-10-29 아래 탭바
-            path.write_text(h, encoding="utf-8")
+            return h.replace("</style>", TABBAR_CSS + "</style>", 1)   # 2026-10-29 아래 탭바
+        def add_nav(path, root):
+            h0 = path.read_text(encoding="utf-8"); h = nav_text(h0, root)
+            if h != h0:
+                path.write_text(h, encoding="utf-8")
         add_nav(dst / "index.html", "../")
         # 공유(카톡) 미리보기: 첫 화면은 제목·설명·이미지를 새로, 회사 페이지는 이미지만 붙인다
         si = dst / "index.html"; h = si.read_text(encoding="utf-8")
@@ -1712,8 +1714,7 @@ def build(out_dir: Path, with_news: bool) -> None:
                 p.write_text(h, encoding="utf-8")
                 n_redirect += 1
                 continue
-            add_nav(d / "index.html", "../../../")
-            h0 = h = p.read_text(encoding="utf-8")
+            h0 = h; h = nav_text(h, "../../../")
             if 'property="og:image"' not in h:
                 h = h.replace("</head>", og_tags + "</head>", 1)
             h = rebrand(h)   # 제목 꼬리표 '| 취업조로' → '| 취업이직연구소' (앞의 회사 이름·연봉은 그대로)
@@ -1726,8 +1727,7 @@ def build(out_dir: Path, with_news: bool) -> None:
         if (dst / "list" / "index.html").exists():
             for p in [dst / "list" / "index.html"] + sorted((dst / "list").glob("*/index.html")):
                 sub = p.parent.name if p.parent.name != "list" else ""
-                add_nav(p, "../../" + ("../" if sub else ""))
-                h0 = h = p.read_text(encoding="utf-8")
+                h0 = p.read_text(encoding="utf-8"); h = nav_text(h0, "../../" + ("../" if sub else ""))
                 if 'property="og:image"' not in h:
                     h = h.replace("</head>", og_tags + "</head>", 1)
                 h = rebrand(h)
@@ -1846,13 +1846,14 @@ def build(out_dir: Path, with_news: bool) -> None:
     for name in STALE_FILES:
         (out_dir / name).unlink(missing_ok=True)
     audit_links(data, BASE / "assets" / "share")
-    print(f"인앱 브라우저 → 기본 브라우저 전환: {add_inapp(out_dir)}개 페이지")
-    print(f"다크모드 지원 표시(color-scheme): {add_color_scheme(out_dir)}개 페이지")
-    print(f"윈도우 PC 만 웹 글꼴(wf 표시): {add_wf(out_dir)}개 페이지")
-    print(f"화면 끝까지(viewport-fit=cover) 맞춤: {add_viewport_fit(out_dir)}개 페이지")
-    print(f"단순화(영어 꼬리표 숨김): {add_simple(out_dir)}개 페이지")
-    print(f"앱(PWA) 설치 연결: {pwa.add_pwa(out_dir, base_url)}개 페이지 (manifest·sw.js)")
-    print(f"공통 head(글꼴 preconnect{' · 분석 ' + ANALYTICS_ID if ANALYTICS_ID else ''}): {add_head_common(out_dir)}개 페이지")
+    fin = finish_pages(out_dir, base_url)   # 2026-11-17: 아래 7가지를 쪽마다 한 번 읽고 한 번 쓰기로 (전엔 1.27만 쪽을 7번 훑어 2시간 넘게 걸림)
+    print(f"인앱 브라우저 → 기본 브라우저 전환: {fin['inapp']}개 페이지")
+    print(f"다크모드 지원 표시(color-scheme): {fin['color']}개 페이지")
+    print(f"윈도우 PC 만 웹 글꼴(wf 표시): {fin['wf']}개 페이지")
+    print(f"화면 끝까지(viewport-fit=cover) 맞춤: {fin['viewport']}개 페이지")
+    print(f"단순화(영어 꼬리표 숨김): {fin['simple']}개 페이지")
+    print(f"앱(PWA) 설치 연결: {fin['pwa']}개 페이지 (manifest·sw.js)")
+    print(f"공통 head(글꼴 preconnect{' · 분석 ' + ANALYTICS_ID if ANALYTICS_ID else ''}): {fin['head']}개 페이지")
     print(f"옛 공유 이미지 정리: {n_og}개 삭제")
     print(f"sitemap.xml(색인): URL {sum(n for _, _, n in sm_idx)}개 -> " + ", ".join(f"{fn} {n}" for fn, _, n in sm_idx))
 
@@ -1952,6 +1953,41 @@ def add_viewport_fit(out_dir: Path) -> int:
         if h2 != h:
             f.write_text(h2, encoding="utf-8"); n += 1
     return n
+
+def finish_pages(out_dir: Path, base_url: str) -> dict:
+    """마무리 7가지(인앱 전환·다크모드 표시·윈도우 글꼴·viewport-fit·단순화·앱 연결·공통 head)를 쪽마다 한 번 읽고 한 번만 쓴다 (2026-11-17).
+    전에는 add_inapp → add_color_scheme → add_wf → add_viewport_fit → add_simple → pwa.add_pwa → add_head_common 이 각각 모든 쪽을 읽고 썼다.
+    쪽 안에서 적용 순서·조건은 그때와 똑같다(결과 파일 동일). offline.html 은 전처럼 앱 설정이 새로 쓴 뒤 공통 head 만 받는다."""
+    n = dict.fromkeys(("inapp", "color", "wf", "viewport", "simple", "pwa", "head"), 0)
+    pwa_fix = pwa.setup(out_dir, base_url)   # manifest·sw.js·offline.html·favicon 쓰기
+    offline = out_dir / "offline.html"
+    for f in out_dir.rglob("*.html"):
+        h0 = h = f.read_text(encoding="utf-8")
+        rel = f.relative_to(out_dir).parts
+        if not (pwa_fix and f == offline):
+            if "data-inapp" not in h and "<head>" in h:
+                h = h.replace("<head>", "<head>\n" + INAPP_JS, 1); n["inapp"] += 1
+            if 'name="color-scheme"' not in h and "<head>" in h:
+                h = re.sub(r'(class="zn-logo"[^>]*><img src="[^"]*)teamzorro_logo\.png"', r'\1teamzorro_logo_halo.png"', h)
+                h = h.replace("<head>", '<head><meta name="color-scheme" content="light dark">', 1); n["color"] += 1
+            if "classList.add('wf')" not in h and "<head>" in h:
+                h = h.replace("<head>", "<head>" + WF_JS, 1); n["wf"] += 1
+            if 'class="zb"' in h:
+                h2 = re.sub(r'<meta name="viewport" content="(?![^"]*viewport-fit)([^"]*)">', lambda m: f'<meta name="viewport" content="{m.group(1)}, viewport-fit=cover">', h, count=1)
+                if h2 != h:
+                    h = h2; n["viewport"] += 1
+            if "data-simple" not in h and "</head>" in h:
+                h = h.replace("</head>", SIMPLE_CSS + "</head>", 1); n["simple"] += 1
+            if pwa_fix:
+                h, c = pwa_fix(rel, f.name, h); n["pwa"] += c
+        if "</head>" in h:
+            h2 = head_common(rel, h)
+            if h2 != h:
+                h = h2; n["head"] += 1
+        if h != h0:
+            f.write_text(h, encoding="utf-8")
+    return n
+
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()

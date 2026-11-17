@@ -139,6 +139,22 @@ def head_tags(root: str) -> str:
 
 def add_pwa(out_dir: Path, base_url: str) -> int:
     """사이트 루트 경로(job.jobzorro.kr 이면 '/')를 기준으로 앱 파일을 쓰고, 페이지마다 연결 태그를 넣는다. 넣은 페이지 수를 돌려준다."""
+    fix = setup(out_dir, base_url)
+    if not fix:
+        return 0
+    n = 0
+    for f in out_dir.rglob("*.html"):
+        h = f.read_text(encoding="utf-8")
+        h2, counted = fix(f.relative_to(out_dir).parts, f.name, h)
+        if h2 != h:
+            f.write_text(h2, encoding="utf-8")
+        n += counted
+    return n
+
+
+def setup(out_dir: Path, base_url: str):
+    """앱 파일(manifest·sw.js·offline.html·favicon)을 쓰고, 페이지 한 장을 고치는 함수 fix(rel_parts, name, html) -> (html, 센 쪽인지) 를 돌려준다.
+    2026-11-17: build.py 가 모든 쪽을 한 번만 읽고 쓰도록(마무리 한 번에) 쪽 고치기를 따로 떼어 냄. 아이콘이 없으면 None."""
     root = urllib.parse.urlparse(base_url).path or "/"
     if not root.endswith("/"):
         root += "/"
@@ -146,7 +162,7 @@ def add_pwa(out_dir: Path, base_url: str) -> int:
     src = BASE / "assets" / "app"
     if not (src / "icon-512.png").exists():
         print("  (assets/app/ 아이콘이 없어 앱 설정을 건너뜁니다 — python make_app_icons.py 먼저)")
-        return 0
+        return None
     shutil.copytree(src, out_dir / "assets" / "app", dirs_exist_ok=True)
 
     (out_dir / "manifest.webmanifest").write_text(json.dumps(manifest(root), ensure_ascii=False, indent=1), encoding="utf-8")
@@ -170,25 +186,21 @@ def add_pwa(out_dir: Path, base_url: str) -> int:
     except Exception as ex:
         print("favicon.ico 만들기 실패:", ex)
 
-    tags, n = head_tags(root), 0
+    tags = head_tags(root)
     apple = f'<link rel="apple-touch-icon" sizes="180x180" href="{root}assets/app/apple-180.png">'
     # 파비콘 링크가 없는 페이지(연봉·회사 상세, 뉴스 날짜 등 다른 파이프라인이 만든 것)에 넣는다
     icon = f'<link rel="icon" type="image/png" sizes="32x32" href="{root}assets/favicon-32.png">'
     has_icon = re.compile(r'<link rel="(?:shortcut )?icon"')
-    for f in out_dir.rglob("*.html"):
-        rel = f.relative_to(out_dir).parts
-        if rel[0] in SKIP or f.name == "offline.html":
-            continue
-        h = f.read_text(encoding="utf-8")
+
+    def fix(rel, name, h):
+        if rel[0] in SKIP or name == "offline.html":
+            return h, 0
         if "</head>" not in h:
-            continue
+            return h, 0
         ico = "" if has_icon.search(h) else icon
         if "data-pwa" in h:   # 이미 처리된 페이지: 파비콘만 빠졌으면 넣는다
-            if ico:
-                f.write_text(h.replace("</head>", ico + "\n</head>", 1), encoding="utf-8")
-            continue
+            return (h.replace("</head>", ico + "\n</head>", 1) if ico else h), 0
         # 아이폰 홈 화면 아이콘: 기존 파비콘(투명 여백이 많아 검은 테두리로 보임) 대신 꽉 찬 앱 아이콘
         h = re.sub(r'<link rel="apple-touch-icon"[^>]*>', "", h)
-        f.write_text(h.replace("</head>", tags + apple + ico + "\n</head>", 1), encoding="utf-8")
-        n += 1
-    return n
+        return h.replace("</head>", tags + apple + ico + "\n</head>", 1), 1
+    return fix
