@@ -1349,7 +1349,7 @@ function ac(inp, box, list, onPick) {
 
 
 
-var LAZY = {"today":"js/today.05fb3ee64b.js","sniper":"js/sniper.32405265cb.js","road":"js/road.81ad68fcc0.js","cup":"js/cup.37a5d0b472.js","run":"js/run.29eaf3e4d2.js","line":"js/line.2f6a68aea2.js"};
+var LAZY = {"today":"js/today.05fb3ee64b.js","sniper":"js/sniper.32405265cb.js","road":"js/road.81ad68fcc0.js","cup":"js/cup.37a5d0b472.js","run":"js/run.099e321620.js","line":"js/line.2f6a68aea2.js"};
 var LAZY_ST = {}, LAZY_CB = {};
 function lazyReady(k) { return !LAZY[k] || LAZY_ST[k] === 2; }
 function lazyLoad(k, cb) {
@@ -1954,6 +1954,7 @@ function lkIsOpen() { return LK.open; }
 function lkEls() { return { d: $('lkDrawer'), b: $('lkBack') }; }
 function lkOpen(push) {
   var E = lkEls(); if (!E.d) return;
+  try { if (RUN && RUN.on && !RUN.pause && RUN.pz) RUN.pz('잠깐 멈췄어요'); } catch (e) {}
   renderLook();
   if (!LK.open) {
     LK.open = true; LK.last = document.activeElement;
@@ -1996,6 +1997,7 @@ document.addEventListener('keydown', function (e) {
   document.addEventListener('touchstart', function (e) {
     if (e.touches.length !== 1) { S = null; return; }
     var t = e.touches[0], E = lkEls();
+    if (!LK.open && document.documentElement.classList.contains('rn-play')) { S = null; return; }
     if (!LK.open && innerWidth <= 640 && t.clientX >= innerWidth - EDGE) S = { mode: 'open', x0: t.clientX, y0: t.clientY, dx: 0, axis: '' };
     else if (LK.open && E.d.contains(e.target) && !(e.target.closest && e.target.closest('input, textarea, .segx'))) S = { mode: 'close', x0: t.clientX, y0: t.clientY, dx: 0, axis: '' };
     else S = null;
