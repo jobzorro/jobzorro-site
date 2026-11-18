@@ -2165,7 +2165,9 @@ function r3Zorro(R, M, m) {
   var zx0 = RPX + (R.zx || 0), hg = M.bike ? runHillH(R, R.dist + 17) : 0, tilt = hg > 0 && R.h - hg < 1.5 && !REDUCE ? Math.atan(runHillSl(R)) : 0;
   var moving = im !== RIMG.stand && im !== RIMG.hit, lean = REDUCE ? 0 : R.stun > 0 ? .16 : R.air ? Math.max(-.14, Math.min(.12, -R.v / 3600)) : moving ? -.05 - .05 * Math.min(1.6, R.spdx || 1) : 0;
   r3Spr(im, zx0 + im.width * (1 - sx2) / 2, zy + im.height * (1 - sy2), 0, { dep: 6, sx: sx2, sy: sy2, rz: tilt + (bike ? 0 : lean) });
+  R3.zr = [im, zx0 + im.width * (1 - sx2) / 2, zy + im.height * (1 - sy2), im.width * sx2, im.height * sy2];
   var BK = RIMG.obj.bike, bw = BK.width * 2, bh = BK.height * 2;
+  if (bike) R3.zb = [BK, zx0 + 2, RGY - R.h - bh, bw, bh];
   if (bike) r3Spr(BK, zx0 + 2, RGY - R.h - bh, 4.6, { sx: 2, sy: 2, dep: 1.6, rz: tilt });
   else if (onb) r3Spr(BK, zx0 - 26, RGY - R.h - bh, 2, { sx: 2, sy: -2, dep: 1.6 });
   if (R.carry && M.bike) { var ca = Math.min(1, R.carry.t / .18), cb = Math.floor(R.dist / 11) % 2, cyb = zy - bh + 6 - 4 * ca + cb, by = (RGY - R.h - bh) * (1 - ca) + cyb * ca;
@@ -2173,6 +2175,34 @@ function r3Zorro(R, M, m) {
     var sw = (R.carry.t * 2.2) % 1; r3G('#9fd3ff', zx0 - 2 - sw * 6, RGY - zy - 6 + sw * 4, 2, 2 * (1 - sw), 3 * (1 - sw), 1); r3G('#9fd3ff', zx0 + 33 + sw * 5, RGY - zy - 9 + sw * 3, 2, 2 * (1 - sw), 2 * (1 - sw), 1); }
   if (hold) { var gx = zx0 + 24, top = R.key === 'bus' ? 22 : Math.max(0, zy - 14); r3B('#9aa0a6', gx, RGY - zy - 14, 3.4, 1, zy + 14 - top, 1); r3B('#ffcf3d', gx - 2, RGY - zy - 15, 3.2, 5, 3, 1.4); }
   if (R.boost > 0 && !REDUCE) for (var a = 0; a < 5; a++) { var an = R.t * 7 + a * 1.26; r3G(a % 2 ? '#ffe27a' : '#c6ff3d', zx0 + 17 + Math.cos(an) * 20, R.h + 18 + Math.sin(an * 1.3) * 16, Math.sin(an) * 9, 2, 2, 2); }
+}
+
+
+function r3HoleBox(oc, x, y, z, w, h, d) {
+  var a = r3P(x, RGY - y - h, z), b = r3P(x + w, RGY - y, z), e = r3P(x, RGY - y - h, z + d), f = r3P(x + w, RGY - y, z + d);
+  var x0 = Math.min(a[0], e[0]), y0 = Math.min(a[1], e[1]), x1 = Math.max(b[0], f[0]), y1 = Math.max(b[1], f[1]);
+  oc.clearRect(x0, y0, x1 - x0, y1 - y0);
+}
+function r3Holes(R, M) {
+  var oc = R3.oc; if (!oc) return;
+  try {
+    var veh = rVeh(R);
+    R.objs.forEach(function (o) {
+      var sx = o.x - R.dist + RPX;
+      if (o.k === 'plat') { if (sx > RW + 40 || sx + o.w < -40) return;
+        if (veh) r3HoleBox(oc, sx, o.y - 5, -11, o.w, 5, 21);
+        else { r3HoleBox(oc, sx, o.y - 7, -12, o.w, 7, 22); for (var k = 8; k < o.w - 4; k += 56) r3HoleBox(oc, sx + k, 0, -11, 3, o.y - 7, 3); }
+        return; }
+    });
+    oc.save(); oc.globalCompositeOperation = 'destination-out'; oc.globalAlpha = 1; oc.imageSmoothingEnabled = false;
+    R.objs.forEach(function (o) {
+      if (o.k === 'plat' || o.k === 'sign' || o.k === 'belt' || o.k === 'puddle' || o.done || o.sq > 0) return;
+      var sx = o.x - R.dist + RPX; if (sx < -60 || sx > RW + 20) return;
+      var im = runImg(o); if (im) oc.drawImage(im, sx, RGY - o.y - im.height);
+    });
+    [R3.zr, R3.zb].forEach(function (q) { if (q) oc.drawImage(q[0], q[1], q[2], q[3], q[4]); });
+    oc.restore();
+  } catch (e) { try { oc.restore(); } catch (x) {} }
 }
 function r3Wx(R) {
   var t = R.t, w = R.wx, i, x, y, z, SP = 200 + R_XT.t * 1.6, N = Math.round(SP / 200 * 130), dk = R3.env.kind === 'dim' || R.dark > 0;
@@ -2223,13 +2253,13 @@ function r3Draw() {
   R.left = R.left.filter(function (L) { var sh = R.dist - L.x0; if (L.k === 'light') return !!r3Light(R, L.m, 1);
     if (sh > RW + 260) return false; r3MiniZ(L.k); c.save(); c.translate(-sh, 0); RM[L.k].prop(c, R, L.m, Math.max(1, sh)); c.restore(); r3Z(0); return true; });
   var crx = R.crem || 0, live = m && (m.ph === 'play' || m.pre);
+  R3.zr = R3.zb = null; r3Zorro(R, M, m); r3Holes(R, M);
   if (live && m.k === 'light') r3Light(R, m, 0);
   else if (live && RM[m.k].draw) { r3MiniZ(m.k); c.save(); c.translate(crx, 0); RM[m.k].draw(c, R, m); c.restore(); r3Z(0); }
   if (R.chase > 0) r3Spr(RIMG.boss, RPX - 46 + Math.sin(R.t * 3) * 6, RGY - 37 - (Math.floor(R.t * 8) % 2), -1, { dep: 6, rz: -.1 });
   var lines = (R.boost > 0 ? 6 : 0) + (R.onBelt ? 4 : 0) + Math.max(0, Math.round((R.spdx - 1.15) * 20));
   for (var k = 0; k < lines; k++) r3G('#ffffff', RW - ((R.t * 600 + k * 53) % (RW + 40)), 6 + (k * 37) % 120, -14 + (k * 7) % 32, 14 + (k % 3) * 6, .5, .5);
   R.dust.forEach(function (d, i) { var a = Math.max(.1, 1 - d.t / .35), s = 3.4 * a; r3B('#cfc6b4', d.x, RGY - d.y + d.t * 14, -3 + (i % 3) * 3, s, s, s); });
-  r3Zorro(R, M, m);
   if (/^(alley|bike|bridge|park|avenue)$/.test(R.key) || (R.key === 'bus' && !R.onBus)) r3Row(cam, 96, 26, function (x, i) { if (ih(i, 33) < .45) return; var w = 10 + ih(i, 34) * 14; r3B('#2f4a2a', x, 0, 27, w, 5, 5); r3B('#3f6a36', x + 2, 5, 28, w * .5, 3, 3); });
   if (live && RM[m.k].front) { r3MiniZ(m.k, 1); c.save(); c.translate(crx, 0); RM[m.k].front(c, R, m); c.restore(); r3Z(0); }
   R.fx.forEach(function (f) { var a = 1 - f.t / .45, s = 3 * a; r3G('#ffe27a', f.x - 1, RGY - f.y + f.t * 30, 4, s, s, s); r3G('#ffe27a', f.x - 5, RGY - f.y + f.t * 22 - 3, 2, s * .7, s * .7, s * .7); r3G('#fff3b0', f.x + 4, RGY - f.y + f.t * 26 - 2, 6, s * .7, s * .7, s * .7); });
