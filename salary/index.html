@@ -477,7 +477,8 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   var D = { meta: null }, IDX = null, idxP = null, SH = {}, CUR = null;
   var RANK_NAMES = ['사원<small class="yr">1~3년차</small>', '대리', '과장', '차장', '부장'];   // 사원 값은 고객 자료의 사원·주임(1~3년차) 평균에 맞춰져 있어 연차를 함께 적는다
   // 검색용 이름: 띄어쓰기·하이픈·법인 표기((주)·주식회사·㈜) 빼고 소문자 (2026-11-03, 회사 판단 연구소와 같은 규칙)
-  var norm = function (s) { return String(s || '').replace(/[（(]\s*주\s*[）)]|㈜|주식회사|[\s\-]/g, '').toLowerCase(); };
+  var norm = function (s) { return String(s || '').replace(/[！-～]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); }).replace(/㈜/g, '(주)')
+    .replace(/\(\s*(주|유|유한|사|재)\s*\)|주식회사|유한책임회사|유한회사|[\s\-·.,'’`]/g, '').toLowerCase(); };   // 2026-11-20 시안: (유)·유한회사·가운뎃점·마침표·전각
   // 한글 자모 맞추기 (회사 판단 연구소 검색과 같은 방식): '깅' → 기아, 'ㅅㅅㅈㅈ' → 삼성전자
   var HG = { cho: 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', jung: ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅗㅏ','ㅗㅐ','ㅗㅣ','ㅛ','ㅜ','ㅜㅓ','ㅜㅔ','ㅜㅣ','ㅠ','ㅡ','ㅡㅣ','ㅣ'],
     jong: ['','ㄱ','ㄲ','ㄱㅅ','ㄴ','ㄴㅈ','ㄴㅎ','ㄷ','ㄹ','ㄹㄱ','ㄹㅁ','ㄹㅂ','ㄹㅅ','ㄹㅌ','ㄹㅍ','ㄹㅎ','ㅁ','ㅂ','ㅂㅅ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'],
@@ -486,7 +487,57 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
     o += (c >= 0 && c < 11172) ? HG.cho[Math.floor(c / 588)] + HG.jung[Math.floor(c % 588 / 28)] + HG.jong[c % 28] : (HG.pair[ch] || ch); } return o; }
   function choOf(s) { var o = ''; for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i) - 0xac00; o += (c >= 0 && c < 11172) ? HG.cho[Math.floor(c / 588)] : s[i]; } return o; }
   // 맞춤 정도: 0 앞부분 일치 · 1 치는 중인 자모·초성으로 앞부분 일치 · 2 중간 포함 · -1 없음 (k 는 '이름|약칭|브랜드')
-  function qOf(v) { var q = norm(v); return { q: q, j: jamo(q), c: /^[ㄱ-ㅎ]+$/.test(q) }; }
+  // 2026-11-20 시안: 영문 ↔ 한글 읽기 (검색어 쪽만 바꿔 본다, 색인은 그대로)
+  // 검색어 변환 (시안 2026-11-20) — 연봉 연구소(site/index.html)와 회사 판단(template.html)에 똑같이 붙여 넣을 조각
+  // 색인은 그대로 두고 '검색어 쪽'만 바꿔 본다: 영문 → 한글 읽기(kread), 한글 읽기 → 영문(unread)
+  // company-check/fetch_rep.py 51~74줄 kread·unread 와 같은 규칙 (검색어는 이미 소문자라 소문자 기준)
+  var KREAD = { a: '에이', b: '비', c: '씨', d: '디', e: '이', f: '에프', g: '지', h: '에이치', i: '아이', j: '제이', k: '케이', l: '엘', m: '엠', n: '엔', o: '오', p: '피', q: '큐', r: '알', s: '에스', t: '티', u: '유', v: '브이', w: '더블유', x: '엑스', y: '와이', z: '지', '&': '앤' };
+  // 영문 1~5글자 묶음만 한 글자씩 읽는다 ('abc코리아' → '에이비씨코리아', 'f&f' → '에프앤에프'). 6글자 이상('google')은 단어로 보고 그대로
+  function kread(q) {
+    if (!/[a-z]/.test(q)) return '';
+    var o = q.replace(/[a-z&]+/g, function (m) { return m.replace(/&/g, '').length > 5 ? m : m.split('').map(function (c) { return KREAD[c]; }).join(''); });
+    return o === q ? '' : o;
+  }
+  var UNREAD = {}; Object.keys(KREAD).forEach(function (k) { if (k !== 'z') UNREAD[KREAD[k]] = k; });   // '지'는 g
+  var UN_T = Object.keys(UNREAD).sort(function (a, b) { return b.length - a.length; });
+  var UN_RUN = new RegExp('(?:' + UN_T.join('|') + '){2,}', 'g'), UN_TOK = new RegExp(UN_T.join('|'), 'g');
+  // 한글로 읽은 영문 글자가 2개 이상 이어진 곳만 영문으로 ('엘엑스하우시스' → 'lx하우시스', '디엘이앤씨' → 'dle&c'·'dl이앤씨'). 후보는 3개까지
+  function unread(s) {
+    var out = [], m;
+    if (s.indexOf('앤') >= 0) out = unread(s.replace(/앤/g, '엔')).slice(0, 2);   // '앤'은 & 로도 n 으로도
+    UN_RUN.lastIndex = 0;
+    while ((m = UN_RUN.exec(s))) {
+      var toks = m[0].match(UN_TOK);
+      for (var k = toks.length; k > 1; k--) {
+        if (toks[k - 1] === '앤') continue;
+        out.push(s.slice(0, m.index) + toks.slice(0, k).map(function (t) { return UNREAD[t]; }).join('') + toks.slice(k).join('') + s.slice(m.index + m[0].length));
+      }
+    }
+    return out.slice(0, 3);
+  }
+  // 검색어 q(이미 norm 을 거친 것) → 바꿔 볼 후보 [{s, u}] (u=1: 한글 → 영문 쪽, 약한 근거)
+  function qVariants(q) {
+    var out = [], seen = {}; seen[q] = 1;
+    function add(s, u) { if (s && s.length >= 2 && !seen[s]) { seen[s] = 1; out.push({ s: s, u: u }); } }
+    var k = kread(q);
+    if (k) { add(k, 0); add(k.replace(/앤/g, '엔'), 0); add(k.replace(/엔/g, '앤'), 0); }   // S&T · SNT · 에스앤티 · 에스엔티
+    if (/[가-힣]/.test(q)) {
+      unread(q).forEach(function (s) { add(s, 1); });
+      if (q.indexOf('앤') >= 0) add(q.replace(/앤/g, '엔'), 0); else if (q.indexOf('엔') >= 0 && q.length >= 4) add(q.replace(/엔/g, '앤'), 0);   // 에프앤비 ↔ 에프엔비
+    }
+    return out.slice(0, 6);
+  }
+  function qOf(v) { var q = norm(v); return { q: q, j: jamo(q), c: /^[ㄱ-ㅎ]+$/.test(q), v: qVariants(q) }; }
+  // 바꾼 검색어로 맞춰 보기: 10 이름·별칭과 똑같음 · 11 앞부분(영문 → 한글 읽기) · 12 앞부분(한글 → 영문) · 13 중간 포함(읽기 4글자 이상) · -1 없음
+  function vmatch(r, Q) {
+    var best = -1, kk = '|' + r.k + '|';
+    for (var j = 0; j < Q.v.length; j++) {
+      var v = Q.v[j], p = r.k.indexOf(v.s); if (p < 0) continue;
+      var g = kk.indexOf('|' + v.s + '|') >= 0 ? 10 : (p === 0 || r.k.indexOf('|' + v.s) >= 0) ? (v.u ? 12 : 11) : (!v.u && v.s.length >= 4 ? 13 : -1);
+      if (g > 0 && (best < 0 || g < best)) best = g;
+    }
+    return best;
+  }
   function match(r, Q) {
     var p = r.k.indexOf(Q.q);
     if (p === 0 || (p > 0 && r.k.indexOf('|' + Q.q) >= 0)) return 0;
@@ -554,26 +605,58 @@ table.ded tr.sum td { border-top:1.5px solid var(--ink); font-weight:900; }
   }).catch(function () { $('qHint').textContent = '데이터를 불러오지 못했습니다. 새로고침해 주세요.'; });
   $('q').addEventListener('focus', function () { if (D.meta) loadIndex().catch(function () {}); });
 
+  // ── 2026-11-20 시안: 못 찾은 검색어 기록 · 회사 추가 요청
+  //    개인정보가 될 수 있는 글은 보내지 않는다: 2~20자 · 이메일·주소 꼴 · 긴 숫자 · 숫자가 절반 넘는 글 · 자모만 친 글 · 사람 이름 꼴
+  var missT = 0;
+  function missOk(s) {
+    s = String(s || '').replace(/\s+/g, ' ').trim();
+    if (s.length < 2 || s.length > 20) return '';
+    if (/@|https?:|www\.|\.(com|net|kr)\b/i.test(s)) return '';
+    if (/\d{4,}/.test(s) || /\d{2,}[-.\s]\d{3,}/.test(s)) return '';
+    if ((s.match(/\d/g) || []).length * 2 > s.length) return '';
+    if (!/[가-힣a-zA-Z]{2}/.test(s)) return '';
+    if (/^(김|이|박|최|정|강|조|윤|장|임)[가-힣]{2}$/.test(s)) return '';
+    return s;
+  }
+  function track(k, n) { try { if (location.hostname !== 'job.jobzorro.kr') return; fetch('https://company-api.jobzorro.workers.dev/ev', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: k, n: n }), keepalive: true }).catch(function () {}); } catch (e) {} }
+  // 회사 추가 요청: 회사 판단의 정정 요청 길(POST /fix, 하루 5건)에 검색어만 보낸다. 연락처는 받지 않는다
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-add-co]'); if (!b) return;
+    var st = $('addSt'), n = missOk($('q').value); if (!n) return;
+    if (location.hostname !== 'job.jobzorro.kr') { st.textContent = '시안이라 아직 보내지 않습니다: ' + n; return; }
+    b.disabled = true; st.textContent = '보내는 중…';
+    fetch('https://company-api.jobzorro.workers.dev/fix', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n: n, msg: '[회사 추가 요청] 연봉 연구소 검색 결과 없음', contact: '' }) })
+      .then(function (r) { st.textContent = r.ok ? '요청을 받았어요. 가입자 30명 미만이거나 국민연금 자료에 없는 회사는 넣기 어려울 수 있어요.' : r.status === 429 ? '오늘은 요청을 더 받을 수 없어요.' : '보내지 못했어요. 잠시 뒤 다시 눌러 주세요.'; if (!r.ok) b.disabled = false; })
+      .catch(function () { st.textContent = '보내지 못했어요. 잠시 뒤 다시 눌러 주세요.'; b.disabled = false; });
+  });
+
   // ── 검색
   function search() {
     var Q = qOf($('q').value), q = Q.q;
     if (!q || !D.meta) { $('results').innerHTML = ''; return; }
     if (!IDX) { loadIndex().then(search).catch(function () {}); return; }
-    var hit = [], pre = [], exact = [], jhead = [];
+    var B = { exact: [], vx: [], pre: [], jhead: [], vk: [], hit: [], vu: [], vh: [] }, push = function (b, r) { if (b.length < 400) b.push(r); };
     for (var i = 0; i < IDX.length; i++) {
-      var r = IDX[i], p = (r.att && !/어린이집|금고|협동조합|노동조합|복지/.test(q)) ? -1 : match(r, Q);   // 부속 기관은 기관 단어로 검색할 때만
-      if (p < 0) continue;
-      if (norm(r.n) === q || (r.al && norm(r.al) === q)) exact.push(r);   // 이름이 정확히 같은 회사(지주사 '엘지' 등)는 가입자가 적어도 맨 위에
-      else if (p === 0) { if (pre.length < 400) pre.push(r); }   // 약칭·브랜드 검색어(x[5]·x[6])가 앞에서 맞아도 앞쪽에
-      else if (p === 1) { if (jhead.length < 400) jhead.push(r); }   // 치는 중인 자모·초성으로 앞부분이 맞는 회사
-      else if (hit.length < 400) hit.push(r);
+      var r = IDX[i], p = (r.att && !/어린이집|금고|협동조합|노동조합|복지/.test(q)) ? -9 : match(r, Q);   // 부속 기관은 기관 단어로 검색할 때만
+      if (p === -9) continue;
+      if (p >= 0) {
+        if (p === 0 && !r.hide && ('|' + r.k + '|').indexOf('|' + q + '|') >= 0) B.exact.push(r);   // 이름·약칭·브랜드·옛 이름 가운데 하나와 똑같으면 맨 위에 (현장 사업장 줄은 빼고)
+        else push(p === 0 ? B.pre : p === 1 ? B.jhead : B.hit, r);
+        continue;
+      }
+      if (!Q.v.length) continue;
+      var g = vmatch(r, Q);   // 2026-11-20 시안: 영문 ↔ 한글 읽기로 바꿔서 맞은 회사
+      if (g > 0) push(g === 10 ? B.vx : g === 11 ? B.vk : g === 12 ? B.vu : B.vh, r);
     }
-    var list = exact.concat(pre, jhead, hit).slice(0, 20);   // 목록은 가입자 많은 순 → 큰 회사가 먼저
+    var list = B.exact.concat(B.pre, B.jhead, B.vx, B.vk, B.hit, B.vu, B.vh).slice(0, 20);   // 목록은 가입자 많은 순 → 큰 회사가 먼저
     $('results').innerHTML = list.length ? list.map(function (r) {
       return '<button class="res' + (CUR === r.i ? ' on' : '') + '" type="button" data-i="' + r.i + '"><span class="nm">' + esc(r.al || r.n) + '</span>' +
         '<span class="sub">' + gradeChip(r.dart ? 2 : r.cal ? 4 : r.cap ? 1 : 0) + ' ' + esc([r.al ? r.n : '', r.ind, r.m.toLocaleString('ko-KR') + '명'].filter(Boolean).join(' · ')) + '</span>' +   // 칩을 앞에 둬야 긴 업종명에 잘리지 않는다
         '<span class="pay">' + man(r.avg) + (r.cap ? '<small>만원+</small>' : '<small>만원</small>') + '</span></button>';
-    }).join('') : '<p class="hint">찾는 회사가 없습니다. 가입자 30명 이상 회사만 있고, 법인명 기준이라 브랜드명과 다를 수 있습니다.</p>';
+    }).join('') : '<p class="hint">찾는 회사가 없습니다. 가입자 30명 이상 회사만 있고, 법인명 기준이라 브랜드명과 다를 수 있습니다.</p>' +
+      (missOk($('q').value) ? '<p class="hint"><button type="button" class="rep-open" data-add-co>이 회사 추가 요청하기</button> <span id="addSt" aria-live="polite"></span></p>' : '');
+    clearTimeout(missT);   // 2026-11-20 시안: 0건이면 1.5초 멈춘 뒤 검색어 하나 기록 (직무사전 jmiss 와 같은 방식)
+    if (!list.length) { var mq = missOk($('q').value); if (mq) missT = setTimeout(function () { track('smiss', mq); }, 1500); }
   }
   var tm; $('q').addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(search, 120); });
   $('q').addEventListener('compositionupdate', function () { clearTimeout(tm); tm = setTimeout(search, 120); });   // 한글 조합 중('ㄱ'→'기')에도 따라오게
