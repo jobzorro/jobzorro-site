@@ -11,7 +11,9 @@ import * as UC from "./engine/ucafe.js";
 import { portraitDataURL, randomLook } from "./portrait.js";
 import * as ST from "./store.js";
 import * as APP from "./app.js";
+import * as FX from "./fx.js";
 import { ART } from "./gen/art.js";
+import { BODY, BG } from "./gen/body.js";
 const D = E.D;
 const $app = document.getElementById("app"), $modal = document.getElementById("modal"), $toast = document.getElementById("toast");
 let S = null, SLOT = 1, META_C = {};
@@ -54,6 +56,11 @@ const P = {
   music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   baby: '<circle cx="12" cy="7" r="4"/><path d="M6 21c0-4 3-7 6-7s6 3 6 7"/><path d="M10 7h.01M14 7h.01"/>',
+  back: '<path d="M15 18l-6-6 6-6"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
+  bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',
+  pin: '<path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>',
 };
 const ic = (k, c = "currentColor") => `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${P[k] || P.spark}</svg>`;
 const ACT_IC = { rest: "bed", study_home: "book", study: "book", course: "book", workout: "gym", pt: "gym", run_crew: "run", beauty: "spark", family_time: "heart", kids_play: "heart", visit_parents: "home", drink: "glass", drink_fancy: "glass", exhibit: "spark", trend_walk: "search", book_club: "book", dating_app: "heart", network_lunch: "users", cowork: "brief", cafe_work: "brief", univ_walk: "search", house_tour: "bld", house_search: "bld", work_hard: "brief", overtime: "brief", office_chat: "msg", company_dinner: "glass", pr_search: "search", pr_visit: "search", pr_landlord: "msg", pr_appcheck: "search", pr_setup: "wrench", pr_manage: "door", pr_promo: "cam", cs_friend: "pen", cs_work: "pen", cs_blog: "pen", cs_insta: "cam", cs_youtube: "video", cs_kakao: "msg", cs_kmong: "coin", cs_soomgo: "coin", cs_flyer: "mega", cs_seminar: "mega", cs_lecture: "mega", cs_template: "pen", cs_group: "users", cs_vod: "video", rejob: "brief", sj_youtube: "video", sj_report: "book", sj_seminar: "mega", sj_interview: "msg", hb_go: "music", co_lunch: "users", co_project: "chart", co_resume: "pen", pr_meetup: "users", pr_course: "book", pr_teach: "mega", pr_club: "glass", pr_review: "cam", in_post: "cam", in_reel: "video", in_engage: "msg", in_deal: "coin", in_gong: "coin", grad_apply: "book", grad_class: "book", pr_decor: "spark", cs_focus: "pen", ab_search: "search", ab_clean: "bed", ab_photo: "cam", ab_host: "msg", ab_cohost: "users", uc_search: "search", uc_check: "wrench", uc_promo: "mega", uc_agent: "users", bg_prcon: "chart", bg_brand: "bld", bg_vip: "coin", bg_ai: "wrench" };
@@ -85,10 +92,58 @@ function artOr(key, expr, fallback) {
   if (ART_CACHE[key]) return ART_CACHE[key][i];
   const fb = fallback(); if (fb) ART_FALL.set(fb, [key, i]); artLoad(key); return fb;
 }
-function artPreload(ids) { let k = 0; for (const id of ids) setTimeout(() => artLoad(id), 40 * k++); }
-function faceSrc(id, expr = "neutral") { return artOr(id, expr, () => { try { return portraitDataURL(lookOf(id), E.CHAR[id]?.gender || "F", expr, 4); } catch (e) { return ""; } }); }
-function meSrc(expr) { return artOr(S.me.avatar, expr, () => { try { return portraitDataURL(S.me.look, S.me.gender, expr, 5); } catch (e) { return ""; } }); }
-const AVATARS = (g) => [...ART].filter((k) => k.startsWith("p" + g));
+function artPreload(ids) { let k = 0; for (const id of ids) setTimeout(() => (BODY[id] ? bodyLoad(id) : artLoad(id)), 40 * k++); }
+const BODY_IMG = {}, BODY_LD = {}, BODY_CUT = {}, BODY_WAIT = new Map();
+function bodyLoad(key) {
+  if (BODY_IMG[key] || BODY_LD[key] || !BODY[key]) return;
+  BODY_LD[key] = 1;
+  const im = new Image();
+  im.onload = () => {
+    BODY_IMG[key] = im;
+    document.querySelectorAll("img.face,img.body").forEach((el) => { const h = BODY_WAIT.get(el.getAttribute("src")); if (h && h[0] === key) { const mode = el.classList.contains("body") ? (el.closest(".sstage.half,.mestage") ? "half" : "full") : "face"; try { el.setAttribute("src", bodyCut(key, h[1], mode)); } catch (e) {} } });
+    if (ui.wiz && !S && ui.wiz.step === 1) renderWiz();
+  };
+  im.src = "img/body/" + key + ".webp";
+}
+function bodyCut(key, i, mode) {
+  const ck = key + i + mode; if (BODY_CUT[ck]) return BODY_CUT[ck];
+  const im = BODY_IMG[key], cw = im.width / 3, ch = im.height / 2, sx = (i % 3) * cw, sy = Math.floor(i / 3) * ch, k = cw / 240;
+  let x = 0, y = 0, w = cw, h = ch;
+  if (mode === "face") { const b = BODY[key][i]; x = b[0] * k; y = b[1] * k; w = h = b[2] * k; }
+  else if (mode === "half") h = Math.round(cw * 1.3);
+  const c = document.createElement("canvas"); c.width = Math.round(w); c.height = Math.round(h);
+  c.getContext("2d").drawImage(im, sx + x, sy + y, w, h, 0, 0, c.width, c.height);
+  return (BODY_CUT[ck] = c.toDataURL("image/webp", 0.9));
+}
+// 몸 그림이 있으면 그 조각, 없으면 null. 불러오는 동안에는 fallback 을 보여 주고 다 불러오면 그 자리에서 바꾼다.
+function bodyOr(key, expr, mode, fallback) {
+  if (!key || !BODY[key]) return null;
+  const i = EXI[expr] ?? 0;
+  if (BODY_IMG[key]) return bodyCut(key, i, mode);
+  bodyLoad(key); const fb = fallback(); if (fb) BODY_WAIT.set(fb, [key, i, mode]); return fb;
+}
+const pixFace = (id, expr) => () => { try { return portraitDataURL(lookOf(id), E.CHAR[id]?.gender || "F", expr, 4); } catch (e) { return ""; } };
+const pixMe = (expr) => () => { try { return portraitDataURL(S.me.look, S.me.gender, expr, 5); } catch (e) { return ""; } };
+function bodySrc(id, expr, mode) { return id === "me" ? bodyOr(S.me.avatar, expr, mode, pixMe(expr)) : bodyOr(id, expr, mode, pixFace(id, expr)); }
+// 장소 배경: 장소(spot) → 배경 그림
+const SPOT_BG = { app: "online", chat: "online", market: "online", univ: "gate" };
+const PAGE_BG = { pr: "partyroom", cs: "consult", airbnb: "airbnb", ucafe: "ucafe", co: "desk", insta: "home", grad: "library", family: "apt", hobby: "cafe" };
+function bgUrl(k) { return k && BG.has(k) ? `img/bg/${k}.webp` : ""; }
+function charSpot(id) { for (const [sp, ids] of Object.entries(S.spot || {})) if (ids.includes(id)) return SPOT_BG[sp] || sp; const c = E.CHAR[id]; if (c?.customer) return c.customer.board === "partyroom" ? "partyroom" : "consult"; return null; }
+function sceneBg(sc) {
+  const cands = [sc.kind === "wedding" ? "wedding" : null, ui.lastSpot ? SPOT_BG[ui.lastSpot] || ui.lastSpot : null, PAGE_BG[ui.page], sc.who ? charSpot(sc.who) : null, "street", "alley"];
+  for (const k of cands) if (k && BG.has(k)) return bgUrl(k);
+  return "";
+}
+// 장소 위에 사람을 세운 무대. 몸 그림이 없으면 예전처럼 얼굴 칸.
+function stageWho(id, expr, mode, bg, cap) {
+  const src = bodySrc(id, expr, mode);
+  if (!src) return null;
+  return `<div class="sstage ${mode}" style="${bg ? `background-image:url(${bg})` : ""}">${img(src, "body", "")}${cap ? `<div class="cap">${cap}</div>` : ""}</div>`;
+}
+function faceSrc(id, expr = "neutral") { return bodyOr(id, expr, "face", pixFace(id, expr)) ?? artOr(id, expr, pixFace(id, expr)); }
+function meSrc(expr) { return bodyOr(S.me.avatar, expr, "face", pixMe(expr)) ?? artOr(S.me.avatar, expr, pixMe(expr)); }
+const AVATARS = (g) => [...new Set([...Object.keys(BODY), ...ART])].filter((k) => k.startsWith("p" + g)).sort();
 const img = (src, cls = "face", alt = "") => src ? `<img class="${cls}" src="${src}" alt="${esc(alt)}">` : "";
 function exprFor(id) { const x = S.rel[id]; if (!x) return "neutral"; if (x.lover || x.spouse) return "blush"; return x.aff >= 45 ? "smile" : "neutral"; }
 function myExpr() { if (S.hp < 30 || S.mental < 25) return "sad"; if (S.mental >= 70) return "smile"; return "neutral"; }
@@ -112,6 +167,7 @@ function toast(lines, msg) {
 // ───────── 행동 실행 ─────────
 function doAct(id, arg) {
   const a = D.ACTIONS[id];
+  ui.lastSpot = Object.values(D.SPOTS).find((sp) => sp.acts.includes(id))?.id || null;
   if (a.pick && arg === undefined) return pickFor(id);
   const res = E.act(S, id, arg);
   if (!res.ok) { toast([], res.msg); return; }
@@ -195,11 +251,18 @@ function unlocked(k) {
 }
 const PAGE_N = Object.fromEntries(D.HUB.flat().map((x) => [x.k, x.n]));
 function order() { return D.HUB.flat().map((x) => x.k).filter(unlocked); }
-function go(k, dir = 0) { if (!unlocked(k)) return; ui.page = k; ui.dir = dir; if (k === "map") ui.region = null; if (k === "pr" && dir) ui.prFlow = null; render(); window.scrollTo(0, 0); }
+function go(k, dir = 0) { if (!unlocked(k)) return; if (k !== ui.page) { ui.hist = (ui.hist || []).filter((x) => x !== k); if (ui.page) ui.hist.push(ui.page); ui.hist = ui.hist.slice(-12); } ui.page = k; ui.dir = dir; if (k === "map") ui.region = null; if (k === "pr" && dir) ui.prFlow = null; render(); window.scrollTo(0, 0); }
 function step(d) { const o = order(); const i = o.indexOf(ui.page); const k = o[(i + d + o.length) % o.length]; go(k, d); }
+// 위쪽 머리줄: 왼쪽 뒤로, 가운데 지금 화면 이름, 오른쪽 전체 메뉴. 홈에서는 뒤로 대신 날짜.
 function pager() {
-  const o = order(), i = o.indexOf(ui.page), p = o[(i - 1 + o.length) % o.length], n = o[(i + 1) % o.length];
-  return `<div class="pager"><button data-swipe="-1">‹ ${esc(PAGE_N[p])}</button><button class="cur" data-hub>${ic("grid")} ${esc(PAGE_N[ui.page])}<span class="dots">${o.map((k) => `<i class="${k === ui.page ? "on" : ""}"></i>`).join("")}</span></button><button data-swipe="1">${esc(PAGE_N[n])} ›</button></div>`;
+  const home = ui.page === "home", anyNew = D.HUB.flat().some(({ k }) => unlocked(k) && !S.tileSeen?.[k]);
+  const left = home ? `<span class="pdate"></span>` : `<button class="pback" data-back>${ic("back")}뒤로</button>`;
+  return `<div class="pager">${left}<div class="cur">${ic(TILE[ui.page]?.ic || "home")}${esc(PAGE_N[ui.page] || "홈")}</div><button class="pmenu" data-hub>${ic("grid")}전체 메뉴${anyNew ? '<span class="badge">N</span>' : ""}</button></div>`;
+}
+function goBack() {
+  const h = ui.hist || [];
+  while (h.length) { const k = h.pop(); if (k !== ui.page && unlocked(k)) { ui.page = k; ui.dir = -1; if (k === "map") ui.region = null; render(); window.scrollTo(0, 0); return; } }
+  ui.page = "home"; ui.dir = -1; render(); window.scrollTo(0, 0);
 }
 function tileInfo(k) {
   if (k === "home") return `${S.year}.${S.cal}`;
@@ -218,6 +281,8 @@ function tileInfo(k) {
   if (k === "grad") return S.grad?.done ? "졸업" : `수업 ${S.grad?.n || 0}`;
   return "준비 중 18";
 }
+const TILE_NEW = { people: "cafe", map: "alley", home: "home", sj: "popup", me: "home", co: "desk", hobby: "rooftop", family: "apt", pr: "partyroom", insta: "online", airbnb: "airbnb", ucafe: "ucafe", grad: "library", cs: "consult" };
+for (const [k, b] of Object.entries(TILE_NEW)) if (TILE[k] && BG.has(b)) TILE[k].bg = `img/bg/${b}.webp`;
 function openHub() {
   const rows = D.HUB.map((row) => `<div class="hrow">${row.map(({ k, n }) => {
     const on = unlocked(k), t = TILE[k], cur = k === ui.page, isNew = on && !S.tileSeen?.[k];
@@ -225,7 +290,8 @@ function openHub() {
       <div class="tv" style="${on && t.bg ? `background-image:linear-gradient(180deg,#0e102055,#0e1020dd),url(${t.bg})` : ""}">${on ? `${ic(t.ic)}<span>${esc(tileInfo(k))}</span>` : ""}${isNew ? '<em class="nbadge">NEW</em>' : ""}</div>
       <div class="tl">${on ? "" : ic("lock", "#f5c04e")}${esc(n)}</div></button>`;
   }).join("")}</div>`).join("");
-  $modal.innerHTML = `<div class="hub"><div class="hhead"><b>화면 지도</b><span class="muted small">잠긴 곳은 인생이 진행되면 열려요 · 좌우로 밀어서 넘길 수 있어요</span><button class="x" data-hclose>✕</button></div><div class="hgrid">${rows}</div></div>`;
+  $modal.innerHTML = `<div class="hub"><div class="hhead"><b>전체 메뉴</b><span class="muted small">누르면 그 화면으로 가요 · 자물쇠는 인생이 진행되면 열려요</span><button class="btn sm" data-hset>설정</button><button class="x" data-hclose>✕</button></div><div class="hgrid">${rows}</div></div>`;
+  $modal.querySelector("[data-hset]").onclick = () => settingsWin();
   $modal.querySelector("[data-hclose]").onclick = closeWin;
   $modal.querySelectorAll("[data-hgo]").forEach((b) => b.onclick = () => { closeWin(); go(b.dataset.hgo); });
   $modal.querySelectorAll("[data-hlock]").forEach((b) => b.onclick = () => toast([], `🔒 ${PAGE_N[b.dataset.hlock]}: ${TILE[b.dataset.hlock].lock}`));
@@ -236,23 +302,39 @@ document.addEventListener("touchend", (e) => { if (!touch || !S || S.over || S.e
 function top() {
   const f = E.fireInfo(S), net = S.lastNet ?? 0, met = Object.keys(S.rel).length;
   const apPct = Math.round(S.ap / Math.max(1, S.apMax) * 100);
-  return `<div class="top"><div class="assets">
+  return `<div class="top"><button class="assets" data-money>
     <div><div class="k">현금</div><div class="v">${won(S.cash)}</div></div>
+    <div><div class="k">지난달</div><div class="v ${net >= 0 ? "good" : "bad"}">${net >= 0 ? "+" : ""}${won(net)}</div></div>
     <div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div>
-    <div><div class="k">대출</div><div class="v ${E.debt(S) ? "bad" : ""}">${won(E.debt(S))}</div></div>
-    <div><div class="k">파이어</div><div class="v ${f.ready ? "good" : ""}">${Math.round(f.ratio * 100)}%</div></div></div>
-    <div class="chips4">
-      <div><div class="k">지난달 손익</div><div class="v ${net >= 0 ? "good" : "bad"}">${net >= 0 ? "+" : ""}${won(net)}</div></div>
-      <div><div class="k">투잡 월수익</div><div class="v">${won(S.hist.at(-1)?.side || 0)}</div></div>
-      <div><div class="k">결산까지</div><div class="v">${Math.max(0, Math.ceil((D.endAge(S.me.gender) - S.age) * 12))}개월</div></div>
-      <button data-go="people"><div class="k">인물도감</div><div class="v">${met} / ${CHARS_N}</div></button></div>
-    <div class="apbar"><span class="lab">행동력</span><div class="bar"><i style="width:${apPct}%"></i></div><span class="num">${S.ap}/${S.apMax}</span><span class="hp">스태미너 <b>${Math.round(S.hp)}</b>/${Math.round(S.hpMax)}</span></div></div>`;
+    <div><div class="k">목표까지</div><div class="v ${f.ready ? "good" : ""}">${Math.round(f.ratio * 100)}%</div></div><span class="more">${ic("info")}</span></button>
+    <div class="apbar" data-apinfo><span class="lab">${ic("bolt")}이번 달 행동력</span><div class="bar"><i style="width:${apPct}%"></i></div><span class="num">${S.ap}/${S.apMax}</span><span class="hp">스태미너 <b>${Math.round(S.hp)}</b></span></div></div>`;
+}
+// 위쪽 숫자를 누르면 나오는 자세한 돈 상황
+function moneyWin() {
+  const f = E.fireInfo(S), net = S.lastNet ?? 0, left = Math.max(0, Math.ceil((D.endAge(S.me.gender) - S.age) * 12)), goal = S.fam.spouse ? 30 : 20;
+  const row = (k, v, cls = "", sub = "") => `<tr><th>${k}</th><td class="${cls}">${v}${sub ? `<div class="tiny muted">${sub}</div>` : ""}</td></tr>`;
+  openWin(`<h2>내 돈 상황 <button class="x" data-close>✕</button></h2><table class="mtab">
+    ${row("현금", won(S.cash), "", "지금 바로 쓸 수 있는 돈")}
+    ${row("지난달 손익", (net >= 0 ? "+" : "") + won(net), net >= 0 ? "good" : "bad", "월급·투잡 수입에서 생활비·이자를 뺀 돈")}
+    ${row("투잡 월수익", won(S.hist.at(-1)?.side || 0))}
+    ${row("대출", won(E.debt(S)), E.debt(S) ? "bad" : "")}
+    ${row("순자산", won(f.nw), "gold", "현금 + 투자 + 집 − 대출")}
+    ${row("목표까지", Math.round(f.ratio * 100) + "%", f.ready ? "good" : "", `목표: ${D.endAge(S.me.gender)}세까지 순자산 ${goal}억 (결혼하면 30억)`)}
+    ${row("게임 끝까지", left + "개월", "", `${D.endAge(S.me.gender)}세에 인생을 결산해요`)}
+    ${row("인물도감", `${Object.keys(S.rel).length} / ${CHARS_N}명`)}
+  </table><button class="btn" style="width:100%;margin-top:10px;padding:11px" data-mgo="me">투자·대출 하러 가기 ›</button>`, (w) => w.querySelector("[data-mgo]").onclick = () => { closeWin(); go("me"); });
+}
+function apWin() {
+  openWin(`<h2>${ic("bolt", "#f5c04e")} 행동력이 뭐예요? <button class="x" data-close>✕</button></h2><div class="intro">
+    <p>한 달에 할 수 있는 <b class="gold">행동 횟수</b>예요. 이번 달 <b class="gold">${S.ap}번</b> 남았어요.</p>
+    <p>버튼에 붙은 <b class="gold">⚡1</b>, <b class="gold">⚡2</b>는 그 행동에 드는 행동력이에요.</p>
+    <p>다 쓰면 <b>다음 달</b>을 눌러요. 남겨도 괜찮지만 다음 달로 넘어가지는 않아요.</p>
+    <p><b class="good">스태미너</b>는 체력이에요. 행동할수록 줄고, 많이 줄면 다음 달 행동력도 줄어요. 지치면 '푹 쉬기'.</p></div>`);
 }
 function nav() {
   const td = E.todos(S).filter((t) => t.lv >= 2).length;
-  const it = [["home", "홈", "home"], ["map", "지도", "map"], ["hub", "화면", "grid"], [S.sj.open ? "sj" : "co", S.sj.open ? "투잡" : "회사", S.sj.open ? "search" : "brief"], ["me", "나", "user"]];
-  const anyNew = D.HUB.flat().some(({ k }) => unlocked(k) && !S.tileSeen?.[k]);
-  return `<div class="nav"><div class="in">${it.map(([k, n, i]) => k === "hub" ? `<button class="hubbtn" data-hub>${ic(i)}${n}${anyNew ? '<span class="badge">N</span>' : ""}</button>` : `<button class="${ui.page === k ? "on" : ""}" data-go="${k}">${ic(i)}${n}${k === "home" && td ? `<span class="badge">${td}</span>` : ""}</button>`).join("")}</div></div>`;
+  const it = [["home", "홈", "home"], ["map", "지도", "map"], ["people", "사람들", "users"], [S.sj.open ? "sj" : "co", S.sj.open ? "투잡" : "회사", S.sj.open ? "search" : "brief"], ["me", "나·돈", "user"]];
+  return `<div class="nav"><div class="in">${it.map(([k, n, i]) => `<button class="${ui.page === k ? "on" : ""} ${unlocked(k) ? "" : "off"}" data-go="${k}">${ic(i)}${n}${k === "home" && td ? `<span class="badge">${td}</span>` : ""}</button>`).join("")}</div></div>`;
 }
 function meter(v, max, color) { return `<div class="meter"><i style="width:${Math.max(0, Math.min(100, v / max * 100))}%;background:${color}"></i></div>`; }
 function hearts(aff) { const n = Math.round(aff / 20); return `<span class="hearts">${"♥".repeat(n)}${"♡".repeat(5 - n)}</span>`; }
@@ -260,7 +342,9 @@ function hearts(aff) { const n = Math.round(aff / 20); return `<span class="hear
 // 홈
 function pgHome() {
   const rk = D.RANKS[S.co.rank].n, job = S.co.quit || S.co.fired ? "전업 사장님" : `${S.co.name} ${rk}`;
-  const bg = S.co.quit || S.co.fired ? "img/bg_partyroom.webp" : S.fam.spouse || [12, 1, 2].includes(S.cal) ? "img/bg_home.webp" : "img/bg_office.webp";
+  const bgk = S.co.quit || S.co.fired ? (SJ.isActive(S, "cs") && !SJ.isActive(S, "pr") ? "consult" : "partyroom") : S.fam.spouse ? "apt" : [12, 1, 2].includes(S.cal) ? "home" : "desk";
+  const bg = bgUrl(bgk) || (S.co.quit || S.co.fired ? "img/bg_partyroom.webp" : S.fam.spouse || [12, 1, 2].includes(S.cal) ? "img/bg_home.webp" : "img/bg_office.webp");
+  const heroB = bodySrc("me", myExpr(), "full");
   const ring = [];
   if (S.fam.spouse) ring.push(S.fam.spouse);
   for (const [id, x] of Object.entries(S.rel)) if (x.lover) ring.push(id);
@@ -268,7 +352,7 @@ function pgHome() {
   const { quick, locked } = quickActs();
   const places = ["co", "hobby", "sj", "pr", "cs", "insta", "airbnb", "ucafe", "grad", "family"].filter(unlocked);
   return `<div class="stage" style="background-image:url(${bg})">
-    ${img(meSrc(myExpr()), "face hero", "나")}
+    ${heroB ? img(heroB, "body hero2", "나") : img(meSrc(myExpr()), "face hero", "나")}
     <div class="when"><b>${S.year}년 ${S.cal}월</b><span>${Math.floor(S.age)}세 · ${esc(job)}</span></div>
     <div class="side">${!S.sj.active.length ? `<span>투잡 없음 · 회사원${S.sj.open ? "" : ""}</span>` : ""}${SJ.isActive(S, "pr") ? `<span>파티룸 ${S.pr.rooms.length}곳 · Lv${S.pr.lv}</span>` : ""}${SJ.isActive(S, "cs") ? `<span>컨설팅 Lv${S.cs.lv}${S.cs.open ? "" : " 준비 중"}</span>` : ""}${S.hb.joined.map((h) => `<span>${esc(D.HOBBIES[h].n)}</span>`).join("")}<span>${D.HOUSING[S.house.type]?.n || ""}</span>${S.fam.kids.length ? `<span>아이 ${S.fam.kids.length}명</span>` : ""}</div>
     <div class="lovers">${ring.map((id) => `<button data-char="${id}">${img(faceSrc(id, "blush"))}</button>`).join("")}</div>
@@ -281,12 +365,13 @@ function pgHome() {
     <div><div class="v" style="color:var(--orange)">${S.co.quit || S.co.fired ? "-" : Math.round(S.co.eye)}</div><div class="k">회사 눈치</div>${meter(S.co.eye, 100, "var(--orange)")}</div>
     <div><div class="v" style="color:var(--purple)">${S.fam.spouse ? Math.round(S.fam.happy) : Object.keys(S.rel).length}</div><div class="k">${S.fam.spouse ? "가족" : "인맥"}</div>${meter(S.fam.spouse ? S.fam.happy : Object.keys(S.rel).length, S.fam.spouse ? 100 : 40, "var(--purple)")}</div>
   </div>
-  ${td.length ? `<div class="sec">이번 달 할 일 ${td.length}</div><div class="todo">${td.map((t) => `<button class="l${t.lv}" data-todo="${esc(t.go || "")}"><span class="dot"></span><span class="grow">${esc(t.text)}</span></button>`).join("")}</div>` : ""}
-  <div class="sec">내 장소 <span class="muted small">· 화면을 좌우로 밀어도 돼요</span></div>
-  <div class="places hscroll">${places.map((k) => `<button data-go="${k}" style="background-image:linear-gradient(180deg,#0e102033,#0e1020ee),url(${TILE[k].bg})">${ic(TILE[k].ic)}<b>${esc(PAGE_N[k])}</b><span>${esc(tileInfo(k))}</span>${!S.tileSeen?.[k] ? '<em class="nbadge">NEW</em>' : ""}</button>`).join("")}<button data-hub class="more">${ic("grid")}<b>화면 지도</b><span>잠긴 곳 ${D.HUB.flat().filter(({ k }) => !unlocked(k)).length}</span></button></div>
-  <div class="sec">바로 하기</div>
-  <div class="grid4">${quick.map((id) => { const a = D.ACTIONS[id]; const why = a.pick ? null : E.canAct(S, id, defaultArg(id)); return `<button data-act="${id}" ${why && !a.pick ? `title="${esc(why)}"` : ""} style="${why && !a.pick ? "opacity:.45" : ""}">${ic(ACT_IC[id])}${esc(a.n)}<span class="ap">⚡${a.ap}</span></button>`; }).join("")}${locked.map(([id, why]) => `<button class="qlock" data-qlock="${esc(why)}">${ic("lock", "#f5c04e")}${esc(D.ACTIONS[id].n)}<span class="tiny muted">${esc(why)}</span></button>`).join("")}</div>
-  <div class="next"><button class="btn" data-go="me">${ic("chart")} 투자·대출<br><span class="gold small">${won(S.invest)}</span></button><button class="btn gold" data-end>다음 달 ${ic("next", "#2a1a00")}</button></div>`;
+  ${S.t < 4 && !S.coachOff ? `<div class="coach"><b>${ic("info")}이렇게 하면 돼요</b><ol><li><b>바로 하기</b>나 <b>지도</b>에서 행동을 골라요. 행동마다 ${ic("bolt")}행동력이 줄어요.</li><li>그림 속 <b>사람을 누르면</b> 말을 걸어 인연이 돼요.</li><li>행동력을 다 쓰면 맨 아래 <b class="gold">다음 달</b>을 눌러요.</li></ol><button class="x" data-coach>알겠어요</button></div>` : ""}
+  ${td.length ? `<div class="sec">${ic("list")}이번 달 할 일 <span class="muted small">· 누르면 그곳으로 가요</span></div><div class="todo">${td.map((t) => `<button class="l${t.lv}" data-todo="${esc(t.go || "")}"><span class="dot"></span><span class="grow">${esc(t.text)}</span>${t.go ? '<span class="arr">›</span>' : ""}</button>`).join("")}</div>` : ""}
+  <div class="sec">${ic("pin")}내 장소 <span class="muted small">· 눌러서 들어가요</span></div>
+  <div class="places hscroll">${places.map((k) => `<button data-go="${k}" style="background-image:linear-gradient(180deg,#0e102033,#0e1020ee),url(${TILE[k].bg})">${ic(TILE[k].ic)}<b>${esc(PAGE_N[k])}</b><span>${esc(tileInfo(k))}</span>${!S.tileSeen?.[k] ? '<em class="nbadge">NEW</em>' : ""}</button>`).join("")}<button data-hub class="more">${ic("grid")}<b>전체 메뉴</b><span>잠긴 곳 ${D.HUB.flat().filter(({ k }) => !unlocked(k)).length}</span></button></div>
+  <div class="sec">${ic("bolt")}바로 하기 <span class="muted small">· ⚡숫자만큼 행동력을 써요</span></div>
+  <div class="grid4">${quick.map((id) => { const a = D.ACTIONS[id]; const why = a.pick ? null : E.canAct(S, id, defaultArg(id)); return `<button data-act="${id}" class="${why ? "qno" : ""}" ${why ? `data-why="${esc(why)}"` : ""}>${ic(ACT_IC[id])}${esc(a.n)}${why ? `<span class="tiny why">${esc(why)}</span>` : `<span class="ap">⚡${a.ap}</span>`}</button>`; }).join("")}${locked.map(([id, why]) => `<button class="qlock" data-qlock="${esc(why)}">${ic("lock", "#f5c04e")}${esc(D.ACTIONS[id].n)}<span class="tiny muted">${esc(why)}</span></button>`).join("")}</div>
+  <div class="next"><button class="btn" data-go="me">${ic("chart")} 투자·대출<br><span class="gold small">${won(S.invest)}</span></button><button class="btn gold ${S.ap <= 0 ? "pulse" : ""}" data-end><span><span class="nt">다음 달 ${ic("next", "#2a1a00")}</span><small>${S.ap > 0 ? `행동력 ${S.ap} 남음` : "이번 달 끝! 넘어가요"}</small></span></button></div>`;
 }
 // 바로 하기 칸은 인생이 진행될수록 늘어난다
 function quickActs() {
@@ -321,14 +406,16 @@ function defaultArg(id) {
 }
 
 // 지도
-const REGION_BG = { town: "img/bg_home.webp", company: "img/bg_office.webp", univ: "img/keyvisual.webp", hot: "img/bg_insta.webp", officest: "img/bg_office.webp", club: "img/keyvisual.webp", online: "img/bg_insta.webp", newtown: "img/bg_home.webp", parents: "img/bg_home.webp" };
+const REGION_BG0 = { town: "img/bg_home.webp", company: "img/bg_office.webp", univ: "img/keyvisual.webp", hot: "img/bg_insta.webp", officest: "img/bg_office.webp", club: "img/keyvisual.webp", online: "img/bg_insta.webp", newtown: "img/bg_home.webp", parents: "img/bg_home.webp" };
+const REGION_NEW = { town: "cafe", company: "desk", univ: "gate", hot: "popup", officest: "alley", club: "pub", online: "online", newtown: "apt", parents: "parents" };
+const REGION_BG = new Proxy(REGION_BG0, { get: (o, k) => bgUrl(REGION_NEW[k]) || o[k] });
 const REGION_TINT = { town: "#3b2a5a", company: "#22324f", univ: "#4a2b3e", hot: "#5a2a4a", officest: "#24304a", club: "#21413a", online: "#2c2a55", newtown: "#3a3a2a", parents: "#463225" };
 function regionPeople(rg) { return rg.spots.flatMap((sp) => S.spot[sp.id] || []); }
 function pgMap() {
   if (ui.region) return pgRegion(D.REGIONS.find((r) => r.id === ui.region));
-  return `<div class="sec">지도 · 오늘 갈 곳 <span class="muted small">회사·취미는 화면 지도에 따로 있어요</span></div><div class="regions">${D.REGIONS.filter((rg) => !rg.hub).map((rg) => {
+  return `<div class="sec">${ic("map")}어디로 갈까요? <span class="muted small">· 동네를 누르면 장소와 사람이 나와요</span></div><div class="regions">${D.REGIONS.filter((rg) => !rg.hub).map((rg) => {
     const lock = rg.unlock && !rg.unlock(S); const ppl = regionPeople(rg);
-    return `<button class="region ${lock ? "lock" : ""}" data-region="${rg.id}" ${lock ? "disabled" : ""} style="background:linear-gradient(180deg,${REGION_TINT[rg.id]}cc,#0b0c1aee),url(${REGION_BG[rg.id]}) center/cover">
+    return `<button class="region ${lock ? "lock" : ""}" data-region="${rg.id}" ${lock ? "disabled" : ""} style="background:linear-gradient(180deg,${REGION_TINT[rg.id]}55,#0b0c1ae6 78%),url(${REGION_BG[rg.id]}) center/cover">
       <div class="faces">${ppl.slice(0, 4).map((id) => S.rel[id] ? img(faceSrc(id, exprFor(id))) : `<i>?</i>`).join("")}</div>
       <div class="rn">${esc(rg.n)}</div><div class="rd">${lock ? "31세 또는 결혼 후 열림" : esc(rg.desc)}</div>
       <div class="rd">${ppl.length ? `인연 ${ppl.length}명${ppl.some((id) => !S.rel[id]) ? " · 새 얼굴" : ""}` : "&nbsp;"}</div></button>`;
@@ -348,7 +435,24 @@ function actRow(id, arg, label) {
   return `<button class="actrow" data-act="${id}" ${arg !== undefined ? `data-arg="${esc(arg)}"` : ""} ${why ? `data-why="${esc(why)}" style="opacity:.5"` : ""}><div class="ic">${ic(ACT_IC[id])}</div><div class="grow"><div class="t">${esc(label || a.n)}</div><div class="d">${esc(why || a.desc)}</div><div class="chips">${actChips(id)}</div></div><span class="ap">⚡${a.ap}</span></button>`;
 }
 function visibleAct(id) { if (/^pr_/.test(id)) return SJ.isActive(S, "pr"); if (/^cs_/.test(id)) return SJ.isActive(S, "cs"); if (/^in_/.test(id)) return SJ.isActive(S, "insta"); if (/^ab_/.test(id)) return SJ.isActive(S, "airbnb"); if (/^uc_/.test(id)) return SJ.isActive(S, "ucafe"); if (id === "grad_class") return !!(S.grad && !S.grad.done); if (/^co_|work_hard|overtime|office_chat|company_dinner/.test(id)) return !(S.co.quit || S.co.fired); return true; }
-function spotBlock(sp) { const ppl = S.spot[sp.id] || []; return `<div class="spot"><div class="sh"><b>${esc(sp.n)}</b><span class="muted small">${ppl.length ? `${ppl.length}명 있음` : "오늘은 조용함"}</span></div>${ppl.length ? `<div class="people">${ppl.map(personCard).join("")}</div>` : ""}<div class="acts">${sp.acts.filter(visibleAct).map((id) => actRow(id, defaultArg(id))).join("")}</div></div>`; }
+// 장소 무대: 그 장소 그림 위에 오늘 와 있는 사람들이 서 있다. 누르면 인물 창(말 걸기).
+function personFig(id, i, n) {
+  const c = E.CHAR[id], x = S.rel[id];
+  const expr = x ? exprFor(id) : "neutral";
+  const src = bodySrc(id, expr, "full");
+  const tag = !x ? `<span class="say">말 걸기 ⚡1</span>` : x.spouse ? `<span class="say love">배우자</span>` : x.lover ? `<span class="say love">연인</span>` : `<span class="say h">${"♥".repeat(Math.max(1, Math.round(x.aff / 20)))}</span>`;
+  const fig = src ? img(src, "body", "") : `<span class="pface">${img(faceSrc(id, expr), "face", "")}</span>`;
+  return `<button class="pfig ${!x ? "new" : ""} ${src ? "" : "noart"}" data-char="${id}" style="--i:${i};--n:${n}">${fig}<span class="pn">${x ? esc(c.name) : "???"}</span>${tag}</button>`;
+}
+function placeStage(bgKey, title, ppl, sub, extraCls = "") {
+  const bg = bgUrl(SPOT_BG[bgKey] || bgKey);
+  const show = ppl.slice(0, 5);
+  return `<div class="pstage ${extraCls} ${show.length ? "" : "empty"}" style="${bg ? `background-image:url(${bg})` : ""}">
+    <div class="ptop"><b>${title}</b><span>${sub ?? (ppl.length ? `${ppl.length}명 있음` : "오늘은 조용함")}</span></div>
+    <div class="crowd">${show.map((id, i) => personFig(id, i, show.length)).join("")}</div>
+    ${ppl.length > 5 ? `<div class="more">+${ppl.length - 5}명</div>` : ""}</div>`;
+}
+function spotBlock(sp) { const ppl = S.spot[sp.id] || []; return `<div class="spot pl">${placeStage(sp.id, esc(sp.n), ppl)}<div class="acts">${sp.acts.filter(visibleAct).map((id) => actRow(id, defaultArg(id))).join("")}</div></div>`; }
 function personCard(id) {
   const c = E.CHAR[id], x = S.rel[id];
   const role = !x ? "새 얼굴" : x.spouse ? "배우자" : x.lover ? "연인" : x.helper ? (c.helper?.role || "조력자") : c.job;
@@ -356,12 +460,12 @@ function personCard(id) {
 }
 function pgRegion(rg) {
   return `<div class="row"><button class="btn sm" data-region="">‹ 지도</button><b style="font-size:17px">${esc(rg.n)}</b></div><div class="muted small">${esc(rg.desc)}</div>
-  ${rg.spots.map((sp) => { const ppl = S.spot[sp.id] || []; return `<div class="spot"><div class="sh"><b>${esc(sp.n)}</b><span class="muted small">${ppl.length ? `${ppl.length}명 있음` : "오늘은 조용함"}</span></div>
-    ${ppl.length ? `<div class="people">${ppl.map(personCard).join("")}</div>` : ""}
+  ${rg.spots.map((sp) => { const ppl = S.spot[sp.id] || []; return `<div class="spot pl">${placeStage(sp.id, esc(sp.n), ppl)}
     <div class="acts"><div class="tiny muted">${esc(sp.n)}에서 언제든</div>${sp.acts.filter(visibleAct).map((id) => actRow(id, defaultArg(id))).join("") || '<div class="tiny muted">투잡을 시작하면 여기서 할 일이 생겨요</div>'}${sp.id === "home" ? actRow("beauty") : ""}${(S.co.quit || S.co.fired) && sp.id === "cowork" ? actRow("rejob") : ""}</div></div>`; }).join("")}`;
 }
 
 // 투잡
+const SJ_BG = { pr: "partyroom", cs: "consult", insta: "online", ucafe: "ucafe", airbnb: "airbnb", coffee: "cafe", popup: "popup", shortstay: "airbnb", tutoring: "online", tistory: "home", realtyblog: "realty", chicken: "pub", bouquet: "wedding", goods: "popup", aivideo: "cowork", vibe: "cowork", webnovel: "library", thesis: "library", press: "cowork", tarot: "gallery", saju: "gallery" };
 const bool = (b, y, n) => (b ? y : n);
 function attrs(L, full) {
   const sh = (k) => L.seen?.[k] || full;
@@ -580,7 +684,8 @@ function pgSJ() {
       : f ? (j.play ? `<button class="btn sm gold" data-sjstart="${k}" ${act.length >= SJ.slots(S) ? "disabled" : ""}>시작하기</button>` : `<span class="tiny muted">다음 업데이트에서 열림</span>`)
       : `<button class="btn sm" data-act="sj_report" data-arg="${k}">리포트 ⚡1</button>`;
     const ask = !sj.know[k] && (it >= 30 || f) ? `<button class="btn sm" data-act="sj_interview" data-arg="${k}">해 본 사람에게 묻기 ⚡1</button>` : "";
-    return `<div class="sjc ${f ? "found" : ""} ${on ? "on" : ""} ${j.play ? "" : "soon"}"><div class="row"><span class="ic">${ic(j.ic)}</span><div class="grow"><b>${esc(j.n)}</b> <span class="tag">${esc(j.type)}</span>${j.play ? "" : ' <span class="tag">준비 중</span>'}</div>${fg ? `<span class="fit g${fg.g}">궁합 ${fg.g}</span>` : ""}</div>
+    const ban = SJ_BG[k] && bgUrl(SJ_BG[k]);
+    return `<div class="sjc ${f ? "found" : ""} ${on ? "on" : ""} ${j.play ? "" : "soon"}">${ban ? `<div class="sjban" style="background-image:url(${ban})"></div>` : ""}<div class="row"><span class="ic">${ic(j.ic)}</span><div class="grow"><b>${esc(j.n)}</b> <span class="tag">${esc(j.type)}</span>${j.play ? "" : ' <span class="tag">준비 중</span>'}</div>${fg ? `<span class="fit g${fg.g}">궁합 ${fg.g}</span>` : ""}</div>
       ${f ? `<div class="tiny">${esc(j.inc)} · ${esc(j.hours)} · 자본 ${esc(j.cap)}</div><div class="tiny muted">"${esc(j.line)}"</div>` : `<div class="tiny muted">관심 ${it}/100 · 단서: ${esc(j.hint)}</div>${meter(it, 100, "var(--gold)")}`}
       <div class="row wrap" style="margin-top:6px">${btns}${ask}</div></div>`;
   };
@@ -660,14 +765,15 @@ function pgGrad() {
   ${G.done ? "" : `<div class="acts" style="padding:0">${actRow("grad_class")}</div>`}`;
 }
 // 취미
+const HOBBY_BG = { run: "apt", climb: "gym", book: "library", mentor: "center", photo: "popup", wine: "rooftop", board: "cafe", cook: "home", camp: "apt", band: "pub", travel: "airbnb", tarot: "gallery", flower: "gallery", code: "cowork", write: "cafe" };
 function pgHobby() {
   const hb = S.hb, max = SJ.hbMax(S);
   const mine = hb.joined.map((id) => {
     const h = D.HOBBIES[id], lv = SJ.hbLv(S, id), nx = D.HOBBY_LV[lv + 1], ppl = S.spot["hb_" + id] || [], went = hb.lastT[id] === S.t;
     const jobs = h.jobs.map((j) => SJ.isFound(S, j) ? `<b class="good">${esc(D.SIDEJOBS[j].n)}✓</b>` : `${esc(D.SIDEJOBS[j].n)} ${Math.round(S.sj.int[j] || 0)}%`).join(", ");
-    return `<div class="spot"><div class="sh"><b>${esc(h.n)}</b> <span class="tag gold">${D.HOBBY_LV[lv].n}</span><span class="grow"></span><span class="muted small">출석 ${hb.cnt[id] || 0}${nx ? `/${nx.need}` : ""}</span></div>
+    return `<div class="spot pl">${placeStage(HOBBY_BG[id] || "cafe", `${esc(h.n)} <span class="tag gold">${D.HOBBY_LV[lv].n}</span>`, ppl, `출석 ${hb.cnt[id] || 0}${nx ? `/${nx.need}` : ""}${ppl.length ? ` · ${ppl.length}명 나옴` : ""}`, "short")}
       <div class="tiny muted">${esc(h.desc)} · 회비 월 ${h.fee}만</div><div class="tiny">발견할 수 있는 투잡: ${jobs}</div>
-      ${ppl.length ? `<div class="tiny muted" style="margin-top:6px">이번 달 모임에 나온 사람</div><div class="people">${ppl.map(personCard).join("")}</div>` : ""}
+
       <div class="acts">${went ? '<div class="tiny good">이번 달 모임 다녀옴</div>' : actRow("hb_go", id, /모임$/.test(h.n) ? `${h.n} 가기` : `${h.n} 모임 가기`)}<div class="row"><span class="grow tiny muted">출석이 쌓이면 단골 → 고인물 → 운영진 → 모임장. 모임장이 되면 취미를 하나 더 할 수 있어요.${h.jobs.includes("pr") ? " 모임장이 되면 모임이 내 파티룸을 빌려요." : ""}</span><button class="btn sm danger" data-hbleave="${id}">탈퇴</button></div></div></div>`;
   }).join("");
   const others = Object.entries(D.HOBBIES).filter(([k]) => !hb.joined.includes(k));
@@ -705,7 +811,8 @@ function pgMe() {
   const f = E.fireInfo(S);
   const h = S.hist.slice(-60);
   const spark = (key, color) => { if (h.length < 2) return ""; const vs = h.map((x) => x[key]); const mn = Math.min(...vs, 0), mx = Math.max(...vs, 1); const pts = vs.map((v, i) => `${(i / (vs.length - 1) * 300).toFixed(1)},${(78 - (v - mn) / (mx - mn) * 74).toFixed(1)}`).join(" "); return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/>`; };
-  return `<div class="card"><h3>파이어 계산 <small>${Math.round(f.ratio * 100)}%</small></h3>${meter(f.ratio, 1, "linear-gradient(90deg,#f5a524,#5fe0a0)")}
+  const meB = bodySrc("me", myExpr(), "half");
+  return `${meB ? `<div class="mestage" style="background-image:url(${bgUrl("home") || ""})">${img(meB, "body", "나")}<div class="cap"><b>${esc(S.me.name)}</b><span>${Math.floor(S.age)}세 · ${esc(S.co.quit || S.co.fired ? "전업 사장님" : `${S.co.name} ${D.RANKS[S.co.rank].n}`)}</span></div></div>` : ""}<div class="card"><h3>파이어 계산 <small>${Math.round(f.ratio * 100)}%</small></h3>${meter(f.ratio, 1, "linear-gradient(90deg,#f5a524,#5fe0a0)")}
     <div class="kv" style="margin-top:8px"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div><div><div class="k">목표 순자산${S.fam.spouse ? "(결혼)" : ""}</div><div class="v">${won(f.target)}</div></div><div><div class="k">월 생활비 전체</div><div class="v">${won(f.spend)}</div></div><div><div class="k">기한</div><div class="v">${D.endAge(S.me.gender)}세 · ${Math.max(0, Math.ceil(D.endAge(S.me.gender) - S.age))}년</div></div></div>
     <div class="tiny muted" style="margin-top:6px">순자산이 목표(혼자 20억, 결혼하면 30억)에 닿으면 파이어를 선언할 수 있어요. 매니저가 굴리는 파티룸이나 VOD처럼 저절로 들어오는 사업 수입이 생활비를 넘으면 목표의 60%만 모아도 돼요.</div>
     ${f.ready ? `<button class="btn gold" style="width:100%;margin-top:8px;padding:12px" data-fire>파이어 선언하기 (${Math.floor(S.age)}세)</button>` : ""}${S.fireAt ? `<div class="tag gold" style="margin-top:8px">${S.fireAt}세 파이어 달성 · ${D.endAge(S.me.gender)}세까지 더 달리는 중</div>` : ""}</div>
@@ -735,7 +842,7 @@ function charWin(id) {
   const hs = c.helper && c.helper.effect !== "none";
   const st = c.stats || {};
   openWin(`<h2>${esc(c.name)} <button class="x" data-close>✕</button></h2>
-    <div class="scene"><div class="who"><div class="pic">${img(faceSrc(id, exprFor(id)))}</div><div class="grow"><div><b>${esc(c.job)}</b> · ${c.age + Math.floor(S.t / 12)}세</div><div class="tagline">${esc(c.tagline || "")}</div>
+    <div class="scene">${stageWho(id, exprFor(id), "half", bgUrl(charSpot(id)) || bgUrl("street") || bgUrl("alley")) || ""}<div class="who"><div class="pic" ${BODY[id] ? 'style="display:none"' : ""}>${img(faceSrc(id, exprFor(id)))}</div><div class="grow"><div><b>${esc(c.job)}</b> · ${c.age + Math.floor(S.t / 12)}세</div><div class="tagline">${esc(c.tagline || "")}</div>
     <div class="row wrap" style="margin-top:4px">${(c.personality || []).map((p) => `<span class="tag">${esc(p)}</span>`).join("")}${romance ? `<span class="tag pink">연애 가능</span>` : ""}${hs ? `<span class="tag green">${esc(c.helper.role)}</span>` : ""}${c.customer ? `<span class="tag blue">${c.customer.board === "partyroom" ? "파티룸 손님" : "컨설팅 손님"}</span>` : ""}${x.spouse ? `<span class="tag pink">배우자</span>` : x.lover ? `<span class="tag pink">연인 ${months}개월</span>` : ""}${x.helper ? `<span class="tag gold">조력 중</span>` : ""}</div>
     <div class="tiny muted" style="margin-top:4px">좋아함: ${(c.likes || []).map(esc).join(", ")}</div></div></div>
     <div class="small">호감도 <b>${Math.round(x.aff)}</b> ${here ? "· 지금 지도에 있음" : ""}</div>${meter(x.aff, 100, "var(--pink)")}
@@ -763,15 +870,16 @@ const HELP_DESC = { pr_clean: "파티룸 청소·관리(청소비 −30%, 관리
 // ───────── 장면 창 ─────────
 function showScene() {
   const sc = S.pending; if (!sc) return;
+  FX.play(sc.kind === "wedding" ? "win" : "scene");
   const who = sc.who && E.CHAR[sc.who];
   const expr = sc.kind === "meet" ? "neutral" : sc.kind === "wedding" ? "blush" : sc.kind === "arc" ? (sc.stage === 3 ? "blush" : "smile") : "neutral";
   openWin(`<div class="scene"><h2>${esc(sc.title)}${sc.tag ? ` <span class="tag gold">${esc(sc.tag)}</span>` : ""}</h2>
-    ${who ? `<div class="who"><div class="pic">${img(faceSrc(sc.who, expr))}</div><div><b>${esc(who.name)}</b><div class="tagline">${esc(who.job)} · ${esc(who.tagline || "")}</div></div></div>` : ""}
+    ${who ? stageWho(sc.who, expr, "full", sceneBg(sc), `<b>${esc(who.name)}</b><span>${esc(who.job)}</span>`) ?? `<div class="who"><div class="pic">${img(faceSrc(sc.who, expr))}</div><div><b>${esc(who.name)}</b><div class="tagline">${esc(who.job)} · ${esc(who.tagline || "")}</div></div></div>` : ""}
     <div class="txt">${esc(sc.text)}</div>
     <div class="choices">${sc.choices.map((c, i) => `<button data-ch="${i}"><span>${esc(c.t)}</span>${c.pct != null ? `<span class="pct">${D.STATS[c.check.stat]} ${c.pct}%</span>` : ""}</button>`).join("")}</div></div>`, (el) => el.querySelectorAll("[data-ch]").forEach((b) => b.onclick = () => {
-    const res = E.choose(S, +b.dataset.ch); save();
+    const res = E.choose(S, +b.dataset.ch); save(); FX.play(res.ok === false ? "bad" : "ok");
     if (sc.kind === "story" && !res.lines.length && !res.text) { closeWin(); return continueChain(); }
-    openWin(`<div class="scene"><h2>${esc(sc.title)}</h2>${who ? `<div class="who"><div class="pic">${img(faceSrc(sc.who, res.ok === false ? "sad" : "smile"))}</div></div>` : ""}
+    openWin(`<div class="scene"><h2>${esc(sc.title)}</h2>${who ? stageWho(sc.who, res.ok === false ? "sad" : sc.kind === "wedding" || sc.kind === "arc" ? "blush" : "smile", "half", sceneBg(sc)) ?? `<div class="who"><div class="pic">${img(faceSrc(sc.who, res.ok === false ? "sad" : "smile"))}</div></div>` : ""}
       <div class="result">${res.check ? `<div class="${res.ok ? "ok" : "ng"}">${esc(res.check)}</div>` : ""}<div class="txt">${esc(res.text || "")}</div>${res.lines.length ? `<div class="effs">${res.lines.map((l) => `<span>${esc(l)}</span>`).join("")}</div>` : ""}</div>
       <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-ok>확인</button></div>`, (el2) => el2.querySelector("[data-ok]").onclick = () => { closeWin(); continueChain(); });
   }), true);
@@ -791,7 +899,7 @@ function endMonthFlow(force) {
   const rc = E.endMonth(S); if (!rc) return;
   const inc = Object.entries(rc.inc).filter(([, v]) => Math.round(v)), exp = Object.entries(rc.exp).filter(([, v]) => Math.round(v));
   const ti = inc.reduce((a, [, v]) => a + v, 0), te = exp.reduce((a, [, v]) => a + v, 0);
-  S.lastNet = Math.round(ti - te); save(true);
+  S.lastNet = Math.round(ti - te); save(true); FX.play(ti - te >= 0 ? "coin" : "month");
   openWin(`<div class="receipt"><h4>${esc(prevYM)} 영수증</h4><div class="tiny" style="text-align:center;margin-bottom:6px">${esc(S.me.name)} · ${esc(S.co.quit || S.co.fired ? "전업" : S.co.name)}</div>
     ${inc.map(([k, v]) => `<div class="dl"><span>${esc(k)}</span><span class="in">+${won(v)}</span></div>`).join("")}
     ${exp.map(([k, v]) => `<div class="dl"><span>${esc(k)}</span><span class="out">−${won(v)}</span></div>`).join("")}
@@ -799,6 +907,29 @@ function endMonthFlow(force) {
     <div class="dl"><span>투잡 순수익</span><span>${won(rc.side)}</span></div><div class="dl"><span>잔고</span><span>${won(rc.cash)}</span></div></div>
     ${rc.notes.length ? `<div class="notes">${rc.notes.map((n) => `<div>${esc(n)}</div>`).join("")}</div>` : ""}
     <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-ok>${S.sceneQ.length ? `다음 (사건 ${S.sceneQ.length})` : "다음 달 시작"}</button>`, (el) => el.querySelector("[data-ok]").onclick = () => { closeWin(); continueChain(); toast([`행동력 ${S.apMax}`, `스태미너 ${Math.round(S.hp)}`], `${S.year}년 ${S.cal}월`); }, true);
+}
+
+// ───────── 설정 ─────────
+// 효과음·진동·글자 크기 + 저장 백업 코드(앱을 지우면 기기 저장이 사라지므로) + 버전·개인정보
+const B64 = { en: (s) => btoa(unescape(encodeURIComponent(s))), de: (s) => decodeURIComponent(escape(atob(s.replace(/\s+/g, "")))) };
+function settingsWin(slots) {
+  const g = FX.get(), sw = (k, n, d) => `<button class="setrow" data-tg="${k}"><span class="grow"><b>${n}</b><span class="tiny muted">${d}</span></span><span class="tgl ${g[k] ? "on" : ""}"><i></i></span></button>`;
+  const empty = slots?.find((x) => x.empty);
+  openWin(`<h2>설정 <button class="x" data-close>✕</button></h2>
+    ${sw("sound", "효과음", "누를 때·돈 들어올 때 짧은 소리")}${sw("vib", "진동", "안드로이드 폰에서만 울려요")}${sw("big", "큰 글씨", "화면 전체를 조금 크게")}
+    <div class="card" style="margin-top:10px"><h3>저장 백업</h3><div class="tiny muted" style="margin-bottom:6px">로그인하지 않으면 이 기기에만 저장돼요. 앱을 지우기 전에 코드를 복사해 두면 다시 불러올 수 있어요.</div>
+      ${S ? `<button class="btn sm" data-bkcopy>지금 인생 코드 복사</button>` : ""}
+      ${!S && slots ? (empty ? `<textarea data-bkin rows="3" placeholder="백업 코드를 붙여 넣으세요" style="width:100%;margin-top:6px;font-size:11px;background:#0b0d1a;color:#dfe3ff;border:1px solid #2a2e55;border-radius:8px;padding:6px"></textarea><button class="btn sm gold" data-bkload style="margin-top:6px">${empty.slot}번 칸으로 불러오기</button>` : `<div class="tiny muted">불러오려면 빈 칸이 하나 있어야 해요.</div>`) : ""}
+      ${!S && !slots ? `<div class="tiny muted">시작 화면의 설정에서 불러올 수 있어요.</div>` : ""}</div>
+    <div class="tiny muted" style="margin-top:10px;text-align:center">After 6PM v${FX.VERSION} · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">개인정보 처리방침</a></div>`, (el) => {
+    el.querySelectorAll("[data-tg]").forEach((b) => b.onclick = () => { const k = b.dataset.tg; FX.put(k, !FX.get()[k]); if (FX.get()[k]) FX.play("ok"); settingsWin(slots); });
+    const cp = el.querySelector("[data-bkcopy]"); if (cp) cp.onclick = async () => { const code = B64.en(E.save(S)); try { await navigator.clipboard.writeText(code); toast([], "백업 코드를 복사했어요. 메모장 같은 곳에 붙여 두세요"); } catch (e) { const ta = document.createElement("textarea"); ta.value = code; ta.rows = 3; ta.style.width = "100%"; cp.after(ta); ta.select(); toast([], "길게 눌러 복사해 주세요"); } };
+    const ld = el.querySelector("[data-bkload]"); if (ld) ld.onclick = async () => {
+      let s = null; try { s = E.load(B64.de(el.querySelector("[data-bkin]").value.trim())); } catch (e) { s = null; }
+      if (!s || !s.me) return toast([], "코드가 맞지 않아요. 처음부터 끝까지 다 붙여 넣었는지 확인해 주세요");
+      SLOT = empty.slot; S = s; closeWin(); save(true); artPreload([S.me.avatar, ...Object.keys(S.rel), ...(S.cast || [])].filter(Boolean)); toast([], `${empty.slot}번 칸으로 불러왔어요`); render();
+    };
+  });
 }
 
 // ───────── 창 공통 ─────────
@@ -814,8 +945,12 @@ function closeWin() { $modal.innerHTML = ""; }
 // ───────── 클릭 연결 ─────────
 function bind() {
   const q = (sel, fn) => $app.querySelectorAll(sel).forEach((el) => el.addEventListener("click", (e) => { e.stopPropagation(); fn(el, e); }));
-  q("[data-go]", (el) => go(el.dataset.go));
+  q("[data-go]", (el) => { const k = el.dataset.go; if (!unlocked(k)) return toast([], `🔒 ${PAGE_N[k]}: ${TILE[k]?.lock || "아직 잠겨 있어요"}`); go(k); });
   q("[data-hub]", () => openHub());
+  q("[data-back]", () => goBack());
+  q("[data-money]", () => moneyWin());
+  q("[data-apinfo]", () => apWin());
+  q("[data-coach]", () => { S.coachOff = 1; save(); render(); });
   q("[data-swipe]", (el) => step(+el.dataset.swipe));
   q("[data-sjstart]", (el) => { const k = el.dataset.sjstart, j = D.SIDEJOBS[k]; openWin(`<h2>${esc(j.n)} 시작할까? <button class="x" data-close>✕</button></h2><div class="small" style="line-height:1.8">· 수익: ${esc(j.inc)}<br>· 시간: ${esc(j.hours)} · 시작 자본 ${esc(j.cap)}<br>· 궁합: ${SJ.fit(S, k).g} (${j.fit.map((x) => D.STATS[x]).join("·")})<br>· 회사에 들키면 경고 → 감봉 → 해고. ${k === "cs" ? "실명으로 하면 더 잘 들킨다." : "지점이 늘수록 눈치가 쌓인다."}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>조금 더 고민</button><button class="btn gold grow" data-yes>시작하기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = SJ.start(S, k); closeWin(); toast([], r.msg); save(); if (r.ok) { go(k); if (r.hid?.length) openWin(`<h2>숨은 특성 공개 <button class="x" data-close>✕</button></h2><div class="small muted">${esc(j.n)}을(를) 시작하니 내 성향이 이렇게 드러나요.</div><div class="intro" style="margin-top:8px">${r.hid.map((x) => `<p>★ ${esc(x)}</p>`).join("")}</div><button class="btn gold" style="width:100%;margin-top:10px" data-close>확인</button>`, null, false, true); } else render(); }); });
   q("[data-sjstop]", (el) => openWin(`<h2>${esc(D.SIDEJOBS[el.dataset.sjstop].n)} 접을까? <button class="x" data-close>✕</button></h2><div class="small">쌓은 후기·능력치는 남는다. 다시 시작할 수 있다.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>접기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = SJ.stop(S, el.dataset.sjstop); closeWin(); toast([], r.msg); save(); render(); }));
@@ -893,12 +1028,13 @@ async function renderTitle() {
     <div class="slots">${slots.map((sl) => sl.empty
       ? `<button class="slot empty" data-snew="${sl.slot}"><b>${sl.slot}번 칸</b><span>비어 있어요 · 여기서 새 인생 시작</span></button>`
       : `<div class="slot"><button class="grow" data-sload="${sl.slot}"><b>${sl.slot}번 칸 · ${esc(sl.summary?.name || "")}</b><span>${sl.summary?.end ? "끝난 인생 · " : ""}${sl.summary?.age ?? "?"}세 · ${esc(sl.summary?.ym || "")} · 순자산 ${won(sl.summary?.nw || 0)}</span><span class="tiny muted">${esc(sl.summary?.job || "")}${sl.summary?.side ? " · 투잡 " + esc(sl.summary.side) : ""}</span></button><button class="btn sm danger" data-sdel="${sl.slot}">지우기</button></div>`).join("")}</div>
-    <div class="btns" style="margin-top:8px"><button class="btn gold" data-new>새 인생 시작</button><button class="btn" data-install ${APP.canInstall() ? "" : "hidden"}>앱으로 설치</button></div>
+    <div class="btns" style="margin-top:8px"><button class="btn gold" data-new>새 인생 시작</button><button class="btn" data-install ${APP.canInstall() ? "" : "hidden"}>앱으로 설치</button><button class="btn" data-set>설정</button></div>
     ${APP.isIOS() ? `<div class="tiny muted" style="margin-top:4px">아이폰: 공유 버튼 → '홈 화면에 추가'로 앱처럼 쓸 수 있어요.</div>` : ""}
     <div class="tiny muted" style="margin-top:6px">한 아이디에 인생 3개까지 저장돼요. 세 칸이 다 차면 한 칸을 지우고 시작합니다.</div>
     ${m.runs?.length ? `<div class="card" style="margin-top:10px;text-align:center"><div class="small">다음 인생은 <b class="gold">${ngNext(m)}회차</b> · 기억 포인트 <b class="gold">${ngPoints(m)}</b> · 최고 파이어 ${m.best ? m.best + "세" : "아직"}</div>${ngCollection(m)}</div>` : ""}
     ${(hall || m.hall || []).length ? `<div class="card" style="margin-top:10px"><h3>명예의 전당 <small>${hall ? "전체 회원" : "내 기록"}</small></h3>${hallList(hall || m.hall)}</div>` : ""}</div>`;
   const pick = (n) => startWizard(n);
+  $app.querySelector("[data-set]").onclick = () => settingsWin(slots);
   const ib = $app.querySelector("[data-install]"); if (ib) ib.onclick = async () => { if (await APP.install()) toast([], "설치했어요! 홈 화면에서 열어 보세요"); ib.hidden = true; };
   $app.querySelector("[data-new]").onclick = () => empty ? pick(empty.slot) : openWin(`<h2>칸이 다 찼어요 <button class="x" data-close>✕</button></h2><div class="small muted">지울 인생을 하나 골라 주세요. 지운 인생은 되돌릴 수 없어요.</div><div class="pick" style="margin-top:10px">${slots.map((sl) => `<button data-swipeout="${sl.slot}"><b>${sl.slot}번 · ${esc(sl.summary?.name || "")}</b><span class="tiny muted">${sl.summary?.age ?? "?"}세 · 순자산 ${won(sl.summary?.nw || 0)}</span></button>`).join("")}</div>`, (w) => w.querySelectorAll("[data-swipeout]").forEach((b) => b.onclick = async () => { const n = +b.dataset.swipeout; closeWin(); await ST.remove(n); pick(n); }));
   $app.querySelectorAll("[data-snew]").forEach((b) => b.onclick = () => pick(+b.dataset.snew));
@@ -1019,13 +1155,14 @@ function renderWiz() {
     body = renderGift();
   } else if (w.step === 1) {
     const avs = AVATARS(w.gender); if (w.avatar === undefined && avs.length) w.avatar = avs[0]; if (w.avatar && !w.avatar.startsWith("p" + w.gender)) w.avatar = avs[0] || null;
-    let src = artOr(w.avatar, "smile", () => { try { return portraitDataURL(w.look, w.gender, "smile", 5); } catch (e) { return ""; } });
+    const pw = () => { try { return portraitDataURL(w.look, w.gender, "smile", 5); } catch (e) { return ""; } };
+    let src = bodyOr(w.avatar, "smile", "half", pw) ?? artOr(w.avatar, "smile", pw);
     body = `<h2>나는 누구일까요</h2><div class="small muted">성별과 나이, 얼굴을 정해 주세요. 능력치는 다음 단계에서 룰렛으로 정해요.</div>
       <div class="seg"><button class="${w.gender === "M" ? "on" : ""}" data-g="M">남자 · 50세까지</button><button class="${w.gender === "F" ? "on" : ""}" data-g="F">여자 · 48세까지</button></div>
       ${u?.nick ? `<div class="card small">닉네임 <b class="gold">${esc(u.nick)}</b>(으)로 살아요. 닉네임은 사이트 계정에서 바꿀 수 있어요.</div>` : `<input placeholder="이름 (비우면 '나')" value="${esc(w.name)}" data-name maxlength="8">`}
       <div class="seg">${(w.gender === "F" ? [25, 26, 27] : [27, 28, 29]).map((a, i) => `<button class="${w.age === a ? "on" : ""}" data-age="${a}">${a}세 · ${i + 1}년 차</button>`).join("")}</div>
       <div class="tiny muted">나이가 많을수록 돈과 경력은 조금 더 있지만, 파이어까지 남은 시간은 줄어요. (${w.gender === "F" ? 48 : 50}세까지 ${(w.gender === "F" ? 48 : 50) - w.age}년)</div>
-      <div class="avatar"><div class="pic">${img(src)}</div><div class="grow">${avs.length ? `<div class="small muted">마음에 드는 얼굴을 골라요.</div><div class="avpick">${avs.map((k) => `<button class="${w.avatar === k ? "on" : ""}" data-av="${k}">${img(artOr(k, "neutral", () => ""))}</button>`).join("")}<button class="${!w.avatar ? "on" : ""}" data-av="">도트</button></div>` : `<div class="small muted">얼굴은 판마다 달라져요.</div>`}${!w.avatar ? `<button class="btn" data-reroll-look style="margin-top:8px">다른 도트 얼굴</button>` : ""}</div></div>`;
+      <div class="avatar"><div class="pic">${img(src)}</div><div class="grow">${avs.length ? `<div class="small muted">마음에 드는 얼굴을 골라요.</div><div class="avpick">${avs.map((k) => `<button class="${w.avatar === k ? "on" : ""}" data-av="${k}">${img(bodyOr(k, "neutral", "face", () => artOr(k, "neutral", () => "")) ?? artOr(k, "neutral", () => ""))}</button>`).join("")}<button class="${!w.avatar ? "on" : ""}" data-av="">도트</button></div>` : `<div class="small muted">얼굴은 판마다 달라져요.</div>`}${!w.avatar ? `<button class="btn" data-reroll-look style="margin-top:8px">다른 도트 얼굴</button>` : ""}</div></div>`;
   } else if (w.step === 2) {
     const cur = w.rolls[w.pick];
     canNext = !!cur;
@@ -1104,7 +1241,7 @@ function showIntro() {
     <p><b class="gold">행동력</b> 매달 행동력이 생겨요. 행동력은 스태미너에서 나오고, 스태미너는 <b>체력</b>이 높을수록 커져요. 운동과 취미로 체력을 키워 두면 나중에 편합니다.</p>
     <p><b>스태미너</b> 행동을 하면 줄고, 많이 쓰면 다음 달 행동력도 줄어요. 지치면 쉬어 가세요.</p>
     <p><b>지도</b> 장소를 고르면 할 수 있는 일과 그곳 사람들이 보여요. '???'에게 말을 걸면 인연이 됩니다.</p>
-    <p><b>화면</b> 아래 화면 버튼을 누르면 화면 지도가 나와요. 좌우로 밀어서 넘길 수도 있어요. 잠긴 곳은 인생이 진행되면 열립니다.</p>
+    <p><b>길 찾기</b> 아래 탭(홈·지도·사람들·투잡·나)으로 다니고, 회사·취미·투잡 화면은 오른쪽 위 <b>전체 메뉴</b>에 다 있어요. 왼쪽 위 <b>뒤로</b>는 방금 본 화면으로 가요.</p>
     <p><b>회사</b> 평가는 해마다 1월, 대부분 B예요. 연봉은 천천히 오르고, 지방 발령이나 구조조정 같은 일도 생겨요. 임원까지 갈 수도 있지만 쉽지 않아요.</p>
     <p><b>투잡</b> 정해진 투잡은 없어요. 회사 소문, 너튜브, 취미에서 발견하고 두 개까지 할 수 있어요. 안 해도 괜찮아요. 투잡을 시작하면 성향 카드의 숨은 특성이 공개돼요.</p>
     <p><b class="gold">목표</b> ${ea}세까지 순자산 20억. 결혼하면 30억으로 올라가요. 파산하거나 번아웃이 세 번 오면 그 인생은 끝나요.</p></div>
@@ -1119,6 +1256,7 @@ function renderEnding() {
   const age = Math.floor(S.age);
   const kind = S.over ? "over" : S.ended;
   if (!S.recorded) {
+    FX.play(S.over ? "bad" : "win");
     m.runs = m.runs || []; m.runs.push({ age, kind, nw: Math.round(f.nw), t: Date.now(), fireAt: S.fireAt || null });
     if (S.fireAt && (!m.best || S.fireAt < m.best)) m.best = S.fireAt;
     ngEndRecord(m, f);
@@ -1169,6 +1307,7 @@ function autoTest(n) {
   }
   const h = location.hash; ui.page = ["map", "people", "sj", "hobby", "co", "pr", "cs", "insta", "airbnb", "ucafe", "grad", "family", "me"].find((k) => h.includes("-" + k)) || "home";
   if (h.includes("region")) ui.region = "town";
+  { const av = h.match(/av=(p[FM][0-9])/); if (av) { S.me.avatar = av[1]; S.me.gender = av[1][1]; } const wh = h.match(/who=(c[0-9]+)/); if (wh) { S.cast.unshift(wh[1]); E.talkTo(S, wh[1]); while (S.pending) E.choose(S, 0); S.rel[wh[1]] = S.rel[wh[1]] || {}; const o = S.rel; S.rel = { [wh[1]]: o[wh[1]], ...o }; } const sp = h.match(/spot=([a-z]+)/); if (sp) ui.lastSpot = sp[1]; }
   render();
   if (h.includes("hub")) openHub();
   if (h.includes("ending")) { S.fireAt = 41; S.cash += 280000; S.ended = "age"; render(); }
@@ -1192,7 +1331,7 @@ function flowTest(months) {
   go("hobby"); click('[data-hbjoin="mentor"]'); click('[data-hbjoin="wine"]');
   for (let m = 0; m < months && S && !S.over && !S.ended; m++) {
     // 화면 지도 열고 닫기, 넘기기
-    go("home"); click("[data-hub]"); click("[data-hgo]", $modal); click('[data-swipe="1"]'); click('[data-swipe="-1"]');
+    go("home"); click("[data-hub]"); click("[data-hgo]", $modal); go("map"); click("[data-back]"); click("[data-money]"); clearModal();
     // 취미 모임
     go("hobby"); click('[data-act="hb_go"]'); clearModal();
     // 투잡 탐색: 리포트 → 시작

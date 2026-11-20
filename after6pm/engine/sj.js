@@ -39,7 +39,7 @@ export function start(s, job) {
   if (sj.active.length >= slots(s)) return { ok: false, msg: `투잡은 지금 ${slots(s)}개까지. 매니저를 두면 한 칸 늘어요` };
   sj.active.push(job); log(s, `${jo(j.n, "을", "를")} 시작하기로 했다.`, "work");
   const hid = reveal(s, job);
-  return { ok: true, hid, msg: `${j.n} 시작! 화면 지도에 ${j.n} 칸이 열렸어요${hid.length ? ` · 숨은 특성 ${hid.length}개 공개` : ""}` };
+  return { ok: true, hid, msg: `${j.n} 시작! 전체 메뉴에 ${j.n} 칸이 열렸어요${hid.length ? ` · 숨은 특성 ${hid.length}개 공개` : ""}` };
 }
 export function stop(s, job) {
   if (!isActive(s, job)) return { ok: false, msg: "하고 있지 않습니다" };
@@ -102,7 +102,7 @@ export function introScene() {
     { t: "일단 회사에 집중한다", eff: { stat: { career: 1 } }, text: "그래도 궁금하긴 하다. 투잡 탐색은 언제든 열어 볼 수 있다." },
   ] };
 }
-export function introChoose(s, i) { s.sj.open = true; addInt(s, "pr", i === 0 ? 30 : 15); addInt(s, "cs", i === 0 ? 30 : 15); return ["화면 지도: 투잡 탐색 열림"]; }
+export function introChoose(s, i) { s.sj.open = true; addInt(s, "pr", i === 0 ? 30 : 15); addInt(s, "cs", i === 0 ? 30 : 15); return ["전체 메뉴: 투잡 탐색 열림"]; }
 
 // ───────── 취미 ─────────
 export function hbLv(s, id) { const c = s.hb.cnt[id] || 0; let lv = 0; D.HOBBY_LV.forEach((x, i) => { if (c >= x.need) lv = i; }); return lv; }

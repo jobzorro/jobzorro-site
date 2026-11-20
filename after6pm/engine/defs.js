@@ -156,7 +156,7 @@ export const ACTIONS = {
   bg_vip: { n: "VIP 이직 패키지 출시", track: "일", ap: 2, hp: 5, desc: "임원·경력직 1:1 고액 상품(Lv4·명성 40)" },
   bg_ai: { n: "AI 자소서 플랫폼 개발", track: "일", ap: 2, hp: 8, mental: -2, desc: "개발비 2,000만. 대박 확률 10~20%, 아니면 소소하게 굴러가요(전업·Lv4·명성 45)" },
   // 대학원
-  grad_apply: { n: "대학원 알아보기", track: "능력치", ap: 1, hp: 2, pick: "grad", desc: "야간 MBA·상담심리 대학원. 다니면 화면 지도에 대학원 칸이 생겨요" },
+  grad_apply: { n: "대학원 알아보기", track: "능력치", ap: 1, hp: 2, pick: "grad", desc: "야간 MBA·상담심리 대학원. 다니면 전체 메뉴에 대학원 칸이 생겨요" },
   grad_class: { n: "대학원 수업·과제", track: "능력치", ap: 1, hp: 4, mental: -1, desc: "능력치 +, 동기 인연" },
 };
 

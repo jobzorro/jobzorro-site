@@ -324,7 +324,7 @@ const ACT_FN = {
     const g = D.GRADS[k] || D.GRADS.mba; if (s.cash - g.cash < -creditRoom(s)) return { lines: ["입학금이 모자라요"], msg: "등록금 고지서를 보고 창을 닫았다." };
     s.cash -= g.cash; addMoney(s, "exp", "대학원 입학금", g.cash); s.grad = { k: k in D.GRADS ? k : "mba", t0: s.t, n: 0, done: false };
     log(s, `${g.n}에 입학했다.`, "life");
-    return { lines: [`${g.n} 입학`, `입학금 ${won(g.cash)}`, `매달 등록금 ${won(g.fee)} · 행동력 −1`, "화면 지도에 대학원 칸이 열렸어요"], msg: "퇴근하고 지하철 두 정거장. 다시 학생증이 생겼다." };
+    return { lines: [`${g.n} 입학`, `입학금 ${won(g.cash)}`, `매달 등록금 ${won(g.fee)} · 행동력 −1`, "전체 메뉴에 대학원 칸이 열렸어요"], msg: "퇴근하고 지하철 두 정거장. 다시 학생증이 생겼다." };
   },
   grad_class(s, r) {
     const G = s.grad, g = D.GRADS[G.k]; G.n++; G.lastT = s.t;
