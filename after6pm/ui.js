@@ -174,7 +174,7 @@ function doAct(id, arg) {
   afterRes(res);
 }
 function afterRes(res) {
-  if (res.lines?.length || res.msg) toast(res.lines, res.msg);
+  if (res.lines?.length || res.msg) { if (S.pending) ui.preFx = { lines: res.lines || [], msg: res.msg }; else toast(res.lines, res.msg); }
   if (res.open?.startsWith("listings:")) { ui.page = "pr"; ui.prFlow = { step: "list", dk: res.open.split(":")[1] }; }
   save(); render();
   if (S.pending) showScene();
@@ -872,8 +872,10 @@ function showScene() {
   const sc = S.pending; if (!sc) return;
   FX.play(sc.kind === "wedding" ? "win" : "scene");
   const who = sc.who && E.CHAR[sc.who];
+  const pf = ui.preFx; ui.preFx = null;
+  const pre = pf && (pf.msg || pf.lines.length) ? `<div class="prefx">${pf.msg ? `<span>${esc(pf.msg)}</span>` : ""}${pf.lines.filter(Boolean).map((l) => `<b>${esc(l)}</b>`).join("")}</div>` : "";
   const expr = sc.kind === "meet" ? "neutral" : sc.kind === "wedding" ? "blush" : sc.kind === "arc" ? (sc.stage === 3 ? "blush" : "smile") : "neutral";
-  openWin(`<div class="scene"><h2>${esc(sc.title)}${sc.tag ? ` <span class="tag gold">${esc(sc.tag)}</span>` : ""}</h2>
+  openWin(`<div class="scene">${pre}<h2>${esc(sc.title)}${sc.tag ? ` <span class="tag gold">${esc(sc.tag)}</span>` : ""}</h2>
     ${who ? stageWho(sc.who, expr, "full", sceneBg(sc), `<b>${esc(who.name)}</b><span>${esc(who.job)}</span>`) ?? `<div class="who"><div class="pic">${img(faceSrc(sc.who, expr))}</div><div><b>${esc(who.name)}</b><div class="tagline">${esc(who.job)} · ${esc(who.tagline || "")}</div></div></div>` : ""}
     <div class="txt">${esc(sc.text)}</div>
     <div class="choices">${sc.choices.map((c, i) => `<button data-ch="${i}"><span>${esc(c.t)}</span>${c.pct != null ? `<span class="pct">${D.STATS[c.check.stat]} ${c.pct}%</span>` : ""}</button>`).join("")}</div></div>`, (el) => el.querySelectorAll("[data-ch]").forEach((b) => b.onclick = () => {
@@ -881,8 +883,8 @@ function showScene() {
     if (sc.kind === "story" && !res.lines.length && !res.text) { closeWin(); return continueChain(); }
     openWin(`<div class="scene"><h2>${esc(sc.title)}</h2>${who ? stageWho(sc.who, res.ok === false ? "sad" : sc.kind === "wedding" || sc.kind === "arc" ? "blush" : "smile", "half", sceneBg(sc)) ?? `<div class="who"><div class="pic">${img(faceSrc(sc.who, res.ok === false ? "sad" : "smile"))}</div></div>` : ""}
       <div class="result">${res.check ? `<div class="${res.ok ? "ok" : "ng"}">${esc(res.check)}</div>` : ""}<div class="txt">${esc(res.text || "")}</div>${res.lines.length ? `<div class="effs">${res.lines.map((l) => `<span>${esc(l)}</span>`).join("")}</div>` : ""}</div>
-      <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-ok>확인</button></div>`, (el2) => el2.querySelector("[data-ok]").onclick = () => { closeWin(); continueChain(); });
-  }), true);
+      <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-ok>확인</button></div>`, (el2) => el2.querySelector("[data-ok]").onclick = () => { closeWin(); continueChain(); }, true, true);
+  }), true, true);
 }
 function continueChain() {
   render();

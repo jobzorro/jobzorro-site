@@ -432,3 +432,11 @@ html.big #app{zoom:1.12}
 .pager .pdate,.pager .pback{min-width:96px}.pager .pmenu{min-width:96px;justify-content:center}.pager .pback{justify-content:flex-start}
 .next .btn.gold .nt{display:flex;align-items:center;gap:6px}
 .pager{padding:0 12px}
+
+/* v4.11 이벤트 창: 가운데, 알림과 안 겹치게 */
+#modal .bg.center .win:has(.scene){max-height:calc(100vh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+.scene .sstage.full{height:min(300px,38vh)}
+.scene .sstage.half{height:min(240px,32vh)}
+.prefx{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin:0 0 10px;color:var(--muted)}
+.prefx span{color:var(--fg);width:100%}.prefx b{color:var(--gold);font-weight:700}
+body:has(#modal .bg) #toast{bottom:auto;top:calc(10px + env(safe-area-inset-top,0px))}
