@@ -1337,6 +1337,7 @@ function autoTest(n) {
   if (location.hash.includes("scene")) { const id = S.cast[0]; E.openScene(S, E.meetScene(S, id)); showScene(); }
   if (location.hash.includes("char")) { const id = Object.keys(S.rel)[0]; if (id) charWin(id); }
   if (location.hash.includes("hbpick")) { doAct("hb_go"); }
+  if (location.hash.includes("hire")) { S.co.hired = S.co.hired || []; S.co.hired.push("c107"); const sc = E.meetScene(S, "c107"); sc.title = "새 사람이 왔다 · 봉다온"; E.openScene(S, sc); showScene(); }
   if (location.hash.includes("sw2")) { const sw = $app.querySelector("[data-sw2]"); if (sw) sw.scrollLeft = 9999; }
 }
 

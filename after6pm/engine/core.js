@@ -100,7 +100,8 @@ export function newGame(o) {
   if (o.meta?.bonusCash) s.cash += o.meta.bonusCash;
   // 이번 판에 등장하는 인연: 100명 중 70명 (로그라이크)
   const pool = CHARS.map((c) => c.id);
-  s.cast = r.shuffle(pool).slice(0, Math.min(pool.length, Math.max(12, Math.round(pool.length * 0.7))));
+  s.cast = r.shuffle(pool.filter((id) => !CHAR[id]?.co)).slice(0, Math.min(pool.length, Math.max(12, Math.round(pool.length * 0.7))));
+  s.cast.push(...CHARS.filter((c) => c.co).map((c) => c.id)); // 회사 동료(신입은 입사 사건 뒤에 나온다)
   // N회차(회귀): 지난 인생의 선물
   const ng = o.ng || {};
   s.ng = { n: Math.max(1, ng.n || 1), hard: !!ng.hard, gifts: ng.gifts || [] };
@@ -149,6 +150,7 @@ function refreshSpots(s) {
     const c = CHAR[id]; if (!c) continue;
     const rel = s.rel[id];
     if (rel?.spouse) continue; // 배우자는 집에 있다
+    if (c.hire && !(s.co.hired || []).includes(id)) continue; // 아직 입사 전
     if (!r.chance(rel?.lover ? 0.85 : 0.62)) continue;
     const loc = r.pick(c.hangouts);
     const cands = Object.values(D.SPOTS).filter((sp) => sp.loc === loc || sp.alt === loc);
@@ -507,8 +509,26 @@ export function choose(s, i) {
   return { text: res.text || "", lines, ok: okv, check: ch.check ? `${D.STATS[ch.check.stat]} 판정 ${okv ? "성공" : "실패"}` : null };
 }
 function pickLocScene(s, r, loc) {
+  if (loc === "office") return pickOffice(s, r);
   const cands = SCENES.filter((x) => x.where === loc && sceneOk(s, x));
   return cands.length ? r.pick(cands) : null;
+}
+// 회사 생활 장면: 다시 나오는 장면은 10달 쉬고, {동료} 장면은 아는 회사 동료 한 명을 넣는다
+function mates(s) { return Object.keys(s.rel).filter((id) => { const c = CHAR[id]; return c && (c.co || c.hangouts?.includes("office")) && !s.rel[id].spouse && (!c.hire || (s.co.hired || []).includes(id)); }); }
+function mateName(t, name) {
+  const P = { 가: ["이", "가"], 이: ["이", "가"], 와: ["과", "와"], 과: ["과", "와"], 를: ["을", "를"], 을: ["을", "를"], 는: ["은", "는"], 은: ["은", "는"] };
+  return String(t || "").replace(/\{동료\}(가|이|와|과|를|을|는|은)?/g, (m, p) => p ? jo(name, P[p][0], P[p][1]) : name);
+}
+export function pickOffice(s, r) {
+  const M = mates(s);
+  const cands = SCENES.filter((x) => x.where === "office" && sceneOk(s, x) && !(x.mate && !M.length) && !(x.when?.once === false && s.seen[x.id] !== undefined && s.t - s.seen[x.id] < 10));
+  if (!cands.length) return null;
+  const tot = cands.reduce((a, x) => a + (x.when?.chance ?? 0.1), 0); let v = r.next() * tot, x = cands[0];
+  for (const c of cands) { v -= c.when?.chance ?? 0.1; if (v <= 0) { x = c; break; } }
+  if (!x.mate) return { ...x, once: true };
+  const id = r.pick(M), nm = CHAR[id].name, f = (t) => mateName(t, nm);
+  const fix = (o) => o && { ...o, text: f(o.text) };
+  return { ...x, once: true, who: id, title: f(x.title), text: f(x.text), choices: x.choices.map((c) => ({ ...c, t: f(c.t), text: f(c.text), ok: fix(c.ok), ng: fix(c.ng) })) };
 }
 export function sceneOk(s, x) {
   const w = x.when || {};
@@ -753,7 +773,18 @@ function companyMonth(s, r, notes, scenes) {
     if (!co.pip && (last2 === "DD" || last2 === "DC" || last2 === "CD")) { co.pip = 3; scenes.push(story("성과 개선 프로그램", "팀장과 인사팀이 함께 들어왔다. \"3개월 동안 성과를 보여 주세요.\" 회사 성과 45를 넘기지 못하면 해고됩니다.")); }
   }
   // 회사 사건: 8개월에 한 번쯤
-  if (s.t - co.evT >= 8 && r.chance(0.09)) {
+  // 새 사람이 왔다: 입사 전 신입·경력직·인턴이 5달에 한 번쯤
+  co.hired = co.hired || [];
+  const waiting = s.cast.filter((id) => CHAR[id]?.hire && !co.hired.includes(id) && !s.rel[id]);
+  if (waiting.length && s.t >= 2 && s.t - (co.hireT ?? -99) >= 5 && r.chance(0.25)) {
+    const id = r.pick(waiting); co.hired.push(id); co.hireT = s.t;
+    const sc = meetScene(s, id); sc.title = `새 사람이 왔다 · ${CHAR[id].name}`; scenes.push(sc);
+    notes.push(`${CHAR[id].job} ${jo(CHAR[id].name, "이", "가")} 들어왔다`); log(s, `회사에 ${CHAR[id].name}(${CHAR[id].job}) 입사`, "work");
+  }
+  // 회사 생활 장면: 두 달에 한 번쯤
+  if (s.t - (co.offT ?? -99) >= 2 && r.chance(0.55)) { const sc = pickOffice(s, r); if (sc) { co.offT = s.t; scenes.push(sc); } }
+  // 회사 사건: 5달에 한 번쯤
+  if (s.t - co.evT >= 5 && r.chance(0.18)) {
     const need = D.RANKS[co.rank].career;
     const L = [];
     if (s.st.career < need * 0.8 && co.rank >= 1) L.push([4, ev("weak", "역량이 모자라다는 말", `새로 온 본부장이 내 보고서를 세 번 반려했다. "${D.RANKS[co.rank].n}이면 이 정도는 해야죠." 직급에 맞는 커리어(${need})보다 지금 커리어(${Math.round(s.st.career)})가 낮습니다.`, ["주말을 반납하고 공부한다 (다음 달 행동력 −2, 커리어 +5)", "버틴다 (올해 평가는 C 이하)"])]);
@@ -976,7 +1007,8 @@ export function load(str) {
   if (s.st.body === undefined) s.st.body = 30;
   if (!s.ins) s.ins = INS.init(); if (!s.big) s.big = BIG.init(); if (!s.ab) s.ab = AB.init(); if (!s.uc) s.uc = UC.init(); s.fame = s.fame || 0; if (s.st.lang === undefined) s.st.lang = 15; s.pi = s.pi || Math.pow(1.025, s.t / 12); s.piX = s.piX || 1; if (s.grad === undefined) s.grad = null; PR.fill(s);
   s.ng = s.ng || { n: 1, hard: false, gifts: [] }; s.items = s.items || {}; s.me.revealed = s.me.revealed || {}; s.me.job = s.me.job || "plan"; if (!D.MAJORS[s.me.major]) s.me.major = "biz";
-  const co = s.co; co.payIdx = co.payIdx || Math.pow(1.02, Math.max(0, co.years - 1)); co.pts = co.pts || 0; co.grades = co.grades || []; co.remote = co.remote || 0; co.evT = co.evT ?? -99;
+  const co = s.co; co.payIdx = co.payIdx || Math.pow(1.02, Math.max(0, co.years - 1)); co.pts = co.pts || 0; co.grades = co.grades || []; co.remote = co.remote || 0; co.evT = co.evT ?? -99; co.hired = co.hired || [];
+  for (const c of CHARS) if (c.co && !s.cast.includes(c.id)) s.cast.push(c.id);
   return s;
 }
 export { D };
