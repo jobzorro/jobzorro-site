@@ -463,6 +463,7 @@ body:has(#modal .bg) #toast{bottom:auto;top:calc(10px + env(safe-area-inset-top,
 /* v4.14 그림 받는 동안 흐리게 → 선명하게 */
 img.face,img.body{transition:filter .35s ease}
 img.face.ld,img.body.ld{filter:blur(5px) saturate(.85)!important;image-rendering:auto}
+img.face,img.body{transition:filter .3s ease-out}
 
 /* v4.14 폰 화면 높이: vh 대신 실제 보이는 높이(dvh) — 선택지가 화면 밖으로 밀리지 않게 */
 .title{min-height:100vh;min-height:100dvh}

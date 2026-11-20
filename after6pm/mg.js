@@ -23,6 +23,7 @@ const CSS = `.mg-langnote{font-size:11.5px;color:#ffe9c4;background:#0007;border
 .mg-stage{position:relative;flex:1 1 auto;min-height:0;border-radius:14px;overflow:hidden;background:var(--mgb2) center/cover no-repeat;border:1px solid var(--mgl)}
 .mg-foot{flex:0 0 auto;display:flex;gap:8px}
 .mg-btn{flex:1;padding:12px 10px;border-radius:12px;background:var(--mgb2)!important;border:1px solid var(--mgl)!important;font-weight:700;font-size:15px}
+.mg-foot .mg-btn.mg-re{flex-direction:column!important;gap:1px;line-height:1.2;font-weight:900;border-color:var(--mgg)!important;color:var(--mgg)!important}.mg-btn.mg-re small{display:block;font-size:10.5px;font-weight:600;opacity:.8;color:#fff}
 .mg-btn.gold{background:var(--mgg)!important;color:#2a1a00!important;border-color:var(--mgg)!important}
 .mg-btn.on{outline:2px solid var(--mgg);outline-offset:-2px}
 .mg-msg{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:9;background:#000b;color:#fff;font-size:12.5px;padding:5px 12px;border-radius:99px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s}
@@ -89,7 +90,7 @@ const CSS = `.mg-langnote{font-size:11.5px;color:#ffe9c4;background:#0007;border
 `;
 function inject() {
   if (typeof document === "undefined" || document.getElementById("mgcss")) return;
-  const s = document.createElement("style"); s.id = "mgcss"; s.textContent = CSS + CSS2 + IN_CSS; document.head.appendChild(s);
+  const s = document.createElement("style"); s.id = "mgcss"; s.textContent = CSS + CSS2 + IN_CSS + MG2.map((g) => g.css || "").join("\n"); document.head.appendChild(s);
 }
 const CSS2 = `
 /* 빨간펜: 펜이 직접 줄을 긋는다 */
@@ -244,6 +245,13 @@ const easeOf = (skill) => 1 + clamp(+skill || 0, 0, 200) / 200 * 0.5;
 // ───────── 공통: 소리·진동·손맛 ─────────
 // 효과음은 파일 없이 WebAudio로 합성. [시작]을 누를 때 오디오를 켠다. 소리 끄기는 기기에 기억(실패해도 그냥 켜짐).
 import { gIN2, IN_CSS } from "./mg_in.js";
+import { GAME as G_pr2 } from "./mg2/pr2.js";
+import { GAME as G_cs2 } from "./mg2/cs2.js";
+import { GAME as G_airbnb2 } from "./mg2/airbnb2.js";
+import { GAME as G_ucafe2 } from "./mg2/ucafe2.js";
+import { GAME as G_insta2 } from "./mg2/insta2.js";
+// 미니게임 2탄: 투잡마다 두 번째 게임. MG·GAMES 에 key 로 붙고, base 는 원래 투잡
+const MG2 = [G_pr2, G_cs2, G_airbnb2, G_ucafe2, G_insta2].filter(Boolean);
 const SND_KEY = "a6_mg_sound";
 let SND_ON = true; try { SND_ON = localStorage.getItem(SND_KEY) !== "0"; } catch (e) {}
 let ACX = null;
@@ -332,6 +340,7 @@ function countdown(host, job, title, then) {
 const JC = { pr: "#c77dff", cs: "#ff6b6b", airbnb: "#4fc3f7", ucafe: "#7CFC9A", insta: "#ff8fc8" };
 // 방법 화면의 작은 그림 설명 3칸
 function introSteps(job) {
+  { const g2 = MG2.find((g) => g.key === job); if (g2) { try { return g2.steps ? g2.steps() : []; } catch (e) { return []; } } }
   if (job === "ucafe") {
     try {
       const im = (t, o) => uSprite({ spec: uSpec(t), cache: {} }, "i", o, false).toDataURL();
@@ -343,37 +352,49 @@ function introSteps(job) {
 }
 const REVIEW = { 대성공: ["손이 기억하는 프로의 솜씨!", "이 정도면 사장님 소리 들어요", "완벽 그 자체예요"], 성공: ["꽤 잘했어요. 손님도 만족!", "안정적인 운영이에요", "한 끗만 더 가면 대성공!"], 보통: ["무난했어요. 다음엔 더 잘할 수 있어요", "평범한 하루였어요"], 아쉬움: ["오늘은 운이 없었어요", "연습하면 금방 늘어요", "내일은 다를 거예요"] };
 
+// "한 번 더?" 문지기. 지금은 무료로 바로 통과. 나중에 광고 보기·유료 아이템으로 바꿀 때
+// setRetryGate(async ({ job, score, grade }) => { …광고 보고 오면 true… }) 한 줄이면 된다(false 면 그대로 결과 화면).
+let retryGate = async () => true;
+export function setRetryGate(fn) { retryGate = typeof fn === "function" ? fn : async () => true; }
 export function mgRun(job, host, opts = {}) {
-  inject();
+  inject(); mg2Init();
   const def = MG[job];
   if (!def || !GAMES[job]) return Promise.resolve({ score: 0.5, grade: "보통", line: "미니게임이 없어 보통 결과로 했어요" });
   const ez = easeOf(opts.skill);
   return new Promise((resolve) => {
+    // 망친 판(보통·아쉬움)은 한 번 더 할 수 있다. 두 판 중 더 잘한 판으로 친다
+    let tries = 0, prev = null;
+    const play = (o) => GAMES[job](host, ez, finish, opts.skill || 0, o);
     // parts: [[항목 이름, 0~1], …] 항목별 막대
     const finish = (score, line, extra = "", parts = null) => {
       score = clamp(Math.round(score * 100) / 100, 0, 1);
       const grade = gradeOf(score), gi = ["대성공", "성공", "보통", "아쉬움"].indexOf(grade);
+      tries++;
+      const canRe = tries === 1 && gi >= 2, keepPrev = prev && prev.score > score;
+      if (prev) extra = (keepPrev ? `앞 판이 더 잘해서 <b>앞 판 ${Math.round(prev.score * 100)}점</b>으로 쳐요` : prev.score === score ? `두 판 점수가 같아요` : `이번 판이 더 잘했어요! <b>이번 점수</b>로 쳐요`) + (extra ? "<br>" + extra : "");
       SFX.end();
       host.innerHTML = `<div class="mg mg-${job}" style="--jc:${JC[job]}"><div class="mg-res"><div class="mg-rhead"><h3>${def.n} 끝</h3>${sndBtn()}</div>
         <div class="mg-stampw"><div class="mg-stamp g${gi}">${grade}</div></div>
         <div class="mg-rev">${pick(REVIEW[grade])}</div><div class="mg-ln">${line}</div>
         <div class="mg-big"><b data-cnt>0</b><span>/ 100</span></div>
         ${parts ? `<div class="mg-parts2">${parts.map(([n, v]) => { const p = Math.round(clamp(+v || 0, 0, 1) * 100); return `<div><span>${n}</span><i><em style="--w:${p}%"></em></i><b>${p}</b></div>`; }).join("")}</div>` : ""}
-        ${extra ? `<div class="mg-x">${extra}</div>` : ""}</div><div class="mg-foot"><button class="mg-btn gold" data-mg-ok>확인</button></div></div>`;
+        ${extra ? `<div class="mg-x">${extra}</div>` : ""}</div><div class="mg-foot">${canRe ? `<button class="mg-btn mg-re" data-mg-re>한 번 더?<small>더 잘한 판으로 쳐요</small></button>` : ""}<button class="mg-btn gold" data-mg-ok>확인</button></div></div>`;
       bindSnd(host);
       setTimeout(() => { SFX.stamp(); vib(25); }, 380);
       if (gi === 0) { const w = host.querySelector(".mg-stampw"); for (let k = 0; k < 7; k++) { const s = document.createElement("i"); s.className = "mg-spk"; s.textContent = "✨"; s.style.left = 50 + (rnd() - 0.5) * 70 + "%"; s.style.top = rnd() * 90 + "%"; s.style.animationDelay = 0.5 + rnd() * 0.9 + "s"; w.appendChild(s); } }
       const cnt = host.querySelector("[data-cnt]"), t1 = performance.now(), tgt = Math.round(score * 100);
       const up = () => { const p = Math.min(1, (performance.now() - t1 - 450) / 800); if (p > 0) cnt.textContent = Math.round(tgt * (1 - Math.pow(1 - p, 3))); if (p < 1 && cnt.isConnected) requestAnimationFrame(up); };
       requestAnimationFrame(up);
-      host.querySelector("[data-mg-ok]").onclick = () => resolve({ score, grade, line: line.replace(/<[^>]+>/g, "") });
+      host.querySelector("[data-mg-ok]").onclick = () => resolve(keepPrev ? prev : { score, grade, line: line.replace(/<[^>]+>/g, "") });
+      const re = host.querySelector("[data-mg-re]");
+      if (re) re.onclick = async () => { if (re.disabled) return; re.disabled = true; let ok = false; try { ok = await retryGate({ job, score, grade }); } catch (e) {} if (!ok || !host.contains(re)) { re.disabled = false; return; } prev = { score, grade, line: line.replace(/<[^>]+>/g, "") }; audioInit(); countdown(host, job, def.n + " · 한 번 더", () => play({ ...opts, retry: true })); };
     };
     const steps = introSteps(job) || [];
     host.innerHTML = `<div class="mg mg-${job}" style="--jc:${JC[job]}"><div class="mg-intro"><div class="mg-logo"><b>${def.n}</b><small>미니게임</small>${sndBtn()}</div><div class="mg-d">${def.desc}</div>
       <div class="mg-steps">${steps.map(([ic, t]) => `<div><i>${ic}</i>${t}</div>`).join("")}</div>
       <ol>${def.how.map((h) => `<li>${h}</li>`).join("")}</ol>${ez > 1.05 ? `<div class="mg-ease">능력치 덕분에 시간 여유 +${Math.round((ez - 1) * 100)}%</div>` : ""}</div><div class="mg-foot"><button class="mg-btn gold" data-mg-start>시작</button></div></div>`;
     bindSnd(host);
-    host.querySelector("[data-mg-start]").onclick = () => { audioInit(); countdown(host, job, def.n, () => GAMES[job](host, ez, finish, opts.skill || 0)); };
+    host.querySelector("[data-mg-start]").onclick = () => { audioInit(); countdown(host, job, def.n, () => play(opts)); };
   });
 }
 
@@ -1338,4 +1359,14 @@ function gIN(host, ez, finish) {
 const GAMES = { pr: gPR, cs: gCS, airbnb: gAB, ucafe: gUC, insta: gIN2 };
 
 // 다른 파일(mg_in.js 등)에서 쓰는 공통 도구
+// 2탄 등록(처음 부를 때 한 번). mg2 파일들이 다 읽힌 뒤라 안전
+let mg2Done = false;
+function mg2Init() {
+  if (mg2Done) return; mg2Done = true;
+  for (const g of MG2) { MG[g.key] = { n: g.n, desc: g.desc, how: g.how, base: g.base }; GAMES[g.key] = g.run; JC[g.key] = JC[g.base]; }
+}
+// 투잡(base)의 미니게임 목록: 1탄 + 2탄
+export function mgKeys(base) { mg2Init(); return Object.keys(MG).filter((k) => k === base || MG[k].base === base); }
+export { mg2Init };
+export { easeOf, gradeOf, uSpec, uSprite, uPaint, uOutline };
 export { frame, timer, SFX, tone, noise, vib, rnd, rint, pick, shuffle, clamp, RM, shutterSound };

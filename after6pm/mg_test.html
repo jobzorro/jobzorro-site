@@ -20,15 +20,17 @@ body{padding:12px max(12px,env(safe-area-inset-left,0px));display:flex;flex-dire
 <body>
 <div class="picks" id="picks"></div>
 <label class="sk">관련 능력치 <input type="range" id="skill" min="0" max="200" value="40"><b id="skv">40</b></label>
+<label class="sk">내 캐릭터(라이브 방송) <select id="av"><option value="pF1">여 1</option><option value="pF2">여 2</option><option value="pF3">여 3</option><option value="pF4">여 4</option><option value="pF5">여 5</option><option value="pF6">여 6</option><option value="pF7">여 7</option><option value="pF8">여 8</option><option value="pM1">남 1</option><option value="pM2">남 2</option><option value="pM3">남 3</option><option value="pM4">남 4</option><option value="pM5">남 5</option><option value="pM6">남 6</option><option value="pM7">남 7</option><option value="pM8">남 8</option></select></label>
 <div id="host"></div>
 <div id="out">위에서 미니게임을 골라요.</div>
 <script type="module">
-import { MG, mgRun } from "./mg.js";
+import { MG, mgRun, mg2Init } from "./mg.js";
+mg2Init();
 const host = document.getElementById("host"), out = document.getElementById("out"), sk = document.getElementById("skill");
 sk.oninput = () => (document.getElementById("skv").textContent = sk.value);
 const run = async (job, autoStart) => {
   out.textContent = MG[job].n + " 진행 중…";
-  const p = mgRun(job, host, { skill: +sk.value });
+  const p = mgRun(job, host, { skill: +sk.value, avatar: document.getElementById("av").value });
   if (autoStart) host.querySelector("[data-mg-start]")?.click();
   const r = await p;
   out.textContent = `${MG[job].n} 결과: ${r.grade} (점수 ${Math.round(r.score * 100)})\n${r.line}`;

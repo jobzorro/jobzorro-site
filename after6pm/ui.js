@@ -15,7 +15,7 @@ import * as FX from "./fx.js";
 import { ART } from "./gen/art.js";
 import { BODY, BG } from "./gen/body.js";
 import { CG } from "./gen/cg.js";
-import { MG, mgRun } from "./mg.js";
+import { MG, mgRun, mgKeys } from "./mg.js";
 const D = E.D;
 const $app = document.getElementById("app"), $modal = document.getElementById("modal"), $toast = document.getElementById("toast");
 let S = null, SLOT = 1, META_C = {};
@@ -75,6 +75,15 @@ function lookOf(id) { const c = E.CHAR[id]; if (c?.look?.hair) return c.look; if
 const EXI = { neutral: 0, smile: 1, sad: 2, angry: 3, blush: 4, surprised: 5 };
 const ART_CACHE = {}, ART_LOAD = {}, ART_FALL = new Map(), ART_THUMB = {};
 // 흐린 사본: 큰 그림이 오기 전 잠깐 보여 준다(img/cs, img/bs). 보이는 그림에 ld 표시를 붙여 흐리게.
+// 그림이 있는 사람은 불러오는 동안 도트 대신 흐린 실루엣(같은 비율). 주석에 key 를 넣어 사람마다 src 가 달라지게
+function ghost(key, i, mode) {
+  const [w, h] = mode === "full" ? [240, 540] : mode === "half" ? [240, 312] : [100, 100];
+  const hx = w / 2, hr = mode === "face" ? 26 : 42, hy = mode === "face" ? 42 : 96, sy = mode === "face" ? 74 : 150;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><!--${key}${i}${mode}--><g fill="#9a90b8" fill-opacity=".28"><circle cx="${hx}" cy="${hy}" r="${hr}"/><path d="M${hx - hr * 1.9} ${h}C${hx - hr * 1.9} ${sy + hr * 0.6} ${hx - hr} ${sy} ${hx} ${sy}S${hx + hr * 1.9} ${sy + hr * 0.6} ${hx + hr * 1.9} ${h}Z"/></g></svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+// 처음 켤 때 흐린 사본(작은 그림)을 미리 받아 둔다 → 바로 흐린 그림, 곧 선명한 그림
+function warmThumbs() { let k = 0; for (const id of Object.keys(BODY)) setTimeout(() => bodyThumb(id), 30 * k++); for (const id of ART) if (!BODY[id]) setTimeout(() => artThumb(id), 30 * k++); }
 const swapSrc = (el, src, done) => { el.setAttribute("src", src); el.classList.toggle("ld", !done); };
 function sheetCut(im, i, cw0) { const cw = Math.floor(im.width / 3), ch = Math.floor(im.height / 2), c = document.createElement("canvas"); c.width = cw; c.height = ch; c.getContext("2d").drawImage(im, (i % 3) * cw, Math.floor(i / 3) * ch, cw, ch, 0, 0, cw, ch); return c.toDataURL("image/webp", 0.8); }
 function artThumb(key) {
@@ -104,7 +113,7 @@ function artOr(key, expr, fallback) {
   const i = EXI[expr] ?? 0;
   if (ART_CACHE[key]) return ART_CACHE[key][i];
   const t = Array.isArray(ART_THUMB[key]) ? ART_THUMB[key][i] : null;
-  const fb = t || fallback(); if (fb) ART_FALL.set(fb, [key, i]); artThumb(key); artLoad(key); return fb;
+  const fb = t || ghost(key, i, "face"); if (fb) ART_FALL.set(fb, [key, i]); artThumb(key); artLoad(key); return fb;
 }
 new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) (n.matches?.("img") ? [n] : n.querySelectorAll("img.face,img.body")).forEach((el) => { const src = el.getAttribute("src"); if (src && (BODY_WAIT.has(src) || ART_FALL.has(src))) el.classList.add("ld"); }); }).observe(document.body, { childList: true, subtree: true });
 function artPreload(ids) { let k = 0; for (const id of ids) setTimeout(() => (BODY[id] ? bodyLoad(id) : artLoad(id)), 40 * k++); }
@@ -145,7 +154,7 @@ function bodyOr(key, expr, mode, fallback) {
   const i = EXI[expr] ?? 0;
   if (BODY_IMG[key]) return bodyCut(key, i, mode);
   let fb = null; if (BODY_TH[key] instanceof Image) try { fb = bodyCut(key, i, mode, BODY_TH[key]); } catch (e) {}
-  fb = fb || fallback(); if (fb) BODY_WAIT.set(fb, [key, i, mode]); bodyThumb(key); bodyLoad(key); return fb;
+  fb = fb || ghost(key, i, mode); if (fb) BODY_WAIT.set(fb, [key, i, mode]); bodyThumb(key); bodyLoad(key); return fb;
 }
 const pixFace = (id, expr) => () => { try { return portraitDataURL(lookOf(id), E.CHAR[id]?.gender || "F", expr, 4); } catch (e) { return ""; } };
 const pixMe = (expr) => () => { try { return portraitDataURL(S.me.look, S.me.gender, expr, 5); } catch (e) { return ""; } };
@@ -206,7 +215,9 @@ function doAct(id, arg) {
 const MGJ = { pr_manage: ["pr", "hands"], cs_work: ["cs", "write"], ab_host: ["airbnb", "lang"], uc_check: ["ucafe", "sense"], in_post: ["insta", "sense"] };
 const MG_SKIP_AT = 3;
 function mgOffer(id, arg) {
-  const [job, stat] = MGJ[id], G = MG[job], m = meta(), plays = (m.mgPlays || {})[job] || 0, skill = Math.round(S.st[stat] || 0);
+  const [job, stat] = MGJ[id], m = meta(), plays = (m.mgPlays || {})[job] || 0, skill = Math.round(S.st[stat] || 0);
+  // 같은 투잡에 게임이 여럿이면 번갈아 나온다(1탄 → 2탄 → 1탄 …)
+  const keys = mgKeys(job), gk = keys[plays % keys.length] || job, G = MG[gk];
   const canSkip = plays >= MG_SKIP_AT;
   const finish = (boost, lines) => { S.mgT = S.mgT || {}; S.mgT[job] = S.t; S.mgBoost = boost; closeWin(); const res = E.act(S, id, arg); if (!res.ok) { S.mgBoost = 0; return toast([], res.msg); } res.lines = [...lines, ...(res.lines || [])]; afterRes(res); };
   openWin(`<h2>${esc(G.n)} <span class="tag gold">미니게임</span></h2><div class="small muted">${esc(G.desc || "")}</div>
@@ -216,7 +227,7 @@ function mgOffer(id, arg) {
     w.querySelector("[data-mgskip]")?.addEventListener("click", () => { const b = +(0.9 + Math.min(200, skill) / 200 * 0.25).toFixed(2); finish(b, [`건너뛰기: 보통 결과(효과 ×${b})`]); });
     w.querySelector("[data-mgplay]").onclick = () => {
       openWin(`<div class="mghost"></div>`, async (w2) => {
-        let r = null; try { r = await mgRun(job, w2.querySelector(".mghost"), { skill }); } catch (e) { r = null; }
+        let r = null; try { r = await mgRun(gk, w2.querySelector(".mghost"), { skill, avatar: S.me.avatar || null, gender: S.me.gender || "F" }); } catch (e) { r = null; }
         const mm = meta(); mm.mgPlays = { ...(mm.mgPlays || {}), [job]: plays + 1 }; setMeta(mm);
         const sc = r ? Math.max(0, Math.min(1, r.score)) : 0.5, b = +(0.7 + sc * 0.8).toFixed(2);
         finish(b, [`미니게임 ${r?.grade || "보통"} · 효과 ×${b}`, ...(plays + 1 === MG_SKIP_AT ? ["이제 건너뛰기를 쓸 수 있어요"] : [])]);
@@ -1506,6 +1517,7 @@ APP.initApp({ onBack: () => {
 document.addEventListener("a6-installable", () => { const b = document.querySelector("[data-install]"); if (b) b.hidden = false; });
 ST.init().then(async () => {
   META_C = await ST.getMeta();
+  setTimeout(warmThumbs, 300);
   if (location.hash.startsWith("#flow")) flowTest(+(location.hash.match(/\d+/) || [24])[0]);
   else if (location.hash.startsWith("#auto")) autoTest(+(location.hash.match(/\d+/) || [18])[0]);
   else if (location.hash.startsWith("#wiz")) { startWizard(1); const w = ui.wiz; const n = +(location.hash.match(/\d/) || [1])[0]; if (n >= 2) { w.step = 2; w.rolls.push(E.rollStats(Math.random)); w.pick = 0; } if (n >= 3) { w.step = 3; w.major = "elec"; } if (n >= 4) { w.step = 4; w.company = "fin"; w.companyName = "신안은행"; w.job = "dfin"; } if (n >= 5) { w.step = 5; w.traits = w.pool.slice(0, 2); } renderWiz(); }
