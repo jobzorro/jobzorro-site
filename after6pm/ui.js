@@ -167,6 +167,9 @@ function toast(lines, msg) {
 // ───────── 행동 실행 ─────────
 function doAct(id, arg) {
   const a = D.ACTIONS[id];
+  if (S.pending) return showScene();
+  if (id === "hb_go" && !arg) return hobbyPick();
+  if (!arg && !a.pick) arg = defaultArg(id);
   ui.lastSpot = Object.values(D.SPOTS).find((sp) => sp.acts.includes(id))?.id || null;
   if (a.pick && arg === undefined) return pickFor(id);
   const res = E.act(S, id, arg);
@@ -178,6 +181,14 @@ function afterRes(res) {
   if (res.open?.startsWith("listings:")) { ui.page = "pr"; ui.prFlow = { step: "list", dk: res.open.split(":")[1] }; }
   save(); render();
   if (S.pending) showScene();
+}
+// 취미 모임 가기: 가입한 취미가 둘 이상이면 고른다
+function hobbyPick() {
+  const J = S.hb.joined;
+  if (!J.length) { toast([], "가입한 취미가 없어요. 취미 화면에서 먼저 가입해요"); return go("hobby"); }
+  if (J.length === 1) return doAct("hb_go", J[0]);
+  const left = J.filter((h) => S.hb.lastT[h] !== S.t).length;
+  openWin(`<h2>어느 모임에 갈까요? <button class="x" data-close>✕</button></h2><div class="pick">${J.map((h) => { const H = D.HOBBIES[h], done = S.hb.lastT[h] === S.t; return `<button data-hb="${h}" ${done ? "disabled" : ""}><b>${esc(H.n)}</b><span class="tiny muted">${done ? "이번 달 모임은 다녀왔어요" : "⚡1 · 회비 " + won(H.fee || 0)}</span></button>`; }).join("")}</div>${left ? "" : `<div class="small muted" style="margin-top:8px">이번 달 모임은 다 다녀왔어요.</div>`}`, (w) => w.querySelectorAll("[data-hb]").forEach((b) => b.onclick = () => { closeWin(); doAct("hb_go", b.dataset.hb); }));
 }
 function pickFor(id) {
   const a = D.ACTIONS[id];
@@ -221,6 +232,7 @@ function render() {
   $app.innerHTML = top() + pager() + `<div class="page ${ui.dir > 0 ? "inR" : ui.dir < 0 ? "inL" : ""}">${pages[ui.page]()}</div>` + nav();
   ui.dir = 0;
   bind();
+  if (S.pending && !$modal.innerHTML) setTimeout(() => { if (S && S.pending && !S.over && !S.ended && !$modal.innerHTML) showScene(); }, 0);
 }
 // ───────── 화면 지도(허브)·넘기기 ─────────
 const TILE = {
@@ -329,7 +341,7 @@ function apWin() {
     <p>한 달에 할 수 있는 <b class="gold">행동 횟수</b>예요. 이번 달 <b class="gold">${S.ap}번</b> 남았어요.</p>
     <p>버튼에 붙은 <b class="gold">⚡1</b>, <b class="gold">⚡2</b>는 그 행동에 드는 행동력이에요.</p>
     <p>다 쓰면 <b>다음 달</b>을 눌러요. 남겨도 괜찮지만 다음 달로 넘어가지는 않아요.</p>
-    <p><b class="good">스태미너</b>는 체력이에요. 행동할수록 줄고, 많이 줄면 다음 달 행동력도 줄어요. 지치면 '푹 쉬기'.</p></div>`);
+    <p><b class="good">스태미너</b>는 행동할수록 줄고, 많이 줄면 다음 달 행동력도 줄어요. 매달 <b>최대 스태미너의 40%</b>가 저절로 차요(지금 약 ${Math.round(S.hpMax * 0.4)}). 운동으로 체력을 키우면 최대치와 회복량이 같이 늘어요. 2~3달에 한 번쯤 '푹 쉬기'.</p></div>`);
 }
 function nav() {
   const td = E.todos(S).filter((t) => t.lv >= 2).length;
@@ -358,13 +370,14 @@ function pgHome() {
     <div class="lovers">${ring.map((id) => `<button data-char="${id}">${img(faceSrc(id, "blush"))}</button>`).join("")}</div>
     <div class="news"><div class="src">투잡일보 · ${S.year}.${String(S.cal).padStart(2, "0")}</div><div class="h">${esc(S.news)}</div></div>
   </div>
-  <div class="strip">
+  <div class="swipe2 hscroll" data-sw2><div class="strip">
     <div><div class="v good">${Math.round(S.hp)}</div><div class="k">스태미너</div>${meter(S.hp, S.hpMax, "var(--green)")}</div>
     <div><div class="v" style="color:var(--blue)">${Math.round(S.mental)}</div><div class="k">멘탈</div>${meter(S.mental, 100, "var(--blue)")}</div>
     <div><div class="v pink">${Math.round(S.st.charm)}</div><div class="k">매력</div>${meter(S.st.charm, 100, "var(--pink)")}</div>
     <div><div class="v" style="color:var(--orange)">${S.co.quit || S.co.fired ? "-" : Math.round(S.co.eye)}</div><div class="k">회사 눈치</div>${meter(S.co.eye, 100, "var(--orange)")}</div>
     <div><div class="v" style="color:var(--purple)">${S.fam.spouse ? Math.round(S.fam.happy) : Object.keys(S.rel).length}</div><div class="k">${S.fam.spouse ? "가족" : "인맥"}</div>${meter(S.fam.spouse ? S.fam.happy : Object.keys(S.rel).length, S.fam.spouse ? 100 : 40, "var(--purple)")}</div>
-  </div>
+  </div><div class="strip st10">${D.STAT_KEYS.map((k) => `<div><div class="v">${Math.round(S.st[k] || 0)}</div><div class="k">${D.STATS[k]}</div>${meter(S.st[k] || 0, 100, "var(--gold)")}</div>`).join("")}</div></div>
+  <button class="swhint" data-sw2go><i class="on"></i><i></i><span>옆으로 밀면 능력치</span></button>
   ${S.t < 4 && !S.coachOff ? `<div class="coach"><b>${ic("info")}이렇게 하면 돼요</b><ol><li><b>바로 하기</b>나 <b>지도</b>에서 행동을 골라요. 행동마다 ${ic("bolt")}행동력이 줄어요.</li><li>그림 속 <b>사람을 누르면</b> 말을 걸어 인연이 돼요.</li><li>행동력을 다 쓰면 맨 아래 <b class="gold">다음 달</b>을 눌러요.</li></ol><button class="x" data-coach>알겠어요</button></div>` : ""}
   ${td.length ? `<div class="sec">${ic("list")}이번 달 할 일 <span class="muted small">· 누르면 그곳으로 가요</span></div><div class="todo">${td.map((t) => `<button class="l${t.lv}" data-todo="${esc(t.go || "")}"><span class="dot"></span><span class="grow">${esc(t.text)}</span>${t.go ? '<span class="arr">›</span>' : ""}</button>`).join("")}</div>` : ""}
   <div class="sec">${ic("pin")}내 장소 <span class="muted small">· 눌러서 들어가요</span></div>
@@ -858,6 +871,7 @@ function charWin(id) {
       ${x.lover ? btn("breakup", "헤어지기", 0) : ""}
     </div></div>`, (el) => el.querySelectorAll("[data-pa]").forEach((b) => b.onclick = () => {
     const k = b.dataset.pa; let res;
+    if (S.pending) { closeWin(); return showScene(); }
     if (k === "talk") res = E.talkTo(S, id);
     else if (k.startsWith("gift")) res = E.personAct(S, id, "gift", +k.slice(4));
     else res = E.personAct(S, id, k);
@@ -950,6 +964,11 @@ function bind() {
   q("[data-go]", (el) => { const k = el.dataset.go; if (!unlocked(k)) return toast([], `🔒 ${PAGE_N[k]}: ${TILE[k]?.lock || "아직 잠겨 있어요"}`); go(k); });
   q("[data-hub]", () => openHub());
   q("[data-back]", () => goBack());
+  { const sw = $app.querySelector("[data-sw2]"), hb = $app.querySelector("[data-sw2go]");
+    if (sw && hb) { const dots = hb.querySelectorAll("i"), lab = hb.querySelector("span");
+      const upd = () => { const p = sw.scrollLeft > sw.clientWidth / 2 ? 1 : 0; dots.forEach((d, i) => d.classList.toggle("on", i === p)); lab.textContent = p ? "옆으로 밀면 상태" : "옆으로 밀면 능력치"; };
+      sw.addEventListener("scroll", upd, { passive: true });
+      hb.onclick = () => sw.scrollTo({ left: sw.scrollLeft > sw.clientWidth / 2 ? 0 : sw.clientWidth, behavior: "smooth" }); } }
   q("[data-money]", () => moneyWin());
   q("[data-apinfo]", () => apWin());
   q("[data-coach]", () => { S.coachOff = 1; save(); render(); });
@@ -959,7 +978,7 @@ function bind() {
   q("[data-sjf]", (el) => { ui.sjf = el.dataset.sjf; render(); });
   q("[data-hbjoin]", (el) => { const r = SJ.hbJoin(S, el.dataset.hbjoin); toast([], r.msg); save(); render(); });
   q("[data-hbleave]", (el) => { const r = SJ.hbLeave(S, el.dataset.hbleave); toast([], r.msg); save(); render(); });
-  q("[data-act]", (el) => { if (el.dataset.why) return toast([], el.dataset.why); doAct(el.dataset.act, el.dataset.arg); });
+  q("[data-act]", (el) => { if (S.pending) return showScene(); if (el.dataset.why) return toast([], el.dataset.why); doAct(el.dataset.act, el.dataset.arg); });
   q("[data-end]", () => endMonthFlow(false));
   q("[data-region]", (el) => { ui.region = el.dataset.region || null; render(); window.scrollTo(0, 0); });
   q("[data-char]", (el) => charWin(el.dataset.char));
@@ -1317,6 +1336,8 @@ function autoTest(n) {
   if (h.includes("quiz")) { S.cs.queue.push({ id: 999, prod: "edit", niche: "newgrad", left: 1, units: 1, price: 7, wait: 0 }); S.ap = 5; quizWin("cs_focus"); }
   if (location.hash.includes("scene")) { const id = S.cast[0]; E.openScene(S, E.meetScene(S, id)); showScene(); }
   if (location.hash.includes("char")) { const id = Object.keys(S.rel)[0]; if (id) charWin(id); }
+  if (location.hash.includes("hbpick")) { doAct("hb_go"); }
+  if (location.hash.includes("sw2")) { const sw = $app.querySelector("[data-sw2]"); if (sw) sw.scrollLeft = 9999; }
 }
 
 

@@ -899,7 +899,9 @@ function startEra(s, sc) {
   log(s, `[시대] ${sc.title}`, "era");
 }
 function bodyMonth(s, r, notes, scenes) {
-  let rec = 14 + mod(s, "hpRec", 0) - Math.max(0, (s.age - 33) / 3) + helperPower(s, "health") * 3;
+  // 한 달 회복 = 최대 스태미너의 40% (체력이 좋을수록 많이 찬다). 회사원은 −6, 33세부터 조금씩 줄어든다
+  syncSta(s);
+  let rec = s.hpMax * 0.4 + mod(s, "hpRec", 0) - Math.max(0, (s.age - 33) / 3) + helperPower(s, "health") * 3;
   if (!(s.co.quit || s.co.fired)) rec -= 6;
   s.hp = clamp(s.hp + rec, 0, s.hpMax);
   // 나이: 체력·감각은 서서히 떨어지고, 말빨·숫자는 경험으로 조금씩 는다

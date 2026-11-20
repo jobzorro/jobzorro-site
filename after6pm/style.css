@@ -440,3 +440,22 @@ html.big #app{zoom:1.12}
 .prefx{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin:0 0 10px;color:var(--muted)}
 .prefx span{color:var(--fg);width:100%}.prefx b{color:var(--gold);font-weight:700}
 body:has(#modal .bg) #toast{bottom:auto;top:calc(10px + env(safe-area-inset-top,0px))}
+
+/* v4.12 홈 상태 ↔ 능력치 밀기 */
+.swipe2{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:14px}
+.swipe2::-webkit-scrollbar{display:none}
+.swipe2>.strip{flex:0 0 100%;scroll-snap-align:start}
+.strip.st10{grid-template-columns:repeat(5,1fr)}
+.strip.st10>div{border-bottom:1px solid var(--line)}
+.strip.st10>div:nth-child(5n){border-right:0}
+.strip.st10>div:nth-child(n+6){border-bottom:0}
+.strip.st10 .v{font-size:15px;color:var(--gold)}
+.swhint{display:flex;align-items:center;justify-content:center;gap:5px;margin:-6px auto 0;font-size:11px;color:var(--muted);padding:2px 8px}
+.swhint i{width:6px;height:6px;border-radius:50%;background:var(--line)}.swhint i.on{background:var(--gold)}
+.swhint span{margin-left:3px}
+.swipe2{align-items:flex-start}
+.strip.st10>div{padding:4px 2px 5px}
+.strip.st10 .v{font-size:13.5px;line-height:1.2}
+.strip.st10 .k{font-size:10px;line-height:1.2}
+.strip.st10 .meter{height:3px;margin:3px 8px 0}
+.strip.st10>div>div{padding:0;border:0}
