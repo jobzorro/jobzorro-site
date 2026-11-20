@@ -19,7 +19,7 @@ from pathlib import Path
 
 BASE = Path(__file__).parent
 THEME = "#0b0b0b"
-SKIP = ("admin",)   # 앱에 넣지 않을 최상위 폴더
+SKIP = ("admin", "after6pm")   # 앱에 넣지 않을 최상위 폴더 (after6pm: 게임 After 6PM — 자기 manifest·sw.js 를 따로 가진 별도 앱, 2026-11-20)
 
 # 플레이스토어 앱(jobzorro-app 폴더, 패키지 kr.jobzorro.app)이 이 사이트의 '공식 앱'임을 증명하는 서명 지문.
 # 맞지 않으면 앱 위에 주소창이 뜬다. 업로드 키 + (플레이 콘솔 '앱 서명' 화면의) 구글 앱 서명 키 둘 다 넣는다.

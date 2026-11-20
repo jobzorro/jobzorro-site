@@ -1833,6 +1833,12 @@ def build(out_dir: Path, with_news: bool) -> None:
         with open(out_dir / "llms.txt", "a", encoding="utf-8") as f:
             f.write(f"\n## 연봉 놀이터\n- [연봉 놀이터]({base_url}play/): 연봉 연구소 자료로 하는 매일 게임 6종(연봉 줄서기·스무고개 퀴즈·연봉 스나이퍼·커리어 로드 20년·조로 출근길·드림 컴퍼니 월드컵), 오늘의 도전 순위와 명예의 전당\n")
         print("연봉 놀이터: /play/")
+    # ---- After 6PM (/after6pm/): 투잡 게임. twojob-game/v4/tools/publish_site.py 가 만든 after6pm/ 을 그대로 복사한다 (2026-11-20)
+    #      자기 manifest·sw.js 를 가진 별도 앱이라 상단 메뉴·사이트 앱 연결(pwa.SKIP)은 붙이지 않는다. 메뉴·sitemap 에는 아직 넣지 않음(정식 공개 때)
+    a6 = BASE / "after6pm"
+    if (a6 / "index.html").exists():
+        dst = out_dir / "after6pm"; shutil.rmtree(dst, ignore_errors=True); shutil.copytree(a6, dst)
+        print(f"After 6PM: /after6pm/ (파일 {sum(1 for f in dst.rglob('*') if f.is_file())}개)")
     if lm_seen:
         save_lastmod(lm_state, lm_seen)
     sm_idx = seo.write_sitemap(out_dir, base_url, entries)

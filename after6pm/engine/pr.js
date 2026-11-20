@@ -1,0 +1,503 @@
+// 파티룸 보드: 상권 → 매물(숨은 정보) → 계약·컨셉·인테리어 → 여러 지점 운영(규모의 경제)
+import * as D from "./defs.js";
+import { CHAR, addMoney, applyEff, helperPower, helpers, mod, won, log, creditRoom, addLoan, openScene, meetScene, gainStat, addAff } from "./core.js";
+import * as SYN from "./syn.js";
+import * as BIG from "./big.js";
+import { JOBEV } from "../gen/data.js";
+
+const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+export function init() { return { rooms: [], listings: [], sys: { cleanContract: false, smartlock: [], booking: false, manager: false }, known: {}, lv: 1, seq: 0, promo: {}, profitHist: [], evT: -99, bestMonth: 0, know: 0, courseT: -99, teachT: -1, clubT: -1, offerT: -99, sold: 0, soldSum: 0 }; }
+export const fill = (s) => { const p = s.pr; p.know = p.know || 0; p.courseT = p.courseT ?? -99; p.offerT = p.offerT ?? -99; p.sold = p.sold || 0; p.soldSum = p.soldSum || 0; for (const rm of p.rooms) { rm.buzz = rm.buzz || 0; rm.decor = rm.decor || { light: 1, seat: 1, wall: 1 }; } };
+// 노하우 0~100: 별점 +최대 0.25, 비용 −최대 20%, 관리 행동력 −최대 1.5
+const knowStar = (s) => (s.pr.know || 0) / 400, knowCost = (s) => 1 - (s.pr.know || 0) / 500;
+// 상권 시장 상태: 경쟁 파티룸 수와 그들의 평균 1건 가격. 잘되는 상권엔 새 가게가 들어오고, 불황엔 문을 닫는다
+export function mkt(s, dk) {
+  s.pr.mkt = s.pr.mkt || {};
+  if (!s.pr.mkt[dk]) { const d = D.DISTRICTS[dk]; s.pr.mkt[dk] = { comp: Math.round((d.comp[0] + d.comp[1]) / 2), price: d.price * SYN.pi(s) * 0.98, hist: [] }; }
+  return s.pr.mkt[dk];
+}
+function mktMonth(s, r, notes) {
+  for (const dk of Object.keys(D.DISTRICTS)) {
+    const M = mkt(s, dk), d = D.DISTRICTS[dk];
+    const mine = s.pr.rooms.filter((x) => x.dk === dk && x.status === "open" && x.last);
+    const occ = mine.length ? mine.reduce((a, x) => a + x.last.occ, 0) / mine.length : 0.5;
+    const pIn = 0.035 + (isPeak(s.cal) ? 0.02 : 0) + (occ > 0.7 ? 0.05 : 0) + (mine.some((x) => (x.buzz || 0) > 50) ? 0.02 : 0) + (s.era.bigcomp ? 0.07 : 0) - (s.era.winter ? 0.02 : 0);
+    const pOut = 0.02 + (s.era.winter ? 0.05 : 0) + (s.era.pandemic ? 0.08 : 0) + (M.comp > d.comp[1] ? 0.04 : 0);
+    if (M.comp < d.comp[1] + 6 && r.chance(pIn)) { M.comp++; M.price *= 0.99; if (mine.length) notes.push(d.n + "에 새 파티룸이 생겼다(경쟁 " + M.comp + "곳, 시세 " + Math.round(M.price) + "만)"); }
+    else if (M.comp > 0 && r.chance(pOut)) { M.comp--; M.price *= 1.015; if (mine.length) notes.push(d.n + " 경쟁 파티룸 한 곳이 문을 닫았다(경쟁 " + M.comp + "곳)"); }
+    if (M.comp > d.comp[1] + 2) M.price *= 0.997; // 경쟁이 심하면 가격 경쟁
+    M.price *= 1 + D.INFL / 12;
+    M.hist.push(M.comp); if (M.hist.length > 24) M.hist.shift();
+  }
+}
+// ───────── 꾸미기 ─────────
+function presetDecor(r) { const o = {}; for (const [k, sl] of Object.entries(D.DECOR)) o[k] = r.int(1, sl.opts.length - 1); return o; }
+// 컨셉과 꾸밈의 궁합 0~1
+export function decorFit(concept, decor) {
+  const want = D.DECOR_WANT[concept] || {}; let got = 0, best = 0;
+  for (const [k, sl] of Object.entries(D.DECOR)) {
+    const sc = (o) => o.tags.reduce((a, tg) => a + (want[tg] || 0), 0);
+    best += Math.max(...sl.opts.map(sc));
+    const i = decor?.[k]; if (i !== undefined) got += sc(sl.opts[i]);
+  }
+  return best ? Math.min(1, got / best) : 0;
+}
+// 컨셉에 가장 잘 맞는 꾸밈(칸마다 점수 높은 것, 같으면 싼 것)
+export function bestDecor(concept) { const want = D.DECOR_WANT[concept] || {}; const o = {}; for (const [k, sl] of Object.entries(D.DECOR)) { let bi = 0, bv = -1; sl.opts.forEach((op, i) => { const v = op.tags.reduce((a, tg) => a + (want[tg] || 0), 0) - op.c / 1000; if (v > bv) { bv = v; bi = i; } }); o[k] = bi; } return o; }
+export const decorFilled = (decor) => Object.keys(decor || {}).filter((k) => D.DECOR[k]).length;
+export function decorQ(s, rm) { const f = decorFit(rm.concept, rm.decor); const fill = decorFilled(rm.decor) / Object.keys(D.DECOR).length; return clamp(f * (0.6 + s.st.sense / 250) * (0.5 + fill / 2), 0, 1.2); }
+export function decorCost(s, rm, picks) {
+  let c = 0; for (const [k, i] of Object.entries(picks)) { if (!D.DECOR[k] || rm.decor?.[k] === i) continue; c += D.DECOR[k].opts[i].c; }
+  return Math.round(c * rm.size / 22 * SYN.pi(s) * D.scaleF(s.pr.rooms.length) * mod(s, "interiorCost", 1));
+}
+export const avgProfit = (rm) => { const h = rm.hist.slice(-6); return h.length ? h.reduce((a, x) => a + x.profit, 0) / h.length : 0; };
+export const conceptOk = (L, k) => { const c = D.CONCEPTS[k]; return c.req ? c.req(L) : null; };
+export function quote(s, L, o) {
+  const it = D.INTERIORS[o.interior ?? 1], scale = L.size / 22, pi = SYN.pi(s), n = s.pr.rooms.length + 1, sf = D.scaleF(n);
+  let interior = Math.round(it.cost * scale * pi * sf * (D.PR_COND[L.cond || "empty"]?.cost ?? 1) * mod(s, "interiorCost", 1) * mod(s, "openCost", 1) * (1 - helperPower(s, "pr_interior") * 0.12));
+  if (o.self) interior = Math.round(interior * 0.65);
+  const ondol = o.ondol && L.hid.ondolOk !== false ? Math.round(250 * scale * pi * sf) : 0;
+  const kit = Math.round((D.CONCEPTS[o.concept]?.kit || 0) * pi * sf);
+  const furn = Math.round(400 * pi * sf);
+  return { interior, ondol, kit, furn, total: L.dep + L.key + interior + ondol + kit + furn, sf, pi };
+}
+// 내놓으면 받을 수 있는 돈(보증금 + 권리금): 별점·수익이 좋을수록 비싸게 판다
+export function resale(s, rm) { const ap = avgProfit(rm); const rf = clamp((rm.rating - 4.0) / 0.8, 0.2, 1.1); return Math.round(rm.dep + Math.max(rm.key * 0.5 * rf, ap * 10 * rf) * (rm.months >= 6 ? 1 : 0.6)); }
+
+export function monthStart(s) {
+  for (const rm of s.pr.rooms) { rm.ap = 0; rm.promo = 0; }
+  // 매물은 2달 지나면 빠진다
+  s.pr.listings = s.pr.listings.filter((l) => s.t - l.t <= 2);
+}
+
+// ───────── 매물 만들기 ─────────
+function makeListing(s, r, dk) {
+  const d = D.DISTRICTS[dk];
+  const size = r.chance(0.12) ? r.int(40, 65) : r.int(d.size[0], d.size[1]);
+  const basement = r.chance(d.base);
+  const floor = basement ? -1 : r.weighted([[1, 0.2], [2, 0.35], [3, 0.25], [4, 0.12], [5, 0.08]]);
+  const elevator = floor >= 2 ? r.chance(floor >= 4 ? 0.75 : 0.45) : false;
+  const parking = r.weighted([[0, 1 - d.park * 0.6], [1, 0.35], [2, d.park * 0.4]]);
+  const toilet = r.chance(basement ? 0.4 : 0.55) ? "in" : "out";
+  const heating = r.weighted([["개별보일러", basement ? 0.15 : 0.45], ["중앙난방", 0.2], ["냉난방기만", basement ? 0.65 : 0.35]]);
+  const ondolOk = r.chance(heating === "개별보일러" ? 0.7 : heating === "중앙난방" ? 0.4 : basement ? 0.1 : 0.15);
+  const sound = basement ? r.weighted([["좋음", 0.5], ["보통", 0.35], ["나쁨", 0.15]]) : r.weighted([["좋음", 0.28], ["보통", 0.45], ["나쁨", 0.27]]);
+  const access24 = r.chance(0.68);
+  let landlord = r.weighted([["환영", 0.25], ["찜찜", 0.45], ["싫어함", 0.3]]);
+  const comp = mkt(s, dk).comp;
+  const walk = r.int(2, 15);
+  const sizeF = size / ((d.size[0] + d.size[1]) / 2);
+  const floorF = basement ? 0.75 : floor === 1 ? 1.15 : floor >= 3 && !elevator ? 0.9 : 1;
+  const pi = SYN.pi(s) * (s.era.rentup ? 1.2 : 1);
+  const rent = rentFor(s, { dk, size, floor, elevator, toilet, walk }, r.next()) * (s.era.rentup ? 1.2 : 1);
+  const dep = Math.round(rent * r.range(8, 12) / 100) * 100; // 보증금은 월세 10배 안팎
+  const key = Math.round(r.range(d.key[0], d.key[1]) * (walk <= 5 ? 1.2 : 1) * pi / 50) * 50;
+  const far = dk === "local" ? 3 : r.int(0, 2); // 집과 거리(관리 행동력 가중)
+  const cond = r.weighted([["empty", 0.5], ["half", 0.3], ["turnkey", 0.2]]);
+  const pre = cond === "turnkey" ? presetDecor(r) : cond === "half" ? { light: 1, kitchen: 1 } : {};
+  const L = { id: "L" + (++s.pr.seq), t: s.t, dk, size, floor, elevator, parking, toilet, heating, walk, rent, dep, key: Math.round(key * D.PR_COND[cond].key / 10) * 10, far, cond, pre,
+    hid: { sound, access24, landlord, comp, ondolOk }, seen: {} };
+  // 조력자: 중개사가 숨은 정보 1개 공개
+  if (helpers(s, "pr_realty").length) { const k = r.pick(["sound", "access24", "landlord", "comp", "ondolOk"]); L.seen[k] = true; }
+  return L;
+}
+function landlordListing(s, r) { // 건물주 인연이 주는 매물
+  const h = helpers(s, "pr_landlord")[0]; if (!h) return null;
+  const dk = r.pick(Object.keys(D.DISTRICTS).filter((k) => k !== "local"));
+  const L = makeListing(s, r, dk); L.hid.landlord = "환영"; L.seen.landlord = true; L.key = 0; L.rent = Math.round(L.rent * 0.9); L.by = h.id; return L;
+}
+
+// ───────── 행동 ─────────
+export function can(s, id, arg) {
+  const pr = s.pr;
+  if (id === "pr_search" || id === "pr_meetup" || id === "pr_decor") return null;
+  if (id === "pr_course") return s.t - pr.courseT < 6 ? `다음 교육은 ${6 - (s.t - pr.courseT)}달 뒤` : pr.know >= 80 ? "배울 만큼 배웠어요" : null;
+  if (id === "pr_teach") return pr.rooms.length < 3 || pr.know < 50 ? `지점 3곳·노하우 50부터(지금 ${pr.rooms.length}곳·${Math.round(pr.know)})` : pr.teachT === s.t ? "이번 달은 강의했어요" : null;
+  if (id === "pr_club") return !SYN.on(s, "club") ? "파티룸과 이어진 취미 모임에 다녀야 해요(와인·보드게임·밴드·러닝·사진)" : pr.clubT === s.t ? "이번 달 행사를 열었어요" : null;
+  if (id === "pr_review") return pr.rooms.some((x) => x.status === "open") ? null : "운영 중인 지점이 없어요";
+  if (["pr_visit", "pr_landlord", "pr_appcheck"].includes(id)) { const L = pr.listings.find((x) => x.id === arg); if (!L) return "매물을 먼저 고르세요"; const k = { pr_visit: "visit", pr_landlord: "meet", pr_appcheck: "app" }[id]; if (L.seen[k]) return "이미 확인했습니다"; return null; }
+  if (id === "pr_setup") { const rm = pr.rooms.find((x) => x.id === arg) || pr.rooms.find((x) => x.status === "setup" && x.self > 0); if (!rm || !(rm.self > 0)) return "셀프 공사 중인 지점이 없습니다"; return null; }
+  if (id === "pr_manage" || id === "pr_promo") { const rm = pr.rooms.find((x) => x.id === arg) || pr.rooms.find((x) => x.status === "open"); if (!rm || rm.status !== "open") return "운영 중인 지점이 없습니다"; return null; }
+  return null;
+}
+export function act(s, r, id, arg, boost = 1) {
+  const pr = s.pr;
+  if (id === "pr_decor") {
+    let o; try { o = typeof arg === "string" ? JSON.parse(arg) : arg; } catch (e) { o = null; }
+    const rm = o && pr.rooms.find((x) => x.id === o.id); if (!rm) return { lines: ["꾸밀 지점을 고르세요"] };
+    const cost = decorCost(s, rm, o.picks); if (s.cash - cost < -creditRoom(s)) return { lines: [`돈이 모자라요(${won(cost)})`] };
+    const before = Math.round(decorFit(rm.concept, rm.decor) * 100);
+    s.cash -= cost; addMoney(s, "exp", "파티룸 꾸미기", cost); rm.decor = { ...rm.decor, ...o.picks };
+    const after = Math.round(decorFit(rm.concept, rm.decor) * 100); gainStat(s, "sense", 0.6); gainStat(s, "hands", 0.3);
+    if (rm.status === "open") rm.buzz = Math.min(100, (rm.buzz || 0) + Math.max(0, after - before) / 5);
+    return { lines: [`${rm.name} 컨셉 궁합 ${before}% → ${after}%`, `비용 −${won(cost)}`], msg: after >= 80 ? "\"여기 완전 인별 각이다.\" 첫 손님이 사진부터 찍었다." : after >= 50 ? "나쁘지 않다. 한두 군데만 더 손보면 될 것 같다." : "뭔가 어수선하다. 컨셉이 안 보인다." };
+  }
+  if (id === "pr_meetup") {
+    const g = 5 * (1 - pr.know / 100) + 1; pr.know = Math.min(100, pr.know + g); const lines = [`운영 노하우 +${g.toFixed(1)} → ${Math.round(pr.know)}`];
+    if (r.chance(0.3)) { const dk = r.pick(Object.keys(D.DISTRICTS).filter((k) => k !== "local")); const L = makeListing(s, r, dk); L.hid.landlord = "환영"; L.seen.landlord = L.seen.meet = true; L.key = Math.round(L.key * 0.5); pr.listings.push(L); lines.push(`${D.DISTRICTS[dk].n} 좋은 매물 정보(권리금 반값)`); }
+    const cands = s.cast.filter((id2) => !s.rel[id2] && /사장|대표|자영업|창업|운영/.test(CHAR[id2]?.job || ""));
+    if (cands.length && r.chance(0.3)) return { scene: meetScene(s, r.pick(cands), "옆자리 사장님이 명함을 건넸다. "), lines };
+    return { lines, msg: r.pick(["\"청소 업체는 여기가 제일 싸요.\" 단톡방에 초대받았다.", "\"권리금은 별점이 4.7을 넘으면 두 배가 돼요.\"", "\"민원은 첫 통화가 전부예요. 먼저 찾아가세요.\""]) };
+  }
+  if (id === "pr_course") { pr.courseT = s.t; const g = 14 * (1 - pr.know / 120); pr.know = Math.min(100, pr.know + g); gainStat(s, "num", 1); return { lines: [`운영 노하우 +${g.toFixed(1)} → ${Math.round(pr.know)}`, "숫자 +"], msg: "공간 창업 아카데미 4주 과정. 손익표 템플릿을 받았다." }; }
+  if (id === "pr_teach") {
+    pr.teachT = s.t; const fee = Math.round((60 + pr.know) * SYN.pi(s) * mod(s, "lectureMult", 1)); s.cash += fee; addMoney(s, "inc", "파티룸 강의료", fee);
+    for (const x of pr.rooms) x.buzz = Math.min(100, (x.buzz || 0) + 5); pr.know = Math.min(100, pr.know + 1.5);
+    const lines = [`강의료 +${won(fee)}`, "모든 지점 입소문 +5", ...applyEff(s, { eye: 4 })]; if (s.sj.active.includes("cs")) { s.cs.refer += 0.5; lines.push("컨설팅 소개 +"); }
+    return { lines, msg: "\"파티룸, 입지보다 운영입니다.\" 수강생 30명이 받아 적었다." };
+  }
+  if (id === "pr_club") {
+    pr.clubT = s.t; const hb = s.hb.joined.find((h) => D.CLUB_HOBBY[h]); const rm = pr.rooms.filter((x) => x.status === "open").sort((a, b) => b.size - a.size)[0];
+    const lvb = 1 + (s.hb.cnt[hb] || 0) / 30; const rev = Math.round(r.int(40, 90) * SYN.pi(s) * lvb); s.cash += rev; addMoney(s, "inc", "파티룸 매출", rev);
+    rm.buzz = Math.min(100, (rm.buzz || 0) + 12); for (const id2 of s.spot["hb_" + hb] || []) if (s.rel[id2]) addAff(s, id2, 3);
+    s.mental = clamp(s.mental + 3, 0, 100);
+    return { lines: [`${D.CLUB_HOBBY[hb]} 매출 +${won(rev)}`, `${rm.name} 입소문 +12`, "모임 사람들 호감 +3", "멘탈 +3"], msg: `${D.HOBBIES[hb].n} 사람들이 ${rm.name}에 모였다. 다들 인별에 사진을 올렸다.` };
+  }
+  if (id === "pr_review") { const open = pr.rooms.filter((x) => x.status === "open"); for (const x of open) x.buzz = Math.min(100, (x.buzz || 0) + 8 * D.CONCEPTS[x.concept].sns); gainStat(s, "mkt", 0.4); return { lines: [`${open.length}곳 입소문 +`], msg: "\"후기 남기면 음료 쿠폰!\" 블로그 체험단 10명을 모았다." }; }
+  if (id === "pr_search") {
+    const dk = arg || "univ";
+    const n = 3 + (helpers(s, "pr_realty").length ? 1 : 0);
+    const ls = Array.from({ length: n }, () => makeListing(s, r, dk));
+    if (r.chance(0.5)) { const ll = landlordListing(s, r); if (ll) ls.push(ll); }
+    pr.listings = pr.listings.filter((l) => l.dk !== dk).concat(ls);
+    if (s.st.num < 90) s.st.num += 0.3;
+    return { lines: [`${D.DISTRICTS[dk].n} 매물 ${ls.length}개`], msg: D.DISTRICTS[dk].tip, open: "listings:" + dk };
+  }
+  const L = pr.listings.find((x) => x.id === arg);
+  if (id === "pr_visit") {
+    L.seen.visit = L.seen.sound = L.seen.access24 = L.seen.ondolOk = true; s.st.hands += 0.2;
+    const msg = [`방음 ${L.hid.sound}`, L.hid.access24 ? "24시간 출입 가능" : "밤 12시 이후 출입 불가", L.hid.ondolOk ? "온돌 시공 가능" : "온돌 시공 불가"];
+    return { lines: msg, msg: L.hid.sound === "나쁨" ? "벽을 두드리니 옆집 TV 소리가 들린다." : "발로 바닥을 굴러 봤다. 생각보다 조용하다." };
+  }
+  if (id === "pr_landlord") {
+    L.seen.meet = L.seen.landlord = true;
+    let msg = `건물주: ${L.hid.landlord}`;
+    if (L.hid.landlord !== "환영") {
+      const p = clamp(0.5 + (s.st.talk - 45) / 40, 0.05, 0.9) * (L.hid.landlord === "싫어함" ? 0.45 : 1);
+      if (r.chance(p)) { L.hid.landlord = L.hid.landlord === "싫어함" ? "찜찜" : "환영"; msg += ` → 설득 성공, ${L.hid.landlord}`; }
+      else msg += " (설득 실패)";
+    }
+    return { lines: [msg], msg: L.hid.landlord === "환영" ? "\"요즘 젊은 사장님들 열심이지. 잘해 봐요.\"" : "\"시끄럽게만 안 하면...\" 눈빛이 날카롭다." };
+  }
+  if (id === "pr_appcheck") {
+    L.seen.app = L.seen.comp = true;
+    const extra = mod(s, "appReveal", 1) >= 2 ? (L.seen.sound ? "landlord" : "sound") : null; if (extra) L.seen[extra] = true;
+    const d = D.DISTRICTS[L.dk];
+    const best = Object.entries(d.fit).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k]) => D.CONCEPTS[k].n).join(", ");
+    const M = mkt(s, L.dk);
+    return { lines: [`반경 500m 경쟁 파티룸 ${M.comp}곳 · 평균 1건 ${Math.round(M.price)}만`, `예약 많은 컨셉: ${best}`, extra ? `${extra === "sound" ? "방음" : "건물주"} 리뷰로 확인: ${L.hid[extra]}` : ""].filter(Boolean), msg: "우주공간 지도를 30분 동안 뒤졌다." };
+  }
+  if (id === "pr_setup") {
+    const rm = pr.rooms.find((x) => x.id === arg) || pr.rooms.find((x) => x.status === "setup" && x.self > 0);
+    rm.self--; const q = (s.st.sense + s.st.hands) / 2;
+    rm.selfQ = (rm.selfQ || 0) + (q - 45) / 300 + mod(s, "selfStar", 0) / 3;
+    s.st.hands = clamp(s.st.hands + 0.6, 0, 200);
+    return { lines: [rm.self ? `남은 공사 ${rm.self}번` : "셀프 공사 끝! 다음 달 오픈"], msg: "페인트 냄새와 먼지. 손바닥에 물집이 잡혔다." };
+  }
+  const rm = pr.rooms.find((x) => x.id === arg) || pr.rooms.find((x) => x.status === "open");
+  if (id === "pr_manage") { rm.ap += 1 * boost; s.st.hands = clamp(s.st.hands + 0.3, 0, 200); return { lines: [`${rm.name} 관리 ${fmt(rm.ap)}/${fmt(needAp(s, rm))}`], msg: "청소기 돌리고 비품 채우고 리뷰에 답글." }; }
+  if (id === "pr_promo") { rm.promo = Math.min(2, rm.promo + 1); rm.buzz = Math.min(100, (rm.buzz || 0) + 3); s.st.sense = clamp(s.st.sense + 0.4, 0, 200); s.st.mkt = clamp(s.st.mkt + 0.3, 0, 200); return { lines: [`${rm.name} 이번 달 예약 +${rm.promo * 12 > 20 ? 20 : rm.promo * 12}%`], msg: "자연광 오후 4시, 인생샷 각도를 찾았다." }; }
+  return null;
+}
+const fmt = (x) => Math.round(x * 10) / 10;
+
+// 계약 (UI에서 직접 부름, 행동력 0)
+export function contract(s, listingId, o) {
+  const pr = s.pr; const L = pr.listings.find((x) => x.id === listingId); if (!L) return { ok: false, msg: "매물이 없습니다" };
+  const it = D.INTERIORS[o.interior ?? 1];
+  const why = conceptOk(L, o.concept); if (why) return { ok: false, msg: `${D.CONCEPTS[o.concept].n}: ${why}` };
+  if (o.ondol && !L.hid.ondolOk && L.seen.ondolOk) return { ok: false, msg: "이 매물은 온돌 시공이 안 됩니다" };
+  const qt = quote(s, L, { ...o, ondol: o.ondol && L.hid.ondolOk }); const total = qt.total;
+  const lack = total - s.cash;
+  if (lack > 0) { const lim = 6000 - (s.loans.find((l) => l.n === "사업자대출")?.amt || 0); if (lack > lim + creditRoom(s) * 0.5) return { ok: false, msg: `돈이 ${won(lack)} 모자랍니다(사업자대출 한도 ${won(Math.max(0, lim))})` }; addLoan(s, "사업자대출", Math.min(lack + 100, Math.max(0, lim)), 0.048); s.cash += Math.min(lack + 100, Math.max(0, lim)); }
+  s.cash -= total; addMoney(s, "exp", "파티룸 개업 투자", total);
+  // 몰래 계약한 숨은 위험은 그대로 따라온다(확인 안 한 정보는 나중에 드러남)
+  const n = pr.rooms.length + 1;
+  const ondolInstalled = !!(o.ondol && L.hid.ondolOk);
+  const rm = { id: "R" + (++pr.seq), name: `${n}호점 ${D.DISTRICTS[L.dk].n}`, ...L, concept: o.concept, interior: o.interior ?? 1, ondol: ondolInstalled, price: Math.round(mkt(s, L.dk).price * D.CONCEPTS[o.concept].priceF * it.priceF * sizeP(L)),
+    status: "setup", buzz: 0, decor: { ...(L.pre || {}) }, self: o.self ? 3 : 0, selfQ: 0, openT: null, rating: 0, reviews: 0, complaints: 0, months: 0, ap: 0, promo: 0, invested: total, notice: null, last: null, hist: [] };
+  pr.rooms.push(rm);
+  pr.listings = pr.listings.filter((x) => x.id !== listingId);
+  if (o.ondol && !L.hid.ondolOk) rm.ondolFail = true;
+  log(s, `${rm.name} 계약 (${D.CONCEPTS[o.concept].n} · ${it.n}${ondolInstalled ? " · 온돌" : ""}). 투자금 ${won(total)}${qt.sf < 1 ? ` · 규모의 경제 ×${qt.sf}` : ""}`, "work");
+  return { ok: true, msg: `${rm.name} 계약! ${o.self ? "셀프 공사 3번 필요" : "업체 공사 중, 다음 달 오픈"}`, room: rm };
+}
+export function setPrice(s, roomId, price) { const rm = s.pr.rooms.find((x) => x.id === roomId); if (rm) rm.price = clamp(Math.round(price), 5, 120); }
+export function setConcept(s, roomId, concept) { const rm = s.pr.rooms.find((x) => x.id === roomId); if (!rm || rm.concept === concept) return { ok: false }; const why = conceptOk(rm, concept); if (why) return { ok: false, msg: why }; const c = Math.round((300 * rm.size / 22 + (D.CONCEPTS[concept].kit || 0)) * SYN.pi(s)); s.cash -= c; addMoney(s, "exp", "컨셉 변경 공사", c); rm.concept = concept; rm.rating = Math.max(3.8, rm.rating - 0.1); return { ok: true, msg: `컨셉 변경 (${won(c)})` }; }
+export function buySystem(s, key, roomId) {
+  const sys = s.pr.sys, def = D.SCALE.systems[key];
+  const nOpen = s.pr.rooms.length;
+  if (nOpen < def.need) return { ok: false, msg: `지점 ${def.need}곳부터` };
+  if (key === "smartlock") { const rm = s.pr.rooms.find((x) => x.id === roomId && !sys.smartlock.includes(x.id)) || s.pr.rooms.find((x) => !sys.smartlock.includes(x.id)); if (!rm) return { ok: false, msg: "모든 지점에 설치됨" }; s.cash -= def.cost; addMoney(s, "exp", "운영 시스템", def.cost); sys.smartlock.push(rm.id); return { ok: true, msg: `${rm.name} 스마트락 설치` }; }
+  if (key === "bulk") return { ok: false, msg: "3곳부터 자동 적용" };
+  sys[key] = !sys[key];
+  if (sys[key] && def.cost) { s.cash -= def.cost; addMoney(s, "exp", "운영 시스템", def.cost); }
+  return { ok: true, msg: `${def.n} ${sys[key] ? "시작" : "중단"}` };
+}
+export function sellRoom(s, roomId, price, why) {
+  const pr = s.pr; const rm = pr.rooms.find((x) => x.id === roomId); if (!rm) return [];
+  s.cash += price; addMoney(s, "inc", "권리금 매각", price); pr.sold++; pr.soldSum += price - rm.dep;
+  pr.rooms = pr.rooms.filter((x) => x !== rm); pr.sys.smartlock = pr.sys.smartlock.filter((x) => x !== rm.id);
+  log(s, `${rm.name} ${why || "매각"}. ${won(price)} (투자 ${won(rm.invested)})`, "work");
+  return [`${rm.name} 매각 +${won(price)}`, `투자금 대비 ${price - rm.invested >= 0 ? "+" : ""}${won(price - rm.invested)}`];
+}
+export function sellAll(s, price) {
+  const pr = s.pr, n = pr.rooms.length, inv = pr.rooms.reduce((a, x) => a + x.invested, 0);
+  s.cash += price; addMoney(s, "inc", "파티룸 엑시트", price); pr.sold += n; pr.soldSum += price; pr.exit = { t: s.t, price, n };
+  pr.rooms = []; pr.sys = { cleanContract: false, smartlock: [], booking: false, manager: false };
+  log(s, `파티룸 ${n}곳을 운영사에 넘겼다. 엑시트 ${won(price)}`, "work");
+  return [`엑시트 +${won(price)}`, `총 투자금 ${won(inv)}`];
+}
+export function closeRoom(s, roomId) {
+  const pr = s.pr; const rm = pr.rooms.find((x) => x.id === roomId); if (!rm) return { ok: false };
+  const back = resale(s, rm);
+  s.cash += back; addMoney(s, "inc", "지점 양도·보증금", back); pr.sold++; pr.soldSum += back - rm.dep;
+  pr.rooms = pr.rooms.filter((x) => x !== rm); pr.sys.smartlock = pr.sys.smartlock.filter((x) => x !== rm.id);
+  log(s, `${rm.name} 양도. 회수 ${won(back)}`, "work");
+  return { ok: true, msg: `양도 완료, ${won(back)} 회수` };
+}
+
+// ───────── 관리 행동력 ─────────
+export function needAp(s, rm) {
+  if (rm.status !== "open") return 0;
+  const sys = s.pr.sys;
+  if (sys.manager) return 0.25;
+  let n = 2 + rm.far * 0.5;
+  if (!sys.cleanContract && !helpers(s, "pr_clean").length) n += (rm.last?.bookings ?? 20) / 12;
+  if (sys.smartlock.includes(rm.id)) n -= 0.5;
+  if (sys.booking) n -= 0.5;
+  n -= helperPower(s, "pr_clean") * 0.4;
+  n -= Math.min(1.5, (s.pr.know || 0) / 60);
+  if ([3, 4, 9, 10].includes(s.cal) && SYN.on(s, "season")) n += 0.5;
+  return Math.max(0.5, Math.round(n * 2) / 2);
+}
+export function totalNeed(s) { return s.pr.rooms.reduce((a, rm) => a + needAp(s, rm), 0); }
+
+// ───────── 한 달 정산 ─────────
+export function month(s, r, notes, scenes) {
+  const pr = s.pr; let total = 0; fill(s); mktMonth(s, r, notes);
+  const open = pr.rooms.filter((x) => x.status === "open");
+  pr.know = Math.min(40, pr.know + open.length * 0.15) > pr.know ? Math.min(40, pr.know + open.length * 0.15) : pr.know; // 운영하면서 조금씩 는다(40까지)
+  const nAll = pr.rooms.length;
+  const halo = pr.rooms.some((x) => x.status === "open" && x.rating >= 4.6 && x.months >= 4);
+  for (const rm of pr.rooms) {
+    if (rm.status === "setup") {
+      if (rm.self > 0) { notes.push(`${rm.name}: 셀프 공사 ${rm.self}번 남음 (월세는 나감)`); s.cash -= rm.rent; addMoney(s, "exp", "파티룸 비용", rm.rent); total -= rm.rent; continue; }
+      rm.status = "open"; rm.openT = s.t + 1; const it = D.INTERIORS[rm.interior];
+      rm.rating = clamp(it.star + (rm.selfQ || 0) + mod(s, "star", 0) + helperPower(s, "pr_interior") * 0.12 - (rm.toilet === "out" ? 0.1 : 0) + (decorQ(s, rm) - 0.45) * 0.45, 3.4, 4.95);
+      notes.push(`${rm.name} 오픈! 첫 별점 ${rm.rating.toFixed(2)}`);
+      if (rm.ondolFail) notes.push(`${rm.name}: 온돌 시공을 하려다 바닥 구조 때문에 못 했다(확인 안 한 정보)`);
+      s.cash -= rm.rent; addMoney(s, "exp", "파티룸 비용", rm.rent); total -= rm.rent;
+      continue;
+    }
+    const res = settle(s, r, rm, { nAll, halo, open });
+    rm.last = res; rm.months++;
+    s.cash += res.rev; addMoney(s, "inc", "파티룸 매출", res.rev);
+    s.cash -= res.cost; addMoney(s, "exp", "파티룸 비용", res.cost);
+    total += res.rev - res.cost;
+    rm.hist.push({ t: s.t, occ: res.occ, profit: res.rev - res.cost, rating: rm.rating });
+    if (rm.hist.length > 36) rm.hist.shift();
+    for (const n of res.notes) notes.push(`${rm.name}: ${n}`);
+    for (const sc of res.scenes) scenes.push(sc);
+  }
+  // 공통 고정비
+  const pi = SYN.pi(s);
+  if (pr.sys.booking && nAll) { const c = Math.round(6 * pi); s.cash -= c; addMoney(s, "exp", "파티룸 비용", c); total -= c; }
+  if (pr.sys.manager && nAll) { const c = Math.round(180 * pi); s.cash -= c; addMoney(s, "exp", "파티룸 비용", c); total -= c; }
+  // 권리금 제안: 장사가 잘되는 지점에 사겠다는 사람이 온다
+  if (s.t - pr.offerT >= 4) {
+    const good = open.filter((x) => x.months >= 8 && x.rating >= 4.4 && avgProfit(x) > 30);
+    if (open.length >= 4 && pr.sys.manager && r.chance(0.012 + pr.know / 6000)) {
+      const sumP = open.reduce((a, x) => a + Math.max(0, avgProfit(x)), 0); const price = Math.round((sumP * r.range(20, 30) + pr.rooms.reduce((a, x) => a + x.dep, 0)) / 100) * 100;
+      s._prExit = { price }; pr.offerT = s.t;
+      scenes.push({ kind: "event", title: "공간 운영사의 인수 제안", tag: "파티룸", text: `공간 플랫폼 운영사에서 연락이 왔다. "${pr.rooms.length}개 지점을 한꺼번에 인수하고 싶습니다." 제시가는 보증금 포함 ${won(price)}. 지난 6개월 월평균 순이익은 ${won(sumP)}.`, onChoose: "pr_exit", choices: [{ t: `전부 넘긴다 (${won(price)})`, eff: {}, text: "도장을 찍었다. 통장 숫자를 세 번 다시 봤다." }, { t: "더 키워서 나중에 판다", eff: {}, text: "아직은 내 공간들이다." }, { t: "조건을 더 올려 본다", check: { stat: "num", dc: 55 }, ok: { text: "\"좋습니다, 15% 더 드리죠.\"", eff: {} }, ng: { text: "\"그럼 이번엔 없던 걸로 하죠.\" 상대가 일어섰다.", eff: {} } }] });
+    } else if (good.length && r.chance(0.05 + pr.know / 2000)) {
+      const rm = r.pick(good); const price = Math.round((rm.dep + Math.max(0, avgProfit(rm)) * r.range(12, 18) + rm.key * 0.3) / 10) * 10;
+      s._prOffer = { id: rm.id, price }; pr.offerT = s.t;
+      scenes.push({ kind: "event", title: "권리금 제안", tag: "파티룸", text: `${rm.name} 단골이었다는 사람이 찾아왔다. "여기 그대로 인수하고 싶어요." 보증금 포함 ${won(price)}. 처음 넣은 돈은 ${won(rm.invested)}였다.`, onChoose: "pr_offer", choices: [{ t: `판다 (${won(price)})`, eff: {}, text: "열쇠를 건넸다. 권리금 장사, 이런 거구나." }, { t: "안 판다", eff: {}, text: "아직 이 공간으로 더 벌 수 있다." }, { t: "더 불러 본다", check: { stat: "talk", dc: 50 }, ok: { text: "\"...알겠어요, 20% 더 드릴게요.\"", eff: {} }, ng: { text: "\"생각해 볼게요.\" 그 뒤로 연락이 없다.", eff: {} } }] });
+    }
+  }
+  // 사건 카드(문서 기반 16장)
+  if (open.length && s.t - pr.evT >= 3 && r.chance(0.3)) { const ev = jobEvent(s, r, "partyroom"); if (ev) { pr.evT = s.t; scenes.push(ev); } }
+  pr.profitHist.push(Math.round(total)); if (pr.profitHist.length > 24) pr.profitHist.shift();
+  // 레벨
+  const avg3 = pr.profitHist.slice(-3).reduce((a, b) => a + b, 0) / 3;
+  const lv = !nAll ? 1 : open.length >= 4 && avg3 >= 600 ? 5 : open.length >= 2 ? 4 : avg3 >= 150 ? 3 : open.some((x) => x.reviews >= 10 && x.rating >= 4.5) ? 2 : 1;
+  if (lv > pr.lv) { notes.push(`파티룸 Lv${lv} 「${D.PR_LEVELS[lv - 1].n}」`); log(s, `파티룸 Lv${lv} 「${D.PR_LEVELS[lv - 1].n}」`, "work"); }
+  pr.lv = Math.max(pr.lv, lv);
+  return total;
+}
+
+function settle(s, r, rm, ctx) {
+  const d = D.DISTRICTS[rm.dk], c = D.CONCEPTS[rm.concept];
+  const notes = [], scenes = [];
+  const winter = [12, 1, 2].includes(s.cal);
+  const SEA = D.PR_SEASON[s.cal - 1];
+  const sa = c.seas ?? 1, sw = 1 + (SEA.we - 1) * sa, sk = 1 + (SEA.wk - 1) * sa; // 교육장처럼 계절을 덜 타는 컨셉
+  let base = (d.we * (c.we ?? 1) * sw * 24 + d.wk * (c.wk ?? 1) * sk * 22 * BIG.fullWk(s)) / 46 * D.PR_K * (d.fit[rm.concept] ?? 0.8);
+  base *= s.cal === 12 ? (c.dec ?? 1) : isPeak(s.cal) ? 1 : (c.off ?? 1);
+  let m = 1;
+  m *= { 좋음: 1.05, 보통: 1, 나쁨: 0.9 }[rm.hid.sound];
+  m *= rm.walk <= 5 ? 1.08 : rm.walk <= 10 ? 0.95 : 0.78; // 역에서 멀면 크게 손해
+  if (rm.floor === -1 && rm.concept === "bridal") m *= 0.82;
+  if (rm.floor === 1) m *= 1.04;
+  if (rm.floor >= 3 && !rm.elevator) m *= 1 - c.elev * (rm.floor - 1) / 2;
+  if (rm.parking === 0) m *= 1 - c.park * 0.22 * (0.5 + d.park / 2); else if (rm.parking === 2) m *= 1 + c.park * 0.05;
+  if (rm.toilet === "out") m *= 1 - c.toilet;
+  m *= rm.hid.access24 ? 1 : 1 - 0.25 * c.need24;
+  if (winter) { if (rm.ondol) m *= 1.06 + c.ondol; else if (rm.heating === "냉난방기만") m *= 0.86; }
+  if (s.cal === 3 && rm.dk === "univ") m *= 1.1;
+  if (s.cal === 5 && rm.concept === "kids") m *= 1.15;
+  if ([4, 5, 9, 10].includes(s.cal) && rm.concept === "bridal") m *= 1.1;
+  const M = mkt(s, rm.dk); m *= Math.max(0.45, 1 - 0.045 * M.comp);
+  m *= 1 + (rm.rating - 4.5) * 0.6;
+  const rampStart = ctx.halo ? (mod(s, "haloMult", 1) > 1 ? 0.85 : 0.7) : 0.45;
+  m *= rm.months === 0 ? rampStart : rm.months === 1 ? Math.max(0.7, rampStart) : rm.months === 2 ? 0.9 : 1;
+  m *= 1 + Math.min(0.2, rm.promo * 0.12);
+  const sib = ctx.open.filter((x) => x !== rm && x.dk === rm.dk).length; m *= 1 + Math.min(0.15, sib * 0.06);
+  m *= 1 + helperPower(s, "pr_photo") * 0.06;
+  m *= 1 + Math.min(0.4, (rm.buzz || 0) / 250); // 손님 인별·블로그 후기 = 입소문
+  if (decorFilled(rm.decor) < 3) m *= 0.85; // 휑한 공간: 사진에서 걸러진다
+  if (["edu", "lecture"].includes(rm.concept)) { if (SYN.on(s, "edu_career")) m *= 1.12; if (SYN.on(s, "grad_net")) m *= 1.08; }
+  if (s.era.winter) m *= 0.8; if (s.era.bigcomp) m *= 0.94;
+  if (s.era.pandemic) m *= 0.4; if (s.era.slump) m *= 0.9; if (s.era.rate) m *= 0.95; if (s.era.recovery) m *= 1.06;
+  const ref = refPrice(s, rm), pEff = rm.price * peakMult(s, s.cal);
+  m *= Math.pow(ref / pEff, SEA.el);
+  // 관리 행동력 충족도
+  const need = needAp(s, rm); const q = need ? clamp(rm.ap / need, 0, 1) : 1;
+  m *= 0.82 + 0.18 * q;
+  const occ = clamp(base * m * (1 + 0.07 * r.normal()), 0.03, 0.95);
+  const bookings = Math.round(occ * D.PR_SLOTS);
+  const rev = Math.round(bookings * pEff);
+  // 비용
+  const nAll = ctx.nAll;
+  const cluster = ctx.open.filter((x) => x.dk === rm.dk).length;
+  const cleanH = helpers(s, "pr_clean").length;
+  const pi = SYN.pi(s), sf = D.scaleF(nAll);
+  const cleanUnit = (s.pr.sys.cleanContract ? D.SCALE.cleanCost(nAll, cluster) : cleanH ? D.SCALE.cleanCost(nAll, cluster) * 0.7 : 0) * pi;
+  const util = (18 + (winter ? (rm.ondol ? 12 : rm.heating === "냉난방기만" ? 22 : 16) : [7, 8].includes(s.cal) ? 14 : 0)) * (rm.size / 22) * pi * (0.6 + 0.4 * sf);
+  const mgmt = (rm.rent * 0.1 + util + bookings * (cleanUnit + D.SCALE.supply(nAll) * pi)) * knowCost(s);
+  let cost = rm.rent + mgmt + rev * (D.PR_FEE + (s.era.fee ? 0.02 * mod(s, "feeShock", 1) : 0));
+  cost *= mod(s, "prCost", 1);
+  cost = Math.round(cost);
+  // 별점
+  const it = D.INTERIORS[rm.interior];
+  const dq = decorQ(s, rm);
+  let target = it.star + (rm.selfQ || 0) + mod(s, "star", 0) + knowStar(s) + (dq - 0.45) * 0.45 + { 좋음: 0.05, 보통: 0, 나쁨: -0.08 }[rm.hid.sound] - (rm.toilet === "out" ? 0.12 : 0) - (winter && !rm.ondol && rm.heating === "냉난방기만" ? 0.15 : 0) + helperPower(s, "pr_interior") * 0.05;
+  target -= (1 - q) * 0.6;
+  const drift = (target - rm.rating) * 0.2 * (target < rm.rating ? mod(s, "ratingGuard", 1) : 1);
+  rm.rating = clamp(rm.rating + drift + 0.03 * r.normal(), 2.5, 4.98);
+  rm.reviews += Math.round(bookings * 0.3);
+  // 손님 후기: 인별·블로그. 별점이 좋고 사진 찍기 좋은 컨셉일수록 많이 올린다
+  const happy = clamp((rm.rating - 3.8) / 1.0, 0, 1.2);
+  const ig = Math.round(bookings * c.sns * happy * 0.25 * (0.8 + s.st.sense / 200) * (0.5 + dq)), bl = Math.round(bookings * c.sns * happy * 0.08);
+  rm.buzz = clamp((rm.buzz || 0) * 0.9 + ig * 0.35 + bl * 0.8, 0, 100);
+  if (rm.rating < 4.1 && r.chance(0.25)) { rm.buzz = Math.max(0, rm.buzz - 10); notes.push("\"사진이랑 달라요\" 블로그 혹평, 입소문 −10"); }
+  else if (ig + bl >= 8 && r.chance(0.2)) notes.push(`손님 후기 인별 ${ig}건·블로그 ${bl}건`);
+  if (q < 0.6) notes.push(`관리 부족(${Math.round(q * 100)}%): 머리카락 리뷰, 별점 하락`);
+  if (winter && !rm.ondol && rm.heating === "냉난방기만" && r.chance(0.4)) notes.push("\"바닥이 너무 차가워요\" 리뷰");
+  if (rm.toilet === "out" && r.chance(0.15)) notes.push("\"화장실이 밖에 있어서 불편\" 리뷰");
+  if (rm.parking === 0 && c.park >= 0.8 && r.chance(0.25)) notes.push("\"주차할 곳이 없어요\" 문의 취소");
+  // 민원
+  const cp = c.noisy * (1 - d.noise) * { 좋음: 0.5, 보통: 1, 나쁨: 1.8 }[rm.hid.sound] * 0.35 * (rm.hid.access24 ? 1.1 : 0.9);
+  if (r.chance(cp)) {
+    rm.complaints++; rm.rating = clamp(rm.rating - 0.05, 2.5, 5);
+    const ll = rm.hid.landlord;
+    notes.push(`소음 민원 ${rm.complaints}회${rm.seen?.landlord ? "" : " · 건물주 성향이 드러났다: " + ll}`); rm.seen = rm.seen || {}; rm.seen.landlord = true;
+    const evict = ll === "싫어함" ? 0.35 : ll === "찜찜" ? 0.1 : 0;
+    if (!rm.notice && rm.complaints >= 2 && r.chance(evict)) { rm.notice = s.t + 3; scenes.push(storyS("건물주의 내용증명", `${rm.name}에 내용증명이 왔다. "계약 만료 후 갱신 불가. 3개월 안에 비워 주세요." 숨은 정보를 확인 안 한 대가.`)); }
+  }
+  if (rm.notice && s.t >= rm.notice) { notes.push("계약 해지로 문을 닫았다"); rm.status = "closed"; s.pr.rooms = s.pr.rooms.filter((x) => x !== rm); const back = rm.dep; s.cash += back; addMoney(s, "inc", "보증금 회수", back); log(s, `${rm.name} 강제 폐업(건물주). 권리금은 날렸다.`, "work"); }
+  // 파손
+  if (r.chance(0.04 + (rm.concept === "party" ? 0.03 : 0))) { const dmg = Math.round(r.int(20, 90) * mod(s, "damageMult", 1) * (1 - Math.min(0.6, helperPower(s, "pr_repair") * 0.5))); cost += dmg; notes.push(`파손 수리 ${won(dmg)}`); }
+  // 2년마다 월세 인상
+  if (rm.months > 0 && rm.months % 24 === 0) { rm.rent = Math.round(rm.rent * (rm.hid.landlord === "환영" ? 1.03 : 1.08) * (s.era.rentup ? 1.12 : 1) * (1 + D.INFL)); notes.push(`재계약, 월세 ${won(rm.rent)}(물가 반영)`); }
+  if (isPeak(s.cal) && rev > 150 && !scenes.length && r.chance((s.cal === 12 ? 0.16 : 0.09) * (1 - (s.pr.know || 0) / 250) * (helpers(s, "pr_repair").length ? 0.6 : 1))) { const sc = crisis(s, r, rm, rev); if (sc) scenes.push(sc); }
+  return { occ, bookings, rev, cost, notes, scenes, need, q, ig, bl };
+}
+// 월세 = 평당 단가 × 평수 × 층 배율(1층 2배, 지하 0.65배) × 역 거리 × 물가
+export function rentFor(s, L, q = 0.5) { const d = D.DISTRICTS[L.dk]; const per = d.rate[0] + (d.rate[1] - d.rate[0]) * q; return Math.round(per * L.size * D.PR_FLOOR_RENT(L) * (L.toilet === "in" ? 1.05 : 1) * (L.walk <= 5 ? 1.1 : L.walk > 10 ? 0.85 : 1) * SYN.pi(s) / 5) * 5; }
+export const sizeP = (L) => (L.size >= 40 ? 1 + (L.size - 30) / 60 : L.size < 18 ? 0.85 : 1); // 넓으면 비싸고 작으면 싸다
+// 성수기 가격 배율: 12월은 고른 배율 그대로, 1·2·7·8월은 그 절반쯤
+export const isPeak = (cal) => [12, 1, 2, 7, 8].includes(cal);
+export function peakMult(s, cal) { const p = s.pr.peak || 1; return cal === 12 ? p : isPeak(cal) ? 1 + (p - 1) * 0.5 : 1; }
+export function setPeak(s, v) { s.pr.peak = v; return { ok: true, msg: v === 1 ? "성수기에도 평소 가격" : `성수기 가격 +${Math.round((v - 1) * 100)}% (1·2·7·8월은 +${Math.round((v - 1) * 50)}%)` }; }
+// 비교 기준 = 그 상권 경쟁사 평균 1건 가격 × 컨셉·인테리어·크기
+export function refPrice(s, rm) { const c = D.CONCEPTS[rm.concept], it = D.INTERIORS[rm.interior]; return mkt(s, rm.dk).price * c.priceF * it.priceF * sizeP(rm); }
+// ───────── 성수기 사고: 제일 벌 때 터진다 ─────────
+const CRISIS = [
+  { id: "boiler", n: "보일러 고장", ok: (s, rm) => [12, 1, 2].includes(s.cal) && !rm.ondol, stat: "hands", text: (rm) => `토요일 밤 9시, ${rm.name} 손님 전화. "사장님, 바닥이 얼음장이에요!" 보일러가 멈췄다. 이번 주말 예약이 줄줄이 걸려 있다.` },
+  { id: "ondol", n: "온돌 배관 터짐", ok: (s, rm) => [12, 1, 2].includes(s.cal) && rm.ondol, stat: "hands", text: (rm) => `${rm.name} 바닥에서 물이 스며 나온다. 온돌 배관이 얼어 터졌다. 크리스마스 예약이 코앞이다.` },
+  { id: "aircon", n: "에어컨 고장", ok: (s) => [7, 8].includes(s.cal), stat: "hands", text: (rm) => `35도 폭염, ${rm.name} 에어컨에서 미지근한 바람만 나온다. 후기에 "사우나인 줄"이 달리기 직전이다.` },
+  { id: "double", n: "이중 예약", ok: (s) => !s.pr.sys.booking, stat: "talk", text: (rm) => `${rm.name} 문 앞에 두 팀이 서 있다. 우주공간와 네이바 예약이 같은 시간에 잡혔다. 둘 다 생일 케이크를 들고 있다.` },
+  { id: "leak", n: "윗집 누수", ok: () => true, stat: "talk", text: (rm) => `${rm.name} 천장에서 물이 떨어진다. 윗집 배관이 샜다. 이번 주 예약 손님들이 걱정스러운 까톡을 보낸다.` },
+  { id: "party", n: "단체 손님 파손", ok: (s, rm) => ["party", "mega", "game"].includes(rm.concept), stat: "talk", text: (rm) => `${rm.name} 송년회 단체가 빠져나간 자리. 소파 찢김, 빔프로젝터 박살, 벽에 케이크. 다음 예약은 3시간 뒤.` },
+  { id: "cleaner", n: "청소 업체 펑크", ok: (s) => s.cal === 12 && s.pr.sys.cleanContract, stat: "hands", text: (rm) => `12월 연속 예약 한가운데, 청소 업체가 "인력이 없어요" 문자 한 통. ${rm.name} 다음 손님 입실까지 2시간.` },
+  { id: "police", n: "소음 신고·경찰 출동", ok: (s, rm) => s.cal === 12 && rm.hid.sound !== "좋음", stat: "talk", text: (rm) => `새벽 1시, ${rm.name} 앞에 경찰차가 섰다. 옆 건물에서 소음 신고. 건물주에게서도 전화가 온다.` },
+];
+function crisis(s, r, rm, rev) {
+  const L = CRISIS.filter((c) => c.ok(s, rm)); if (!L.length) return null; const c = r.pick(L);
+  const pi = SYN.pi(s), fixF = (1 - Math.min(0.6, helperPower(s, "pr_repair") * 0.5)) * mod(s, "damageMult", 1);
+  const loss = Math.round(rev * r.range(0.25, 0.4)), fix = Math.round(r.int(80, 250) * pi * fixF);
+  s._prCrisis = { id: rm.id, loss, fix, n: c.n };
+  return { kind: "event", title: `성수기 사고 · ${c.n}`, tag: "파티룸", text: `${c.text(rm)} (그대로 두면 예약 환불 약 ${won(loss)})`, onChoose: "pr_crisis", choices: [
+    { t: `긴급 출장 수리·대응 (${won(Math.round(fix * 1.6))})`, eff: {}, text: "새벽에 기사님이 왔다. 손님들은 거의 몰랐다." },
+    { t: `환불하고 다음 주에 고친다 (−${won(loss + fix)}, 별점 −)`, eff: {}, text: "사과 문자 12통. 별점 1개짜리 후기가 달렸다." },
+    { t: `내가 직접 달려간다 (${D.STATS[c.stat]} 판정, 다음 달 행동력 −2)`, check: { stat: c.stat, dc: 55 }, ok: { text: "밤새 붙어서 해결했다. 손님이 \"사장님 멋있어요\" 후기를 남겼다.", eff: {} }, ng: { text: "더 망가뜨렸다. 결국 업체를 불렀고 환불까지 했다.", eff: {} } },
+  ] };
+}
+export function crisisChoose(s, i, ok) {
+  const o = s._prCrisis; if (!o) return []; const rm = s.pr.rooms.find((x) => x.id === o.id); if (!rm) return [];
+  const pay = (v, k) => { s.cash -= v; addMoney(s, "exp", k, v); };
+  if (i === 0) { const c = Math.round(o.fix * 1.6); pay(c, "파티룸 사고 수리"); return [`긴급 수리 −${won(c)}`]; }
+  if (i === 1) { pay(o.loss, "파티룸 환불"); pay(o.fix, "파티룸 사고 수리"); rm.rating = clamp(rm.rating - 0.12, 2.5, 5); rm.buzz = Math.max(0, (rm.buzz || 0) - 8); return [`환불 −${won(o.loss)}`, `수리 −${won(o.fix)}`, `${rm.name} 별점 −0.12`, "입소문 −8"]; }
+  s.apNext -= 2;
+  if (ok) { const c = Math.round(o.fix * 0.3); pay(c, "파티룸 사고 수리"); rm.buzz = Math.min(100, (rm.buzz || 0) + 4); return [`부품값 −${won(c)}`, "입소문 +4", "다음 달 행동력 −2"]; }
+  pay(o.loss, "파티룸 환불"); pay(Math.round(o.fix * 1.3), "파티룸 사고 수리"); rm.rating = clamp(rm.rating - 0.15, 2.5, 5);
+  return [`환불 −${won(o.loss)}`, `수리 −${won(Math.round(o.fix * 1.3))}`, `${rm.name} 별점 −0.15`, "다음 달 행동력 −2"];
+}
+function storyS(title, text) { return { kind: "story", title, text, choices: [{ t: "계속", eff: {}, text: "" }] }; }
+
+// 문서 기반 사건(16장)을 장면으로
+const SIZE = { 소: 1, 중: 2, 대: 3 };
+export function textToEff(text, job) {
+  const eff = {}; if (!text) return eff;
+  for (const part of text.split(/[,，]/).map((x) => x.trim())) {
+    if (!part || /변화 없음/.test(part)) continue;
+    const mag = SIZE[(part.match(/[소중대]/) || ["소"])[0]] || 1;
+    const neg = /-|−|감소|하락|손실|줄|악화/.test(part) && !/위험 대 감소|위험 감소/.test(part);
+    const sign = neg ? -1 : 1;
+    if (/돈|비용|수입|매출|순수익|광고비/.test(part)) eff.cash = (eff.cash || 0) + sign * (job === "partyroom" ? [0, 30, 90, 250] : [0, 10, 40, 120])[mag];
+    else if (/체력/.test(part)) eff.hp = sign * [0, 5, 10, 18][mag];
+    else if (/멘탈|스트레스/.test(part)) eff.mental = sign * [0, 4, 8, 15][mag];
+    else if (/회사\s?눈치|발각/.test(part)) eff.eye = sign * [0, 5, 10, 20][mag];
+    else if (/가족|배우자/.test(part)) eff.family = sign * [0, 4, 8, 15][mag];
+    else if (/평판|후기|리뷰|별점|신뢰|단골|문의|예약/.test(part)) { if (job === "partyroom") eff.pr_rating = sign * [0, 0.05, 0.1, 0.2][mag]; else eff.cs_rep = sign * [0, 1, 3, 6][mag]; }
+    else { const map = { 글쓰기: "write", 말빨: "talk", 디자인: "sense", 손재주: "hands", 숫자: "num", 영업: "mkt", 촬영: "sense", 코딩: "num" }; for (const [k, v] of Object.entries(map)) if (part.includes(k)) { eff.stat = eff.stat || {}; eff.stat[v] = (eff.stat[v] || 0) + sign * mag; } }
+  }
+  return eff;
+}
+export function jobEvent(s, r, job) {
+  const evs = (JOBEV[job] || []).filter((e) => !s.seen["job_" + e.id]);
+  if (!evs.length) return null;
+  const phase = job === "partyroom" ? (s.pr.rooms.length >= 2 || s.pr.lv >= 4 ? "late" : s.pr.lv >= 2 ? "mid" : "early") : (s.cs.lv >= 4 ? "late" : s.cs.lv >= 2 ? "mid" : "early");
+  const pool = evs.filter((e) => e.phase === phase || (phase === "late" && e.phase === "mid")).concat(evs.filter((e) => e.phase === "early" && phase !== "early").slice(0, 1));
+  const e = r.pick(pool.length ? pool : evs);
+  s.seen["job_" + e.id] = s.t;
+  return { kind: "event", title: e.title, text: e.scene, tag: job === "partyroom" ? "파티룸" : "컨설팅", choices: e.choices.map((c) => ({ t: c.t, eff: textToEff(c.effect, job), text: "" })) };
+}
+
+// ───────── 가치·패시브·할 일 ─────────
+export function value(s) { return s.pr.rooms.reduce((a, rm) => a + (rm.status === "open" ? Math.round(resale(s, rm) * 0.8) : rm.dep + rm.key * 0.5), 0); }
+export function passive(s) { if (!s.pr.sys.manager) return 0; return Math.max(0, s.pr.profitHist.slice(-3).reduce((a, b) => a + b, 0) / 3); }
+export function todos(s) {
+  const t = [];
+  for (const rm of s.pr.rooms) {
+    if (rm.status === "setup" && rm.self > 0) t.push({ lv: 2, text: `${rm.name} 셀프 공사 ${rm.self}번 남음(월세 나가는 중)`, go: "pr" });
+    if (rm.status === "open") { const n = needAp(s, rm); if (rm.ap < n) t.push({ lv: rm.ap < n * 0.6 ? 2 : 1, text: `${rm.name} 관리 ${fmt(rm.ap)}/${fmt(n)}`, go: "pr" }); if (rm.notice) t.push({ lv: 2, text: `${rm.name} 계약 해지 통보: ${rm.notice - s.t}개월 남음`, go: "pr" }); }
+  }
+  const pend = s.pr.listings.filter((l) => !(l.seen.visit && l.seen.meet && l.seen.app));
+  if (pend.length) t.push({ lv: 0, text: `확인 안 한 매물 정보 ${pend.length}곳`, go: "pr" });
+  if ([11, 6].includes(s.cal) && s.pr.rooms.length) t.push({ lv: (s.pr.peak || 1) === 1 ? 2 : 0, text: s.cal === 11 ? `다음 달 12월 극성수기! 성수기 가격 ${(s.pr.peak || 1) === 1 ? "아직 그대로" : `+${Math.round((s.pr.peak - 1) * 100)}%`}` : "7·8월 성수기가 온다: 성수기 가격·에어컨 점검", go: "pr" });
+  return t;
+}

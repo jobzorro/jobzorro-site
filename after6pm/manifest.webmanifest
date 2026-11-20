@@ -1,0 +1,19 @@
+{
+  "name": "After 6PM - 파이어족을 꿈꾸는 퇴근 후 사장님",
+  "short_name": "After 6PM",
+  "description": "퇴근 후 6시, 투잡으로 파이어를 꿈꾸는 직장인 인생 시뮬레이션",
+  "id": "./?app=after6pm",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e1020",
+  "theme_color": "#0e1020",
+  "lang": "ko",
+  "categories": ["games", "simulation"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
