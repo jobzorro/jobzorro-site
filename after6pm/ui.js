@@ -14,6 +14,8 @@ import * as APP from "./app.js";
 import * as FX from "./fx.js";
 import { ART } from "./gen/art.js";
 import { BODY, BG } from "./gen/body.js";
+import { CG } from "./gen/cg.js";
+import { MG, mgRun } from "./mg.js";
 const D = E.D;
 const $app = document.getElementById("app"), $modal = document.getElementById("modal"), $toast = document.getElementById("toast");
 let S = null, SLOT = 1, META_C = {};
@@ -71,7 +73,18 @@ const lookCache = {};
 function lookOf(id) { const c = E.CHAR[id]; if (c?.look?.hair) return c.look; if (!lookCache[id]) lookCache[id] = randomLook(seededRng(id), c?.gender || "F", { older: (c?.age || 30) >= 40 }); return lookCache[id]; }
 // 그림체 초상화: img/ch/<id>.webp 한 장에 표정 6칸(3x2). 불러오기 전에는 도트 얼굴을 보여 주고, 다 불러오면 그 자리에서 바꾼다.
 const EXI = { neutral: 0, smile: 1, sad: 2, angry: 3, blush: 4, surprised: 5 };
-const ART_CACHE = {}, ART_LOAD = {}, ART_FALL = new Map();
+const ART_CACHE = {}, ART_LOAD = {}, ART_FALL = new Map(), ART_THUMB = {};
+// 흐린 사본: 큰 그림이 오기 전 잠깐 보여 준다(img/cs, img/bs). 보이는 그림에 ld 표시를 붙여 흐리게.
+const swapSrc = (el, src, done) => { el.setAttribute("src", src); el.classList.toggle("ld", !done); };
+function sheetCut(im, i, cw0) { const cw = Math.floor(im.width / 3), ch = Math.floor(im.height / 2), c = document.createElement("canvas"); c.width = cw; c.height = ch; c.getContext("2d").drawImage(im, (i % 3) * cw, Math.floor(i / 3) * ch, cw, ch, 0, 0, cw, ch); return c.toDataURL("image/webp", 0.8); }
+function artThumb(key) {
+  if (ART_THUMB[key] || ART_CACHE[key]) return;
+  ART_THUMB[key] = "ld";
+  const im = new Image();
+  im.onload = () => { if (ART_CACHE[key]) return; try { ART_THUMB[key] = [0, 1, 2, 3, 4, 5].map((j) => sheetCut(im, j)); } catch (e) { return; }
+    document.querySelectorAll("img.face").forEach((el) => { const hit = ART_FALL.get(el.getAttribute("src")); if (hit && hit[0] === key) { const t = ART_THUMB[key][hit[1]]; ART_FALL.set(t, hit); swapSrc(el, t, false); } }); };
+  im.src = "img/cs/" + key + ".webp";
+}
 function artLoad(key) {
   if (ART_CACHE[key] || ART_LOAD[key] || !ART.has(key)) return;
   ART_LOAD[key] = 1;
@@ -81,7 +94,7 @@ function artLoad(key) {
       const cw = Math.floor(im.width / 3), chh = Math.floor(im.height / 2), c = document.createElement("canvas"); c.width = cw; c.height = chh; const g = c.getContext("2d");
       ART_CACHE[key] = [0, 1, 2, 3, 4, 5].map((j) => { g.clearRect(0, 0, cw, chh); g.drawImage(im, (j % 3) * cw, Math.floor(j / 3) * chh, cw, chh, 0, 0, cw, chh); return c.toDataURL("image/webp", 0.88); });
       if (ui.wiz && !S && ui.wiz.step === 1) renderWiz();
-      document.querySelectorAll("img.face").forEach((el) => { const hit = ART_FALL.get(el.getAttribute("src")); if (hit && hit[0] === key) el.setAttribute("src", ART_CACHE[key][hit[1]]); });
+      document.querySelectorAll("img.face").forEach((el) => { const hit = ART_FALL.get(el.getAttribute("src")); if (hit && hit[0] === key) swapSrc(el, ART_CACHE[key][hit[1]], true); });
     } catch (e) {}
   };
   im.src = "img/ch/" + key + ".webp";
@@ -90,37 +103,49 @@ function artOr(key, expr, fallback) {
   if (!key || !ART.has(key)) return fallback();
   const i = EXI[expr] ?? 0;
   if (ART_CACHE[key]) return ART_CACHE[key][i];
-  const fb = fallback(); if (fb) ART_FALL.set(fb, [key, i]); artLoad(key); return fb;
+  const t = Array.isArray(ART_THUMB[key]) ? ART_THUMB[key][i] : null;
+  const fb = t || fallback(); if (fb) ART_FALL.set(fb, [key, i]); artThumb(key); artLoad(key); return fb;
 }
+new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) (n.matches?.("img") ? [n] : n.querySelectorAll("img.face,img.body")).forEach((el) => { const src = el.getAttribute("src"); if (src && (BODY_WAIT.has(src) || ART_FALL.has(src))) el.classList.add("ld"); }); }).observe(document.body, { childList: true, subtree: true });
 function artPreload(ids) { let k = 0; for (const id of ids) setTimeout(() => (BODY[id] ? bodyLoad(id) : artLoad(id)), 40 * k++); }
-const BODY_IMG = {}, BODY_LD = {}, BODY_CUT = {}, BODY_WAIT = new Map();
+const BODY_IMG = {}, BODY_LD = {}, BODY_CUT = {}, BODY_WAIT = new Map(), BODY_TH = {};
+const modeOf = (el) => el.classList.contains("body") ? (el.closest(".sstage.half,.mestage") ? "half" : "full") : "face";
+function bodyThumb(key) {
+  if (BODY_TH[key] || BODY_IMG[key]) return;
+  BODY_TH[key] = "ld";
+  const im = new Image();
+  im.onload = () => { if (BODY_IMG[key]) return; BODY_TH[key] = im;
+    document.querySelectorAll("img.face,img.body").forEach((el) => { const h = BODY_WAIT.get(el.getAttribute("src")); if (h && h[0] === key) { try { const t = bodyCut(key, h[1], modeOf(el), im); BODY_WAIT.set(t, h); swapSrc(el, t, false); } catch (e) {} } }); };
+  im.src = "img/bs/" + key + ".webp";
+}
 function bodyLoad(key) {
   if (BODY_IMG[key] || BODY_LD[key] || !BODY[key]) return;
   BODY_LD[key] = 1;
   const im = new Image();
   im.onload = () => {
     BODY_IMG[key] = im;
-    document.querySelectorAll("img.face,img.body").forEach((el) => { const h = BODY_WAIT.get(el.getAttribute("src")); if (h && h[0] === key) { const mode = el.classList.contains("body") ? (el.closest(".sstage.half,.mestage") ? "half" : "full") : "face"; try { el.setAttribute("src", bodyCut(key, h[1], mode)); } catch (e) {} } });
+    document.querySelectorAll("img.face,img.body").forEach((el) => { const h = BODY_WAIT.get(el.getAttribute("src")); if (h && h[0] === key) { try { swapSrc(el, bodyCut(key, h[1], modeOf(el)), true); } catch (e) {} } });
     if (ui.wiz && !S && ui.wiz.step === 1) renderWiz();
   };
   im.src = "img/body/" + key + ".webp";
 }
-function bodyCut(key, i, mode) {
-  const ck = key + i + mode; if (BODY_CUT[ck]) return BODY_CUT[ck];
-  const im = BODY_IMG[key], cw = im.width / 3, ch = im.height / 2, sx = (i % 3) * cw, sy = Math.floor(i / 3) * ch, k = cw / 240;
+function bodyCut(key, i, mode, th) {
+  const ck = key + i + mode + (th ? "s" : ""); if (BODY_CUT[ck]) return BODY_CUT[ck];
+  const im = th || BODY_IMG[key], cw = im.width / 3, ch = im.height / 2, sx = (i % 3) * cw, sy = Math.floor(i / 3) * ch, k = cw / 240;
   let x = 0, y = 0, w = cw, h = ch;
   if (mode === "face") { const b = BODY[key][i]; x = b[0] * k; y = b[1] * k; w = h = b[2] * k; }
   else if (mode === "half") h = Math.round(cw * 1.3);
   const c = document.createElement("canvas"); c.width = Math.round(w); c.height = Math.round(h);
   c.getContext("2d").drawImage(im, sx + x, sy + y, w, h, 0, 0, c.width, c.height);
-  return (BODY_CUT[ck] = c.toDataURL("image/webp", 0.9));
+  return (BODY_CUT[ck] = c.toDataURL("image/webp", th ? 0.7 : 0.9));
 }
 // 몸 그림이 있으면 그 조각, 없으면 null. 불러오는 동안에는 fallback 을 보여 주고 다 불러오면 그 자리에서 바꾼다.
 function bodyOr(key, expr, mode, fallback) {
   if (!key || !BODY[key]) return null;
   const i = EXI[expr] ?? 0;
   if (BODY_IMG[key]) return bodyCut(key, i, mode);
-  bodyLoad(key); const fb = fallback(); if (fb) BODY_WAIT.set(fb, [key, i, mode]); return fb;
+  let fb = null; if (BODY_TH[key] instanceof Image) try { fb = bodyCut(key, i, mode, BODY_TH[key]); } catch (e) {}
+  fb = fb || fallback(); if (fb) BODY_WAIT.set(fb, [key, i, mode]); bodyThumb(key); bodyLoad(key); return fb;
 }
 const pixFace = (id, expr) => () => { try { return portraitDataURL(lookOf(id), E.CHAR[id]?.gender || "F", expr, 4); } catch (e) { return ""; } };
 const pixMe = (expr) => () => { try { return portraitDataURL(S.me.look, S.me.gender, expr, 5); } catch (e) { return ""; } };
@@ -172,9 +197,32 @@ function doAct(id, arg) {
   if (!arg && !a.pick) arg = defaultArg(id);
   ui.lastSpot = Object.values(D.SPOTS).find((sp) => sp.acts.includes(id))?.id || null;
   if (a.pick && arg === undefined) return pickFor(id);
+  if (MGJ[id] && (S.mgT || {})[MGJ[id][0]] !== S.t && !E.canAct(S, id, arg)) return mgOffer(id, arg);
   const res = E.act(S, id, arg);
   if (!res.ok) { toast([], res.msg); return; }
   afterRes(res);
+}
+// ───────── 투잡 미니게임: 한 달에 한 번, 핵심 행동 때 ─────────
+const MGJ = { pr_manage: ["pr", "hands"], cs_work: ["cs", "write"], ab_host: ["airbnb", "lang"], uc_check: ["ucafe", "sense"], in_post: ["insta", "sense"] };
+const MG_SKIP_AT = 3;
+function mgOffer(id, arg) {
+  const [job, stat] = MGJ[id], G = MG[job], m = meta(), plays = (m.mgPlays || {})[job] || 0, skill = Math.round(S.st[stat] || 0);
+  const canSkip = plays >= MG_SKIP_AT;
+  const finish = (boost, lines) => { S.mgT = S.mgT || {}; S.mgT[job] = S.t; S.mgBoost = boost; closeWin(); const res = E.act(S, id, arg); if (!res.ok) { S.mgBoost = 0; return toast([], res.msg); } res.lines = [...lines, ...(res.lines || [])]; afterRes(res); };
+  openWin(`<h2>${esc(G.n)} <span class="tag gold">미니게임</span></h2><div class="small muted">${esc(G.desc || "")}</div>
+    ${G.how ? `<ul class="mghow">${G.how.map((h) => `<li>${h}</li>`).join("")}</ul>` : ""}
+    <div class="card small" style="margin-top:8px">이번 달 ${esc(D.ACTIONS[id].n)} 결과가 미니게임 점수로 달라져요(효과 ×0.7~1.5). ${canSkip ? `<b class="gold">건너뛰기</b>를 누르면 ${D.STATS[stat]} ${skill} 기준 <b>보통 결과</b>가 나와요.` : `<b class="gold">${MG_SKIP_AT}번</b> 해 보면 건너뛰기가 생겨요(지금 ${plays}번). 건너뛰면 능력치대로 보통 결과가 나와요.`}</div>
+    <div class="row" style="margin-top:12px">${canSkip ? `<button class="btn grow" data-mgskip>건너뛰기 (보통 결과)</button>` : ""}<button class="btn gold grow" data-mgplay>미니게임 하기</button></div>`, (w) => {
+    w.querySelector("[data-mgskip]")?.addEventListener("click", () => { const b = +(0.9 + Math.min(200, skill) / 200 * 0.25).toFixed(2); finish(b, [`건너뛰기: 보통 결과(효과 ×${b})`]); });
+    w.querySelector("[data-mgplay]").onclick = () => {
+      openWin(`<div class="mghost"></div>`, async (w2) => {
+        let r = null; try { r = await mgRun(job, w2.querySelector(".mghost"), { skill }); } catch (e) { r = null; }
+        const mm = meta(); mm.mgPlays = { ...(mm.mgPlays || {}), [job]: plays + 1 }; setMeta(mm);
+        const sc = r ? Math.max(0, Math.min(1, r.score)) : 0.5, b = +(0.7 + sc * 0.8).toFixed(2);
+        finish(b, [`미니게임 ${r?.grade || "보통"} · 효과 ×${b}`, ...(plays + 1 === MG_SKIP_AT ? ["이제 건너뛰기를 쓸 수 있어요"] : [])]);
+      }, true, true);
+    };
+  }, true, true);
 }
 function afterRes(res) {
   if (res.lines?.length || res.msg) { if (S.pending) ui.preFx = { lines: res.lines || [], msg: res.msg }; else toast(res.lines, res.msg); }
@@ -227,12 +275,13 @@ function render() {
   if (!S) return renderTitle();
   if (S.over || S.ended) return renderEnding();
   if (!unlocked(ui.page)) ui.page = "home";
+  document.body.dataset.page = ui.page; // 투잡 화면마다 색·분위기가 바뀐다(style.css v4.15)
   S.tileSeen = S.tileSeen || {}; S.tileSeen[ui.page] = 1;
   const pages = { home: pgHome, map: pgMap, people: pgPeople, me: pgMe, sj: pgSJ, co: pgCo, hobby: pgHobby, family: pgFamily, pr: pgPR, cs: pgCS, insta: pgInsta, grad: pgGrad, airbnb: pgAirbnb, ucafe: pgUcafe };
   $app.innerHTML = top() + pager() + `<div class="page ${ui.dir > 0 ? "inR" : ui.dir < 0 ? "inL" : ""}">${pages[ui.page]()}</div>` + nav();
   ui.dir = 0;
   bind();
-  if (S.pending && !$modal.innerHTML) setTimeout(() => { if (S && S.pending && !S.over && !S.ended && !$modal.innerHTML) showScene(); }, 0);
+  if (S.pending && !$modal.innerHTML) setTimeout(() => { if (S && S.pending && !S.over && !S.ended && !$modal.innerHTML && !document.querySelector(".cine")) showScene(); }, 0);
 }
 // ───────── 화면 지도(허브)·넘기기 ─────────
 const TILE = {
@@ -362,7 +411,8 @@ function pgHome() {
   for (const [id, x] of Object.entries(S.rel)) if (x.lover) ring.push(id);
   const td = E.todos(S).slice(0, 7);
   const { quick, locked } = quickActs();
-  const places = ["co", "hobby", "sj", "pr", "cs", "insta", "airbnb", "ucafe", "grad", "family"].filter(unlocked);
+  const JOBP = ["pr", "cs", "insta", "airbnb", "ucafe"], jobOn = (k) => SJ.isActive(S, k);
+  const places = [...JOBP.filter(jobOn), "co", "hobby", "sj", ...JOBP.filter((k) => !jobOn(k)), "grad", "family"].filter(unlocked);
   return `<div class="stage" style="background-image:url(${bg})">
     ${heroB ? img(heroB, "body hero2", "나") : img(meSrc(myExpr()), "face hero", "나")}
     <div class="when"><b>${S.year}년 ${S.cal}월</b><span>${Math.floor(S.age)}세 · ${esc(job)}</span></div>
@@ -837,11 +887,12 @@ function pgMe() {
     <div class="tiny muted" style="margin-top:6px">스태미너는 매달 쓰는 기력이에요. 최대 스태미너 = 60 + 체력×0.6(지금 ${S.hpMax}). 행동력 = 4 + 스태미너÷13 + 체력÷50${D.RANKS[S.co.rank].ap ? ` ${D.RANKS[S.co.rank].ap}(직급)` : ""}${E.kidsAp(S) ? ` −${E.kidsAp(S)}(육아)` : ""}${S.co.remote ? " −1(지방 근무)" : ""}. 체력과 감각은 30대 중반부터 조금씩 떨어지니 운동과 구경으로 챙겨 주세요.</div></div>
   <div class="card"><h3>아이템 <small>사면 능력치가 바로 올라요</small></h3><div class="pick">${Object.entries(D.ITEMS).map(([k, it]) => { const own = S.items?.[k] !== undefined; return `<button data-item="${k}" ${own ? "disabled" : ""}><b>${esc(it.n)}</b><span class="tiny muted">${won(it.cash)} · ${Object.entries(it.stat).map(([s, v]) => `${D.STATS[s]} +${v}`).join(", ")}</span>${own ? '<span class="tiny good">갖고 있어요</span>' : ""}</button>`; }).join("")}</div></div>
   <div class="card"><h3>성향 카드 <small>숨은 특성은 그 일을 시작하면 공개</small></h3><div style="display:flex;flex-direction:column;gap:6px">${S.me.traits.map((id) => traitCard(D.TRAITS.find((t) => t.id === id), true)).join("")}</div></div>
+  <div class="card"><h3>특전 카드 <small>큰 일을 해내면 받아요 · 다음 인생에 1장 가져가기</small></h3>${(S.me.perks || []).length ? `<div style="display:flex;flex-direction:column;gap:6px">${S.me.perks.map((id) => traitCard(D.CARD(id), true)).join("")}</div>` : ""}<div class="chips" style="margin-top:6px">${D.PERKS.filter((p) => p.test && !(S.me.perks || []).includes(p.id)).map((p) => `<span class="chip">🔒 ${esc(p.got)}</span>`).join("")}</div></div>
   <div class="card"><h3>삶 <small>${esc(D.HOUSING[S.house.type]?.n || "")}${S.house.value ? " · " + won(S.house.value) : ""}</small></h3>
     <div class="acts" style="padding:0">${actRow("house_search")}${actRow("visit_parents")}</div></div>
   <div class="card"><h3>기록 <small>순자산(금색)·투잡 수익(초록)</small></h3><svg class="spark" viewBox="0 0 300 80" preserveAspectRatio="none">${spark("nw", "#f5c04e")}${spark("side", "#5fe0a0")}</svg>
     <div class="logl">${S.log.slice(0, 40).map((l) => `<div><span>${l.age}세 ${l.cal}월</span><span style="color:var(--fg)">${esc(l.text)}</span></div>`).join("")}</div></div>
-  <div class="row"><button class="btn sm" data-newlife>이 칸에서 새 인생</button><button class="btn sm" data-toslots>저장 칸으로</button><span class="grow"></span><span class="tiny muted">${SLOT}번 칸 · 자동 저장${ST.isServer() ? "(계정)" : "(이 브라우저)"}</span></div>`;
+  <div class="row"><button class="btn sm" data-album>인생 앨범 ${(meta().album || []).length}장</button><button class="btn sm" data-newlife>이 칸에서 새 인생</button><button class="btn sm" data-toslots>저장 칸으로</button><span class="grow"></span><span class="tiny muted">${SLOT}번 칸 · 자동 저장${ST.isServer() ? "(계정)" : "(이 브라우저)"}</span></div>`;
 }
 
 // ───────── 인물 창 ─────────
@@ -882,8 +933,51 @@ function charWin(id) {
 const HELP_DESC = { pr_clean: "파티룸 청소·관리(청소비 −30%, 관리 행동력 −)", pr_interior: "인테리어(비용 −12%, 별점 +)", pr_photo: "사진 촬영(예약 +6%)", pr_realty: "매물 정보(매물 +1, 숨은 정보 1개 공개)", pr_landlord: "자기 건물 매물(건물주 환영·권리금 0)", pr_repair: "수리(파손 비용 −50%)", cs_coach: "공동 코치(매달 고객 3명 자동 처리, 수익 40% 나눔)", cs_hr: "인사담당자 정보(합격률 +8%p)", cs_headhunter: "경력 이직 고객 소개", cs_design: "썸네일·상세페이지(크멍·인별 +30%)", cs_video: "영상 편집(너튜브 +50%)", cs_lecture: "강의 섭외", cs_writer: "블로그 글 대행(+30%)", tax: "세무(종합소득세 −20%)", invest: "재테크 조언(투자 수익 +)", health: "운동 코치(체력 회복 +3)", mental: "마음 상담(멘탈 회복 +3)" };
 
 // ───────── 장면 창 ─────────
+// ───────── 화보 연출: 큰 순간은 그 사람이 있는 곳으로 이동하며 크게 ─────────
+const CINE_BG = { lover: "rooftop", propose: "rooftop", wedding: "wedding", baby: "apt", breakup: "street", promo: "desk", fired: "desk", quit: "desk", burnout: "home", pr_open: "partyroom", pr_multi: "partyroom", cs_first: "consult", cs_pen: "consult", cs_name: "consult", ab_first: "airbnb", ab_super: "airbnb", uc_open: "ucafe", uc_multi: "ucafe", in_10k: "home", in_deal: "home", house: "apt", seed: "home", fire: "rooftop", grad: "library", parents_bye: "parents" };
+Object.assign(CINE_BG, { full_pr: "partyroom", full_cs: "consult", full_airbnb: "airbnb", full_ucafe: "ucafe", full_insta: "home" });
+const CINE_TAG = { full_pr: "본잡 전환", full_cs: "본잡 전환", full_airbnb: "본잡 전환", full_ucafe: "본잡 전환", full_insta: "본잡 전환", lover: "연애", propose: "연애", wedding: "결혼", baby: "가족", breakup: "연애", parents_bye: "가족", promo: "회사", fired: "회사", quit: "회사", burnout: "나", pr_open: "파티룸", pr_multi: "파티룸", cs_first: "컨설팅", cs_pen: "컨설팅", cs_name: "컨설팅", ab_first: "숙소", ab_super: "숙소", uc_open: "무인카페", uc_multi: "무인카페", in_10k: "인별그램", in_deal: "인별그램", house: "인생", seed: "인생", fire: "인생", grad: "인생", arc3: "인연" };
+const COUPLE = new Set(["lover", "propose", "wedding", "baby"]);
+function cineKey(sc) { return sc.cine || (sc.kind === "wedding" ? "propose" : sc.kind === "arc" && sc.stage === 3 ? "arc3" : D.TITLE_CINE[sc.title]) || null; }
+function cineHtml(p) {
+  const ppl = (p.people || []).filter(Boolean);
+  return `<div class="cine" role="dialog" aria-label="${esc(p.title)}"><div class="cimg ${p.cg ? "cg" : ""}" style="background-image:url(${p.img})"></div>
+    ${ppl.length ? `<div class="cppl n${ppl.length}">${ppl.map((src) => `<img class="body" src="${src}" alt="">`).join("")}</div>` : ""}
+    <div class="cbar t"></div><div class="cbar b"></div>
+    <div class="ctag">화보 · ${esc(p.tag || "인생")}</div>
+    <div class="ccap"><span>${esc(p.when)}</span><b>${esc(p.title)}</b>${p.line ? `<p>${esc(p.line)}</p>` : ""}</div>
+    <div class="ctap">${p.tapText || "눌러서 계속"}</div></div>`;
+}
+function cinePlay(sc, key, done) {
+  const files = CG[key] || [], cgf = files.length ? files[Math.floor(Math.random() * files.length)] : null;
+  const who = sc.who && E.CHAR[sc.who] ? sc.who : null;
+  const bgk = key === "arc3" && who ? charSpot(who) : CINE_BG[key];
+  const imgU = cgf ? `img/cg/${cgf}` : bgUrl(bgk) || sceneBg(sc) || bgUrl("street");
+  const expr = ["breakup", "fired", "burnout", "parents_bye"].includes(key) ? "sad" : COUPLE.has(key) ? "blush" : "smile";
+  const people = cgf ? [] : [who ? bodySrc(who, expr, "full") : null, (COUPLE.has(key) || !who) && key !== "breakup" ? bodySrc("me", expr === "blush" ? "smile" : expr, "full") : null];
+  const p = { k: key, img: imgU, cg: !!cgf, people, title: sc.title.replace(/^특전 카드 · /, ""), line: sc.kind === "story" ? String(sc.text || "").split("\n")[0] : String(sc.text || "").split(/(?<=[.!?])\s/).slice(0, 2).join(" "), when: `${E.ymLabel(S)} · ${Math.floor(S.age)}세`, tag: CINE_TAG[key] };
+  // 인생 앨범에 남기기(다음 인생에도 남는다)
+  try { const m = meta(); m.album = [{ k: key, img: imgU, cg: !!cgf, who, title: p.title, line: p.line, when: p.when, tag: p.tag, run: S.ng?.n || 1, name: S.me.name }, ...(m.album || [])].slice(0, 300); setMeta(m); } catch (e) {}
+  showCine(p, done);
+}
+function showCine(p, done) {
+  document.querySelector(".cine")?.remove();
+  const wrap = document.createElement("div"); wrap.innerHTML = cineHtml(p); const el = wrap.firstElementChild; document.body.appendChild(el);
+  try { FX.play("win"); } catch (e) {}
+  let ready = false; setTimeout(() => { ready = true; el.classList.add("ready"); }, 900);
+  el.onclick = () => { if (!ready) return; el.classList.add("out"); setTimeout(() => { el.remove(); done && done(); }, 260); };
+}
+// 인생 앨범: 지금까지 본 화보. 첫 화면과 나 화면에서 본다
+function albumWin() {
+  const A = meta().album || [];
+  const keys = new Set(A.map((a) => a.k));
+  openWin(`<h2>인생 앨범 <span class="tag gold">${A.length}장</span> <button class="x" data-close>✕</button></h2><div class="small muted">큰 순간을 맞을 때마다 한 장씩 쌓여요. 같은 순간도 그림이 여러 장이라 인생마다 달라요. 모은 순간 ${keys.size}/${Object.keys(CINE_TAG).length}가지.</div>
+    ${A.length ? `<div class="album">${A.map((a, i) => `<button data-alb="${i}" style="background-image:linear-gradient(180deg,#0000 40%,#000c),url(${a.img})"><b>${esc(a.title)}</b><span>${a.run}회차 · ${esc(a.when)}</span></button>`).join("")}</div>` : `<div class="card small muted" style="margin-top:10px">아직 비어 있어요. 연애·결혼·투잡 첫 오픈 같은 큰 순간에 채워져요.</div>`}`, (w) => w.querySelectorAll("[data-alb]").forEach((b) => b.onclick = () => { const a = A[+b.dataset.alb]; showCine({ ...a, people: [], tapText: "눌러서 닫기" }); }));
+}
 function showScene() {
   const sc = S.pending; if (!sc) return;
+  if (document.querySelector(".cine")) return;
+  { const ck = cineKey(sc); if (ck && !sc._cined) { sc._cined = 1; return cinePlay(sc, ck, () => { if (S.pending !== sc) return; if (sc.kind === "story") { E.choose(S, 0); save(); closeWin(); continueChain(); } else showScene(); }); } }
   FX.play(sc.kind === "wedding" ? "win" : "scene");
   const who = sc.who && E.CHAR[sc.who];
   const pf = ui.preFx; ui.preFx = null;
@@ -950,7 +1044,8 @@ function settingsWin(slots) {
 
 // ───────── 창 공통 ─────────
 function openWin(html, onBind, lock, center) {
-  $modal.innerHTML = `<div class="bg ${center ? "center" : ""}" ${lock ? "" : "data-bgclose"}><div class="win">${html}</div></div>`;
+  const isScene = /class="scene/.test(html);
+  $modal.innerHTML = `<div class="bg ${center ? "center" : ""}" ${lock ? "" : "data-bgclose"}><div class="win${isScene ? " scwin" : ""}">${html}</div></div>`;
   const bg = $modal.querySelector(".bg");
   bg.addEventListener("click", (e) => { if (e.target === bg && !lock) closeWin(); });
   $modal.querySelectorAll("[data-close]").forEach((b) => b.onclick = closeWin);
@@ -1017,6 +1112,7 @@ function bind() {
   q("[data-decorgo]", () => { const f = ui.prFlow, rm = S.pr.rooms.find((x) => x.id === f.id); const ch = Object.fromEntries(Object.entries(f.picks).filter(([k, i]) => rm.decor?.[k] !== i)); if (!Object.keys(ch).length) return toast([], "바뀐 게 없어요"); const res = E.act(S, "pr_decor", JSON.stringify({ id: f.id, picks: ch })); if (!res.ok) return toast([], res.msg); ui.prFlow = null; afterRes(res); });
   q("[data-item]", (el) => { const r = E.buyItem(S, el.dataset.item); toast(r.lines || [], r.msg); save(); render(); });
   q("[data-qlock]", (el) => toast([], `🔒 ${el.dataset.qlock} 열려요`));
+  q("[data-album]", () => albumWin());
   q("[data-toslots]", () => { save(true); S = null; renderTitle(); });
   q("[data-fire]", () => openWin(`<h2>파이어 달성! <button class="x" data-close>✕</button></h2><div class="small">순자산 ${won(E.fireInfo(S).nw)}. 지금 은퇴할 수도 있고, ${D.endAge(S.me.gender)}세까지 더 달려서 명예의 전당을 노릴 수도 있어요. 기록에는 ${Math.floor(S.age)}세 파이어가 남아요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-keep>계속 달린다</button><button class="btn gold grow" data-yes>지금 은퇴</button></div>`, (w) => { w.querySelector("[data-yes]").onclick = () => { closeWin(); E.declareFire(S, false); save(true); render(); }; w.querySelector("[data-keep]").onclick = () => { closeWin(); E.declareFire(S, true); save(true); toast([], `${S.fireAt}세 파이어 기록! 계속 달려요`); render(); }; }));
   q("[data-newlife]", () => openWin(`<h2>이 칸에서 새 인생을 시작할까요? <button class="x" data-close>✕</button></h2><div class="small">지금 ${SLOT}번 칸의 인생은 지워져요. 다른 칸에서 시작하려면 '저장 칸으로' 버튼을 눌러 주세요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn gold grow" data-yes>새 인생</button></div>`, (w) => w.querySelector("[data-yes]").onclick = async () => { closeWin(); S = null; await ST.remove(SLOT); ui.wiz = null; startWizard(SLOT); }));
@@ -1049,13 +1145,14 @@ async function renderTitle() {
     <div class="slots">${slots.map((sl) => sl.empty
       ? `<button class="slot empty" data-snew="${sl.slot}"><b>${sl.slot}번 칸</b><span>비어 있어요 · 여기서 새 인생 시작</span></button>`
       : `<div class="slot"><button class="grow" data-sload="${sl.slot}"><b>${sl.slot}번 칸 · ${esc(sl.summary?.name || "")}</b><span>${sl.summary?.end ? "끝난 인생 · " : ""}${sl.summary?.age ?? "?"}세 · ${esc(sl.summary?.ym || "")} · 순자산 ${won(sl.summary?.nw || 0)}</span><span class="tiny muted">${esc(sl.summary?.job || "")}${sl.summary?.side ? " · 투잡 " + esc(sl.summary.side) : ""}</span></button><button class="btn sm danger" data-sdel="${sl.slot}">지우기</button></div>`).join("")}</div>
-    <div class="btns" style="margin-top:8px"><button class="btn gold" data-new>새 인생 시작</button><button class="btn" data-install ${APP.canInstall() ? "" : "hidden"}>앱으로 설치</button><button class="btn" data-set>설정</button></div>
+    <div class="btns" style="margin-top:8px"><button class="btn gold" data-new>새 인생 시작</button><button class="btn" data-install ${APP.canInstall() ? "" : "hidden"}>앱으로 설치</button><button class="btn" data-set>설정</button><button class="btn" data-album>인생 앨범 ${(m.album || []).length ? `<b class="gold">${m.album.length}</b>` : ""}</button></div>
     ${APP.isIOS() ? `<div class="tiny muted" style="margin-top:4px">아이폰: 공유 버튼 → '홈 화면에 추가'로 앱처럼 쓸 수 있어요.</div>` : ""}
     <div class="tiny muted" style="margin-top:6px">한 아이디에 인생 3개까지 저장돼요. 세 칸이 다 차면 한 칸을 지우고 시작합니다.</div>
     ${m.runs?.length ? `<div class="card" style="margin-top:10px;text-align:center"><div class="small">다음 인생은 <b class="gold">${ngNext(m)}회차</b> · 기억 포인트 <b class="gold">${ngPoints(m)}</b> · 최고 파이어 ${m.best ? m.best + "세" : "아직"}</div>${ngCollection(m)}</div>` : ""}
     ${(hall || m.hall || []).length ? `<div class="card" style="margin-top:10px"><h3>명예의 전당 <small>${hall ? "전체 회원" : "내 기록"}</small></h3>${hallList(hall || m.hall)}</div>` : ""}</div>`;
   const pick = (n) => startWizard(n);
   $app.querySelector("[data-set]").onclick = () => settingsWin(slots);
+  $app.querySelector("[data-album]").onclick = () => albumWin();
   const ib = $app.querySelector("[data-install]"); if (ib) ib.onclick = async () => { if (await APP.install()) toast([], "설치했어요! 홈 화면에서 열어 보세요"); ib.hidden = true; };
   $app.querySelector("[data-new]").onclick = () => empty ? pick(empty.slot) : openWin(`<h2>칸이 다 찼어요 <button class="x" data-close>✕</button></h2><div class="small muted">지울 인생을 하나 골라 주세요. 지운 인생은 되돌릴 수 없어요.</div><div class="pick" style="margin-top:10px">${slots.map((sl) => `<button data-swipeout="${sl.slot}"><b>${sl.slot}번 · ${esc(sl.summary?.name || "")}</b><span class="tiny muted">${sl.summary?.age ?? "?"}세 · 순자산 ${won(sl.summary?.nw || 0)}</span></button>`).join("")}</div>`, (w) => w.querySelectorAll("[data-swipeout]").forEach((b) => b.onclick = async () => { const n = +b.dataset.swipeout; closeWin(); await ST.remove(n); pick(n); }));
   $app.querySelectorAll("[data-snew]").forEach((b) => b.onclick = () => pick(+b.dataset.snew));
@@ -1145,6 +1242,7 @@ function ngEndRecord(m, f) {
   m.knownJobs = [...new Set([...(m.knownJobs || []), ...Object.keys(S.sj.found).filter((j) => D.SIDEJOBS[j]?.play)])];
   const close = Object.entries(S.rel).filter(([, x]) => x.spouse || x.lover || x.aff >= 50).sort((a, b) => (b[1].spouse ? 999 : b[1].aff) - (a[1].spouse ? 999 : a[1].aff)).map(([id]) => id);
   m.pastFriends = [...new Set([...close, ...(m.pastFriends || [])])].slice(0, 12);
+  m.carry = [...new Set([...S.me.traits, ...(S.me.perks || []).filter((p) => !/^yr/.test(p))])];
   S.ngGot = { pts, got, newEnds };
 }
 function startWizard(slot) {
@@ -1157,16 +1255,19 @@ function startWizard(slot) {
 function drawPool(not) { return shuffle(D.TRAITS.map((t) => t.id).filter((x) => !not.includes(x))).slice(0, 4); }
 function wizStats(w, upto) {
   const base = w.rolls[w.pick] || {};
-  return E.startStats(base, { major: upto >= 3 ? w.major : null, company: upto >= 4 ? w.company : null, job: upto >= 4 ? w.job : null, traits: upto >= 5 ? w.traits : [] });
+  return E.startStats(base, { major: upto >= 3 ? w.major : null, company: upto >= 4 ? w.company : null, job: upto >= 4 ? w.job : null, traits: upto >= 5 ? [...w.traits, ...(w.carry && isTrait(w.carry) ? [w.carry] : [])] : [] });
 }
 function traitCard(t, inGame) {
   if (!t) return "";
+  if (t.g === "특전") return `<div class="trait perk"><div class="tn">${esc(t.n)} <span class="tag gold">특전</span></div><div class="muted">“${esc(t.line)}”</div><div class="pro">＋ ${esc(t.pro)}</div><div class="hoff">받은 이유: ${esc(t.got)}</div></div>`;
   const domN = (d) => (d === "co" ? "회사" : D.SIDEJOBS[d]?.n || d);
   const hid = inGame
     ? t.hid.map((h) => S.me.revealed?.[h.d] !== undefined ? `<div class="hon">★ ${esc(domN(h.d))} · ${esc(h.t)}</div>` : `<div class="hoff">🔒 ${esc(domN(h.d))}${h.d === "co" ? "에서 첫 평가를 받으면" : D.SIDEJOBS[h.d]?.play ? "을(를) 시작하면" : " (다음 업데이트)"} 공개</div>`).join("")
     : `<div class="hoff">숨은 특성 4개 · 단서: ${t.hint.map(esc).join(" · ")}</div>`;
   return `<div class="trait"><div class="tn">${esc(t.n)} <span class="tag">${esc(t.g)}</span></div><div class="muted">“${esc(t.line)}”</div><div class="pro">＋ ${esc(t.pro)}</div><div class="con">－ ${esc(t.con)}</div>${hid}</div>`;
 }
+const wizYr = (w) => Math.max(1, Math.min(3, w.age - (w.gender === "F" ? 24 : 26)));
+const isTrait = (id) => D.TRAITS.some((t) => t.id === id);
 function renderWiz() {
   const w = ui.wiz, u = ST.who();
   const prog = w.step === 0 ? "" : `<div class="wsteps">${WSTEPS.map((n, i) => `<span class="${i + 1 === w.step ? "on" : i + 1 < w.step ? "done" : ""}">${i + 1}. ${n}</span>`).join("")}</div>`;
@@ -1181,8 +1282,8 @@ function renderWiz() {
     body = `<h2>나는 누구일까요</h2><div class="small muted">성별과 나이, 얼굴을 정해 주세요. 능력치는 다음 단계에서 룰렛으로 정해요.</div>
       <div class="seg"><button class="${w.gender === "M" ? "on" : ""}" data-g="M">남자 · 50세까지</button><button class="${w.gender === "F" ? "on" : ""}" data-g="F">여자 · 48세까지</button></div>
       ${u?.nick ? `<div class="card small">닉네임 <b class="gold">${esc(u.nick)}</b>(으)로 살아요. 닉네임은 사이트 계정에서 바꿀 수 있어요.</div>` : `<input placeholder="이름 (비우면 '나')" value="${esc(w.name)}" data-name maxlength="8">`}
-      <div class="seg">${(w.gender === "F" ? [25, 26, 27] : [27, 28, 29]).map((a, i) => `<button class="${w.age === a ? "on" : ""}" data-age="${a}">${a}세 · ${i + 1}년 차</button>`).join("")}</div>
-      <div class="tiny muted">나이가 많을수록 돈과 경력은 조금 더 있지만, 파이어까지 남은 시간은 줄어요. (${w.gender === "F" ? 48 : 50}세까지 ${(w.gender === "F" ? 48 : 50) - w.age}년)</div>
+      <div class="seg agepick">${(w.gender === "F" ? [25, 26, 27] : [27, 28, 29]).map((a, i) => `<button class="${w.age === a ? "on" : ""}" data-age="${a}"><b>${a}세 · ${i + 1}년 차</b><span class="tiny">${["기본", "능력치↑ · 특전 1장", "능력치↑↑ · 특전 1장"][i]}</span></button>`).join("")}</div>
+      <div class="tiny muted">나이가 많을수록 시작 돈·경력·룰렛 능력치가 더 좋고 특전 카드도 받아요. 대신 파이어까지 남은 시간은 줄어요. 젊을 때만 좋은 점도 있다는 소문이 있어요. (${w.gender === "F" ? 48 : 50}세까지 ${(w.gender === "F" ? 48 : 50) - w.age}년)</div>
       <div class="avatar"><div class="pic">${img(src)}</div><div class="grow">${avs.length ? `<div class="small muted">마음에 드는 얼굴을 골라요.</div><div class="avpick">${avs.map((k) => `<button class="${w.avatar === k ? "on" : ""}" data-av="${k}">${img(bodyOr(k, "neutral", "face", () => artOr(k, "neutral", () => "")) ?? artOr(k, "neutral", () => ""))}</button>`).join("")}<button class="${!w.avatar ? "on" : ""}" data-av="">도트</button></div>` : `<div class="small muted">얼굴은 판마다 달라져요.</div>`}${!w.avatar ? `<button class="btn" data-reroll-look style="margin-top:8px">다른 도트 얼굴</button>` : ""}</div></div>`;
   } else if (w.step === 2) {
     const cur = w.rolls[w.pick];
@@ -1215,19 +1316,20 @@ function renderWiz() {
       <div class="small muted">카드 앞면에는 역량만 보여요. 카드마다 회사·투잡에서 드러나는 <b class="gold">숨은 특성이 4개</b>씩 있고, 그 일을 시작하면 하나씩 공개돼요. 단서 단어로 짐작해 보세요.</div>
       <div class="radarbox">${radar([{ v: prev, c: LAYER.base, fill: "22" }, { v: now, c: LAYER.now }])}</div>
       <div class="tcards">${w.pool.map((id) => `<button class="${w.traits.includes(id) ? "on" : ""}" data-tr="${id}">${traitCard(D.TRAITS.find((t) => t.id === id))}</button>`).join("")}</div>
-      <div class="row"><button class="btn grow" data-reroll-tr ${w.reroll ? "" : "disabled"}>다시 뽑기 (${w.reroll}번 남음)</button><button class="btn grow" data-undo-tr ${w.undo && w.prevPool ? "" : "disabled"}>무르기 (${w.undo}번 남음)</button></div>`;
+      <div class="row"><button class="btn grow" data-reroll-tr ${w.reroll ? "" : "disabled"}>다시 뽑기 (${w.reroll}번 남음)</button><button class="btn grow" data-undo-tr ${w.undo && w.prevPool ? "" : "disabled"}>무르기 (${w.undo}번 남음)</button></div>
+      ${(meta().carry || []).filter((id) => D.CARD(id)).length ? `<div class="sec">지난 인생에서 가져갈 카드 <span class="muted small">· 1장 고르면 카드 3장으로 시작</span></div><div class="tcards">${meta().carry.filter((id) => D.CARD(id) && !w.traits.includes(id)).map((id) => `<button class="${w.carry === id ? "on" : ""}" data-carry="${id}">${traitCard(D.CARD(id))}</button>`).join("")}</div>` : ""}`;
   }
   $app.innerHTML = `<div class="wiz">${prog}${body}<div class="row"><button class="btn" data-back>${w.step === 0 || (w.step === 1 && !((meta().runs?.length || 0) > 0)) ? "처음으로" : "이전"}</button><span class="grow"></span><button class="btn gold" data-nextw ${canNext ? "" : "disabled"}>${w.step === 5 ? "인생 시작" : w.step === 0 ? "이 선물로 시작" : "다음"}</button></div></div>`;
   const q = (sel, fn) => $app.querySelectorAll(sel).forEach((el) => el.onclick = () => fn(el));
-  q("[data-g]", (el) => { w.gender = el.dataset.g; w.look = randomLook(Math.random, w.gender); w.age = w.gender === "F" ? 25 : 27; renderWiz(); });
-  q("[data-age]", (el) => { w.age = +el.dataset.age; renderWiz(); });
+  q("[data-g]", (el) => { w.gender = el.dataset.g; w.look = randomLook(Math.random, w.gender); w.age = w.gender === "F" ? 25 : 27; w.rolls = []; w.pick = -1; renderWiz(); });
+  q("[data-age]", (el) => { w.age = +el.dataset.age; w.rolls = []; w.pick = -1; renderWiz(); });
   q("[data-av]", (el) => { w.avatar = el.dataset.av || null; renderWiz(); });
   q("[data-reroll-look]", () => { w.look = randomLook(Math.random, w.gender); renderWiz(); });
   const nm = $app.querySelector("[data-name]"); if (nm) nm.oninput = () => (w.name = nm.value.trim());
   q("[data-roll]", (el) => {
     el.disabled = true; const box = $app.querySelector("[data-radar]"); let f = 0;
-    const final = E.rollStats(Math.random);
-    const tick = () => { f++; if (f < 14) { box.innerHTML = radar([{ v: E.rollStats(Math.random), c: LAYER.now }]); setTimeout(tick, 55 + f * 6); } else { w.rolls.push(final); w.pick = w.rolls.length - 1; renderWiz(); } };
+    const yr = wizYr(w), final = E.rollStats(Math.random, yr);
+    const tick = () => { f++; if (f < 14) { box.innerHTML = radar([{ v: E.rollStats(Math.random, yr), c: LAYER.now }]); setTimeout(tick, 55 + f * 6); } else { w.rolls.push(final); w.pick = w.rolls.length - 1; renderWiz(); } };
     tick();
   });
   q("[data-rpick]", (el) => { w.pick = +el.dataset.rpick; renderWiz(); });
@@ -1235,6 +1337,7 @@ function renderWiz() {
   q("[data-co]", (el) => { w.company = el.dataset.co; w.companyName = D.COMPANY_TYPES[w.company].names[0]; renderWiz(); });
   q("[data-job]", (el) => { w.job = el.dataset.job; renderWiz(); });
   const cn = $app.querySelector("[data-coname]"); if (cn) cn.onchange = () => (w.companyName = cn.value);
+  q("[data-carry]", (el) => { w.carry = w.carry === el.dataset.carry ? null : el.dataset.carry; renderWiz(); });
   q("[data-tr]", (el) => { const id = el.dataset.tr; if (w.traits.includes(id)) w.traits = w.traits.filter((x) => x !== id); else if (w.traits.length < 2) w.traits.push(id); renderWiz(); });
   q("[data-reroll-tr]", () => { if (!w.reroll) return; w.reroll--; w.prevPool = w.pool; w.pool = drawPool(w.pool); w.traits = []; renderWiz(); });
   q("[data-undo-tr]", () => { if (!w.undo || !w.prevPool) return; w.undo--; w.pool = w.prevPool; w.prevPool = null; w.traits = []; renderWiz(); });
@@ -1249,7 +1352,7 @@ function renderWiz() {
     if (w.step === 0) { w.reroll = 2 + (w.gifts.tr || 0) * 2; }
     if (w.step < 5) { w.step++; window.scrollTo(0, 0); return renderWiz(); }
     const m = meta();
-    S = E.newGame({ seed: String(Date.now()), gender: w.gender, name: u?.nick || w.name || "나", age: w.age, look: w.look, base: w.rolls[w.pick], major: w.major, company: w.company, companyName: w.companyName, job: w.job, traits: w.traits, ng: ngGiftsToStart(w) });
+    S = E.newGame({ seed: String(Date.now()), gender: w.gender, name: u?.nick || w.name || "나", age: w.age, look: w.look, base: w.rolls[w.pick], major: w.major, company: w.company, companyName: w.companyName, job: w.job, traits: w.traits, carry: w.traits.includes(w.carry) ? null : w.carry || null, ng: ngGiftsToStart(w) });
     S.me.avatar = w.avatar || null; artPreload([S.me.avatar, ...(S.cast || [])].filter(Boolean));
     { const sp = ngSpent(w); if (sp) { m.ngPts = Math.max(0, (m.ngPts || 0) - sp); setMeta(m); } }
     ui.page = "home"; save(true); render();
@@ -1337,6 +1440,10 @@ function autoTest(n) {
   if (location.hash.includes("scene")) { const id = S.cast[0]; E.openScene(S, E.meetScene(S, id)); showScene(); }
   if (location.hash.includes("char")) { const id = Object.keys(S.rel)[0]; if (id) charWin(id); }
   if (location.hash.includes("hbpick")) { doAct("hb_go"); }
+  if (location.hash.includes("cine")) { const id = E.CHARS ? "c002" : "c002"; E.openScene(S, { kind: "story", title: "연인이 됐다", text: "돌아오는 길, 손이 먼저 닿았다. 둘 다 아무 말도 안 했다.", cine: "lover", who: id, choices: [{ t: "계속", eff: {}, text: "" }] }); showScene(); }
+  if (location.hash.includes("mgoff")) mgOffer("in_post");
+  { const pm = location.hash.match(/pg_([a-z]+)/); if (pm) setTimeout(() => { if (D.SIDEJOBS[pm[1]] && !S.sj.active.includes(pm[1])) S.sj.active.push(pm[1]); ui.page = pm[1]; render(); }, 400); }
+  if (location.hash.includes("full")) { E.openScene(S, { kind: "event", tag: "본잡 전환", title: "투잡이 연봉만큼 벌었다", cine: "full_pr", text: "2028년 연말 결산. 올해 투잡 이익 5,200만, 회사 연봉 4,800만(1.1배). 가장 많이 번 건 파티룸. 회사를 나와 파티룸을 본잡으로 할까요?", choices: [{ t: "파티룸을 본잡으로! 사직서를 낸다", eff: {}, text: "" }, { t: "아직은 병행한다", eff: {}, text: "" }] }); showScene(); }
   if (location.hash.includes("hire")) { S.co.hired = S.co.hired || []; S.co.hired.push("c107"); const sc = E.meetScene(S, "c107"); sc.title = "새 사람이 왔다 · 봉다온"; E.openScene(S, sc); showScene(); }
   if (location.hash.includes("sw2")) { const sw = $app.querySelector("[data-sw2]"); if (sw) sw.scrollLeft = 9999; }
 }

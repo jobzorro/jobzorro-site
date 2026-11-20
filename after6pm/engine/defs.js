@@ -179,13 +179,14 @@ export const COMPANY_TYPES = {
 };
 // 임원(상무·전무)은 1년 계약. 평가가 나쁘면 퇴임한다. years: 그 직급에서 보통 걸리는 햇수(스타트업은 더 빠름)
 export const RANKS = [
-  { n: "사원", pay: 1.0, ap: 0, years: 3, fast: 2, career: 0 },
-  { n: "대리", pay: 1.17, ap: 0, years: 4, fast: 3, career: 25 },
-  { n: "과장", pay: 1.36, ap: -1, years: 4, fast: 3, career: 45 },
-  { n: "차장", pay: 1.56, ap: -1, years: 4, fast: 3, career: 70 },
-  { n: "부장", pay: 1.8, ap: -2, years: 5, fast: 3, career: 100 },
-  { n: "상무", pay: 2.9, ap: -2, years: 4, fast: 3, career: 135, exec: true },
-  { n: "전무", pay: 3.7, ap: -2, years: 99, fast: 99, career: 165, exec: true },
+  // need: 매달 꼭 해야 하는 회사 일(성과 내기 1, 자진 야근 2로 친다). 못 채우면 성과·팀장 호감·멘탈이 깎인다
+  { n: "사원", pay: 1.0, ap: 0, years: 3, fast: 2, career: 0, need: 0 },
+  { n: "대리", pay: 1.17, ap: 0, years: 4, fast: 3, career: 25, need: 1 },
+  { n: "과장", pay: 1.36, ap: -1, years: 4, fast: 3, career: 45, need: 2 },
+  { n: "차장", pay: 1.56, ap: -1, years: 4, fast: 3, career: 70, need: 2 },
+  { n: "부장", pay: 1.8, ap: -2, years: 5, fast: 3, career: 100, need: 3 },
+  { n: "상무", pay: 2.9, ap: -2, years: 4, fast: 3, career: 135, exec: true, need: 3 },
+  { n: "전무", pay: 3.7, ap: -2, years: 99, fast: 99, career: 165, exec: true, need: 3 },
 ];
 // 연말 평가: B가 가장 많이 나온다. raise: 연봉 인상률, bonus: 성과급(월급의 몇 배), pt: 승진 점수
 export const GRADES = {
@@ -265,6 +266,46 @@ export const ITEMS = {
 // 보이는 것: pro·con(역량). 숨은 특성 hid 4개: d(회사 co·파티룸 pr·컨설팅 cs·다른 투잡 id)에서 그 일을 시작하면 공개된다.
 // hint: 숨은 특성을 짐작할 수 있는 단어. 숨은 특성 효과는 공개 전에도 적용된다.
 const H = (d, t, m = {}) => ({ d, t, m });
+// 특전 카드: 나이(2·3년 차)로 받거나, 인생 중 큰 일을 해내면 받는다. 숨은 특성 없음. 다음 인생에 한 장 가져갈 수 있다(나이 특전 제외).
+const P = (id, n, line, pro, m, got, test) => ({ id, g: "특전", n, line, pro, con: "", m, got, test, hint: [] });
+export const PERKS = [
+  P("yr2", "회사 요령", "2년 차쯤 되면 보이는 것들", "회사 눈치 −15%, 성과 +10%", { eyeMult: 0.85, perfMult: 1.1 }, "2년 차 특전", null),
+  P("yr3", "사내 인맥", "3년 동안 쌓은 점심 약속", "승진 확률 +, 헤드헌터 제안 +30%, 회사 동료 2명과 아는 사이로 시작", { promoBonus: 0.05, headhunt: 1.3 }, "3년 차 특전", null),
+  P("p_room", "공간의 감", "빈 방을 보면 손님이 보인다", "파티룸 별점 하락 −20%, 인테리어 비용 −10%", { ratingGuard: 0.8, interiorCost: 0.9 }, "첫 파티룸을 열었다", (s) => s.pr.rooms.some((r) => r.status === "open")),
+  P("p_pen", "빨간펜", "후기 10개, 이제 문장이 보인다", "합격률 +3%p, 소개 +15%", { passBonus: 0.03, referMult: 1.15 }, "컨설팅 후기 10개", (s) => s.cs.reviews >= 10),
+  P("p_algo", "알고리즘의 총애", "팔로워 1만, 피드가 나를 안다", "팔로워 증가 +15%, 떡상 확률 +20%", { instaMult: 1.15, viralMult: 1.2 }, "인별 팔로워 1만", (s) => s.ins.f >= 10000),
+  P("p_host", "세계의 손님", "슈퍼호스트 배지가 달렸다", "숙소 별점 +, 외국어 응대 +20%", { abStar: 0.05, abLang: 1.2 }, "슈퍼호스트", (s) => !!s.ab.super),
+  P("p_auto", "자동화 사장", "기계가 일하는 동안 나는 잔다", "먹튀·정산 손실 −30%, 단골 +10%", { ucTheft: 0.7, ucRepeat: 1.1 }, "무인카페 2곳", (s) => s.uc.stores.length >= 2),
+  P("p_family", "든든한 편", "집에 가면 내 편이 있다", "매달 멘탈 +1, 스태미너 회복 +2", { monthMental: 1, hpRec: 2 }, "결혼", (s) => !!s.fam.spouse),
+  P("p_promo", "결재 라인", "이제 내 도장도 한 칸 차지한다", "승진 확률 +, 성과 +10%", { promoBonus: 0.05, perfMult: 1.1 }, "과장 이상 승진", (s) => s.co.rank >= 2),
+  P("p_phoenix", "다시 일어선 사람", "한 번 꺼져 본 사람은 불 조절을 안다", "스태미너 회복 +3, 매달 멘탈 +1", { hpRec: 3, monthMental: 1 }, "번아웃을 이겨 냈다", (s) => s.burnouts >= 1 && !s.burnLeft && s.mental >= 60),
+  P("p_seed", "종잣돈", "통장에 1억이 찍힌 날", "생활비 −5%", { livingMult: 0.95 }, "현금 1억", (s) => s.cash >= 10000),
+  P("p_people", "마당발", "아는 사람이 25명", "호감 오름 +15%, 연애 확률 +10%", { affMult: 1.15, romanceMult: 1.1 }, "인연 25명", (s) => Object.keys(s.rel).length >= 25),
+  P("p_hobby", "취미 부자", "주말이 모자라다", "매달 멘탈 +1", { monthMental: 1 }, "취미 두 개를 1년", (s) => s.hb.joined.length >= 2 && s.t >= 12),
+  P("p_body", "운동 습관", "계단이 무섭지 않다", "행동 스태미너 소모 −10%", { hpCostMult: 0.9 }, "체력 70", (s) => s.st.body >= 70),
+];
+// 큰 순간: 화보(CG) 연출로 보여 주는 장면. key = img/cg/<key>_<n>.webp 그림 묶음
+const M = (key, title, test, lines, who) => ({ key, title, test, lines, who });
+const lover = (s) => Object.keys(s.rel).find((id) => s.rel[id].lover);
+export const MOMENTS = [
+  M("lover", "연인이 됐다", (s) => !!lover(s), ["돌아오는 길, 손이 먼저 닿았다. 둘 다 아무 말도 안 했다.", "\"우리 오늘부터 1일이야?\" 대답 대신 웃음이 났다.", "핸드폰 배경화면이 바뀌었다."], lover),
+  M("pr_multi", "파티룸 3호점", (s) => s.pr.rooms.filter((r) => r.status === "open").length >= 3, ["지도 앱에 내 지점이 세 개. 불이 켜진 창문을 하나씩 세어 봤다.", "토요일 밤, 세 곳 모두 만실 알림이 울렸다."]),
+  M("cs_first", "첫 합격 소식", (s) => s.cs.passes >= 1, ["새벽 1시 메시지 알림. \"저 붙었어요!!!\" 잠이 확 깼다.", "고객이 보낸 합격 화면 캡처. 내 일처럼 손이 떨렸다."]),
+  M("cs_name", "이름이 알려졌다", (s) => s.cs.lv >= 4, ["강연 요청 메일이 왔다. 무대 조명 아래 서는 날이 오다니.", "모르는 사람이 내 닉네임을 불렀다. \"혹시… 그 컨설턴트님?\""]),
+  M("ab_first", "첫 외국인 손님", (s) => s.ab.units.some((u) => u.stays > 0), ["캐리어 바퀴 소리. \"Annyeong-haseyo!\" 서툰 인사에 웃음이 터졌다.", "손글씨 환영 카드를 침대 위에 올려 두었다."]),
+  M("uc_open", "무인카페 개업", (s) => s.uc.stores.length >= 1, ["밤 11시, 혼자 가게 불을 켰다. 첫 잔은 내가 사 마셨다.", "키오스크에서 첫 주문 알림이 울렸다. 아무도 없는데 괜히 인사했다."]),
+  M("in_deal", "첫 협찬", (s) => s.ins.dealsDone >= 1, ["택배 상자에 손편지가 들어 있었다. \"함께해 주셔서 감사합니다.\"", "언박싱 영상을 찍다가 세 번이나 다시 찍었다."]),
+  M("house", "내 집 마련", (s) => s.house.type === "own", ["열쇠를 받았다. 빈 거실에 첫 짐 상자를 내려놓았다.", "등기부등본에 내 이름. 몇 번이고 다시 봤다."]),
+  M("quit", "회사를 나왔다", (s) => s.co.quit, ["마지막 출근. 사원증을 반납하고 엘리베이터 문이 닫혔다.", "빈 책상 위 상자 하나. 생각보다 짐이 적었다."]),
+  M("fire", "파이어", (s) => !!s.fireAt, ["평일 낮 바닷가. 알람 없는 아침이 이런 거였구나.", "월요일 오전 10시, 카페 창가. 출근하는 사람들을 보며 커피를 마셨다."]),
+];
+// 특전 카드 중 화보로 보여 줄 것
+export const PERK_CINE = { p_room: "pr_open", p_pen: "cs_pen", p_algo: "in_10k", p_host: "ab_super", p_auto: "uc_multi", p_family: "wedding", p_seed: "seed" };
+// 이미 있는 장면 제목 → 화보
+export const TITLE_CINE = { "아이가 태어났다": "baby", "이별": "breakup", "이혼": "breakup", "승진": "promo", "임원이 됐다": "promo", "학위 수여식": "grad", "작별": "parents_bye", "과로로 쓰러졌다": "burnout", "저성과자 해고": "fired", "겸업으로 해고": "fired", "권고사직": "fired" };
+export const CARD = (id) => TRAITS.find((x) => x.id === id) || PERKS.find((x) => x.id === id);
+// 나이(연차)별: 룰렛 능력치 보너스, 그리고 겉으로 안 보이는 젊음(성장 속도)
+export const AGE_YR = { 1: { roll: 0, youth: 1.15 }, 2: { roll: 3, youth: 1.07, perk: "yr2" }, 3: { roll: 6, youth: 1, perk: "yr3" } };
 export const TRAITS = [
   { id: "insider", g: "사람", n: "인싸", line: "모르는 사람과 5분이면 친구", pro: "말빨 +8, 매력 +4, 호감 오름 +20%", con: "혼자 하는 공부·글쓰기 때 멘탈 −1", m: { stat: { talk: 8, charm: 4 }, affMult: 1.2, soloMental: -1 }, hint: ["회식", "단골", "채팅방", "팔로워"],
     hid: [H("co", "회식·점심에서 팀장 호감 +40%", { bossMult: 1.4 }), H("pr", "단골이 별점을 지켜 준다(하락 −40%)", { ratingGuard: 0.6 }), H("cs", "오픈채팅방 효과 +30%", { kakaoMult: 1.3 }), H("insta", "인별 팔로워 증가 +20%", { instaMult: 1.2 })] },

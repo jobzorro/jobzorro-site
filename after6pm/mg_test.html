@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>투잡 미니게임 시험</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{padding:12px max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px;max-width:540px;margin:0 auto}
+.picks{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.picks button{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 2px;font-size:12px}
+.picks button b{display:block;font-size:13px}
+.sk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.sk input{flex:1}
+#host{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px}
+#host .mg{--mgh:calc(100vh - 230px);--mgh:calc(100dvh - 230px)}
+#out{font-size:12px;color:var(--muted);white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div class="picks" id="picks"></div>
+<label class="sk">관련 능력치 <input type="range" id="skill" min="0" max="200" value="40"><b id="skv">40</b></label>
+<div id="host"></div>
+<div id="out">위에서 미니게임을 골라요.</div>
+<script type="module">
+import { MG, mgRun } from "./mg.js";
+const host = document.getElementById("host"), out = document.getElementById("out"), sk = document.getElementById("skill");
+sk.oninput = () => (document.getElementById("skv").textContent = sk.value);
+const run = async (job, autoStart) => {
+  out.textContent = MG[job].n + " 진행 중…";
+  const p = mgRun(job, host, { skill: +sk.value });
+  if (autoStart) host.querySelector("[data-mg-start]")?.click();
+  const r = await p;
+  out.textContent = `${MG[job].n} 결과: ${r.grade} (점수 ${Math.round(r.score * 100)})\n${r.line}`;
+  host.innerHTML = "";
+};
+document.getElementById("picks").innerHTML = Object.entries(MG).map(([k, g]) => `<button data-j="${k}"><b>${g.n}</b>${k}</button>`).join("");
+document.querySelectorAll("[data-j]").forEach((b) => (b.onclick = () => run(b.dataset.j)));
+// 시험용: #pr 은 방법 화면, #pr-play 는 바로 시작
+const h = location.hash.slice(1);
+if (h) { const [job, mode] = h.split("-"); if (MG[job]) run(job, mode === "play"); }
+</script>
+</body>
+</html>

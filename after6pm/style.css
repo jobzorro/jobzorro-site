@@ -459,3 +459,77 @@ body:has(#modal .bg) #toast{bottom:auto;top:calc(10px + env(safe-area-inset-top,
 .strip.st10 .k{font-size:10px;line-height:1.2}
 .strip.st10 .meter{height:3px;margin:3px 8px 0}
 .strip.st10>div>div{padding:0;border:0}
+
+/* v4.14 그림 받는 동안 흐리게 → 선명하게 */
+img.face,img.body{transition:filter .35s ease}
+img.face.ld,img.body.ld{filter:blur(5px) saturate(.85)!important;image-rendering:auto}
+
+/* v4.14 폰 화면 높이: vh 대신 실제 보이는 높이(dvh) — 선택지가 화면 밖으로 밀리지 않게 */
+.title{min-height:100vh;min-height:100dvh}
+#modal .win{max-height:92vh;max-height:92dvh}
+#modal .bg.center{align-items:safe center;overflow:auto}
+#modal .bg.center .win{max-height:86vh;max-height:86dvh}
+#modal .bg.center .win.scwin{max-height:calc(100vh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding-bottom:0}
+.scene .sstage.full{height:min(300px,32vh);height:min(300px,30dvh)}
+.scene .sstage.half{height:min(240px,28vh);height:min(240px,26dvh)}
+@media (max-height:700px){.scene .sstage.full,.scene .sstage.half{height:24vh;height:24dvh}}
+.scwin .scene .choices{position:sticky;bottom:0;z-index:2;background:var(--panel);margin:12px -2px 0;padding:8px 2px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 14px -6px var(--panel)}
+@media (max-width:380px){.top .assets .v{font-size:13px;letter-spacing:-.4px;white-space:nowrap}.next .btn:first-child{font-size:13px;white-space:nowrap;padding:12px 8px}}
+
+/* v4.15 나이 고르기·특전 카드 */
+.seg.agepick button{display:flex;flex-direction:column;gap:2px;line-height:1.25;padding:8px 4px}
+.seg.agepick button .tiny{opacity:.8;font-weight:500}
+.trait.perk,.trait:has(.tag.perk){border-color:#f4c25b66}
+
+/* v4.15 화보 연출 */
+.cine{position:fixed;inset:0;z-index:80;background:#000;overflow:hidden;cursor:pointer;animation:cin .45s ease-out}
+.cine .cimg{position:absolute;inset:0;background:center/cover no-repeat;animation:kb 7s ease-out forwards;filter:saturate(1.08)}
+.cine .cimg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0006,#0000 30%,#0000 50%,#000d)}
+.cine .cppl{position:absolute;left:0;right:0;bottom:12%;height:68%;display:flex;justify-content:center;align-items:flex-end;z-index:2}
+.cine .cppl img{height:100%;width:auto;max-width:62%;object-fit:contain;filter:drop-shadow(0 10px 24px #000b);animation:walkin .9s cubic-bezier(.2,.8,.2,1) both}
+.cine .cppl.n2 img{max-width:48%;height:92%}
+.cine .cppl.n2 img:first-child{margin-right:-6%;animation-name:walkinL}
+.cine .cppl.n2 img:last-child{animation-delay:.15s}
+.cine .cbar{position:absolute;left:0;right:0;height:11%;background:#000;z-index:4;animation:bar .6s ease-out both}
+.cine .cbar.t{top:0;transform-origin:top}.cine .cbar.b{bottom:0;transform-origin:bottom}
+.cine .ctag{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:calc(11% + 10px);z-index:5;font-size:11px;color:var(--gold);background:#0009;border:1px solid #f4c25b66;border-radius:99px;padding:3px 10px}
+.cine .ccap{position:absolute;left:max(18px,env(safe-area-inset-left,0px));right:18px;bottom:calc(11% + 16px);z-index:5;display:flex;flex-direction:column;gap:4px;text-shadow:0 2px 12px #000}
+.cine .ccap span{font-size:12px;letter-spacing:1px;color:#ffe9c4;opacity:0;animation:fadein .6s .5s forwards}
+.cine .ccap b{font-size:clamp(24px,7vw,34px);color:#fff;font-weight:900;opacity:0;animation:fadein .7s .8s forwards}
+.cine .ccap p{margin:0;font-size:14px;line-height:1.6;color:#f3eefc;max-width:34em;opacity:0;animation:fadein .7s 1.2s forwards}
+.cine .ctap{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 3%);z-index:5;text-align:center;font-size:12px;color:#fff9;opacity:0;transition:opacity .4s}
+.cine.ready .ctap{opacity:1;animation:blink 1.6s ease-in-out infinite}
+.cine.out{animation:cout .26s ease-in forwards}
+@keyframes cin{from{opacity:0}to{opacity:1}}@keyframes cout{to{opacity:0}}
+@keyframes kb{from{transform:scale(1.14) translateY(2%)}to{transform:scale(1)}}
+@keyframes walkin{from{transform:translateX(18%);opacity:0}to{transform:none;opacity:1}}
+@keyframes walkinL{from{transform:translateX(-18%);opacity:0}to{transform:none;opacity:1}}
+@keyframes bar{from{transform:scaleY(0)}to{transform:none}}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes blink{50%{opacity:.4}}
+@media (prefers-reduced-motion:reduce){.cine *{animation:none!important;opacity:1!important}}
+/* 인생 앨범 */
+.album{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+.album button{aspect-ratio:3/2;border-radius:12px;border:1px solid var(--line);background:center/cover no-repeat;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:8px;text-align:left;color:#fff;gap:1px}
+.album button b{font-size:13px}.album button span{font-size:10.5px;opacity:.8}
+
+/* v4.15 미니게임 창 */
+.mghow{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6}
+#modal .win:has(.mghost){padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px))}
+.mghost{--mgh:min(600px,calc(86vh - 30px));--mgh:min(600px,calc(86dvh - 30px))}
+/* v4.15 투잡마다 다른 화면: 들어가면 색·틀이 통째로 바뀐다 */
+body[data-page="pr"]{--gold:#d38cff;--gold2:#ecc4ff;--panel:#1b1530;--panel2:#261c42;--line:#3d2c62;--bg:#120c22}
+body[data-page="pr"] #app{background:radial-gradient(120% 40% at 50% 0%,#7b2cff22,transparent 70%),repeating-linear-gradient(90deg,#ffffff05 0 1px,transparent 1px 48px)}
+body[data-page="pr"] .pager b,body[data-page="pr"] .sec{text-shadow:0 0 10px #c77dffaa}
+body[data-page="cs"]{--gold:#ff6b6b;--gold2:#ffb3b3;--panel:#1c1a22;--panel2:#26232d;--line:#3a3442;--bg:#141218}
+body[data-page="cs"] #app{background:repeating-linear-gradient(180deg,transparent 0 27px,#ff6b6b10 27px 28px)}
+body[data-page="cs"] .card{border-left:3px solid #ff6b6b66}
+body[data-page="airbnb"]{--gold:#4fc3f7;--gold2:#a8e4ff;--panel:#13202c;--panel2:#1a2c3c;--line:#264256;--bg:#0b1620}
+body[data-page="airbnb"] #app{background:radial-gradient(circle at 85% 12%,#4fc3f71a 0 60px,transparent 61px),radial-gradient(circle at 12% 70%,#4fc3f712 0 46px,transparent 47px)}
+body[data-page="airbnb"] .card{border-style:dashed}
+body[data-page="ucafe"]{--gold:#d9b08c;--gold2:#f2d6bb;--panel:#1d1915;--panel2:#28221c;--line:#40362b;--bg:#14110e}
+body[data-page="ucafe"] .card{border:1px dashed #d9b08c55;background-image:linear-gradient(180deg,#ffffff06,transparent)}
+body[data-page="ucafe"] .pager b{font-family:var(--pixel)}
+body[data-page="insta"]{--gold:#ff8fc8;--gold2:#ffc4e2;--panel:#1e1522;--panel2:#2a1c30;--line:#44294d;--bg:#140d18}
+body[data-page="insta"] #app{background:linear-gradient(180deg,#ff8fc814,transparent 220px)}
+body[data-page="insta"] .card{border-radius:20px}

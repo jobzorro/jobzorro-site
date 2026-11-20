@@ -85,7 +85,15 @@ export function month(s, r, notes, scenes) {
     u.hist.push(rev - cost); if (u.hist.length > 24) u.hist.shift();
     s.cash += rev - cost; addMoney(s, "inc", "에어씨앤씨 매출", rev); addMoney(s, "exp", "에어씨앤씨 비용", cost); total += rev - cost;
     // 사건
-    if (u.reg === "illegal" && r.chance(0.035 + (u.last.foreign < 50 ? 0.02 : 0))) { const fine = Math.round(r.int(300, 1000) * pi); s.cash -= fine; addMoney(s, "exp", "미등록 숙박 과태료", fine); u.banned = 3; scenes.push(story("불법 숙박 단속", `${u.name}에 구청 단속반이 왔다. 이웃 신고였다. 과태료 ${won(fine)}, 3개월 영업정지. 에어씨앤씨 리스팅도 내려갔다.`)); }
+    // 미등록 단속: 드물게(1년에 한 번 이하), 넘어갈 길이 있다
+    if (u.reg === "illegal" && s.t - (A.raidT ?? -99) >= 12 && r.chance(0.012 + (u.last.foreign < 50 ? 0.008 : 0))) {
+      const fine = Math.round(r.int(300, 1000) * pi); A.raidT = s.t; s._abRaid = { id: u.id, fine };
+      scenes.push({ kind: "event", tag: "에어씨앤씨", title: "불법 숙박 단속", onChoose: "ab_raid", text: `${u.name}에 구청 단속반이 왔다. 이웃 신고였다. 그대로면 과태료 ${won(fine)}에 3개월 영업정지. 어떻게 할까?`, choices: [
+        { t: "아랫집에 떡 돌리고 사정을 설명한다", check: { stat: "talk", dc: 42 }, ok: { text: "\"젊은 사람이 애쓰네.\" 이웃이 신고를 취하했다. 경고장 한 장으로 끝났다.", eff: {} }, ng: { text: "\"시끄러운 건 시끄러운 거죠.\" 신고는 그대로 갔다.", eff: {} } },
+        { t: u.house ? "바로 숙박업 등록을 하겠다고 약속한다" : "오피스텔이라 등록은 못 하지만 운영을 줄이겠다고 한다", eff: {}, text: u.house ? "등록 서류를 냈다. 과태료는 절반, 정지는 1개월로 줄었다. 이제 합법 숙소다." : "선처를 받아 과태료가 30% 줄었다. 정지 2개월." },
+        { t: "과태료 내고 버틴다", eff: {}, text: "과태료를 냈다. 3개월 동안 리스팅이 내려간다." },
+      ] });
+    }
     else if (stays && r.chance(0.06)) scenes.push(abEvent(s, r, u));
   }
   // 환율·국제 이슈
@@ -99,6 +107,16 @@ export function month(s, r, notes, scenes) {
   return total;
 }
 function story(title, text) { return { kind: "story", title, text, choices: [{ t: "계속", eff: {}, text: "" }] }; }
+export function raidChoose(s, i, ok) {
+  const o = s._abRaid; s._abRaid = null; if (!o) return [];
+  const u = s.ab.units.find((x) => x.id === o.id); if (!u) return [];
+  let fine = o.fine, ban = 3;
+  if (i === 0 && ok) { fine = 0; ban = 0; }
+  else if (i === 1) { if (u.house) { fine = Math.round(fine / 2); ban = 1; u.reg = "legal"; } else { fine = Math.round(fine * 0.7); ban = 2; } }
+  if (fine) { s.cash -= fine; addMoney(s, "exp", "미등록 숙박 과태료", fine); }
+  u.banned = ban;
+  return [fine ? `과태료 −${won(fine)}` : "과태료 없음", ban ? `${ban}개월 영업정지` : "영업 계속", ...(i === 1 && u.house ? ["합법 등록 완료"] : [])];
+}
 function abEvent(s, r, u) {
   s._abEv = { id: u.id };
   const L = [

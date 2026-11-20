@@ -37,12 +37,12 @@ export function buyCctv(s, id) { const st = s.uc.stores.find((x) => x.id === id)
 export const needAp = (s, st) => (s.uc.agent ? 0.25 : Math.max(0.5, Math.round((1 + (st.last?.cups ?? 1800) / 2500) * 2) / 2));
 
 export function can(s, id) { if (id === "uc_search") return null; if (!s.uc.stores.length) return "매장이 없어요"; if (id === "uc_agent" && s.uc.stores.length < 2) return "매장 2곳부터"; return null; }
-export function act(s, r, id, arg) {
+export function act(s, r, id, arg, boost = 1) {
   const U = s.uc;
   if (id === "uc_search") { const ls = search(s, r, arg || "apt"); return { lines: [`${D.UC_AREAS[arg || "apt"].n} 매물 ${ls.length}개`], msg: D.UC_AREAS[arg || "apt"].tip }; }
   if (id === "uc_agent") { U.agent = !U.agent; return { lines: [U.agent ? "관리 대행 계약: 매장당 월 40만, 청소·재고를 맡겨요" : "관리 대행 해지"], msg: U.agent ? "\"매일 아침 7시에 들러서 원두 채울게요.\"" : "다시 내가 새벽에 간다." }; }
   const st = U.stores.find((x) => x.id === arg) || U.stores[0];
-  if (id === "uc_check") { st.ap += 1; st.clean = Math.min(100, st.clean + 30); if (st.broken) { st.broken = 0; } gainStat(s, "hands", 0.3); return { lines: [`${st.name} 점검 ${st.ap}/${needAp(s, st)}`, "청결 +"], msg: r.pick(["새벽 6시, 원두 채우고 얼음통 비우고 테이블 닦기.", "컵 뚜껑이 다 떨어져 있었다. 편의점으로 뛰었다.", "그라인더 청소. 커피 가루가 손톱에 꼈다."]) }; }
+  if (id === "uc_check") { st.ap += boost; st.clean = Math.min(100, st.clean + Math.round(30 * boost)); if (st.broken) { st.broken = 0; } gainStat(s, "hands", 0.3); return { lines: [`${st.name} 점검 ${st.ap}/${needAp(s, st)}`, "청결 +"], msg: r.pick(["새벽 6시, 원두 채우고 얼음통 비우고 테이블 닦기.", "컵 뚜껑이 다 떨어져 있었다. 편의점으로 뛰었다.", "그라인더 청소. 커피 가루가 손톱에 꼈다."]) }; }
   if (id === "uc_promo") { st.buzz = Math.min(100, (st.buzz || 0) + 12 + s.st.mkt / 10); gainStat(s, "mkt", 0.4); return { lines: [`${st.name} 동네 입소문 +`], msg: "아파트 단톡방에 \"첫 잔 1,000원\" 쿠폰을 뿌렸다." }; }
   return null;
 }
