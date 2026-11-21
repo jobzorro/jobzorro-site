@@ -1,7 +1,8 @@
 // 투잡 탐색 + 취미. 투잡은 처음부터 정해져 있지 않다. 너튜브·리포트·세미나·회사 소문·취미에서 '발견'하고, 두 개까지 고른다.
 import * as D from "./defs.js";
-import { CHAR, addMoney, log, jo, won, gainStat, meetScene, openScene, sceneOk, reveal } from "./core.js";
+import { CHAR, addMoney, log, jo, won, gainStat, meetScene, openScene, sceneOk, reveal, ensureRel } from "./core.js";
 import { DISC, SCENES } from "../gen/data.js";
+import * as REG from "./reg.js"; // 새 투잡 플러그인(투잡 칸 +1·접기 조건)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 export function init() { return { int: {}, found: {}, active: [], know: {}, open: false, seen: {} }; }
@@ -9,7 +10,7 @@ export function hbInit() { return { joined: [], cnt: {}, lastT: {}, since: {} };
 
 // ───────── 투잡 ─────────
 // 투잡 칸: 기본 2개, 매니저(파티룸 매니저·에어씨앤씨 코호스트·컨설팅 공동 코치)를 두면 3개
-export function slots(s) { const coach = Object.entries(s.rel || {}).some(([id, x]) => x.helper && CHAR[id]?.helper?.effect === "cs_coach"); return D.SJ_SLOTS + (s.pr?.sys?.manager || s.ab?.cohost || s.uc?.agent || coach ? 1 : 0); }
+export function slots(s) { const coach = Object.entries(s.rel || {}).some(([id, x]) => x.helper && CHAR[id]?.helper?.effect === "cs_coach"); const plug = REG.JOBS.some((P) => P.slot && s[P.key] && P.slot(s)); return D.SJ_SLOTS + (s.pr?.sys?.manager || s.ab?.cohost || s.uc?.agent || coach || plug ? 1 : 0); }
 export const isActive = (s, job) => !!s.sj?.active.includes(job);
 export const isFound = (s, job) => s.sj?.found[job] !== undefined;
 export function fit(s, job) { // 궁합 등급(능력치 기반)
@@ -38,15 +39,19 @@ export function start(s, job) {
   if (isActive(s, job)) return { ok: false, msg: "이미 하고 있습니다" };
   if (sj.active.length >= slots(s)) return { ok: false, msg: `투잡은 지금 ${slots(s)}개까지. 매니저를 두면 한 칸 늘어요` };
   sj.active.push(job); log(s, `${jo(j.n, "을", "를")} 시작하기로 했다.`, "work");
+  { const P = REG.get(job); if (P) { if (!s[job]) s[job] = P.init(s); if (P.onStart) P.onStart(s); } }
   const hid = reveal(s, job);
-  return { ok: true, hid, msg: `${j.n} 시작! 전체 메뉴에 ${j.n} 칸이 열렸어요${hid.length ? ` · 숨은 특성 ${hid.length}개 공개` : ""}` };
+  const N = need(s, job); const warn = N && !N.ok ? ` · ${N.n} ${N.cur}/${N.need}: 초반이 더 힘들 거예요` : "";
+  return { ok: true, hid, msg: `${j.n} 시작! 전체 메뉴에 ${j.n} 칸이 열렸어요${warn}${hid.length ? ` · 숨은 특성 ${hid.length}개 공개` : ""}` };
 }
 export function stop(s, job) {
   if (!isActive(s, job)) return { ok: false, msg: "하고 있지 않습니다" };
   if (job === "pr" && s.pr.rooms.length) return { ok: false, msg: "지점을 모두 양도해야 접을 수 있습니다" };
   if (job === "cs" && s.cs.queue.length) return { ok: false, msg: "대기 고객을 먼저 끝내야 합니다" };
+  const P = REG.get(job); if (P?.stopWhy) { const why = P.stopWhy(s); if (why) return { ok: false, msg: why }; }
   s.sj.active = s.sj.active.filter((x) => x !== job);
   if (job === "cs") { s.cs.open = false; s.cs.ads = 0; }
+  if (P?.onStop) P.onStop(s);
   log(s, `${jo(D.SIDEJOBS[job].n, "을", "를")} 접었다.`, "work");
   return { ok: true, msg: `${D.SIDEJOBS[job].n} 접음` };
 }
@@ -55,6 +60,7 @@ function unfound(s) { return Object.keys(D.SIDEJOBS).filter((k) => !isFound(s, k
 export function can(s, id, arg) {
   if (id === "sj_report" || id === "sj_interview") { if (!arg || !D.SIDEJOBS[arg]) return "투잡을 고르세요"; if (id === "sj_interview" && (s.sj.int[arg] || 0) < 30 && !isFound(s, arg)) return "관심 30 이상이어야 물어볼 사람을 찾는다"; if (id === "sj_interview" && s.sj.know[arg]) return "이미 들었다"; if (id === "sj_report" && isFound(s, arg)) return "이미 발견한 투잡"; }
   if ((id === "sj_youtube" || id === "sj_seminar") && !unfound(s).length) return "더 찾을 투잡이 없다";
+  if (id === "sj_prep" || id === "sj_senior") { const E = ENTRY[arg]; if (!E) return "투잡을 고르세요"; if (!isFound(s, arg) && (s.sj.int[arg] || 0) < 30) return "관심 30 이상이어야 해요"; if (id === "sj_prep") { if (isActive(s, arg)) return "이미 시작했어요(준비는 시작 전에)"; if (rp(s, arg).prep >= 3) return "준비는 다 했어요(3/3)"; if (s.cash < E.prep.cost) return "준비비가 모자라요"; } else { const p = rp(s, arg); if (p.sen >= 3) return "선배에게 들을 건 다 들었어요(3/3)"; if (p.sen >= 1 && !isActive(s, arg)) return "다음 만남은 시작한 뒤에(첫 달 막혔을 때)"; if (p.sen >= 2 && (p.t0 === undefined || s.t - p.t0 < 2)) return "세 번째 만남은 영업 두 달 뒤에(다음 단계 앞)"; if (p.senT === s.t) return "이번 달은 이미 만났어요"; } }
   if (id === "hb_go") { if (!s.hb.joined.includes(arg)) return "가입한 취미가 아닙니다"; if (s.hb.lastT[arg] === s.t) return "이번 달 모임은 다녀왔다"; }
   return null;
 }
@@ -78,6 +84,8 @@ export function act(s, r, id, arg) {
     s.sj.know[arg] = s.t; const l = addInt(s, arg, 50); const j = D.SIDEJOBS[arg]; const f = fit(s, arg);
     return { lines: [l, `궁합 ${f.g}`].filter(Boolean), msg: `해 본 사람에게 커피를 샀다. "${j.line}" 수익은 ${j.inc}, 시간은 ${j.hours}. 시작 자본 ${j.cap}.` };
   }
+  if (id === "sj_prep") return prepAct(s, arg);
+  if (id === "sj_senior") { rp(s, arg).senT = s.t; addInt(s, arg, 20); return { lines: ["커피값 −3만"], msg: "", scene: seniorScene(s, arg) }; }
   if (id === "hb_go") return hbGo(s, r, arg);
   return { lines };
 }
@@ -93,6 +101,7 @@ export function discScene(s, hobby, job) {
   ] };
 }
 export function discChoose(s, sc, i) {
+  if (sc?.coach) return coachChoose(s, sc, i);
   if (i === 0) { found(s, sc.job, `${D.HOBBIES[sc.hobby]?.n || "취미"}에서`); return [`투잡 발견: ${D.SIDEJOBS[sc.job].n}`, D.SIDEJOBS[sc.job].play ? "투잡 탐색에서 시작할 수 있다" : "준비 중인 투잡"]; }
   s.sj.int[sc.job] = 70; return ["관심 70에서 멈춤"];
 }
@@ -123,6 +132,7 @@ function hashN(str) { let h = 7; for (const ch of str) h = (h * 31 + ch.charCode
 const CO_RE = /(대리|과장|사원|팀장|기획|마케터|개발자|인사|회계|영업|MD|PM|디자이너|연구원|재무|컨설턴트|애널리스트|회사원|직장인|행원)/;
 export function coworkers(s) { return s.cast.filter((id) => { const c = CHAR[id]; return c && (CO_RE.test(c.job) || (c.hangouts || []).some((h) => h === "office" || h === "officest")); }); }
 export function refresh(s, r) { // 이번 달 회사·모임에 나오는 사람들
+  for (const job of s.sj?.active || []) { const p = s.sj.rp?.[job]; if (ENTRY[job] && p && p.t0 !== undefined && p.t0 < s.t && p.shock === undefined && p.done === undefined) { p.shock = s.t; (s.sceneQ = s.sceneQ || []).push(shockScene(s, job)); } } // 첫 영업 달 정산 뒤 '생각보다 안 되네'
   if (!(s.co.quit || s.co.fired)) {
     const pool = r.shuffle(coworkers(s).filter((id) => !s.rel[id]?.spouse)).slice(0, r.int(3, 5));
     for (const sp of Object.values(s.spot)) for (const id of pool) { const i = sp.indexOf(id); if (i >= 0) sp.splice(i, 1); }
@@ -152,6 +162,7 @@ function hbGo(s, r, id) {
   return { lines, msg: h.desc, scene };
 }
 export function month(s, r, notes) {
+  coachMonth(s, notes);
   let fee = 0; for (const id of s.hb.joined) fee += D.HOBBIES[id].fee;
   if (fee) { s.cash -= fee; addMoney(s, "exp", "취미 회비", fee); }
   for (const id of s.hb.joined) if (s.hb.lastT[id] !== s.t && (s.hb.since[id] ?? 0) < s.t) { notes.push(`${D.HOBBIES[id].n}: 이번 달 결석. 회비만 냈다`); }
@@ -170,5 +181,246 @@ export function todos(s) {
   if (!s.sj.active.length && !ready.length && s.t >= 2) t.push({ lv: 0, text: "투잡 탐색: 너튜브·리포트·취미에서 찾아보기", go: "sj" });
   for (const id of s.hb.joined) if (s.hb.lastT[id] !== s.t) t.push({ lv: 0, text: `${D.HOBBIES[id].n} 이번 달 모임 아직(회비 ${D.HOBBIES[id].fee}만)`, go: "hobby" });
   if (!s.hb.joined.length && s.t >= 1) t.push({ lv: 0, text: "취미가 없다. 인연도 투잡도 취미에서 온다", go: "hobby" });
+  if (!s.sj.coachOff) {
+    for (const job of s.sj.active) { const p = s.sj.rp?.[job]; if (p?.tip && p.done === undefined) t.push({ lv: 1, text: `코치 · ${D.SIDEJOBS[job].n}: ${p.tip}`, go: job }); }
+    const gap = ready.find((k) => ENTRY[k] && (!need(s, k).ok || rp(s, k).prep < 3)); if (gap && s.sj.active.length < slots(s)) { const N = need(s, gap); t.push({ lv: 0, text: `${D.SIDEJOBS[gap].n} 시작 전: ${N.n} ${N.cur}/${N.need} · 준비 ${rp(s, gap).prep}/3 · 선배 찾아가기`, go: "sj" }); }
+  }
   return t;
+}
+
+// ───────── 진입 준비 · 초반 고생 · 선배 코치 (11-21) ─────────
+// 투잡마다 핵심 역량(st)·기준(need)을 둔다. 모자라도 시작은 되지만 초반 수요가 더 낮게, 더 천천히 오른다.
+// 초반 수요 배율 ramp(): 첫 영업 달(t0)부터 f0에서 1까지. 시간만으로도 rm달이면 다 오르지만(가만히 있으면 느림),
+// 마케팅·후기·품질 행동(acts)을 하면 pt점에서 다 오른다(한 달 최대 4점, 영업 시작 뒤부터). rm = 2R, pt = 8R(R = 기획 데이터 ramp 참고):
+// 꾸준히 하면 R달, 가만히 있으면 2R달, 역량이 모자라면 더 늦게. 다 오르면 그 뒤로는 1(중후반 곡선은 그대로).
+// 기획 데이터: 투잡연구소 09_게임 기획/data/<투잡>.json 의 income.ramp_months_to_median·start·codex_facts·fixed_costs
+const RP_CAP = 4; // 한 달에 쌓이는 노력 점수 상한
+export const ENTRY = {
+  pr: { st: "num", need: 35, f0: 0.92, rm: 6, pt: 24, disc: 10, who: "c094", whoN: "파티룸 3곳 운영 4년 차 사장님",
+    prep: { cost: 5, list: ["상권 앱으로 주변 파티룸 30곳 예약표 훑기", "공간대여 창업 강의 듣기", "청소·민원 체크리스트 만들기"] },
+    acts: { pr_promo: "mkt", pr_review: "rev", pr_club: "mkt", pr_decor: "qual", pr_meetup: "qual", pr_course: "qual", pr_appcheck: "mkt" },
+    shock: "첫 정산서. 토요일 저녁 몇 타임 빼고 예약표가 텅 비었다. 사진은 휴대폰으로 대충 찍었고, 후기는 0개, 가격은 옆 공간과 똑같다. 손님 입장에선 여기를 고를 이유가 없다.",
+    tips: [{ a: "pr_promo", k: "mkt", t: "사진부터 다시 찍어요. 예약은 사진에서 갈려요. '홍보 사진 찍기' 한 번이면 예약표가 달라져요." }, { a: "pr_review", k: "rev", t: "후기 0개면 아무도 안 골라요. 음료 쿠폰 걸고 '리뷰 이벤트'로 첫 후기부터 모아요." }, { a: "pr_decor", k: "qual", t: "휑한 공간은 사진에서 걸러져요. '파티룸 꾸미기'로 포토존 하나만 채워도 달라요." }, { a: "pr_club", k: "mkt", t: "첫 손님은 아는 사람에게서 와요. 내 모임을 불러 '모임 대관 행사'를 열어 봐요." }, { a: "pr_meetup", k: "qual", t: "'파티룸 사장 모임'에 한 번 나가 봐요. 남의 가격표를 보면 내 실수가 보여요." }],
+    sen: [
+      { t: "\"20평 하나 차리는 데 보증금까지 4,000만 원쯤 들어요. 월세는 매출의 30~50% 안으로 잡아야 남고요. 첫 달 0~50만, 둘째 달 100만, 셋째 달 150만이 보통이에요. 건물주가 파티룸을 싫어하면 시작도 못 해요. 계약 전에 꼭 물어봐요.\"", m: "보증금 포함 약 4,000만 · 월세는 매출의 30~50% 안 · 1달차 0~50만 → 3달차 150만 · 건물주 동의 먼저" },
+      { t: "\"예약 많은 곳은 거의 다 즉시결제예요. 토요일 저녁 7시가 제일 잘 팔리고, 평일은 비는 게 정상이에요. 평일 할인보다 생일·브라이덜샤워 같은 컨셉 사진을 먼저 올려요.\"", m: "즉시결제 켜기 · 토요일 저녁 7시가 피크 · 평일 공실은 정상 · 컨셉 사진 먼저" },
+      { t: "\"솔직히 하나만 하면 안 돼요. 방 하나면 공실·월세·청소비가 전부 그 한 곳에 걸려요. 보일러 한 번 고장 나면 그달은 끝이에요. 저는 세 곳이라 겹친 예약은 옆 방으로 넘기고, 청소 업체·예약 프로그램은 같이 써서 방당 비용이 확 줄었어요. 대신 2호점은 1호점이 6개월 넘게 흑자일 때만. 6개월 내내 적자면 그 방은 전략을 바꾸거나 접을 때고요. 새로 연 곳 상당수가 1년 안에 문 닫아요.\"", m: "하나만 하면 위험이 한 곳에 몰림 · 2~3곳이면 예약 넘기기·청소·예약 프로그램 나눠 쓰기 · 2호점은 1호점 6개월 흑자 뒤 · 6개월 적자면 전략 수정이나 정리" }],
+    ask: "\"대리석 테이블은 들이지 마요. 한 번 깨지면 수십만 원이에요. 소모품은 대용량으로 사고요.\"", help: ["hands", "주말에 선배 파티룸 청소를 같이 했다. 소파 틈에 케이크 크림이 끼어 있었다. 이게 현실이다."],
+    next: "예약이 자리 잡았어요. 이제 별점 4.6을 지키면서 가격을 조금씩 올려 봐요. 방 하나로 끝내진 마요. 1호점이 6개월 흑자면 2호점, 2~3곳은 돼야 위험이 나뉘어요." },
+  cs: { st: "career", need: 40, f0: 0.55, rm: 18, pt: 72, disc: 5, who: "c097", whoN: "자소서 첨삭 10년 차 강사",
+    prep: { cost: 5, list: ["합격 자소서 20개 구조 분석", "무료 첨삭 3명으로 포트폴리오 만들기", "컨설팅 입문 강의 듣기"] },
+    acts: { cs_friend: "rev", cs_kmong: "mkt", cs_blog: "mkt", cs_insta: "mkt", cs_kakao: "mkt", cs_flyer: "mkt", cs_youtube: "mkt", cs_seminar: "mkt", cs_focus: "qual", cs_template: "qual", cs_soomgo: "mkt" },
+    shock: "첫 달 문의 0~1건. 블로그는 검색에 안 잡히고, 재능장터엔 후기 수백 개짜리 선배들이 줄 서 있다. 내 첨삭 실력과 상관없이, 아직 아무도 나를 모른다.",
+    tips: [{ a: "cs_friend", k: "rev", t: "첫 후기는 지인에게서 와요. '지인 무료 첨삭'으로 후기 3개부터 만들어요." }, { a: "cs_kmong", k: "mkt", t: "재능장터 상세페이지를 다듬어요. 후기 많은 사람과 같은 가격이면 안 골라요." }, { a: "cs_blog", k: "mkt", t: "블로그 글은 석 달 뒤에 효과가 나요. 지금 쓰는 글이 석 달 뒤 문의예요." }, { a: "cs_kakao", k: "mkt", t: "오픈채팅방을 하나 열어 봐요. 사람이 모이면 문의가 따라와요." }, { a: "cs_focus", k: "qual", t: "첨삭 품질이 후기를 만들어요. '집중 첨삭'으로 실력을 다져요." }],
+    sen: [
+      { t: "\"자소서 첨삭은 건당 5~10만 원이에요. 첫 1년은 한 달에 몇 명 안 와요. 자리 잡는 데 1~2년, 마케팅까지 안정되려면 3년 걸려요. 다니는 회사 이름이 곧 신뢰예요. 대신 얼굴 내놓는 일이라 겸업 규정부터 봐요.\"", m: "건당 5~10만 · 자리 잡는 데 1~2년 · 회사 경력이 신뢰 · 겸업 규정 확인" },
+      { t: "\"3월, 9월이 대란이에요. 그 전에 후기를 쌓아 둬야 해요. 재능장터는 수수료를 20%쯤 떼니까, 블로그·오픈채팅으로 직접 오는 손님을 만들어요.\"", m: "3·9월 성수기 전에 후기 · 재능장터 수수료 약 20% · 직접 유입 채널" },
+      { t: "\"1:1은 한 달 2~8명이 한계예요. 밀리면 템플릿을 만들고 그룹으로 가요. 불합격 환불 요구도 와요. 환불 기준은 꼭 계약서에 적고, 세금 신고도 미리 챙겨요.\"", m: "1:1 한 달 2~8명 한계 · 템플릿·그룹 확장 · 환불 기준 계약서에 · 세금 신고" }],
+    ask: "\"첫 상담 30분은 무료로 해요. 거기서 약점 하나만 정확히 짚으면 계약해요.\"", help: ["write", "주말에 선배 첨삭 초안 정리를 도왔다. 빨간 펜이 문장 한 줄에 세 번 지나갔다."],
+    next: "문의가 꾸준해졌어요. 이제 성수기(3·9월) 전에 무료 특강을 열고, 템플릿으로 한 명당 시간을 줄여 봐요." },
+  insta: { st: "sense", need: 40, f0: 0.7, rm: 18, pt: 72, disc: 0, who: "c071", whoN: "구독자 8만 크리에이터",
+    prep: { cost: 3, list: ["같은 주제 계정 30개 저장 많은 글 분석", "사진·릴스 편집 강의 듣기", "피드 9칸 미리 찍어 두기"] },
+    acts: { in_post: "mkt", in_reel: "mkt", in_engage: "rev" },
+    shock: "조회수 37. 친구 몇 명이 누른 좋아요가 전부다. 주제는 매일 바뀌고 올리는 시간도 들쭉날쭉. 알고리즘은 아직 내가 누군지 모른다.",
+    tips: [{ a: "in_post", k: "mkt", t: "주제 하나로 매주 올려요. 1천 명 이하 계정은 주제가 한결같으면 참여율이 3배예요." }, { a: "in_engage", k: "rev", t: "댓글·DM 답장이 곧 노출이에요. '댓글·DM 소통'을 빼먹지 마요." }, { a: "in_reel", k: "mkt", t: "한 달에 한 번은 릴스를 찍어요. 피드보다 새 사람에게 닿아요." }],
+    sen: [
+      { t: "\"주 9시간 하면 첫 1년은 월 5~10만 원이에요. 협찬은 팔로워 1천 넘어야 오고 건당 1만~13만 원. 촬영·소품비가 매달 25~45만 원 드니까 처음엔 마이너스예요. 장비 욕심부터 내면 망해요.\"", m: "첫해 월 5~10만 · 협찬은 팔로워 1천부터 건당 1~13만 · 촬영비 월 25~45만 · 장비병 주의" },
+      { t: "\"팔로워는 절대 사지 마요. 참여율이 망가지면 회복이 안 돼요. 저장이 많이 되는 정보형 글이 돈이 돼요.\"", m: "팔로워 구매 금지 · 저장되는 정보형 글" },
+      { t: "\"1만 명 넘으면 협찬이 건당 13만~65만 원이에요. 광고 표기는 꼭 하고, 회사 사람이 팔로우할 수 있다는 것도 각오해요.\"", m: "1만 넘으면 건당 13~65만 · 광고 표기 필수 · 회사 노출 각오" }],
+    ask: "\"올리는 요일과 시간을 정해요. 저는 화·목·토 저녁 9시예요.\"", help: ["sense", "선배 촬영을 하루 도왔다. 30초 영상에 4시간. 조명 하나 옮기는 데만 20분."],
+    next: "계정이 자리 잡았어요. 이제 협찬 단가를 올리고, 한 달에 한 번은 정보형 릴스로 새 사람을 데려와요." },
+  airbnb: { st: "lang", need: 30, f0: 0.55, rm: 8, pt: 32, disc: 8, who: null, whoN: "숙소 3채 운영 4년 차 호스트",
+    prep: { cost: 3, list: ["입주민 동의·영업신고 절차 알아보기", "외국인 게스트 응대 문장 연습", "사진 잘 나온 숙소 30곳 분석"] },
+    acts: { ab_photo: "qual", ab_host: "rev" },
+    shock: "첫 달 예약률이 바닥이다. 후기 0개 숙소는 검색 뒤로 밀리고, 사진은 어둡다. 게스트 질문에 답이 늦어서 예약이 옆 숙소로 넘어갔다.",
+    tips: [{ a: "ab_photo", k: "qual", t: "사진이 예약률이에요. '사진·소개 다듬기'로 밝은 낮 사진부터 다시 찍어요." }, { a: "ab_host", k: "rev", t: "답장 속도가 곧 별점이에요. '게스트 응대'로 첫 후기 5개를 만들어요." }],
+    sen: [
+      { t: "\"하루 20만 원에 예약률 50%면 매출 300만, 순수익은 90만 남짓이에요. 청소비가 건당 5만이라 15번이면 75만이 나가요. 사업자 등록·영업신고 없으면 앱에서 내려가요. 제일 어려운 건 입주민 동의예요.\"", m: "1박 20만·예약률 50% → 순수익 약 90만 · 청소 건당 5만 · 영업신고 필수 · 입주민 동의" },
+      { t: "\"첫 후기 다섯 개까지는 가격을 조금 내려서라도 받아요. 답장은 1시간 안에. 체크인 안내를 사진으로 만들어 두면 질문이 반으로 줄어요.\"", m: "첫 후기 5개까진 가격 양보 · 답장 1시간 안 · 사진 체크인 안내" },
+      { t: "\"연 매출 4,800만 넘으면 세금 유형이 바뀌어요. 두 번째 숙소는 첫 숙소가 6개월 안정된 뒤에. 청소 이모님 휴가 때 대타도 미리 구해 둬요.\"", m: "연 매출 4,800만 넘으면 세금 유형 변경 · 2호는 6개월 안정 뒤 · 청소 대타" }],
+    ask: "\"머그컵은 같은 걸로 넉넉히. 깨지면 증거 사진부터 찍어요.\"", help: ["lang", "주말에 선배 숙소 외국인 체크인을 대신 맡았다. 와이파이 비밀번호를 세 번 설명했다."],
+    next: "후기가 쌓였어요. 이제 별점 4.8을 지키면서 성수기 가격을 올려 봐요. 두 번째 숙소는 6개월 안정 뒤에요." },
+  ucafe: { st: "num", need: 35, f0: 0.62, rm: 8, pt: 32, disc: 10, who: null, whoN: "무인카페 2곳 3년 차 사장님",
+    prep: { cost: 5, list: ["반경 500m 저가커피 지도 그리기", "머신 관리·위생교육 듣기", "원가표 만들기(재료비 20~30%)"] },
+    acts: { uc_promo: "mkt", uc_check: "qual" },
+    shock: "하루 매출 4만 원. 동네 사람들은 여기가 생긴 줄도 모른다. 간판은 작고, 쿠폰도 없고, 건너편 1,900원 카페에만 줄이 선다.",
+    tips: [{ a: "uc_promo", k: "mkt", t: "첫 손님 대부분은 반경 몇백 미터 동네 사람이에요. '동네 홍보'로 아파트 단톡방부터 가요." }, { a: "uc_check", k: "qual", t: "기계와 청소가 곧 리뷰예요. '점검·재고·청소'를 거르면 별점부터 떨어져요." }],
+    sen: [
+      { t: "\"10평 차리는 데 4,000~6,000만, 머신 신품만 2,200~2,800만이에요. 월매출 308만이 손익분기, 450만이면 순익 156만. '월 200 보장' 말 믿고 7천 넣었다가 50만 버는 사람도 봤어요.\"", m: "창업 4,000~6,000만 · 머신 2,200~2,800만 · 손익분기 월매출 약 308만 · '수익 보장' 의심" },
+      { t: "\"개점 3개월이면 판가름 나요. 쿠폰 걸고 지도 앱 리뷰 30개부터 모아요. 결제 오류, 얼음컵 같은 사소한 게 별점 1점이 돼요.\"", m: "개점 3개월에 판가름 · 리뷰 30개 작전 · 결제 오류·얼음컵 관리" },
+      { t: "\"투자금 회수까지 35개월쯤 봐요. 2호점은 1호점이 6개월 흑자로 버틴 뒤에. 머신 할부 70만 같은 고정비가 제일 무서워요.\"", m: "회수 약 35개월 · 2호점은 6개월 흑자 뒤 · 할부 고정비 주의" }],
+    ask: "\"머신 청소는 매일 10분. 곰팡이 한 번 나면 그 동네에서 끝이에요.\"", help: ["hands", "주말에 선배 매장 마감을 도왔다. 원두 채우고, 얼음통 닦고, 쓰레기 세 봉지."],
+    next: "동네 단골이 생겼어요. 이제 별점을 지키면서 객단가 높은 메뉴를 하나 더 넣어 봐요." },
+  chicken: { st: "num", need: 40, f0: 0.88, rm: 10, pt: 40, disc: 30, who: null, whoN: "치킨집 6년 차 점주",
+    prep: { cost: 10, list: ["정보공개서 읽는 법 상담받기", "치킨집 주말 알바 체험", "원가표 만들기(재료비 47%·수수료 15%)"] },
+    acts: { ch_market: "mkt", ch_shift: "qual", ch_crew: "qual" },
+    shock: "오픈발 주문이 끝나자 배달앱 순위가 쭉 밀렸다. 리뷰 수는 옆 가게의 10분의 1. 매출은 본사가 말한 '초보 평균'에 한참 못 미치는데, 월세와 인건비는 그대로 나간다.",
+    tips: [{ a: "ch_market", k: "mkt", t: "배달앱 리뷰 답글이 순위예요. '배달통·플레이스 관리'를 매주 해요." }, { a: "ch_shift", k: "qual", t: "피크 타임엔 사장이 튀겨요. '매장 근무'로 맛과 속도를 잡아요." }, { a: "ch_crew", k: "qual", t: "알바가 그만두면 내가 튀겨야 해요. '알바 관리'로 빈자리부터 채워요." }],
+    sen: [
+      { t: "\"공시 창업비가 5,000만이라고 써 있어도 권리금·보증금·닥트 공사 붙으면 1.5억이에요. 재료비 47%, 배달수수료 15%, 인건비 17%, 월세 10% 빼면 남는 게 11%예요. 정보공개서는 계약 14일 전에 받아서 꼭 읽어요.\"", m: "실제 창업비 약 1.5억 · 영업이익 약 11% · 정보공개서 계약 14일 전 수령" },
+      { t: "\"오픈발 끝나면 순위가 떨어져요. 리뷰 답글은 하루도 빼먹지 마요. 금요일 7시에 알바가 잠수 타면 내가 튀겨야 하니까, 사장이 튀길 줄 알아야 해요.\"", m: "오픈발 뒤 순위 하락 · 리뷰 답글 매일 · 사장이 튀길 줄 알기" },
+      { t: "\"치킨집 폐점률이 한 해 12%예요. 슈퍼바이저가 2호점을 권하면 1호점 장부부터 봐요. 오토 운영은 직원이 매출 올릴 이유가 없어서 꼭 떨어져요.\"", m: "폐점률 연 약 12% · 2호점 권유엔 장부부터 · 오토 운영은 매출 하락" }],
+    ask: "\"영업지역 조항을 꼭 확인해요. 850m 옆에 같은 간판 들어오는 걸 막아야 해요.\"", help: ["hands", "토요일 저녁 선배 가게 튀김기 앞에 섰다. 기름 냄새가 이틀 동안 안 빠졌다."],
+    next: "매장이 자리 잡았어요. 이제 장부를 매달 보고 재료비 47%를 지켜요. 2호점은 손익분기를 넘긴 뒤에요." },
+  tarot: { st: "talk", need: 40, f0: 0.45, rm: 6, pt: 24, disc: 3, who: null, whoN: "타로 상담 4년 차 리더",
+    prep: { cost: 3, list: ["78장 카드 뜻 정리 노트", "친구 3명 무료 리딩 연습", "타로 원데이 클래스 듣기"] },
+    acts: { tr_card: "mkt", tr_booth: "mkt", tr_practice: "qual", tr_read: "rev", tr_kit: "qual" },
+    shock: "유료로 바꾸자 문의가 뚝 끊겼다. 재능장터에 타로 상담사만 1,200명. 후기 0개인 내 프로필은 스크롤 맨 아래다.",
+    tips: [{ a: "tr_card", k: "mkt", t: "'오늘의 카드'를 꾸준히 올려요. 카드 이미지 한 장이 첫 손님을 데려와요." }, { a: "tr_read", k: "rev", t: "첫 손님에게 정성을 다해요. 후기 하나가 다음 문의 셋이에요." }, { a: "tr_practice", k: "qual", t: "연습 노트로 해석력을 다져요. 리딩이 좋아야 다시 찾아와요." }, { a: "tr_booth", k: "mkt", t: "주말 플리마켓 부스로 얼굴을 알려요. 대면 손님은 단골이 돼요." }],
+    sen: [
+      { t: "\"덱 하나 2~5만 원이면 시작해요. 텍스트 리딩은 건당 5천~1만 5천 원, 통화는 30분 3만 원. 준비 한 달, 그다음 두세 달은 월 10~50만이 보통이에요. 카드 뜻보다 상담이 본업이에요.\"", m: "덱 2~5만 · 텍스트 5천~1.5만, 통화 30분 3만 · 두세 달은 월 10~50만 · 상담이 본업" },
+      { t: "\"처음 몇 명은 무료로 읽어 주고 후기를 받아요. 꼬리 질문 3,000원 같은 작은 상품을 붙이면 단골이 돼요. 2월은 원래 조용해요.\"", m: "무료 리딩으로 첫 후기 · 꼬리 질문 소액 상품 · 2월 비수기" },
+      { t: "\"재구매율 20~30%를 넘기면 본업도 생각해 볼 만해요. 감정 쓰레기통이 되지 않게 상담 시간을 정해요. 상담실 임대는 단골이 생긴 뒤에요.\"", m: "재구매율 20~30%가 기준 · 상담 시간 경계 · 상담실은 단골 뒤" }],
+    ask: "\"리딩 끝에 '다음 달에 다시 봐요' 하고 날짜를 잡아 줘요. 그게 재구매예요.\"", help: ["talk", "선배 플리마켓 부스를 하루 지켰다. 손님 열 명 중 일곱이 연애운이었다."],
+    next: "단골이 생기기 시작했어요. 이제 재구매율 20%를 목표로, 연말·연초 성수기를 준비해요." },
+  webnovel: { st: "write", need: 45, f0: 0.6, rm: 16, pt: 64, disc: 0, who: null, whoN: "웹소설 완결 3편 작가",
+    prep: { cost: 5, list: ["인기작 1~20화 구조 분석", "작법 강의 듣기", "비축분 10화 먼저 쓰기"] },
+    acts: { wn_reader: "mkt", wn_plot: "qual", wn_contest: "mkt" },
+    shock: "1화 조회수 7, 선호작 3. 제목은 평범하고 1화에 사건이 없다. 독자는 세 줄 안에 뒤로 가기를 누른다.",
+    tips: [{ a: "wn_reader", k: "mkt", t: "첫 댓글엔 꼭 답해요. '독자 소통·홍보'가 초반 유입의 전부예요." }, { a: "wn_plot", k: "qual", t: "1~5화 몰입이 생명이에요. '플롯 다듬기'로 1화에 사건을 넣어요." }, { a: "wn_contest", k: "mkt", t: "공모전 시즌(5·6·10·11월)엔 참가해요. 노출이 확 늘어요." }],
+    sen: [
+      { t: "\"10화도 못 채우고 그만두는 사람이 60~70%예요. 독자가 100원 내면 플랫폼이 30~45%를 떼고, 남은 걸 매니지먼트랑 7:3으로 나눠요. 전체 중위 수입은 월 25만 원쯤이에요. 로맨스는 3~6달, 판타지는 6~12달 지나야 돈이 돼요.\"", m: "10화 전 포기 60~70% · 100원에 작가 30~50원 · 중위 월 약 25만 · 수익까지 3~12달" },
+      { t: "\"비축분 없이 연재하면 야근 한 번에 펑크 나요. 최소 10화는 쌓고 시작해요. 첫 20화쯤은 무료로 풀고 그 뒤에 유료예요.\"", m: "비축분 10화 · 첫 20화 안팎 무료" },
+      { t: "\"50화쯤 중반의 늪이 와요. 연독률이 떨어질 때 플롯을 다시 짜요. 완결만 해도 인세가 길게 들어와요.\"", m: "50화 전후 중반의 늪 · 완결하면 인세가 길게" }],
+    ask: "\"제목에 주인공이 뭘 하는지 넣어요. 회사 얘기가 제일 좋은 소재예요.\"", help: ["write", "선배 원고 교정을 도왔다. 5,000자에 오타 40개. 마감은 늘 전날 밤이다."],
+    next: "독자가 붙기 시작했어요. 이제 비축분을 지키며 완결까지 가는 게 목표예요." },
+  tutoring: { st: "talk", need: 40, f0: 0.4, rm: 16, pt: 64, disc: 5, who: null, whoN: "화상과외 5년 차 선생님",
+    prep: { cost: 3, list: ["담당 과목 기출 풀어 보기", "판서 프로그램·화상 장비 연습", "시범수업 대본 만들기"] },
+    acts: { tu_find: "mkt", tu_make: "mkt", tu_report: "rev" },
+    shock: "제안 메시지 40통, 답장 0통. 후기 없는 선생님은 학부모 목록 맨 아래다. 시범수업 한 번 잡기가 이렇게 어렵다.",
+    tips: [{ a: "tu_find", k: "mkt", t: "메시지는 많이 보내야 해요. 200통에 1건이 현실이에요. '학생 모집'을 꾸준히요." }, { a: "tu_report", k: "rev", t: "학부모 리포트가 곧 후기예요. 돈 내는 사람은 학부모예요." }, { a: "tu_make", k: "mkt", t: "출제경향 숏폼을 올려요. 학부모가 먼저 찾아오게 돼요." }],
+    sen: [
+      { t: "\"고등 수학 시간당 5만 원, 학생 5명이면 월 100만이에요. 매칭앱은 메시지 200통에 1건 성사돼요. 수수료가 20~40%까지 떼여요. 콘텐츠로 학부모가 먼저 찾아오기까지 6개월~1년 걸려요.\"", m: "시간당 약 5만 · 5명이면 월 100만 · 메시지 200통에 1건 · 수수료 20~40%" },
+      { t: "\"시범수업은 학생보다 학부모를 봐요. 끝나고 30분 안에 피드백 문자를 보내요. 그게 등록률이에요.\"", m: "시범수업 뒤 30분 안 피드백 문자 · 학부모가 고객" },
+      { t: "\"1:1만 하면 연 5천만 원이 한계예요. 소그룹을 열면 시간당 수입이 확 늘어요. 목 관리도 해요. 목 나가면 한 달 쉬어요.\"", m: "1:1 한계 연 5천만 · 소그룹으로 확장 · 목 관리" }],
+    ask: "\"성적이 떨어진 달엔 내가 먼저 연락해요. 숨기면 그만둬요.\"", help: ["career", "선배 수업 자료 만들기를 도왔다. 문제 하나 해설에 30분."],
+    next: "정규 학생이 자리 잡았어요. 이제 소개 학생을 받고, 소그룹반으로 시간당 수입을 올려요." },
+  vibe: { st: "num", need: 40, f0: 0.45, rm: 12, pt: 48, disc: 5, who: null, whoN: "1인 외주 2년 차 바이브코더",
+    prep: { cost: 5, list: ["AI 코딩 도구로 내 홈페이지 만들어 보기", "DB·로그인 기초 강의 듣기", "포트폴리오 3개 만들기"] },
+    acts: { vb_sell: "mkt", vb_study: "qual", vb_fix: "rev" },
+    shock: "견적을 다섯 군데 보냈는데 답장은 한 곳. 레퍼런스가 없으니 '해외 팀 반값'에 밀린다. 첫 의뢰는 아는 가게 무료 홈페이지였다.",
+    tips: [{ a: "vb_sell", k: "mkt", t: "견적은 꾸준히 보내요. 아는 가게 한 곳이 첫 레퍼런스예요." }, { a: "vb_study", k: "qual", t: "DB·로그인·보안을 알아야 사고가 안 나요. '공부'로 기술 이해를 올려요." }, { a: "vb_fix", k: "rev", t: "유지보수 문의는 바로 처리해요. 그게 다음 의뢰를 데려와요." }],
+    sen: [
+      { t: "\"첫 의뢰는 30~50만 원짜리 단발이에요. 첫 수익까지 4~8주 걸리고, 착수금 30%는 꼭 받아요. 도구 구독료가 월 5~10만 원 나가요. 무상 AS 범위를 계약서에 안 적으면 끝없이 고쳐 줘요.\"", m: "첫 의뢰 30~50만 · 첫 수익 4~8주 · 착수금 30% · 무상 AS 범위 계약서에" },
+      { t: "\"레퍼런스가 3개 생기면 단가를 20~30% 올려요. 한 업종만 파면 패키지가 돼요.\"", m: "레퍼런스 3개 뒤 단가 20~30% 인상 · 한 업종 패키지" },
+      { t: "\"유지보수 계약 2~3건이 생기면 매달 바닥이 깔려요. AI가 DB를 날리는 일도 있어요. 백업은 매일 해요.\"", m: "유지보수 계약 2~3건 · 백업 매일" }],
+    ask: "\"견적서에 '수정 2회까지'라고 써요. 그게 내 시간이에요.\"", help: ["num", "선배 납품 검수를 하루 도왔다. 로그인 버튼 하나에 버그가 셋."],
+    next: "의뢰가 이어지고 있어요. 이제 유지보수 계약을 만들고 한 업종 패키지를 준비해요." },
+};
+// 행동 정의(defs.js 는 건드리지 않고 여기서 붙인다)
+D.ACTIONS.sj_prep = D.ACTIONS.sj_prep || { n: "투잡 준비하기", track: "일", ap: 1, hp: 2, desc: "시작 전 강의·시장조사·연습(3번까지). 초반 고생이 줄고 핵심 역량 +" };
+D.ACTIONS.sj_senior = D.ACTIONS.sj_senior || { n: "선배 찾아가기", track: "일", ap: 1, hp: 2, cash: -3, desc: "그 투잡을 하는 선배에게 커피를 산다. 현실 숫자·함정·첫 3달 할 일" };
+const ACT_JOB = {}; for (const [k, E] of Object.entries(ENTRY)) for (const id of Object.keys(E.acts)) ACT_JOB[id] = k;
+const STAT_HOW = { num: "보드게임·코딩 모임이나 숫자 공부", talk: "타로 클래스·멘토링 봉사나 말하기 연습", write: "글쓰기·독서 모임", career: "회사 일 열심히·멘토링 봉사", sense: "사진 동호회·플라워 클래스", lang: "외국어 공부·여행 모임", hands: "홈카페·쿠킹 클래스·캠핑", mkt: "여행 모임·마케팅 공부", charm: "와인 모임·운동", body: "운동" };
+export function rp(s, job) { const sj = s.sj; sj.rp = sj.rp || {}; return (sj.rp[job] = sj.rp[job] || { pts: 0, prep: 0, sen: 0, didA: {}, said: {} }); }
+export function need(s, job) { const E = ENTRY[job]; if (!E) return null; const cur = Math.round(s.st[E.st] || 0); return { st: E.st, n: D.STATS[E.st], need: E.need, cur, ok: cur >= E.need, how: STAT_HOW[E.st] || "공부" }; }
+// 초반 수요 배율(0.15~1). 엔진이 수요를 계산할 때 곱한다. 처음 부르는 달이 '첫 영업 달'
+export function ramp(s, job) {
+  const E = ENTRY[job]; if (!E || !s.sj) return 1;
+  const p = rp(s, job); if (p.done !== undefined) return 1;
+  if (p.t0 === undefined) { p.t0 = s.t; if (hadRevenue(s, job)) { p.done = s.t; p.grad = s.t; p.shock = s.t; return 1; } } // 예전 저장: 이미 벌고 있던 투잡은 초반 고생 없음
+  const sk = clamp((s.st[E.st] || 0) / E.need, 0.4, 1.4);
+  const f0 = clamp(E.f0 * (sk < 1 ? 0.6 + 0.4 * sk : 1) + Math.min(3, p.prep) * 0.03 + Math.min(3, p.sen) * 0.03, 0.15, 0.95); // 준비·선배 한 번에 +3%p
+  const spd = sk < 1 ? 0.55 + 0.45 * sk : Math.min(1.2, 1 + (sk - 1) * 0.5);
+  const prog = clamp(((s.t - p.t0) / E.rm + p.pts / E.pt) * spd, 0, 1);
+  let f = f0 + (1 - f0) * prog;
+  if (p.discT !== undefined && p.discT >= s.t) f = Math.min(1, f + 0.12);
+  p.f = Math.round(f * 100) / 100; p.prog = Math.round(prog * 100) / 100;
+  if (prog >= 1) p.done = s.t;
+  return f;
+}
+function hadRevenue(s, job) { // 이익 난 달이 3달 이상이면 이미 자리 잡은 투잡
+  const H = s.hist || [], n = (a) => a.filter((v) => v > 0).length >= 3;
+  if (job === "pr") return n(H.map((h) => h.pr)); if (job === "cs") return n(H.map((h) => h.cs));
+  if (job === "airbnb") return n(s.ab?.hist || []); if (job === "ucafe") return n(s.uc?.hist || []);
+  if (job === "insta") return (s.ins?.dealsDone || 0) > 3;
+  return n(H.map((h) => h.px?.[job] || 0));
+}
+export const rampInfo = (s, job) => { const p = s.sj?.rp?.[job]; if (!p || p.t0 === undefined || !ENTRY[job]) return null; return { pct: p.done !== undefined ? 100 : Math.round((p.f ?? ENTRY[job].f0) * 100), done: p.done !== undefined, tip: p.tip || "", t0: p.t0 }; };
+// 행동 하나 끝날 때(core.act 에서 부름): 그 투잡의 마케팅·후기·품질 행동이면 노력 점수
+export function onAct(s, id) {
+  const job = ACT_JOB[id]; if (!job || !isActive(s, job)) return;
+  const p = rp(s, job), k = ENTRY[job].acts[id];
+  p.didA[id] = (p.didA[id] || 0) + 1;
+  if (p.done !== undefined || p.t0 === undefined) return; // 영업 시작 전 행동은 점수 없음(준비는 sj_prep)
+  if (p.mt !== s.t) { p.mt = s.t; p.mp = 0; }
+  const w = k === "qual" ? 0.8 : 1; if (p.mp >= RP_CAP) return;
+  p.pts += Math.min(w, RP_CAP - p.mp); p.mp += w;
+}
+// 이번 달 코치 한마디: 아직 안 한 행동 → 방향(dir) 우선, 같은 말 반복 안 함. 다 했으면 진행도로 다독이기
+function coachTip(s, job) {
+  const E = ENTRY[job], p = rp(s, job), N = need(s, job);
+  if (!N.ok && (p.skT === undefined || s.t - p.skT >= 4)) { p.skT = s.t; return `${jo(N.n, "이", "가")} 아직 ${N.cur}이에요(기준 ${E.need}). ${N.how}로 올리면 손님이 더 빨리 붙어요.`; }
+  const pref = (x) => (p.dir === "mkt" ? (x.k === "mkt" ? 0 : 1) : p.dir === "qual" ? (x.k === "mkt" ? 1 : 0) : 0);
+  const todo = E.tips.map((x, i) => ({ x, i })).filter(({ x, i }) => !p.didA[x.a] && (p.said[i] || 0) < 2).sort((a, b) => pref(a.x) - pref(b.x) || (p.said[a.i] || 0) - (p.said[b.i] || 0));
+  const pick = todo.find(({ i }) => !p.said[i]) || todo.find(({ i }) => i !== p.lastI);
+  if (pick) { p.said[pick.i] = (p.said[pick.i] || 0) + 1; p.lastI = pick.i; return pick.x.t; }
+  const pct = Math.round((p.f ?? E.f0) * 100), low = E.tips.slice().sort((a, b) => (p.didA[a.a] || 0) - (p.didA[b.a] || 0))[0];
+  const nm = D.ACTIONS[low.a]?.n || "홍보";
+  const L = [`잘하고 있어요. 손님이 기대치의 ${pct}%까지 왔어요. 이번 달은 '${nm}'를 한 번 더 챙겨요.`, `한 번 하고 끝내면 안 돼요. '${nm}'는 매달 해야 쌓여요. 지금 ${pct}%예요.`, `초반엔 다들 이래요. 꾸준히 하는 사람이 남아요. 지금 ${pct}%, '${nm}' 한 번 더요.`];
+  p.gi = ((p.gi ?? -1) + 1) % L.length; return L[p.gi];
+}
+function coachMonth(s, notes) { // SJ.month 에서: 영업 중인 투잡마다 코치 한마디·칭찬·할인 비용
+  for (const job of s.sj.active) {
+    const E = ENTRY[job]; if (!E) continue; const p = s.sj.rp?.[job]; if (!p || p.t0 === undefined) continue;
+    ramp(s, job); // 엔진이 이번 달 안 불렀어도 진행도·졸업을 갱신
+    const nm = D.SIDEJOBS[job].n;
+    if (p.discT !== undefined && p.discT >= s.t && E.disc) { const c = Math.round(E.disc); s.cash -= c; addMoney(s, "exp", "첫 손님 할인", c); }
+    if (p.done !== undefined) { if (p.grad === undefined) { p.grad = s.t; p.tip = ""; log(s, `${nm}: 초반 고생 끝. 손님이 제자리를 찾았다`, "work"); if (!s.sj.coachOff) notes.push(`코치 한마디 · ${nm}: 초반 고생 끝! 수고했어요. ${E.next}`); } continue; }
+    if ((p.prog ?? 0) >= 0.5 && p.half === undefined) { p.half = s.t; if (!s.sj.coachOff) notes.push(`코치 한마디 · ${nm}: 반은 왔어요! 손님이 기대치의 ${Math.round(p.f * 100)}%까지 붙었어요. 지금 하던 걸 멈추지만 마요.`); continue; }
+    if (s.t - p.t0 < 1) continue; // 첫 달은 '생각보다 안 되네' 장면이 대신한다
+    p.tip = coachTip(s, job);
+    if (!s.sj.coachOff) notes.push(`코치 한마디 · ${nm}: ${p.tip}`);
+  }
+}
+// 첫 달 '생각보다 안 되네' 장면(다음 달 시작 때 큐에 넣는다)
+function shockScene(s, job) {
+  const E = ENTRY[job], j = D.SIDEJOBS[job], N = need(s, job);
+  const why = N.ok ? "" : ` 솔직히 ${N.n}도 아직 ${N.cur}이라 기준(${E.need})에 못 미친다.`;
+  const mk = E.tips.find((x) => x.k === "mkt") || E.tips[0], ql = E.tips.find((x) => x.k !== "mkt") || E.tips[0];
+  return { kind: "event", tag: "코치", title: `${j.n}, 생각보다 안 되네`, text: `${E.shock}${why}\n\n투잡연구소 코치: "처음엔 다 이래요. 손님은 아직 나를 몰라요. 노출, 후기, 가격 중 하나부터 잡아요. 셋 다 하려면 아무것도 안 돼요."`, onChoose: "sj_disc", coach: { job, type: "shock" }, choices: [
+    { t: "노출부터: 마케팅·홍보를 늘린다", eff: { mental: 1 }, text: `코치: "좋아요. ${mk.t}"` },
+    { t: "후기·품질부터 다진다", eff: { mental: 1 }, text: `코치: "좋아요. ${ql.t}"` },
+    ...(E.disc ? [{ t: `첫 손님 할인(3달, 월 ${E.disc}만)`, eff: {}, text: "코치: \"할인은 첫 후기를 빨리 모으는 도구예요. 3달 뒤엔 꼭 원래 가격으로 돌아가요. 싸게 오래 하면 싼 가게가 돼요.\"" }] : []),
+  ] };
+}
+// 선배 찾아가기 장면: 진입 전 / 첫 달 막혔을 때 / 다음 단계 앞, 최대 3번
+function seniorScene(s, job) {
+  const E = ENTRY[job], j = D.SIDEJOBS[job], p = rp(s, job), st = Math.min(2, p.sen);
+  const who = E.who && s.cast?.includes(E.who) ? E.who : null;
+  if (who) ensureRel(s, who);
+  const nm = who ? `${CHAR[who].name}(${E.whoN})` : E.whoN;
+  const intro = [`${jo(nm, "을", "를")} 찾아가 커피를 샀다. 한참 내 얘기를 듣더니 입을 열었다.`, `${nm}에게 다시 연락했다. "막혔죠? 다들 그때 연락해요." 밥값은 내가 냈다.`, `${nm}에게 세 번째로 찾아갔다. "이제 다음 단계 얘기할 때네요."`][st];
+  const stH = E.help[0];
+  return { kind: "event", tag: "선배", title: `선배 찾아가기 · ${j.n} ${st + 1}/3`, ...(who ? { who } : {}), text: `${intro}\n\n${E.sen[st].t}`, onChoose: "sj_disc", coach: { job, type: "senior", st }, choices: [
+    { t: "꼼꼼히 받아 적는다", eff: { mental: 1, ...(who ? { aff: 3 } : {}) }, text: "수첩 한 페이지가 꽉 찼다. 투잡 탐색의 '선배 메모'에 남겼다." },
+    { t: "날카롭게 되묻는다(말빨)", check: { stat: "talk", dc: 40 }, ok: { text: `선배가 웃었다. "그걸 묻는 사람은 잘돼요." ${E.ask}`, eff: { flag: "sj_ok", ...(who ? { aff: 5 } : {}) } }, ng: { text: "질문이 너무 뭉뚱그려졌다. 선배는 \"해 보면 알아요\"라고만 했다.", eff: who ? { aff: 1 } : {} } },
+    { t: "주말에 일을 거들어 본다(스태미너 −10)", eff: { hp: -10, mental: -2, stat: { [stH]: 1.5 }, ...(who ? { aff: 6 } : {}) }, text: E.help[1] },
+  ] };
+}
+export function coachChoose(s, sc, i) {
+  const c = sc.coach, E = ENTRY[c.job], p = rp(s, c.job), out = [];
+  if (c.type === "shock") {
+    if (i === 0) { p.dir = "mkt"; p.pts += E.pt * 0.06; gainStat(s, "mkt", 0.5); out.push("방향: 노출·마케팅 · 초반 진행 +"); }
+    else if (i === 1) { p.dir = "qual"; p.pts += E.pt * 0.06; gainStat(s, E.st, 0.5); out.push(`방향: 후기·품질 · ${D.STATS[E.st]} +`); }
+    else { p.dir = "price"; p.discT = s.t + 2; out.push(`첫 손님 할인 3달(월 ${E.disc}만) · 손님 +`); }
+    return out;
+  }
+  const ok = s.flags?.sj_ok === s.t; if (s.flags) delete s.flags.sj_ok;
+  const memo = (s.sj.memo = s.sj.memo || {}); const M = (memo[c.job] = memo[c.job] || []);
+  if (!M.some((x) => x.st === c.st && !x.tip)) M.push({ t: s.t, st: c.st, txt: E.sen[c.st].m });
+  if (ok && !M.some((x) => x.tip)) M.push({ t: s.t, st: c.st, tip: 1, txt: E.ask.replace(/["“”]/g, "") });
+  p.sen = Math.min(3, p.sen + 1); p.pts += E.pt * (ok ? 0.1 : i === 2 ? 0.08 : 0.05);
+  if (i === 0) gainStat(s, E.st, 0.6);
+  out.push(`선배 메모 +1${ok ? " · 덤으로 꿀팁" : ""} · 초반 고생 −`);
+  return out;
+}
+// 준비하기(시작 전, 3번까지)
+function prepAct(s, job) {
+  const E = ENTRY[job], p = rp(s, job), c = E.prep.cost; const item = E.prep.list[Math.min(2, p.prep)];
+  s.cash -= c; addMoney(s, "exp", "투잡 준비비", c); p.prep++;
+  const g = gainStat(s, E.st, 1.2);
+  const memo = (s.sj.memo = s.sj.memo || {}); (memo[job] = memo[job] || []).push({ t: s.t, prep: 1, txt: `준비 ${p.prep}/3: ${item}` });
+  const N = need(s, job);
+  return { lines: [`${D.STATS[E.st]} +${g.toFixed(1)}`, `준비 ${p.prep}/3 · 초반 고생 −`, `준비비 −${won(c)}`], msg: `${D.SIDEJOBS[job].n} 준비: ${item}.${p.prep >= 3 ? " 이제 시작해도 덜 고생할 것 같다." : N.ok ? "" : ` 아직 ${N.n} ${N.cur}/${E.need}.`}` };
 }

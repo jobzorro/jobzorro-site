@@ -31,8 +31,10 @@ sk.oninput = () => (document.getElementById("skv").textContent = sk.value);
 const run = async (job, autoStart) => {
   out.textContent = MG[job].n + " 진행 중…";
   const p = mgRun(job, host, { skill: +sk.value, avatar: document.getElementById("av").value });
-  if (autoStart) host.querySelector("[data-mg-start]")?.click();
+  // 미니게임 파일은 할 때 받으므로(11-21) 시작 버튼이 나올 때까지 기다렸다 누른다
+  if (autoStart) { const t0 = Date.now(), tap = () => { const b = host.querySelector("[data-mg-start]"); if (b) b.click(); else if (Date.now() - t0 < 15000) setTimeout(tap, 50); }; tap(); }
   const r = await p;
+  if (r.loadFail) { out.textContent = `${MG[job].n}: 미니게임 파일을 받지 못했어요(오프라인?)`; host.innerHTML = ""; return; }
   out.textContent = `${MG[job].n} 결과: ${r.grade} (점수 ${Math.round(r.score * 100)})\n${r.line}`;
   host.innerHTML = "";
 };

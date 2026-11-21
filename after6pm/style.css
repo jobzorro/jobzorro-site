@@ -25,7 +25,7 @@ img.face{image-rendering:pixelated;display:block}
 .assets .v{font-weight:900;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chips4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
 .chips4 button,.chips4 div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px 6px;text-align:center;min-width:0}
-.chips4 .k{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.chips4 .k{font-size:11px;color:var(--muted);white-space:nowrap}
 .chips4 .v{font-weight:900;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* 행동력 줄 */
@@ -89,7 +89,7 @@ img.face{image-rendering:pixelated;display:block}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .grid4 button{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12.5px;font-weight:700;min-width:0}
 .grid4 svg{width:24px;height:24px}
-.grid4 .ap{font-size:10.5px;padding:0 6px}
+.grid4 .ap{font-size:11px;padding:0 6px}
 .next{display:grid;grid-template-columns:1fr 1.3fr;gap:8px}
 .next .btn{padding:14px;font-size:17px;border-radius:14px}
 
@@ -112,8 +112,8 @@ img.face{image-rendering:pixelated;display:block}
 .person.new .pic{border-color:var(--gold)}
 .person.love .pic{border-color:var(--pink)}
 .person .nm{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:84px}
-.person .rl{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:84px}
-.hearts{color:var(--pink);font-size:10px;letter-spacing:-1px}
+.person .rl{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:84px}
+.hearts{color:var(--pink);font-size:11px;letter-spacing:-1px}
 .acts{display:flex;flex-direction:column;gap:6px;padding:0 12px 12px}
 .actrow{display:flex;gap:10px;align-items:center;background:var(--panel2);border-radius:12px;padding:9px 10px;text-align:left;width:100%}
 .actrow .ic{width:34px;height:34px;border-radius:10px;background:var(--panel3);display:grid;place-items:center;flex:none}
@@ -121,7 +121,7 @@ img.face{image-rendering:pixelated;display:block}
 .actrow .t{font-weight:700;font-size:14px}
 .actrow .d{font-size:11.5px;color:var(--muted)}
 .actrow .chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
-.actrow .chips span{font-size:10.5px;border-radius:6px;padding:0 5px;background:var(--panel3);color:var(--muted)}
+.actrow .chips span{font-size:11px;border-radius:6px;padding:0 5px;background:var(--panel3);color:var(--muted)}
 .actrow .chips .p{color:var(--green)} .actrow .chips .m{color:var(--red)}
 
 /* 투잡 */
@@ -138,7 +138,7 @@ img.face{image-rendering:pixelated;display:block}
 .attrs span.q{background:rgba(245,192,78,.12);color:var(--gold);border:1px dashed rgba(245,192,78,.5)}
 .attrs span.bad{color:var(--red)} .attrs span.good{color:var(--green)}
 .stepper{display:inline-flex;align-items:center;gap:4px;background:var(--panel3);border-radius:8px;padding:2px}
-.stepper button{width:26px;height:26px;border-radius:6px;background:var(--panel)}
+.stepper button{width:34px;height:34px;border-radius:8px;background:var(--panel);font-size:16px;font-weight:900}
 .stepper b{min-width:54px;text-align:center;font-size:13px}
 .dist{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .dist button{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:left;display:flex;flex-direction:column;gap:3px}
@@ -152,11 +152,11 @@ img.face{image-rendering:pixelated;display:block}
 .funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center}
 .funnel div{background:var(--panel2);border-radius:10px;padding:6px 2px;min-width:0}
 .funnel .v{font-weight:900;font-size:16px}
-.funnel .k{font-size:10.5px;color:var(--muted)}
+.funnel .k{font-size:11px;color:var(--muted)}
 .season{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;align-items:end;height:46px}
 .season i{background:var(--panel3);border-radius:3px 3px 0 0;display:block}
 .season i.now{background:var(--gold)}
-.season-l{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;font-size:9.5px;color:var(--muted);text-align:center}
+.season-l{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;font-size:11px;color:var(--muted);text-align:center}
 .chs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .ch{background:var(--panel2);border-radius:12px;padding:9px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .ch b{font-size:13.5px}
@@ -192,7 +192,7 @@ img.face{image-rendering:pixelated;display:block}
 .nav button{padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;color:var(--muted);position:relative}
 .nav button svg{width:22px;height:22px}
 .nav button.on{color:var(--gold)}
-.nav .badge{position:absolute;top:4px;left:calc(50% + 6px);background:var(--red);color:#fff;border-radius:999px;font-size:10px;padding:0 5px;font-weight:900}
+.nav .badge{position:absolute;top:4px;left:calc(50% + 6px);background:var(--red);color:#fff;border-radius:999px;font-size:11px;padding:0 5px;font-weight:900}
 
 /* 창 */
 #modal .bg{position:fixed;inset:0;z-index:50;background:rgba(5,6,15,.78);display:flex;align-items:flex-end;justify-content:center}
@@ -273,7 +273,7 @@ img.face{image-rendering:pixelated;display:block}
 .tile .tl{margin-top:-14px;background:#11131f;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:3px;white-space:nowrap;position:relative;z-index:1}
 .tile .tl svg{width:13px;height:13px}
 .tile.locked .tv{background:#12141f;border-color:#23263a}.tile.locked .tl{color:var(--muted)}
-.nbadge{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-style:normal;font-size:10px;font-weight:900;border-radius:999px;padding:1px 6px}
+.nbadge{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-style:normal;font-size:11px;font-weight:900;border-radius:999px;padding:1px 6px}
 .nav .hubbtn{color:var(--gold)}
 .places{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
 .places button{flex:none;width:96px;height:112px;border-radius:20px;border:1px solid var(--line);background:var(--panel) center/cover;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:10px;gap:1px;position:relative;text-align:left}
@@ -318,7 +318,7 @@ img.face{image-rendering:pixelated;display:block}
 .gr{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;font-size:11px;font-weight:900;margin-left:3px;background:#2a2e55}
 .gr.gS{background:#f5c04e;color:#2a1a00}.gr.gA{background:#5fe0a0;color:#06210f}.gr.gB{background:#4a5590}.gr.gC{background:#8a5a3a}.gr.gD{background:#c0392b}
 .grid4 .qlock{opacity:.6;border-style:dashed}
-.grid4 .qlock .tiny{font-size:10px;font-weight:400}
+.grid4 .qlock .tiny{font-size:11px;font-weight:400}
 .chips span{font-size:11px;border-radius:6px;padding:1px 6px;background:var(--panel3)} .chips .p{color:var(--green)} .chips .m{color:var(--red)}
 .syn{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px}
 .syn>div{background:var(--panel2);border-radius:10px;padding:8px 10px;border-left:3px solid var(--line);opacity:.62;display:flex;flex-direction:column;gap:2px}
@@ -410,7 +410,7 @@ html.big #app{zoom:1.12}
 .pager .pback,.pager .pmenu{display:flex;align-items:center;gap:3px;max-width:none;font-size:12.5px;font-weight:700;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 10px;position:relative;overflow:visible}
 .pager .pback svg{width:16px;height:16px}.pager .pmenu svg{width:15px;height:15px;color:var(--gold)}
 .pager .pdate{font-weight:900;color:var(--gold);font-size:13px;min-width:74px}
-.pager .pmenu .badge{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border-radius:999px;font-size:10px;padding:0 5px;font-weight:900}
+.pager .pmenu .badge{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border-radius:999px;font-size:11px;padding:0 5px;font-weight:900}
 .pager .pback{min-width:74px}
 .top .assets{width:100%;position:relative;padding:2px 18px 2px 0}
 .top .assets .more{position:absolute;right:0;top:50%;transform:translateY(-50%);color:var(--muted)}
@@ -423,7 +423,7 @@ html.big #app{zoom:1.12}
 .coach ol{margin:6px 0 0;padding-left:20px;font-size:13px;line-height:1.6}.coach ol svg{width:13px;height:13px;vertical-align:-2px;color:var(--gold)}
 .coach .x{position:absolute;right:8px;top:8px;width:auto;font-size:12px;padding:3px 9px;border-radius:8px;background:var(--panel);border:1px solid var(--line)}
 .todo .arr{color:var(--muted);font-size:18px;line-height:1;margin-left:auto}
-.grid4 button.qno{opacity:.55}.grid4 .why{font-size:10px;color:var(--muted);font-weight:500;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 3px}
+.grid4 button.qno{opacity:.55}.grid4 .why{font-size:11px;color:var(--muted);font-weight:500;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 3px}
 .next{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:15;padding:8px 0 4px;background:linear-gradient(180deg,#0e102000,var(--bg) 30%)}
 .next .btn.gold>span{display:flex;flex-direction:column;align-items:center;line-height:1.15}.next .btn.gold small{font-size:11px;font-weight:700;opacity:.8;margin-top:2px}
 .next .btn.gold.pulse{animation:a6pulse 1.4s ease-in-out infinite}
@@ -456,7 +456,7 @@ body:has(#modal .bg) #toast{bottom:auto;top:calc(10px + env(safe-area-inset-top,
 .swipe2{align-items:flex-start}
 .strip.st10>div{padding:4px 2px 5px}
 .strip.st10 .v{font-size:13.5px;line-height:1.2}
-.strip.st10 .k{font-size:10px;line-height:1.2}
+.strip.st10 .k{font-size:11px;line-height:1.2}
 .strip.st10 .meter{height:3px;margin:3px 8px 0}
 .strip.st10>div>div{padding:0;border:0}
 
@@ -512,7 +512,7 @@ img.face,img.body{transition:filter .3s ease-out}
 /* 인생 앨범 */
 .album{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
 .album button{aspect-ratio:3/2;border-radius:12px;border:1px solid var(--line);background:center/cover no-repeat;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:8px;text-align:left;color:#fff;gap:1px}
-.album button b{font-size:13px}.album button span{font-size:10.5px;opacity:.8}
+.album button b{font-size:13px}.album button span{font-size:11px;opacity:.8}
 
 /* v4.15 미니게임 창 */
 .mghow{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6}
@@ -534,3 +534,13 @@ body[data-page="ucafe"] .pager b{font-family:var(--pixel)}
 body[data-page="insta"]{--gold:#ff8fc8;--gold2:#ffc4e2;--panel:#1e1522;--panel2:#2a1c30;--line:#44294d;--bg:#140d18}
 body[data-page="insta"] #app{background:linear-gradient(180deg,#ff8fc814,transparent 220px)}
 body[data-page="insta"] .card{border-radius:20px}
+/* 11-21 파산 직전 경고: 상단 바 버틸 수 있는 달·영수증 경고 상자 */
+.top .runway{display:block;width:100%;margin:6px 0 2px;padding:5px 8px;border-radius:8px;font-size:12px;line-height:1.35;text-align:center;border:1px solid rgba(255,159,90,.5);background:rgba(255,159,90,.12);color:var(--orange)}
+.top .runway.bad{border-color:rgba(255,107,127,.7);background:rgba(255,107,127,.16);color:var(--red);animation:rwpulse 1.6s ease-in-out infinite}
+@keyframes rwpulse{50%{background:rgba(255,107,127,.3)}}
+.danger-box{margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,107,127,.7);background:rgba(255,107,127,.14);color:#ffd5db;font-size:13px;line-height:1.5}
+.danger-box b{color:var(--red)}
+.danger-box.warn{border-color:rgba(255,159,90,.6);background:rgba(255,159,90,.12);color:#ffe2cc}
+.danger-box.warn b{color:var(--orange)}
+.danger-box .tiny{margin-top:4px;opacity:.85}
+.mgquit{display:block;margin:8px auto 0;padding:6px 12px;min-height:36px;font-size:12px;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:8px}

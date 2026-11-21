@@ -4,8 +4,14 @@ import * as SYN from "./syn.js";
 import * as BIG from "./big.js";
 import { CHAR, addMoney, applyEff, helperPower, helpers, mod, won, log, eyeMult, ensureRel, isRomanceable, addAff, gainStat } from "./core.js";
 import { jobEvent } from "./pr.js";
+import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+// 11-21 밸런스(10개 투잡 공통 비교, 기획 jobconsult.json: 중위 월 200만·p95 1,500만·1:1 한계 연 3억).
+// 원래: 문의 수 상한 없음 → 합격·후기·소개가 서로 키워 회사 다니며 3년 차 월 1,000만, 전업 5년 차 월 9,000만까지 폭주.
+// 지금: 한 달 문의는 시장 크기(leadCap, 전업이면 ×fullCapX)에 가까워질수록 덜 는다. 소개는 refMax 까지만 쌓인다.
+// 무료 특강 신청자는 후기 semRev 개까지만 늘어난다(원래 후기 수에 비례해 끝없이: 후기 1,600개면 특강 한 번에 100명+).
+export const CS_BAL = { leadCap: 7, fullCapX: 2, refMax: 6, semRev: 60 };
 export function init() {
   return { open: false, niche: null, niches: [], nick: null, price: "mid", reviews: 0, passes: 0, fails: 0, clients: 0, friends: 0,
     queue: [], outcomes: [], ch: { kmong: { on: false, q: 0 }, blog: { posts: 0, idx: 0, lastT: -99 }, insta: { f: 0 }, youtube: { subs: 0, videos: 0 }, kakao: { m: 0 } },
@@ -119,7 +125,7 @@ export function act(s, r, id, arg, boost = 1) {
     return { lines: [n ? `상담 신청 ${n}명` : "오늘은 반응 없음"], msg: "스터디 모집 게시판 옆에 작은 포스터를 붙였다." };
   }
   if (id === "cs_seminar") {
-    const room = roomBoost(s); cs.seminarT = s.t; const n = Math.max(2, r.poisson((3 + cs.reviews / 15) * mod(s, "lectureMult", 1) * boost * room));
+    const room = roomBoost(s); cs.seminarT = s.t; const n = Math.max(2, r.poisson((3 + Math.min(cs.reviews, CS_BAL.semRev) / 15) * mod(s, "lectureMult", 1) * boost * room));
     for (let i = 0; i < n; i++) addClient(s, r, "특강");
     cs.reviews += 1; if (cs.nick === "real") applyEff(s, { eye: 3 });
     return { lines: [`특강 참석자 중 ${n}명 상담 신청`, "후기 +1", room > 1 ? `내 파티룸에서 진행 ×${room}` : ""].filter(Boolean), msg: room > 1 ? "내 파티룸에 의자 30개를 깔았다. 대관료 0원." : "질문이 끝나지 않았다. 마이크를 내려놓으니 9시 반." };
@@ -161,7 +167,7 @@ function addClient(s, r, src) {
 }
 function passProb(s, prod) {
   const st = s.st[D.NICHES[s.cs.niche].stat];
-  let p = 0.27 + (s.cs.focus > 0 ? 0.05 * s.cs.focus : 0) + (st - 50) / 180 + (s.st.career - 40) / 300 + helperPower(s, "cs_hr") * 0.08 + mod(s, "passBonus", 0) + s.cs.template * 0.015 + (prod === "pkg" ? 0.15 : 0);
+  let p = 0.27 + (s.cs.focus > 0 ? 0.05 * s.cs.focus : 0) + (st - 50) / 180 + (s.st.career - 40) / 300 + clamp(((s.st.lang || 0) - 50) / 1000, 0, 0.04) + helperPower(s, "cs_hr") * 0.08 + mod(s, "passBonus", 0) + s.cs.template * 0.015 + (prod === "pkg" ? 0.15 : 0);
   if (s.cs.aiCheck) p += 0.02;
   if (s.era.freeze) p -= 0.08; if (s.era.ai && prod === "edit") p -= 0.03;
   return clamp(p, 0.08, 0.85);
@@ -170,7 +176,7 @@ function finishClient(s, r, q) {
   const cs = s.cs; let pay = q.price;
   if (q.kmong) { const fee = Math.round(pay * (s.era.fee ? 0.25 : 0.2) * 10) / 10; addMoney(s, "exp", "컨설팅 광고·수수료", fee); s.cash -= fee; }
   s.cash += pay; addMoney(s, "inc", "컨설팅", pay); cs.monthRev += pay; cs.clients++;
-  const g = gap(s); if (g > 0 && r.chance(Math.min(0.45, g / 70) * (cs.focus > 0 ? 0.4 : 1))) { const back = Math.round(pay * r.range(0.5, 1)); s.cash -= back; addMoney(s, "exp", "환불", back); cs.monthRev -= back; cs.reviews = Math.max(0, cs.reviews - 0.6); s.mental = Math.max(0, s.mental - 3); cs.refunds = (cs.refunds || 0) + 1; }
+  const g = gap(s); if (g > 0 && r.chance(Math.min(0.45, g / 70) * (cs.focus > 0 ? 0.4 : 1))) { const back = Math.round(pay * r.range(0.5, 1)); s.cash -= back; addMoney(s, "exp", "환불", back); cs.monthRev -= back; cs.reviews = Math.max(0, cs.reviews - 0.6); s.mental = Math.max(0, s.mental - 3); cs.refunds = (cs.refunds || 0) + 1; cs.refundAll = (cs.refundAll || 0) + 1; }
   cs.outcomes.push({ t: s.t + r.int(1, 3), p: passProb(s, q.prod), who: q.who, price: q.price, prod: q.prod });
   if (q.who) s.rel[q.who].aff = clamp(s.rel[q.who].aff + 6, 0, 100);
   return pay;
@@ -191,13 +197,18 @@ export function monthStart(s, r) {
     헤드헌터: cs.niches.includes("career") ? helperPower(s, "cs_headhunter") * 2.5 : 0,
   };
   const seas = cs.niches.reduce((a, k) => a + (s.era.rolling ? 1 : D.NICHES[k].season[s.cal - 1]) * D.NICHES[k].demand, 0) / Math.max(1, cs.niches.length) * (1 + 0.35 * (cs.niches.length - 1));
-  let mult = 0.58 * BIG.fullLead(s) * seas * (s.era.winter ? 0.9 : 1) * mod(s, "leadMult", 1) * (s.era.ai && cs.niche === "newgrad" ? 0.85 : 1) * (s.era.freeze ? 1.2 : 1);
+  let mult = 0.58 * BIG.fullLead(s) * seas * (s.era.winter ? 0.9 : 1) * mod(s, "leadMult", 1) * (s.era.ai && cs.niche === "newgrad" ? 0.85 : 1) * (s.era.freeze ? 1.2 : 1) * SJ.ramp(s, "cs");
   let leads = 0; cs.src = {};
-  for (const [k, v] of Object.entries(src)) { const x = v * mult; cs.src[k] = Math.round(x * 10) / 10; leads += x; }
+  for (const [k, v] of Object.entries(src)) leads += v * mult;
+  // 시장 포화: 문의가 상한(cap)에 가까워질수록 덜 는다
+  const cap = CS_BAL.leadCap * (BIG.isFull(s) ? CS_BAL.fullCapX : 1) * (1 + (s.fame || 0) / 100), raw = leads;
+  leads = cap * (1 - Math.exp(-raw / cap));
+  const sat = raw > 0 ? leads / raw : 1;
+  for (const [k, v] of Object.entries(src)) cs.src[k] = Math.round(v * mult * sat * 10) / 10;
   cs.leads = leads;
   const trust = D.COMPANY_TYPES[s.co.type].trust * (s.co.quit || s.co.fired ? 0.6 : 1) + Math.min(0.35, cs.reviews / 80) + Math.min(0.2, cs.passes / 150) + (cs.nick === "real" ? 0.06 : 0) + cs.lv * 0.02;
   cs.trust = trust;
-  cs.conv = clamp(0.17 + trust * 0.35 + (s.st.talk - 40) / 250 + D.CS_PRICE[cs.price].conv + mod(s, "convBonus", 0) + (SYN.on(s, "grad_cs") ? 0.04 : 0), 0.05, 0.75);
+  cs.conv = clamp(0.17 + trust * 0.35 + (s.st.talk - 40) / 250 + clamp(((s.st.charm || 0) - 40) / 800, -0.03, 0.06) + D.CS_PRICE[cs.price].conv + mod(s, "convBonus", 0) + (SYN.on(s, "grad_cs") ? 0.04 : 0), 0.05, 0.75);
   const n = r.poisson(leads * cs.conv);
   const kmShare = leads ? src.크멍 * mult / leads : 0;
   for (let i = 0; i < n; i++) addClient(s, r, r.chance(kmShare) ? "크멍" : "문의");
@@ -223,7 +234,7 @@ export function month(s, r, notes, scenes) {
   const due = cs.outcomes.filter((o) => o.t <= s.t); cs.outcomes = cs.outcomes.filter((o) => o.t > s.t);
   let pass = 0, fail = 0;
   for (const o of due) {
-    if (r.chance(o.p)) { pass++; cs.passes++; if (r.chance(0.7)) cs.reviews++; cs.refer += 0.25 * mod(s, "referMult", 1); if (o.who) { s.rel[o.who].aff = clamp(s.rel[o.who].aff + 12, 0, 100); notes.push(`${CHAR[o.who].name}: "최종 합격했어요!!"`); } }
+    if (r.chance(o.p)) { pass++; cs.passes++; if (r.chance(0.7)) cs.reviews++; cs.refer = Math.min(CS_BAL.refMax, cs.refer + 0.25 * mod(s, "referMult", 1)); if (o.who) { s.rel[o.who].aff = clamp(s.rel[o.who].aff + 12, 0, 100); notes.push(`${CHAR[o.who].name}: "최종 합격했어요!!"`); } }
     else { fail++; cs.fails++; cs.reviews += 0.15; if (o.prod === "pkg" && r.chance(0.2)) { s.cash -= Math.round(o.price * 0.5); addMoney(s, "exp", "환불", Math.round(o.price * 0.5)); notes.push("불합격 패키지 고객 50% 환불"); } }
   }
   if (pass + fail) notes.push(`합격 발표: 합격 ${pass} · 불합격 ${fail}`);

@@ -4,7 +4,7 @@
 import { frame, SFX, tone, noise, vib, rnd, pick, shuffle, clamp, RM, shutterSound } from "./mg.js";
 
 const TRIPS = [
-  { id: "whale", place: "제주 바다 여행", think: ["바다 예쁘다…", "근데 인스타엔 뭘 올리지?", "바다 사진은 다들 올리잖아…"], wow: "어… 저기 물보라가?!", ev: "고래 점프", ground: "sea", day: 1, sky: ["#2f6fc4", "#7fb8ea", "#e4f2ff"], far: "#6e8fae", gnd: ["#2a78b8", "#0e3c66"], hl: "#bfe3ff" },
+  { id: "whale", place: "제주 바다 여행", think: ["바다 예쁘다…", "근데 인별엔 뭘 올리지?", "바다 사진은 다들 올리잖아…"], wow: "어… 저기 물보라가?!", ev: "고래 점프", ground: "sea", day: 1, sky: ["#2f6fc4", "#7fb8ea", "#e4f2ff"], far: "#6e8fae", gnd: ["#2a78b8", "#0e3c66"], hl: "#bfe3ff" },
   { id: "tornado", place: "대평원 자동차 여행", think: ["끝없는 밀밭…", "찍어도 그냥 노랗기만 해", "하늘이 좀 어두운데?"], wow: "하늘이… 어어어?!", ev: "토네이도", ground: "field", storm: 1, sky: ["#262b33", "#4c5562", "#9a957d"], far: "#3d4038", gnd: ["#a8903f", "#5a4c22"], hl: "#d6bf6a" },
   { id: "meteor", place: "초원 별 보기 캠핑", think: ["별 진짜 많다…", "근데 별 사진은 폰으로 안 나와", "뭐 특별한 거 없나"], wow: "어? 저 불덩이 뭐야?!", ev: "불덩이 유성", ground: "field", night: 1, sky: ["#03050f", "#0f1840", "#2f2a5a"], far: "#090c1c", gnd: ["#141a26", "#06080d"], hl: "#2a3346" },
   { id: "bolt", place: "바닷가 숙소 창가", think: ["비 온다… 망했다", "오늘은 올릴 게 없네", "우르릉…?"], wow: "온다 온다… 크게 온다!", ev: "거대한 번개", ground: "bay", night: 1, storm: 1, sky: ["#0c0f1a", "#232a40", "#3e4460"], far: "#151a28", gnd: ["#1b2236", "#080b14"], hl: "#3a4766" },
@@ -27,7 +27,7 @@ export const IN_CSS = `
 .mg-meter{position:absolute;right:14px;top:22%;height:42%;width:9px;border-radius:5px;background:#ffffff2a;z-index:3;pointer-events:none;box-shadow:0 0 0 1px #0006}
 .mg-meter em{position:absolute;left:0;right:0;bottom:0;height:0;border-radius:5px;background:linear-gradient(0deg,#ffd166,#ff5e7e)}
 .mg-meter::after{content:"";position:absolute;left:-4px;right:-4px;top:0;height:2px;background:#fff}
-.mg-meter span{position:absolute;top:-17px;right:-6px;font-size:10px;color:#fff;font-weight:800;text-shadow:0 1px 3px #000;white-space:nowrap}
+.mg-meter span{position:absolute;top:-17px;right:-6px;font-size:11px;color:#fff;font-weight:800;text-shadow:0 1px 3px #000;white-space:nowrap}
 .mg-meter.hot em{box-shadow:0 0 10px #ff5e7e}
 .mg-story{position:absolute;left:12px;right:34px;top:14px;z-index:4;pointer-events:none;transition:opacity .3s}
 .mg-story.off{opacity:0}

@@ -23,7 +23,7 @@ const CSS = `.mg-langnote{font-size:11.5px;color:#ffe9c4;background:#0007;border
 .mg-stage{position:relative;flex:1 1 auto;min-height:0;border-radius:14px;overflow:hidden;background:var(--mgb2) center/cover no-repeat;border:1px solid var(--mgl)}
 .mg-foot{flex:0 0 auto;display:flex;gap:8px}
 .mg-btn{flex:1;padding:12px 10px;border-radius:12px;background:var(--mgb2)!important;border:1px solid var(--mgl)!important;font-weight:700;font-size:15px}
-.mg-foot .mg-btn.mg-re{flex-direction:column!important;gap:1px;line-height:1.2;font-weight:900;border-color:var(--mgg)!important;color:var(--mgg)!important}.mg-btn.mg-re small{display:block;font-size:10.5px;font-weight:600;opacity:.8;color:#fff}
+.mg-foot .mg-btn.mg-re{flex-direction:column!important;gap:1px;line-height:1.2;font-weight:900;border-color:var(--mgg)!important;color:var(--mgg)!important}.mg-btn.mg-re small{display:block;font-size:11px;font-weight:600;opacity:.8;color:#fff}
 .mg-btn.gold{background:var(--mgg)!important;color:#2a1a00!important;border-color:var(--mgg)!important}
 .mg-btn.on{outline:2px solid var(--mgg);outline-offset:-2px}
 .mg-msg{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:9;background:#000b;color:#fff;font-size:12.5px;padding:5px 12px;border-radius:99px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s}
@@ -90,7 +90,7 @@ const CSS = `.mg-langnote{font-size:11.5px;color:#ffe9c4;background:#0007;border
 `;
 function inject() {
   if (typeof document === "undefined" || document.getElementById("mgcss")) return;
-  const s = document.createElement("style"); s.id = "mgcss"; s.textContent = CSS + CSS2 + IN_CSS + MG2.map((g) => g.css || "").join("\n"); document.head.appendChild(s);
+  const s = document.createElement("style"); s.id = "mgcss"; s.textContent = CSS + CSS2; document.head.appendChild(s);
 }
 const CSS2 = `
 /* 빨간펜: 펜이 직접 줄을 긋는다 */
@@ -244,14 +244,65 @@ const easeOf = (skill) => 1 + clamp(+skill || 0, 0, 200) / 200 * 0.5;
 
 // ───────── 공통: 소리·진동·손맛 ─────────
 // 효과음은 파일 없이 WebAudio로 합성. [시작]을 누를 때 오디오를 켠다. 소리 끄기는 기기에 기억(실패해도 그냥 켜짐).
-import { gIN2, IN_CSS } from "./mg_in.js";
-import { GAME as G_pr2 } from "./mg2/pr2.js";
-import { GAME as G_cs2 } from "./mg2/cs2.js";
-import { GAME as G_airbnb2 } from "./mg2/airbnb2.js";
-import { GAME as G_ucafe2 } from "./mg2/ucafe2.js";
-import { GAME as G_insta2 } from "./mg2/insta2.js";
-// 미니게임 2탄: 투잡마다 두 번째 게임. MG·GAMES 에 key 로 붙고, base 는 원래 투잡
-const MG2 = [G_pr2, G_cs2, G_airbnb2, G_ucafe2, G_insta2].filter(Boolean);
+// 미니게임 2탄·3탄·새 투잡 게임(mg2/*.js)과 인별그램 1탄(mg_in.js)은 실제로 할 때만 받는다(11-21, 첫 화면을 가볍게).
+// 받기 전에 필요한 이름·설명·색은 아래 목록에서 읽는다. 받으면 파일 안 값(GAME)으로 덮어쓴다.
+// ── MG2_LIST 시작 (자동 생성: tools/mg_manifest.cjs — 직접 고치지 말 것) ──
+const MG2_LIST = {
+  airbnb2: {"base":"airbnb","n":"체크인 전 검수","desc":"손님 오기 전, 지난번 완벽했던 방 사진과 지금 방을 비교해 다른 곳을 찾아요.","how":["위는 <b>지난번 손님 맞이 사진</b>, 아래는 <b>지금 방</b>이에요","아래 그림에서 <b>다른 곳 5개</b>를 톡! 틀리면 감점과 시간 -1초","<b>돋보기</b>를 누르고 사진을 꾹 누르면 크게 보여요. 손님이 문 앞까지 와요!"]},
+  airbnb3: {"base":"airbnb","n":"길 잃은 손님 안내","desc":"역에서 헤매는 외국인 손님에게 숙소까지 길을 그려 줘요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 캐리어 끄는 손님이 역·정류장에서 <b>\"Where is it?\"</b> 하고 전화해요.","손님을 <b>꾹 누른 채</b> 골목을 따라 <b>숙소 핀</b>까지 손가락으로 길을 그려요. 손님이 그 길 그대로 걸어가요.","<b>공사장</b>은 못 지나가요. <b>계단</b>(캐리어로 지침)·<b>비 오는 골목</b>·<b>일방통행 역방향</b>·<b>먼 길</b>은 감점! 빨리 안내할수록 좋아요."]},
+  chicken1: {"base":"chicken","n":"황금 튀김 타이밍","desc":"황금색일 때 건져야 리뷰가 ★5","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 주문표가 들어오면 <b>반죽한 닭</b>을 끌어 <b>튀김 바구니</b>에 넣어요.","튀김 색이 연노랑 → <b>황금</b> → 갈색 → 탄 색으로 변해요. <b>황금색일 때</b> 바구니를 <b>위로 쓱</b> 끌어 올려요. 타면 버리고 다시 튀겨야 해요.","주문표대로 <b>소스 통을 톡</b> → 볼을 <b>문질러</b> 버무리고, 박스에 <b>치킨무를 톡</b>! 무를 빠뜨리면 별점이 깎여요. 불이 세지면 <b>불 손잡이를 톡</b>."],"jc":"#ffb03b"},
+  chicken2: {"base":"chicken","n":"금요일 밤 배달 폭주","desc":"축구 하는 밤, 식기 전에 라이더를 보내요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 치킨이 튀겨지면 가게 앞에 박스가 쌓여요. <b>라이더를 끌어</b> 주문 핀까지 길을 그어요.","가까운 주문은 핀 <b>여러 개를 차례로 지나가게</b> 끌면 한 번에 묶어 보내요(가방 최대 3개). 핀 아래 막대는 <b>식는 시계</b>, 파랗게 식으면 별점이 깎여요.","라이더가 그만두면 <b>배달대행</b>을 톡(수수료가 나가요). <b>오배송</b>은 ? 핀에서 회수 → ! 핀으로, <b>단체 주문</b>은 박스를 한 번에 실어요."],"jc":"#ffb03b"},
+  chicken3: {"base":"chicken","n":"알바 스케줄 퍼즐","desc":"일요일 밤, 다음 주 근무표 짜기","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 아래 <b>알바 카드</b>를 끌어 위 근무표 칸에 놓아요. 놓기 전에 <b>옆으로 쓱</b> 밀거나 <b>블록 끝을 끌면</b> 여러 날이 한 번에 채워져요.","빨간 <b>피크</b>(금·토, 축구 경기 날)는 <b>두 명</b>, 그중 <b>튀김</b>과 <b>배달</b>이 꼭 있어야 해요. 카드의 가능 시간·숙련·성격(지각 잦음, 시험 기간)을 보고 골라요.","<b>인건비 막대</b>가 예산을 넘으면 안 돼요. 한 사람이 <b>주 15시간</b>을 넘기면 주휴수당이 붙어 확 뛰어요. 빈 칸은 <b>사장님이 직접</b> 들어가요(체력↓). 중간에 '못 나와요' 문자가 올 수도…"],"jc":"#ffb03b"},
+  cs2: {"base":"cs","n":"모의면접 코칭","desc":"멘티 모의면접, 면접관 마음을 읽고 답을 짜 줘요","how":["면접관이 질문해요. 먼저 <b>면접관이 정말 확인하려는 것</b>(질문 의도)을 3개 중에서 골라요.","답 카드 6장 중 3장을 <b>결론 → 근거 사례 → 회사 연결</b> 순서로 톡톡. 두괄식, 사실과 숫자, 회사에 줄 이익이 정답이에요.","함정 카드 조심! 장황한 서두, AI 티 나는 상투어, 숫자 없는 말, 회사와 무관한 말, 남 탓. 시간이 줄면 멘티가 땀을 흘려요. 면접관 <b>표정</b>도 잘 봐요."]},
+  cs3: {"base":"cs","n":"공고 골라 주기","desc":"멘티에게 맞는 공고만 쏙쏙, 서류 합격 알림을 쌓아요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 위에 <b>멘티 프로필</b>(희망 직무·경력·지역)이 있고, 채용공고가 한 장씩 날아와요.","맞는 공고는 <b>오른쪽으로 밀어 지원!</b> 직무·경력·근무지가 안 맞거나 <b>수상한 문구</b>(열정페이 같은)가 있으면 <b>왼쪽으로 패스</b>. <b>오픈 예정</b> 공고는 <b>위로 밀어 찜</b>.","<b>대기업</b>은 비슷한 직무여도 지원하면 보너스(회사가 직무보다 중요!). <b>D-1·D-DAY</b> 공고는 불타기 전에 빨리. 많이, 정확하게 지원할수록 멘티 폰에 <b>서류 합격</b>이 쌓여요."]},
+  insta2: {"base":"insta","n":"첫 라이브 방송","desc":"떨리는 첫 라이브, 채팅을 받아 치며 시청자를 모아요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 채팅이 아래에서 올라오면 <b>좋은 질문·칭찬</b>은 톡 해서 답하면 시청자와 하트가 늘어요.","<b>악플·도배·광고</b>는 옆으로 <b>밀어서</b> 가려요. 악플에 답하거나, 가리지 않고 두면 분위기가 싸해져요.","<b>금색</b> 협찬 문의·후원은 큰 보너스! 중간에 <b>링크 주세요!</b>가 몰리면 원이 꽉 찼을 때 <b>공구 링크</b> 버튼을 눌러요. 그다음엔 떡상 구간이 와요."]},
+  insta3: {"base":"insta","n":"릴스 편집","desc":"퇴근 후 찍은 영상을 음악 박자에 맞춰 잘라 떡상 릴스를 만들어요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 음악에 맞춰 <b>가위 표시</b>가 흘러와요. <b>빨간 선</b>에 닿는 순간 화면 아무 데나 톡 하면 컷이 바뀌어요.","<b>보라 화살표</b>는 전환 효과! 그 방향으로 <b>쓱 밀어요</b>. <b>노란 자막 막대</b>는 꾹 누르고 있다가 막대 끝에서 떼요.","박자에 딱 맞으면 <b>Perfect</b>, 어긋나면 화면이 튀어요. 다 끝나면 내가 만든 릴스가 재생되고 <b>조회수</b>가 정해져요!"]},
+  pr2: {"base":"pr","n":"만실 테트리스","desc":"금·토·일 파티룸 주말 달력에 예약을 꽉꽉 끼워 넣어요.","how":["위에 뜬 예약 알림을 <b>끌어서</b> 달력 빈 칸에 끼워요. 한 칸은 2시간이에요.","예약 사이엔 <b>청소 1칸</b>이 꼭 필요해요. 붙이면 빨갛게 안 돼요. <b>위로 밀면 거절</b>.","<b>금색 단체 예약</b>은 큰돈! 한 요일을 꽉 채우면 <b>만실</b> 보너스."]},
+  pr3: {"base":"pr","n":"층간소음 막기","desc":"밤 11시, 파티룸의 흥은 지키고 이웃은 재워요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 파티룸 3칸이 영업 중이고, <b>옆집·아래층</b> 이웃은 자고 있어요.","손님들이 자꾸 볼륨을 올려요. <b>시끄러운 방을 톡</b>하면 '조금만 낮춰 주세요' 문자가 가서 한 칸 내려가요. <b>열린 창문</b>은 톡해서 닫아요.","너무 낮추면 손님이 <b>노잼</b>이라 별점이 떨어져요. 스피커 칸이 <b>초록</b>이면 딱 좋아요. <b>생일 케이크 떼창</b>은 막지 말고 다른 방을 미리 낮춰요. 이웃이 <b>112</b>에 신고하면 경찰차가 오기 전에 전부 조용히!"]},
+  tarot1: {"base":"tarot","n":"카드 펼치기","desc":"플리마켓 타로 부스, 카드보다 상담이 본업이에요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 손님이 고민을 말하면 가운데 <b>덱을 좌우로 문질러</b> 섞어요.","카드 3장이 펼쳐지면 손님이 고른 <b>반짝이는 카드</b>를 톡! 카드가 <b>거꾸로</b> 나오면 역방향 뜻이에요. 방향에 맞는 뜻을 골라요.","손님 <b>표정</b>을 보고 말투를 골라요. 글썽이며 꼼지락대면 <b>따뜻하게</b>, 팔짱 끼고 한숨 쉬면 <b>솔직하게</b>. 만족하면 팁과 단골 예약이 붙어요."],"jc":"#b48cff"},
+  tarot2: {"base":"tarot","n":"속마음 읽기","desc":"카페 상담실 타로, 카드보다 상담이 본업이에요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 손님이 별일 아닌 척 이야기하는 동안 <b>몸짓에 단서</b>가 잠깐씩 스쳐요.","<b>반지 만지작·폰 알림·사원증 줄·문 쪽 시선·한숨·다리 떨기·통지서</b>가 보이면 톡! 커피 홀짝·머리 넘기기·창밖 보기는 <b>가짜</b>라 누르면 감점이에요.","마지막에 <b>진짜 고민</b> 카드 3장 중 하나를 골라요. 단서를 많이 모을수록 안 맞는 카드가 흐려져요. 손님 3명을 상담해요. 손님 <b>표정</b>도 힌트예요."],"jc":"#b48cff"},
+  tarot3: {"base":"tarot","n":"축제 부스 대기줄","desc":"연말 야시장, 줄은 길고 멘탈은 한정판이에요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 연말 야시장, 줄 선 손님을 <b>끌어서 빈 의자</b>에 앉혀요.","<b>밝은 말풍선</b>은 가벼운 고민 → <b>빠른 1장</b>, <b>어두운 말풍선</b>은 무거운 고민 → <b>3장 스프레드</b>. 손 잡은 커플은 <b>나란히 두 자리</b>에!","상담할수록 <b>멘탈</b>이 닳아요. 바닥나기 전에 <b>따뜻한 차</b> 한 잔. 술 취한 손님은 <b>왼쪽으로 쭉 밀어</b> 정중히 돌려보내요."],"jc":"#b48cff"},
+  tutoring1: {"base":"tutoring","n":"졸지 마 학생아","desc":"퇴근 후 화상과외! 딴짓하는 학생을 불러 수업에 집중시켜요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 화상 수업 화면에서 <b>딴짓하는 학생</b>을 찾아 화면을 눌러 이름을 불러요.","<b>졸면 톡톡</b>(빠르게 두 번), <b>폰 보면 쓱 밀기</b>(퀴즈 던지기), <b>카메라 끄면 꾹</b> 길게, <b>고양이·음소거는 톡</b> 한 번!","잘 듣는 학생을 부르면 서운해해요. 중간 <b>오늘의 퀴즈</b> 때 모두 집중해 있으면 보너스예요."],"jc":"#7fe0c0"},
+  tutoring2: {"base":"tutoring","n":"풀이 순서 판서","desc":"학생이 보낸 문제! 풀이 카드를 순서대로 칠판에 붙여 이해시켜요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 학생이 모르는 문제를 보내면 아래 <b>풀이 카드</b>를 <b>칠판으로 끌어 올려요</b>.","<b>위에서부터 순서대로</b> 붙여야 해요. 순서가 틀리면 학생 머리 위 <b>물음표가 커져요</b>.","<b>틀린 공식(함정 카드)</b>이 섞여 있어요. 칠판 옆 <b>휴지통</b>에 버리면 보너스! 문제는 갈수록 길어져요."],"jc":"#7fe0c0"},
+  tutoring3: {"base":"tutoring","n":"학부모 상담 전화","desc":"퇴근길 지하철, 과외 학부모 전화! 말 한마디에 재등록이 갈려요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 학부모 말이 오면 알맞은 <b>답 카드를 위로 쓱</b> 끌어 올려 보내요.","<b>솔직한 진단·구체적 계획</b>은 기분이 오르고, <b>무리한 약속·학생 탓</b>은 함정! 늦게 답해도 기분이 내려가요.","<b>터널</b>에선 신호가 끊기기 전에 빨리, <b>소음</b> 땐 말풍선을 톡 눌러 다시 듣고, <b>단톡방 알림</b>은 옆으로 밀어 치워요."],"jc":"#7fe0c0"},
+  ucafe2: {"base":"ucafe","n":"한여름 피크 방어","desc":"폭염 낮, 몰려드는 손님을 원격으로 버텨요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 손님은 알아서 주문하고 음료를 받아 가요. 당신은 <b>사장님(원격)</b>이에요. 한 잔 만들 때마다 <b>얼음·컵·원두·우유·빨대</b>가 줄어요.","<b>내가 할 일 ①</b> 아래 재고 칸을 <b>톡</b>하면 창고 상자 하나로 가득 채워요. 가져오는 데 <b>1초</b> 걸리니 비기 전에 미리! 상자는 한정이라 덜 빈 칸을 채우면 아까워요. 하나라도 비면 손님이 화내고 그냥 가요.","<b>내가 할 일 ②</b> 사고가 나면 바로! 노란 손가락이 할 일을 짚어 줘요. <b>얼음 기계 고장</b>은 기계를 연타, <b>쏟은 음료</b>는 문질러 닦기, <b>에어컨 꺼짐</b>은 에어컨을 톡. 늦으면 미끄러지고, 더워서 손님이 못 기다려요."]},
+  ucafe3: {"base":"ucafe","n":"신메뉴 레시피","desc":"시음회 날! 층층이 예쁜 신메뉴를 정확히 쌓아요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 주문 카드에 층층이 쌓인 음료 그림과 <b>순서</b>가 나와요.","아래 재료 버튼을 <b>꾹 누르고 있는 동안</b> 컵에 부어져요. 컵 옆 <b>노란 눈금선</b>에서 손을 떼요. 공중에 남은 줄기도 마저 떨어지니 <b>살짝 일찍</b>! 넘치거나 순서가 틀리면 층이 섞여요.","<b>얼음</b>은 집게가 컵 위에 올 때 톡, <b>토핑·시럽</b>은 컵 위를 손가락으로 쓱쓱. 잔이 커질수록 층이 많아지고, 다 만들면 손님이 마셔 보고 반응해요."]},
+  vibe1: {"base":"vibe","n":"프롬프트 조립","desc":"의뢰인 말을 칩으로 조립해 코딩 AI 코디에게 시켜요","how":["처음엔 <b>리허설</b>로 한 번 해 보고 시작해요. 의뢰인이 말풍선으로 원하는 걸 <b>두루뭉술하게</b> 말해요.","아래 <b>프롬프트 칩</b>(기능·색·화면·조건)을 끌어서(톡도 돼요) 위 <b>프롬프트 창</b>에 넣고 <b>실행</b>! 코디가 앱을 만들어 미리보기에 띄워요.","<b>대충 알아서</b> 같은 모호한 칩은 함정이에요. 결과가 다르면 <b>수정 요청</b>이 와요. 빨간 칩을 톡 해서 빼고 다시 실행. 의뢰 3건, 빨리 끝내면 보너스!"],"jc":"#7c9cff"},
+  vibe2: {"base":"vibe","n":"버그 잡기","desc":"오픈 직전 앱에 버그 신고가 쏟아져요. 벌레를 잡고 코디에게 맞는 수정을 시켜요","how":["처음엔 <b>리허설</b>로 한 번 해 보고 시작해요. 의뢰인 폰 화면에 <b>버그 벌레</b>가 기어다니며 앱을 깨뜨려요.","<b>벌레</b>(또는 깨진 곳)를 <b>톡!</b> 하면 코디가 고치는 법 3개를 알려 줘요. 화면을 보고 <b>맞는 방법</b>을 골라요.","<b>틀리면 다른 데가 새로 깨지고</b>, 오래 두면 벌레가 <b>알</b>을 까서 늘어나요. 다 잡으면 <b>출시!</b>"],"jc":"#7c9cff"},
+  vibe3: {"base":"vibe","n":"출시 날 서버 지키기","desc":"떡상한 내 앱! 밤새 서버가 안 터지게 지켜요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 내 앱이 커뮤니티에서 <b>떡상</b>! 사용자가 서버로 몰려와요.","<b>빨간 서버</b>(과부하)를 잡고 <b>한가한 서버</b>로 끌면 트래픽이 옮겨 가요. 꽉 찬 채로 버티면 <b>503</b>으로 터져요.","빨간 <b>해킹 점</b>은 톡! 막고, 사람이 넘치면 <b>캐시</b>·<b>서버 추가</b>(월 비용↑). 새벽 3시 졸음엔 <b>커피 톡</b>!"],"jc":"#7c9cff"},
+  webnovel1: {"base":"webnovel","n":"마감 5분 전","desc":"밤 11시 55분, 자정 업로드까지 오늘 회차 5,000자를 채워요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 퇴근하고 책상 앞, 자정까지 오늘 회차 <b>5,000자</b>를 채워요.","아래로 내려오는 문장 조각 중 <b>오늘 장르와 같은 색</b>만 톡! <b>타자 라인</b>에서 누르면 '완벽', 너무 일찍 누르면 덜 써져요. 다른 장르·<b>빨간 밑줄 오타</b>·딴짓은 흘려보내요.","눈꺼풀이 내려오면 <b>커피</b>를 톡. 자정 종이 울리면 <b>업로드</b> 버튼을 바로 눌러요!"],"jc":"#5fb8ff"},
+  webnovel2: {"base":"webnovel","n":"절단신공","desc":"오늘 회차는 다 썼다. 어디서 '다음 화에 계속'으로 끊을지가 결제를 가른다","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 원고가 위로 흘러가고, 오른쪽 <b>긴장도 그래프</b>가 같이 흘러가요.","그래프가 <b>빨간 점선(절단각)</b>을 넘은 꼭대기 줄이 <b>가위선</b>에 오면 톡! 점선 아래 작은 봉우리는 가짜 꼭대기예요.","<b>분량 OK</b> 선이 지나기 전에 자르면 \"분량 실화?\", 꼭대기를 지나면 <b>독자 이탈</b>이 올라요. 회차 4개를 이어서 끊어요."],"jc":"#5fb8ff"},
+  webnovel3: {"base":"webnovel","n":"랭킹 레이스","desc":"노블리 공모전 마지막 날 밤, 자정 마감까지 순위를 끌어올려요","how":["처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 저녁 7시부터 <b>자정 마감</b>까지, 위쪽 <b>실시간 랭킹</b>에서 내 작품을 3위 안으로!","<b>원고는 5편뿐.</b> 가운데 그래프의 <b>노란 칸(밤 10~12시 피크)</b>에 <b>연재 올리기</b>를 하면 조회가 폭발해요. 그 전엔 아껴 둬요.","피크 전엔 준비: 떠오르는 <b>독자 댓글</b>에 답글 톡(<b>악플은 무시</b>), <b>표지 바꾸기</b>(1번), <b>이벤트 참여</b>. 라이벌의 <b>연참 폭탄</b>도 조심!"],"jc":"#5fb8ff"},
+};
+// ── MG2_LIST 끝 ──
+const LOADED = {}; // key → 받은 GAME
+const LOADING = {}; // key → 받는 중인 Promise
+// 1탄 중 따로 받는 것: 파일과 꺼낼 것
+// 브라우저는 한 번 실패한 모듈 주소를 다시 받지 않으므로, 실패 뒤에는 주소 끝에 ?r=n 을 붙여 다시 받는다
+const FAILN = {}, retryQ = (key) => (FAILN[key] ? `?r=${FAILN[key]}` : "");
+const LAZY1 = { insta: () => import("./mg_in.js" + retryQ("insta")).then((m) => { addCss("insta", m.IN_CSS); GAMES.insta = m.gIN2; return { key: "insta" }; }) };
+function addCss(key, css) {
+  if (typeof document === "undefined" || !css || document.getElementById("mgcss-" + key)) return;
+  const s = document.createElement("style"); s.id = "mgcss-" + key; s.textContent = css; document.head.appendChild(s);
+}
+// 미니게임 파일 받기. 이미 받았으면 바로. 실패하면 다음에 다시 시도할 수 있게 지운다
+export function mgLoad(key) {
+  if (GAMES[key]) return Promise.resolve(LOADED[key] || { key });
+  if (LOADING[key]) return LOADING[key];
+  const p = (LAZY1[key] ? LAZY1[key]() : MG2_LIST[key] ? import(`./mg2/${key}.js${retryQ(key)}`).then((m) => {
+    const g = m.GAME; if (!g || typeof g.run !== "function") throw new Error("미니게임 파일이 비었어요: " + key);
+    mg2Init(); LOADED[key] = g; addCss(key, g.css);
+    MG[key] = { n: g.n, desc: g.desc, how: g.how, base: g.base }; GAMES[key] = g.run; if (g.jc) JC[key] = g.jc;
+    return g;
+  }) : Promise.reject(new Error("없는 미니게임: " + key))).then((g) => { delete LOADING[key]; return g; }, (e) => { delete LOADING[key]; FAILN[key] = (FAILN[key] || 0) + 1; throw e; });
+  LOADING[key] = p;
+  return p;
+}
+// 곧 할 미니게임(key)을 조용히 미리 받아 둔다. 실패는 무시하고 1분 동안은 다시 시도하지 않는다(오프라인에서 화면마다 받기 방지)
+const PF_FAIL = {};
+export function mgPrefetch(key) {
+  try { if (!key || GAMES[key] || LOADING[key] || !(MG2_LIST[key] || LAZY1[key]) || Date.now() - (PF_FAIL[key] || 0) < 60000) return; mgLoad(key).catch(() => { PF_FAIL[key] = Date.now(); }); } catch (e) {}
+}
 const SND_KEY = "a6_mg_sound";
 let SND_ON = true; try { SND_ON = localStorage.getItem(SND_KEY) !== "0"; } catch (e) {}
 let ACX = null;
@@ -340,7 +391,7 @@ function countdown(host, job, title, then) {
 const JC = { pr: "#c77dff", cs: "#ff6b6b", airbnb: "#4fc3f7", ucafe: "#7CFC9A", insta: "#ff8fc8" };
 // 방법 화면의 작은 그림 설명 3칸
 function introSteps(job) {
-  { const g2 = MG2.find((g) => g.key === job); if (g2) { try { return g2.steps ? g2.steps() : []; } catch (e) { return []; } } }
+  { const g2 = LOADED[job]; if (g2) { try { return g2.steps ? g2.steps() : []; } catch (e) { return []; } } }
   if (job === "ucafe") {
     try {
       const im = (t, o) => uSprite({ spec: uSpec(t), cache: {} }, "i", o, false).toDataURL();
@@ -358,8 +409,20 @@ let retryGate = async () => true;
 export function setRetryGate(fn) { retryGate = typeof fn === "function" ? fn : async () => true; }
 export function mgRun(job, host, opts = {}) {
   inject(); mg2Init();
+  if (!MG[job]) return Promise.resolve({ score: 0.5, grade: "보통", line: "미니게임이 없어 보통 결과로 했어요" });
+  if (GAMES[job]) return mgRun1(job, host, opts);
+  // 아직 안 받은 게임: 받는 동안 짧게 알리고, 못 받으면(오프라인 등) 안내 후 { loadFail } 로 끝낸다
   const def = MG[job];
-  if (!def || !GAMES[job]) return Promise.resolve({ score: 0.5, grade: "보통", line: "미니게임이 없어 보통 결과로 했어요" });
+  host.innerHTML = `<div class="mg mg-${job}" style="--jc:${JC[job]}"><div class="mg-intro mg-loading"><div class="mg-logo"><b>${def.n}</b><small>미니게임</small></div><div class="mg-d">불러오는 중…</div></div></div>`;
+  return mgLoad(job).then(() => mgRun1(job, host, opts), (e) => new Promise((resolve) => {
+    try { console.warn("미니게임 받기 실패", job, e); } catch (e2) {}
+    if (!host.isConnected) return resolve({ loadFail: true });
+    host.innerHTML = `<div class="mg mg-${job}" style="--jc:${JC[job]}"><div class="mg-intro"><div class="mg-logo"><b>${def.n}</b><small>미니게임</small></div><div class="mg-d">미니게임을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.<br>이번 판은 능력치대로 <b>보통 결과</b>로 해요.</div></div><div class="mg-foot"><button class="mg-btn gold" data-mg-ok>확인</button></div></div>`;
+    host.querySelector("[data-mg-ok]").onclick = () => resolve({ loadFail: true });
+  }));
+}
+function mgRun1(job, host, opts) {
+  const def = MG[job];
   const ez = easeOf(opts.skill);
   return new Promise((resolve) => {
     // 망친 판(보통·아쉬움)은 한 번 더 할 수 있다. 두 판 중 더 잘한 판으로 친다
@@ -1356,14 +1419,14 @@ function gIN(host, ez, finish) {
   setup(); raf = requestAnimationFrame(loop);
 }
 
-const GAMES = { pr: gPR, cs: gCS, airbnb: gAB, ucafe: gUC, insta: gIN2 };
+const GAMES = { pr: gPR, cs: gCS, airbnb: gAB, ucafe: gUC }; // insta 는 mg_in.js 를 받을 때 붙는다
 
 // 다른 파일(mg_in.js 등)에서 쓰는 공통 도구
-// 2탄 등록(처음 부를 때 한 번). mg2 파일들이 다 읽힌 뒤라 안전
+// 2탄 등록(처음 부를 때 한 번): 이름·설명만. 게임 본체는 mgLoad 로 받을 때 붙는다
 let mg2Done = false;
 function mg2Init() {
   if (mg2Done) return; mg2Done = true;
-  for (const g of MG2) { MG[g.key] = { n: g.n, desc: g.desc, how: g.how, base: g.base }; GAMES[g.key] = g.run; JC[g.key] = JC[g.base]; }
+  for (const [k, g] of Object.entries(MG2_LIST)) { if (!MG[k]) MG[k] = { n: g.n, desc: g.desc, how: g.how, base: g.base }; JC[k] = JC[k] || g.jc || JC[g.base] || "#ffd166"; if (!JC[g.base]) JC[g.base] = JC[k]; }
 }
 // 투잡(base)의 미니게임 목록: 1탄 + 2탄
 export function mgKeys(base) { mg2Init(); return Object.keys(MG).filter((k) => k === base || MG[k].base === base); }

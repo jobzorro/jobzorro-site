@@ -15,8 +15,12 @@ import * as FX from "./fx.js";
 import { ART } from "./gen/art.js";
 import { BODY, BG } from "./gen/body.js";
 import { CG } from "./gen/cg.js";
-import { MG, mgRun, mgKeys } from "./mg.js";
+import { MG, mgRun, mgKeys, mgPrefetch, mg2Init } from "./mg.js";
+import * as REG from "./engine/reg.js";
+import { UI_PLUGINS } from "./jobs/index.js";
 const D = E.D;
+// 새 투잡 화면 플러그인(jobs/<key>_ui.js). 엔진 플러그인이 등록된 것만 쓴다. 채우기는 아래 regUiPlugins()
+const UJ = {}, PLUG_PAGES = {};
 const $app = document.getElementById("app"), $modal = document.getElementById("modal"), $toast = document.getElementById("toast");
 let S = null, SLOT = 1, META_C = {};
 const ui = { page: "home", region: null, filter: "all", prFlow: null, wiz: null, chain: [], sjf: "all", dir: 0 };
@@ -206,7 +210,7 @@ function doAct(id, arg) {
   if (!arg && !a.pick) arg = defaultArg(id);
   ui.lastSpot = Object.values(D.SPOTS).find((sp) => sp.acts.includes(id))?.id || null;
   if (a.pick && arg === undefined) return pickFor(id);
-  if (MGJ[id] && (S.mgT || {})[MGJ[id][0]] !== S.t && !E.canAct(S, id, arg)) return mgOffer(id, arg);
+  if (MGJ[id] && (S.mgT || {})[MGJ[id][0]] !== S.t && !E.canAct(S, id, arg) && mgKeys(MGJ[id][0]).some((k) => MG[k])) return mgOffer(id, arg); // 미니게임이 아직 없으면(GAME = null) 그냥 행동
   const res = E.act(S, id, arg);
   if (!res.ok) { toast([], res.msg); return; }
   afterRes(res);
@@ -214,23 +218,44 @@ function doAct(id, arg) {
 // ───────── 투잡 미니게임: 한 달에 한 번, 핵심 행동 때 ─────────
 const MGJ = { pr_manage: ["pr", "hands"], cs_work: ["cs", "write"], ab_host: ["airbnb", "lang"], uc_check: ["ucafe", "sense"], in_post: ["insta", "sense"] };
 const MG_SKIP_AT = 3;
+// 이 투잡에서 다음에 나올 미니게임: 같은 투잡에 게임이 여럿이면 번갈아(1탄 → 2탄 → 1탄 …)
+function mgNext(job, plays = (meta().mgPlays || {})[job] || 0) { const keys = mgKeys(job).filter((k) => MG[k]); return keys[plays % Math.max(1, keys.length)]; }
+// 투잡 보드를 열면(시작 직후 포함) 그 투잡 다음 미니게임 파일을 조용히 미리 받는다
+function mgWarm(page) { try { if (Object.values(MGJ).some(([j]) => j === page)) mgPrefetch(mgNext(page)); } catch (e) {} }
 function mgOffer(id, arg) {
   const [job, stat] = MGJ[id], m = meta(), plays = (m.mgPlays || {})[job] || 0, skill = Math.round(S.st[stat] || 0);
   // 같은 투잡에 게임이 여럿이면 번갈아 나온다(1탄 → 2탄 → 1탄 …)
-  const keys = mgKeys(job), gk = keys[plays % keys.length] || job, G = MG[gk];
-  const canSkip = plays >= MG_SKIP_AT;
+  mgDoneMap(); // 옛 저장이면 이번 판을 세기 전에 기록부터 옮겨 둔다
+  const gk = mgNext(job, plays), G = gk && MG[gk];
+  if (!G) { const res = E.act(S, id, arg); if (!res.ok) return toast([], res.msg); return afterRes(res); } // 미니게임이 없으면(null) 바로 행동
+  mgPrefetch(gk); // 설명을 읽는 동안 미니게임 파일을 받아 둔다
+  const canSkip = plays >= MG_SKIP_AT, normalB = +(0.9 + Math.min(200, skill) / 200 * 0.25).toFixed(2);
   const finish = (boost, lines) => { S.mgT = S.mgT || {}; S.mgT[job] = S.t; S.mgBoost = boost; closeWin(); const res = E.act(S, id, arg); if (!res.ok) { S.mgBoost = 0; return toast([], res.msg); } res.lines = [...lines, ...(res.lines || [])]; afterRes(res); };
   openWin(`<h2>${esc(G.n)} <span class="tag gold">미니게임</span></h2><div class="small muted">${esc(G.desc || "")}</div>
     ${G.how ? `<ul class="mghow">${G.how.map((h) => `<li>${h}</li>`).join("")}</ul>` : ""}
     <div class="card small" style="margin-top:8px">이번 달 ${esc(D.ACTIONS[id].n)} 결과가 미니게임 점수로 달라져요(효과 ×0.7~1.5). ${canSkip ? `<b class="gold">건너뛰기</b>를 누르면 ${D.STATS[stat]} ${skill} 기준 <b>보통 결과</b>가 나와요.` : `<b class="gold">${MG_SKIP_AT}번</b> 해 보면 건너뛰기가 생겨요(지금 ${plays}번). 건너뛰면 능력치대로 보통 결과가 나와요.`}</div>
-    <div class="row" style="margin-top:12px">${canSkip ? `<button class="btn grow" data-mgskip>건너뛰기 (보통 결과)</button>` : ""}<button class="btn gold grow" data-mgplay>미니게임 하기</button></div>`, (w) => {
-    w.querySelector("[data-mgskip]")?.addEventListener("click", () => { const b = +(0.9 + Math.min(200, skill) / 200 * 0.25).toFixed(2); finish(b, [`건너뛰기: 보통 결과(효과 ×${b})`]); });
+    <div class="row" style="margin-top:12px">${canSkip ? `<button class="btn grow" data-mgskip>건너뛰기 (보통 결과)</button>` : ""}<button class="btn gold grow" data-mgplay>미니게임 하기</button></div>
+    <button class="btn" style="width:100%;margin-top:8px" data-mgcancel data-close>취소 (이번엔 안 함)</button>`, (w) => {
+    w.querySelector("[data-mgcancel]").onclick = () => closeWin();
+    w.querySelector("[data-mgskip]")?.addEventListener("click", () => finish(normalB, [`건너뛰기: 보통 결과(효과 ×${normalB})`]));
     w.querySelector("[data-mgplay]").onclick = () => {
-      openWin(`<div class="mghost"></div>`, async (w2) => {
-        let r = null; try { r = await mgRun(gk, w2.querySelector(".mghost"), { skill, avatar: S.me.avatar || null, gender: S.me.gender || "F" }); } catch (e) { r = null; }
+      openWin(`<div class="mghost"></div><button class="mgquit" data-mgquit>그만하기 (보통 결과)</button>`, async (w2) => {
+        // 게임 안에서 오류가 나거나(이벤트 처리 중 오류는 Promise로 안 잡힌다) 그만하기를 누르면 보통 결과로 닫는다
+        let bail; const bailP = new Promise((res) => { bail = res; });
+        const onErr = (e) => { try { console.warn("미니게임 오류", gk, e?.error || e?.reason || e); } catch (e2) {} bail("err"); };
+        window.addEventListener("error", onErr); window.addEventListener("unhandledrejection", onErr);
+        w2.querySelector("[data-mgquit]").onclick = () => bail("quit");
+        let r = null, err = false;
+        try { r = await Promise.race([mgRun(gk, w2.querySelector(".mghost"), { skill, avatar: S.me.avatar || null, gender: S.me.gender || "F" }), bailP]); } catch (e) { r = null; err = true; try { console.warn("미니게임 오류", gk, e); } catch (e2) {} }
+        window.removeEventListener("error", onErr); window.removeEventListener("unhandledrejection", onErr);
+        if (r === "quit") return finish(normalB, [`미니게임 그만하기: 보통 결과(효과 ×${normalB})`]);
+        if (r === "err") { r = null; err = true; }
+        if (r && r.loadFail) return finish(normalB, [`미니게임을 불러오지 못했어요: 보통 결과(효과 ×${normalB})`]); // 오프라인 등. 판 수는 안 센다
         const mm = meta(); mm.mgPlays = { ...(mm.mgPlays || {}), [job]: plays + 1 }; setMeta(mm);
-        const sc = r ? Math.max(0, Math.min(1, r.score)) : 0.5, b = +(0.7 + sc * 0.8).toFixed(2);
-        finish(b, [`미니게임 ${r?.grade || "보통"} · 효과 ×${b}`, ...(plays + 1 === MG_SKIP_AT ? ["이제 건너뛰기를 쓸 수 있어요"] : [])]);
+        if (err || !r || !Number.isFinite(+r.score)) return finish(normalB, [`미니게임을 끝까지 못 했어요: 보통 결과(효과 ×${normalB})`]); // 오류가 나도 보통 결과로 닫는다
+        mgRecord(gk, r); try { const m3 = meta(); m3.mgAv = { avatar: S.me.avatar || null, gender: S.me.gender || "F" }; setMeta(m3); } catch (e) {} // 시작 화면 '미니게임 다시 하기'용
+        const sc = Math.max(0, Math.min(1, +r.score)), b = +(0.7 + sc * 0.8).toFixed(2);
+        finish(b, [`미니게임 ${r.grade || "보통"} · 효과 ×${b}`, ...(plays + 1 === MG_SKIP_AT ? ["이제 건너뛰기를 쓸 수 있어요"] : [])]);
       }, true, true);
     };
   }, true, true);
@@ -258,7 +283,7 @@ function pickFor(id) {
   } else if (a.pick === "district") { ui.page = "pr"; ui.prFlow = { step: "district" }; render(); }
   else if (a.pick === "decor") { const rm = S.pr.rooms[0]; if (!rm) return toast([], "지점이 없어요"); ui.prFlow = { step: "decor", id: rm.id, picks: { ...rm.decor } }; go("pr"); }
   else if (a.pick === "quiz") quizWin(id);
-  else if (a.pick === "ucarea") openWin(`<h2>어느 상권을 볼까요? <button class="x" data-close>✕</button></h2><div class="pick">${Object.entries(D.UC_AREAS).map(([k, A]) => `<button data-pick="${k}"><b>${esc(A.n)}</b><span class="tiny muted">유동인구 ${"●".repeat(Math.round(A.traffic * 3))} · 월세 ${A.rent[0]}~${A.rent[1]}만(10평) · 경쟁 ${A.comp}곳</span><span class="tiny muted">${esc(A.tip)}</span></button>`).join("")}</div>`, (el) => el.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => { closeWin(); doAct(id, b.dataset.pick); }));
+  else if (a.pick === "ucarea") openWin(`<h2>어느 상권을 볼까요? <button class="x" data-close>✕</button></h2><div class="pick">${Object.entries(D.UC_AREAS).map(([k, A]) => `<button data-pick="${k}"><b>${esc(A.n)}</b><span class="tiny muted">유동인구 ${"●".repeat(Math.round(A.traffic * UC.weekendF(A) * 3))} · 월세 ${A.rent[0]}~${A.rent[1]}만(10평) · 경쟁 ${A.comp}곳</span><span class="tiny muted">${esc(A.tip)}</span>${A.risk ? `<span class="tiny bad">⚠ ${esc(A.risk)}</span>` : ""}</button>`).join("")}</div>`, (el) => el.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => { closeWin(); doAct(id, b.dataset.pick); }));
   else if (a.pick === "abregion") openWin(`<h2>어느 지역을 볼까요? <button class="x" data-close>✕</button></h2><div class="pick">${Object.entries(D.AB_REGIONS).map(([k, R]) => `<button data-pick="${k}"><b>${esc(R.n)}</b><span class="tiny muted">외국인 ${Math.round(R.foreign * 100)}% · 1박 약 ${R.adr}만 · 월세 ${R.rent[0]}~${R.rent[1]}만</span><span class="tiny muted">${esc(R.tip)}</span><span class="tiny ${R.city ? "bad" : "good"}">${R.city ? "합법 등록이면 외국인만 받아요" : "합법 등록해도 누구나 받아요"}</span></button>`).join("")}</div>`, (el) => el.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => { closeWin(); doAct(id, b.dataset.pick); }));
   else if (a.pick === "grad") {
     openWin(`<h2>대학원 고르기 <button class="x" data-close>✕</button></h2><p class="muted small">다니는 동안 매달 등록금이 나가고 행동력이 1 줄어요. 30개월 안에 수업 20번을 채우면 졸업해요.</p><div class="pick">${Object.entries(D.GRADS).map(([k, g]) => `<button data-pick="${k}"><b>${esc(g.n)}</b><span class="tiny muted">입학금 ${won(g.cash)} · 월 ${won(g.fee)}</span><span class="tiny muted">${esc(g.desc)}</span><span class="tiny good">졸업: ${Object.entries(g.done).map(([s, v]) => `${D.STATS[s]} +${v}`).join(", ")}</span></button>`).join("")}</div>`, (el) => el.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => { closeWin(); doAct(id, b.dataset.pick); }));
@@ -288,10 +313,11 @@ function render() {
   if (!unlocked(ui.page)) ui.page = "home";
   document.body.dataset.page = ui.page; // 투잡 화면마다 색·분위기가 바뀐다(style.css v4.15)
   S.tileSeen = S.tileSeen || {}; S.tileSeen[ui.page] = 1;
-  const pages = { home: pgHome, map: pgMap, people: pgPeople, me: pgMe, sj: pgSJ, co: pgCo, hobby: pgHobby, family: pgFamily, pr: pgPR, cs: pgCS, insta: pgInsta, grad: pgGrad, airbnb: pgAirbnb, ucafe: pgUcafe };
+  const pages = { home: pgHome, map: pgMap, people: pgPeople, me: pgMe, sj: pgSJ, co: pgCo, hobby: pgHobby, family: pgFamily, pr: pgPR, cs: pgCS, insta: pgInsta, grad: pgGrad, airbnb: pgAirbnb, ucafe: pgUcafe, ...PLUG_PAGES };
   $app.innerHTML = top() + pager() + `<div class="page ${ui.dir > 0 ? "inR" : ui.dir < 0 ? "inL" : ""}">${pages[ui.page]()}</div>` + nav();
   ui.dir = 0;
   bind();
+  mgWarm(ui.page);
   if (S.pending && !$modal.innerHTML) setTimeout(() => { if (S && S.pending && !S.over && !S.ended && !$modal.innerHTML && !document.querySelector(".cine")) showScene(); }, 0);
 }
 // ───────── 화면 지도(허브)·넘기기 ─────────
@@ -319,6 +345,7 @@ function unlocked(k) {
   if (k === "family") return !!(S.fam.spouse || S.fam.kids.length);
   if (k === "pr" || k === "cs" || k === "insta" || k === "airbnb" || k === "ucafe") return SJ.isActive(S, k);
   if (k === "grad") return !!S.grad;
+  if (REG.get(k)) return SJ.isActive(S, k);
   return false;
 }
 const PAGE_N = Object.fromEntries(D.HUB.flat().map((x) => [x.k, x.n]));
@@ -351,6 +378,7 @@ function tileInfo(k) {
   if (k === "ucafe") return `${S.uc.stores.length}곳`;
   if (k === "airbnb") return `${S.ab.units.length}채${S.ab.super ? " ★" : ""}`;
   if (k === "grad") return S.grad?.done ? "졸업" : `수업 ${S.grad?.n || 0}`;
+  if (REG.get(k)) { try { return UJ[k]?.tile ? String(UJ[k].tile(S)) : "하는 중"; } catch (e) { return ""; } }
   return "준비 중 18";
 }
 const TILE_NEW = { people: "cafe", map: "alley", home: "home", sj: "popup", me: "home", co: "desk", hobby: "rooftop", family: "apt", pr: "partyroom", insta: "online", airbnb: "airbnb", ucafe: "ucafe", grad: "library", cs: "consult" };
@@ -379,11 +407,12 @@ function top() {
     <div><div class="k">지난달</div><div class="v ${net >= 0 ? "good" : "bad"}">${net >= 0 ? "+" : ""}${won(net)}</div></div>
     <div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div>
     <div><div class="k">목표까지</div><div class="v ${f.ready ? "good" : ""}">${Math.round(f.ratio * 100)}%</div></div><span class="more">${ic("info")}</span></button>
+    ${(() => { const rw = E.runway(S), used = S.loans.find((l) => l.n === "신용대출")?.amt || 0; if (!(rw.late || rw.months <= 12 || used > 0)) return ""; const red = rw.late || rw.months <= 3; return `<button class="runway ${red ? "bad" : "warn"}" data-money>${rw.late ? `⚠ 카드값 연체 ${rw.late}개월째 · ${3 - rw.late}달 더 밀리면 개인회생` : `${rw.months === Infinity ? "흑자 중" : `버틸 수 있는 달 <b>${rw.months}개월</b>`} · 남은 신용 한도 <b>${won(rw.credit)}</b>${used ? ` · 신용대출 ${won(used)}` : ""}`}</button>`; })()}
     <div class="apbar" data-apinfo><span class="lab">${ic("bolt")}이번 달 행동력</span><div class="bar"><i style="width:${apPct}%"></i></div><span class="num">${S.ap}/${S.apMax}</span><span class="hp">스태미너 <b>${Math.round(S.hp)}</b></span></div></div>`;
 }
 // 위쪽 숫자를 누르면 나오는 자세한 돈 상황
 function moneyWin() {
-  const f = E.fireInfo(S), net = S.lastNet ?? 0, left = Math.max(0, Math.ceil((D.endAge(S.me.gender) - S.age) * 12)), goal = S.fam.spouse ? 30 : 20;
+  const f = E.fireInfo(S), net = S.lastNet ?? 0, left = Math.max(0, Math.ceil((D.endAge(S.me.gender) - S.age) * 12)), goal = S.fam.spouse ? 35 : 25;
   const row = (k, v, cls = "", sub = "") => `<tr><th>${k}</th><td class="${cls}">${v}${sub ? `<div class="tiny muted">${sub}</div>` : ""}</td></tr>`;
   openWin(`<h2>내 돈 상황 <button class="x" data-close>✕</button></h2><table class="mtab">
     ${row("현금", won(S.cash), "", "지금 바로 쓸 수 있는 돈")}
@@ -391,7 +420,7 @@ function moneyWin() {
     ${row("투잡 월수익", won(S.hist.at(-1)?.side || 0))}
     ${row("대출", won(E.debt(S)), E.debt(S) ? "bad" : "")}
     ${row("순자산", won(f.nw), "gold", "현금 + 투자 + 집 − 대출")}
-    ${row("목표까지", Math.round(f.ratio * 100) + "%", f.ready ? "good" : "", `목표: ${D.endAge(S.me.gender)}세까지 순자산 ${goal}억 (결혼하면 30억)`)}
+    ${row("목표까지", Math.round(f.ratio * 100) + "%", f.ready ? "good" : "", `목표: ${D.endAge(S.me.gender)}세까지 순자산 ${goal}억 (결혼하면 35억)`)}
     ${row("게임 끝까지", left + "개월", "", `${D.endAge(S.me.gender)}세에 인생을 결산해요`)}
     ${row("인물도감", `${Object.keys(S.rel).length} / ${CHARS_N}명`)}
   </table><button class="btn" style="width:100%;margin-top:10px;padding:11px" data-mgo="me">투자·대출 하러 가기 ›</button>`, (w) => w.querySelector("[data-mgo]").onclick = () => { closeWin(); go("me"); });
@@ -422,12 +451,12 @@ function pgHome() {
   for (const [id, x] of Object.entries(S.rel)) if (x.lover) ring.push(id);
   const td = E.todos(S).slice(0, 7);
   const { quick, locked } = quickActs();
-  const JOBP = ["pr", "cs", "insta", "airbnb", "ucafe"], jobOn = (k) => SJ.isActive(S, k);
+  const JOBP = ["pr", "cs", "insta", "airbnb", "ucafe", ...REG.JOBS.map((P) => P.key)], jobOn = (k) => SJ.isActive(S, k);
   const places = [...JOBP.filter(jobOn), "co", "hobby", "sj", ...JOBP.filter((k) => !jobOn(k)), "grad", "family"].filter(unlocked);
   return `<div class="stage" style="background-image:url(${bg})">
     ${heroB ? img(heroB, "body hero2", "나") : img(meSrc(myExpr()), "face hero", "나")}
     <div class="when"><b>${S.year}년 ${S.cal}월</b><span>${Math.floor(S.age)}세 · ${esc(job)}</span></div>
-    <div class="side">${!S.sj.active.length ? `<span>투잡 없음 · 회사원${S.sj.open ? "" : ""}</span>` : ""}${SJ.isActive(S, "pr") ? `<span>파티룸 ${S.pr.rooms.length}곳 · Lv${S.pr.lv}</span>` : ""}${SJ.isActive(S, "cs") ? `<span>컨설팅 Lv${S.cs.lv}${S.cs.open ? "" : " 준비 중"}</span>` : ""}${S.hb.joined.map((h) => `<span>${esc(D.HOBBIES[h].n)}</span>`).join("")}<span>${D.HOUSING[S.house.type]?.n || ""}</span>${S.fam.kids.length ? `<span>아이 ${S.fam.kids.length}명</span>` : ""}</div>
+    <div class="side">${!S.sj.active.length ? `<span>투잡 없음 · 회사원${S.sj.open ? "" : ""}</span>` : ""}${SJ.isActive(S, "pr") ? `<span>파티룸 ${S.pr.rooms.length}곳 · Lv${S.pr.lv}</span>` : ""}${SJ.isActive(S, "cs") ? `<span>컨설팅 Lv${S.cs.lv}${S.cs.open ? "" : " 준비 중"}</span>` : ""}${REG.JOBS.filter((P) => UJ[P.key]?.side && SJ.isActive(S, P.key)).map((P) => { try { return `<span>${esc(UJ[P.key].side(S))}</span>`; } catch (e) { return ""; } }).join("")}${S.hb.joined.map((h) => `<span>${esc(D.HOBBIES[h].n)}</span>`).join("")}<span>${D.HOUSING[S.house.type]?.n || ""}</span>${S.fam.kids.length ? `<span>아이 ${S.fam.kids.length}명</span>` : ""}</div>
     <div class="lovers">${ring.map((id) => `<button data-char="${id}">${img(faceSrc(id, "blush"))}</button>`).join("")}</div>
     <div class="news"><div class="src">투잡일보 · ${S.year}.${String(S.cal).padStart(2, "0")}</div><div class="h">${esc(S.news)}</div></div>
   </div>
@@ -459,9 +488,10 @@ function quickActs() {
     [S.grad && !S.grad.done ? "grad_class" : null, () => true, ""],
     [SJ.isActive(S, "airbnb") && S.ab.units.length && !S.ab.cohost ? "ab_clean" : null, () => true, ""],
     [SJ.isActive(S, "ucafe") && S.uc.stores.length && !S.uc.agent ? "uc_check" : null, () => true, ""],
+    ...REG.JOBS.filter((P) => UJ[P.key]?.quick && SJ.isActive(S, P.key)).map((P) => { let id = null; try { id = UJ[P.key].quick(S); } catch (e) {} return [id && D.ACTIONS[id] ? id : null, () => true, ""]; }),
     ["hb_go", () => S.hb.joined.length > 0, "취미에 가입하면"],
     ["co_lunch", () => !quit && S.t >= 1, "2달째부터"],
-    ["sj_youtube", () => S.sj.open && S.sj.active.length < 2, "투잡 탐색이 열리면"],
+    ["sj_youtube", () => S.sj.open && S.sj.active.length < 2, !S.sj.open ? "투잡 탐색이 열리면" : "투잡 2개 진행 중 · 하나를 접으면"],
     [S.fam.spouse || S.fam.kids.length ? "family_time" : "dating_app", () => S.fam.spouse || S.t >= 3 || nRel >= 3, "인연 3명 또는 4달째"],
     ["beauty", () => S.t >= 2, "3달째부터"],
     ["co_project", () => !quit && (S.co.rank >= 1 || S.t >= 6), "7달째부터"],
@@ -475,6 +505,7 @@ function quickActs() {
 }
 function defaultArg(id) {
   if (id === "hb_go") return S.hb.joined.find((h) => S.hb.lastT[h] !== S.t) || S.hb.joined[0];
+  { const P = REG.byAct(id); if (P) return UJ[P.key]?.defaultArg ? UJ[P.key].defaultArg(S, id) : undefined; }
   if (id === "pr_manage" || id === "pr_promo") { const rm = S.pr.rooms.filter((r) => r.status === "open").sort((a, b) => (a.ap - PR.needAp(S, a)) - (b.ap - PR.needAp(S, b)))[0]; return rm?.id; }
   return undefined;
 }
@@ -508,7 +539,7 @@ function actRow(id, arg, label) {
   const a = D.ACTIONS[id]; const why = a.pick && arg === undefined ? (a.need && !a.need(S) ? "지금은 할 수 없음" : null) : E.canAct(S, id, arg);
   return `<button class="actrow" data-act="${id}" ${arg !== undefined ? `data-arg="${esc(arg)}"` : ""} ${why ? `data-why="${esc(why)}" style="opacity:.5"` : ""}><div class="ic">${ic(ACT_IC[id])}</div><div class="grow"><div class="t">${esc(label || a.n)}</div><div class="d">${esc(why || a.desc)}</div><div class="chips">${actChips(id)}</div></div><span class="ap">⚡${a.ap}</span></button>`;
 }
-function visibleAct(id) { if (/^pr_/.test(id)) return SJ.isActive(S, "pr"); if (/^cs_/.test(id)) return SJ.isActive(S, "cs"); if (/^in_/.test(id)) return SJ.isActive(S, "insta"); if (/^ab_/.test(id)) return SJ.isActive(S, "airbnb"); if (/^uc_/.test(id)) return SJ.isActive(S, "ucafe"); if (id === "grad_class") return !!(S.grad && !S.grad.done); if (/^co_|work_hard|overtime|office_chat|company_dinner/.test(id)) return !(S.co.quit || S.co.fired); return true; }
+function visibleAct(id) { { const P = REG.byAct(id); if (P) return SJ.isActive(S, P.key); } if (/^pr_/.test(id)) return SJ.isActive(S, "pr"); if (/^cs_/.test(id)) return SJ.isActive(S, "cs"); if (/^in_/.test(id)) return SJ.isActive(S, "insta"); if (/^ab_/.test(id)) return SJ.isActive(S, "airbnb"); if (/^uc_/.test(id)) return SJ.isActive(S, "ucafe"); if (id === "grad_class") return !!(S.grad && !S.grad.done); if (/^co_|work_hard|overtime|office_chat|company_dinner/.test(id)) return !(S.co.quit || S.co.fired); return true; }
 // 장소 무대: 그 장소 그림 위에 오늘 와 있는 사람들이 서 있다. 누르면 인물 창(말 걸기).
 function personFig(id, i, n) {
   const c = E.CHAR[id], x = S.rel[id];
@@ -572,6 +603,7 @@ function pgPR() {
     <div><div class="k">관리 행동력</div><div class="v ${have < need ? "bad" : ""}">${r1(have)}/${r1(need)}</div></div>
     <div><div class="k">운영 노하우</div><div class="v">${Math.round(pr.know || 0)}</div></div>
     <div><div class="k">규모의 경제</div><div class="v">×${D.scaleF(pr.rooms.length || 1)}</div></div>
+    <div><div class="k">묶음 효과</div><div class="v ${PR.bundle(S).n >= 2 ? "good" : "muted"}">${PR.bundle(S).n >= 2 ? `예약 +${Math.round(PR.bundle(S).occ * 100)}% · 관리비 −${Math.round(PR.bundle(S).cost * 100)}%` : "2곳부터"}</div></div>
     <div><div class="k">물가</div><div class="v">×${(S.pi || 1).toFixed(2)}</div></div>
     ${pr.sold ? `<div><div class="k">매각 ${pr.sold}곳</div><div class="v good">${won(pr.soldSum)}</div></div>` : ""}</div>
     ${pr.listings.length ? `<div style="margin-top:8px"><button class="btn sm" data-prflow="list:${pr.listings[0].dk}">보던 매물 ${pr.listings.length}개 보기</button></div>` : ""}</div>
@@ -673,6 +705,7 @@ function prContract(f) {
   <div class="tiny muted">${qt.sf < 1 ? `${S.pr.rooms.length + 1}호점 규모의 경제로 공사·비품 ×${qt.sf}. ` : ""}물가 ×${qt.pi.toFixed(2)}가 이미 들어가 있어요.</div><div class="row" style="margin-top:6px"><b class="grow" style="font-size:17px">합계 ${won(total)}</b><span class="small muted">현금 ${won(S.cash)}</span></div>
   ${total > S.cash ? `<div class="small bad">모자란 돈은 사업자대출(연 4.8%, 한도 6,000만)로 채운다.</div>` : ""}
   ${unseen ? `<div class="small gold">확인 안 한 정보 ${unseen}개. 그대로 계약하면 운영하다가 드러난다.</div>` : ""}
+  ${(() => { const rb = PR.reserveNeed(S, L.rent), left = S.cash - total; return `<div class="small ${left < rb ? "bad" : "muted"}" style="margin-top:4px">${left < rb ? "⚠ " : ""}계약 뒤 남는 현금 ${won(Math.max(0, left))}${left < 0 ? `(대출 ${won(-left)})` : ""}. 비수기(3~6·9월)를 버티려면 월세 ${PR.RESERVE_MONTHS}달 치 + 생활비 2달 치, 약 ${won(rb)}는 남기세요.${left < rb && S.pr.rooms.length ? " 지점을 늘리다 비수기에 신용대출까지 다 쓰면 개인회생이에요." : ""}</div>`; })()}
   <button class="btn gold" style="width:100%;margin-top:8px;padding:12px" data-sign="${L.id}">계약하기</button></div>`;
 }
 
@@ -737,7 +770,7 @@ function pgCo() {
     <div style="margin-top:8px" class="small">회사 눈치 ${Math.round(co.eye)} ${meter(co.eye, 100, "var(--orange)")}</div>
     ${coEval()}
     <div class="tiny muted" style="margin-top:4px">눈치가 50을 넘으면 겸업이 들킬 수 있어요(경고 → 감봉 → 해고). ${t.n}은 ×${t.eye}.</div></div>
-  <div class="tiny muted" style="margin:2px 2px 6px">투잡 없이 회사만 다녀도 돼요. 다만 연봉은 천천히 오르고 지방 발령, 구조조정 같은 일도 생겨서 회사만으로 20억은 쉽지 않아요.</div>
+  <div class="tiny muted" style="margin:2px 2px 6px">투잡 없이 회사만 다녀도 돼요. 다만 연봉은 천천히 오르고 지방 발령, 구조조정 같은 일도 생겨서 회사만으로 25억은 쉽지 않아요.</div>
   ${spots.map(spotBlock).join("")}
   <div class="card"><h3>온잡(전업)으로 가면 <small>명성 ${Math.round(S.fame || 0)}</small></h3><div class="small muted">회사를 나오면 행동력 +5, 컨설팅 처리량 ×1.6·문의 ×1.3, 인별 성장 ×1.3, 파티룸 평일 영업 +15%. 명성이 높으면 파티룸 창업 컨설팅·가맹 사업·VIP 상품·AI 플랫폼이 열려요. 대신 월급이 끊기고 지역 건강보험이 나가요. 잘될 때 가면 크게, 빨리 벌어요.</div></div>
   <div class="card"><h3>환승 퇴사 <small>선퇴사 금지</small></h3>
@@ -746,7 +779,7 @@ function pgCo() {
 }
 
 // 투잡 보드 머리
-function boardHead(k) { const j = D.SIDEJOBS[k] || { type: "", inc: "" }; return `<div class="row" style="margin-bottom:6px"><button class="btn sm" data-go="sj">‹ 투잡 탐색</button><span class="tag">${esc(j.type)}</span><span class="grow"></span><span class="tiny muted">${esc(j.inc)}</span></div>`; }
+function boardHead(k) { const j = D.SIDEJOBS[k] || { type: "", inc: "" }; const ri = SJ.rampInfo(S, k), tip = ri && !ri.done && !S.sj.coachOff ? (S.sj.rp[k].tip || "첫 달은 손님이 적어요. 홍보·후기 행동을 해야 올라가요.") : ""; return `<div class="row" style="margin-bottom:6px"><button class="btn sm" data-go="sj">‹ 투잡 탐색</button><span class="tag">${esc(j.type)}</span><span class="grow"></span><span class="tiny muted">${esc(j.inc)}</span></div>${ri && !ri.done ? `<div class="card" style="padding:8px 10px;margin-bottom:8px"><div class="tiny"><b class="gold">초반 고생 중</b> · 손님 기대치의 ${ri.pct}%</div>${meter(ri.pct, 100, "var(--gold)")}${tip ? `<div class="tiny muted" style="margin-top:4px">코치: ${esc(tip)}</div>` : ""}</div>` : ""}`; }
 
 // 투잡 탐색
 function pgSJ() {
@@ -758,10 +791,11 @@ function pgSJ() {
       : f ? (j.play ? `<button class="btn sm gold" data-sjstart="${k}" ${act.length >= SJ.slots(S) ? "disabled" : ""}>시작하기</button>` : `<span class="tiny muted">다음 업데이트에서 열림</span>`)
       : `<button class="btn sm" data-act="sj_report" data-arg="${k}">리포트 ⚡1</button>`;
     const ask = !sj.know[k] && (it >= 30 || f) ? `<button class="btn sm" data-act="sj_interview" data-arg="${k}">해 본 사람에게 묻기 ⚡1</button>` : "";
+    const ent = sjEntry(k, f, on, it);
     const ban = SJ_BG[k] && bgUrl(SJ_BG[k]);
     return `<div class="sjc ${f ? "found" : ""} ${on ? "on" : ""} ${j.play ? "" : "soon"}">${ban ? `<div class="sjban" style="background-image:url(${ban})"></div>` : ""}<div class="row"><span class="ic">${ic(j.ic)}</span><div class="grow"><b>${esc(j.n)}</b> <span class="tag">${esc(j.type)}</span>${j.play ? "" : ' <span class="tag">준비 중</span>'}</div>${fg ? `<span class="fit g${fg.g}">궁합 ${fg.g}</span>` : ""}</div>
-      ${f ? `<div class="tiny">${esc(j.inc)} · ${esc(j.hours)} · 자본 ${esc(j.cap)}</div><div class="tiny muted">"${esc(j.line)}"</div>` : `<div class="tiny muted">관심 ${it}/100 · 단서: ${esc(j.hint)}</div>${meter(it, 100, "var(--gold)")}`}
-      <div class="row wrap" style="margin-top:6px">${btns}${ask}</div></div>`;
+      ${f ? `<div class="tiny">${esc(j.inc)} · ${esc(j.hours)} · 자본 ${esc(j.cap)}</div><div class="tiny muted">"${esc(j.line)}"</div>` : `<div class="tiny muted">관심 ${it}/100 · 단서: ${esc(j.hint)}</div>${meter(it, 100, "var(--gold)")}`}${ent.html}
+      <div class="row wrap" style="margin-top:6px">${btns}${ask}${ent.btns}</div></div>`;
   };
   const keys = Object.keys(D.SIDEJOBS).sort((a, b) => (SJ.isActive(S, b) - SJ.isActive(S, a)) || ((SJ.isFound(S, b) ? 1 : 0) - (SJ.isFound(S, a) ? 1 : 0)) || ((D.SIDEJOBS[b].play ? 1 : 0) - (D.SIDEJOBS[a].play ? 1 : 0)) || (S.sj.int[b] || 0) - (S.sj.int[a] || 0));
   const F = { all: () => true, found: (k) => SJ.isFound(S, k), play: (k) => D.SIDEJOBS[k].play };
@@ -774,6 +808,20 @@ function pgSJ() {
   <div class="sjgrid">${keys.filter(F[ui.sjf] || F.all).map(card).join("")}</div>`;
 }
 
+// 투잡 카드 아래: 필요 역량(진입 준비)·초반 고생 진행·코치 한마디·준비/선배/메모 버튼(engine/sj.js ENTRY)
+function sjEntry(k, f, on, it) {
+  const N = SJ.need(S, k); if (!N || !D.SIDEJOBS[k].play || !(f || it >= 30)) return { html: "", btns: "" };
+  const P = S.sj.rp?.[k] || { prep: 0, sen: 0 }, M = S.sj.memo?.[k] || [], ri = on ? SJ.rampInfo(S, k) : null, off = S.sj.coachOff;
+  let html = `<div class="tiny ${N.ok ? "good" : "bad"}" style="margin-top:4px">필요 역량 ${esc(N.n)} ${N.need} (지금 ${N.cur})${on ? "" : ` · 준비 ${P.prep}/3`} · 선배 ${P.sen}/3</div>`;
+  if (!on && !off) html += `<div class="tiny muted">코치: "${N.ok ? (P.prep < 3 ? "역량은 충분해요. 준비를 마치고 들어가면 첫 달이 덜 힘들어요." : "준비 끝. 이제 들어가도 돼요. 그래도 첫 석 달은 홍보가 일이에요.") : `이 투잡은 ${esc(N.n)} ${N.need} 이상은 돼야 덜 고생해요. 지금 ${N.cur}이니 ${esc(N.how)}로 먼저 올려 보세요.`}"</div>`;
+  if (ri && !ri.done) html += `<div class="tiny muted">초반 고생 중 · 손님 기대치의 ${ri.pct}%${ri.tip && !off ? ` · 코치: ${esc(ri.tip)}` : ""}</div>`;
+  const btns = (f && !on && P.prep < 3 ? `<button class="btn sm" data-act="sj_prep" data-arg="${k}">준비하기 ⚡1</button>` : "") + (P.sen < 3 ? `<button class="btn sm" data-act="sj_senior" data-arg="${k}">선배 찾아가기 ⚡1</button>` : "") + (M.length ? `<button class="btn sm" data-sjmemo="${k}">선배 메모 ${M.length}</button>` : "");
+  return { html, btns };
+}
+function sjMemoWin(k) {
+  const M = S.sj.memo?.[k] || [], j = D.SIDEJOBS[k], P = S.sj.rp?.[k], ri = SJ.rampInfo(S, k);
+  openWin(`<h2>선배 메모 · ${esc(j.n)} <button class="x" data-close>✕</button></h2><div class="small muted">선배를 만나고 준비하며 받아 적은 것. 숫자는 투잡연구소 조사 기준이에요.</div><div class="intro" style="margin-top:8px">${M.map((x) => `<p>${x.tip ? "★ 꿀팁" : x.prep ? "· 준비" : `· 선배 ${x.st + 1}/3`} ${esc(x.txt)}</p>`).join("") || "<p>아직 없어요</p>"}</div>${ri ? `<div class="tiny muted" style="margin-top:8px">${ri.done ? "초반 고생 끝" : `초반 고생 중 · 손님 기대치의 ${ri.pct}%`}${P?.tip && !ri.done ? ` · 코치: ${esc(P.tip)}` : ""}</div>` : ""}<button class="btn gold" style="width:100%;margin-top:10px" data-close>확인</button>`);
+}
 function synCard() {
   const L = SYN.list(S);
   return `<div class="card"><h3>투잡 궁합 <small>켜진 것 ${L.filter((x) => x.on).length}개</small></h3><div class="small muted" style="margin-bottom:6px">투잡끼리, 취미와 투잡이 서로 돕기도 하고 발목을 잡기도 해요.</div>
@@ -797,7 +845,7 @@ function pgInsta() {
 // 에어씨앤씨
 function pgAirbnb() {
   const A = S.ab, last = A.hist.at(-1) || 0;
-  const unit = (u) => { const R = D.AB_REGIONS[u.rk], L = u.last, n = AB.needAp(S, u); return `<div class="room"><div class="body"><div class="row"><div class="grow"><div class="nm">${esc(u.name)}</div><div class="tiny"><span class="tag ${u.reg === "legal" ? "green" : "red"}">${u.reg === "legal" ? (R.city ? "도시민박업(외국인만)" : "농어촌민박 등록") : "미등록(단속 위험)"}</span>${u.banned ? ` <span class="tag red">영업정지 ${u.banned}개월</span>` : ""}</div></div><div style="text-align:right"><div class="gold" style="font-weight:900">★ ${u.rating.toFixed(2)}</div><div class="tiny muted">숙박 ${u.stays}건</div></div></div>
+  const unit = (u) => { const R = D.AB_REGIONS[u.rk], L = u.last, n = AB.needAp(S, u); return `<div class="room"><div class="body"><div class="row"><div class="grow"><div class="nm">${esc(u.name)}</div><div class="tiny"><span class="tag ${u.reg === "legal" ? "green" : "red"}">${u.reg === "legal" ? (R.city ? "도시민박업(외국인 위주)" : "농어촌민박 등록") : "미등록(단속 위험)"}</span>${u.banned ? ` <span class="tag red">영업정지 ${u.banned}개월</span>` : ""}</div></div><div style="text-align:right"><div class="gold" style="font-weight:900">★ ${u.rating.toFixed(2)}</div><div class="tiny muted">숙박 ${u.stays}건</div></div></div>
     ${L ? `<div class="kv"><div><div class="k">예약률</div><div class="v">${Math.round(L.occ * 100)}%</div></div><div><div class="k">숙박</div><div class="v">${L.nights}박</div></div><div><div class="k">외국인</div><div class="v">${L.foreign}%</div></div><div><div class="k">지난달 순익</div><div class="v ${L.rev - L.cost >= 0 ? "good" : "bad"}">${won(L.rev - L.cost)}</div></div></div>` : '<div class="tiny muted">다음 달부터 손님이 와요</div>'}
     <div class="row wrap small"><span>월세 ${won(u.rent)} · 사진 ${Math.round(u.photo)}</span><span class="grow"></span><span class="muted">1박</span><div class="stepper"><button data-adr="${u.id}:-1">−</button><b>${u.adr}만</b><button data-adr="${u.id}:1">+</button></div></div>
     <div class="row"><span class="small">관리 <b class="${A.cohost || u.ap >= n ? "good" : "bad"}">${A.cohost ? "코호스트" : `${Math.round(u.ap * 10) / 10}/${n}`}</b></span><span class="grow"></span>${A.cohost ? "" : `<button class="btn sm" data-act="ab_clean" data-arg="${u.id}">청소 ⚡1</button>`}<button class="btn sm" data-act="ab_host" data-arg="${u.id}">응대 ⚡1</button><button class="btn sm" data-act="ab_photo" data-arg="${u.id}">사진 ⚡1</button></div>
@@ -805,7 +853,7 @@ function pgAirbnb() {
   const ls = A.listings.filter((l) => s0(l));
   return `${boardHead("airbnb")}<div class="card"><h3>에어씨앤씨 <small>${A.super ? "★ 슈퍼호스트" : `숙소 ${A.units.length}채`}</small></h3>
     <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div><div><div class="k">외국어</div><div class="v">${Math.round(S.st.lang)}</div></div><div><div class="k">코호스트</div><div class="v">${A.cohost ? "고용 중" : "없음"}</div></div>${A.fx ? `<div><div class="k">환율 급등</div><div class="v good">${A.fx}개월</div></div>` : ""}</div>
-    <div class="tiny muted" style="margin-top:6px">파티룸이 '몇 시간'이라면 에어씨앤씨는 '1박'이에요. 서울에서 합법(외국인관광 도시민박업)으로 하면 외국인만 받을 수 있어서 <b class="gold">외국어</b>가 곧 매출이에요. 미등록은 누구나 받지만 이웃 신고로 단속되면 과태료와 영업정지. 별점 4.8 이상·숙박 10건이면 슈퍼호스트(노출 +12%, 요금 +8%).</div></div>
+    <div class="tiny muted" style="margin-top:6px">파티룸이 '몇 시간'이라면 에어씨앤씨는 '1박'이에요. 서울에서 합법(외국인관광 도시민박업)으로 하면 외국인 위주라 <b class="gold">외국어</b>가 곧 매출이에요(내국인은 공유숙박 특례로 일부만). 합법 숙소는 등록번호가 있어 <b class="gold">노출 +8%</b>, 슈퍼호스트가 되면 5% 더. 미등록은 누구나 받지만 노출이 줄고, 이웃 신고·등록번호 점검으로 단속되면 과태료 400~1,200만과 영업정지. 별점 4.8 이상·숙박 10건이면 슈퍼호스트(노출 +12%, 요금 +8%).</div></div>
   <div class="acts" style="padding:0">${actRow("ab_search")}${actRow("ab_cohost", undefined, A.cohost ? "코호스트 해지" : "코호스트 고용(매출 20%, 투잡 칸 +1)")}${actRow("study", "lang", "외국어 공부 (스터디카페)")}</div>
   ${A.units.map(unit).join("")}
   ${ls.length ? `<div class="sec">보던 매물</div>${ls.map((l) => { const R = D.AB_REGIONS[l.rk], T = D.AB_TYPES[l.ty]; return `<div class="room"><div class="body"><div class="nm">${esc(R.n)} ${esc(T.n)}</div><div class="small">보증금 ${won(l.dep)} · 월세 <b>${won(l.rent)}</b> · 세팅비 ${won(l.setup)}</div><div class="tiny muted">${l.house ? "주택(등록 가능)" : "오피스텔(등록 불가)"} · 집주인 숙박업 동의 ${l.owner ? "O" : "X"}</div>
@@ -825,7 +873,7 @@ function pgUcafe() {
     <div class="tiny muted" style="margin-top:6px">기계가 일하고 나는 새벽에 청소·재고를 채워요. 머신을 사면 처음에 비싸지만 매달 렌탈비가 없고 맛이 조금 더 좋아요. 렌탈은 고장 나도 수리가 공짜예요. 여름 아이스가 성수기, 겨울은 비수기. CCTV가 없으면 먹튀가 3배예요. 한 잔 가격을 올리면 잔 수가 줄어요.</div></div>
   <div class="acts" style="padding:0">${actRow("uc_search")}${actRow("uc_agent", undefined, U.agent ? "관리 대행 해지" : "관리 대행 계약(매장당 월 40만, 투잡 칸 +1)")}</div>
   ${U.stores.map(store).join("")}
-  ${U.listings.length ? `<div class="sec">보던 자리</div>${U.listings.map((l) => { const A = D.UC_AREAS[l.ak], qr = UC.quote(S, l, { machine: "rent" }), qb = UC.quote(S, l, { machine: "buy" }); return `<div class="room"><div class="body"><div class="nm">${esc(A.n)} ${l.size}평</div><div class="small">보증금 ${won(l.dep)} · 월세 <b>${won(l.rent)}</b> · 권리금 ${won(l.key)} · 유동인구 ${"●".repeat(Math.round(l.traffic * 3))} · 경쟁 ${l.comp}곳</div>
+  ${U.listings.length ? `<div class="sec">보던 자리</div>${U.listings.map((l) => { const A = D.UC_AREAS[l.ak], qr = UC.quote(S, l, { machine: "rent" }), qb = UC.quote(S, l, { machine: "buy" }); return `<div class="room"><div class="body"><div class="nm">${esc(A.n)} ${l.size}평</div>${A.risk ? `<div class="tiny bad">⚠ ${esc(A.risk)}</div>` : ""}<div class="small">보증금 ${won(l.dep)} · 월세 <b>${won(l.rent)}</b> · 권리금 ${won(l.key)} · 유동인구 ${"●".repeat(Math.round(l.traffic * 3))} · 경쟁 ${l.comp}곳</div>
       <div class="row wrap" style="margin-top:6px"><button class="btn sm" data-uccon="${l.id}:rent">머신 렌탈로 열기 (${won(qr.total)})</button><button class="btn sm gold" data-uccon="${l.id}:buy">머신 사서 열기 (${won(qb.total)})</button></div></div></div>`; }).join("")}` : ""}`;
 }
 // 대학원
@@ -888,7 +936,7 @@ function pgMe() {
   const meB = bodySrc("me", myExpr(), "half");
   return `${meB ? `<div class="mestage" style="background-image:url(${bgUrl("home") || ""})">${img(meB, "body", "나")}<div class="cap"><b>${esc(S.me.name)}</b><span>${Math.floor(S.age)}세 · ${esc(S.co.quit || S.co.fired ? "전업 사장님" : `${S.co.name} ${D.RANKS[S.co.rank].n}`)}</span></div></div>` : ""}<div class="card"><h3>파이어 계산 <small>${Math.round(f.ratio * 100)}%</small></h3>${meter(f.ratio, 1, "linear-gradient(90deg,#f5a524,#5fe0a0)")}
     <div class="kv" style="margin-top:8px"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div><div><div class="k">목표 순자산${S.fam.spouse ? "(결혼)" : ""}</div><div class="v">${won(f.target)}</div></div><div><div class="k">월 생활비 전체</div><div class="v">${won(f.spend)}</div></div><div><div class="k">기한</div><div class="v">${D.endAge(S.me.gender)}세 · ${Math.max(0, Math.ceil(D.endAge(S.me.gender) - S.age))}년</div></div></div>
-    <div class="tiny muted" style="margin-top:6px">순자산이 목표(혼자 20억, 결혼하면 30억)에 닿으면 파이어를 선언할 수 있어요. 매니저가 굴리는 파티룸이나 VOD처럼 저절로 들어오는 사업 수입이 생활비를 넘으면 목표의 60%만 모아도 돼요.</div>
+    <div class="tiny muted" style="margin-top:6px">순자산이 목표(혼자 25억, 결혼하면 35억)에 닿으면 파이어를 선언할 수 있어요. 매니저가 굴리는 파티룸이나 VOD처럼 저절로 들어오는 사업 수입이 생활비를 넘으면 목표의 60%만 모아도 돼요.</div>
     ${f.ready ? `<button class="btn gold" style="width:100%;margin-top:8px;padding:12px" data-fire>파이어 선언하기 (${Math.floor(S.age)}세)</button>` : ""}${S.fireAt ? `<div class="tag gold" style="margin-top:8px">${S.fireAt}세 파이어 달성 · ${D.endAge(S.me.gender)}세까지 더 달리는 중</div>` : ""}</div>
   <div class="card"><h3>명성·온잡 <small>명성 ${Math.round(S.fame || 0)}/100</small></h3>${meter(S.fame || 0, 100, "var(--purple)")}<div class="tiny muted" style="margin-top:6px">별점 높은 파티룸, 컨설팅 Lv4~5, 인별·너튜브 팔로워가 명성을 올려요. 명성이 높을수록 문의·협찬·강의료가 오르고, 큰 판(가맹·VIP·AI 플랫폼)이 열려요. ${BIG.isFull(S) ? "지금 전업(온잡)이라 명성이 30% 빨리 올라요." : "회사를 나와 전업하면 판이 더 커져요."}</div></div>
   <div class="card"><h3>투자·대출</h3><div class="kv"><div><div class="k">투자(ETF)</div><div class="v">${won(S.invest)}</div></div><div><div class="k">대출 합계</div><div class="v bad">${won(E.debt(S))}</div></div><div><div class="k">월 이자·상환</div><div class="v">${won(Math.round(E.loanPay(S)))}</div></div></div>
@@ -977,6 +1025,82 @@ function showCine(p, done) {
   try { FX.play("win"); } catch (e) {}
   let ready = false; setTimeout(() => { ready = true; el.classList.add("ready"); }, 900);
   el.onclick = () => { if (!ready) return; el.classList.add("out"); setTimeout(() => { el.remove(); done && done(); }, 260); };
+  el._skip = () => { if (!el.isConnected) return; el.remove(); done && done(); }; // 시험용: 900ms 기다리지 않고 바로 넘기기
+}
+// ───────── 미니게임 기록·다시 하기(시작 화면, 11-21) ─────────
+// meta.mgDone = { <key>: { n: 판 수, best: 최고 점수(0~100, 모르면 null), grade } }. 해 본 게임만 연습할 수 있다
+function mgDoneMap() {
+  const m = meta();
+  if (!m.mgDone) { // 옛 저장: 투잡별 판 수(mgPlays)와 번갈아 나오는 순서로 이미 한 게임을 채운다(점수는 모름)
+    const d = {};
+    try { for (const [job, p] of Object.entries(m.mgPlays || {})) { const ks = mgKeys(job).filter((k) => MG[k]); for (let i = 0; i < p && ks.length; i++) { const k = ks[i % ks.length]; d[k] = d[k] || { n: 0, best: null, grade: "" }; d[k].n++; } } } catch (e) {}
+    m.mgDone = d; setMeta(m);
+  }
+  return m.mgDone;
+}
+// 한 판 끝: 판 수(연습 판은 안 셈)·최고 점수 기록
+function mgRecord(key, r, practice = false) {
+  if (!key || !r || !Number.isFinite(+r.score)) return;
+  try {
+    const d = { ...mgDoneMap() }, o = d[key] || { n: 0, best: null, grade: "" }, sc = Math.round(Math.max(0, Math.min(1, +r.score)) * 100), up = o.best == null || sc > o.best;
+    d[key] = { n: o.n + (practice ? 0 : 1), best: up ? sc : o.best, grade: up ? r.grade || "" : o.grade };
+    const m = meta(); m.mgDone = d; setMeta(m);
+  } catch (e) {}
+}
+// 모든 미니게임(투잡 순서대로)
+function mgAll() { mg2Init(); const ks = Object.keys(MG), bs = [...new Set(ks.map((k) => MG[k].base || k))]; return bs.flatMap((b) => ks.filter((k) => (MG[k].base || k) === b)); }
+function tjxCss() {
+  if (document.getElementById("tjxcss")) return;
+  const s = document.createElement("style"); s.id = "tjxcss";
+  s.textContent = `.tjx{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.tjx>button{display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:9px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);text-align:left;min-width:0;font:inherit;cursor:pointer}
+.tjx>button:active{transform:scale(.98)}
+.tjx-th{display:flex;gap:4px;height:56px;margin-bottom:3px}
+.tjx-th i{flex:1;min-width:0;border-radius:8px;background:#ffffff10 center/cover no-repeat}
+.tjx-th i.e{display:flex;align-items:center;justify-content:center;font-style:normal;font-size:26px}
+.tjx-ic{height:56px;margin-bottom:3px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:30px;background:linear-gradient(135deg,#ff8fc833,#7c9cff40)}
+.tjx b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tjx span{font-size:12px;color:var(--gold);font-weight:700}
+.tjr-h{margin:12px 0 6px;font-size:14px}
+.tjr{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tjr button{display:flex;flex-direction:column;gap:3px;text-align:left;padding:9px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:inherit;min-width:0;cursor:pointer}
+.tjr button b{font-size:13px}
+.tjr button span{font-size:11.5px;color:var(--muted);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tjr button em{font-style:normal;font-size:11.5px;color:var(--gold);font-weight:700}
+.tjr button.lock{opacity:.5;filter:grayscale(1);cursor:default}`;
+  document.head.appendChild(s);
+}
+// 시작 화면 카드: 왼쪽 인생 앨범, 오른쪽 미니게임 다시 하기
+function titleCards(m) {
+  const A = m.album || [], done = mgDoneMap(), all = mgAll(), n = all.filter((k) => done[k]).length;
+  const th = A.slice(0, 3).map((a) => `<i style="background-image:url('${esc(a.img || "")}')"></i>`).join("") || `<i class="e">📷</i>`;
+  return `<div class="tjx"><button data-album><div class="tjx-th">${th}</div><b>인생 앨범</b><span>${A.length}장</span></button><button data-mgre><div class="tjx-ic">🎮</div><b>미니게임 다시 하기</b><span>${n}/${all.length}</span></button></div>`;
+}
+function mgReplayWin() {
+  tjxCss();
+  const done = mgDoneMap(), all = mgAll(), n = all.filter((k) => done[k]).length, groups = {};
+  for (const k of all) (groups[MG[k].base || k] = groups[MG[k].base || k] || []).push(k);
+  const jn = (b) => D.SIDEJOBS[b]?.n || b;
+  openWin(`<h2>미니게임 다시 하기 <span class="tag gold">${n}/${all.length}</span> <button class="x" data-close>✕</button></h2><div class="small muted">해 본 미니게임은 여기서 연습할 수 있어요. 연습 판은 인생에 영향이 없고 최고 점수만 남아요.</div>
+    ${Object.entries(groups).map(([b, ks]) => `<h3 class="tjr-h">${esc(jn(b))}</h3><div class="tjr">${ks.map((k) => { const g = MG[k], d = done[k]; return d ? `<button data-mgp="${k}"><b>${esc(g.n)}</b><span>${esc(g.desc || "")}</span><em>${d.best != null ? `최고 ${d.best}점 · ${esc(d.grade || "")}` : `${d.n}번 해 봄 · 점수 기록 없음`}</em></button>` : `<button class="lock" disabled><b>🔒 ? ? ?</b><span>게임에서 ${esc(jn(b))} 투잡을 하면 열려요</span></button>`; }).join("")}</div>`).join("")}`,
+  (w) => w.querySelectorAll("[data-mgp]").forEach((b) => b.onclick = () => mgPractice(b.dataset.mgp)));
+}
+// 연습 판: 게임 상태(S)·효과·판 수는 그대로, 최고 점수만 갱신
+function mgPractice(key) {
+  const av = meta().mgAv || {};
+  openWin(`<div class="mghost"></div><button class="mgquit" data-mgquit>그만하기</button>`, async (w2) => {
+    let bail; const bailP = new Promise((res) => { bail = res; });
+    const onErr = (e) => { try { console.warn("미니게임 오류", key, e?.error || e?.reason || e); } catch (e2) {} bail("err"); };
+    window.addEventListener("error", onErr); window.addEventListener("unhandledrejection", onErr);
+    w2.querySelector("[data-mgquit]").onclick = () => bail("quit");
+    let r = null;
+    try { r = await Promise.race([mgRun(key, w2.querySelector(".mghost"), { skill: 40, avatar: av.avatar || null, gender: av.gender || "F", practice: true }), bailP]); } catch (e) { r = null; try { console.warn("미니게임 오류", key, e); } catch (e2) {} }
+    window.removeEventListener("error", onErr); window.removeEventListener("unhandledrejection", onErr);
+    if (r && typeof r === "object" && r.loadFail) toast([], "미니게임을 불러오지 못했어요. 인터넷 연결을 확인해 주세요");
+    else if (r && typeof r === "object") mgRecord(key, r, true);
+    else if (r === "err") toast([], "미니게임에 문제가 생겨 닫았어요");
+    closeWin(); if (!S) renderTitle(); mgReplayWin();
+  }, true, true);
 }
 // 인생 앨범: 지금까지 본 화보. 첫 화면과 나 화면에서 본다
 function albumWin() {
@@ -1027,6 +1151,7 @@ function endMonthFlow(force) {
     <div class="tot"><span>이번 달</span><span class="${ti - te >= 0 ? "in" : "out"}">${ti - te >= 0 ? "+" : "−"}${won(Math.abs(ti - te))}</span></div>
     <div class="dl"><span>투잡 순수익</span><span>${won(rc.side)}</span></div><div class="dl"><span>잔고</span><span>${won(rc.cash)}</span></div></div>
     ${rc.notes.length ? `<div class="notes">${rc.notes.map((n) => `<div>${esc(n)}</div>`).join("")}</div>` : ""}
+    ${!S.over && S.debtLate > 0 ? `<div class="danger-box"><b>⚠ 카드값 연체 ${S.debtLate}개월째</b><div>신용 한도까지 다 써서 잔고가 마이너스예요. <b>3개월 연속</b>이면 개인회생(이번 인생 끝)이에요. 남은 기회 <b>${3 - S.debtLate}번</b>.</div><div class="tiny">살릴 방법: 적자 지점 양도·매각 · 비싼 지출 줄이기 · 야근·성과로 월급 지키기 · 투잡 수입 올리기</div></div>` : (() => { const rw = E.runway(S); return !S.over && rw.months <= 3 ? `<div class="danger-box warn"><b>⚠ ${rw.months ? `이대로면 ${rw.months}달 뒤` : "다음 달이면"} 돈이 바닥나요</b><div>월 ${won(-rw.net)} 적자 · 남은 신용 한도 ${won(rw.credit)}. 한도를 다 쓰고 3달 연속 마이너스면 개인회생이에요.</div></div>` : ""; })()}
     <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-ok>${S.sceneQ.length ? `다음 (사건 ${S.sceneQ.length})` : "다음 달 시작"}</button>`, (el) => el.querySelector("[data-ok]").onclick = () => { closeWin(); continueChain(); toast([`행동력 ${S.apMax}`, `스태미너 ${Math.round(S.hp)}`], `${S.year}년 ${S.cal}월`); }, true);
 }
 
@@ -1037,12 +1162,13 @@ function settingsWin(slots) {
   const g = FX.get(), sw = (k, n, d) => `<button class="setrow" data-tg="${k}"><span class="grow"><b>${n}</b><span class="tiny muted">${d}</span></span><span class="tgl ${g[k] ? "on" : ""}"><i></i></span></button>`;
   const empty = slots?.find((x) => x.empty);
   openWin(`<h2>설정 <button class="x" data-close>✕</button></h2>
-    ${sw("sound", "효과음", "누를 때·돈 들어올 때 짧은 소리")}${sw("vib", "진동", "안드로이드 폰에서만 울려요")}${sw("big", "큰 글씨", "화면 전체를 조금 크게")}
+    ${sw("sound", "효과음", "누를 때·돈 들어올 때 짧은 소리")}${sw("vib", "진동", "안드로이드 폰에서만 울려요")}${sw("big", "큰 글씨", "화면 전체를 조금 크게")}${S ? `<button class="setrow" data-coach><span class="grow"><b>투잡 코치</b><span class="tiny muted">초반 고생 구간의 코치 한마디·할 일 안내</span></span><span class="tgl ${S.sj.coachOff ? "" : "on"}"><i></i></span></button>` : ""}
     <div class="card" style="margin-top:10px"><h3>저장 백업</h3><div class="tiny muted" style="margin-bottom:6px">로그인하지 않으면 이 기기에만 저장돼요. 앱을 지우기 전에 코드를 복사해 두면 다시 불러올 수 있어요.</div>
       ${S ? `<button class="btn sm" data-bkcopy>지금 인생 코드 복사</button>` : ""}
       ${!S && slots ? (empty ? `<textarea data-bkin rows="3" placeholder="백업 코드를 붙여 넣으세요" style="width:100%;margin-top:6px;font-size:11px;background:#0b0d1a;color:#dfe3ff;border:1px solid #2a2e55;border-radius:8px;padding:6px"></textarea><button class="btn sm gold" data-bkload style="margin-top:6px">${empty.slot}번 칸으로 불러오기</button>` : `<div class="tiny muted">불러오려면 빈 칸이 하나 있어야 해요.</div>`) : ""}
       ${!S && !slots ? `<div class="tiny muted">시작 화면의 설정에서 불러올 수 있어요.</div>` : ""}</div>
     <div class="tiny muted" style="margin-top:10px;text-align:center">After 6PM v${FX.VERSION} · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">개인정보 처리방침</a></div>`, (el) => {
+    const cb = el.querySelector("[data-coach]"); if (cb) cb.onclick = () => { S.sj.coachOff = !S.sj.coachOff; save(); settingsWin(slots); };
     el.querySelectorAll("[data-tg]").forEach((b) => b.onclick = () => { const k = b.dataset.tg; FX.put(k, !FX.get()[k]); if (FX.get()[k]) FX.play("ok"); settingsWin(slots); });
     const cp = el.querySelector("[data-bkcopy]"); if (cp) cp.onclick = async () => { const code = B64.en(E.save(S)); try { await navigator.clipboard.writeText(code); toast([], "백업 코드를 복사했어요. 메모장 같은 곳에 붙여 두세요"); } catch (e) { const ta = document.createElement("textarea"); ta.value = code; ta.rows = 3; ta.style.width = "100%"; cp.after(ta); ta.select(); toast([], "길게 눌러 복사해 주세요"); } };
     const ld = el.querySelector("[data-bkload]"); if (ld) ld.onclick = async () => {
@@ -1079,16 +1205,17 @@ function bind() {
   q("[data-apinfo]", () => apWin());
   q("[data-coach]", () => { S.coachOff = 1; save(); render(); });
   q("[data-swipe]", (el) => step(+el.dataset.swipe));
-  q("[data-sjstart]", (el) => { const k = el.dataset.sjstart, j = D.SIDEJOBS[k]; openWin(`<h2>${esc(j.n)} 시작할까? <button class="x" data-close>✕</button></h2><div class="small" style="line-height:1.8">· 수익: ${esc(j.inc)}<br>· 시간: ${esc(j.hours)} · 시작 자본 ${esc(j.cap)}<br>· 궁합: ${SJ.fit(S, k).g} (${j.fit.map((x) => D.STATS[x]).join("·")})<br>· 회사에 들키면 경고 → 감봉 → 해고. ${k === "cs" ? "실명으로 하면 더 잘 들킨다." : "지점이 늘수록 눈치가 쌓인다."}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>조금 더 고민</button><button class="btn gold grow" data-yes>시작하기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = SJ.start(S, k); closeWin(); toast([], r.msg); save(); if (r.ok) { go(k); if (r.hid?.length) openWin(`<h2>숨은 특성 공개 <button class="x" data-close>✕</button></h2><div class="small muted">${esc(j.n)}을(를) 시작하니 내 성향이 이렇게 드러나요.</div><div class="intro" style="margin-top:8px">${r.hid.map((x) => `<p>★ ${esc(x)}</p>`).join("")}</div><button class="btn gold" style="width:100%;margin-top:10px" data-close>확인</button>`, null, false, true); } else render(); }); });
+  q("[data-sjstart]", (el) => { const k = el.dataset.sjstart, j = D.SIDEJOBS[k]; openWin(`<h2>${esc(j.n)} 시작할까? <button class="x" data-close>✕</button></h2><div class="small" style="line-height:1.8">· 수익: ${esc(j.inc)}<br>· 시간: ${esc(j.hours)} · 시작 자본 ${esc(j.cap)}<br>· 궁합: ${SJ.fit(S, k).g} (${j.fit.map((x) => D.STATS[x]).join("·")})${(() => { const N = SJ.need(S, k), P = S.sj.rp?.[k]; return N ? `<br>· 필요 역량: ${esc(N.n)} ${N.need} (지금 <b class="${N.ok ? "good" : "bad"}">${N.cur}</b>) · 준비 ${P?.prep || 0}/3${N.ok ? "" : "<br>· 코치: 역량이 모자라면 첫 몇 달은 손님이 훨씬 적어요. 홍보·후기로 버텨야 해요."}` : ""; })()}<br>· 회사에 들키면 경고 → 감봉 → 해고. ${k === "cs" ? "실명으로 하면 더 잘 들킨다." : "지점이 늘수록 눈치가 쌓인다."}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>조금 더 고민</button><button class="btn gold grow" data-yes>시작하기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = SJ.start(S, k); closeWin(); toast([], r.msg); save(); if (r.ok) { go(k); if (r.hid?.length) openWin(`<h2>숨은 특성 공개 <button class="x" data-close>✕</button></h2><div class="small muted">${esc(j.n)}을(를) 시작하니 내 성향이 이렇게 드러나요.</div><div class="intro" style="margin-top:8px">${r.hid.map((x) => `<p>★ ${esc(x)}</p>`).join("")}</div><button class="btn gold" style="width:100%;margin-top:10px" data-close>확인</button>`, null, false, true); } else render(); }); });
   q("[data-sjstop]", (el) => openWin(`<h2>${esc(D.SIDEJOBS[el.dataset.sjstop].n)} 접을까? <button class="x" data-close>✕</button></h2><div class="small">쌓은 후기·능력치는 남는다. 다시 시작할 수 있다.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>접기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = SJ.stop(S, el.dataset.sjstop); closeWin(); toast([], r.msg); save(); render(); }));
   q("[data-sjf]", (el) => { ui.sjf = el.dataset.sjf; render(); });
   q("[data-hbjoin]", (el) => { const r = SJ.hbJoin(S, el.dataset.hbjoin); toast([], r.msg); save(); render(); });
   q("[data-hbleave]", (el) => { const r = SJ.hbLeave(S, el.dataset.hbleave); toast([], r.msg); save(); render(); });
+  q("[data-sjmemo]", (el) => sjMemoWin(el.dataset.sjmemo));
   q("[data-act]", (el) => { if (S.pending) return showScene(); if (el.dataset.why) return toast([], el.dataset.why); doAct(el.dataset.act, el.dataset.arg); });
   q("[data-end]", () => endMonthFlow(false));
   q("[data-region]", (el) => { ui.region = el.dataset.region || null; render(); window.scrollTo(0, 0); });
   q("[data-char]", (el) => charWin(el.dataset.char));
-  q("[data-todo]", (el) => { const g = el.dataset.todo; if (g.startsWith("people:")) return charWin(g.slice(7)); if (["pr", "cs", "sj", "hobby", "family", "co", "insta", "grad", "airbnb", "ucafe"].includes(g)) { ui.prFlow = null; return go(g); } if (D.SPOTS[g]) { if (D.SPOTS[g].region === "company") return go("co"); ui.page = "map"; ui.region = D.SPOTS[g].region; } else if (g === "parents") { ui.page = "map"; ui.region = "parents"; } render(); window.scrollTo(0, 0); });
+  q("[data-todo]", (el) => { const g = el.dataset.todo; if (g.startsWith("people:")) return charWin(g.slice(7)); if (["pr", "cs", "sj", "hobby", "family", "co", "insta", "grad", "airbnb", "ucafe"].includes(g) || REG.get(g)) { ui.prFlow = null; return go(g); } if (D.SPOTS[g]) { if (D.SPOTS[g].region === "company") return go("co"); ui.page = "map"; ui.region = D.SPOTS[g].region; } else if (g === "parents") { ui.page = "map"; ui.region = "parents"; } render(); window.scrollTo(0, 0); });
   q("[data-prflow]", (el) => { const v = el.dataset.prflow; if (!v) ui.prFlow = null; else if (v === "district") ui.prFlow = { step: "district", dk: ui.prFlow?.dk }; else if (v.startsWith("list:")) ui.prFlow = { step: "list", dk: v.slice(5) }; else if (v.startsWith("contract:")) ui.prFlow = { step: "contract", id: v.slice(9) }; ui.page = "pr"; render(); });
   q("[data-dk]", (el) => { ui.prFlow.dk = el.dataset.dk; render(); });
   q("[data-cc]", (el) => { ui.prFlow.concept = el.dataset.cc; render(); });
@@ -1125,6 +1252,7 @@ function bind() {
   q("[data-qlock]", (el) => toast([], `🔒 ${el.dataset.qlock} 열려요`));
   q("[data-album]", () => albumWin());
   q("[data-toslots]", () => { save(true); S = null; renderTitle(); });
+  if (UJ[ui.page]?.bind) UJ[ui.page].bind(jctx(q)); // 새 투잡 보드의 버튼 연결
   q("[data-fire]", () => openWin(`<h2>파이어 달성! <button class="x" data-close>✕</button></h2><div class="small">순자산 ${won(E.fireInfo(S).nw)}. 지금 은퇴할 수도 있고, ${D.endAge(S.me.gender)}세까지 더 달려서 명예의 전당을 노릴 수도 있어요. 기록에는 ${Math.floor(S.age)}세 파이어가 남아요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-keep>계속 달린다</button><button class="btn gold grow" data-yes>지금 은퇴</button></div>`, (w) => { w.querySelector("[data-yes]").onclick = () => { closeWin(); E.declareFire(S, false); save(true); render(); }; w.querySelector("[data-keep]").onclick = () => { closeWin(); E.declareFire(S, true); save(true); toast([], `${S.fireAt}세 파이어 기록! 계속 달려요`); render(); }; }));
   q("[data-newlife]", () => openWin(`<h2>이 칸에서 새 인생을 시작할까요? <button class="x" data-close>✕</button></h2><div class="small">지금 ${SLOT}번 칸의 인생은 지워져요. 다른 칸에서 시작하려면 '저장 칸으로' 버튼을 눌러 주세요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn gold grow" data-yes>새 인생</button></div>`, (w) => w.querySelector("[data-yes]").onclick = async () => { closeWin(); S = null; await ST.remove(SLOT); ui.wiz = null; startWizard(SLOT); }));
 }
@@ -1139,9 +1267,9 @@ function radar(layers, size = 240) {
   const rings = [0.25, 0.5, 0.75, 1].map((q) => `<polygon points="${poly(() => scale * q)}" fill="none" stroke="#ffffff22"/>`).join("");
   const axes = K.map((k, i) => { const [x, y] = pt(i, scale); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#ffffff1a"/>`; }).join("");
   const last = layers[layers.length - 1].v;
-  const labels = K.map((k, i) => { const [x, y] = pt(i, scale * 1.22); return `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" font-size="11" fill="#cfd2ea">${D.STATS[k]} <tspan fill="#f5c04e" font-weight="700">${Math.round(last[k] || 0)}</tspan></text>`; }).join("");
+  const labels = K.map((k, i) => { const [x, y] = pt(i, scale * 1.22); return `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" font-size="12.5" fill="#cfd2ea">${D.STATS[k]} <tspan fill="#f5c04e" font-weight="700">${Math.round(last[k] || 0)}</tspan></text>`; }).join("");
   const shapes = layers.map((l) => `<polygon points="${poly((k) => l.v[k] || 0)}" fill="${l.c}${l.fill ?? "33"}" stroke="${l.c}" stroke-width="2"/>`).join("");
-  return `<svg class="radar" viewBox="0 0 ${size} ${size + 8}" width="100%" style="max-width:${size + 40}px">${rings}${axes}${shapes}${labels}<text x="${size - 4}" y="${size + 4}" text-anchor="end" font-size="9" fill="#8a8fb5">눈금 0~${scale}</text></svg>`;
+  return `<svg class="radar" viewBox="0 0 ${size} ${size + 8}" width="100%" style="max-width:${size + 40}px">${rings}${axes}${shapes}${labels}<text x="${size - 4}" y="${size + 4}" text-anchor="end" font-size="11.5" fill="#8a8fb5">눈금 0~${scale}</text></svg>`;
 }
 const LAYER = { base: "#8a8fb5", now: "#f5c04e" };
 function diffChips(a, b) { return D.STAT_KEYS.filter((k) => Math.round(b[k]) !== Math.round(a[k])).map((k) => { const d = Math.round(b[k] - a[k]); return `<span class="${d > 0 ? "p" : "m"}">${D.STATS[k]} ${d > 0 ? "+" : ""}${d}</span>`; }).join(""); }
@@ -1150,13 +1278,15 @@ function diffChips(a, b) { return D.STAT_KEYS.filter((k) => Math.round(b[k]) !==
 async function renderTitle() {
   const slots = await ST.list(), u = ST.who(), m = meta(), hall = await ST.hallList();
   const empty = slots.find((x) => x.empty);
-  $app.innerHTML = `<div class="title"><div class="px small gold">TJLAB GAME · v4 시험판</div><h1>After <span>6</span>PM</h1><div class="sub">파이어족을 꿈꾸는 퇴근 후 사장님</div>
-    <div class="desc">우리는 막 취업했거나 어느 정도 자리를 잡은 1~3년 차 직장인의 삶을 살게 됩니다. 회사를 열심히 다닐 수도, 투잡을 할 수도, 취미를 즐길 수도, 연애와 결혼을 할 수도 있습니다. 우리의 목표는 순자산 20억으로 파이어. 남자는 27세에 시작해 50세까지, 여자는 25세에 시작해 48세까지 똑같이 23년이에요. 한번 재미지게 살아 보십시다!</div>
+  tjxCss();
+  $app.innerHTML = `<div class="title"><div class="px small gold">TJLAB GAME · v4</div><h1>After <span>6</span>PM</h1><div class="sub">파이어족을 꿈꾸는 퇴근 후 사장님</div>
+    <div class="desc">우리는 막 취업했거나 어느 정도 자리를 잡은 1~3년 차 직장인의 삶을 살게 됩니다. 회사를 열심히 다닐 수도, 투잡을 할 수도, 취미를 즐길 수도, 연애와 결혼을 할 수도 있습니다. 목표는 순자산 25억으로 파이어(내 집 10억 + 4%씩 꺼내 써도 안 줄어드는 돈 15억). 남자는 27세에 시작해 50세까지, 여자는 25세에 시작해 48세까지 똑같이 23년이에요. 한번 재미지게 살아 보십시다!</div>
     <div class="small ${u ? "gold" : "muted"}" style="margin-bottom:6px">${u ? `${esc(u.nick || u.id)}님의 저장 칸` : "로그인하지 않으면 이 브라우저에 저장돼요"}</div>
     <div class="slots">${slots.map((sl) => sl.empty
       ? `<button class="slot empty" data-snew="${sl.slot}"><b>${sl.slot}번 칸</b><span>비어 있어요 · 여기서 새 인생 시작</span></button>`
       : `<div class="slot"><button class="grow" data-sload="${sl.slot}"><b>${sl.slot}번 칸 · ${esc(sl.summary?.name || "")}</b><span>${sl.summary?.end ? "끝난 인생 · " : ""}${sl.summary?.age ?? "?"}세 · ${esc(sl.summary?.ym || "")} · 순자산 ${won(sl.summary?.nw || 0)}</span><span class="tiny muted">${esc(sl.summary?.job || "")}${sl.summary?.side ? " · 투잡 " + esc(sl.summary.side) : ""}</span></button><button class="btn sm danger" data-sdel="${sl.slot}">지우기</button></div>`).join("")}</div>
-    <div class="btns" style="margin-top:8px"><button class="btn gold" data-new>새 인생 시작</button><button class="btn" data-install ${APP.canInstall() ? "" : "hidden"}>앱으로 설치</button><button class="btn" data-set>설정</button><button class="btn" data-album>인생 앨범 ${(m.album || []).length ? `<b class="gold">${m.album.length}</b>` : ""}</button></div>
+    ${titleCards(m)}
+    <div class="btns" style="margin-top:8px"><button class="btn gold" data-new>새 인생 시작</button><button class="btn" data-install ${APP.canInstall() ? "" : "hidden"}>앱으로 설치</button><button class="btn" data-set>설정</button></div>
     ${APP.isIOS() ? `<div class="tiny muted" style="margin-top:4px">아이폰: 공유 버튼 → '홈 화면에 추가'로 앱처럼 쓸 수 있어요.</div>` : ""}
     <div class="tiny muted" style="margin-top:6px">한 아이디에 인생 3개까지 저장돼요. 세 칸이 다 차면 한 칸을 지우고 시작합니다.</div>
     ${m.runs?.length ? `<div class="card" style="margin-top:10px;text-align:center"><div class="small">다음 인생은 <b class="gold">${ngNext(m)}회차</b> · 기억 포인트 <b class="gold">${ngPoints(m)}</b> · 최고 파이어 ${m.best ? m.best + "세" : "아직"}</div>${ngCollection(m)}</div>` : ""}
@@ -1164,6 +1294,7 @@ async function renderTitle() {
   const pick = (n) => startWizard(n);
   $app.querySelector("[data-set]").onclick = () => settingsWin(slots);
   $app.querySelector("[data-album]").onclick = () => albumWin();
+  $app.querySelector("[data-mgre]").onclick = () => mgReplayWin();
   const ib = $app.querySelector("[data-install]"); if (ib) ib.onclick = async () => { if (await APP.install()) toast([], "설치했어요! 홈 화면에서 열어 보세요"); ib.hidden = true; };
   $app.querySelector("[data-new]").onclick = () => empty ? pick(empty.slot) : openWin(`<h2>칸이 다 찼어요 <button class="x" data-close>✕</button></h2><div class="small muted">지울 인생을 하나 골라 주세요. 지운 인생은 되돌릴 수 없어요.</div><div class="pick" style="margin-top:10px">${slots.map((sl) => `<button data-swipeout="${sl.slot}"><b>${sl.slot}번 · ${esc(sl.summary?.name || "")}</b><span class="tiny muted">${sl.summary?.age ?? "?"}세 · 순자산 ${won(sl.summary?.nw || 0)}</span></button>`).join("")}</div>`, (w) => w.querySelectorAll("[data-swipeout]").forEach((b) => b.onclick = async () => { const n = +b.dataset.swipeout; closeWin(); await ST.remove(n); pick(n); }));
   $app.querySelectorAll("[data-snew]").forEach((b) => b.onclick = () => pick(+b.dataset.snew));
@@ -1171,7 +1302,7 @@ async function renderTitle() {
     const n = +b.dataset.sload; let s = null;
     try { const t = await ST.load(n); s = t ? E.load(t) : null; } catch (e) { s = null; }
     if (!s) return toast([], "이 칸을 불러오지 못했어요");
-    SLOT = n; S = s; artPreload([S.me.avatar, ...Object.keys(S.rel), ...(S.cast || [])].filter(Boolean)); if (u?.nick) S.me.name = u.nick; render();
+    SLOT = n; S = s; try { const m4 = meta(); m4.mgAv = { avatar: S.me.avatar || null, gender: S.me.gender || "F" }; setMeta(m4); } catch (e) {} artPreload([S.me.avatar, ...Object.keys(S.rel), ...(S.cast || [])].filter(Boolean)); if (u?.nick) S.me.name = u.nick; render();
   });
   $app.querySelectorAll("[data-sdel]").forEach((b) => b.onclick = () => { const n = +b.dataset.sdel; openWin(`<h2>${n}번 칸을 지울까요? <button class="x" data-close>✕</button></h2><div class="small muted">지운 인생은 되돌릴 수 없어요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>지우기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = async () => { closeWin(); await ST.remove(n); renderTitle(); }); });
 }
@@ -1192,6 +1323,8 @@ const GIFTS = [
 const ENDINGS = [
   ["fire40", "40세 전 파이어"], ["fire", "파이어"], ["keepgo", "파이어 뒤에도 달린 인생"], ["full", "전업으로 끝까지"],
   ["family", "결혼하고 파이어"], ["agefail", "결산까지 버틴 인생"], ["bankrupt", "개인회생"], ["burnout", "번아웃"], ["hard", "어려움 모드 파이어"],
+  // 투잡 엔딩(engine/reg.js ENDS): 투잡마다 2~3개. 판 중 화보로 받고, 판이 끝나면 도감에 오른다
+  ...REG.ENDS.map((e) => [e.key, `${D.SIDEJOBS[e.job].n} · ${e.title}`]),
 ];
 const ngNext = (m) => (m.runs?.length || 0) + 1;
 function ngPoints(m) { return m.ngPts || 0; }
@@ -1230,7 +1363,7 @@ function ngEndRecord(m, f) {
   add(1, "인생 하나를 끝까지 살았다");
   if (S.fireAt) add(2, `${S.fireAt}세 파이어`);
   if (f.nw >= 100000) add(1, "순자산 10억");
-  if (f.nw >= 300000) add(1, "순자산 30억");
+  if (f.nw >= 350000) add(1, "순자산 35억");
   if (S.fam.spouse) add(1, "결혼");
   if (Object.keys(S.rel).length >= 25) add(1, "인연 25명");
   const ends = [];
@@ -1243,8 +1376,10 @@ function ngEndRecord(m, f) {
   if (S.over === "bankrupt") ends.push("bankrupt");
   if (S.over === "burnout") ends.push("burnout");
   if (S.fireAt && S.ng?.hard) ends.push("hard");
+  for (const e of REG.endsOf(S)) ends.push(e.key); // 투잡 엔딩
   const newEnds = ends.filter((e) => !(m.endings || []).includes(e));
-  if (newEnds.length) add(newEnds.length, "새 엔딩 " + newEnds.map((e) => ENDINGS.find((x) => x[0] === e)[1]).join("·"));
+  // 기억 포인트: 인생 엔딩은 새것마다 +1, 투잡 엔딩은 새것이 몇 개든 +1(투잡 엔딩이 30개라 포인트가 불어나지 않게)
+  if (newEnds.length) { const nJob = newEnds.filter((e) => REG.ENDS.some((x) => x.key === e)).length; add(newEnds.length - nJob + (nJob ? 1 : 0), "새 엔딩 " + newEnds.map((e) => ENDINGS.find((x) => x[0] === e)?.[1] || e).join("·")); }
   let pts = got.reduce((a, b) => a + b[0], 0);
   if (S.ng?.hard) { got.push([pts, "어려움 모드 2배"]); pts *= 2; }
   m.ngPts = (m.ngPts || 0) + pts;
@@ -1379,7 +1514,7 @@ function showIntro() {
     <p><b>길 찾기</b> 아래 탭(홈·지도·사람들·투잡·나)으로 다니고, 회사·취미·투잡 화면은 오른쪽 위 <b>전체 메뉴</b>에 다 있어요. 왼쪽 위 <b>뒤로</b>는 방금 본 화면으로 가요.</p>
     <p><b>회사</b> 평가는 해마다 1월, 대부분 B예요. 연봉은 천천히 오르고, 지방 발령이나 구조조정 같은 일도 생겨요. 임원까지 갈 수도 있지만 쉽지 않아요.</p>
     <p><b>투잡</b> 정해진 투잡은 없어요. 회사 소문, 너튜브, 취미에서 발견하고 두 개까지 할 수 있어요. 안 해도 괜찮아요. 투잡을 시작하면 성향 카드의 숨은 특성이 공개돼요.</p>
-    <p><b class="gold">목표</b> ${ea}세까지 순자산 20억. 결혼하면 30억으로 올라가요. 파산하거나 번아웃이 세 번 오면 그 인생은 끝나요.</p></div>
+    <p><b class="gold">목표</b> ${ea}세까지 순자산 25억. 내 집 10억 + 4%씩 꺼내 써도 안 줄어드는 돈 15억(월 500만)이에요. 결혼하면 집 15억 + 20억(월 670만)으로 35억이 돼요. 파산하거나 번아웃이 세 번 오면 그 인생은 끝나요.</p></div>
     <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-close>시작하기</button>`, null, false, true);
 }
 
@@ -1395,20 +1530,27 @@ function renderEnding() {
     m.runs = m.runs || []; m.runs.push({ age, kind, nw: Math.round(f.nw), t: Date.now(), fireAt: S.fireAt || null });
     if (S.fireAt && (!m.best || S.fireAt < m.best)) m.best = S.fireAt;
     ngEndRecord(m, f);
-    const rec = { name: S.me.name, nw: Math.round(f.nw), fireAt: S.fireAt || null, age, path: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·") || "회사원", full: BIG.isFull(S), t: Date.now() };
-    m.hall = (m.hall || []).concat(rec).sort((a, b) => b.nw - a.nw).slice(0, 10); S.hallRank = m.hall.indexOf(rec) + 1;
-    ST.hallSubmit(rec);
+    const rec = { name: S.me.name, nw: Math.round(f.nw), fireAt: S.fireAt || null, age, path: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·") || "회사원", full: BIG.isFull(S), t: Date.now(), kind };
+    // 개인회생으로 끝난 판은 명예의 전당에 올리지 않는다
+    if (S.over !== "bankrupt") { m.hall = (m.hall || []).concat(rec).sort((a, b) => b.nw - a.nw).slice(0, 10); S.hallRank = m.hall.indexOf(rec) + 1; ST.hallSubmit(rec); }
+    else S.hallRank = 0;
     setMeta(m); S.recorded = true; save();
   }
   const title = kind === "fire" ? `${age}세 파이어` : kind === "age" ? (S.fireAt ? `${S.fireAt}세 파이어 · ${D.endAge(S.me.gender)}세 결산` : `${D.endAge(S.me.gender)}세 결산 · 파이어 실패`) : kind === "over" && S.over === "bankrupt" ? "개인회생" : "번아웃";
   $app.innerHTML = `<div class="ending"><div class="px gold">THE END · ${esc(S.me.name)}의 인생</div><div class="big">${esc(title)}</div>
     <div class="card"><div class="kv"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div><div><div class="k">파티룸</div><div class="v">${S.pr.rooms.length}곳 · Lv${S.pr.lv}</div></div><div><div class="k">컨설팅</div><div class="v">Lv${S.cs.lv} · 합격 ${S.cs.passes}</div></div><div><div class="k">인연</div><div class="v">${Object.keys(S.rel).length}명</div></div></div></div>
+    ${jobEndCard()}
     <div class="card"><h3>그 뒤의 이야기</h3><div class="small" style="line-height:1.8">${epilogue().map(esc).join("<br>")}</div></div>
     ${S.hallRank ? `<div class="card"><h3>명예의 전당 ${S.hallRank}위 등록!</h3>${hallList(m.hall)}</div>` : ""}
     <div class="card"><h3>기억 포인트 +${S.ngGot?.pts || 0} <small>다음은 ${ngNext(m)}회차 · 모은 포인트 ${ngPoints(m)}</small></h3><div class="small">${(S.ngGot?.got || []).map(([p, why]) => `+${p} ${esc(why)}`).join("<br>")}</div>${S.ngGot?.newEnds?.length ? `<div class="small gold" style="margin-top:6px">새 엔딩을 도감에 올렸어요!</div>` : ""}${ngCollection(m)}<div class="tiny muted" style="margin-top:6px">지금까지 ${m.runs.length}판 · 최고 파이어 ${m.best ? m.best + "세" : "아직 없음"}</div></div>
     <button class="btn gold" style="padding:14px" data-again>이 칸에서 ${ngNext(m)}회차 인생</button><button class="btn" style="padding:12px" data-slots>저장 칸으로</button></div>`;
   $app.querySelector("[data-again]").onclick = () => { S = null; startWizard(SLOT); };
   $app.querySelector("[data-slots]").onclick = () => { ST.flush(); S = null; renderTitle(); };
+}
+// 이번 판 투잡 엔딩(받은 순서). 좋은 엔딩은 금색, 쓴 엔딩은 빨간 꼬리표
+function jobEndCard() {
+  const es = REG.endsOf(S); if (!es.length) return "";
+  return `<div class="card"><h3>투잡 엔딩 <small>${es.length}개</small></h3><div class="chips">${es.map((e) => `<span class="chip ${e.kind === "bad" ? "" : "on"}">${esc(D.SIDEJOBS[e.job].n)} · ${esc(e.title)}${e.kind === "bad" ? " (쓴맛)" : ""}</span>`).join("")}</div></div>`;
 }
 function epilogue() {
   const L = [], sp = S.fam.spouse && E.CHAR[S.fam.spouse];
@@ -1419,7 +1561,8 @@ function epilogue() {
   else L.push("결혼은 하지 않았다. 대신 오래 볼 친구들이 생겼다.");
   for (const k of S.fam.kids) L.push(`${jo(k.name, "은", "는")} ${Math.floor((S.t - k.born) / 12) + 20}살에 독립했다. ${S.cs.passes > 30 ? "자소서는 내가 봐 줬다." : "첫 월급으로 내복을 사 왔다."}`);
   if (S.pr.rooms.length) L.push(`파티룸 ${S.pr.rooms.length}곳은 ${S.pr.sys.manager ? "매니저가 맡아 지금도 돌아간다" : "하나씩 양도하고 마지막 한 곳만 남겼다"}.`);
-  if (S.cs.lv >= 3) L.push(`취업컨설팅으로 ${S.cs.passes}명이 합격했다. 가끔 "선생님 덕분에" 하는 연락이 온다.`);
+  if (S.cs.lv >= 3 && S.moments?.cs_end_mentor === undefined) L.push(`취업컨설팅으로 ${S.cs.passes}명이 합격했다. 가끔 "선생님 덕분에" 하는 연락이 온다.`);
+  for (const e of REG.endsOf(S)) L.push(e.epi || `${D.SIDEJOBS[e.job].n}: ${e.title}`); // 투잡 엔딩
   L.push(S.ended === "fire" ? "70세, 손주 돌잔치를 내가 만든 파티룸에서 했다." : "60세, 은퇴식에서 후배에게 말했다. \"퇴근 후 두 시간이 인생을 바꿔.\"");
   return L;
 }
@@ -1428,6 +1571,7 @@ function epilogue() {
 function autoTest(n) {
   S = E.newGame({ seed: "auto", gender: "F", name: "시험", major: "sw", company: "fin", job: "dfin", traits: ["insider", "cfo"], look: randomLook(Math.random, "F") });
   SJ.hbJoin(S, "wine"); SJ.hbJoin(S, "book"); S.sj.open = true; SJ.found(S, "pr"); SJ.found(S, "cs"); SJ.found(S, "insta"); SJ.start(S, "pr"); if (location.hash.includes("ucf")) { SJ.found(S, "ucafe"); SJ.start(S, "ucafe"); UC.search(S, E.R(S), "apt"); UC.contract(S, S.uc.listings[0].id, { machine: "buy" }); UC.search(S, E.R(S), "academy"); } if (location.hash.includes("abnb")) { SJ.found(S, "airbnb"); SJ.start(S, "airbnb"); S.st.lang = 55; for (const rk of ["hongdae", "jongno"]) { AB.search(S, E.R(S), rk); const L = S.ab.listings.find((l) => l.rk === rk && l.house && l.owner) || S.ab.listings.find((l) => l.rk === rk); AB.contract(S, L.id, L.house && L.owner ? "legal" : "illegal"); } AB.search(S, E.R(S), "jeju"); } if (location.hash.includes("ins")) { SJ.start(S, "insta"); INS.setNiche(S, "space"); INS.setFace(S, true); S.ins.f = 4200; } else SJ.start(S, "cs"); if (location.hash.includes("grad")) { S.grad = { k: "mba", t0: 0, n: 0, done: false }; } S.cash += 20000;
+  for (const P of REG.JOBS) if (new RegExp(`[-_]${P.key}(\\b|$)`).test(location.hash)) { if (S.sj.active.length >= SJ.slots(S)) S.sj.active.pop(); SJ.found(S, P.key); SJ.start(S, P.key); if (UJ[P.key]?.auto) UJ[P.key].auto(jctx()); } // #auto18-<key>
   if (location.hash.includes("rooms")) for (const dk of ["univ", "under", "office", "hot"]) { S.ap = 99; S.hp = S.hpMax; E.act(S, "pr_search", dk); while (S.pending) E.choose(S, 0); const L = S.pr.listings.find((l) => l.dk === dk); if (L) { const c = Object.keys(D.CONCEPTS).filter((k) => !PR.conceptOk(L, k)).sort((x, y) => (D.DISTRICTS[dk].fit[y] || 0) - (D.DISTRICTS[dk].fit[x] || 0))[0]; PR.contract(S, L.id, { concept: c, interior: 1 }); } S.pr.sys.cleanContract = true; }
   for (let m = 0; m < n && !S.over && !S.ended; m++) {
     let g = 0;
@@ -1440,12 +1584,12 @@ function autoTest(n) {
     }
     E.endMonth(S); while (S.pending || S.sceneQ.length) { if (!S.pending) E.nextQueuedScene(S); if (S.pending) E.choose(S, 0); }
   }
-  const h = location.hash; ui.page = ["map", "people", "sj", "hobby", "co", "pr", "cs", "insta", "airbnb", "ucafe", "grad", "family", "me"].find((k) => h.includes("-" + k)) || "home";
+  const h = location.hash; ui.page = ["map", "people", "sj", "hobby", "co", "pr", "cs", "insta", "airbnb", "ucafe", "grad", "family", "me", ...REG.JOBS.map((P) => P.key)].find((k) => h.includes("-" + k)) || "home";
   if (h.includes("region")) ui.region = "town";
   { const av = h.match(/av=(p[FM][0-9])/); if (av) { S.me.avatar = av[1]; S.me.gender = av[1][1]; } const wh = h.match(/who=(c[0-9]+)/); if (wh) { S.cast.unshift(wh[1]); E.talkTo(S, wh[1]); while (S.pending) E.choose(S, 0); S.rel[wh[1]] = S.rel[wh[1]] || {}; const o = S.rel; S.rel = { [wh[1]]: o[wh[1]], ...o }; } const sp = h.match(/spot=([a-z]+)/); if (sp) ui.lastSpot = sp[1]; }
   render();
   if (h.includes("hub")) openHub();
-  if (h.includes("ending")) { S.fireAt = 41; S.cash += 280000; S.ended = "age"; render(); }
+  if (h.includes("ending")) { S.fireAt = 41; S.cash += 280000; S.ended = "age"; if (h.includes("jobend")) { S.moments = S.moments || {}; for (const e of REG.ENDS.filter((x, i) => i % 7 === 0)) S.moments[e.key] = S.t; } render(); } // #auto18-ending-jobend: 투잡 엔딩 몇 개 받은 결산 화면
   if (h.includes("decor") && S.pr.rooms[0]) { const rm = S.pr.rooms[0]; ui.page = "pr"; ui.prFlow = { step: "decor", id: rm.id, picks: { ...rm.decor, light: 3, seat: 1, zone: 3 } }; render(); }
   if (h.includes("quiz")) { S.cs.queue.push({ id: 999, prod: "edit", niche: "newgrad", left: 1, units: 1, price: 7, wait: 0 }); S.ap = 5; quizWin("cs_focus"); }
   if (location.hash.includes("scene")) { const id = S.cast[0]; E.openScene(S, E.meetScene(S, id)); showScene(); }
@@ -1453,6 +1597,7 @@ function autoTest(n) {
   if (location.hash.includes("hbpick")) { doAct("hb_go"); }
   if (location.hash.includes("cine")) { const id = E.CHARS ? "c002" : "c002"; E.openScene(S, { kind: "story", title: "연인이 됐다", text: "돌아오는 길, 손이 먼저 닿았다. 둘 다 아무 말도 안 했다.", cine: "lover", who: id, choices: [{ t: "계속", eff: {}, text: "" }] }); showScene(); }
   if (location.hash.includes("mgoff")) mgOffer("in_post");
+  if (location.hash.includes("broke")) { const lim = E.creditRoom(S); E.addLoan(S, "신용대출", lim, 0.065); S.cash = -300; S.debtLate = 1; S.hist.push({ side: -900 }, { side: -900 }, { side: -900 }); render(); } // 파산 직전 경고 시험(#auto6-broke)
   { const pm = location.hash.match(/pg_([a-z]+)/); if (pm) setTimeout(() => { if (D.SIDEJOBS[pm[1]] && !S.sj.active.includes(pm[1])) S.sj.active.push(pm[1]); ui.page = pm[1]; render(); }, 400); }
   if (location.hash.includes("full")) { E.openScene(S, { kind: "event", tag: "본잡 전환", title: "투잡이 연봉만큼 벌었다", cine: "full_pr", text: "2028년 연말 결산. 올해 투잡 이익 5,200만, 회사 연봉 4,800만(1.1배). 가장 많이 번 건 파티룸. 회사를 나와 파티룸을 본잡으로 할까요?", choices: [{ t: "파티룸을 본잡으로! 사직서를 낸다", eff: {}, text: "" }, { t: "아직은 병행한다", eff: {}, text: "" }] }); showScene(); }
   if (location.hash.includes("hire")) { S.co.hired = S.co.hired || []; S.co.hired.push("c107"); const sc = E.meetScene(S, "c107"); sc.title = "새 사람이 왔다 · 봉다온"; E.openScene(S, sc); showScene(); }
@@ -1464,14 +1609,19 @@ function autoTest(n) {
 function flowTest(months) {
   const $ = (sel, root = document) => root.querySelector(sel);
   const click = (sel, root) => { const el = $(sel, root); if (el && !el.disabled) { el.click(); return true; } return false; };
-  const clearModal = () => { for (let g = 0; g < 60 && $modal.innerHTML; g++) { if (click("[data-ch]", $modal) || click("[data-ok]", $modal) || click("[data-force]", $modal) || click("[data-pick]", $modal) || click("[data-pa]", $modal) || click("[data-close]", $modal)) continue; closeWin(); } };
+  const skipCine = () => { const cn = $(".cine"); if (!cn) return false; if (cn._skip) cn._skip(); else cn.remove(); return true; };
+  const clearModal = () => { for (let g = 0; g < 60 && ($modal.innerHTML || $(".cine")); g++) { if (skipCine()) continue; if (click("[data-ch]", $modal) || click("[data-ok]", $modal) || click("[data-force]", $modal) || click("[data-pick]", $modal) || click("[data-pa]", $modal) || click("[data-close]", $modal)) continue; closeWin(); } };
   startWizard(1); click('[data-g="F"]'); click('[data-age="28"]'); click("[data-nextw]");
   { const w = ui.wiz; w.rolls.push(E.rollStats(Math.random), E.rollStats(Math.random)); w.pick = 1; renderWiz(); click('[data-rpick="0"]'); click("[data-nextw]"); }
   click('[data-major="math"]'); click("[data-nextw]"); click('[data-co="fin"]'); click('[data-job="risk"]'); click("[data-nextw]");
   click("[data-reroll-tr]"); click("[data-undo-tr]"); $app.querySelectorAll("[data-tr]")[0].click(); $app.querySelectorAll("[data-tr]")[1].click(); click("[data-nextw]"); clearModal();
-  const log = [];
+  const log = []; let stuck = 0, stuckAt = null;
   go("hobby"); click('[data-hbjoin="mentor"]'); click('[data-hbjoin="wine"]');
+  let done = 0; const startT = S.t;
   for (let m = 0; m < months && S && !S.over && !S.ended; m++) {
+    const t0 = S.t;
+    if (m) { if (S.t === ui._flowT) { stuck++; if (stuck >= 3) { stuckAt = { age: S.age.toFixed(1), modal: ($modal.textContent || "").slice(0, 120), cine: !!$(".cine"), pending: S.pending?.title || null }; break; } } else stuck = 0; }
+    ui._flowT = t0;
     // 화면 지도 열고 닫기, 넘기기
     go("home"); click("[data-hub]"); click("[data-hgo]", $modal); go("map"); click("[data-back]"); click("[data-money]"); clearModal();
     // 취미 모임
@@ -1502,9 +1652,76 @@ function flowTest(months) {
     ui.page = "home"; render(); click("[data-end]"); clearModal(); clearModal();
     log.push(`${S.age.toFixed(1)}세 현금 ${Math.round(S.cash)} 투잡 ${S.sj.active.join("+")} 지점 ${S.pr.rooms.length} 컨설팅 ${S.cs.open ? "O" : "X"} 인연 ${Object.keys(S.rel).length} 취미 ${S.hb.joined.map((h) => S.hb.cnt[h]).join("/")}`);
   }
+  done = S ? S.t - startT : 0;
+  if (!stuckAt && S && !S.over && !S.ended && done < months) stuckAt = { age: S.age.toFixed(1), modal: ($modal.textContent || "").slice(0, 120), cine: !!$(".cine"), pending: S.pending?.title || null };
   ui.page = "home"; render();
-  const d = document.createElement("pre"); d.style.cssText = "position:fixed;left:0;right:0;bottom:80px;z-index:70;background:#000c;color:#9f9;font-size:10px;max-height:40vh;overflow:auto;margin:0;padding:6px"; d.textContent = ["FLOW OK", ...log.slice(-12)].join(String.fromCharCode(10)); document.body.appendChild(d);
+  // 나이가 실제로 늘었는지로 판정한다(화보·창이 막으면 FLOW STUCK)
+  const head = stuckAt ? `FLOW STUCK ${done}/${months}개월 · ${stuckAt.age}세에서 멈춤 · 창:${stuckAt.modal || "없음"} · 화보:${stuckAt.cine ? "있음" : "없음"} · 장면:${stuckAt.pending || "없음"}` : S.over || S.ended ? `FLOW OK (끝남: ${S.over || S.ended}) ${done}개월` : `FLOW OK ${done}/${months}개월 · ${S.age.toFixed(1)}세`;
+  const d = document.createElement("pre"); d.id = "flow"; d.style.cssText = "position:fixed;left:0;right:0;bottom:80px;z-index:70;background:#000c;color:" + (stuckAt ? "#f99" : "#9f9") + ";font-size:10px;max-height:40vh;overflow:auto;margin:0;padding:6px"; d.textContent = [head, ...log.slice(-12)].join(String.fromCharCode(10)); document.body.appendChild(d);
 }
+
+// ───────── 투잡 플러그인 클릭 시험(#jobflow12-<key>): 탐색 → 시작 → 보드 → 행동 → 월 넘김 → 장면 → 저장/불러오기 ─────────
+function jobFlowTest(key, months) {
+  const P = REG.get(key), $ = (sel, root = document) => root.querySelector(sel), log = [];
+  const say = (ok, t) => { const er = document.getElementById("err"); if (er) { ok = false; t = [er.textContent, ...t]; } const d = document.createElement("pre"); d.id = "jobflow"; d.style.cssText = "position:fixed;left:0;right:0;bottom:80px;z-index:70;background:#000c;color:#9f9;font-size:10px;max-height:40vh;overflow:auto;margin:0;padding:6px"; d.textContent = [ok ? `JOB FLOW OK ${key}` : `JOB FLOW FAIL ${key}`, ...t].join(String.fromCharCode(10)); document.body.appendChild(d); };
+  if (!P) return say(false, ["엔진 플러그인이 등록되지 않음(engine/jobs/" + key + ".js 가 null 이거나 규약 오류, 콘솔 경고 확인)"]);
+  const clear = () => { for (let g = 0; g < 80; g++) { const cn = $(".cine"); if (cn) { if (cn._skip) cn._skip(); else { cn.remove(); showScene(); } continue; } if (!$modal.innerHTML) break; const b = $("[data-ch]", $modal) || $("[data-ok]", $modal) || $("[data-force]", $modal) || $("[data-pick]", $modal) || $("[data-pa]", $modal) || $("[data-close]", $modal); if (b && !b.disabled) b.click(); else closeWin(); } };
+  try {
+    S = E.newGame({ seed: "jobflow-" + key, gender: "F", name: "시험", traits: ["insider", "cfo"], look: randomLook(Math.random, "F") }); S.cash += 30000;
+    S.sj.open = true; SJ.found(S, key); ui.page = "sj"; ui.sjf = "all"; render();
+    const st = $(`[data-sjstart="${key}"]`); if (!st) throw new Error("투잡 탐색에 시작하기 버튼이 없음");
+    st.click(); $("[data-yes]", $modal).click(); clear();
+    if (!SJ.isActive(S, key)) throw new Error("시작 안 됨");
+    if (ui.page !== key) go(key);
+    if (!$app.querySelector(".page")?.innerHTML.trim()) throw new Error("보드가 비어 있음");
+    log.push(`시작 OK · 칸 ${S.sj.active.join(",")} · 보드 글자 ${$app.innerText.length}`);
+    let acts = 0, scenes = 0;
+    for (let m = 0; m < months && !S.over; m++) {
+      for (let k = 0; k < 6 && S.ap > 0; k++) {
+        if (ui.page !== key) go(key);
+        const bs = [...$app.querySelectorAll(`[data-act^="${P.prefix}"]`)].filter((b) => !b.dataset.why);
+        if (!bs.length) break;
+        const before = S.stat.actions; bs[(m + k) % bs.length].click(); clear(); if (S.stat.actions > before) acts++;
+      }
+      go("home"); S.ap = 0; const sc0 = S.stat.scenes; $("[data-end]").click(); clear(); clear(); scenes += S.stat.scenes - sc0;
+      log.push(`${E.ymLabel(S)} 현금 ${Math.round(S.cash)} 순자산 ${Math.round(E.netWorth(S))} 이 투잡 ${S.hist.at(-1)?.px?.[key] ?? "-"}`);
+    }
+    const L = E.load(E.save(S)); if (!L || !L[key] || !L.sj.active.includes(key)) throw new Error("저장/불러오기에서 상태가 사라짐");
+    S = L; go(key);
+    log.unshift(`행동 ${acts}번 · 장면 ${scenes}개 · 저장/불러오기 OK · 할 일 ${E.todos(S).filter((t) => t.go === key).length}개`);
+    say(true, log);
+  } catch (e) { say(false, [String(e.stack || e), ...log]); }
+}
+
+// ───────── 새 투잡 화면 플러그인(jobs/<key>_ui.js) 등록 ─────────
+// 플러그인에 넘기는 공용 도구. S 는 새 인생마다 바뀌니 부를 때마다 새로 만든다. q 는 bind 때만 있다.
+function jctx(q) {
+  return { S, D, E, SJ, SYN, REG, ui, esc, won, jo, r1, toast, save, render, go, openWin, closeWin, actRow, boardHead, meter, ic, img, bgUrl, doAct, afterRes, defaultArg, FX,
+    q: q || ((sel, fn) => $app.querySelectorAll(sel).forEach((el) => el.addEventListener("click", (e) => { e.stopPropagation(); fn(el, e); }))) };
+}
+// 화면 플러그인이 없을 때 쓰는 기본 보드: 행동 목록만
+function plugPageBasic(P) {
+  const j = D.SIDEJOBS[P.key];
+  return `${boardHead(P.key)}<div class="card"><h3>${esc(j.n)}</h3><div class="tiny muted">"${esc(j.line)}"</div></div><div class="acts" style="padding:0">${Object.keys(P.actions || {}).filter((id) => D.ACTIONS[id]).map((id) => actRow(id, defaultArg(id))).join("")}</div>`;
+}
+function regUiPlugins() {
+  for (const U of UI_PLUGINS) { if (U?.key && REG.get(U.key)) UJ[U.key] = U; else console.warn("[투잡 등록표] 화면 플러그인 건너뜀(엔진 플러그인 없음)", U?.key); }
+  for (const P of REG.JOBS) {
+    const k = P.key, U = UJ[k] || {}, j = D.SIDEJOBS[k], bgk = U.bg || SJ_BG[k] || "alley";
+    PLUG_PAGES[k] = () => { try { return U.page ? U.page(jctx()) : plugPageBasic(P); } catch (e) { showErr(e.stack || String(e)); return plugPageBasic(P); } };
+    TILE[k] = { ic: U.ic || j.ic || "spark", bg: BG.has(bgk) ? `img/bg/${bgk}.webp` : "img/bg_office.webp", lock: U.lock || `투잡 탐색에서 ${j.n} 시작` };
+    PAGE_BG[k] = bgk; SJ_BG[k] = U.sjBg || bgk;
+    Object.assign(ACT_IC, U.icons || {});
+    for (const [id, stat] of Object.entries(P.mg || {})) if (D.ACTIONS[id]) MGJ[id] = [k, stat]; // 미니게임: mg2/<key>1~3.js
+    CINE_BG["full_" + k] = U.fullBg || bgk; CINE_TAG["full_" + k] = "본잡 전환";
+    for (const [ck, v] of Object.entries(U.cine || {})) { const [b, t] = Array.isArray(v) ? v : [v, j.n]; CINE_BG[ck] = b; CINE_TAG[ck] = t || j.n; }
+  }
+  // 투잡 엔딩 화보: 배경이 따로 없으면 그 투잡 배경, 꼬리표는 '○○ 엔딩'
+  const OLD_BG = { pr: "partyroom", cs: "consult", insta: "home", airbnb: "airbnb", ucafe: "ucafe" };
+  for (const X of REG.STORY) for (const m of X.milestones || []) if (!m.end && !CINE_BG[m.key]) { CINE_BG[m.key] = OLD_BG[X.key] || "alley"; CINE_TAG[m.key] = D.SIDEJOBS[X.key].n; } // 기존 투잡 이야기 마일스톤 화보 배경
+  for (const e of REG.ENDS) { if (!CINE_BG[e.key]) CINE_BG[e.key] = OLD_BG[e.job] || PAGE_BG[e.job] || "alley"; CINE_TAG[e.key] = `${D.SIDEJOBS[e.job].n} 엔딩`; }
+}
+regUiPlugins();
 
 const CHARS_N = Object.keys(E.CHAR).length;
 APP.initApp({ onBack: () => {
@@ -1518,7 +1735,8 @@ document.addEventListener("a6-installable", () => { const b = document.querySele
 ST.init().then(async () => {
   META_C = await ST.getMeta();
   setTimeout(warmThumbs, 300);
-  if (location.hash.startsWith("#flow")) flowTest(+(location.hash.match(/\d+/) || [24])[0]);
+  if (location.hash.startsWith("#jobflow")) jobFlowTest((location.hash.match(/-([a-z]+)/) || [])[1], +(location.hash.match(/\d+/) || [12])[0]);
+  else if (location.hash.startsWith("#flow")) flowTest(+(location.hash.match(/\d+/) || [24])[0]);
   else if (location.hash.startsWith("#auto")) autoTest(+(location.hash.match(/\d+/) || [18])[0]);
   else if (location.hash.startsWith("#wiz")) { startWizard(1); const w = ui.wiz; const n = +(location.hash.match(/\d/) || [1])[0]; if (n >= 2) { w.step = 2; w.rolls.push(E.rollStats(Math.random)); w.pick = 0; } if (n >= 3) { w.step = 3; w.major = "elec"; } if (n >= 4) { w.step = 4; w.company = "fin"; w.companyName = "신안은행"; w.job = "dfin"; } if (n >= 5) { w.step = 5; w.traits = w.pool.slice(0, 2); } renderWiz(); }
   else if (location.hash.startsWith("#intro")) { autoTest(1); showIntro(); }

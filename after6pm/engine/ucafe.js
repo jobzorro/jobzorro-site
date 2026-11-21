@@ -2,8 +2,14 @@
 import * as D from "./defs.js";
 import { addMoney, log, won, gainStat, creditRoom, addLoan, helperPower, mod } from "./core.js";
 import * as SYN from "./syn.js";
+import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+// 11-21 밸런스(기획 unmanned.json: 월매출 330~450만, 순익 중위 140만). 원래: 하루 기본 88잔, 잔당 원가 0.055(스페셜티 0.075), 렌탈 45만
+// 11-21 밸런스 2차(10개 투잡 공통 비교): 동네 홍보를 꾸준히 하는 보통 플레이에서 매장당 월 300만 안팎(기획 p95)이 나와 하루 기본 110 → 95잔
+export const UC_BAL = { cups: 95, unit: 0.046, unitSp: 0.064, rental: 38 };
+// 주말 손님 비율(평일=1). 오피스가는 주말에 거의 안 온다
+export const weekendF = (A) => (22 + 8 * (A.weekend ?? 1)) / 30;
 export function init() { return { stores: [], listings: [], seq: 0, agent: false, hist: [], beanUp: 0 }; }
 
 export function search(s, r, ak) {
@@ -29,7 +35,7 @@ export function contract(s, id, o) {
   log(s, `${st.name} 무인카페 오픈 (${o.machine === "buy" ? "기계 구매" : "기계 렌탈"}). ${won(q.total)}`, "work");
   return { ok: true, msg: `${st.name} 오픈! 다음 달부터 기계가 일해요`, store: st };
 }
-export function close(s, id) { const U = s.uc, st = U.stores.find((x) => x.id === id); if (!st) return { ok: false }; const back = Math.round(st.dep + (st.machine === "buy" ? 700 : 0) + Math.max(0, avg(st)) * 6); s.cash += back; addMoney(s, "inc", "무인카페 양도", back); U.stores = U.stores.filter((x) => x !== st); log(s, `${st.name} 양도 ${won(back)}`, "work"); return { ok: true, msg: `${st.name} 양도, ${won(back)} 회수` }; }
+export function close(s, id) { const U = s.uc, st = U.stores.find((x) => x.id === id); if (!st) return { ok: false }; const back = Math.round(st.dep + (st.machine === "buy" ? 700 : 0) + Math.max(0, avg(st)) * 6); s.cash += back; addMoney(s, "inc", "무인카페 양도", back); U.stores = U.stores.filter((x) => x !== st); if (avg(st) > 0) U.soldN = (U.soldN || 0) + 1; log(s, `${st.name} 양도 ${won(back)}`, "work"); return { ok: true, msg: `${st.name} 양도, ${won(back)} 회수` }; }
 const avg = (st) => { const h = st.hist.slice(-6); return h.length ? h.reduce((a, b) => a + b, 0) / h.length : 0; };
 export function setPrice(s, id, v) { const st = s.uc.stores.find((x) => x.id === id); if (st) st.price = clamp(Math.round(v * 100) / 100, 0.1, 0.45); }
 export function setBean(s, id, v) { const st = s.uc.stores.find((x) => x.id === id); if (st) st.bean = v ? 1 : 0; }
@@ -42,7 +48,7 @@ export function act(s, r, id, arg, boost = 1) {
   if (id === "uc_search") { const ls = search(s, r, arg || "apt"); return { lines: [`${D.UC_AREAS[arg || "apt"].n} 매물 ${ls.length}개`], msg: D.UC_AREAS[arg || "apt"].tip }; }
   if (id === "uc_agent") { U.agent = !U.agent; return { lines: [U.agent ? "관리 대행 계약: 매장당 월 40만, 청소·재고를 맡겨요" : "관리 대행 해지"], msg: U.agent ? "\"매일 아침 7시에 들러서 원두 채울게요.\"" : "다시 내가 새벽에 간다." }; }
   const st = U.stores.find((x) => x.id === arg) || U.stores[0];
-  if (id === "uc_check") { st.ap += boost; st.clean = Math.min(100, st.clean + Math.round(30 * boost)); if (st.broken) { st.broken = 0; } gainStat(s, "hands", 0.3); return { lines: [`${st.name} 점검 ${st.ap}/${needAp(s, st)}`, "청결 +"], msg: r.pick(["새벽 6시, 원두 채우고 얼음통 비우고 테이블 닦기.", "컵 뚜껑이 다 떨어져 있었다. 편의점으로 뛰었다.", "그라인더 청소. 커피 가루가 손톱에 꼈다."]) }; }
+  if (id === "uc_check") { const hf = clamp(0.85 + (s.st.hands || 0) / 300, 0.85, 1.25); st.ap += boost * hf; st.clean = Math.min(100, st.clean + Math.round(30 * boost * hf)); if (st.broken) { st.broken = 0; } gainStat(s, "hands", 0.3); return { lines: [`${st.name} 점검 ${st.ap}/${needAp(s, st)}`, "청결 +"], msg: r.pick(["새벽 6시, 원두 채우고 얼음통 비우고 테이블 닦기.", "컵 뚜껑이 다 떨어져 있었다. 편의점으로 뛰었다.", "그라인더 청소. 커피 가루가 손톱에 꼈다."]) }; }
   if (id === "uc_promo") { st.buzz = Math.min(100, (st.buzz || 0) + 12 + s.st.mkt / 10); gainStat(s, "mkt", 0.4); return { lines: [`${st.name} 동네 입소문 +`], msg: "아파트 단톡방에 \"첫 잔 1,000원\" 쿠폰을 뿌렸다." }; }
   return null;
 }
@@ -54,15 +60,17 @@ export function month(s, r, notes, scenes) {
     const A = D.UC_AREAS[st.ak], seas = D.UC_SEASON[s.cal - 1], q = U.agent ? 1 : clamp(st.ap / needAp(s, st), 0, 1);
     st.clean = clamp(st.clean * 0.4 + q * 60, 0, 100);
     const quality = 0.85 + st.bean * 0.15 + (st.machine === "buy" ? 0.08 : 0) + (SYN.on(s, "cook_uc") ? 0.08 : 0);
-    let cups = 88 * st.traffic * seas * quality * Math.pow(0.2 * pi / st.price, 1.4) * (1 - 0.06 * st.comp) * (1 + (st.rating - 4.3) * 0.7) * (1 + (st.buzz || 0) / 300) * (st.months === 0 ? 0.6 : st.months < 3 ? 0.85 : 1);
+    let cups = UC_BAL.cups * weekendF(A) * st.traffic * seas * quality * Math.pow(0.2 * pi / st.price, 1.4) * (1 - 0.06 * st.comp) * (1 + (st.rating - 4.3) * 0.7) * (1 + (st.buzz || 0) / 300) * (st.months === 0 ? 0.6 : st.months < 3 ? 0.85 : 1);
     if (st.broken) cups *= 0.5;
+    cups *= SJ.ramp(s, "ucafe"); // 첫 매장 초반 고생(sj.js ENTRY)
     cups *= mod(s, "ucRepeat", 1);
     if (s.era.winter) cups *= 0.9;
     cups = Math.max(0, Math.round(cups * 30 * (1 + 0.07 * r.normal())));
-    const theft = Math.round(cups * (st.cctv ? 0.01 : 0.035) * mod(s, "ucTheft", 1)), rev = Math.round((cups - theft) * st.price);
-    const unit = (st.bean ? 0.075 : 0.055) * pi * (U.beanUp ? 1.35 : 1) * (0.85 + 0.15 * D.scaleF(U.stores.length));
+    const numF = clamp(1.03 - (s.st.num || 0) / 2000, 0.95, 1.03); // 숫자: 재고·원가·정산을 꼼꼼히 본다(숫자 60이면 1)
+    const theft = Math.round(cups * (st.cctv ? 0.01 : 0.035) * mod(s, "ucTheft", 1) * numF), rev = Math.round((cups - theft) * st.price);
+    const unit = (st.bean ? UC_BAL.unitSp : UC_BAL.unit) * pi * (U.beanUp ? 1.35 : 1) * (0.85 + 0.15 * D.scaleF(U.stores.length)) * numF;
     const util = (22 + ([6, 7, 8].includes(s.cal) ? 18 : [12, 1, 2].includes(s.cal) ? 8 : 0)) * pi;
-    let cost = Math.round(st.rent + cups * unit + util + (st.machine === "rent" ? 45 * pi : 0) + rev * 0.025 + (U.agent ? 40 * pi : 0) + 8 * pi);
+    let cost = Math.round(st.rent + cups * unit + util + (st.machine === "rent" ? UC_BAL.rental * pi : 0) + rev * 0.025 + (U.agent ? 40 * pi : 0) + 8 * pi);
     // 별점: 청결·맛·고장
     const target = 4.1 + st.clean / 300 + st.bean * 0.15 - (st.broken ? 0.2 : 0);
     st.rating = clamp(st.rating + (target - st.rating) * 0.3 + 0.03 * r.normal(), 3.2, 4.95);

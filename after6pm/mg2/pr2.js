@@ -122,8 +122,8 @@ export const GAME = {
 .mg-pr2 .mg-pr2c{position:absolute;width:31.25%;height:21.6%;color:#fff}
 .mg-pr2 .mg-pr2c .am{position:absolute;left:42%;top:23%;font-size:1.6em;font-weight:900;color:#fff;text-shadow:0 1px 0 #000,0 0 6px #ff8ac8aa;white-space:nowrap}
 .mg-pr2 .mg-pr2c.gold .am{color:#ffe08a;text-shadow:0 1px 0 #000,0 0 7px #ffb300}
-.mg-pr2 .mg-pr2c .nm{position:absolute;left:5%;right:2%;top:57%;font-size:.92em;font-weight:800;white-space:nowrap;overflow:hidden;color:#eadfff;letter-spacing:-.04em}
-.mg-pr2 .mg-pr2c .dy{position:absolute;right:3%;top:1.5%;font-style:normal;font-size:.82em;font-weight:900;color:#2a0a1a;background:#ffd0e6;padding:0 .3em;border-radius:.3em;white-space:nowrap}
+.mg-pr2 .mg-pr2c .nm{position:absolute;left:5%;right:2%;top:57%;font-size:max(11px,.92em);font-weight:800;white-space:nowrap;overflow:hidden;color:#eadfff;letter-spacing:-.04em}
+.mg-pr2 .mg-pr2c .dy{position:absolute;right:3%;top:1.5%;font-style:normal;font-size:max(11px,.82em);font-weight:900;color:#2a0a1a;background:#ffd0e6;padding:0 .3em;border-radius:.3em;white-space:nowrap}
 .mg-pr2 .mg-pr2c.dr .nm,.mg-pr2 .mg-pr2c.dr .dy{display:none}
 .mg-pr2 .mg-pr2c.dr .am{left:auto;right:0;top:-1.5em;background:#000a;border-radius:.4em;padding:0 .3em}
 .mg-pr2 .mg-pr2c.off{display:none}
@@ -132,7 +132,7 @@ export const GAME = {
 .mg-pr2 .mg-pr2rej.hot{opacity:1;color:#fff;background:linear-gradient(#ff3d6e,#ff3d6e88)}
 .mg-pr2 .mg-pr2full{position:absolute;left:13.75%;width:82.5%;height:20.8%;display:flex;align-items:center;justify-content:center;font-size:3.4em;font-weight:900;color:#fff;letter-spacing:.06em;text-shadow:0 0 3px #fff,0 0 8px #ff4fd8,0 0 16px #ff4fd8,0 0 28px #c77dff;animation:mgpr2full 1.7s ease-out forwards}
 @keyframes mgpr2full{0%{transform:scale(2.4);opacity:0}14%{transform:scale(.9);opacity:1}24%{transform:scale(1.06)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:translateY(-25%)}}
-.mg-pr2 .mg-pr2tag{position:absolute;left:.3%;width:12.5%;font-size:.8em;font-weight:900;text-align:center;color:#fff;text-shadow:0 0 4px #ff4fd8,0 0 8px #ff4fd8;animation:mgpr2tag 1s steps(2) infinite}
+.mg-pr2 .mg-pr2tag{position:absolute;left:.3%;width:12.5%;font-size:max(11px,.8em);font-weight:900;text-align:center;color:#fff;text-shadow:0 0 4px #ff4fd8,0 0 8px #ff4fd8;animation:mgpr2tag 1s steps(2) infinite}
 @keyframes mgpr2tag{50%{opacity:.55}}
 .mg-pr2 .mg-pr2tot{position:absolute;left:9%;right:9%;top:38%;padding:.7em .4em;border-radius:.9em;background:#140828ee;border:2px solid #ffd166;box-shadow:0 0 18px #ffd16688,inset 0 0 12px #ffd16633;text-align:center;opacity:0;transform:scale(.5);transition:transform .4s cubic-bezier(.3,1.6,.5,1),opacity .25s}
 .mg-pr2 .mg-pr2tot.on{opacity:1;transform:none}

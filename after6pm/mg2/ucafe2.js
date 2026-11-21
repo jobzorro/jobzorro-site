@@ -1,4 +1,4 @@
-// 무인카페 2탄: 한여름 피크 방어 (도트 캔버스 160x200)
+// 무인카페 2탄: 한여름 피크 방어 (논리 160x200~250, 캔버스는 기기 해상도: 손님·사장은 캐릭터 그림(표정), 창밖은 실제 거리 그림, 재고·말풍선·표시는 벡터. 가게 배치는 그대로 두어 알아보기 쉽게)
 // 폭염 낮, 손님이 문 → 키오스크 → 커피 머신 → 문으로 다닌다. 아래 재고 칸(얼음·컵·원두·우유·빨대)을
 // 창고 상자로 채우고, 가끔 생기는 사고(얼음 기계 고장·쏟은 음료·에어컨 꺼짐)를 처리한다.
 // 끝나면 프린터에서 오늘 매출 영수증이 쭉 나온다.
@@ -49,6 +49,45 @@ const DRINK = {
   al: (P) => { P(1, 0, 1, 3, "#3fb8e0"); P(0, 2, 7, 1, "#ffffff"); P(1, 3, 5, 7, "#d8ecf4"); P(1, 5, 5, 2, "#f2e6d0"); P(1, 7, 5, 3, "#b07a4a"); P(2, 5, 1, 1, "#ffffff"); P(4, 6, 1, 1, "#ffffff"); P(5, 3, 1, 7, "#b8d0dc"); },
   hl: (P) => { P(2, 0, 1, 2, "#d8d8d8"); P(4, 0, 1, 1, "#d8d8d8"); P(0, 3, 7, 1, "#ffffff"); P(1, 4, 5, 6, "#f6f2ea"); P(1, 6, 5, 2, "#a8743e"); P(5, 4, 1, 6, "#d8d0c0"); },
 };
+// 벡터 아이콘(32x32): 재고 5종
+const svgU = (t) => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(t.replace(/\s*\n\s*/g, ""));
+const ICSVG = {
+  ice: `<defs><linearGradient id="i" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#9cd2f0"/></linearGradient></defs><path d="M3 16h26l-2 13H5z" fill="#aebccb" stroke="#6f7c8a" stroke-width="1"/><path d="M3 16h26" stroke="#e4ecf4" stroke-width="1.6"/>${[[6, 7, -8], [13, 4, 10], [20, 7, -4], [9, 12, 6], [17, 11, -10]].map(([x, y, r]) => `<rect x="${x}" y="${y}" width="7" height="7" rx="1.6" transform="rotate(${r} ${x + 3.5} ${y + 3.5})" fill="url(#i)" stroke="#7fb4d6" stroke-width=".8"/>`).join("")}`,
+  cup: `<defs><linearGradient id="c" x1="0" x2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c8dce8"/></linearGradient></defs><path d="M7 6h18l-2.4 23H9.4z" fill="url(#c)" stroke="#8aa8b8" stroke-width="1"/><rect x="5" y="3" width="22" height="4" rx="1.6" fill="#eef6fb" stroke="#8aa8b8" stroke-width="1"/><path d="M8.4 14h15.2l-.6 6H9z" fill="#5fbf8f"/><path d="M10 9l1 17" stroke="#fff" stroke-width="1.4" opacity=".8"/>`,
+  bean: `<rect x="6" y="6" width="20" height="23" rx="3" fill="#9a6a3e" stroke="#5a3a1a" stroke-width="1"/><path d="M6 9h20" stroke="#7a4e2a" stroke-width="3"/><rect x="11" y="3" width="10" height="4" rx="1" fill="#c9a050"/><rect x="10" y="13" width="12" height="12" rx="2" fill="#f2e6c8"/><ellipse cx="16" cy="19" rx="3.4" ry="4.4" fill="#6a3c1e" transform="rotate(20 16 19)"/><path d="M14.6 15.4q2.4 3.6 0 7.4" stroke="#f2e6c8" stroke-width="1" fill="none"/>`,
+  milk: `<path d="M9 10l3-5h8l3 5v18a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2z" fill="#f8f8fc" stroke="#9aa4b8" stroke-width="1"/><path d="M12 5h8" stroke="#4f8ad9" stroke-width="2"/><rect x="9" y="15" width="14" height="7" fill="#4f8ad9"/><path d="M9 15h14" stroke="#9fc6ff" stroke-width="1"/><text x="16" y="21" font-size="5" font-weight="900" fill="#fff" text-anchor="middle" font-family="sans-serif">MILK</text><path d="M11 11v14" stroke="#fff" stroke-width="1.4"/>`,
+  straw: `${[0, 1, 2, 3, 4].map((k) => `<path d="M${9 + k * 3.4} ${17}V${3 + (k % 2) * 3}" stroke="${k % 2 ? "#ff5a6a" : "#3fb8e0"}" stroke-width="2.2" stroke-linecap="round"/><path d="M${9 + k * 3.4} ${7 + (k % 2) * 3}v1.6M${9 + k * 3.4} ${12 + (k % 2) * 2}v1.6" stroke="#fff" stroke-width="2.2"/>`).join("")}<rect x="5" y="16" width="22" height="13" rx="2.4" fill="#4a5a6a" stroke="#2a3a4a" stroke-width="1"/><rect x="9" y="20" width="14" height="5" rx="1.4" fill="#7fe0b0"/>`,
+};
+const icoImg = (k) => { const im = new Image(); im.src = svgU(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">${ICSVG[k]}</svg>`); return im; };
+// 주문 음료(벡터, 캔버스에 직접): x,y 왼쪽 위, 7x10 칸
+function drinkV(g, k, x, y) {
+  g.save(); g.translate(x, y);
+  const ice = k !== "hl";
+  if (ice) { g.strokeStyle = k === "aa" ? "#ff5a6a" : "#3fb8e0"; g.lineWidth = 0.8; g.lineCap = "round"; g.beginPath(); g.moveTo(2, 3); g.lineTo(1.4, -0.4); g.stroke(); }
+  g.beginPath(); g.moveTo(0.4, 2.6); g.lineTo(6.6, 2.6); g.lineTo(5.8, 10); g.lineTo(1.2, 10); g.closePath(); g.fillStyle = ice ? "#d8ecf4" : "#f6f2ea"; g.fill(); g.strokeStyle = "#8aa0ac"; g.lineWidth = 0.4; g.stroke();
+  g.beginPath(); g.moveTo(0.8, 5); g.lineTo(6.2, 5); g.lineTo(5.8, 10); g.lineTo(1.2, 10); g.closePath(); g.fillStyle = k === "aa" ? "#5a3018" : k === "al" ? "#b07a4a" : "#a8743e"; g.fill();
+  if (k === "al") { g.fillStyle = "#f2e6d0"; g.fillRect(0.8, 5, 5.4, 1.6); }
+  if (ice) { g.fillStyle = "#ffffffcc"; [[1.8, 5.8], [4, 7], [2.4, 8.4]].forEach(([a, b]) => { g.fillRect(a, b, 1.1, 1.1); }); }
+  else { g.strokeStyle = "#d0d0d0"; g.lineWidth = 0.5; g.beginPath(); g.moveTo(2.4, 1.8); g.quadraticCurveTo(3.4, 0.8, 2.6, -0.6); g.moveTo(4.4, 1.8); g.quadraticCurveTo(5.4, 0.6, 4.6, -0.6); g.stroke(); }
+  g.fillStyle = "#ffffff"; g.fillRect(0.2, 2.2, 6.6, 0.7);
+  g.restore();
+}
+function boxV(g, x, y) { // 8x7
+  g.save(); g.fillStyle = "#c8955a"; g.beginPath(); g.roundRect ? g.roundRect(x, y + 1, 8, 6, 0.8) : g.rect(x, y + 1, 8, 6); g.fill(); g.fillStyle = "#e0b07a"; g.fillRect(x, y + 1, 8, 1); g.fillStyle = "#ecdcaa"; g.fillRect(x + 3.2, y + 0.6, 1.6, 6.4); g.strokeStyle = "#8a5a2a"; g.lineWidth = 0.35; g.strokeRect(x + 0.2, y + 1.2, 7.6, 5.6); g.restore();
+}
+function stepPics() {
+  const ic = (k, x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})">${ICSVG[k].replace(/id="(\w)"/g, 'id="$1s"').replace(/url\(#(\w)\)/g, "url(#$1s)")}</g>`;
+  const hand = (x, y) => `<g transform="translate(${x} ${y})"><path d="M5 0c1.6 0 2.4 1 2.4 2.4v7l1-.2c1.4-.2 2.4.6 2.6 1.6l.2.2c1.4-.4 2.6.4 2.8 1.6 1.4-.2 2.4.8 2.4 2v4.6c0 3.6-2.6 6.4-6.2 6.4H8.8c-2.2 0-3.6-1-4.8-2.8L.6 17.6c-.8-1.2-.4-2.6.8-3.2 1-.4 2-.2 2.8.6V2.4C2.6 1 3.4 0 5 0z" fill="#fff" stroke="#2a1e2e" stroke-width="1.3" stroke-linejoin="round"/></g>`;
+  const a = svgU(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 68"><rect width="80" height="68" rx="11" fill="#dcefe6"/><rect y="40" width="80" height="28" fill="#efdcb8"/><rect x="6" y="10" width="20" height="30" rx="2" fill="#4a5560"/><rect x="8" y="12" width="16" height="28" fill="#bfe6f2"/>
+    <g transform="translate(34 16)"><circle cx="10" cy="9" r="7" fill="#f5d0b0"/><path d="M3 8a7 7 0 0 1 14 0c-2-3-11-3-14 0z" fill="#3b2a1e"/><path d="M0 34c0-9 4-15 10-15s10 6 10 15z" fill="#5b8fd8"/><circle cx="7.6" cy="10" r=".9" fill="#222"/><circle cx="12.4" cy="10" r=".9" fill="#222"/><path d="M8 13q2 1.6 4 0" stroke="#a84040" stroke-width=".8" fill="none"/></g>
+    <g transform="translate(58 8)"><rect width="16" height="17" rx="4" fill="#fff" stroke="#1c1c24"/><path d="M4 19l2-3h3z" fill="#fff" stroke="#1c1c24" stroke-width=".8"/><path d="M5 5h6l-.8 9H5.8z" fill="#d8ecf4"/><path d="M5.2 8h5.6l-.5 6H5.8z" fill="#5a3018"/></g></svg>`);
+  const b = svgU(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 68"><rect width="80" height="68" rx="11" fill="#3b2b20"/><rect x="8" y="8" width="34" height="50" rx="4" fill="#4e3a2b" stroke="#6a503c"/>${ic("ice", 9, 10, 1)}<rect x="11" y="46" width="28" height="7" rx="2" fill="#2a1d14"/><rect x="13" y="48" width="4" height="3" rx="1" fill="#5fe08a"/><rect x="18" y="48" width="4" height="3" rx="1" fill="#5fe08a"/><rect x="23" y="48" width="4" height="3" rx="1" fill="#5fe08a"/><rect x="28" y="48" width="4" height="3" rx="1" fill="#5fe08a"/><rect x="33" y="48" width="4" height="3" rx="1" fill="#5fe08a"/>
+    <g transform="translate(50 18)"><rect y="4" width="22" height="17" rx="2" fill="#c8955a" stroke="#8a5a2a"/><rect x="9" y="3" width="4" height="18" fill="#ecdcaa"/></g><path d="M48 30H40m3-3-3 3 3 3" stroke="#9fe0ff" stroke-width="2" fill="none" stroke-linecap="round"/>${hand(20, 34)}</svg>`);
+  const c = svgU(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 68"><rect width="80" height="68" rx="11" fill="#e6d0a8"/><ellipse cx="34" cy="44" rx="22" ry="8" fill="#8a5a32" opacity=".85"/><ellipse cx="28" cy="42" rx="4" ry="1.4" fill="#fff" opacity=".7"/>
+    <g transform="translate(46 8) rotate(20)"><rect x="4" width="3.4" height="30" rx="1.4" fill="#c9a050"/><rect x="-4" y="29" width="20" height="4" rx="1.4" fill="#5a6a7a"/>${[0, 1, 2, 3, 4, 5].map((k) => `<path d="M${-3 + k * 3.4} 33v7" stroke="${k % 2 ? "#e8e8f0" : "#c8ccd8"}" stroke-width="2.6" stroke-linecap="round"/>`).join("")}</g>
+    <circle cx="14" cy="14" r="8" fill="#ffd23f" stroke="#1c1c24"/><path d="M14 9v6M14 18v.6" stroke="#1c1c24" stroke-width="2.4" stroke-linecap="round"/></svg>`);
+  return [[`<img src="${a}" alt="">`, "손님이 몰려와요"], [`<img src="${b}" alt="">`, "톡하면 채움"], [`<img src="${c}" alt="">`, "사고는 바로"]];
+}
 // 사장님(앞치마 초록·흰 모자·안경)
 const BOSS = { skin: "#f0c8a8", hair: "#2a2018", style: "short", shirt: "#2f7a5a", shirt2: "#235c44", pants: "#2c3550", shoe: "#222", hat: "#f4f4f4", pack: null, hood: null, glasses: true, kid: false, elder: false };
 
@@ -131,19 +170,11 @@ export const GAME = {
     "<b>내가 할 일 ①</b> 아래 재고 칸을 <b>톡</b>하면 창고 상자 하나로 가득 채워요. 가져오는 데 <b>1초</b> 걸리니 비기 전에 미리! 상자는 한정이라 덜 빈 칸을 채우면 아까워요. 하나라도 비면 손님이 화내고 그냥 가요.",
     "<b>내가 할 일 ②</b> 사고가 나면 바로! 노란 손가락이 할 일을 짚어 줘요. <b>얼음 기계 고장</b>은 기계를 연타, <b>쏟은 음료</b>는 문질러 닦기, <b>에어컨 꺼짐</b>은 에어컨을 톡. 늦으면 미끄러지고, 더워서 손님이 못 기다려요.",
   ],
-  steps: () => {
-    try {
-      const s1 = document.createElement("canvas"); s1.width = 20; s1.height = 44; { const g = s1.getContext("2d"); const p = { spec: uSpec("student"), cache: {} }; g.drawImage(uSprite(p, "f", { v: "f", carry: 1 }, false), 2, 13); g.fillStyle = "#fff"; g.fillRect(6, 0, 11, 13); g.fillRect(8, 13, 2, 1); g.fillStyle = "#1c1c24"; g.fillRect(5, 1, 1, 11); g.fillRect(17, 1, 1, 11); g.fillRect(6, -1 + 1, 11, 0); const d = mkC(7, 10, DRINK.al, false); g.drawImage(d, 7, 1); }
-      const s2 = document.createElement("canvas"); s2.width = 30; s2.height = 30; { const g = s2.getContext("2d"); g.fillStyle = "#4e3a2b"; g.fillRect(0, 0, 30, 30); g.drawImage(mkC(16, 16, ICON.ice), 1, 2); g.fillStyle = "#2a1d14"; g.fillRect(2, 22, 18, 5); for (let k = 0; k < 6; k++) { g.fillStyle = k < 1 ? "#ff5a5a" : "#3a2a1e"; g.fillRect(3 + k * 3, 23, 2, 3); } g.drawImage(mkC(8, 7, BOX), 20, 10); g.fillStyle = "#ffe066"; g.fillRect(24, 3, 1, 5); g.fillRect(22, 5, 5, 1); }
-      const s3 = document.createElement("canvas"); s3.width = 30; s3.height = 30; { const g = s3.getContext("2d"); g.fillStyle = "#e6d0a8"; g.fillRect(0, 0, 30, 30); g.fillStyle = "#8a5a32"; g.fillRect(4, 16, 20, 6); g.fillRect(7, 14, 13, 10); g.fillStyle = "#b07a4a"; g.fillRect(9, 16, 6, 2); g.fillStyle = "#ffffff"; g.fillRect(10, 16, 2, 1); g.drawImage(mopC(), 14, 0); g.fillStyle = "#fff6b0"; g.fillRect(4, 8, 1, 3); g.fillRect(3, 9, 3, 1); }
-      const im = (c, h) => `<img src="${c.toDataURL()}" alt="" style="height:${h}px;width:auto">`;
-      return [[im(s1, 56), "손님이 몰려와요"], [im(s2, 46), "톡하면 채움"], [im(s3, 46), "사고는 바로"]];
-    } catch (e) { return [["", "손님이 몰려와요"], ["", "톡하면 채움"], ["", "사고는 바로 처리"]]; }
-  },
+  steps: () => { try { return stepPics(); } catch (e) { return [["", "손님이 몰려와요"], ["", "톡하면 채움"], ["", "사고는 바로"]]; } },
   css: `
 .mg-u2st{background:#1a130e!important;display:flex;align-items:center;justify-content:center}
 .mg-u2w{position:relative;flex:0 0 auto}
-.mg-u2w canvas{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;cursor:pointer}
+.mg-u2w canvas{width:100%;height:100%;display:block;touch-action:none;cursor:pointer}
 .mg-u2hud{position:absolute;left:4px;top:4px;display:flex;gap:4px;align-items:center;pointer-events:none;z-index:6;font:700 10.5px ui-monospace,monospace}
 .mg-u2hud .lv{color:#fff;background:#e0303ad0;padding:1px 6px;border-radius:4px;letter-spacing:.5px}
 .mg-u2hud .lv i{font-style:normal;animation:mgu2blink 1s steps(2) infinite}
@@ -151,12 +182,12 @@ export const GAME = {
 .mg-u2hud .tp.hot{background:#e0601ee8;animation:mgu2hot .6s ease-in-out infinite alternate}
 @keyframes mgu2blink{50%{opacity:0}}
 @keyframes mgu2hot{to{transform:scale(1.08)}}
-.mg-ucafe2 .mg-steps img{image-rendering:pixelated}
+.mg-ucafe2 .mg-steps img{width:76px!important;height:65px!important;image-rendering:auto;border-radius:11px;box-shadow:0 3px 10px #0006}
 .mg-ucafe2 .mg-logo b{font-size:26px}
 .mg-u2dim{position:absolute;inset:0;background:#0000;transition:background .5s;pointer-events:none;z-index:7}
 .mg-u2dim.on{background:#000a}
 .mg-u2rc{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:8;display:flex;flex-direction:column;align-items:center;pointer-events:none;width:min(86%,250px)}
-.mg-u2rc .prn{width:100%;height:auto;image-rendering:pixelated;display:block;position:relative;z-index:2;filter:drop-shadow(0 4px 6px #0008)}
+.mg-u2rc .prn{width:100%;height:auto;display:block;position:relative;z-index:2;filter:drop-shadow(0 4px 6px #0008)}
 .mg-u2rc .pap{position:relative;z-index:1;width:78%;height:0;margin-top:-3%;overflow:hidden;background:#fffef6;color:#2a2620;box-shadow:0 6px 14px #0007;transform-origin:top center}
 .mg-u2rc .pap.torn{animation:mgu2tear .5s cubic-bezier(.3,1.5,.5,1) forwards}
 @keyframes mgu2tear{0%{transform:rotate(0)}40%{transform:translateY(8px) rotate(-3deg)}100%{transform:translateY(14px) rotate(-2deg)}}
@@ -224,11 +255,41 @@ function runGame(host, ez, finish, opts = {}) {
   const F = frame(host, "ucafe2", "한여름 피크 방어", "mg-u2st");
   F.stage.insertAdjacentHTML("beforeend", `<div class="mg-u2w"><canvas width="${W}" height="${H}"></canvas><div class="mg-u2hud"><span class="lv"><i>●</i> LIVE</span><span class="tp"></span></div><div class="mg-bubs"></div><div class="u2lb"></div><div class="u2go"><span></span><i></i></div><div class="u2tut"><div class="u2tc"><em>리허설</em><p></p><div class="u2tb"></div></div></div><div class="mg-u2dim"></div></div>`);
   const wrap = F.stage.querySelector(".mg-u2w"), lbEl = F.stage.querySelector(".u2lb"), goEl = F.stage.querySelector(".u2go"), goT = goEl.querySelector("span"), goI = goEl.querySelector("i"), tutEl = F.stage.querySelector(".u2tut"), tutP = tutEl.querySelector("p"), tutB = tutEl.querySelector(".u2tb"), hud = wrap.querySelector(".mg-u2hud"), cv = wrap.querySelector("canvas"), g = cv.getContext("2d"), bubs = wrap.querySelector(".mg-bubs"), tpEl = wrap.querySelector(".tp"), dim = wrap.querySelector(".mg-u2dim");
-  let K = 2;
-  const fit = () => { const sw = F.stage.clientWidth, sh = F.stage.clientHeight, r = Math.min(sw / W, sh / 200); K = r >= 2 ? Math.floor(r) : Math.max(1, r); H = clamp(Math.floor(sh / K), 200, 250); PY = H - 50; cv.height = H; hud.style.top = Math.round((PY - 4) * K - 20) + "px"; wrap.style.width = W * K + "px"; wrap.style.height = H * K + "px"; };
+  let K = 2, KS = 2;
+  const DPR = Math.min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1);
+  const fit = () => { const sw = F.stage.clientWidth, sh = F.stage.clientHeight, r = Math.min(sw / W, sh / 200); K = r >= 2 ? Math.floor(r) : Math.max(1, r); H = clamp(Math.floor(sh / K), 200, 250); PY = H - 50; KS = K * DPR; cv.width = Math.round(W * KS); cv.height = Math.round(H * KS); hud.style.top = Math.round((PY - 4) * K - 20) + "px"; wrap.style.width = W * K + "px"; wrap.style.height = H * K + "px"; };
   fit();
   const BG = bgCanvas(), OUT = outside(), MOP = mopC(), BOXC = mkC(8, 7, BOX);
   const ICC = {}; for (const it of ITEMS) ICC[it.id] = mkC(16, 16, ICON[it.id]);
+  const ICV = {}; for (const it of ITEMS) ICV[it.id] = icoImg(it.id);
+  // 캐릭터 그림: 손님·앉은 손님·사장님(내 캐릭터). 창밖은 실제 거리 그림
+  const ART = {};
+  const artOf = (k) => { if (!ART[k]) { const q = { ok: false, im: new Image() }; q.im.onload = () => (q.ok = true); q.im.src = "img/body/" + k + ".webp"; ART[k] = q; } return ART[k]; };
+  const AVK = typeof opts.avatar === "string" && /^p[FM][0-9]$/.test(opts.avatar) ? opts.avatar : "p" + (opts.gender === "M" ? "M" : "F") + "1";
+  const CPOOL = shuffle(["c002", "c009", "c010", "c013", "c019", "c021", "c022", "c024", "c028", "c030", "c034", "c036", "c039", "c041", "c047", "c050", "c051", "c052", "c053", "c054", "c055", "c057", "c058", "c063", "c069", "c070", "c072", "c074", "c079", "c084", "c088", "c092"]);
+  CPOOL.slice(0, 14).forEach(artOf); artOf(AVK);
+  let cpi = 0;
+  const OUTI = { ok: false, im: new Image() }; OUTI.im.onload = () => { OUTI.ok = true; OUTH = null; }; OUTI.im.src = "img/bg/alley.webp";
+  let OUTH = null;
+  const buildOut = () => { const c = document.createElement("canvas"); c.width = Math.round(W * KS); c.height = Math.round(FL * KS); const q = c.getContext("2d"); const im = OUTI.im, iw = im.naturalWidth, ih = im.naturalHeight; q.drawImage(im, 0, ih * 0.05, iw, iw * FL / W, 0, 0, c.width, c.height); q.fillStyle = "rgba(255,236,170,.18)"; q.fillRect(0, 0, c.width, c.height); return c; };
+  const EXI = { neutral: 0, smile: 1, sad: 2, angry: 3, blush: 4, surprised: 5 };
+  const scr = document.createElement("canvas"), sg = scr.getContext("2d");
+  // 사람 그림 한 장: 아래는 바닥으로 흐리게(그림이 허벅지까지)
+  const body = (a, ex, cx, by, hh, o = {}) => {
+    if (!a || !a.ok) return false;
+    const ww = hh * 240 / 312, dw = Math.max(2, Math.ceil(ww * KS)), dh = Math.max(2, Math.ceil(hh * KS)), e = EXI[ex] || 0;
+    if (scr.width < dw || scr.height < dh) { scr.width = Math.max(scr.width, dw); scr.height = Math.max(scr.height, dh); }
+    sg.setTransform(1, 0, 0, 1, 0, 0); sg.globalCompositeOperation = "source-over"; sg.clearRect(0, 0, dw + 2, dh + 2);
+    sg.drawImage(a.im, (e % 3) * 240, e >= 3 ? 540 : 0, 240, 312, 0, 0, dw, dh);
+    const fd = o.fade == null ? 0.28 : o.fade;
+    if (fd > 0) { sg.globalCompositeOperation = "destination-out"; const q = sg.createLinearGradient(0, dh * (1 - fd), 0, dh); q.addColorStop(0, "rgba(0,0,0,0)"); q.addColorStop(1, "rgba(0,0,0,1)"); sg.fillStyle = q; sg.fillRect(0, dh * (1 - fd) - 1, dw + 2, dh * fd + 2); sg.globalCompositeOperation = "source-over"; }
+    g.save(); g.imageSmoothingEnabled = true; if (o.a != null) g.globalAlpha *= o.a;
+    g.translate(cx, by); if (o.rot) g.rotate(o.rot); if (o.flip) g.scale(-1, 1);
+    g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = 2 * KS; g.shadowOffsetY = 0.6 * KS;
+    g.drawImage(scr, 0, 0, dw, dh, -ww / 2, -hh, ww, hh); g.restore();
+    return true;
+  };
+  const rr = (x, y, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); };
   const DRC = {}; for (const k in DRINK) DRC[k] = mkC(7, 10, DRINK[k], false);
   const P = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
 
@@ -246,7 +307,8 @@ function runGame(host, ez, finish, opts = {}) {
   const incAt = [5.5, 11.5, 17.5, 23];
   // 손님 고정 자리 장식: 탁자·앉은 손님
   const DY = PY - 150, TABLES = [[34, 126 + DY], [124, 120 + DY], [112, 92 + DY * 0.5]];
-  const sitters = [{ spec: uSpec("worker"), cache: {}, x: 45, y: 129 + DY, flip: true }, { spec: uSpec("student"), cache: {}, x: 113, y: 123 + DY, flip: false }, { spec: uSpec("elder"), cache: {}, x: 123, y: 95 + DY * 0.5, flip: true }];
+  const sitters = [{ spec: uSpec("worker"), cache: {}, x: 45, y: 129 + DY, flip: true, ak: "c061" }, { spec: uSpec("student"), cache: {}, x: 113, y: 123 + DY, flip: false, ak: "c025" }, { spec: uSpec("elder"), cache: {}, x: 123, y: 95 + DY * 0.5, flip: true, ak: "c087" }];
+  sitters.forEach((s2) => (s2.art = artOf(s2.ak)));
 
   const bubble = (x, y, text, cls = "") => { const b = document.createElement("div"); b.className = "mg-bub2 " + cls; b.textContent = text; b.style.left = x * K + "px"; b.style.top = (y - 34) * K + "px"; bubs.appendChild(b); setTimeout(() => b.remove(), 1300); };
   const stageXY = (x, y) => { const r = cv.getBoundingClientRect(), s = F.stage.getBoundingClientRect(); return [r.left - s.left + x / W * r.width, r.top - s.top + y / H * r.height]; };
@@ -281,7 +343,7 @@ function runGame(host, ez, finish, opts = {}) {
     if (ppl.filter((p) => !p.gone).length >= 10) return;
     const r = rnd(), ord = r < 0.52 ? "aa" : r < 0.9 ? "al" : "hl";
     const p = { spec: uSpec(pick(["student", "worker", "plain", "teen", "worker", "student", "elder", "plain"])), cache: {}, x: SP.door[0], y: SP.door[1] - 6, alpha: 0, st: "kq", ord, carry: 0, pat: (10 + rnd() * 3) * ez, act: 0, actK: "", walkT: rnd() * 4, v: "f", flip: false, angry: 0, slip: 0, slipped: false, sp: 24 + rnd() * 6, hurry: false, gone: false, moving: true };
-    kq.push(p); ppl.push(p); S.chime();
+    p.art = artOf(CPOOL[cpi++ % CPOOL.length]); kq.push(p); ppl.push(p); S.chime();
   };
   const qpos = (S0, i) => (i === 0 ? S0 : [S0[0] + (i % 2 ? -3 : 3), S0[1] + 9 * i]);
   const walkTo = (p, x, y, dt) => {
@@ -485,6 +547,20 @@ function runGame(host, ez, finish, opts = {}) {
     else if (p.st === "mq" && p.act) { key = "mk"; o = { v: "b" }; }
     else if (p.moving) { const f = Math.floor(p.walkT) % 4; key = p.v + f + p.carry; o = { v: p.v, f, carry: p.carry }; flip = p.v === "s" && p.flip; }
     else { key = p.v + "0" + p.carry; o = { v: p.v, f: 0, carry: p.carry }; }
+    // 캐릭터 그림(표정): 화남·미끄러짐(깜짝)·음료 받음(웃음)·더위(슬픔)
+    const ex = p.slip > 0 ? "surprised" : p.angry > 0 ? "angry" : p.carry ? "smile" : inT >= 29 ? "sad" : "neutral";
+    const bob = p.moving ? -Math.abs(Math.sin(p.walkT * Math.PI)) * 1.2 : 0;
+    g.save(); g.globalAlpha = clamp(p.alpha, 0, 1);
+    if (p.art && p.art.ok) {
+      g.fillStyle = "rgba(60,40,20,.22)"; g.beginPath(); g.ellipse(p.x, p.y, 6, 1.6, 0, 0, 6.3); g.fill();
+      if (p.slip > 0) { body(p.art, ex, p.x + 8, p.y + 3, 30, { rot: -Math.PI / 2, fade: 0.2 }); g.fillStyle = "#ffe066"; g.font = "900 5px sans-serif"; g.textAlign = "center"; g.fillText("✦ ✦", p.x - 6 + (Math.floor(tm * 10) % 2), p.y - 18); }
+      else {
+        body(p.art, ex, p.x, p.y + 1 + bob, 34, { flip: p.flip && p.v === "s" });
+        if (p.carry) drinkV(g, p.ord, p.x + 4.4, p.y - 16 + bob);
+      }
+      g.restore(); return;
+    }
+    g.restore();
     const c = uSprite(p, key, o, flip), x = Math.round(p.x - 8), y = Math.round(p.y - 29);
     g.globalAlpha = clamp(p.alpha, 0, 1);
     if (p.slip > 0) {
@@ -493,15 +569,31 @@ function runGame(host, ez, finish, opts = {}) {
     } else g.drawImage(c, x, y);
     g.globalAlpha = 1;
   };
-  const drawAnger = (x, y, tm) => { const b = Math.floor(tm * 6) % 2; ANG.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === "X") P(x + c, y + r - b, 1, 1, "#ff3b3b"); })); };
+  const drawAnger = (x, y, tm) => { const b = Math.floor(tm * 6) % 2; if (true) { g.save(); g.strokeStyle = "#ff3b3b"; g.lineWidth = 1.1; g.lineCap = "round"; const cx = x + 2.5, cy = y + 2.5 - b; g.shadowColor = "#fff"; g.shadowBlur = 1.5 * KS; g.beginPath(); for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { g.moveTo(cx + sx * 0.8, cy + sy * 2.6); g.quadraticCurveTo(cx + sx * 0.8, cy + sy * 0.8, cx + sx * 2.6, cy + sy * 0.8); } g.stroke(); g.restore(); return; } ANG.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === "X") P(x + c, y + r - b, 1, 1, "#ff3b3b"); })); };
   const drawBubble = (p, tm) => {
     if (p.alpha < 0.6 || p.slip > 0) return;
-    const x = Math.round(p.x) - 1, y = Math.round(p.y) - 44;
+    const x = Math.round(p.x) - 1, y = Math.round(p.y) - 46;
     const missing = ORD[p.ord].need.some((id) => stock[id] <= 0), blink = missing && Math.floor(tm * 5) % 2;
+    if (true) {
+      g.save(); g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = 2 * KS; g.shadowOffsetY = 0.5 * KS;
+      rr(x - 1, y - 1, 13, 14, 3.4); g.fillStyle = blink ? "#ffd0d0" : "#ffffff"; g.fill(); g.restore();
+      g.save(); g.beginPath(); g.moveTo(x + 2, y + 12.6); g.lineTo(x + 3, y + 15.4); g.lineTo(x + 5.6, y + 12.6); g.closePath(); g.fillStyle = blink ? "#ffd0d0" : "#ffffff"; g.fill(); rr(x - 1, y - 1, 13, 14, 3.4); g.strokeStyle = "#1c1c24"; g.lineWidth = 0.5; g.stroke(); g.restore();
+      drinkV(g, p.ord, x + 2, y + 1.2);
+      if (missing) { g.save(); g.beginPath(); g.arc(x + 11.6, y - 0.8, 2.6, 0, 6.3); g.fillStyle = "#ff3b3b"; g.fill(); g.fillStyle = "#fff"; g.fillRect(x + 11.2, y - 2.6, 0.8, 2.2); g.fillRect(x + 11.2, y + 0.1, 0.8, 0.8); g.restore(); }
+      return;
+    }
     P(x, y, 11, 12, blink ? "#ffd0d0" : "#ffffff"); P(x - 1, y + 1, 1, 10, "#1c1c24"); P(x + 11, y + 1, 1, 10, "#1c1c24"); P(x, y - 1 + 1, 11, 0, "#000"); P(x + 1, y - 1, 9, 1, "#1c1c24"); P(x + 1, y + 12, 9, 1, "#1c1c24"); P(x + 2, y + 13, 2, 1, "#1c1c24"); P(x + 2, y + 12, 2, 1, blink ? "#ffd0d0" : "#ffffff");
     g.drawImage(DRC[p.ord], x + 2, y + 1);
     if (missing) { P(x + 10, y - 3, 2, 5, "#ff3b3b"); P(x + 10, y + 3, 2, 1, "#ff3b3b"); }
   };
+  // 소품(벡터)
+  const lgr = (x0, y0, x1, y1, cs) => { const q = g.createLinearGradient(x0, y0, x1, y1); cs.forEach((c, i) => q.addColorStop(i / (cs.length - 1), c)); return q; };
+  const tableV = ([x, y]) => { g.save(); g.fillStyle = "rgba(60,40,20,.18)"; g.beginPath(); g.ellipse(x, y, 8, 1.8, 0, 0, 6.3); g.fill(); g.fillStyle = "#5c5450"; g.fillRect(x - 0.9, y - 10.5, 1.8, 10); rr(x - 5, y - 1.4, 10, 1.6, 0.8); g.fillStyle = "#4a4440"; g.fill(); g.shadowColor = "rgba(0,0,0,.25)"; g.shadowBlur = 1.5 * KS; rr(x - 10.5, y - 14.6, 21, 4.4, 2); g.fillStyle = lgr(0, y - 14.6, 0, y - 10.2, ["#ffffff", "#e8e2d6"]); g.fill(); g.restore(); };
+  const stoolV = (x, y) => { g.save(); g.fillStyle = "#6a6a70"; g.fillRect(x - 0.4, y - 5.4, 0.9, 5); rr(x - 2.6, y - 1.2, 5.6, 1.2, 0.6); g.fillStyle = "#4a4a50"; g.fill(); g.beginPath(); g.ellipse(x + 0.2, y - 6.2, 3.8, 1.6, 0, 0, 6.3); g.fillStyle = lgr(0, y - 7.8, 0, y - 4.6, ["#f4a888", "#d0684a"]); g.fill(); g.restore(); };
+  const plantV = (x, y) => { g.save(); g.beginPath(); g.moveTo(x - 3.6, y - 6.4); g.lineTo(x + 3.8, y - 6.4); g.lineTo(x + 3, y); g.lineTo(x - 2.8, y); g.closePath(); g.fillStyle = lgr(x - 3, 0, x + 4, 0, ["#ffffff", "#d8d0c0"]); g.fill(); for (const [a, l, c] of [[-1.9, 10, "#4fae5a"], [-1.2, 12, "#3e8e4a"], [-0.5, 13, "#5fc06a"], [0.3, 11, "#3e8e4a"], [0.9, 12, "#4fae5a"], [1.6, 9, "#2f7e3a"]]) { g.save(); g.translate(x + 0.2, y - 6.4); g.rotate(a * 0.42); g.beginPath(); g.ellipse(0, -l / 2, 1.7, l / 2, 0, 0, 6.3); g.fillStyle = c; g.fill(); g.restore(); } g.restore(); };
+  const signV = (x, y, tm) => { g.save(); g.strokeStyle = "#3a4a42"; g.lineWidth = 1; g.beginPath(); g.moveTo(x - 5, y); g.lineTo(x - 3, y - 18); g.moveTo(x + 6, y); g.lineTo(x + 4, y - 18); g.stroke(); g.shadowColor = "rgba(0,0,0,.3)"; g.shadowBlur = 1.5 * KS; rr(x - 6.5, y - 19, 13, 15, 1.6); g.fillStyle = "#2f3a32"; g.fill(); g.restore(); g.save(); rr(x - 6.5, y - 19, 13, 15, 1.6); g.strokeStyle = "#8a6a4a"; g.lineWidth = 0.8; g.stroke(); drinkV(g, "aa", x - 5.4, y - 16); g.fillStyle = Math.floor(tm * 2) % 2 ? "#9fe0ff" : "#ffffff"; g.font = "900 3.6px sans-serif"; g.textAlign = "center"; g.fillText("❄", x + 3.4, y - 11); g.fillStyle = "#e9c46a"; g.font = "800 2.6px sans-serif"; g.fillText("ICE", x + 3.4, y - 7); g.restore(); };
+  const binV = (x, y) => { g.save(); g.shadowColor = "rgba(0,0,0,.3)"; g.shadowBlur = 1.5 * KS; rr(x - 4.4, y - 10.4, 9.4, 10.4, 1.6); g.fillStyle = lgr(x - 4, 0, x + 5, 0, ["#7fb0f0", "#4f8ad9", "#3a6ab0"]); g.fill(); g.restore(); g.save(); rr(x - 4.8, y - 11, 10.2, 2.2, 1); g.fillStyle = "#9fc6ff"; g.fill(); g.fillStyle = "#1c2a40"; rr(x - 2, y - 10.6, 5, 1, 0.5); g.fill(); g.fillStyle = "#fff"; g.font = "900 4px sans-serif"; g.textAlign = "center"; g.fillText("♻", x + 0.4, y - 3); g.restore(); };
+  const fanV = (x, y, tm) => { g.save(); rr(x - 5.4, y - 1.4, 11, 2.2, 1); g.fillStyle = "#7a848c"; g.fill(); g.fillStyle = "#9aa4ac"; g.fillRect(x - 0.4, y - 13, 1, 12); const cx = x + 0.1, cy = y - 18; g.beginPath(); g.arc(cx, cy, 5.4, 0, 6.3); g.fillStyle = "rgba(220,230,240,.35)"; g.fill(); g.strokeStyle = "#c8d0d8"; g.lineWidth = 0.6; g.stroke(); const sp = acOn ? 10 : 22, rot = tm * sp; g.fillStyle = "#7fd0ff"; for (let b = 0; b < 3; b++) { g.save(); g.translate(cx, cy); g.rotate(rot + b * 2.094); g.beginPath(); g.ellipse(0, -2.4, 1.3, 2.4, 0, 0, 6.3); g.fill(); g.restore(); } g.beginPath(); g.arc(cx, cy, 0.9, 0, 6.3); g.fillStyle = "#4a5a6a"; g.fill(); g.restore(); };
   const drawTable = ([x, y]) => { P(x - 10, y - 14, 20, 4, "#f6f4ee"); P(x - 10, y - 14, 20, 1, "#ffffff"); P(x - 10, y - 11, 20, 1, "#c8c0b0"); P(x - 1, y - 10, 2, 9, "#5c5450"); P(x - 5, y - 1, 10, 1, "#4a4440"); };
   const drawStool = (x, y) => { P(x - 3, y - 7, 7, 2, "#e07a5a"); P(x - 3, y - 7, 7, 1, "#f0a080"); P(x, y - 5, 1, 5, "#6a6a70"); P(x - 2, y - 1, 5, 1, "#4a4a50"); };
   const drawPlant = (x, y) => { P(x - 3, y - 6, 7, 6, "#e8e0d0"); P(x - 3, y - 6, 7, 1, "#ffffff"); P(x + 3, y - 5, 1, 5, "#c8c0b0"); P(x - 1, y - 17, 3, 11, "#3e8e4a"); P(x - 5, y - 13, 4, 3, "#4fae5a"); P(x + 2, y - 15, 4, 3, "#4fae5a"); P(x - 4, y - 9, 3, 2, "#2f6e3a"); P(x + 2, y - 10, 3, 2, "#2f6e3a"); P(x, y - 19, 1, 2, "#6fd07a"); };
@@ -521,13 +613,16 @@ function runGame(host, ez, finish, opts = {}) {
     for (let b = 0; b < 3; b++) { const t = (b / 3 + fr / 9) * 6.283; for (let r = 1; r <= 3; r++) P(cx + Math.round(Math.cos(t) * r), cy + Math.round(Math.sin(t) * r), 1, 1, "#7fd0ff"); }
     P(cx, cy, 1, 1, "#4a5a6a");
   };
-  const drawMark = (x, y, tm) => { if (Math.floor(tm * 4) % 2) return; P(x, y + 1, 7, 6, "#ffd23f"); P(x + 1, y, 5, 1, "#ffd23f"); P(x - 1, y + 2, 1, 4, "#1c1c24"); P(x + 7, y + 2, 1, 4, "#1c1c24"); P(x + 3, y + 1, 1, 3, "#1c1c24"); P(x + 3, y + 5, 1, 1, "#1c1c24"); };
+  const drawMark = (x, y, tm) => { if (Math.floor(tm * 4) % 2) return; if (true) { g.save(); g.shadowColor = "rgba(0,0,0,.4)"; g.shadowBlur = 2 * KS; g.beginPath(); g.moveTo(x + 3.5, y - 0.6); g.lineTo(x + 8, y + 7.4); g.lineTo(x - 1, y + 7.4); g.closePath(); g.fillStyle = "#ffd23f"; g.fill(); g.restore(); g.save(); g.lineWidth = 0.6; g.strokeStyle = "#1c1c24"; g.beginPath(); g.moveTo(x + 3.5, y - 0.6); g.lineTo(x + 8, y + 7.4); g.lineTo(x - 1, y + 7.4); g.closePath(); g.stroke(); g.fillStyle = "#1c1c24"; g.fillRect(x + 3.1, y + 2, 0.8, 3); g.fillRect(x + 3.1, y + 5.6, 0.8, 0.8); g.restore(); return; } P(x, y + 1, 7, 6, "#ffd23f"); P(x + 1, y, 5, 1, "#ffd23f"); P(x - 1, y + 2, 1, 4, "#1c1c24"); P(x + 7, y + 2, 1, 4, "#1c1c24"); P(x + 3, y + 1, 1, 3, "#1c1c24"); P(x + 3, y + 5, 1, 1, "#1c1c24"); };
   const digits = (x, y, n, col) => { String(n).split("").forEach((d, i) => { const m = DIG[+d]; for (let k = 0; k < 15; k++) if (m[k] === "1") P(x + i * 4 + (k % 3), y + Math.floor(k / 3), 1, 1, col); }); };
 
   const render = (tm) => {
+    g.setTransform(KS, 0, 0, KS, 0, 0); g.imageSmoothingEnabled = false;
     g.drawImage(BG, 0, 0);
+    if (!OUTH && OUTI.ok) OUTH = buildOut();
+    const OS = OUTH ? KS : 1, OI = OUTH || OUT;
     // 바깥(아지랑이): 창문·문 유리 안에 줄마다 흔들어 그린다
-    const haze = (x, y0, w, h) => { for (let r = 0; r < h; r++) { const yy = y0 + r, amp = yy > 30 ? 1.4 : yy > 18 ? 0.8 : 0; const ox = Math.round(Math.sin(tm * 5 + yy * 0.8) * amp); g.drawImage(OUT, x + ox, yy, w, 1, x, yy, w, 1); } };
+    const haze = (x, y0, w, h) => { if (OUTH) g.imageSmoothingEnabled = true; for (let r = 0; r < h; r++) { const yy = y0 + r, amp = yy > 30 ? 1.4 : yy > 18 ? 0.8 : 0; const ox = Math.round(Math.sin(tm * 5 + yy * 0.8) * amp); g.drawImage(OI, (x + ox) * OS, yy * OS, w * OS, OS, x, yy, w, 1); } g.imageSmoothingEnabled = false; };
     haze(33, 7, 25, 19); P(44, 7, 1, 19, "#f6f6f4"); P(33, 15, 25, 1, "#f6f6f4");
     haze(8, 14, 20, 40);
     // 미닫이 유리문
@@ -577,19 +672,21 @@ function runGame(host, ez, finish, opts = {}) {
     if (puddle) {
       const k = 1 - puddle.clean * 0.75, a = 0.85 * (1 - puddle.clean * 0.5);
       g.fillStyle = `rgba(138,90,50,${a})`;
-      for (const [bx, by, br0] of puddle.blobs) { const br1 = br0 * k; for (let yy = -br1 * 0.5; yy <= br1 * 0.5; yy++) { const w = Math.round(br1 * Math.sqrt(1 - Math.pow(yy / (br1 * 0.5 + 0.01), 2)) * 1.0); g.fillRect(Math.round(puddle.x + bx * k - w), Math.round(puddle.y + by * k + yy), w * 2 + 1, 1); } }
+      for (const [bx, by, br0] of puddle.blobs) { const br1 = br0 * k; g.beginPath(); g.ellipse(puddle.x + bx * k, puddle.y + by * k, br1 + 0.5, br1 * 0.5 + 0.3, 0, 0, 6.3); g.fill(); }
       g.fillStyle = `rgba(255,255,255,${0.7 * k})`; g.fillRect(Math.round(puddle.x - 3 * k), Math.round(puddle.y - 1), 2, 1); g.fillRect(Math.round(puddle.x + 2 * k), Math.round(puddle.y + 1), 1, 1);
       if (puddle.clean < 0.5) { for (const [cx2, cy2] of puddle.cubes) { P(puddle.x + cx2, puddle.y + cy2, 2, 2, "#e8f8ff"); } P(puddle.x + 6, puddle.y - 3, 3, 5, "#d8ecf4"); P(puddle.x + 6, puddle.y - 3, 3, 1, "#ffffff"); P(puddle.x + 9, puddle.y - 2, 2, 1, "#ff5a6a"); }
     }
     // 깊이 순서: 탁자·의자·화분·선풍기·사람·사장님
     const items = [];
-    TABLES.forEach((t) => items.push([t[1], () => drawTable(t)]));
-    items.push([129.5 + DY, () => drawStool(45, 129 + DY)], [123.5 + DY, () => drawStool(113, 123 + DY)], [128.5 + DY, () => drawStool(22, 128 + DY)]);
-    sitters.forEach((s) => items.push([s.y + 0.6, () => { const sip = Math.floor(tm * 0.7 + s.x) % 3 === 0; const c = uSprite(s, "sit" + (sip ? 1 : 0), { v: "s", sit: true, carry: 1, arm: null }, s.flip); g.drawImage(c, Math.round(s.x - 8), Math.round(s.y - 29)); }]));
-    items.push([95.5 + DY * 0.5, () => drawStool(123, 95 + DY * 0.5)], [86, () => drawSign(142, 86, tm)], [76, () => drawBin(152, 76)], [84, () => drawPlant(5, 84)], [PY - 4, () => drawPlant(5, PY - 4)], [PY - 4, () => drawFan(150, PY - 4, tm)]);
+    TABLES.forEach((t) => items.push([t[1], () => tableV(t)]));
+    items.push([129.5 + DY, () => stoolV(45, 129 + DY)], [123.5 + DY, () => stoolV(113, 123 + DY)], [128.5 + DY, () => stoolV(22, 128 + DY)]);
+    sitters.forEach((s) => items.push([s.y + 0.6, () => { const sip = Math.floor(tm * 0.7 + s.x) % 3 === 0; if (s.art.ok) { body(s.art, inT >= 29 ? "sad" : sip ? "smile" : "neutral", s.x + (s.flip ? -2 : 2), s.y - 6, 30, { flip: s.flip, fade: 0.36 }); drinkV(g, "al", s.x + (s.flip ? -9 : 6), s.y - 21); return; } const c = uSprite(s, "sit" + (sip ? 1 : 0), { v: "s", sit: true, carry: 1, arm: null }, s.flip); g.drawImage(c, Math.round(s.x - 8), Math.round(s.y - 29)); }]));
+    items.push([95.5 + DY * 0.5, () => stoolV(123, 95 + DY * 0.5)], [86, () => signV(142, 86, tm)], [76, () => binV(152, 76)], [84, () => plantV(5, 84)], [PY - 4, () => plantV(5, PY - 4)], [PY - 4, () => fanV(150, PY - 4, tm)]);
     ppl.forEach((p) => { if (!p.gone) items.push([p.y, () => drawPerson(p, tm)]); });
     owners.forEach((ow) => items.push([60, () => {
       const a = ow.t < 0.12 ? ow.t / 0.12 : ow.t > 0.75 ? Math.max(0, (0.95 - ow.t) / 0.2) : 1, lift = ow.t < 0.2 ? Math.round((0.2 - ow.t) * 30) : 0;
+      const me = ART[AVK];
+      if (me && me.ok) { g.save(); g.globalAlpha = a; body(me, ow.t > 0.35 && ow.t < 0.6 ? "smile" : "neutral", ow.x, 58 + lift, 30, { fade: 0.35 }); boxV(g, ow.x - 4, 40 + lift - (ow.t > 0.35 && ow.t < 0.6 ? 2 : 0)); g.restore(); return; }
       g.globalAlpha = a; const c = uSprite(ow, "boss" + (Math.floor(tm * 6) % 2), { v: "b", f: Math.floor(tm * 6) % 2 ? 1 : 3 }, false);
       g.drawImage(c, Math.round(ow.x - 8), 31 + lift); g.drawImage(BOXC, Math.round(ow.x - 5), 24 + lift - (ow.t > 0.35 && ow.t < 0.6 ? 2 : 0)); g.globalAlpha = 1;
     }]));
@@ -608,7 +705,7 @@ function runGame(host, ez, finish, opts = {}) {
     if (inT > 25.5) {
       const a = clamp((inT - 25.5) / 8, 0, 1);
       g.fillStyle = `rgba(255,120,40,${0.22 * a})`; g.fillRect(0, 0, W, PY);
-      const n = Math.round(a * 14); for (let k = 0; k < n; k++) { const yy = FL + rint(PY - FL - 2), ox = Math.round(Math.sin(tm * 9 + yy) * 1.4); if (ox) g.drawImage(cv, 0, yy, W, 2, ox, yy, W, 2); }
+      const n = Math.round(a * 14); for (let k = 0; k < n; k++) { const yy = FL + rint(PY - FL - 2), ox = Math.round(Math.sin(tm * 9 + yy) * 1.4); if (ox) g.drawImage(cv, 0, yy * KS, W * KS, 2 * KS, ox, yy, W, 2); }
     }
     // 사고 표시(!)
     if (!acOn) drawMark(130, 16, tm);
@@ -621,21 +718,21 @@ function runGame(host, ez, finish, opts = {}) {
       const fx = slotFx[i], s = stock[it.id], x0 = 2 + i * 26 + (fx.shake > 0 ? (Math.floor(tm * 40) % 2 ? 1 : -1) : 0);
       const low = s <= 1, lock = it.id === "ice" && iceBroken;
       P(x0, 154, 24, 22, low && Math.floor(tm * 4) % 2 ? "#6a2a22" : "#4e3a2b"); P(x0, 154, 24, 1, "#6a503c");
-      g.drawImage(ICC[it.id], x0 + 3, 156);
+      if (ICV[it.id].complete && ICV[it.id].naturalWidth) { g.imageSmoothingEnabled = true; g.drawImage(ICV[it.id], x0 + 3, 155.4, 18, 18); g.imageSmoothingEnabled = false; } else g.drawImage(ICC[it.id], x0 + 3, 156);
       if (s <= 0) { for (let k = 0; k < 14; k++) { P(x0 + 5 + k, 158 + k, 2, 1, "#ff3b3b"); P(x0 + 18 - k, 158 + k, 2, 1, "#ff3b3b"); } }
       if (lock) { g.fillStyle = "rgba(30,30,40,.55)"; g.fillRect(x0, 154, 24, 22); P(x0 + 8, 160, 8, 2, "#c8ccd4"); P(x0 + 11, 162, 2, 8, "#c8ccd4"); P(x0 + 7, 158, 2, 3, "#c8ccd4"); P(x0 + 15, 158, 2, 3, "#c8ccd4"); }
       // 막대
       P(x0, 176, 24, 8, "#2a1d14");
       const sw = Math.floor(22 / it.max), off = Math.floor((24 - sw * it.max) / 2) + 1;
       const col = s <= 1 ? "#ff5a4a" : s <= it.max / 2 ? "#ffc23f" : "#5fe08a";
-      for (let k = 0; k < it.max; k++) P(x0 + off + k * sw, 178, sw - 1, 4, k < s ? col : "#3e2c20");
+      for (let k = 0; k < it.max; k++) { rr(x0 + off + k * sw + 0.2, 178, sw - 1.2, 4, 1); g.fillStyle = k < s ? col : "#3e2c20"; g.fill(); }
       // 채우기 표시(+)
             if (fx.pend) { g.fillStyle = "rgba(20,40,60,.5)"; g.fillRect(x0, 154, 24, 43); for (let k = 0; k < 3; k++) if (Math.floor(tm * 6) % 3 >= k) P(x0 + 6 + k * 5, 186, 3, 3, "#9fe0ff"); }
       if (fx.flash > 0) { g.fillStyle = `rgba(255,255,255,${fx.flash * 1.6})`; g.fillRect(x0, 154, 24, 43); }
     });
     // 창고 상자
     const nb = Math.min(boxes, 8);
-    for (let b = 0; b < nb; b++) { const col = b % 2, row = Math.floor(b / 2), drop = b >= nb - 3 && boxDrop > 0 ? Math.round(boxDrop * 40) : 0; g.drawImage(BOXC, 135 + col * 11, 178 - row * 8 - drop); }
+    for (let b = 0; b < nb; b++) { const col = b % 2, row = Math.floor(b / 2), drop = b >= nb - 3 && boxDrop > 0 ? Math.round(boxDrop * 40) : 0; boxV(g, 136 + col * 11, 179 - row * 8 - drop); }
     g.restore();
   };
 
@@ -682,6 +779,7 @@ function runGame(host, ez, finish, opts = {}) {
     return rs.reduce((a, r) => a + (r.t1 ? clamp(1 - (r.t1 - r.t0 - 1.5) / (7 * ez), 0.25, 1) : 0) - 0.25 * r.slips, 0) / rs.length;
   };
   const printerURL = () => {
+    try { return svgU(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 18"><defs><linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="1" stop-color="#b8bcc4"/></linearGradient></defs><rect x="2" y="0" width="68" height="4" rx="1.4" fill="#c4c8cc"/><rect x="0" y="2.4" width="72" height="15" rx="3" fill="url(#p)" stroke="#8a9098" stroke-width=".6"/><rect x="8" y="11.4" width="56" height="2.4" rx="1.2" fill="#2a2e34"/><rect x="4" y="5.4" width="20" height="3" rx="1.2" fill="#b8bcc2"/><circle cx="62" cy="6.6" r="1.4" fill="#3fe07a"/><circle cx="56" cy="6.6" r="1.4" fill="#e0b040"/></svg>`); } catch (e) {}
     const c = mkC(70, 16, (Q) => { Q(0, 2, 70, 14, "#d8dce0"); Q(0, 2, 70, 1, "#f4f6f8"); Q(2, 0, 66, 3, "#c4c8cc"); Q(8, 11, 54, 2, "#2a2e34"); Q(8, 13, 54, 1, "#5a5e64"); Q(60, 5, 3, 2, "#3fe07a"); Q(54, 5, 3, 2, "#e0b040"); Q(4, 5, 20, 3, "#b8bcc2"); Q(5, 6, 18, 1, "#9aa0a8"); Q(0, 15, 70, 1, "#9aa0a8"); });
     return c.toDataURL();
   };

@@ -2,8 +2,13 @@
 import * as D from "./defs.js";
 import { addMoney, log, mod, won, gainStat, applyEff, creditRoom, addLoan, helperPower } from "./core.js";
 import * as SYN from "./syn.js";
+import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+// 11-21 밸런스: 공개 게임이라 미등록이 정답이 되면 안 된다. 합법이 기대값이 조금 더 낫게.
+// 원래: 노출 배율 없음, 서울 합법은 내국인 0, 단속 월 1.2%(+0.8%)·12개월 간격·과태료 300~1000만·설득 판정 42
+// 11-21 밸런스 2차(10개 투잡 공통 비교, 기획 stay.json: 1채 중위 월 90만·p75 180만): 기본 예약률 occ 0.85 → 0.75
+export const AB_LAW = { occ: 0.75, legalShow: 1.08, legalSuper: 1.05, cityDomestic: 0.45, illegalShow: 0.95, raidP: 0.018, raidDom: 0.012, raidGap: 9, fine: [400, 1200], talkDc: 55 };
 export function init() { return { units: [], listings: [], seq: 0, cohost: false, evT: -99, hist: [], fx: 0 }; }
 
 // 매물
@@ -30,7 +35,7 @@ export function contract(s, id, reg) {
   const u = { ...L, id: "U" + (++A.seq), name: `${n}호 ${R.n} ${D.AB_TYPES[L.ty].n}`, reg, adr: Math.round(R.adr * D.AB_TYPES[L.ty].adrF * SYN.pi(s)), rating: 4.5, stays: 0, months: 0, photo: 30 + s.st.sense / 3, ap: 0, last: null, hist: [], invested: total, banned: 0 };
   A.units.push(u); A.listings = A.listings.filter((x) => x !== L);
   log(s, `${u.name} 오픈 (${reg === "legal" ? "합법 등록" : "미등록"}). ${won(total)}`, "work");
-  return { ok: true, msg: `${u.name} 오픈! ${reg === "legal" ? (R.city ? "외국인 손님만 받아요" : "누구나 받아요") : "누구나 받지만 단속 위험이 있어요"}`, unit: u };
+  return { ok: true, msg: `${u.name} 오픈! ${reg === "legal" ? (R.city ? "외국인 위주(내국인은 일부), 등록 숙소 노출 +8%" : "누구나 받아요, 등록 숙소 노출 +8%") : "누구나 받지만 노출이 줄고 단속 위험이 있어요"}`, unit: u };
 }
 export function close(s, id) { const A = s.ab, u = A.units.find((x) => x.id === id); if (!u) return { ok: false }; s.cash += u.dep; addMoney(s, "inc", "보증금 회수", u.dep); A.units = A.units.filter((x) => x !== u); log(s, `${u.name} 정리`, "work"); return { ok: true, msg: `${u.name} 정리, 보증금 ${won(u.dep)} 회수` }; }
 export function setAdr(s, id, v) { const u = s.ab.units.find((x) => x.id === id); if (u) u.adr = clamp(Math.round(v), 3, 80); }
@@ -48,7 +53,7 @@ export function act(s, r, id, arg, boost = 1) {
   if (id === "ab_search") { const ls = search(s, r, arg || "hongdae"); return { lines: [`${D.AB_REGIONS[arg || "hongdae"].n} 매물 ${ls.length}개`], msg: D.AB_REGIONS[arg || "hongdae"].tip }; }
   if (id === "ab_cohost") { A.cohost = !A.cohost; return { lines: [A.cohost ? "코호스트 고용: 매출의 20%, 청소·응대를 맡겨요" : "코호스트 해지"], msg: A.cohost ? "\"체크인 안내는 제가 4개 국어로 할게요.\"" : "다시 내가 다 한다." }; }
   const u = A.units.find((x) => x.id === arg) || A.units[0];
-  if (id === "ab_clean") { u.ap += 1 * boost; gainStat(s, "hands", 0.3); return { lines: [`${u.name} 관리 ${Math.round(u.ap * 10) / 10}/${needAp(s, u)}`], msg: "침구 교체, 머리카락 0개 작전, 웰컴 카드." }; }
+  if (id === "ab_clean") { u.ap += boost * clamp(0.85 + (s.st.hands || 0) / 300, 0.85, 1.25); gainStat(s, "hands", 0.3); return { lines: [`${u.name} 관리 ${Math.round(u.ap * 10) / 10}/${needAp(s, u)}`], msg: "침구 교체, 머리카락 0개 작전, 웰컴 카드." }; }
   if (id === "ab_photo") { u.photo = Math.min(100, u.photo + 8 + s.st.sense / 20); gainStat(s, "sense", 0.5); return { lines: [`${u.name} 사진·소개 ${Math.round(u.photo)}`], msg: "광각 렌즈, 오전 10시 햇살, 침대 위 수건 백조." }; }
   if (id === "ab_host") {
     u.host = s.t; const ok = r.chance(clamp(0.35 + s.st.lang / 120 + s.st.talk / 400, 0.1, 0.95)); gainStat(s, "lang", 0.8);
@@ -69,9 +74,10 @@ export function month(s, r, notes, scenes) {
     const seas = (R.peak.includes(s.cal) ? 1.35 : R.off ?? 1) * (D.AB_SEASON[s.cal - 1]);
     const fx = A.fx > 0 ? 1.3 : 1, intl = s.era.pandemic ? 0.15 : s.era.intl ? 0.5 : 1;
     const langF = clamp(0.45 + s.st.lang / 110, 0.4, 1.3) * mod(s, "abLang", 1);
-    const foreignD = R.foreign * fx * intl * langF * (SYN.on(s, "ovs_ab") ? 1.1 : 1) * (SYN.on(s, "insta_ab") ? 1.06 : 1), domesticD = (u.reg === "legal" && R.city ? 0 : 1 - R.foreign) * (s.era.winter ? 0.8 : 1);
-    let occ = 0.85 * seas * (foreignD + domesticD) * (0.6 + u.photo / 250) * (1 + (u.rating - 4.6) * 0.8) * Math.pow(R.adr * T.adrF * pi / u.adr, 1.2) * (A.super ? 1.12 : 1) * (1 - 0.03 * (s.pr?.mkt?.[u.rk]?.comp || 0));
+    const foreignD = R.foreign * fx * intl * langF * (SYN.on(s, "ovs_ab") ? 1.1 : 1) * (SYN.on(s, "insta_ab") ? 1.06 : 1), domesticD = (u.reg === "legal" && R.city ? AB_LAW.cityDomestic : 1) * (1 - R.foreign) * (s.era.winter ? 0.8 : 1); // 서울 합법: 내국인은 공유숙박 특례로 절반만
+    let occ = AB_LAW.occ * seas * (foreignD + domesticD) * (0.6 + u.photo / 250) * (1 + (u.rating - 4.6) * 0.8) * Math.pow(R.adr * T.adrF * pi / u.adr, 1.2) * (A.super ? 1.12 * (u.reg === "legal" ? AB_LAW.legalSuper : 1) : 1) * (u.reg === "legal" ? AB_LAW.legalShow : AB_LAW.illegalShow) * (1 - 0.03 * (s.pr?.mkt?.[u.rk]?.comp || 0));
     if (u.months === 0) occ *= 0.6;
+    occ *= SJ.ramp(s, "airbnb"); // 첫 숙소 초반 고생(sj.js ENTRY)
     const q = A.cohost ? 1 : clamp(u.ap / needAp(s, u), 0, 1); occ *= 0.8 + 0.2 * q;
     occ = clamp(occ * (1 + 0.08 * r.normal()), 0.03, 0.97);
     const nights = Math.round(occ * 30), stays = Math.max(0, Math.round(nights / T.len)), rev = Math.round(nights * u.adr * (A.super ? 1.08 : 1));
@@ -85,11 +91,11 @@ export function month(s, r, notes, scenes) {
     u.hist.push(rev - cost); if (u.hist.length > 24) u.hist.shift();
     s.cash += rev - cost; addMoney(s, "inc", "에어씨앤씨 매출", rev); addMoney(s, "exp", "에어씨앤씨 비용", cost); total += rev - cost;
     // 사건
-    // 미등록 단속: 드물게(1년에 한 번 이하), 넘어갈 길이 있다
-    if (u.reg === "illegal" && s.t - (A.raidT ?? -99) >= 12 && r.chance(0.012 + (u.last.foreign < 50 ? 0.008 : 0))) {
-      const fine = Math.round(r.int(300, 1000) * pi); A.raidT = s.t; s._abRaid = { id: u.id, fine };
+    // 미등록 단속: 이웃 신고·플랫폼 등록번호 점검. 6개월에 한 번까지, 설득은 어렵다
+    if (u.reg === "illegal" && s.t - (A.raidT ?? -99) >= AB_LAW.raidGap && r.chance(AB_LAW.raidP + (u.last.foreign < 50 ? AB_LAW.raidDom : 0))) {
+      const fine = Math.round(r.int(AB_LAW.fine[0], AB_LAW.fine[1]) * pi); A.raidT = s.t; A.raidN = (A.raidN || 0) + 1; s._abRaid = { id: u.id, fine };
       scenes.push({ kind: "event", tag: "에어씨앤씨", title: "불법 숙박 단속", onChoose: "ab_raid", text: `${u.name}에 구청 단속반이 왔다. 이웃 신고였다. 그대로면 과태료 ${won(fine)}에 3개월 영업정지. 어떻게 할까?`, choices: [
-        { t: "아랫집에 떡 돌리고 사정을 설명한다", check: { stat: "talk", dc: 42 }, ok: { text: "\"젊은 사람이 애쓰네.\" 이웃이 신고를 취하했다. 경고장 한 장으로 끝났다.", eff: {} }, ng: { text: "\"시끄러운 건 시끄러운 거죠.\" 신고는 그대로 갔다.", eff: {} } },
+        { t: "아랫집에 떡 돌리고 사정을 설명한다", check: { stat: "talk", dc: AB_LAW.talkDc }, ok: { text: "\"젊은 사람이 애쓰네.\" 이웃이 신고를 취하했다. 경고장 한 장으로 끝났다.", eff: {} }, ng: { text: "\"시끄러운 건 시끄러운 거죠.\" 신고는 그대로 갔다.", eff: {} } },
         { t: u.house ? "바로 숙박업 등록을 하겠다고 약속한다" : "오피스텔이라 등록은 못 하지만 운영을 줄이겠다고 한다", eff: {}, text: u.house ? "등록 서류를 냈다. 과태료는 절반, 정지는 1개월로 줄었다. 이제 합법 숙소다." : "선처를 받아 과태료가 30% 줄었다. 정지 2개월." },
         { t: "과태료 내고 버틴다", eff: {}, text: "과태료를 냈다. 3개월 동안 리스팅이 내려간다." },
       ] });
@@ -102,7 +108,7 @@ export function month(s, r, notes, scenes) {
   const sup = A.units.length && A.units.every((u) => u.rating >= 4.8) && A.units.reduce((a, u) => a + u.stays, 0) >= 10;
   if (sup && !A.super) { notes.push("슈퍼호스트 배지 획득! 노출 +12%, 요금 +8%"); log(s, "에어씨앤씨 슈퍼호스트가 됐다.", "work"); }
   if (!sup && A.super) notes.push("슈퍼호스트 배지를 잃었다");
-  A.super = !!sup;
+  A.super = !!sup; A.superM = A.super ? (A.superM || 0) + 1 : 0; // 엔딩용: 슈퍼호스트 연속 달
   A.hist.push(Math.round(total)); if (A.hist.length > 24) A.hist.shift();
   return total;
 }
