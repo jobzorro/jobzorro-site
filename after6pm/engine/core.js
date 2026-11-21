@@ -14,6 +14,7 @@ import * as REG from "./reg.js"; // 새 투잡 플러그인 등록표(engine/job
 import { yearScene, yearMark } from "./yearend.js"; // 연말 결산(v4.24)
 import { famMonth, FAM_CHOOSE } from "./famev.js"; // 가족 이벤트(v4.25)
 import { affMonth, AFF_CHOOSE, affDate } from "./affair.js"; // 바람(v4.25)
+import { flirtMonth } from "./flirt.js"; // 연애·결혼 19금(v4.25)
 
 export const CHAR = Object.fromEntries(CHARS.map((c) => [c.id, c]));
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -971,6 +972,7 @@ function peopleMonth(s, r, notes, scenes) {
     if (s.fam.pregnant !== null && s.t >= s.fam.pregnant) { s.fam.kids.push({ born: s.t, name: r.pick(["하린", "도윤", "서아", "이준", "지안", "시우", "유나", "건우"]) }); s.fam.pregnant = null; s.cash -= 300; addMoney(s, "exp", "출산·산후조리", 300); s.fam.happy = clamp(s.fam.happy + 20, 0, 100); scenes.push(story("아이가 태어났다", "새벽 3시 수유, 새벽 5시 기저귀. 투잡에 쓰던 시간이 사라졌다. 그런데 이상하게 힘이 난다.")); log(s, `아이 ${jo(s.fam.kids[s.fam.kids.length - 1].name, "이", "가")} 태어났다.`, "life"); }
   }
   affMonth(s, r, scenes, notes); // 바람(engine/affair.js)
+  flirtMonth(s, r, scenes); // 연애·결혼 19금(engine/flirt.js)
   famMonth(s, r, scenes, notes); // 자녀·배우자·부모님 이벤트(engine/famev.js)
   // 부모님
   s.fam.parents = clamp(s.fam.parents - (s.age > 38 ? 0.28 : 0.14) - (s.t - s.fam.lastVisit > 6 ? 0.1 : 0), 0, 100);

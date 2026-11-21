@@ -1249,7 +1249,7 @@ function showScene() {
   const who = sc.who && E.CHAR[sc.who];
   const pf = ui.preFx; ui.preFx = null;
   const pre = pf && (pf.msg || pf.lines.length) ? `<div class="prefx">${pf.msg ? `<span>${esc(pf.msg)}</span>` : ""}${pf.lines.filter(Boolean).map((l) => `<b>${esc(l)}</b>`).join("")}</div>` : "";
-  const expr = sc.kind === "meet" ? "neutral" : sc.kind === "wedding" ? "blush" : sc.kind === "arc" ? (sc.stage === 3 ? "blush" : "smile") : "neutral";
+  const expr = sc.expr || (sc.kind === "meet" ? "neutral" : sc.kind === "wedding" ? "blush" : sc.kind === "arc" ? (sc.stage === 3 ? "blush" : "smile") : "neutral");
   openWin(`<div class="scene">${pre}<h2>${esc(sc.title)}${sc.tag ? ` <span class="tag gold">${esc(sc.tag)}</span>` : ""}</h2>
     ${who ? stageWho(sc.who, expr, "full", sceneBg(sc), `<b>${esc(who.name)}</b><span>${esc(who.job)}</span>`) ?? `<div class="who"><div class="pic">${img(faceSrc(sc.who, expr))}</div><div><b>${esc(who.name)}</b><div class="tagline">${esc(who.job)} · ${esc(who.tagline || "")}</div></div></div>` : ""}
     <div class="txt">${esc(sc.text)}</div>

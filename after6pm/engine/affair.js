@@ -63,7 +63,7 @@ export function affMonth(s, r, scenes, notes) {
     // 상대의 압박: 1년 넘으면 "나랑 살자"
     if (!busy && !a.asked && s.t - a.t >= 12 && r.chance(0.12)) {
       a.asked = true;
-      scenes.push({ kind: "event", who: a.who, title: "\"나랑 살자\"", text: `${jo(nm(a.who), "이", "가")} 커피잔을 내려놓았다. "언제까지 이렇게 숨어 살 거야? 정리하고 나한테 와." ${sp(s)}의 얼굴이 스쳤다.`, onChoose: "af_ask",
+      scenes.push({ kind: "event", who: a.who, expr: "sad", title: "\"나랑 살자\"", text: `${jo(nm(a.who), "이", "가")} 커피잔을 내려놓았다. "언제까지 이렇게 숨어 살 거야? 정리하고 나한테 와." ${sp(s)}의 얼굴이 스쳤다.`, onChoose: "af_ask",
         choices: [{ t: "이혼하고 간다 (재산 절반)", eff: {}, text: "짐은 캐리어 두 개였다." }, { t: "여기서 끝내자고 말한다", eff: { mental: -6 }, text: "\"…그래, 알겠어.\" 목소리가 너무 조용했다." }] });
       return;
     }
@@ -71,7 +71,7 @@ export function affMonth(s, r, scenes, notes) {
     if (!busy && s.t - a.crisisT >= 2 && r.chance(0.3)) {
       a.crisisT = s.t;
       const pool = CRISES.filter((c) => !a.used.includes(c[0])); const c = r.pick(pool.length ? pool : CRISES); a.used.push(c[0]);
-      scenes.push({ kind: "event", who: s.fam.spouse, title: c[1], text: `${c[2](s, a)} (의심 ${Math.round(a.sus)})`, onChoose: "af_crisis",
+      scenes.push({ kind: "event", who: s.fam.spouse, expr: a.sus >= 50 ? "angry" : "surprised", title: c[1], text: `${c[2](s, a)} (의심 ${Math.round(a.sus)})`, onChoose: "af_crisis",
         choices: [
           { t: "태연하게 둘러댄다", check: { stat: c[3], dc: 35 + Math.round(a.sus / 3) }, ok: { text: "\"아, 그거?\" 웃으며 넘겼다. 심장이 귀에서 뛰었다.", eff: { mental: -3 } }, ng: { text: "말이 꼬였다. 대답 대신 긴 침묵이 돌아왔다.", eff: { mental: -6, family: -6 } } },
           { t: "이번엔 진짜 정리한다", eff: { mental: -8 }, text: "그날 밤 마지막 메시지를 보냈다." },
@@ -96,7 +96,7 @@ export function affMonth(s, r, scenes, notes) {
   if (!r.chance(p)) return;
   s.flags.affTempt = s.t;
   const id = r.pick(cands);
-  scenes.push({ kind: "event", who: id, title: "선을 넘을 뻔한 밤", text: `모임이 끝나고 둘만 남았다. ${jo(nm(id), "이", "가")} 말했다. "요즘 집에 가기 싫다는 얼굴이던데." 막차까지 20분. ${sp(s)}의 메시지: "언제 와?"`, onChoose: "af_tempt",
+  scenes.push({ kind: "event", tag: "19금", who: id, expr: "blush", title: "선을 넘을 뻔한 밤", text: `모임이 끝나고 둘만 남았다. ${jo(nm(id), "이", "가")} 말했다. "요즘 집에 가기 싫다는 얼굴이던데." 막차까지 20분. ${sp(s)}의 메시지: "언제 와?"`, onChoose: "af_tempt",
     choices: [
       { t: "택시를 잡는다. 집으로", eff: { mental: 2, family: 3 }, text: "현관 불이 켜져 있었다. 괜히 꼭 안아 줬다." },
       { t: "\"한 잔만 더.\"", eff: { mental: 6 }, text: "그날 밤, 집에는 \"야근\"이라고 보냈다." },
