@@ -410,11 +410,18 @@ function top() {
     <div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div>
     <div><div class="k">목표까지</div><div class="v ${f.ready ? "good" : ""}">${Math.round(f.ratio * 100)}%</div></div><span class="more">${ic("info")}</span></button>
     ${(() => { const rw = E.runway(S), used = S.loans.find((l) => l.n === "신용대출")?.amt || 0; if (!(rw.late || rw.months <= 12 || used > 0)) return ""; const red = rw.late || rw.months <= 3; return `<button class="runway ${red ? "bad" : "warn"}" data-money>${rw.late ? `⚠ 카드값 연체 ${rw.late}개월째 · ${3 - rw.late}달 더 밀리면 개인회생` : `${rw.months === Infinity ? "흑자 중" : `버틸 수 있는 달 <b>${rw.months}개월</b>`} · 남은 신용 한도 <b>${won(rw.credit)}</b>${used ? ` · 신용대출 ${won(used)}` : ""}`}</button>`; })()}
-    <div class="apbar" data-apinfo><span class="lab">${ic("bolt")}이번 달 행동력</span><div class="bar"><i style="width:${apPct}%"></i></div><span class="num">${S.ap}/${S.apMax}</span><span class="hp">스태미너 <b>${Math.round(S.hp)}</b></span></div></div>`;
+    ${relChips()}<div class="apbar" data-apinfo><span class="lab">${ic("bolt")}이번 달 행동력</span><div class="bar"><i style="width:${apPct}%"></i></div><span class="num">${S.ap}/${S.apMax}</span><span class="hp">스태미너 <b>${Math.round(S.hp)}</b></span></div></div>`;
+}
+// 위쪽 왼쪽 관계 얼굴(v4.25): 배우자·연인·아이. 누르면 그 사람 창(아이는 가족 화면)
+function relChips() {
+  const L = [];
+  for (const [id, x] of Object.entries(S.rel)) if ((x.spouse || x.lover || x.affair) && E.CHAR[id]) L.push(`<button class="rchip${x.affair ? " sec" : ""}" data-char="${id}"><span class="rf">${img(faceSrc(id, exprFor(id)))}</span><span class="rt"><b>${esc(E.CHAR[id].name)}</b><i>${x.affair ? `비밀 · 의심 ${Math.round(S.fam.affair?.sus || 0)}` : `${x.spouse ? "배우자" : "연인"} · ♥${Math.round(x.aff)}`}</i></span></button>`);
+  if (S.fam.kids.length) L.push(`<button class="rchip kid" data-rkid><span class="rf">👶</span><span class="rt"><b>아이 ${S.fam.kids.length}</b><i>가족 행복 ${Math.round(S.fam.happy)}</i></span></button>`);
+  return L.length ? `<div class="rchips">${L.join("")}</div>` : "";
 }
 // 위쪽 숫자를 누르면 나오는 자세한 돈 상황
 function moneyWin() {
-  const f = E.fireInfo(S), net = S.lastNet ?? 0, left = Math.max(0, Math.ceil((D.endAge(S.me.gender) - S.age) * 12)), goal = S.fam.spouse ? 35 : 25;
+  const f = E.fireInfo(S), net = S.lastNet ?? 0, left = Math.max(0, Math.ceil((D.endAge(S.me.gender) - S.age) * 12)), goal = S.fam.spouse ? 40 : 30;
   const row = (k, v, cls = "", sub = "") => `<tr><th>${k}</th><td class="${cls}">${v}${sub ? `<div class="tiny muted">${sub}</div>` : ""}</td></tr>`;
   openWin(`<h2>내 돈 상황 <button class="x" data-close>✕</button></h2><table class="mtab">
     ${row("현금", won(S.cash), "", "지금 바로 쓸 수 있는 돈")}
@@ -422,7 +429,7 @@ function moneyWin() {
     ${row("투잡 월수익", won(S.hist.at(-1)?.side || 0))}
     ${row("대출", won(E.debt(S)), E.debt(S) ? "bad" : "")}
     ${row("순자산", won(f.nw), "gold", "현금 + 투자 + 집 − 대출")}
-    ${row("목표까지", Math.round(f.ratio * 100) + "%", f.ready ? "good" : "", `목표: ${D.endAge(S.me.gender)}세까지 순자산 ${goal}억 (결혼하면 35억)`)}
+    ${row("목표까지", Math.round(f.ratio * 100) + "%", f.ready ? "good" : "", `목표: ${D.endAge(S.me.gender)}세까지 순자산 ${goal}억 (결혼하면 40억)`)}
     ${row("게임 끝까지", left + "개월", "", `${D.endAge(S.me.gender)}세에 인생을 결산해요`)}
     ${row("인물도감", `${Object.keys(S.rel).length} / ${CHARS_N}명`)}
   </table><button class="btn" style="width:100%;margin-top:10px;padding:11px" data-mgo="me">투자·대출 하러 가기 ›</button>`, (w) => w.querySelector("[data-mgo]").onclick = () => { closeWin(); go("me"); });
@@ -773,7 +780,7 @@ function pgCo() {
     <div style="margin-top:8px" class="small">회사 눈치 ${Math.round(co.eye)} ${meter(co.eye, 100, "var(--orange)")}</div>
     ${coEval()}
     <div class="tiny muted" style="margin-top:4px">눈치가 50을 넘으면 겸업이 들킬 수 있어요(경고 → 감봉 → 해고). ${t.n}은 ×${t.eye}.</div></div>
-  <div class="tiny muted" style="margin:2px 2px 6px">투잡 없이 회사만 다녀도 돼요. 다만 연봉은 천천히 오르고 지방 발령, 구조조정 같은 일도 생겨서 회사만으로 25억은 쉽지 않아요.</div>
+  <div class="tiny muted" style="margin:2px 2px 6px">투잡 없이 회사만 다녀도 돼요. 다만 연봉은 천천히 오르고 지방 발령, 구조조정 같은 일도 생겨서 회사만으로 30억은 쉽지 않아요.</div>
   ${spots.map(spotBlock).join("")}
   <div class="card"><h3>온잡(전업)으로 가면 <small>명성 ${Math.round(S.fame || 0)}</small></h3><div class="small muted">회사를 나오면 행동력 +5, 컨설팅 처리량 ×1.6·문의 ×1.3, 인별 성장 ×1.3, 파티룸 평일 영업 +15%. 명성이 높으면 파티룸 창업 컨설팅·가맹 사업·VIP 상품·AI 플랫폼이 열려요. 대신 월급이 끊기고 지역 건강보험이 나가요. 잘될 때 가면 크게, 빨리 벌어요.</div></div>
   <div class="card"><h3>환승 퇴사 <small>선퇴사 금지</small></h3>
@@ -940,14 +947,14 @@ function pgMe() {
   const meB = bodySrc("me", myExpr(), "half");
   return `${meB ? `<div class="mestage" style="background-image:url(${bgUrl("home") || ""})">${img(meB, "body", "나")}<div class="cap"><b>${esc(S.me.name)}</b><span>${Math.floor(S.age)}세 · ${esc(S.co.quit || S.co.fired ? "전업 사장님" : `${S.co.name} ${D.RANKS[S.co.rank].n}`)}</span></div></div>` : ""}<div class="card"><h3>파이어 계산 <small>${Math.round(f.ratio * 100)}%</small></h3>${meter(f.ratio, 1, "linear-gradient(90deg,#f5a524,#5fe0a0)")}
     <div class="kv" style="margin-top:8px"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div><div><div class="k">목표 순자산${S.fam.spouse ? "(결혼)" : ""}</div><div class="v">${won(f.target)}</div></div><div><div class="k">월 생활비 전체</div><div class="v">${won(f.spend)}</div></div><div><div class="k">기한</div><div class="v">${D.endAge(S.me.gender)}세 · ${Math.max(0, Math.ceil(D.endAge(S.me.gender) - S.age))}년</div></div></div>
-    <div class="tiny muted" style="margin-top:6px">순자산이 목표(혼자 25억, 결혼하면 35억)에 닿으면 파이어를 선언할 수 있어요. 매니저가 굴리는 파티룸이나 VOD처럼 저절로 들어오는 사업 수입이 생활비를 넘으면 목표의 60%만 모아도 돼요.</div>
+    <div class="tiny muted" style="margin-top:6px">순자산이 목표(혼자 30억, 결혼하면 40억)에 닿으면 파이어를 선언할 수 있어요. 매니저가 굴리는 파티룸이나 VOD처럼 저절로 들어오는 사업 수입이 생활비를 넘으면 목표의 60%만 모아도 돼요.</div>
     ${f.ready ? `<button class="btn gold" style="width:100%;margin-top:8px;padding:12px" data-fire>파이어 선언하기 (${Math.floor(S.age)}세)</button>` : ""}${S.fireAt ? `<div class="tag gold" style="margin-top:8px">${S.fireAt}세 파이어 달성 · ${D.endAge(S.me.gender)}세까지 더 달리는 중</div>` : ""}</div>
   <div class="card"><h3>명성·온잡 <small>명성 ${Math.round(S.fame || 0)}/100</small></h3>${meter(S.fame || 0, 100, "var(--purple)")}<div class="tiny muted" style="margin-top:6px">별점 높은 파티룸, 컨설팅 Lv4~5, 인별·너튜브 팔로워가 명성을 올려요. 명성이 높을수록 문의·협찬·강의료가 오르고, 큰 판(가맹·VIP·AI 플랫폼)이 열려요. ${BIG.isFull(S) ? "지금 전업(온잡)이라 명성이 30% 빨리 올라요." : "회사를 나와 전업하면 판이 더 커져요."}</div></div>
   <div class="card"><h3>투자·대출</h3><div class="kv"><div><div class="k">투자(ETF)</div><div class="v">${won(S.invest)}</div></div><div><div class="k">대출 합계</div><div class="v bad">${won(E.debt(S))}</div></div><div><div class="k">월 이자·상환</div><div class="v">${won(Math.round(E.loanPay(S)))}</div></div></div>
     <div class="row wrap" style="margin-top:8px">${[100, 500, 1000].map((v) => `<button class="btn sm" data-inv="${v}">+${won(v)}</button>`).join("")}${[500, 1000].map((v) => `<button class="btn sm" data-inv="-${v}">−${won(v)}</button>`).join("")}<button class="btn sm" data-inv="all">전부 빼기</button></div>
     <div class="tiny muted" style="margin-top:4px">월 평균 +0.55%, 흔들림 큼. 대출: ${S.loans.map((l) => `${l.n} ${won(l.amt)}(${(l.rate * 100).toFixed(1)}%)`).join(", ") || "없음"}</div></div>
   <div class="card"><h3>능력치 <small>최대 200 · ${esc(D.MAJORS[S.me.major]?.n || "")} · ${esc(D.JOBS[S.me.job]?.n || "")}</small></h3><div class="radarbox">${radar([{ v: S.st, c: "#f5c04e" }])}</div>${D.STAT_KEYS.map((k) => `<div class="statrow"><span>${D.STATS[k]}</span>${meter(S.st[k], D.STAT_MAX, k === "body" ? "var(--green)" : "var(--blue)")}<b>${Math.round(S.st[k])}</b></div>`).join("")}
-    <div class="tiny muted" style="margin-top:6px">스태미너는 매달 쓰는 기력이에요. 최대 스태미너 = 60 + 체력×0.6(지금 ${S.hpMax}). 행동력 = 4 + 스태미너÷13 + 체력÷50${D.RANKS[S.co.rank].ap ? ` ${D.RANKS[S.co.rank].ap}(직급)` : ""}${E.kidsAp(S) ? ` −${E.kidsAp(S)}(육아)` : ""}${S.co.remote ? " −1(지방 근무)" : ""}. 체력과 감각은 30대 중반부터 조금씩 떨어지니 운동과 구경으로 챙겨 주세요.</div></div>
+    <div class="tiny muted" style="margin-top:6px">스태미너는 매달 쓰는 기력이에요. 최대 스태미너 = 60 + 체력×0.6(지금 ${S.hpMax}). 행동력 = 4 + 스태미너÷13 + 체력÷50${D.RANKS[S.co.rank].ap ? ` ${D.RANKS[S.co.rank].ap}(직급)` : ""}${E.kidsAp(S) ? ` −${E.kidsAp(S)}(육아)` : ""}${E.spouseAp(S) ? ` ${E.spouseAp(S) > 0 ? "+" : "−"}${Math.abs(E.spouseAp(S))}(${E.spouseAp(S) > 0 ? "배우자 도움" : "배우자 반대"})` : ""}${E.kidMotiveAp(S) ? ` +${E.kidMotiveAp(S)}(아이 보며 힘내기)` : ""}${S.co.remote ? " −1(지방 근무)" : ""}. 체력과 감각은 30대 중반부터 조금씩 떨어지니 운동과 구경으로 챙겨 주세요.</div></div>
   <div class="card"><h3>아이템 <small>사면 능력치가 바로 올라요</small></h3><div class="pick">${Object.entries(D.ITEMS).map(([k, it]) => { const own = S.items?.[k] !== undefined; return `<button data-item="${k}" ${own ? "disabled" : ""}><b>${esc(it.n)}</b><span class="tiny muted">${won(it.cash)} · ${Object.entries(it.stat).map(([s, v]) => `${D.STATS[s]} +${v}`).join(", ")}</span>${own ? '<span class="tiny good">갖고 있어요</span>' : ""}</button>`; }).join("")}</div></div>
   <div class="card"><h3>성향 카드 <small>숨은 특성은 그 일을 시작하면 공개</small></h3><div style="display:flex;flex-direction:column;gap:6px">${S.me.traits.map((id) => traitCard(D.TRAITS.find((t) => t.id === id), true)).join("")}</div></div>
   <div class="card"><h3>특전 카드 <small>큰 일을 해내면 받아요 · 다음 인생에 1장 가져가기</small></h3>${(S.me.perks || []).length ? `<div style="display:flex;flex-direction:column;gap:6px">${S.me.perks.map((id) => traitCard(D.CARD(id), true)).join("")}</div>` : ""}<div class="chips" style="margin-top:6px">${D.PERKS.filter((p) => p.test && !(S.me.perks || []).includes(p.id)).map((p) => `<span class="chip">🔒 ${esc(p.got)}</span>`).join("")}</div></div>
@@ -970,7 +977,7 @@ function charWin(id) {
   const st = c.stats || {};
   openWin(`<h2>${esc(c.name)} <button class="x" data-close>✕</button></h2>
     <div class="scene">${stageWho(id, exprFor(id), "half", bgUrl(charSpot(id)) || bgUrl("street") || bgUrl("alley")) || ""}<div class="who"><div class="pic" ${BODY[id] ? 'style="display:none"' : ""}>${img(faceSrc(id, exprFor(id)))}</div><div class="grow"><div><b>${esc(c.job)}</b> · ${c.age + Math.floor(S.t / 12)}세</div><div class="tagline">${esc(c.tagline || "")}</div>
-    <div class="row wrap" style="margin-top:4px">${(c.personality || []).map((p) => `<span class="tag">${esc(p)}</span>`).join("")}${romance ? `<span class="tag pink">연애 가능</span>` : ""}${hs ? `<span class="tag green">${esc(c.helper.role)}</span>` : ""}${c.customer ? `<span class="tag blue">${c.customer.board === "partyroom" ? "파티룸 손님" : "컨설팅 손님"}</span>` : ""}${x.spouse ? `<span class="tag pink">배우자</span>` : x.lover ? `<span class="tag pink">연인 ${months}개월</span>` : ""}${x.helper ? `<span class="tag gold">조력 중</span>` : ""}</div>
+    <div class="row wrap" style="margin-top:4px">${(c.personality || []).map((p) => `<span class="tag">${esc(p)}</span>`).join("")}${romance ? `<span class="tag pink">연애 가능</span>` : ""}${hs ? `<span class="tag green">${esc(c.helper.role)}</span>` : ""}${c.customer ? `<span class="tag blue">${c.customer.board === "partyroom" ? "파티룸 손님" : "컨설팅 손님"}</span>` : ""}${x.affair ? `<span class="tag red">비밀 관계 · 의심 ${Math.round(S.fam.affair?.sus || 0)}</span>` : x.spouse ? `<span class="tag pink">배우자</span>` : x.lover ? `<span class="tag pink">연인 ${months}개월</span>` : ""}${x.helper ? `<span class="tag gold">조력 중</span>` : ""}</div>
     <div class="tiny muted" style="margin-top:4px">좋아함: ${(c.likes || []).map(esc).join(", ")}</div></div></div>
     <div class="small">호감도 <b>${Math.round(x.aff)}</b> ${here ? "· 지금 지도에 있음" : ""}</div>${meter(x.aff, 100, "var(--pink)")}
     <div class="tiny muted" style="margin:2px 0 8px">20 친해짐 · 45 속이야기·조력 · 70 ${romance ? "고백 가능" : "평생 친구"} · 85 프러포즈(연인 8개월)</div>
@@ -978,7 +985,7 @@ function charWin(id) {
     <div class="row wrap" style="margin-top:10px">
       ${here ? btn("talk", "말 걸기", 1) : ""}${x.aff >= 15 ? btn("meetup", "약속 잡기(4만)", 1) : ""}
       ${btn("gift10", "선물 10만", 0)}${btn("gift30", "선물 30만", 0)}
-      ${x.lover || x.spouse ? btn("date", "데이트(10만)", 1) + btn("trip", "여행(80만)", 3) : ""}
+      ${x.lover || x.spouse || x.affair ? btn("date", x.affair ? "몰래 만나기(10만)" : "데이트(10만)", 1) + btn("trip", x.affair ? "몰래 여행(80만)" : "여행(80만)", 3) : ""}
       ${romance && !x.lover && !x.spouse && x.aff >= 70 && !S.fam.spouse ? btn("confess", "고백하기", 1) : ""}
       ${x.lover && months >= 8 && x.aff >= 85 ? btn("propose", "프러포즈(반지 300만)", 2) : ""}
       ${hs ? btn("helper", x.helper ? "조력 그만 부탁" : "투잡 도와 달라고 부탁", 0) : ""}
@@ -1328,6 +1335,7 @@ function bind() {
       hb.onclick = () => sw.scrollTo({ left: sw.scrollLeft > sw.clientWidth / 2 ? 0 : sw.clientWidth, behavior: "smooth" }); } }
   q("[data-money]", () => moneyWin());
   q("[data-apinfo]", () => apWin());
+  q("[data-rkid]", () => go(unlocked("family") ? "family" : "me"));
   q("[data-coach]", () => { S.coachOff = 1; save(); render(); });
   q("[data-swipe]", (el) => step(+el.dataset.swipe));
   q("[data-sjstart]", (el) => { const k = el.dataset.sjstart, j = D.SIDEJOBS[k]; openWin(`<h2>${esc(j.n)} 시작할까? <button class="x" data-close>✕</button></h2><div class="small" style="line-height:1.8">· 수익: ${esc(j.inc)}<br>· 시간: ${esc(j.hours)} · 시작 자본 ${esc(j.cap)}<br>· 궁합: ${SJ.fit(S, k).g} (${j.fit.map((x) => D.STATS[x]).join("·")})${(() => { const N = SJ.need(S, k), P = S.sj.rp?.[k]; return N ? `<br>· 필요 역량: ${esc(N.n)} ${N.need} (지금 <b class="${N.ok ? "good" : "bad"}">${N.cur}</b>) · 준비 ${P?.prep || 0}/3${N.ok ? "" : "<br>· 코치: 역량이 모자라면 첫 몇 달은 손님이 훨씬 적어요. 홍보·후기로 버텨야 해요."}` : ""; })()}<br>· 회사에 들키면 경고 → 감봉 → 해고. ${k === "cs" ? "실명으로 하면 더 잘 들킨다." : "지점이 늘수록 눈치가 쌓인다."}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>조금 더 고민</button><button class="btn gold grow" data-yes>시작하기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = SJ.start(S, k); closeWin(); toast([], r.msg); save(); if (r.ok) { go(k); if (r.hid?.length) openWin(`<h2>숨은 특성 공개 <button class="x" data-close>✕</button></h2><div class="small muted">${esc(j.n)}을(를) 시작하니 내 성향이 이렇게 드러나요.</div><div class="intro" style="margin-top:8px">${r.hid.map((x) => `<p>★ ${esc(x)}</p>`).join("")}</div><button class="btn gold" style="width:100%;margin-top:10px" data-close>확인</button>`, null, false, true); } else render(); }); });
@@ -1406,7 +1414,7 @@ async function renderTitle() {
   const empty = slots.find((x) => x.empty);
   tjxCss();
   $app.innerHTML = `<div class="title"><div class="px small gold">TJLAB GAME · v4</div><h1>After <span>6</span>PM</h1><div class="sub">파이어족을 꿈꾸는 퇴근 후 사장님</div>
-    <div class="desc">우리는 막 취업했거나 어느 정도 자리를 잡은 1~3년 차 직장인의 삶을 살게 됩니다. 회사를 열심히 다닐 수도, 투잡을 할 수도, 취미를 즐길 수도, 연애와 결혼을 할 수도 있습니다. 목표는 순자산 25억으로 파이어(내 집 10억 + 4%씩 꺼내 써도 안 줄어드는 돈 15억). 남자는 27세에 시작해 50세까지, 여자는 25세에 시작해 48세까지 똑같이 23년이에요. 한번 재미지게 살아 보십시다!</div>
+    <div class="desc">우리는 막 취업했거나 어느 정도 자리를 잡은 1~3년 차 직장인의 삶을 살게 됩니다. 회사를 열심히 다닐 수도, 투잡을 할 수도, 취미를 즐길 수도, 연애와 결혼을 할 수도 있습니다. 목표는 순자산 30억으로 파이어(내 집 12억 + 4%씩 꺼내 써도 안 줄어드는 돈 18억). 남자는 27세에 시작해 50세까지, 여자는 25세에 시작해 48세까지 똑같이 23년이에요. 한번 재미지게 살아 보십시다!</div>
     <div class="small ${u ? "gold" : "muted"}" style="margin-bottom:6px">${u ? `${esc(u.nick || u.id)}님의 저장 칸` : "로그인하지 않으면 이 브라우저에 저장돼요"}</div>
     <div class="slots">${slots.map((sl) => sl.empty
       ? `<button class="slot empty" data-snew="${sl.slot}"><b>${sl.slot}번 칸</b><span>비어 있어요 · 여기서 새 인생 시작</span></button>`
@@ -1489,7 +1497,7 @@ function ngEndRecord(m, f) {
   add(1, "인생 하나를 끝까지 살았다");
   if (S.fireAt) add(2, `${S.fireAt}세 파이어`);
   if (f.nw >= 100000) add(1, "순자산 10억");
-  if (f.nw >= 350000) add(1, "순자산 35억");
+  if (f.nw >= 400000) add(1, "순자산 40억");
   if (S.fam.spouse) add(1, "결혼");
   if (Object.keys(S.rel).length >= 25) add(1, "인연 25명");
   const ends = [];
@@ -1640,7 +1648,7 @@ function showIntro() {
     <p><b>길 찾기</b> 아래 탭(홈·지도·사람들·투잡·나)으로 다니고, 회사·취미·투잡 화면은 오른쪽 위 <b>전체 메뉴</b>에 다 있어요. 왼쪽 위 <b>뒤로</b>는 방금 본 화면으로 가요.</p>
     <p><b>회사</b> 평가는 해마다 12월(연말 결산 때), 대부분 B예요. 연봉은 천천히 오르고, 지방 발령이나 구조조정 같은 일도 생겨요. 임원까지 갈 수도 있지만 쉽지 않아요.</p>
     <p><b>투잡</b> 정해진 투잡은 없어요. 회사 소문, 너튜브, 취미에서 발견하고 두 개까지 할 수 있어요. 안 해도 괜찮아요. 투잡을 시작하면 성향 카드의 숨은 특성이 공개돼요.</p>
-    <p><b class="gold">목표</b> ${ea}세까지 순자산 25억. 내 집 10억 + 4%씩 꺼내 써도 안 줄어드는 돈 15억(월 500만)이에요. 결혼하면 집 15억 + 20억(월 670만)으로 35억이 돼요. 파산하거나 번아웃이 세 번 오면 그 인생은 끝나요.</p></div>
+    <p><b class="gold">목표</b> ${ea}세까지 순자산 30억. 내 집 12억 + 4%씩 꺼내 써도 안 줄어드는 돈 18억(월 600만)이에요. 결혼하면 집 15억 + 25억(월 830만)으로 40억이 돼요. 대신 배우자가 손을 보태 줘서 행동력이 늘어요. 파산하거나 번아웃이 세 번 오면 그 인생은 끝나요.</p></div>
     <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-close>시작하기</button>`, null, false, true);
 }
 
@@ -1713,6 +1721,7 @@ function autoTest(n) {
   const h = location.hash; ui.page = ["map", "people", "sj", "hobby", "co", "pr", "cs", "insta", "airbnb", "ucafe", "grad", "family", "me", ...REG.JOBS.map((P) => P.key)].find((k) => h.includes("-" + k)) || "home";
   if (h.includes("region")) ui.region = "town";
   { const av = h.match(/av=(p[FM][0-9])/); if (av) { S.me.avatar = av[1]; S.me.gender = av[1][1]; } const wh = h.match(/who=(c[0-9]+)/); if (wh) { S.cast.unshift(wh[1]); E.talkTo(S, wh[1]); while (S.pending) E.choose(S, 0); S.rel[wh[1]] = S.rel[wh[1]] || {}; const o = S.rel; S.rel = { [wh[1]]: o[wh[1]], ...o }; } const sp = h.match(/spot=([a-z]+)/); if (sp) ui.lastSpot = sp[1]; }
+  if (h.includes("-wed") || h.includes("-lover")) { const ids = Object.keys(E.CHAR).filter((k) => E.isRomanceable(S, E.CHAR[k])); const id = ids[0]; E.ensureRel(S, id); if (h.includes("-wed")) { Object.assign(S.rel[id], { spouse: true, aff: 72 }); S.fam.spouse = id; S.fam.spouseType = "응원형"; S.fam.marriedT = S.t; if (h.includes("kid")) S.fam.kids.push({ born: S.t - 3, name: "하린" }); } else Object.assign(S.rel[id], { lover: true, loverSince: S.t, aff: 66 }); if (h.includes("-aff")) { E.ensureRel(S, ids[2]); Object.assign(S.rel[ids[2]], { affair: true, aff: 64 }); S.fam.affair = { who: ids[2], t: S.t, sus: 42, crisisT: S.t, used: [], asked: false }; } if (h.includes("two")) { E.ensureRel(S, ids[1]); Object.assign(S.rel[ids[1]], { lover: true, loverSince: S.t, aff: 55 }); } S.apMax = E.calcApMax(S); S.ap = S.apMax; }
   render();
   if (h.includes("hub")) openHub();
   if (h.includes("ending")) { S.fireAt = 41; S.cash += 280000; S.ended = "age"; if (h.includes("jobend")) { S.moments = S.moments || {}; for (const e of REG.ENDS.filter((x, i) => i % 7 === 0)) S.moments[e.key] = S.t; } render(); } // #auto18-ending-jobend: 투잡 엔딩 몇 개 받은 결산 화면

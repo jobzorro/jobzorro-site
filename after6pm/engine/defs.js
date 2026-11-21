@@ -515,7 +515,7 @@ export const HOUSING = {
 export const END_AGE = 50; // 남자 50세, 여자 48세까지 (endAge)
 export const endAge = (g) => (g === "F" ? 48 : 50);
 export const FIRE_MULT = 25;
-export const FIRE_TARGET = { single: 250000, married: 350000 }; // 25억(집 10억 + 4%씩 꺼내 써도 안 줄어드는 돈 15억), 결혼하면 35억(집 15억 + 20억) (만원)
+export const FIRE_TARGET = { single: 300000, married: 400000 }; // 30억(집 12억 + 4%씩 꺼내 써도 안 줄어드는 돈 18억, 월 600만), 결혼하면 40억(집 15억 + 25억, 월 830만) (만원)
 
 // ───────── 투잡 탐색 (21개, 지금은 파티룸·취업컨설팅만 플레이 가능) ─────────
 // type: 투잡연구소 유형. fit: 궁합 계산에 쓰는 능력치. cap: 시작 자본(만원). hours: 주당 시간. inc: 문서에 적힌 수익.
