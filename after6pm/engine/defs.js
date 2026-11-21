@@ -108,7 +108,7 @@ export const ACTIONS = {
   cs_template: { n: "첨삭 템플릿 만들기", track: "일", ap: 2, hp: 6, desc: "고객 1명당 걸리는 시간이 준다(규모의 경제)" },
   cs_group: { n: "그룹 스터디 운영", track: "일", ap: 1, hp: 5, desc: "한 번에 여러 명. 오픈채팅 150명 또는 후기 25개" },
   cs_focus: { n: "집중 첨삭(미니게임)", track: "일", ap: 1, hp: 5, mental: -1, pick: "quiz", desc: "자소서 문장 3개를 직접 고친다. 잘 고칠수록 합격률 +, 환불 −" },
-  pr_decor: { n: "파티룸 꾸미기", track: "일", ap: 1, hp: 4, pick: "decor", desc: "조명·소파·벽·놀거리·포토존·주방을 골라 컨셉 궁합을 맞춰요" },
+  pr_decor: { n: "파티룸 컨셉 소품", track: "일", ap: 1, hp: 4, pick: "decor", desc: "조명·소파·벽·놀거리·포토존·주방을 골라 컨셉 궁합을 맞춰요" },
   cs_vod: { n: "VOD·전자책 제작", track: "일", ap: 2, hp: 6, desc: "완성되면 매달 저절로 팔린다" },
   // 장소에서 사람 만나기(공통)
   talk: { n: "말 걸기", track: "사람", ap: 1, hp: 2, desc: "" },
@@ -272,7 +272,7 @@ export const PERKS = [
   P("yr2", "회사 요령", "2년 차쯤 되면 보이는 것들", "회사 눈치 −15%, 성과 +10%", { eyeMult: 0.85, perfMult: 1.1 }, "2년 차 특전", null),
   P("yr3", "사내 인맥", "3년 동안 쌓은 점심 약속", "승진 확률 +, 헤드헌터 제안 +30%, 회사 동료 2명과 아는 사이로 시작", { promoBonus: 0.05, headhunt: 1.3 }, "3년 차 특전", null),
   P("p_room", "공간의 감", "빈 방을 보면 손님이 보인다", "파티룸 별점 하락 −20%, 인테리어 비용 −10%", { ratingGuard: 0.8, interiorCost: 0.9 }, "파티룸 3곳 운영 + 한 달 이익 1,500만", (s) => s.pr.rooms.filter((r) => r.status === "open").length >= 3 && (s.pr.profitHist?.at(-1) || 0) >= 1500 * (s.pi || 1)),
-  P("p_pen", "빨간펜", "합격 200명, 환불은 한 번도 없었다", "합격률 +3%p, 소개 +20%", { passBonus: 0.03, referMult: 1.2 }, "컨설팅 합격 200명 + 환불 0건", (s) => !!s.cs.open && (s.cs.passes || 0) >= 200 && !(s.cs.refundAll > 0)),
+  P("p_pen", "합격 제조기", "합격 200명, 환불은 한 번도 없었다", "합격률 +3%p, 소개 +20%", { passBonus: 0.03, referMult: 1.2 }, "컨설팅 합격 200명 + 환불 0건", (s) => !!s.cs.open && (s.cs.passes || 0) >= 200 && !(s.cs.refundAll > 0)),
   P("p_algo", "알고리즘의 총애", "팔로워 25만, 피드가 나를 안다", "팔로워 증가 +12%, 릴스 떡상 확률 +30%", { instaMult: 1.12, instaViral: 1.3 }, "인별 팔로워 25만", (s) => s.ins.f >= 250000),
   P("p_host", "세계의 손님", "슈퍼호스트 배지를 5년 지켰다", "숙소 별점 +, 외국어 응대 +20%", { abStar: 0.05, abLang: 1.2 }, "슈퍼호스트 60달 + 외국어 100", (s) => (s.ab.superM || 0) >= 60 && (s.st.lang || 0) >= 100),
   P("p_auto", "자동화 사장", "기계가 일하는 동안 나는 잔다", "먹튀·정산 손실 −40%, 단골 +10%", { ucTheft: 0.6, ucRepeat: 1.1 }, "무인카페 3곳, 또는 2곳 모두 별점 4.5", (s) => s.uc.stores.length >= 3 || (s.uc.stores.length >= 2 && s.uc.stores.every((st) => st.months >= 12 && (st.rating || 0) >= 4.5))),

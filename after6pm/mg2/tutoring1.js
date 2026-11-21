@@ -1,4 +1,4 @@
-// 미니게임 1탄(tutoring1) "졸지 마 학생아": 퇴근 후 화상과외. 학생은 캐릭터 그림(표정 시트), 방은 실제 배경 그림, 책상·고양이·칠판·아이콘은 고해상도 벡터(그림 실패 때만 도트).
+// 미니게임 1탄(tutoring1) "쌤 렉 걸렸어요": 퇴근 후 화상과외. 학생은 캐릭터 그림(표정 시트), 방은 실제 배경 그림, 책상·고양이·칠판·아이콘은 고해상도 벡터(그림 실패 때만 도트).
 // 화상 수업 격자(학생 4명)에서 딴짓하는 학생을 찾아 이름을 불러 깨운다.
 // 졸기 = 톡톡(빠르게 두 번), 폰 보기 = 밀기(퀴즈 던지기), 카메라 끔 = 꾹 길게, 고양이·음소거 = 톡 한 번. 잘 듣는 학생을 부르면 서운해한다.
 // 중간 '오늘의 퀴즈' 때 모두 집중해 있으면 보너스. 끝나면 "감사합니다~" 하고 화면이 하나씩 꺼지고 학부모 메시지가 온다. 30초.
@@ -312,7 +312,7 @@ function stepPicsDot() {
 }
 
 export const GAME = {
-  key: "tutoring1", base: "tutoring", jc: "#7fe0c0", n: "졸지 마 학생아", desc: "퇴근 후 화상과외! 딴짓하는 학생을 불러 수업에 집중시켜요",
+  key: "tutoring1", base: "tutoring", jc: "#7fe0c0", n: "쌤 렉 걸렸어요", desc: "퇴근 후 화상과외! 딴짓하는 학생을 불러 수업에 집중시켜요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 화상 수업 화면에서 <b>딴짓하는 학생</b>을 찾아 화면을 눌러 이름을 불러요.",
     "<b>졸면 톡톡</b>(빠르게 두 번), <b>폰 보면 쓱 밀기</b>(퀴즈 던지기), <b>카메라 끄면 꾹</b> 길게, <b>고양이·음소거는 톡</b> 한 번!",
@@ -428,7 +428,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const T = 30, QUIZ_AT = 14, QLEN = 5, HOLD = 0.5, dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "tutoring1", "졸지 마 학생아", "tu-st");
+    const F = frame(host, "tutoring1", "쌤 렉 걸렸어요", "tu-st");
     F.stage.insertAdjacentHTML("beforeend", `<canvas class="tu-cv"></canvas><div class="tu-me"><div class="tu-av"></div></div><canvas class="tu-cv tu-fx"></canvas>
       <div class="tu-hud"><span class="tu-app"><i></i>과외온</span><span class="tu-cls">화상수업 · 수학</span><span class="tu-cf">반 집중<i><em></em></i><b>85%</b></span></div>
       <div class="tu-bd"><p></p><p></p><p></p><p></p><div class="tu-qz"><div><em>오늘의 퀴즈</em><b></b><small></small></div><i></i></div></div>

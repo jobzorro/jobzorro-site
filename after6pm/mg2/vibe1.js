@@ -1,4 +1,4 @@
-// 바이브코딩 1탄: 프롬프트 조립 (일러스트판: 논리 160xH 좌표를 기기 해상도 캔버스에 벡터로 그린다)
+// 바이브코딩 1탄: 이게 되네? (일러스트판: 논리 160xH 좌표를 기기 해상도 캔버스에 벡터로 그린다)
 // 의뢰인은 캐릭터 그림(표정 시트: 반가움=웃음, 수정 요청=슬픔, 함정=놀람, 반만 줄게=팔짱), 가게는 실제 배경 그림.
 // 칩 아이콘·손가락·동전·기기·코디·노트북은 벡터. 그림을 못 불러올 때만 도트 사람으로 대체.
 // 퇴근 후 외주. 의뢰인(도트 사람)이 가게에서 두루뭉술하게 말한다. 아래 '프롬프트 칩'(기능·색·화면·조건)을
@@ -148,7 +148,7 @@ function shopFront(id, s) {
 }
 
 export const GAME = {
-  key: "vibe1", base: "vibe", jc: "#7c9cff", n: "프롬프트 조립", desc: "의뢰인 말을 칩으로 조립해 코딩 AI 코디에게 시켜요",
+  key: "vibe1", base: "vibe", jc: "#7c9cff", n: "이게 되네?", desc: "의뢰인 말을 칩으로 조립해 코딩 AI 코디에게 시켜요",
   how: [
     "처음엔 <b>리허설</b>로 한 번 해 보고 시작해요. 의뢰인이 말풍선으로 원하는 걸 <b>두루뭉술하게</b> 말해요.",
     "아래 <b>프롬프트 칩</b>(기능·색·화면·조건)을 끌어서(톡도 돼요) 위 <b>프롬프트 창</b>에 넣고 <b>실행</b>! 코디가 앱을 만들어 미리보기에 띄워요.",
@@ -370,7 +370,7 @@ function drawApp(g, r, a, tm) {
 }
 
 function runGame(host, ez, finish, opts = {}) {
-  const F = frame(host, "vibe1", "프롬프트 조립", "mg-v1st");
+  const F = frame(host, "vibe1", "이게 되네?", "mg-v1st");
   F.stage.insertAdjacentHTML("beforeend", `<div class="v1-w"><canvas></canvas>
     <div class="v1-bub"><em></em><p></p></div><div class="v1-pvl"><i>코디</i> 미리보기</div>
     <div class="v1-pr"><div class="v1-ph">여기에 칩을 끌어 놓아요</div><div class="v1-pc" style="display:contents"></div></div>

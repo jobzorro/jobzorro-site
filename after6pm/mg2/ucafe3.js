@@ -1,4 +1,4 @@
-// 무인카페 3탄: 신메뉴 레시피 (도트 캔버스 160x200~260)
+// 무인카페 3탄: 사장님은 연구 중 (도트 캔버스 160x200~260)
 // 신메뉴 시음회 날. 주문 카드에 층층이 쌓인 음료 그림이 나온다. 아래 재료 버튼을 꾹 누르고 있는 동안 컵에 붓고,
 // 컵 옆 노란 눈금선에서 손을 뗀다(공중에 남은 줄기도 마저 떨어진다). 얼음은 집게 타이밍, 토핑·시럽은 컵 위를 쓱쓱.
 // 잔을 완성하면 시음 손님이 한 모금 마시고 반응한다. 끝나면 오늘의 신메뉴 포스터에 '판매 시작' 도장.
@@ -293,7 +293,7 @@ function drawPitcher(G, id, sx, sy, tilt, alpha) {
 }
 
 export const GAME = {
-  key: "ucafe3", base: "ucafe", n: "신메뉴 레시피", desc: "시음회 날! 층층이 예쁜 신메뉴를 정확히 쌓아요",
+  key: "ucafe3", base: "ucafe", n: "사장님은 연구 중", desc: "시음회 날! 층층이 예쁜 신메뉴를 정확히 쌓아요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 주문 카드에 층층이 쌓인 음료 그림과 <b>순서</b>가 나와요.",
     "아래 재료 버튼을 <b>꾹 누르고 있는 동안</b> 컵에 부어져요. 컵 옆 <b>노란 눈금선</b>에서 손을 떼요. 공중에 남은 줄기도 마저 떨어지니 <b>살짝 일찍</b>! 넘치거나 순서가 틀리면 층이 섞여요.",
@@ -384,7 +384,7 @@ export const GAME = {
 };
 
 function runGame(host, ez, finish, opts = {}) {
-  const F = frame(host, "ucafe3", "신메뉴 레시피", "mg-u3st");
+  const F = frame(host, "ucafe3", "사장님은 연구 중", "mg-u3st");
   F.stage.insertAdjacentHTML("beforeend", `<div class="u3w"><canvas width="${W}" height="200"></canvas><div class="u3sign"><i>NEW</i>신메뉴 시음회</div><div class="u3card"><b class="t"></b><ol></ol></div><div class="u3rv"></div><div class="mg-bubs"></div><div class="u3lb"></div><div class="u3go"><span></span><i></i></div><div class="u3tut"><div class="u3tc"><em>리허설</em><p></p><div class="u3tb"></div></div></div><div class="u3dim"></div></div>`);
   const wrap = F.stage.querySelector(".u3w"), cv = wrap.querySelector("canvas"), g = cv.getContext("2d");
   const signEl = wrap.querySelector(".u3sign"), cardEl = wrap.querySelector(".u3card"), cardT = cardEl.querySelector(".t"), cardL = cardEl.querySelector("ol"), rvEl = wrap.querySelector(".u3rv");

@@ -1,4 +1,4 @@
-// 타로 1탄: 카드 펼치기 (손님은 캐릭터 그림, 배경은 저녁 거리 그림, 탁자·카드·소품은 기기 해상도 벡터)
+// 타로 1탄: 카드빨보다 말빨 (손님은 캐릭터 그림, 배경은 저녁 거리 그림, 탁자·카드·소품은 기기 해상도 벡터)
 // 카드 11장은 금테 + 그림 칸 + 이름판의 벡터 그림(고해상도 캔버스에 한 번 그려 둠). 손님 그림 실패 때만 도트 손님.
 // 플리마켓 타로 부스. 손님이 고민을 말하면 덱을 문질러 섞고, 3장을 펼쳐 손님이 고른 카드를 뒤집는다.
 // 카드 방향(정·역)을 보고 뜻을 고르고, 손님 표정을 보고 말투(따뜻하게·솔직하게)를 고른다.
@@ -310,7 +310,7 @@ function stepPics() {
 }
 
 export const GAME = {
-  key: "tarot1", base: "tarot", jc: "#b48cff", n: "카드 펼치기", desc: "플리마켓 타로 부스, 카드보다 상담이 본업이에요",
+  key: "tarot1", base: "tarot", jc: "#b48cff", n: "카드빨보다 말빨", desc: "플리마켓 타로 부스, 카드보다 상담이 본업이에요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 손님이 고민을 말하면 가운데 <b>덱을 좌우로 문질러</b> 섞어요.",
     "카드 3장이 펼쳐지면 손님이 고른 <b>반짝이는 카드</b>를 톡! 카드가 <b>거꾸로</b> 나오면 역방향 뜻이에요. 방향에 맞는 뜻을 골라요.",
@@ -414,7 +414,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "tarot1", "카드 펼치기", "tr-st");
+    const F = frame(host, "tarot1", "카드빨보다 말빨", "tr-st");
     const st = F.stage;
     st.insertAdjacentHTML("beforeend", `<div class="tr-bgi"></div><div class="tr-vg"></div><div class="tr-awn"></div><div class="tr-lts"></div><canvas class="tr-cv tr-bk"></canvas><div class="tr-cu"></div><div class="tr-mk"></div><div class="tr-me"></div><canvas class="tr-cv tr-fr"></canvas>
       <div class="tr-bub c"></div><div class="tr-bub m"></div>

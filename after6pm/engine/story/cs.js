@@ -9,7 +9,7 @@
 //  위기                     → 패키지 불합격 환불 · 세무서 우편 → 가산세 · 번아웃 주간 · 회사에 걸렸다 · 과장 광고 신고 · 비수기 달력
 //  인물                     → 합격시킨 고객의 청첩장 · "저 그만두고 싶어요"(선퇴사 금지, 환승 이직)
 //  선배                     → 업계 선배 취업조로에게 한 수 배우기(판당 최대 2번): z1 합격률 정체 → 한 항목 한 이야기·두괄식 / z2 경력 이직 → 직소싱·회사가 직무보다·환승
-//  퇴사 고민(p16 세 번째)   → 환승 조건(quitReady)이 되면 본잡 전환 장면(cine full_cs · onChoose full_ev), 안 되면 모자란 달·돈을 보여 주고 조건이 차면 한 번 더 묻는다
+//  퇴사 고민(p16 세 번째)   → 환승 조건(quitReady: 최근 연말 결산 투잡 이익 ≥ 연봉 + 비상금 6개월치)이 되면 본잡 전환 장면(cine full_cs · onChoose full_ev), 안 되면 모자란 배수·돈을 보여 주고 조건이 차면 한 번 더 묻는다
 //
 // 기획 데이터(jobconsult.json) 이벤트 16개는 원래 pr.js 의 jobEvent 가 '말로 된 효과'(돈 +40 같은 일반 효과)로 띄우던 것이다.
 // 여기서 같은 16개를 단계·시즌에 맞는 때에, 후기·소개·대기 고객·검색 지수 같은 실제 상태에 반영되게 다시 만들었다.
@@ -241,7 +241,7 @@ function fullScene(s, again) {
   const q = quitNeed(s);
   s._fullJob = "cs";
   return { kind: "event", tag: "본잡 전환", title: again ? "서랍 속 사직서" : "사직서를 꺼낼 때", cine: "full_cs", onChoose: "full_ev",
-    text: `${again ? "몇 달 전 서랍에 넣어 둔 사직서를 다시 꺼냈다. " : ""}계산기를 두드려 봤다. 투잡 수입이 월급을 넘긴 달이 ${q.streak}달째 이어지고, 비상금도 6개월치(${won(q.need)})를 넘겼다. 환승 조건은 다 찼다. 회사를 나와 취업컨설팅을 본잡으로 할까요?`,
+    text: `${again ? "몇 달 전 서랍에 넣어 둔 사직서를 다시 꺼냈다. " : ""}계산기를 두드려 봤다. 지난 연말 결산에서 투잡 이익이 연봉의 ${q.x.toFixed(1)}배였고, 비상금도 6개월치(${won(q.need)})를 넘겼다. 환승 조건은 다 찼다. 회사를 나와 취업컨설팅을 본잡으로 할까요?`,
     choices: [
       { t: "컨설팅을 본잡으로! 사직서를 낸다", eff: {}, text: "사직서를 냈다. 마지막 달까지 인수인계는 깔끔하게. 내일부터 출근지는 내 상담실이다. 행동력 +5, 월급은 끊긴다." },
       { t: "아직은 병행한다", eff: { mental: 2 }, text: "조건이 찼다는 것만으로 든든하다. 조금 더 다니며 모으기로 했다." },
@@ -280,7 +280,7 @@ export default {
     // 공채 시즌(3·9월)에 한 달 매출 120만 이상이면 시즌을 넘긴 것으로 센다
     if (cs.open && [3, 9].includes(s.cal) && cs.monthRev >= 120 * pi && X.peakKey !== s.t) { X.peakKey = s.t; X.peakN++; }
     // 이야기 이벤트: 원래 엔진이 이번 달 컨설팅 장면을 띄웠으면 쉰다. 이야기끼리 최소 1달 간격
-    if (X.quitWish && !X.quitAsked && company(s) && s.cal !== 12 && s.t >= X.quitWish && quitReady(s).ok && !scenes.some((sc) => sc?.onChoose === "full_ev")) {
+    if (X.quitWish && !X.quitAsked && company(s) && s.cal !== 12 && s.t >= X.quitWish && quitReady(s).ok && (s.fullAskT ?? -99) < s.t - 2 && !scenes.some((sc) => sc?.onChoose === "full_ev")) { // 결산에서 막 물어봤으면 석 달은 쉰다
       X.quitAsked = true; scenes.push(fullScene(s, true)); return;
     }
     if (scenes.some((sc) => sc && sc.tag === "컨설팅") || cs.ev2T === s.t || cs.evT === s.t || scenes.length >= 3) return;
@@ -346,7 +346,7 @@ export default {
         else if (q.ok) out.push("환승 조건 충족: 이어지는 연말 결산에서 정할 수 있다");
         else {
           X.quitWish = s.t + 1; // 다음 달부터 다시 확인(0 이면 꺼짐)
-          out.push(`투잡 수입 ≥ 월급: ${q.streak}/12달 연속${q.streak >= 12 ? " 충족" : ` (${12 - q.streak}달 더)`}`);
+          out.push(`지난 연말 결산 투잡 이익: 연봉의 ${q.x.toFixed(1)}배${q.yearOk ? " 충족" : " (1배부터. 12월 결산에서 다시 확인)"}`);
           out.push(`비상금 ${won(Math.max(0, q.have))} / 6개월치 ${won(q.need)}${q.emer ? " 충족" : ` (${won(q.need - Math.max(0, q.have))} 더)`}`);
           out.push("선퇴사 금지, 환승부터. 조건이 차면 다시 묻는다");
         }

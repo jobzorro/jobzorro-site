@@ -4,6 +4,7 @@ import { CHAR, addMoney, applyEff, helperPower, helpers, mod, won, log, creditRo
 import * as SYN from "./syn.js";
 import * as BIG from "./big.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
+import * as DF from "./decofx.js"; // 방 꾸미기 감성 점수 효과
 import { JOBEV } from "../gen/data.js";
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -364,7 +365,7 @@ export function month(s, r, notes, scenes) {
     if (rm.status === "setup") {
       if (rm.self > 0) { notes.push(`${rm.name}: 셀프 공사 ${rm.self}번 남음 (월세는 나감)`); s.cash -= rm.rent; addMoney(s, "exp", "파티룸 비용", rm.rent); total -= rm.rent; continue; }
       rm.status = "open"; rm.openT = s.t + 1; const it = D.INTERIORS[rm.interior];
-      rm.rating = clamp(it.star + (rm.selfQ || 0) + mod(s, "star", 0) + helperPower(s, "pr_interior") * 0.12 - (rm.toilet === "out" ? 0.1 : 0) + (decorQ(s, rm) - 0.45) * 0.45, 3.4, 4.95);
+      rm.rating = clamp(it.star + (rm.selfQ || 0) + mod(s, "star", 0) + helperPower(s, "pr_interior") * 0.12 - (rm.toilet === "out" ? 0.1 : 0) + (decorQ(s, rm) - 0.45) * 0.45 + DF.lift(s, rm) * DF.DECO.star, 3.4, 4.95);
       notes.push(`${rm.name} 오픈! 첫 별점 ${rm.rating.toFixed(2)}`);
       if (rm.ondolFail) notes.push(`${rm.name}: 온돌 시공을 하려다 바닥 구조 때문에 못 했다(확인 안 한 정보)`);
       s.cash -= rm.rent; addMoney(s, "exp", "파티룸 비용", rm.rent); total -= rm.rent;
@@ -441,10 +442,11 @@ function settle(s, r, rm, ctx) {
   if (ctx.B?.occ) m *= 1 + ctx.B.occ; // 묶음 효과: 겹친 예약을 옆 지점으로 넘긴다
   m *= 1 + Math.min(0.4, (rm.buzz || 0) / 250); // 손님 인별·블로그 후기 = 입소문
   if (decorFilled(rm.decor) < 3) m *= 0.85; // 휑한 공간: 사진에서 걸러진다
+  const dl = DF.lift(s, rm); m *= 1 + dl * DF.DECO.occ; // 방 꾸미기 감성 점수(안 꾸미면 '알아서' 수준 = 거의 0)
   if (["edu", "lecture"].includes(rm.concept)) { if (SYN.on(s, "edu_career")) m *= 1.12; if (SYN.on(s, "grad_net")) m *= 1.08; }
   if (s.era.winter) m *= 0.8; if (s.era.bigcomp) m *= 0.94;
   if (s.era.pandemic) m *= 0.4; if (s.era.slump) m *= 0.9; if (s.era.rate) m *= 0.95; if (s.era.recovery) m *= 1.06;
-  const ref = refPrice(s, rm), pEff = rm.price * peakMult(s, s.cal);
+  const ref = refPrice(s, rm) * (1 + dl * DF.DECO.price), pEff = rm.price * peakMult(s, s.cal); // 잘 꾸민 방은 시세보다 받아도 덜 빠진다
   m *= Math.pow(ref / pEff, SEA.el);
   // 관리 행동력 충족도
   const need = needAp(s, rm); const q = need ? clamp(rm.ap / need, 0, 1) : 1;
@@ -466,7 +468,7 @@ function settle(s, r, rm, ctx) {
   // 별점
   const it = D.INTERIORS[rm.interior];
   const dq = decorQ(s, rm);
-  let target = it.star + (rm.selfQ || 0) + mod(s, "star", 0) + knowStar(s) + (dq - 0.45) * 0.45 + { 좋음: 0.05, 보통: 0, 나쁨: -0.08 }[rm.hid.sound] - (rm.toilet === "out" ? 0.12 : 0) - (winter && !rm.ondol && rm.heating === "냉난방기만" ? 0.15 : 0) + helperPower(s, "pr_interior") * 0.05;
+  let target = it.star + (rm.selfQ || 0) + mod(s, "star", 0) + knowStar(s) + (dq - 0.45) * 0.45 + { 좋음: 0.05, 보통: 0, 나쁨: -0.08 }[rm.hid.sound] - (rm.toilet === "out" ? 0.12 : 0) - (winter && !rm.ondol && rm.heating === "냉난방기만" ? 0.15 : 0) + helperPower(s, "pr_interior") * 0.05 + dl * DF.DECO.star;
   target -= (1 - q) * 0.6;
   const drift = (target - rm.rating) * 0.2 * (target < rm.rating ? mod(s, "ratingGuard", 1) : 1);
   rm.rating = clamp(rm.rating + drift + 0.03 * r.normal(), 2.5, 4.98);

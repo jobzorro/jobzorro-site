@@ -1,4 +1,4 @@
-// 웹소설 1탄(webnovel1) "마감 5분 전": 밤 11시 55분, 퇴근하고 책상 앞. 자정까지 오늘 회차 5,000자를 채운다.
+// 웹소설 1탄(webnovel1) "작가님 마감이요": 밤 11시 55분, 퇴근하고 책상 앞. 자정까지 오늘 회차 5,000자를 채운다.
 // 아래 세 줄로 문장 조각(대사·묘사·반전)이 내려온다. 오늘 장르와 같은 색 조각만 톡 → 원고에 타자로 쌓인다.
 // 다른 장르·빨간 밑줄 오타·딴짓 조각은 흘려보낸다. 졸음이 차면 눈꺼풀이 내려오니 커피 조각을 톡.
 // 자정 종이 울리면 '업로드' 버튼을 바로 누르는 것이 클라이맥스. 그 뒤 독자 댓글이 쏟아진다.
@@ -94,7 +94,7 @@ function stepPics() {
 }
 
 export const GAME = {
-  key: "webnovel1", base: "webnovel", jc: "#5fb8ff", n: "마감 5분 전", desc: "밤 11시 55분, 자정 업로드까지 오늘 회차 5,000자를 채워요",
+  key: "webnovel1", base: "webnovel", jc: "#5fb8ff", n: "작가님 마감이요", desc: "밤 11시 55분, 자정 업로드까지 오늘 회차 5,000자를 채워요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 퇴근하고 책상 앞, 자정까지 오늘 회차 <b>5,000자</b>를 채워요.",
     "아래로 내려오는 문장 조각 중 <b>오늘 장르와 같은 색</b>만 톡! <b>타자 라인</b>에서 누르면 '완벽', 너무 일찍 누르면 덜 써져요. 다른 장르·<b>빨간 밑줄 오타</b>·딴짓은 흘려보내요.",
@@ -225,7 +225,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "webnovel1", "마감 5분 전", "wn-st");
+    const F = frame(host, "webnovel1", "작가님 마감이요", "wn-st");
     const GK = pick(Object.keys(GEN)), G = GEN[GK], OTH = Object.keys(GEN).filter((k) => k !== GK), EP = 30 + rint(90);
     const st = F.stage;
     st.style.setProperty("--gc", G.c);

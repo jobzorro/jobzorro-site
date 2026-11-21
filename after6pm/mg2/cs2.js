@@ -1,4 +1,4 @@
-// 미니게임 2탄(cs2) "모의면접 코칭": 컨설턴트가 되어 멘티의 모의면접을 코칭한다.
+// 미니게임 2탄(cs2) "면접관 독심술": 컨설턴트가 되어 멘티의 모의면접을 코칭한다.
 // 일러스트판: 면접관 3명은 캐릭터 그림(표정 시트: 끄덕=웃음, 갸웃=놀람, 펜 내려놓기=팔짱), 배경은 실제 회의실 그림,
 // 앞쪽 멘티는 크게 보이는 뒤통수(기기 해상도 벡터), 책상·펜·명패·표시는 벡터 캔버스. 결과 때 멘티가 돌아본다(그림).
 // 3문항: ① 질문 의도 고르기 → ② 답 카드 6장 중 3장을 "결론 → 근거 사례 → 회사 연결" 순서로.
@@ -305,14 +305,14 @@ function stepPics() {
 }
 
 export const GAME = {
-  key: "cs2", base: "cs", n: "모의면접 코칭", desc: "멘티 모의면접, 면접관 마음을 읽고 답을 짜 줘요",
+  key: "cs2", base: "cs", n: "면접관 독심술", desc: "멘티 모의면접, 면접관 마음을 읽고 답을 짜 줘요",
   how: ["면접관이 질문해요. 먼저 <b>면접관이 정말 확인하려는 것</b>(질문 의도)을 3개 중에서 골라요.", "답 카드 6장 중 3장을 <b>결론 → 근거 사례 → 회사 연결</b> 순서로 톡톡. 두괄식, 사실과 숫자, 회사에 줄 이익이 정답이에요.", "함정 카드 조심! 장황한 서두, AI 티 나는 상투어, 숫자 없는 말, 회사와 무관한 말, 남 탓. 시간이 줄면 멘티가 땀을 흘려요. 면접관 <b>표정</b>도 잘 봐요."],
   steps: () => { try { return stepPics(); } catch (e) { return [["", "의도 고르기"], ["", "결론→근거→회사"], ["", "합격 도장"]]; } },
   css: CSS,
   run(host, ez, finish) {
     const dbg = typeof window !== "undefined" && window.__mgdbg ? window.__mgdbg : null, auto = dbg && dbg.cs2;
     const N = 3, PER = 15 * ez, qs = shuffle(QS).slice(0, N);
-    const F = frame(host, "cs2", "모의면접 코칭", "");
+    const F = frame(host, "cs2", "면접관 독심술", "");
     // 사람 고르기: 가운데 팀장님 + 양옆 면접관 2명 + 멘티 1명
     const mt = pick(MENTEE);
     const sideK = shuffle(IV_SIDE.filter((k) => k !== mt.k)).slice(0, 2), ivKeys = [sideK[0], pick(IV_MID), sideK[1]];

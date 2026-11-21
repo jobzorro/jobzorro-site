@@ -1,4 +1,4 @@
-// 미니게임 3탄(cs3) "공고 골라 주기": 퇴근 후 컨설턴트가 되어 멘티에게 맞는 채용공고를 골라 준다.
+// 미니게임 3탄(cs3) "공고 중매술": 퇴근 후 컨설턴트가 되어 멘티에게 맞는 채용공고를 골라 준다.
 // 위: 멘티 프로필 카드(고정, 멘티 얼굴은 캐릭터 그림·표정). 가운데: 공고 카드가 한 장씩 날아온다. 아래: 밤 책상(실제 방 그림 + 내 캐릭터 그림 + 벡터 책상·노트북·멘티 폰). 그림 실패 때만 도트.
 // 오른쪽으로 밀면 지원(→ 멘티 폰), 왼쪽은 패스(→ 휴지통), 위로는 찜(→ 찜 폴더). 마감 임박 공고는 도화선이 탄다.
 // 맞게 지원하면 멘티 폰에 '서류 합격' 알림, 엉뚱하게 지원하면 '탈락 메일'. 대기업은 비슷한 직무도 지원하면 보너스(회사가 직무보다 중요).
@@ -283,7 +283,7 @@ const CSS = `
 `;
 
 export const GAME = {
-  key: "cs3", base: "cs", n: "공고 골라 주기", desc: "멘티에게 맞는 공고만 쏙쏙, 서류 합격 알림을 쌓아요",
+  key: "cs3", base: "cs", n: "공고 중매술", desc: "멘티에게 맞는 공고만 쏙쏙, 서류 합격 알림을 쌓아요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 위에 <b>멘티 프로필</b>(희망 직무·경력·지역)이 있고, 채용공고가 한 장씩 날아와요.",
     "맞는 공고는 <b>오른쪽으로 밀어 지원!</b> 직무·경력·근무지가 안 맞거나 <b>수상한 문구</b>(열정페이 같은)가 있으면 <b>왼쪽으로 패스</b>. <b>오픈 예정</b> 공고는 <b>위로 밀어 찜</b>.",
@@ -296,7 +296,7 @@ export const GAME = {
 
 function runGame(host, ez, finish, opts = {}) {
   const T = Math.round(30 * ez), TARGET = 6;
-  const F = frame(host, "cs3", "공고 골라 주기", "", "", `<button class="mg-btn" data-d="L">← 패스</button><button class="mg-btn" data-d="U">↑ 찜</button><button class="mg-btn gold" data-d="R">지원 →</button>`);
+  const F = frame(host, "cs3", "공고 중매술", "", "", `<button class="mg-btn" data-d="L">← 패스</button><button class="mg-btn" data-d="U">↑ 찜</button><button class="mg-btn gold" data-d="R">지원 →</button>`);
   const M = { ...pick(MENTEES) };
   const season = pick([["상반기 공채 시즌", "3/2"], ["하반기 공채 시즌", "9/1"], ["상반기 공채 시즌", "3/16"], ["하반기 공채 시즌", "9/8"]]);
   const cTxt = M.c === 0 ? "신입" : M.c <= 2 ? `중고신입(${M.c}년)` : `경력 ${M.c}년 차`;

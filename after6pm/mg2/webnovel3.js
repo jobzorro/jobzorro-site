@@ -1,4 +1,4 @@
-// 웹소설 3탄(webnovel3) "랭킹 레이스": 노블리 공모전 마지막 날 밤 7시 → 자정 마감.
+// 웹소설 3탄(webnovel3) "작가님 1위 가즈아": 노블리 공모전 마지막 날 밤 7시 → 자정 마감.
 // 위: 실시간 랭킹 보드(내 작품 + 라이벌 5편이 순위를 다투며 줄이 휙휙 바뀐다).
 // 가운데: 시간대별 독자 수 그래프(밤 10~12시 피크). 아래: 침대에 앉아 폰으로 관리하는 나 + 작업 버튼.
 // 할 일: 떠오르는 독자 댓글에 답글(악플은 무시), 표지 바꾸기(1번), 이벤트 참여, 원고 5편을 피크에 연재 올리기.
@@ -106,7 +106,7 @@ function stepPics() {
 }
 
 export const GAME = {
-  key: "webnovel3", base: "webnovel", jc: "#5fb8ff", n: "랭킹 레이스", desc: "노블리 공모전 마지막 날 밤, 자정 마감까지 순위를 끌어올려요",
+  key: "webnovel3", base: "webnovel", jc: "#5fb8ff", n: "작가님 1위 가즈아", desc: "노블리 공모전 마지막 날 밤, 자정 마감까지 순위를 끌어올려요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 저녁 7시부터 <b>자정 마감</b>까지, 위쪽 <b>실시간 랭킹</b>에서 내 작품을 3위 안으로!",
     "<b>원고는 5편뿐.</b> 가운데 그래프의 <b>노란 칸(밤 10~12시 피크)</b>에 <b>연재 올리기</b>를 하면 조회가 폭발해요. 그 전엔 아껴 둬요.",
@@ -272,7 +272,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "webnovel3", "랭킹 레이스", "wr-st");
+    const F = frame(host, "webnovel3", "작가님 1위 가즈아", "wr-st");
     const st = F.stage;
     st.insertAdjacentHTML("beforeend", `<canvas class="wr-cv"></canvas><div class="wr-rc"><div class="wr-me"></div></div><canvas class="wr-cv fg"></canvas>
       <div class="wr-hd"><i>노블리</i><span>공모전 실시간 랭킹</span><span class="lv">LIVE</span><span class="wr-clk">19:00</span></div><div class="wr-bd"></div>

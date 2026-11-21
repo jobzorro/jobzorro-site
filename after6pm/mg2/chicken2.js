@@ -1,4 +1,4 @@
-// 프랜차이즈 치킨 2탄: 금요일 밤 배달 폭주 (도트 캔버스 160x200~250, 동네 지도를 위에서 본 그림)
+// 프랜차이즈 치킨 2탄: 치킨은 식기 전에 (도트 캔버스 160x200~250, 동네 지도를 위에서 본 그림)
 // 금요일 밤 9시, 축구 하는 날. 주문 핀이 뜨고 치킨이 튀겨지면 가게 앞에 박스가 쌓인다.
 // 가게 앞 라이더를 끌어 주문 핀까지 길을 긋는다. 핀 여러 개를 차례로 지나가면 한 번에 묶어 배달(가방 최대 3개).
 // 핀마다 식는 시계가 있어 늦으면 별점이 깎이고 식은 치킨 리뷰가 달린다.
@@ -77,7 +77,7 @@ function pinDraw(P, cx, ty, o) {
 }
 
 export const GAME = {
-  key: "chicken2", base: "chicken", jc: "#ffb03b", n: "금요일 밤 배달 폭주", desc: "축구 하는 밤, 식기 전에 라이더를 보내요",
+  key: "chicken2", base: "chicken", jc: "#ffb03b", n: "치킨은 식기 전에", desc: "축구 하는 밤, 식기 전에 라이더를 보내요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 치킨이 튀겨지면 가게 앞에 박스가 쌓여요. <b>라이더를 끌어</b> 주문 핀까지 길을 그어요.",
     "가까운 주문은 핀 <b>여러 개를 차례로 지나가게</b> 끌면 한 번에 묶어 보내요(가방 최대 3개). 핀 아래 막대는 <b>식는 시계</b>, 파랗게 식으면 별점이 깎여요.",
@@ -181,7 +181,7 @@ export const GAME = {
 };
 
 function runGame(host, ez, finish, opts = {}) {
-  const F = frame(host, "chicken2", "금요일 밤 배달 폭주", "mg-c2st");
+  const F = frame(host, "chicken2", "치킨은 식기 전에", "mg-c2st");
   F.stage.insertAdjacentHTML("beforeend", `<div class="mg-c2w"><canvas></canvas><div class="mg-bubs"></div><div class="c2hud"><span class="ck">금 21:00</span><span>비</span><span class="fb">축구 0:0</span></div><div class="c2lb"><b class="br">황금닭</b></div><button class="c2ag" data-ag>배달대행 부르기<small>수수료 ${won(AGFEE)}원</small></button><div class="c2cnt"></div><div class="c2go"><span></span><i></i></div><div class="c2tut off"><div class="c2tc"><em>리허설</em><p></p><div class="c2tb"></div></div></div><div class="c2dim"></div></div>`);
   const wrap = F.stage.querySelector(".mg-c2w"), cv = wrap.querySelector("canvas"), g = cv.getContext("2d"), bubs = wrap.querySelector(".mg-bubs");
   const ckEl = wrap.querySelector(".c2hud .ck"), fbEl = wrap.querySelector(".c2hud .fb"), signEl = wrap.querySelector(".c2lb .br"), agBtn = wrap.querySelector(".c2ag"), cntEl = wrap.querySelector(".c2cnt");

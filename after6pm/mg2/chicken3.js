@@ -1,4 +1,4 @@
-// 프랜차이즈 치킨 3탄: 알바 스케줄 퍼즐 (바탕 근무표는 도트 캔버스 160x280~330, 카드·블록·얼굴은 고해상도 벡터 캔버스 + 캐릭터 그림)
+// 프랜차이즈 치킨 3탄: 치킨은 사람 장사 (바탕 근무표는 도트 캔버스 160x280~330, 카드·블록·얼굴은 고해상도 벡터 캔버스 + 캐릭터 그림)
 // 일요일 밤, 다음 주 근무표를 짠다. 위는 요일(화~일, 월 휴무) x 시간대(저녁 17~21 / 밤 21~01) 격자, 칸마다 자리 2개.
 // 금·토 저녁, 토 밤, 축구 경기 날(수 밤)은 '피크' — 두 명, 그중 튀김 1 + 배달 1 이 꼭 있어야 한다.
 // 아래 알바 카드(도트 얼굴)를 끌어 칸에 놓고, 놓기 전에 옆으로 쓱 밀거나 블록 끝을 끌어 여러 날로 늘린다. 블록 톡 = 그 칸 빼기.
@@ -123,7 +123,7 @@ function fingerURL(down) {
 }
 
 export const GAME = {
-  key: "chicken3", base: "chicken", jc: "#ffb03b", n: "알바 스케줄 퍼즐", desc: "일요일 밤, 다음 주 근무표 짜기",
+  key: "chicken3", base: "chicken", jc: "#ffb03b", n: "치킨은 사람 장사", desc: "일요일 밤, 다음 주 근무표 짜기",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 아래 <b>알바 카드</b>를 끌어 위 근무표 칸에 놓아요. 놓기 전에 <b>옆으로 쓱</b> 밀거나 <b>블록 끝을 끌면</b> 여러 날이 한 번에 채워져요.",
     "빨간 <b>피크</b>(금·토, 축구 경기 날)는 <b>두 명</b>, 그중 <b>튀김</b>과 <b>배달</b>이 꼭 있어야 해요. 카드의 가능 시간·숙련·성격(지각 잦음, 시험 기간)을 보고 골라요.",
@@ -214,7 +214,7 @@ export const GAME = {
 };
 
 function runGame(host, ez, finish, opts = {}) {
-  const F = frame(host, "chicken3", "알바 스케줄 퍼즐", "mg-c3st");
+  const F = frame(host, "chicken3", "치킨은 사람 장사", "mg-c3st");
   F.stage.insertAdjacentHTML("beforeend", `<div class="c3w"><canvas></canvas><div class="c3me"></div><canvas class="c3fr"></canvas><canvas class="c3hi"></canvas><div class="mg-bubs"></div><div class="c3lb"></div><div class="c3av"></div><button class="c3ok" data-ok>근무표 확정</button><div class="c3go"><span></span><i></i></div><div class="c3tut off"><div class="c3tc"><em>리허설</em><p></p><div class="c3tb"></div></div></div><div class="c3dim"></div></div>`);
   const wrap = F.stage.querySelector(".c3w"), cv = wrap.querySelector("canvas"), g = cv.getContext("2d"), cvF = wrap.querySelector(".c3fr"), gF = cvF.getContext("2d");
   const lbEl = wrap.querySelector(".c3lb"), meEl = wrap.querySelector(".c3me"), avEl = wrap.querySelector(".c3av"), okBtn = wrap.querySelector(".c3ok"), bubs = wrap.querySelector(".mg-bubs");

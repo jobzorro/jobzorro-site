@@ -1,4 +1,4 @@
-// 미니게임 2탄(pr2): 파티룸 "만실 테트리스"(주말 예약 달력)
+// 미니게임 2탄(pr2): 파티룸 "파티는 빈틈없이"(주말 예약 달력)
 // 160x250 논리 픽셀 도트 캔버스를 정수배로 키운다. 위: 예약 알림 카드 3칸, 아래: 금·토·일 × 2시간 6칸 달력.
 // 카드를 끌어 빈 칸에 끼운다. 예약 사이엔 청소 1칸(빗자루)이 꼭 필요. 위로 밀면 거절. 한 요일이 꽉 차면 만실!
 import { frame, timer, SFX, tone, noise, vib, rnd, rint, pick, shuffle, clamp, RM, uSpec, uSprite, uOutline } from "../mg.js";
@@ -107,7 +107,7 @@ function steps() {
 }
 
 export const GAME = {
-  key: "pr2", base: "pr", n: "만실 테트리스", desc: "금·토·일 파티룸 주말 달력에 예약을 꽉꽉 끼워 넣어요.",
+  key: "pr2", base: "pr", n: "파티는 빈틈없이", desc: "금·토·일 파티룸 주말 달력에 예약을 꽉꽉 끼워 넣어요.",
   how: [
     "위에 뜬 예약 알림을 <b>끌어서</b> 달력 빈 칸에 끼워요. 한 칸은 2시간이에요.",
     "예약 사이엔 <b>청소 1칸</b>이 꼭 필요해요. 붙이면 빨갛게 안 돼요. <b>위로 밀면 거절</b>.",
@@ -142,7 +142,7 @@ export const GAME = {
 `,
   run(host, ez, finish) {
     const T = 30, S = sprites();
-    const F = frame(host, "pr2", "주말 예약", "mg-pr2st", "", "");
+    const F = frame(host, "pr2", "파티는 빈틈없이", "mg-pr2st", "", "");
     F.stage.insertAdjacentHTML("beforeend", `<div class="mg-pr2w"><canvas width="${W}" height="${H}"></canvas><div class="mg-pr2l"><div class="mg-pr2rej">↑ 놓으면 거절</div><div class="mg-pr2tot"><small>이번 주 매출</small><b>0원</b><em></em></div></div></div>`);
     const wrap = F.stage.querySelector(".mg-pr2w"), cv = wrap.querySelector("canvas"), g = cv.getContext("2d"), lay = wrap.querySelector(".mg-pr2l"), rejEl = lay.querySelector(".mg-pr2rej"), totEl = lay.querySelector(".mg-pr2tot");
     g.imageSmoothingEnabled = false;

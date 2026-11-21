@@ -1,4 +1,4 @@
-// 미니게임 2탄(insta2) "첫 라이브 방송": 인별그램 첫 라이브. 도트 방 앞에서 내가 말하고 손 흔든다.
+// 미니게임 2탄(insta2) "이건 라방 떡상 각": 인별그램 첫 라이브. 도트 방 앞에서 내가 말하고 손 흔든다.
 // 채팅이 아래에서 위로 쏟아진다. 좋은 질문·칭찬은 톡(답하기), 악플·도배는 옆으로 밀어 가리기, 금색 협찬·후원은 큰 보너스.
 // 중간에 "링크 주세요!" 몰림(공구 링크 버튼 타이밍)과 "떡상 구간"(시청자 폭증)이 있다. 30초. 점수 = 최고 시청자 + 분위기.
 // mg.js 와 서로 불러 쓰므로, 맨 위에서는 불러온 것을 바로 쓰지 않는다(함수 안에서만).
@@ -136,7 +136,7 @@ function stepPics() {
 }
 
 export const GAME = {
-  key: "insta2", base: "insta", n: "첫 라이브 방송", desc: "떨리는 첫 라이브, 채팅을 받아 치며 시청자를 모아요",
+  key: "insta2", base: "insta", n: "이건 라방 떡상 각", desc: "떨리는 첫 라이브, 채팅을 받아 치며 시청자를 모아요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 채팅이 아래에서 올라오면 <b>좋은 질문·칭찬</b>은 톡 해서 답하면 시청자와 하트가 늘어요.",
     "<b>악플·도배·광고</b>는 옆으로 <b>밀어서</b> 가려요. 악플에 답하거나, 가리지 않고 두면 분위기가 싸해져요.",
@@ -255,7 +255,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const T = 30, dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "insta2", "첫 라이브 방송", "lv-st");
+    const F = frame(host, "insta2", "이건 라방 떡상 각", "lv-st");
     F.stage.insertAdjacentHTML("beforeend", `<canvas class="lv-cv"></canvas><div class="lv-me"></div><canvas class="lv-cv lv-fr"></canvas>
       <div class="lv-hud"><b class="lv-live">LIVE</b><span class="lv-vw"><i></i><em>0</em></span></div>
       <div class="lv-mood"><span>분위기</span><i><em></em></i></div>

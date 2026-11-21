@@ -1,4 +1,4 @@
-// 미니게임 2탄(tutoring2) "풀이 순서 판서": 퇴근 후 화상과외. 학생은 캐릭터 그림(표정 시트), 방·책상·시험지는 도트.
+// 미니게임 2탄(tutoring2) "쌤 이제 알겠어요": 퇴근 후 화상과외. 학생은 캐릭터 그림(표정 시트), 방·책상·시험지는 도트.
 // 학생이 모르는 문제를 보내면, 섞인 풀이 카드를 칠판(화면 공유)으로 끌어 올려 순서대로 붙인다.
 // 붙이면 분필로 써지고 학생 이해도가 오른다. 순서가 틀리면 학생 물음표가 커지고, 함정 카드(틀린 공식)를 붙이면 썼다가 지우개로 지운다. 함정은 휴지통으로 버리면 보너스.
 // 문제 4개(단계 3→4→4→5). 다 붙이면 학생이 "아~!" 하고 전구가 켜진다. 끝나면 학생이 시험지를 들어 보이고 빨간 동그라미가 그려지며 점수가 오른다.
@@ -250,7 +250,7 @@ function stepPicsDot() {
 }
 
 export const GAME = {
-  key: "tutoring2", base: "tutoring", jc: "#7fe0c0", n: "풀이 순서 판서", desc: "학생이 보낸 문제! 풀이 카드를 순서대로 칠판에 붙여 이해시켜요",
+  key: "tutoring2", base: "tutoring", jc: "#7fe0c0", n: "쌤 이제 알겠어요", desc: "학생이 보낸 문제! 풀이 카드를 순서대로 칠판에 붙여 이해시켜요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 학생이 모르는 문제를 보내면 아래 <b>풀이 카드</b>를 <b>칠판으로 끌어 올려요</b>.",
     "<b>위에서부터 순서대로</b> 붙여야 해요. 순서가 틀리면 학생 머리 위 <b>물음표가 커져요</b>.",
@@ -375,7 +375,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const T = Math.round(40 * (1 + (clamp(ez, 1, 1.5) - 1) * 0.6)), dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "tutoring2", "풀이 순서 판서", "tg-st");
+    const F = frame(host, "tutoring2", "쌤 이제 알겠어요", "tg-st");
     F.stage.insertAdjacentHTML("beforeend", `<canvas class="tg-cv"></canvas><div class="tg-me"><div class="tg-av"></div></div><canvas class="tg-cv tg-fx"></canvas>
       <div class="tg-hud"><span class="tg-app"><i></i>과외온</span><span class="tg-cls">1:1 · 화면 공유 중</span><span class="tg-un">이해도<i><em></em></i><b>0%</b></span></div>
       <div class="tg-snm"></div><b class="tg-mnm">나 · 선생님</b><div class="tg-bub"></div><div class="tg-say"></div>

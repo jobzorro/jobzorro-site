@@ -1,4 +1,4 @@
-// 미니게임 3탄(tutoring3) "학부모 상담 전화": 퇴근길 지하철에서 과외 학부모와 통화한다.
+// 미니게임 3탄(tutoring3) "쌤 통화 잠깐만요": 퇴근길 지하철에서 과외 학부모와 통화한다.
 // 학부모 말풍선이 오면 답 카드 2~3장 중 알맞은 카드를 위로 끌어 올려 보낸다(솔직한 진단·구체적 계획이 정답, 무리한 약속·학생 탓·핑계는 함정).
 // 중간 변수: 터널(신호 끊기기 전에 빨리), 옆자리 소음(말풍선 톡 → 다시 듣기), 회사 단톡방 알림(옆으로 밀어 치우기).
 // 끝나면 열차가 집앞역에 서고, 학부모 기분에 따라 재등록·입금 알림 또는 "그만하겠습니다" 메시지가 온다. 30초.
@@ -68,7 +68,7 @@ function stepPics() {
 }
 
 export const GAME = {
-  key: "tutoring3", base: "tutoring", jc: "#7fe0c0", n: "학부모 상담 전화", desc: "퇴근길 지하철, 과외 학부모 전화! 말 한마디에 재등록이 갈려요",
+  key: "tutoring3", base: "tutoring", jc: "#7fe0c0", n: "쌤 통화 잠깐만요", desc: "퇴근길 지하철, 과외 학부모 전화! 말 한마디에 재등록이 갈려요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 학부모 말이 오면 알맞은 <b>답 카드를 위로 쓱</b> 끌어 올려 보내요.",
     "<b>솔직한 진단·구체적 계획</b>은 기분이 오르고, <b>무리한 약속·학생 탓</b>은 함정! 늦게 답해도 기분이 내려가요.",
@@ -219,7 +219,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const T = 30, dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "tutoring3", "학부모 상담 전화", "t3-st");
+    const F = frame(host, "tutoring3", "쌤 통화 잠깐만요", "t3-st");
     F.stage.insertAdjacentHTML("beforeend", `<canvas class="t3-cv"></canvas><div class="t3-mew"><div class="t3-av"></div></div>
       <div class="t3-led"><span>이번 역은 야근역입니다 · 다음 역은 투잡역 · 내리실 문은 왼쪽입니다</span></div><div class="t3-nb"></div>
       <div class="t3-ph">

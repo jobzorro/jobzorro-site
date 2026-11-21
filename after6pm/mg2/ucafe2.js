@@ -1,4 +1,4 @@
-// 무인카페 2탄: 한여름 피크 방어 (논리 160x200~250, 캔버스는 기기 해상도: 손님·사장은 캐릭터 그림(표정), 창밖은 실제 거리 그림, 재고·말풍선·표시는 벡터. 가게 배치는 그대로 두어 알아보기 쉽게)
+// 무인카페 2탄: 사장님은 원격 중 (논리 160x200~250, 캔버스는 기기 해상도: 손님·사장은 캐릭터 그림(표정), 창밖은 실제 거리 그림, 재고·말풍선·표시는 벡터. 가게 배치는 그대로 두어 알아보기 쉽게)
 // 폭염 낮, 손님이 문 → 키오스크 → 커피 머신 → 문으로 다닌다. 아래 재고 칸(얼음·컵·원두·우유·빨대)을
 // 창고 상자로 채우고, 가끔 생기는 사고(얼음 기계 고장·쏟은 음료·에어컨 꺼짐)를 처리한다.
 // 끝나면 프린터에서 오늘 매출 영수증이 쭉 나온다.
@@ -164,7 +164,7 @@ function bgCanvas() {
 }
 
 export const GAME = {
-  key: "ucafe2", base: "ucafe", n: "한여름 피크 방어", desc: "폭염 낮, 몰려드는 손님을 원격으로 버텨요",
+  key: "ucafe2", base: "ucafe", n: "사장님은 원격 중", desc: "폭염 낮, 몰려드는 손님을 원격으로 버텨요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 손님은 알아서 주문하고 음료를 받아 가요. 당신은 <b>사장님(원격)</b>이에요. 한 잔 만들 때마다 <b>얼음·컵·원두·우유·빨대</b>가 줄어요.",
     "<b>내가 할 일 ①</b> 아래 재고 칸을 <b>톡</b>하면 창고 상자 하나로 가득 채워요. 가져오는 데 <b>1초</b> 걸리니 비기 전에 미리! 상자는 한정이라 덜 빈 칸을 채우면 아까워요. 하나라도 비면 손님이 화내고 그냥 가요.",
@@ -252,7 +252,7 @@ function mopC() {
 }
 
 function runGame(host, ez, finish, opts = {}) {
-  const F = frame(host, "ucafe2", "한여름 피크 방어", "mg-u2st");
+  const F = frame(host, "ucafe2", "사장님은 원격 중", "mg-u2st");
   F.stage.insertAdjacentHTML("beforeend", `<div class="mg-u2w"><canvas width="${W}" height="${H}"></canvas><div class="mg-u2hud"><span class="lv"><i>●</i> LIVE</span><span class="tp"></span></div><div class="mg-bubs"></div><div class="u2lb"></div><div class="u2go"><span></span><i></i></div><div class="u2tut"><div class="u2tc"><em>리허설</em><p></p><div class="u2tb"></div></div></div><div class="mg-u2dim"></div></div>`);
   const wrap = F.stage.querySelector(".mg-u2w"), lbEl = F.stage.querySelector(".u2lb"), goEl = F.stage.querySelector(".u2go"), goT = goEl.querySelector("span"), goI = goEl.querySelector("i"), tutEl = F.stage.querySelector(".u2tut"), tutP = tutEl.querySelector("p"), tutB = tutEl.querySelector(".u2tb"), hud = wrap.querySelector(".mg-u2hud"), cv = wrap.querySelector("canvas"), g = cv.getContext("2d"), bubs = wrap.querySelector(".mg-bubs"), tpEl = wrap.querySelector(".tp"), dim = wrap.querySelector(".mg-u2dim");
   let K = 2, KS = 2;

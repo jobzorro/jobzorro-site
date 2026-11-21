@@ -148,7 +148,7 @@ function steps() {
 }
 
 export const GAME = {
-  key: "pr3", base: "pr", n: "층간소음 막기", desc: "밤 11시, 파티룸의 흥은 지키고 이웃은 재워요",
+  key: "pr3", base: "pr", n: "파티는 소곤소곤", desc: "밤 11시, 파티룸의 흥은 지키고 이웃은 재워요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 파티룸 3칸이 영업 중이고, <b>옆집·아래층</b> 이웃은 자고 있어요.",
     "손님들이 자꾸 볼륨을 올려요. <b>시끄러운 방을 톡</b>하면 '조금만 낮춰 주세요' 문자가 가서 한 칸 내려가요. <b>열린 창문</b>은 톡해서 닫아요.",
@@ -221,7 +221,7 @@ export const GAME = {
 
 function runGame(host, ez, finish, opts = {}) {
   const S = sprites();
-  const F = frame(host, "pr3", "층간소음 막기", "mg-p3st");
+  const F = frame(host, "pr3", "파티는 소곤소곤", "mg-p3st");
   F.stage.insertAdjacentHTML("beforeend", `<div class="mg-p3w"><canvas width="${W}" height="${H}"></canvas><div class="p3lb"></div><div class="p3clk"></div><div class="p3pol"><b></b><small>경찰차 오기 전에 전부 조용히!</small></div><div class="p3go"><span></span><i></i></div><div class="p3tut off"><div class="p3tc"><em>리허설</em><p></p><div class="p3tb"></div></div></div></div>`);
   const wrap = F.stage.querySelector(".mg-p3w"), cv = wrap.querySelector("canvas"), g = cv.getContext("2d"), lbEl = wrap.querySelector(".p3lb"), clkEl = wrap.querySelector(".p3clk"), polEl = wrap.querySelector(".p3pol"), polB = polEl.querySelector("b");
   const goEl = wrap.querySelector(".p3go"), goT = goEl.querySelector("span"), goI = goEl.querySelector("i"), tutEl = wrap.querySelector(".p3tut"), tutP = tutEl.querySelector("p"), tutB = tutEl.querySelector(".p3tb");

@@ -3,6 +3,7 @@ import * as D from "./defs.js";
 import { addMoney, log, mod, won, gainStat, applyEff, creditRoom, addLoan, helperPower } from "./core.js";
 import * as SYN from "./syn.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
+import * as DF from "./decofx.js"; // 방 꾸미기 감성 점수 효과(사진 클릭·별점)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 // 11-21 밸런스: 공개 게임이라 미등록이 정답이 되면 안 된다. 합법이 기대값이 조금 더 낫게.
@@ -75,7 +76,8 @@ export function month(s, r, notes, scenes) {
     const fx = A.fx > 0 ? 1.3 : 1, intl = s.era.pandemic ? 0.15 : s.era.intl ? 0.5 : 1;
     const langF = clamp(0.45 + s.st.lang / 110, 0.4, 1.3) * mod(s, "abLang", 1);
     const foreignD = R.foreign * fx * intl * langF * (SYN.on(s, "ovs_ab") ? 1.1 : 1) * (SYN.on(s, "insta_ab") ? 1.06 : 1), domesticD = (u.reg === "legal" && R.city ? AB_LAW.cityDomestic : 1) * (1 - R.foreign) * (s.era.winter ? 0.8 : 1); // 서울 합법: 내국인은 공유숙박 특례로 절반만
-    let occ = AB_LAW.occ * seas * (foreignD + domesticD) * (0.6 + u.photo / 250) * (1 + (u.rating - 4.6) * 0.8) * Math.pow(R.adr * T.adrF * pi / u.adr, 1.2) * (A.super ? 1.12 * (u.reg === "legal" ? AB_LAW.legalSuper : 1) : 1) * (u.reg === "legal" ? AB_LAW.legalShow : AB_LAW.illegalShow) * (1 - 0.03 * (s.pr?.mkt?.[u.rk]?.comp || 0));
+    const dl = DF.lift(s, u); // 안 꾸민 숙소는 '알아서' 수준(거의 0)
+    let occ = AB_LAW.occ * seas * (foreignD + domesticD) * (0.6 + u.photo / 250 + dl * DF.DECO.photo) * (1 + (u.rating - 4.6) * 0.8) * Math.pow(R.adr * T.adrF * pi / u.adr, 1.2) * (A.super ? 1.12 * (u.reg === "legal" ? AB_LAW.legalSuper : 1) : 1) * (u.reg === "legal" ? AB_LAW.legalShow : AB_LAW.illegalShow) * (1 - 0.03 * (s.pr?.mkt?.[u.rk]?.comp || 0));
     if (u.months === 0) occ *= 0.6;
     occ *= SJ.ramp(s, "airbnb"); // 첫 숙소 초반 고생(sj.js ENTRY)
     const q = A.cohost ? 1 : clamp(u.ap / needAp(s, u), 0, 1); occ *= 0.8 + 0.2 * q;
@@ -84,7 +86,7 @@ export function month(s, r, notes, scenes) {
     const clean = (A.cohost ? 3.5 : 1.2) * stays * pi * sf, util = 18 * T.rentF * pi * (0.6 + 0.4 * sf), fee = rev * 0.035, cohost = A.cohost ? rev * 0.2 : 0;
     let cost = Math.round(u.rent + clean + util + fee + cohost + stays * 0.8 * pi);
     // 별점: 청결(관리)·응대(외국어)·사진
-    const target = 4.35 + q * 0.35 + (s.st.lang - 40) / 400 + (u.host === s.t ? 0.05 : 0) + mod(s, "abStar", 0) + (SYN.on(s, "travel_ab") ? 0.05 : 0);
+    const target = 4.35 + q * 0.35 + (s.st.lang - 40) / 400 + (u.host === s.t ? 0.05 : 0) + mod(s, "abStar", 0) + (SYN.on(s, "travel_ab") ? 0.05 : 0) + dl * DF.DECO.abStar;
     u.rating = clamp(u.rating + (target - u.rating) * 0.25 + 0.03 * r.normal(), 3.4, 4.99);
     u.stays += stays; u.months++; u.ap = 0;
     u.last = { occ, nights, stays, rev, cost, foreign: Math.round(foreignD / (foreignD + domesticD + 1e-9) * 100), q };

@@ -1,4 +1,4 @@
-// 미니게임 2탄: 에어씨앤씨 숙소 — 체크인 전 검수(틀린 그림 찾기)
+// 미니게임 2탄: 에어씨앤씨 숙소 — 인간 돋보기(틀린 그림 찾기)
 // 위: 지난번 손님 맞이 때 찍은 "완벽한 방" 사진, 아래: 지금 방. 둘 다 120x90 도트 장면을 코드로 그린다.
 // 방 3개(게스트하우스 침실·한옥 방·욕실 겸 원룸, 색·무늬·좌우 무작위), 방마다 다른 곳 5개를 아래 그림에서 톡.
 // 맞히면 빨간 동그라미 + 그 자리가 고쳐지고, 틀리면 감점·흔들림. 시간이 흐르면 캐리어 소리·"곧 도착" 알림.
@@ -281,7 +281,7 @@ const loupeIcon = () => spr(12, 12, (P) => { P(2, 0, 4, 1, "#e8e8f0"); P(1, 1, 1
 const bagP = (P, x, y, c) => { P(x, y - 9, 6, 8, c); P(x, y - 9, 6, 1, sh(c, 1.25)); P(x + 5, y - 8, 1, 7, sh(c, 0.7)); P(x + 2, y - 11, 2, 1, "#333"); P(x + 1, y - 10, 1, 1, "#333"); P(x + 4, y - 10, 1, 1, "#333"); P(x + 1, y - 6, 4, 1, sh(c, 0.8)); P(x, y - 1, 1, 1, "#222"); P(x + 5, y - 1, 1, 1, "#222"); };
 
 export const GAME = {
-  key: "airbnb2", base: "airbnb", n: "체크인 전 검수", desc: "손님 오기 전, 지난번 완벽했던 방 사진과 지금 방을 비교해 다른 곳을 찾아요.",
+  key: "airbnb2", base: "airbnb", n: "인간 돋보기", desc: "손님 오기 전, 지난번 완벽했던 방 사진과 지금 방을 비교해 다른 곳을 찾아요.",
   how: ["위는 <b>지난번 손님 맞이 사진</b>, 아래는 <b>지금 방</b>이에요", "아래 그림에서 <b>다른 곳 5개</b>를 톡! 틀리면 감점과 시간 -1초", "<b>돋보기</b>를 누르고 사진을 꾹 누르면 크게 보여요. 손님이 문 앞까지 와요!"],
   steps: () => {
     const R = roomBed(), a = mkC(W, H), b = mkC(W, H), ga = a.getContext("2d"), gb = b.getContext("2d");
@@ -363,7 +363,7 @@ export const GAME = {
   run(host, ez, finish, skill = 0) {
     const T = ROOM_T * ez;
     let lpLeft = 1 + (skill >= 60 ? 1 : 0);
-    const F = frame(host, "airbnb2", "체크인 전 검수", "mg-ab2st", "", `<button class="mg-btn" data-lp><img src="${loupeIcon()}" alt="">돋보기 <span>${lpLeft}</span></button><div class="ab2-info"><span>지금 방에서</span><b>다른 곳 5개 찾기</b></div>`);
+    const F = frame(host, "airbnb2", "인간 돋보기", "mg-ab2st", "", `<button class="mg-btn" data-lp><img src="${loupeIcon()}" alt="">돋보기 <span>${lpLeft}</span></button><div class="ab2-info"><span>지금 방에서</span><b>다른 곳 5개 찾기</b></div>`);
     const dateS = `'${String(24 + rint(2))}.${String(1 + rint(12)).padStart(2, "0")}.${String(1 + rint(28)).padStart(2, "0")}`;
     F.stage.insertAdjacentHTML("beforeend", `<div class="ab2-w"><div class="ab2-ph"><i class="ab2-tape"></i><canvas class="ab2-c ab2-t" width="${W}" height="${H}"></canvas><b><span>지난번 손님 맞이 사진 · 완벽!</span><em>${dateS}</em></b></div>
       <div class="ab2-now"><canvas class="ab2-c ab2-b" width="${W}" height="${H}"></canvas><span class="ab2-tag">지금 방</span><span class="ab2-dots">${"<i></i>".repeat(ND)}</span><div class="ab2-ov"></div></div></div>

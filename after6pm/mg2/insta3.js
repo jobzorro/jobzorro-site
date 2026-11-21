@@ -1,4 +1,4 @@
-// 미니게임 3탄(insta3) "릴스 편집": 퇴근 후 찍어 둔 영상(여행·음식·운동·내 얼굴)을 음악 박자에 맞춰 자르는 리듬 편집기.
+// 미니게임 3탄(insta3) "이건 칼박 숏폼 각": 퇴근 후 찍어 둔 영상(여행·음식·운동·내 얼굴)을 음악 박자에 맞춰 자르는 리듬 편집기.
 // 위는 세로 미리보기, 아래는 타임라인. 가위 표시가 빨간 선에 닿을 때 톡 = 컷. 보라 화살표 = 그 방향으로 쓱(전환 효과).
 // 노란 자막 막대 = 꾹 눌렀다가 끝에서 떼기. 정박이면 Perfect, 어긋나면 화면이 튄다. 끝나면 내가 편집한 릴스가 박자대로 재생되고 조회수가 터진다.
 // 음악은 tone·noise 로 직접 짠 드럼+베이스 루프(BPM 96). 소리와 화면은 같은 시계(performance.now)로 맞춘다.
@@ -232,7 +232,7 @@ function stepPics() {
 }
 
 export const GAME = {
-  key: "insta3", base: "insta", n: "릴스 편집", desc: "퇴근 후 찍은 영상을 음악 박자에 맞춰 잘라 떡상 릴스를 만들어요",
+  key: "insta3", base: "insta", n: "이건 칼박 숏폼 각", desc: "퇴근 후 찍은 영상을 음악 박자에 맞춰 잘라 떡상 릴스를 만들어요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 음악에 맞춰 <b>가위 표시</b>가 흘러와요. <b>빨간 선</b>에 닿는 순간 화면 아무 데나 톡 하면 컷이 바뀌어요.",
     "<b>보라 화살표</b>는 전환 효과! 그 방향으로 <b>쓱 밀어요</b>. <b>노란 자막 막대</b>는 꾹 누르고 있다가 막대 끝에서 떼요.",
@@ -320,7 +320,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "insta3", "릴스 편집", "rl-st");
+    const F = frame(host, "insta3", "이건 칼박 숏폼 각", "rl-st");
     F.stage.insertAdjacentHTML("beforeend", `<canvas class="rl-cv"></canvas><div class="rl-pv"><div class="rl-me"></div><div class="rl-sub"></div></div><canvas class="rl-cv rl-fr"></canvas>
       <div class="rl-j"></div><div class="rl-cb"></div><div class="rl-ban"></div><div class="rl-hint"></div>
       <div class="rl-up"><span>릴스 내보내는 중…</span><i><em></em></i></div>

@@ -1,4 +1,4 @@
-// 미니게임 3탄: 에어씨앤씨 — 길 잃은 손님 안내
+// 미니게임 3탄: 에어씨앤씨 — 인간 내비게이션
 // 위에서 본 도트 동네 지도(골목·큰길·지하철역·버스 정류장·편의점·공사장·계단 언덕·일방통행·비 오는 골목)를 코드로 그린다.
 // 캐리어 끄는 외국인 손님이 역·정류장에서 "Where is it?" 하고 전화하면, 손님을 꾹 눌러 골목을 따라 숙소 핀까지 길을 그린다.
 // 손님은 그린 길을 그대로 걷는다. 공사장은 못 지나가고, 계단(느리고 지침)·비 오는 골목·일방통행 역방향·먼 길은 감점.
@@ -166,7 +166,7 @@ function houseP(P, x, y, w, h, open) {
 }
 
 export const GAME = {
-  key: "airbnb3", base: "airbnb", n: "길 잃은 손님 안내", desc: "역에서 헤매는 외국인 손님에게 숙소까지 길을 그려 줘요",
+  key: "airbnb3", base: "airbnb", n: "인간 내비게이션", desc: "역에서 헤매는 외국인 손님에게 숙소까지 길을 그려 줘요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 캐리어 끄는 손님이 역·정류장에서 <b>\"Where is it?\"</b> 하고 전화해요.",
     "손님을 <b>꾹 누른 채</b> 골목을 따라 <b>숙소 핀</b>까지 손가락으로 길을 그려요. 손님이 그 길 그대로 걸어가요.",
@@ -273,7 +273,7 @@ export const GAME = {
 @media (prefers-reduced-motion:reduce){.mg-airbnb3 .ab3-go i,.mg-airbnb3 .ab3-go2,.mg-airbnb3 .ab3-bub.lo,.mg-airbnb3 .ab3-ppl img{animation:none}}
 `,
   run(host, ez, finish, skill = 0, opts = {}) {
-    const F = frame(host, "airbnb3", "길 잃은 손님 안내", "mg-ab3st");
+    const F = frame(host, "airbnb3", "인간 내비게이션", "mg-ab3st");
     F.stage.insertAdjacentHTML("beforeend", `<div class="ab3-call idle"><img src="${phoneURL()}" alt=""><div><b>에어씨앤씨 손님 전화</b><span>잠깐만요…</span></div><i><em></em></i></div>
       <div class="ab3-w"><canvas width="${W}" height="${H}"></canvas><div class="ab3-ov"></div><div class="ab3-go"><span></span><i></i></div>
       <div class="ab3-tut off"><div class="ab3-tc"><em>리허설</em><p></p><div class="ab3-tb"></div></div></div><div class="ab3-end"></div></div>`);

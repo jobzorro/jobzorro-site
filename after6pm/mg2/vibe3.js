@@ -1,4 +1,4 @@
-// 바이브코딩 3탄: 출시 날 서버 지키기 (도트 캔버스 160xH)
+// 바이브코딩 3탄: 이게 왜 터져? (도트 캔버스 160xH)
 // 코딩 AI '코디'랑 만든 내 작은 앱이 커뮤니티에서 떡상! 밤 9시~아침 7시, 서버실 대시보드를 지킨다.
 // 사용자 도트가 양옆에서 몰려와 로드밸런서를 지나 케이블을 타고 서버 랙으로 들어간다.
 // 과부하된(빨간) 랙을 잡고 한가한 랙으로 끌면 트래픽이 옮겨 간다. 꽉 찬 채로 버티면 503으로 터지고 사용자가 떠난다.
@@ -46,7 +46,7 @@ function miniRack(P, x, y, h, st) {
 }
 
 export const GAME = {
-  key: "vibe3", base: "vibe", jc: "#7c9cff", n: "출시 날 서버 지키기", desc: "떡상한 내 앱! 밤새 서버가 안 터지게 지켜요",
+  key: "vibe3", base: "vibe", jc: "#7c9cff", n: "이게 왜 터져?", desc: "떡상한 내 앱! 밤새 서버가 안 터지게 지켜요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 내 앱이 커뮤니티에서 <b>떡상</b>! 사용자가 서버로 몰려와요.",
     "<b>빨간 서버</b>(과부하)를 잡고 <b>한가한 서버</b>로 끌면 트래픽이 옮겨 가요. 꽉 찬 채로 버티면 <b>503</b>으로 터져요.",
@@ -148,7 +148,7 @@ export const GAME = {
 };
 
 function runGame(host, ez, finish, opts = {}) {
-  const F = frame(host, "vibe3", "출시 날 서버 지키기", "mg-v3st");
+  const F = frame(host, "vibe3", "이게 왜 터져?", "mg-v3st");
   F.stage.insertAdjacentHTML("beforeend", `<div class="v3-w"><canvas class="v3-cv"></canvas>
     <div class="v3-gl">실시간 가입자 <b>▲</b></div>
     <div class="v3-dash"><b class="v3-clk">21:00</b><span>가입 <i data-k="u">0</i>명</span><span class="rv">구독 <i data-k="s">0</i>명 <i data-k="r">0</i>만</span><span class="cs">서버비 <i data-k="c">36</i>만/월</span></div>

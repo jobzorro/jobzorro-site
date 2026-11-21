@@ -56,7 +56,7 @@ export const IN_CSS = `
 
 export function gIN2(host, ez, finish) {
   const N = 3, dbgT = typeof window !== "undefined" && window.__mgdbg && window.__mgdbg.trip, trips = dbgT ? [TRIPS.find((x) => x.id === dbgT), ...shuffle(TRIPS.filter((x) => x.id !== dbgT))].slice(0, N) : shuffle(TRIPS).slice(0, N);
-  const F = frame(host, "insta", "사진 한 장", "mg-trip", "", `<div class="mg-shots">${trips.map(() => "<span>-</span>").join("")}</div><button class="mg-shut" data-shut aria-label="셔터"></button>`);
+  const F = frame(host, "insta", "이건 인생샷 각", "mg-trip", "", `<div class="mg-shots">${trips.map(() => "<span>-</span>").join("")}</div><button class="mg-shut" data-shut aria-label="셔터"></button>`);
   F.foot.style.alignItems = "center"; F.foot.style.justifyContent = "space-between";
   F.stage.insertAdjacentHTML("afterbegin", `<canvas class="mg-tcv"></canvas>`);
   F.stage.insertAdjacentHTML("beforeend", `<div class="mg-vf"><i class="c1"></i><i class="c2"></i><i class="c3"></i><i class="c4"></i></div><div class="mg-fbox"></div><div class="mg-meter"><em></em><span>분위기</span></div>

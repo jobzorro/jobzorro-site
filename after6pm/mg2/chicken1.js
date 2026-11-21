@@ -1,4 +1,4 @@
-// 프랜차이즈 치킨 1탄: 황금 튀김 타이밍 (도트 캔버스 160x200~250)
+// 프랜차이즈 치킨 1탄: 치킨은 겉바속촉 (도트 캔버스 160x200~250)
 // 주문표가 들어오면 반죽한 닭을 끌어 튀김 바구니에 넣는다. 연노랑 → 황금 → 갈색 → 탄 색.
 // 황금색일 때 바구니를 위로 쓱 끌어 올리면 '탁탁' 기름을 턴다. 주문대로 소스 통을 톡 → 볼을 문질러 버무리고,
 // 박스에 치킨무를 톡 넣으면 라이더가 가져간다. 가끔 불이 세져서 기름이 튄다(손잡이 톡).
@@ -79,7 +79,7 @@ const BOXI = (P) => { P(0, 4, 22, 10, "#d9a868"); P(0, 4, 22, 1, "#f0c88a"); P(1
 const MUI = (P) => { P(1, 2, 8, 7, "#f6f6f0"); P(0, 1, 10, 2, "#ffffff"); P(2, 3, 2, 2, "#fffbe0"); P(5, 4, 2, 2, "#f8f0c8"); P(3, 6, 2, 2, "#fffbe0"); P(8, 3, 1, 6, "#d8d8cc"); };
 
 export const GAME = {
-  key: "chicken1", base: "chicken", jc: "#ffb03b", n: "황금 튀김 타이밍", desc: "황금색일 때 건져야 리뷰가 ★5",
+  key: "chicken1", base: "chicken", jc: "#ffb03b", n: "치킨은 겉바속촉", desc: "황금색일 때 건져야 리뷰가 ★5",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 주문표가 들어오면 <b>반죽한 닭</b>을 끌어 <b>튀김 바구니</b>에 넣어요.",
     "튀김 색이 연노랑 → <b>황금</b> → 갈색 → 탄 색으로 변해요. <b>황금색일 때</b> 바구니를 <b>위로 쓱</b> 끌어 올려요. 타면 버리고 다시 튀겨야 해요.",
@@ -177,7 +177,7 @@ export const GAME = {
 };
 
 function runGame(host, ez, finish, opts = {}) {
-  const F = frame(host, "chicken1", "황금 튀김 타이밍", "mg-c1st");
+  const F = frame(host, "chicken1", "치킨은 겉바속촉", "mg-c1st");
   F.stage.insertAdjacentHTML("beforeend", `<div class="mg-c1w"><canvas></canvas><div class="mg-bubs"></div><div class="c1lb"></div><div class="c1go"><span></span><i></i></div><div class="c1tut"><div class="c1tc"><em>리허설</em><p></p><div class="c1tb"></div></div></div><div class="c1dim"></div></div>`);
   const wrap = F.stage.querySelector(".mg-c1w"), cv = wrap.querySelector("canvas"), g = cv.getContext("2d"), lbEl = wrap.querySelector(".c1lb"), goEl = wrap.querySelector(".c1go"), goT = goEl.querySelector("span"), goI = goEl.querySelector("i"), tutEl = wrap.querySelector(".c1tut"), tutP = tutEl.querySelector("p"), tutB = tutEl.querySelector(".c1tb"), dim = wrap.querySelector(".c1dim"), bubs = wrap.querySelector(".mg-bubs");
   let K = 2, H = 220, OD = 32, LIP = OT + 32, CY = 146, PR = 184;

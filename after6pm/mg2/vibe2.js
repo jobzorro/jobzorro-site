@@ -1,4 +1,4 @@
-// 바이브코딩 2탄: 버그 잡기 (논리 160xH, 캔버스는 기기 해상도: 가게는 실제 배경 그림, 의뢰인은 캐릭터 그림(표정), 폰·벌레·코디·노트북은 벡터. 그림 실패 때만 도트)
+// 바이브코딩 2탄: 이게 왜 안 돼? (논리 160xH, 캔버스는 기기 해상도: 가게는 실제 배경 그림, 의뢰인은 캐릭터 그림(표정), 폰·벌레·코디·노트북은 벡터. 그림 실패 때만 도트)
 // 의뢰인 앱이 오픈 직전인데 버그 신고가 쏟아진다. 위: 의뢰인 폰에서 도트 앱이 돌아가고, 버그 벌레가 기어다니며
 // 화면을 깨뜨린다(버튼 삐져나옴·글자 깨짐·사진 뒤집힘·무한 로딩·가격 0원·다크모드 글자 안 보임).
 // 벌레(또는 깨진 곳)를 톡 → 코디가 고치는 법 3개 제안 → 맞으면 화면이 쓱 고쳐지고 벌레 찍!, 틀리면 다른 데가 새로 깨진다.
@@ -322,7 +322,7 @@ function shopFront(th) {
 }
 
 export const GAME = {
-  key: "vibe2", base: "vibe", jc: "#7c9cff", n: "버그 잡기", desc: "오픈 직전 앱에 버그 신고가 쏟아져요. 벌레를 잡고 코디에게 맞는 수정을 시켜요",
+  key: "vibe2", base: "vibe", jc: "#7c9cff", n: "이게 왜 안 돼?", desc: "오픈 직전 앱에 버그 신고가 쏟아져요. 벌레를 잡고 코디에게 맞는 수정을 시켜요",
   how: [
     "처음엔 <b>리허설</b>로 한 번 해 보고 시작해요. 의뢰인 폰 화면에 <b>버그 벌레</b>가 기어다니며 앱을 깨뜨려요.",
     "<b>벌레</b>(또는 깨진 곳)를 <b>톡!</b> 하면 코디가 고치는 법 3개를 알려 줘요. 화면을 보고 <b>맞는 방법</b>을 골라요.",
@@ -394,7 +394,7 @@ export const GAME = {
 };
 
 function runGame(host, ez, finish, opts = {}) {
-  const F = frame(host, "vibe2", "버그 잡기", "mg-v2st");
+  const F = frame(host, "vibe2", "이게 왜 안 돼?", "mg-v2st");
   F.stage.insertAdjacentHTML("beforeend", `<div class="v2-w"><canvas></canvas>
     <div class="v2-bub"><em></em><p></p></div>
     <div class="v2-pan"><div class="v2-ph"></div><div class="v2-ops" style="display:flex;flex-direction:column;gap:4px"></div><div class="v2-cnt"></div></div>

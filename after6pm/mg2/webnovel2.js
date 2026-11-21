@@ -1,4 +1,4 @@
-// 웹소설 2탄(webnovel2) "절단신공": 오늘 회차는 다 썼다. 이제 어디서 '다음 화에 계속'으로 끊을지가 승부.
+// 웹소설 2탄(webnovel2) "작가님 절단신공": 오늘 회차는 다 썼다. 이제 어디서 '다음 화에 계속'으로 끊을지가 승부.
 // 원고가 위로 흘러가고, 오른쪽 '긴장도' 파형이 같이 흐른다. 빨간 점선(절단각)을 넘는 진짜 꼭대기 줄이
 // 가위선에 왔을 때 톡 → 가위가 지나가고 "다음 화에 계속" 도장이 쾅. 너무 일찍(분량 표시 전)이면 "분량 실화?",
 // 늦으면 긴장이 풀려 독자 이탈이 오른다. 점선 아래 작은 봉우리(가짜 꼭대기)에 속으면 손해. 회차 4개를 이어서.
@@ -112,7 +112,7 @@ function stepPics() {
 }
 
 export const GAME = {
-  key: "webnovel2", base: "webnovel", jc: "#5fb8ff", n: "절단신공", desc: "오늘 회차는 다 썼다. 어디서 '다음 화에 계속'으로 끊을지가 결제를 가른다",
+  key: "webnovel2", base: "webnovel", jc: "#5fb8ff", n: "작가님 절단신공", desc: "오늘 회차는 다 썼다. 어디서 '다음 화에 계속'으로 끊을지가 결제를 가른다",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 원고가 위로 흘러가고, 오른쪽 <b>긴장도 그래프</b>가 같이 흘러가요.",
     "그래프가 <b>빨간 점선(절단각)</b>을 넘은 꼭대기 줄이 <b>가위선</b>에 오면 톡! 점선 아래 작은 봉우리는 가짜 꼭대기예요.",
@@ -250,7 +250,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "webnovel2", "절단신공", "wz-st");
+    const F = frame(host, "webnovel2", "작가님 절단신공", "wz-st");
     const st = F.stage;
     const ORDER = shuffle(Object.keys(GEN)); ORDER.push(pick(ORDER.slice(0, 2)));
     const EPNO = {}; for (const k of Object.keys(GEN)) EPNO[k] = 20 + rint(120);

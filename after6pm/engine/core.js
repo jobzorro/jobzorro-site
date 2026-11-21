@@ -11,6 +11,7 @@ import * as BIG from "./big.js";
 import * as AB from "./abnb.js";
 import * as UC from "./ucafe.js";
 import * as REG from "./reg.js"; // 새 투잡 플러그인 등록표(engine/jobs/)
+import { yearScene, yearMark } from "./yearend.js"; // 연말 결산(v4.24)
 
 export const CHAR = Object.fromEntries(CHARS.map((c) => [c.id, c]));
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -678,6 +679,7 @@ export function endMonth(s) {
   if (s.pending || s.over || s.ended) return null;
   const r = R(s), M = s.month, notes = M.notes;
   const scenes = [];
+  if (!s.yr0) yearMark(s); // 연말 결산 기준점(새 판 첫 달·옛 저장)
   // 1) 회사
   const sal = salary(s);
   if (sal) { s.cash += sal; addMoney(s, "inc", "월급", sal); }
@@ -748,15 +750,18 @@ export function endMonth(s) {
   let side = (M.inc["파티룸 매출"] || 0) - (M.exp["파티룸 비용"] || 0) + (M.inc["컨설팅"] || 0) + (M.inc["VOD·전자책"] || 0) + (M.inc["강의료"] || 0) + (M.inc["파티룸 강의료"] || 0) + (M.inc["인별 수익"] || 0) - (M.exp["컨설팅 광고·수수료"] || 0) + (M.inc["에어씨앤씨 매출"] || 0) - (M.exp["에어씨앤씨 비용"] || 0) + (M.inc["무인카페 매출"] || 0) - (M.exp["무인카페 비용"] || 0) + (M.inc["파티룸 창업 컨설팅"] || 0) + (M.inc["가맹비"] || 0) + (M.inc["가맹 로열티"] || 0) + (M.inc["AI 플랫폼 구독"] || 0) - (M.exp["플랫폼 서버·인건비"] || 0);
   const px = {}; for (const P of REG.JOBS) if (plugRet[P.key] !== undefined) { px[P.key] = Math.round(REG.sideOf(P, M, plugRet[P.key])); side += px[P.key]; }
   s.taxBase += Math.max(0, side);
-  if (s.cal === 12) { s.lastYearSide = s.taxBase; s.taxBase = 0; yearSettle(s, scenes); }
-  if (sal && side >= sal) s.sideStreak++; else if (sal) s.sideStreak = 0;
-  s.hist.push({ t: s.t, age: s.age, cash: Math.round(s.cash), nw: Math.round(netWorth(s)), side: Math.round(side), sal, pr: Math.round(prProfit), cs: Math.round(csProfit), ...(Object.keys(px).length ? { px } : {}), hp: Math.round(s.hp), mental: Math.round(s.mental), fire: +fireInfo(s).ratio.toFixed(3) });
+  if (s.cal === 12) { s.lastYearSide = s.taxBase; s.taxBase = 0; }
+  if (sal && side >= sal) s.sideStreak++; else if (sal) s.sideStreak = 0; // (옛 기준, 기록용) 투잡 ≥ 월급 연속 달
+  const invM = Math.round((M.inc["투자 손익"] || 0) - (M.exp["투자 손익"] || 0) + (M.inc["투자 판단 손익"] || 0) - (M.exp["투자 판단 손익"] || 0)), bonM = Math.round(M.inc["성과급"] || 0);
+  s.hist.push({ t: s.t, age: s.age, cash: Math.round(s.cash), nw: Math.round(netWorth(s)), side: Math.round(side), sal, pr: Math.round(prProfit), cs: Math.round(csProfit), ...(Object.keys(px).length ? { px } : {}), ...(invM ? { inv: invM } : {}), ...(bonM ? { bon: bonM } : {}), hp: Math.round(s.hp), mental: Math.round(s.mental), fire: +fireInfo(s).ratio.toFixed(3) });
+  const yearSc = s.cal === 12 && !s.over ? yearScene(s, r) : null; // 12월: 연말 결산(꼭). 그달 장면들 뒤에 띄운다
   const receipt = { inc: M.inc, exp: M.exp, notes: notes.slice(), cash: s.cash, side, ym: ymLabel(s) };
   // 9) 시간 흐름
   s.t++; s.cal = s.cal % 12 + 1; if (s.cal === 1) s.year++; s.age = s.startAge + s.t / 12;
   s.co.years += (s.co.quit || s.co.fired) ? 0 : 1 / 12;
   if (s.age >= D.endAge(s.me.gender) && !s.over) { s.ended = "age"; log(s, `${D.endAge(s.me.gender)}세. 인생 중간 결산.`, "end"); }
   checkPerks(s, scenes);
+  if (yearSc && !s.over) scenes.push(yearSc);
   s.sceneQ = scenes.filter(Boolean);
   if (!s.over && !s.ended) monthStart(s);
   return receipt;
@@ -798,15 +803,16 @@ function companyMonth(s, r, notes, scenes) {
   if (co.discipline > 0) co.discipline--;
   if (co.remote > 0) { co.remote--; s.mental = clamp(s.mental - 1, 0, 100); if (s.fam.spouse) s.fam.happy = clamp(s.fam.happy - 2, 0, 100); if (co.remote === 0) { notes.push("지방 근무가 끝나 본사로 돌아왔다"); log(s, "본사로 복귀했다.", "work"); } }
   if (co.pip > 0) { co.pip--; if (co.pip === 0) { if (co.perf < 45) { co.fired = true; scenes.push(story("저성과자 해고", "개선 기간 3개월이 끝났다. 인사팀 회의실, 서류 한 장. 사원증을 반납했다.")); log(s, "저성과로 해고됐다.", "work"); return; } notes.push("개선 기간 통과. 한숨 돌렸다"); } }
-  // 1월: 연말 평가 → 연봉·성과급·승진
-  if (s.cal === 1) {
+  // 12월: 연말 평가 → 연봉·성과급·승진(v4.24: 1월 → 12월, 결과는 연말 결산 화면에 같이 나온다)
+  if (s.cal === 12) {
     co.yrsRank++;
-    const g = grade(s, r), G = D.GRADES[g];
+    const g = grade(s, r), G = D.GRADES[g], frz = !!co.freeze;
     co.grades.push(g); if (co.grades.length > 30) co.grades.shift();
     if (co.freeze) { notes.push(`평가 ${g} · 연봉 동결`); co.freeze = false; }
     else { co.payIdx = (co.payIdx || 1) * (1 + G.raise); notes.push(`평가 ${g} · 연봉 +${(G.raise * 100).toFixed(1)}%`); }
     const b = Math.round(salary(s) * G.bonus * (BONUS_F[co.type] || 1));
     if (b > 0) { s.cash += b; addMoney(s, "inc", "성과급", b); notes.push(`성과급 ${won(b)}`); }
+    co.lastEval = { year: s.year, g, raise: frz ? 0 : G.raise, bonus: b, promo: null };
     co.pts += G.pt; co.capC = false; co.weak = false;
     const hid = reveal(s, "co"); if (hid.length) scenes.push(story("첫 평가, 숨은 특성", `회사에서 1년을 보내니 내가 어떤 사람인지 조금 보인다.\n· ${hid.join("\n· ")}`));
     // 임원은 1년 계약
@@ -825,7 +831,7 @@ function companyMonth(s, r, notes, scenes) {
       else if (s.st.career < nx.career * 0.85) notes.push(`승진 누락 · 역량 부족(커리어 ${Math.round(s.st.career)}/${Math.round(nx.career * 0.85)})`);
       else {
         const p = clamp((nx.exec ? 0.3 : 0.6) + mod(s, "promoBonus", 0) + (g === "S" ? 0.25 : g === "A" ? 0.12 : 0) + (co.boss - 50) / 200, 0.05, 0.92);
-        if (r.chance(p)) { co.rank++; co.yrsRank = 0; co.pts = 0; notes.push(`${D.RANKS[co.rank].n} 승진!`); log(s, `${D.RANKS[co.rank].n}으로 승진했다.`, "work"); scenes.push(story(nx.exec ? "임원이 됐다" : "승진", nx.exec ? `인사 발령: ${nx.n}. 차 키와 기사님, 그리고 1년짜리 계약서. 이제 해마다 성적표가 계약서가 된다.` : `인사 발령 메일. ${nx.n}. 명함이 바뀐다. 일도 늘 것 같은 예감.`)); }
+        if (r.chance(p)) { co.rank++; co.yrsRank = 0; co.pts = 0; co.lastEval.promo = D.RANKS[co.rank].n; notes.push(`${D.RANKS[co.rank].n} 승진!`); log(s, `${D.RANKS[co.rank].n}으로 승진했다.`, "work"); scenes.push(story(nx.exec ? "임원이 됐다" : "승진", nx.exec ? `인사 발령: ${nx.n}. 차 키와 기사님, 그리고 1년짜리 계약서. 이제 해마다 성적표가 계약서가 된다.` : `인사 발령 메일. ${nx.n}. 명함이 바뀐다. 일도 늘 것 같은 예감.`)); }
         else notes.push("승진 심사 탈락. 내년을 기약한다");
       }
     }
@@ -912,7 +918,8 @@ export function quitCompany(s) {
   if (!ready.ok) s.mental = clamp(s.mental + 10, 0, 100);
   return { ok: true, msg: ready.ok ? "환승 퇴사 성공. 행동력 +5" : "속은 시원하다. 다음 달 카드값이 걱정이다." };
 }
-export function quitReady(s) { const sal = salary(s); const emer = s.cash + s.invest >= monthlySpend(s) * 6; return { ok: s.sideStreak >= 12 && emer, streak: s.sideStreak, emer }; }
+// 환승 조건(v4.24): 가장 최근 연말 결산에서 투잡 이익 ≥ 연봉(s.yearX ≥ 1) + 비상금 6개월치. streak 은 옛 기준(기록용)
+export function quitReady(s) { const emer = s.cash + s.invest >= monthlySpend(s) * 6, x = s.yearX || 0; return { ok: x >= 1 && emer, x, yearOk: x >= 1, emer, streak: s.sideStreak }; }
 
 function peopleMonth(s, r, notes, scenes) {
   for (const [id, x] of Object.entries(s.rel)) {
@@ -1100,29 +1107,13 @@ function checkPerks(s, scenes) {
 효과: ${p.pro}. 다음 인생에 이 카드를 가져갈 수도 있어요.`), tag: "특전", perk: p.id, cine: D.PERK_CINE[p.id] || null, who: p.id === "p_family" ? s.fam.spouse : null });
   }
 }
-// 연말 결산: 투잡 이익이 연봉의 1배·1.5배·2배·3배를 넘을 때마다 본잡 전환을 묻는다
-const FULL_STEPS = [1, 1.5, 2, 3];
-function jobYear(s, k) {
+// 투잡별 올해 이익(연말 결산에서 가장 많이 번 투잡 고르기, yearend.js)
+export function jobYear(s, k) {
   const h = s.hist.slice(-12), sum = (a) => a.reduce((x, y) => x + (typeof y === "number" ? y : 0), 0);
   if (k === "pr") return sum(h.map((x) => x.pr)); if (k === "cs") return sum(h.map((x) => x.cs));
   { const P = REG.get(k); if (P) return P.yearProfit ? P.yearProfit(s) : sum(h.map((x) => x.px?.[k] || 0)); }
   if (k === "airbnb") return sum(s.ab.hist.slice(-12)); if (k === "ucafe") return sum(s.uc.hist.slice(-12)); if (k === "insta") return (s.ins.monthRev || 0) * 12;
   return 0;
-}
-function yearSettle(s, scenes) {
-  if (s.co.quit || s.co.fired || !s.sj.active.length) return;
-  const sal = salary(s) * 12, side = s.lastYearSide, x = sal > 0 ? side / sal : 0;
-  const step = FULL_STEPS.filter((v) => x >= v).pop(); if (!step || step <= (s.fullAsk || 0)) return;
-  s.fullAsk = step;
-  const job = [...s.sj.active].sort((a, b) => jobYear(s, b) - jobYear(s, a))[0], jn = D.SIDEJOBS[job]?.n || "투잡";
-  s._fullJob = job;
-  const head = step === 1 ? "투잡이 연봉만큼 벌었다" : `투잡이 연봉의 ${step}배`;
-  scenes.push({ kind: "event", tag: "본잡 전환", title: head, cine: "full_" + job, onChoose: "full_ev",
-    text: `${s.year}년 연말 결산. 올해 투잡 이익 ${won(side)}, 회사 연봉 ${won(sal)}(${x.toFixed(1)}배). 가장 많이 번 건 ${jn}. 회사를 나와 ${jn}을(를) 본잡으로 할까요?${quitReady(s).emer ? "" : " (비상금 6개월치가 아직 안 모였어요)"}`,
-    choices: [
-      { t: `${jn}을(를) 본잡으로! 사직서를 낸다`, eff: {}, text: `사직서를 냈다. 내일부터 출근지는 ${jn}이다. 행동력 +5, 월급은 끊긴다.` },
-      { t: "아직은 병행한다", eff: { mental: 2 }, text: `조금 더 모아 보기로 했다. 다음 결산에서 ${FULL_STEPS.find((v) => v > step) ? FULL_STEPS.find((v) => v > step) + "배를 넘으면 다시 물어볼게요." : "또 이야기해요."}` },
-    ] });
 }
 function story(title, text) { return { kind: "story", title, text, choices: [{ t: "계속", eff: {}, text: "" }] }; }
 
@@ -1191,3 +1182,4 @@ export function load(str) {
   return s;
 }
 export { D };
+export { yearScene }; // 시험 해시(#autoN-yr2)용

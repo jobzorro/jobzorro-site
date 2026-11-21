@@ -1,4 +1,4 @@
-// 타로 2탄: 속마음 읽기 (일러스트판: 손님은 캐릭터 그림, 배경은 실제 그림, 소품·효과는 고해상도 벡터 캔버스)
+// 타로 2탄: 눈치빨 상담실 (일러스트판: 손님은 캐릭터 그림, 배경은 실제 그림, 소품·효과는 고해상도 벡터 캔버스)
 // 조용한 카페 상담실. 손님이 별일 아닌 척 이야기하는 동안 몸짓에 단서가 잠깐씩 스친다.
 // 단서(반지·폰 알림·사원증 줄·문 쪽 시선·한숨·다리 떨기·통지서)를 톡 해서 단서 노트에 모으고,
 // 가짜 몸짓(커피 홀짝·머리 넘기기·창밖 보기)은 그냥 둔다. 마지막에 "진짜 고민" 카드 3장 중 하나를 고른다.
@@ -130,7 +130,7 @@ function stepPics() {
 const CU_POOL = [...Array(23)].map((_, i) => "c" + String(i + 1).padStart(3, "0")).concat(["pM1", "pM2", "pM3", "pM4", "pM5", "pM6", "pM7", "pM8", "pF2", "pF3", "pF4", "pF5", "pF6", "pF7", "pF8"]);
 
 export const GAME = {
-  key: "tarot2", base: "tarot", jc: "#b48cff", n: "속마음 읽기", desc: "카페 상담실 타로, 카드보다 상담이 본업이에요",
+  key: "tarot2", base: "tarot", jc: "#b48cff", n: "눈치빨 상담실", desc: "카페 상담실 타로, 카드보다 상담이 본업이에요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 손님이 별일 아닌 척 이야기하는 동안 <b>몸짓에 단서</b>가 잠깐씩 스쳐요.",
     "<b>반지 만지작·폰 알림·사원증 줄·문 쪽 시선·한숨·다리 떨기·통지서</b>가 보이면 톡! 커피 홀짝·머리 넘기기·창밖 보기는 <b>가짜</b>라 누르면 감점이에요.",
@@ -242,7 +242,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "tarot2", "속마음 읽기", "t2-st");
+    const F = frame(host, "tarot2", "눈치빨 상담실", "t2-st");
     const st = F.stage;
     const ICU = {}; CL_ORDER.forEach((k) => (ICU[k] = svgU(ICON[k])));
     const WIU = {}; W_KEYS.forEach((k) => (WIU[k] = svgU(WICON[k])));
@@ -526,7 +526,7 @@ export const GAME = {
       });
       const avg = rv.length ? rv.reduce((a, r) => a + r.stars, 0) / rv.length : 0;
       const ov = document.createElement("div"); ov.className = "t2-end";
-      ov.innerHTML = `<h4>오늘의 상담 후기<small>카페 타로 · 속마음 읽기</small></h4>
+      ov.innerHTML = `<h4>오늘의 상담 후기<small>카페 타로 · 눈치빨 상담실</small></h4>
         <div class="t2-avg"><img src="${STARU}" alt=""><b data-avg>0.0</b><span>/ 5 · 후기 ${rv.length}개</span></div>
         <div class="t2-revs">${rv.map((r, i) => `<div class="t2-rv" style="animation-delay:${0.5 + i * 0.75}s"><img class="${r.f[1]}" src="${r.f[0]}" alt=""><div><i>${[0, 1, 2, 3, 4].map(() => `<img src="${STARU}" alt="">`).join("")}</i><p>“${r.txt}”</p><small>${r.sub}</small></div></div>`).join("")}</div>
         <div class="t2-bye">${!rv.length ? "손님 마음을 읽기도 전에 마감했어요…" : correct === rv.length ? "“여기 타로 잘 본대” 소문이 났어요!" : correct ? "다음엔 몸짓을 더 잘 봐요" : "단서를 모으면 카드가 쉬워져요"}</div>`;

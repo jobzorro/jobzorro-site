@@ -1,4 +1,4 @@
-// 타로 3탄: 축제 부스 대기줄 (일러스트판: 논리 폭 112칸 좌표를 기기 해상도 캔버스에 벡터로 그린다)
+// 타로 3탄: 멘탈빨 야시장 (일러스트판: 논리 폭 112칸 좌표를 기기 해상도 캔버스에 벡터로 그린다)
 // 손님은 캐릭터 그림(전신, 표정: 지침=화남, 술=수줍음(빨간 볼), 만족=웃음), 의자에 앉으면 뒷모습(그림에서 머리·옷 색을 뽑아 벡터로).
 // 배경은 실제 저녁 거리 그림 + 벡터 천막·커튼·무대. 그림을 못 불러올 때만 도트 사람으로 대체.
 // 연말 야시장. 내 타로 부스 앞에 줄이 선다. 손님을 끌어 의자에 앉히고, 고민 무게에 맞춰 1장·3장을 고른다.
@@ -62,7 +62,7 @@ function stepPics() {
 }
 
 export const GAME = {
-  key: "tarot3", base: "tarot", jc: "#b48cff", n: "축제 부스 대기줄", desc: "연말 야시장, 줄은 길고 멘탈은 한정판이에요",
+  key: "tarot3", base: "tarot", jc: "#b48cff", n: "멘탈빨 야시장", desc: "연말 야시장, 줄은 길고 멘탈은 한정판이에요",
   how: [
     "처음엔 <b>리허설</b>로 한 번씩 해 보고 시작해요. 연말 야시장, 줄 선 손님을 <b>끌어서 빈 의자</b>에 앉혀요.",
     "<b>밝은 말풍선</b>은 가벼운 고민 → <b>빠른 1장</b>, <b>어두운 말풍선</b>은 무거운 고민 → <b>3장 스프레드</b>. 손 잡은 커플은 <b>나란히 두 자리</b>에!",
@@ -151,7 +151,7 @@ export const GAME = {
 `,
   run(host, ez, finish, skill, opts = {}) {
     const dbg = typeof window !== "undefined" && window.__mgdbg;
-    const F = frame(host, "tarot3", "축제 부스 대기줄", "tq-st");
+    const F = frame(host, "tarot3", "멘탈빨 야시장", "tq-st");
     const st = F.stage;
     st.insertAdjacentHTML("beforeend", `<canvas class="tq-cv tq-bk"></canvas><div class="tq-me"></div><canvas class="tq-cv tq-fr"></canvas>
       <div class="tq-pops"></div><div class="tq-out">←<br>돌려<br>보내기</div>
