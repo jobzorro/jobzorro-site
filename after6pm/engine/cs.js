@@ -13,7 +13,7 @@ const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 // 무료 특강 신청자는 후기 semRev 개까지만 늘어난다(원래 후기 수에 비례해 끝없이: 후기 1,600개면 특강 한 번에 100명+).
 export const CS_BAL = { leadCap: 7, fullCapX: 2, refMax: 6, semRev: 60 };
 export function init() {
-  return { open: false, niche: null, niches: [], nick: null, price: "mid", reviews: 0, passes: 0, fails: 0, clients: 0, friends: 0,
+  return { open: false, niche: null, niches: [], nick: null, price: "low", reviews: 0, passes: 0, fails: 0, clients: 0, friends: 0,
     queue: [], outcomes: [], ch: { kmong: { on: false, q: 0 }, blog: { posts: 0, idx: 0, lastT: -99 }, insta: { f: 0 }, youtube: { subs: 0, videos: 0 }, kakao: { m: 0 } },
     ads: 0, template: 0, vod: { prog: 0, n: 0, income: 0 }, lv: 1, offers: 0, refer: 0, revHist: [], monthRev: 0, leads: 0, conv: 0, src: {}, evT: -99, groupT: -1, seminarT: -1, seq: 0, newThisMonth: 0 };
 }
@@ -55,7 +55,7 @@ export function can(s, id) {
 // 컨설팅 × 파티룸: 내 공간에서 하면 효과 +30%, 강의·세미나룸·교육장이면 +60%
 function roomBoost(s) { if (!SYN.on(s, "cs_room")) return 1; return s.pr.rooms.some((x) => x.status === "open" && ["lecture", "edu", "study"].includes(x.concept)) ? 1.6 : 1.3; }
 // 실력 = 핵심 능력과 커리어의 평균. 가격 단계(레벨 보너스 포함)가 요구하는 실력보다 낮으면 환불·혹평
-export function skill(s) { const k = D.NICHES[s.cs.niche || "newgrad"].stat; return Math.round((s.st[k] + s.st.career) / 2); }
+export function skill(s) { const k = D.NICHES[s.cs.niche || "newgrad"].stat; return Math.round(s.st[k] * 0.7 + s.st.career * 0.3); } // v4.25: 분야 능력치(대개 글쓰기) 비중을 높임
 export function priceNeed(s) { return D.CS_PRICE_NEED[s.cs.price] + (s.cs.lv >= 4 ? 20 : 0) + (s.cs.lv >= 5 ? 15 : 0); }
 export const gap = (s) => priceNeed(s) - skill(s);
 function capacity(s, boost) { return (2 + Math.floor(s.st.write / 35) + Math.floor(s.cs.template)) * boost * BIG.fullCap(s); }
@@ -67,7 +67,7 @@ export function act(s, r, id, arg, boost = 1) {
   if (id === "cs_friend") {
     cs.friends++;
     const ok = r.chance(clamp(0.5 + (s.st.write - 30) / 40, 0.15, 0.95));
-    cs.reviews += ok ? 1 : 0.4; s.st.write = clamp(s.st.write + 0.6, 0, 200);
+    cs.reviews += ok ? 1 : 0.4; s.st.write = clamp(s.st.write + 0.3, 0, 200);
     const opened = checkOpen(s, lines);
     return { lines: [ok ? "후기 +1 (\"선배 덕분에 서류 붙었어요\")" : "후기 +0.4 (\"음... 고마워요\")", ...lines], msg: "후배 자소서 4문항. 두괄식부터 다시 잡았다." + (opened ? " 이제 진짜 시작이다." : "") };
   }
@@ -91,7 +91,7 @@ export function act(s, r, id, arg, boost = 1) {
     ch.blog.posts++; ch.blog.lastT = s.t;
     let g = (2 + s.st.write / 25) * mod(s, "blogMult", 1) * boost * (1 + helperPower(s, "cs_writer") * 0.3);
     if (viral(0.03)) { g += 15; lines.push("검색 상위 노출! 방문자 폭증"); }
-    ch.blog.idx += g; s.st.write = clamp(s.st.write + 0.4, 0, 200); s.mental += mod(s, "soloMental", 0);
+    ch.blog.idx += g; s.st.write = clamp(s.st.write + 0.2, 0, 200); s.mental += mod(s, "soloMental", 0);
     checkOpen(s, lines);
     return { lines: [`블로그 글 ${ch.blog.posts}개 · 검색 지수 ${Math.round(ch.blog.idx)}`, ...lines], msg: r.pick(["「자소서 두괄식, 첫 문장이 전부다」", "「면접관이 지원동기를 묻는 진짜 이유」", "「중고신입, 경력은 이렇게 쓴다」", "「공기업 NCS 자소서 3가지 함정」"]) };
   }
@@ -197,7 +197,7 @@ export function monthStart(s, r) {
     헤드헌터: cs.niches.includes("career") ? helperPower(s, "cs_headhunter") * 2.5 : 0,
   };
   const seas = cs.niches.reduce((a, k) => a + (s.era.rolling ? 1 : D.NICHES[k].season[s.cal - 1]) * D.NICHES[k].demand, 0) / Math.max(1, cs.niches.length) * (1 + 0.35 * (cs.niches.length - 1));
-  let mult = 0.58 * BIG.fullLead(s) * seas * (s.era.winter ? 0.9 : 1) * mod(s, "leadMult", 1) * (s.era.ai && cs.niche === "newgrad" ? 0.85 : 1) * (s.era.freeze ? 1.2 : 1) * SJ.ramp(s, "cs");
+  let mult = 0.58 * BIG.fullLead(s) * seas * (s.era.winter ? 0.9 : 1) * mod(s, "leadMult", 1) * (s.era.ai && cs.niche === "newgrad" ? 0.85 : 1) * (s.era.freeze ? 1.2 : 1) * SJ.ramp(s, "cs") * SJ.skillRamp(s, "cs"); // v4.25b 배우는 기간
   let leads = 0; cs.src = {};
   for (const [k, v] of Object.entries(src)) leads += v * mult;
   // 시장 포화: 문의가 상한(cap)에 가까워질수록 덜 는다

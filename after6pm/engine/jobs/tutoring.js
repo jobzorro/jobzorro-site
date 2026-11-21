@@ -275,7 +275,7 @@ export default {
     }
     if (id === "tu_find") {
       const c = Math.round(3 * pi); s.cash -= c; addMoney(s, "exp", "화상과외 비용", c); T.msgs++;
-      const p = clamp(0.2 + T.prof / 250 + (T.lv - 1) * 0.05 + (s.st.mkt || 0) / 400, 0.15, 0.7) * SEASON[s.cal - 1] * T.expo * SJ.ramp(s, "tutoring");
+      const p = clamp(0.2 + T.prof / 250 + (T.lv - 1) * 0.05 + (s.st.mkt || 0) / 400, 0.15, 0.7) * SEASON[s.cal - 1] * T.expo * SJ.ramp(s, "tutoring") * SJ.skillRamp(s, "tutoring"); // v4.25b 배우는 기간
       gainStat(s, "mkt", 0.3);
       if (r.chance(p)) { const L = newLead(s, r, "app"); return { lines: [`과외온 캐시 −${won(c)}`, `시범수업 문의: ${leadLabel(L)}(${regionN(L.reg)})`], msg: r.pick(["답장 알림! \"혹시 화상으로도 꼼꼼히 봐 주시나요?\"", `${regionN(L.reg)}에서 연락이 왔다. 화상이라 거리는 상관없다.`]) }; }
       return { lines: [`과외온 캐시 −${won(c)}`, "답장 없음"], msg: r.pick(["읽음 표시만 40개. 답장은 0.", "\"이미 선생님 구했어요.\" 그나마 답장이 온 게 이거다.", "소개글을 다시 봤다. 내가 학부모라도 안 고를 것 같다."]) };

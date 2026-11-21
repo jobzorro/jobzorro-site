@@ -19,6 +19,11 @@ import { MG, mgRun, mgKeys, mgPrefetch, mg2Init } from "./mg.js";
 import * as REG from "./engine/reg.js";
 import { UI_PLUGINS } from "./jobs/index.js";
 import * as DK from "./deco_ui.js"; // 방 꾸미기(deco/deco.js 는 열 때 받기)
+import { rivalBox, RIVAL_CINE_TAG } from "./rival_ui.js"; // 라이벌 칸(v4.25)
+import { marketBox } from "./market_ui.js"; // 배우는 기간·시장 칸(v4.25b)
+import * as CU from "./cards_ui.js"; // 성장 카드·카드팩·가방(v4.25)
+import * as GC from "./engine/cards.js";
+import * as IT_ from "./engine/items.js";
 const D = E.D;
 // 새 투잡 화면 플러그인(jobs/<key>_ui.js). 엔진 플러그인이 등록된 것만 쓴다. 채우기는 아래 regUiPlugins()
 const UJ = {}, PLUG_PAGES = {};
@@ -193,6 +198,7 @@ function summary() { return { name: S.me.name, gender: S.me.gender, age: Math.fl
 function save(now) { if (S) ST.save(SLOT, E.save(S), summary(), now); }
 function meta() { return META_C; }
 function setMeta(m) { META_C = m; ST.setMeta(m); }
+function gcx() { return { ...dctx(), E, FX }; } // 성장 카드·가방(cards_ui.js)에 넘기는 것
 function dctx() { return { S, save, render, toast, openWin, closeWin, meta, setMeta, esc, won }; } // 방 꾸미기(deco_ui.js)에 넘기는 것
 
 // ───────── 알림 ─────────
@@ -257,7 +263,7 @@ function mgOffer(id, arg) {
         if (err || !r || !Number.isFinite(+r.score)) return finish(normalB, [`미니게임을 끝까지 못 했어요: 보통 결과(효과 ×${normalB})`]); // 오류가 나도 보통 결과로 닫는다
         mgRecord(gk, r); try { const m3 = meta(); m3.mgAv = { avatar: S.me.avatar || null, gender: S.me.gender || "F" }; setMeta(m3); } catch (e) {} // 시작 화면 '미니게임 다시 하기'용
         const sc = Math.max(0, Math.min(1, +r.score)), b = +(0.7 + sc * 0.8).toFixed(2);
-        finish(b, [`미니게임 ${r.grade || "보통"} · 효과 ×${b}`, ...(plays + 1 === MG_SKIP_AT ? ["이제 건너뛰기를 쓸 수 있어요"] : [])]);
+        finish(b, [`미니게임 ${r.grade || "보통"} · 효과 ×${b}`, ...(r.grade === "대성공" ? GC.mgReward(S, E.R(S), job) : []), ...(plays + 1 === MG_SKIP_AT ? ["이제 건너뛰기를 쓸 수 있어요"] : [])]);
       }, true, true);
     };
   }, true, true);
@@ -450,6 +456,18 @@ function meter(v, max, color) { return `<div class="meter"><i style="width:${Mat
 function hearts(aff) { const n = Math.round(aff / 20); return `<span class="hearts">${"♥".repeat(n)}${"♡".repeat(5 - n)}</span>`; }
 
 // 홈
+// 첫 3개월 탐색 가이드(v4.25): 권하는 말투로 방향만 준다
+function guideCard() {
+  if (S.t >= SJ.PROBATION || S.flags.noProbation) return "";
+  const fc = SJ.foundCount(S), know = Object.keys(S.sj.know || {}).length, co = S.flags.coActs || 0, hb = S.hb.joined.length;
+  const it = (ok, go, t, sub) => `<button class="gd ${ok ? "ok" : ""}" data-go="${go}"><i>${ok ? "✓" : ""}</i><span><b>${t}</b><small>${sub}</small></span></button>`;
+  return `<div class="guide"><div class="gh"><b>${ic("info")}첫 3개월, 이렇게 보내 보세요</b><span>${S.t + 1}/3개월</span></div>
+    ${it(co >= 2, "co", "회사에도 관심을 가져 보세요~", `성과 내기·동료와 점심·탕비실 수다 ${Math.min(co, 2)}/2 · 첫인상이 연말 평가로 가요`)}
+    ${it(hb >= 1, "hobby", "취미도 가져 보세요~", `취미 모임 ${Math.min(hb, 1)}/1 · 모임에서 투잡 이야기를 주워들어요`)}
+    ${it(know >= 2, "map", "발품 팔아 알아보세요~", `깊게 알아본 투잡 ${Math.min(know, 2)}/2 · 지도 장소·리포트·선배 찾아가기`)}
+    ${it(fc >= SJ.NEED_CANDS, "sj", "투잡 후보를 모아 보세요~", `후보 ${Math.min(fc, SJ.NEED_CANDS)}/${SJ.NEED_CANDS} · 이해도 100%면 후보, 그때 궁합·특성 연계를 보고 골라요`)}
+    <div class="gf">투잡은 4개월 차부터, 후보가 ${SJ.NEED_CANDS}개 이상일 때 고를 수 있어요. 정보는 발품을 팔아야 모여요.</div></div>`;
+}
 function pgHome() {
   const rk = D.RANKS[S.co.rank].n, job = S.co.quit || S.co.fired ? "전업 사장님" : `${S.co.name} ${rk}`;
   const bgk = S.co.quit || S.co.fired ? (SJ.isActive(S, "cs") && !SJ.isActive(S, "pr") ? "consult" : "partyroom") : S.fam.spouse ? "apt" : [12, 1, 2].includes(S.cal) ? "home" : "desk";
@@ -478,6 +496,7 @@ function pgHome() {
   </div><div class="strip st10">${D.STAT_KEYS.map((k) => `<div><div class="v">${Math.round(S.st[k] || 0)}</div><div class="k">${D.STATS[k]}</div>${meter(S.st[k] || 0, 100, "var(--gold)")}</div>`).join("")}</div></div>
   <button class="swhint" data-sw2go><i class="on"></i><i></i><span>옆으로 밀면 능력치</span></button>
   ${S.t < 4 && !S.coachOff ? `<div class="coach"><b>${ic("info")}이렇게 하면 돼요</b><ol><li><b>바로 하기</b>나 <b>지도</b>에서 행동을 골라요. 행동마다 ${ic("bolt")}행동력이 줄어요.</li><li>그림 속 <b>사람을 누르면</b> 말을 걸어 인연이 돼요.</li><li>행동력을 다 쓰면 맨 아래 <b class="gold">다음 달</b>을 눌러요.</li></ol><button class="x" data-coach>알겠어요</button></div>` : ""}
+  ${guideCard()}
   ${td.length ? `<div class="sec">${ic("list")}이번 달 할 일 <span class="muted small">· 누르면 그곳으로 가요</span></div><div class="todo">${td.map((t) => `<button class="l${t.lv}" data-todo="${esc(t.go || "")}"><span class="dot"></span><span class="grow">${esc(t.text)}</span>${t.go ? '<span class="arr">›</span>' : ""}</button>`).join("")}</div>` : ""}
   <div class="sec">${ic("pin")}내 장소 <span class="muted small">· 눌러서 들어가요</span></div>
   <div class="places hscroll">${places.map((k) => `<button data-go="${k}" style="background-image:linear-gradient(180deg,#0e102033,#0e1020ee),url(${TILE[k].bg})">${ic(TILE[k].ic)}<b>${esc(PAGE_N[k])}</b><span>${esc(tileInfo(k))}</span>${!S.tileSeen?.[k] ? '<em class="nbadge">NEW</em>' : ""}</button>`).join("")}<button data-hub class="more">${ic("grid")}<b>전체 메뉴</b><span>잠긴 곳 ${D.HUB.flat().filter(({ k }) => !unlocked(k)).length}</span></button></div>
@@ -789,28 +808,28 @@ function pgCo() {
 }
 
 // 투잡 보드 머리
-function boardHead(k) { const j = D.SIDEJOBS[k] || { type: "", inc: "" }; const ri = SJ.rampInfo(S, k), tip = ri && !ri.done && !S.sj.coachOff ? (S.sj.rp[k].tip || "첫 달은 손님이 적어요. 홍보·후기 행동을 해야 올라가요.") : ""; return `<div class="row" style="margin-bottom:6px"><button class="btn sm" data-go="sj">‹ 투잡 탐색</button><span class="tag">${esc(j.type)}</span><span class="grow"></span><span class="tiny muted">${esc(j.inc)}</span></div>${ri && !ri.done ? `<div class="card" style="padding:8px 10px;margin-bottom:8px"><div class="tiny"><b class="gold">초반 고생 중</b> · 손님 기대치의 ${ri.pct}%</div>${meter(ri.pct, 100, "var(--gold)")}${tip ? `<div class="tiny muted" style="margin-top:4px">코치: ${esc(tip)}</div>` : ""}</div>` : ""}`; }
+function boardHead(k) { const j = D.SIDEJOBS[k] || { type: "", inc: "" }; const ri = SJ.rampInfo(S, k), tip = ri && !ri.done && !S.sj.coachOff ? (S.sj.rp[k].tip || "첫 달은 손님이 적어요. 홍보·후기 행동을 해야 올라가요.") : ""; return `<div class="row" style="margin-bottom:6px"><button class="btn sm" data-go="sj">‹ 투잡 탐색</button><span class="tag">${esc(j.type)}</span><span class="grow"></span><span class="tiny muted">${esc(j.inc)}</span></div>${ri && !ri.done ? `<div class="card" style="padding:8px 10px;margin-bottom:8px"><div class="tiny"><b class="gold">초반 고생 중</b> · 손님 기대치의 ${ri.pct}%</div>${meter(ri.pct, 100, "var(--gold)")}${tip ? `<div class="tiny muted" style="margin-top:4px">코치: ${esc(tip)}</div>` : ""}</div>` : ""}${marketBox(S, k)}${rivalBox(S, k)}`; }
 
 // 투잡 탐색
 function pgSJ() {
   const sj = S.sj, act = sj.active;
   const card = (k) => {
     const j = D.SIDEJOBS[k], f = SJ.isFound(S, k), on = SJ.isActive(S, k), it = Math.round(sj.int[k] || 0), know = f || sj.know[k];
-    const fg = know ? SJ.fit(S, k) : null;
+    const fg = SJ.insight(S, k); // 이해도 100%가 되어야 궁합·특성 연계가 보인다
     const btns = on ? `<button class="btn sm gold" data-go="${k}">보드 열기</button><button class="btn sm danger" data-sjstop="${k}">접기</button>`
-      : f ? (j.play ? `<button class="btn sm gold" data-sjstart="${k}" ${act.length >= SJ.slots(S) ? "disabled" : ""}>시작하기</button>` : `<span class="tiny muted">다음 업데이트에서 열림</span>`)
+      : f ? (j.play ? `${SJ.startLock(S) ? `<span class="tiny muted">${S.t < SJ.PROBATION ? `${SJ.PROBATION + 1}개월 차부터` : `후보 ${SJ.foundCount(S)}/${SJ.NEED_CANDS}개 모이면`} 시작</span>` : `<button class="btn sm gold" data-sjstart="${k}" ${act.length >= SJ.slots(S) ? "disabled" : ""}>시작하기</button>`}` : `<span class="tiny muted">다음 업데이트에서 열림</span>`)
       : `<button class="btn sm" data-act="sj_report" data-arg="${k}">리포트 ⚡1</button>`;
     const ask = !sj.know[k] && (it >= 30 || f) ? `<button class="btn sm" data-act="sj_interview" data-arg="${k}">해 본 사람에게 묻기 ⚡1</button>` : "";
     const ent = sjEntry(k, f, on, it);
     const ban = SJ_BG[k] && bgUrl(SJ_BG[k]);
     return `<div class="sjc ${f ? "found" : ""} ${on ? "on" : ""} ${j.play ? "" : "soon"}">${ban ? `<div class="sjban" style="background-image:url(${ban})"></div>` : ""}<div class="row"><span class="ic">${ic(j.ic)}</span><div class="grow"><b>${esc(j.n)}</b> <span class="tag">${esc(j.type)}</span>${j.play ? "" : ' <span class="tag">준비 중</span>'}</div>${fg ? `<span class="fit g${fg.g}">궁합 ${fg.g}</span>` : ""}</div>
-      ${f ? `<div class="tiny">${esc(j.inc)} · ${esc(j.hours)} · 자본 ${esc(j.cap)}</div><div class="tiny muted">"${esc(j.line)}"</div>` : `<div class="tiny muted">관심 ${it}/100 · 단서: ${esc(j.hint)}</div>${meter(it, 100, "var(--gold)")}`}${ent.html}
+      ${f ? `<div class="tiny">${esc(j.inc)} · ${esc(j.hours)} · 자본 ${esc(j.cap)}</div><div class="tiny muted">"${esc(j.line)}"</div>${fg ? `<div class="sjins"><span>궁합 ${fg.g} · ${fg.stats.map(esc).join(" · ")}</span>${fg.links.length ? fg.links.map((x) => `<span class="lk">★ ${esc(x)}</span>`).join("") : `<span class="muted">내 특성카드와 연계 없음</span>`}</div>` : ""}` : `<div class="tiny muted">이해도 ${it}% · 단서: ${esc(j.hint)}${it >= 50 ? " · 100%가 되면 궁합·특성 연계가 보여요" : ""}</div>${meter(it, 100, "var(--gold)")}`}${ent.html}
       <div class="row wrap" style="margin-top:6px">${btns}${ask}${ent.btns}</div></div>`;
   };
   const keys = Object.keys(D.SIDEJOBS).sort((a, b) => (SJ.isActive(S, b) - SJ.isActive(S, a)) || ((SJ.isFound(S, b) ? 1 : 0) - (SJ.isFound(S, a) ? 1 : 0)) || ((D.SIDEJOBS[b].play ? 1 : 0) - (D.SIDEJOBS[a].play ? 1 : 0)) || (S.sj.int[b] || 0) - (S.sj.int[a] || 0));
   const F = { all: () => true, found: (k) => SJ.isFound(S, k), play: (k) => D.SIDEJOBS[k].play };
   return `<div class="card"><h3>투잡 탐색 <small>발견 ${Object.keys(sj.found).length}/21 · 하는 중 ${act.length}/${SJ.slots(S)}</small></h3>
-    <div class="small muted">투잡은 정해져 있지 않아요. 너튜브·리포트·세미나, 회사 소문, 그리고 <b class="gold">취미</b>에서 발견해요. 관심이 100이 되면 발견! 두 개까지 할 수 있고, 하나도 안 해도 괜찮아요. 투잡을 시작하면 성향 카드의 숨은 특성이 공개돼요.</div>
+    <div class="small muted">투잡은 정해져 있지 않아요. 너튜브·리포트·세미나, 회사 소문, 그리고 <b class="gold">취미</b>에서 발견해요. 이해도가 100%가 되면 후보가 되고, 그때 내 능력치 궁합과 특성카드 연계가 보여요. 정보는 리서치뿐 아니라 회사·사람·취미·이벤트에서도 조금씩 모여요. 두 개까지 할 수 있고, 하나도 안 해도 괜찮아요. 투잡을 시작하면 성향 카드의 숨은 특성이 공개돼요.</div>
     ${act.length ? `<div class="row wrap" style="margin-top:8px">${act.map((k) => `<button class="btn sm gold" data-go="${k}">${ic(D.SIDEJOBS[k].ic)} ${esc(D.SIDEJOBS[k].n)} 보드</button>`).join("")}</div>` : `<div class="tag" style="margin-top:8px">지금은 회사원 · 투잡 없음</div>`}</div>
   ${synCard()}
   <div class="acts" style="padding:0">${actRow("sj_youtube")}${actRow("sj_seminar")}</div>
@@ -955,7 +974,7 @@ function pgMe() {
     <div class="tiny muted" style="margin-top:4px">월 평균 +0.55%, 흔들림 큼. 대출: ${S.loans.map((l) => `${l.n} ${won(l.amt)}(${(l.rate * 100).toFixed(1)}%)`).join(", ") || "없음"}</div></div>
   <div class="card"><h3>능력치 <small>최대 200 · ${esc(D.MAJORS[S.me.major]?.n || "")} · ${esc(D.JOBS[S.me.job]?.n || "")}</small></h3><div class="radarbox">${radar([{ v: S.st, c: "#f5c04e" }])}</div>${D.STAT_KEYS.map((k) => `<div class="statrow"><span>${D.STATS[k]}</span>${meter(S.st[k], D.STAT_MAX, k === "body" ? "var(--green)" : "var(--blue)")}<b>${Math.round(S.st[k])}</b></div>`).join("")}
     <div class="tiny muted" style="margin-top:6px">스태미너는 매달 쓰는 기력이에요. 최대 스태미너 = 60 + 체력×0.6(지금 ${S.hpMax}). 행동력 = 4 + 스태미너÷13 + 체력÷50${D.RANKS[S.co.rank].ap ? ` ${D.RANKS[S.co.rank].ap}(직급)` : ""}${E.kidsAp(S) ? ` −${E.kidsAp(S)}(육아)` : ""}${E.spouseAp(S) ? ` ${E.spouseAp(S) > 0 ? "+" : "−"}${Math.abs(E.spouseAp(S))}(${E.spouseAp(S) > 0 ? "배우자 도움" : "배우자 반대"})` : ""}${E.kidMotiveAp(S) ? ` +${E.kidMotiveAp(S)}(아이 보며 힘내기)` : ""}${S.co.remote ? " −1(지방 근무)" : ""}. 체력과 감각은 30대 중반부터 조금씩 떨어지니 운동과 구경으로 챙겨 주세요.</div></div>
-  <div class="card"><h3>아이템 <small>사면 능력치가 바로 올라요</small></h3><div class="pick">${Object.entries(D.ITEMS).map(([k, it]) => { const own = S.items?.[k] !== undefined; return `<button data-item="${k}" ${own ? "disabled" : ""}><b>${esc(it.n)}</b><span class="tiny muted">${won(it.cash)} · ${Object.entries(it.stat).map(([s, v]) => `${D.STATS[s]} +${v}`).join(", ")}</span>${own ? '<span class="tiny good">갖고 있어요</span>' : ""}</button>`; }).join("")}</div></div>
+  ${CU.bagCard(S, esc)}
   <div class="card"><h3>성향 카드 <small>숨은 특성은 그 일을 시작하면 공개</small></h3><div style="display:flex;flex-direction:column;gap:6px">${S.me.traits.map((id) => traitCard(D.TRAITS.find((t) => t.id === id), true)).join("")}</div></div>
   <div class="card"><h3>특전 카드 <small>큰 일을 해내면 받아요 · 다음 인생에 1장 가져가기</small></h3>${(S.me.perks || []).length ? `<div style="display:flex;flex-direction:column;gap:6px">${S.me.perks.map((id) => traitCard(D.CARD(id), true)).join("")}</div>` : ""}<div class="chips" style="margin-top:6px">${D.PERKS.filter((p) => p.test && !(S.me.perks || []).includes(p.id)).map((p) => `<span class="chip">🔒 ${esc(p.got)}</span>`).join("")}</div></div>
   <div class="card"><h3>삶 <small>${esc(D.HOUSING[S.house.type]?.n || "")}${S.house.value ? " · " + won(S.house.value) : ""}</small></h3>
@@ -1006,7 +1025,7 @@ const HELP_DESC = { pr_clean: "파티룸 청소·관리(청소비 −30%, 관리
 // ───────── 화보 연출: 큰 순간은 그 사람이 있는 곳으로 이동하며 크게 ─────────
 const CINE_BG = { lover: "rooftop", propose: "rooftop", wedding: "wedding", baby: "apt", breakup: "street", promo: "desk", fired: "desk", quit: "desk", burnout: "home", pr_open: "partyroom", pr_multi: "partyroom", cs_first: "consult", cs_pen: "consult", cs_name: "consult", ab_first: "airbnb", ab_super: "airbnb", uc_open: "ucafe", uc_multi: "ucafe", in_10k: "home", in_deal: "home", house: "apt", seed: "home", fire: "rooftop", grad: "library", parents_bye: "parents" };
 Object.assign(CINE_BG, { full_pr: "partyroom", full_cs: "consult", full_airbnb: "airbnb", full_ucafe: "ucafe", full_insta: "home" });
-const CINE_TAG = { full_pr: "본잡 전환", full_cs: "본잡 전환", full_airbnb: "본잡 전환", full_ucafe: "본잡 전환", full_insta: "본잡 전환", lover: "연애", propose: "연애", wedding: "결혼", baby: "가족", breakup: "연애", parents_bye: "가족", promo: "회사", fired: "회사", quit: "회사", burnout: "나", pr_open: "파티룸", pr_multi: "파티룸", cs_first: "컨설팅", cs_pen: "컨설팅", cs_name: "컨설팅", ab_first: "숙소", ab_super: "숙소", uc_open: "무인카페", uc_multi: "무인카페", in_10k: "인별그램", in_deal: "인별그램", house: "인생", seed: "인생", fire: "인생", grad: "인생", arc3: "인연" };
+const CINE_TAG = { full_pr: "본잡 전환", full_cs: "본잡 전환", full_airbnb: "본잡 전환", full_ucafe: "본잡 전환", full_insta: "본잡 전환", lover: "연애", propose: "연애", wedding: "결혼", baby: "가족", breakup: "연애", parents_bye: "가족", promo: "회사", fired: "회사", quit: "회사", burnout: "나", pr_open: "파티룸", pr_multi: "파티룸", cs_first: "컨설팅", cs_pen: "컨설팅", cs_name: "컨설팅", ab_first: "숙소", ab_super: "숙소", uc_open: "무인카페", uc_multi: "무인카페", in_10k: "인별그램", in_deal: "인별그램", house: "인생", seed: "인생", fire: "인생", grad: "인생", arc3: "인연", ...RIVAL_CINE_TAG };
 const COUPLE = new Set(["lover", "propose", "wedding", "baby"]);
 function cineKey(sc) { return sc.cine || (sc.kind === "wedding" ? "propose" : sc.kind === "arc" && sc.stage === 3 ? "arc3" : D.TITLE_CINE[sc.title]) || null; }
 function cineHtml(p) {
@@ -1265,6 +1284,7 @@ function continueChain() {
   render();
   if (S.pending) return showScene();
   const nx = E.nextQueuedScene(S); if (nx) return showScene();
+  if (S.gc?.offers?.length && !S.over) return CU.pickWin(gcx(), continueChain); // 연말·조각 카드 고르기(v4.25)
   if (S.over || S.ended) render();
 }
 
@@ -1382,6 +1402,7 @@ function bind() {
   q("[data-decor]", (el) => { const rm = S.pr.rooms.find((x) => x.id === el.dataset.decor); ui.prFlow = { step: "decor", id: rm.id, picks: { ...rm.decor } }; render(); window.scrollTo(0, 0); });
   q("[data-dpick]", (el) => { const [k, i] = el.dataset.dpick.split(":"); ui.prFlow.picks[k] = +i; render(); });
   q("[data-decorgo]", () => { const f = ui.prFlow, rm = S.pr.rooms.find((x) => x.id === f.id); const ch = Object.fromEntries(Object.entries(f.picks).filter(([k, i]) => rm.decor?.[k] !== i)); if (!Object.keys(ch).length) return toast([], "바뀐 게 없어요"); const res = E.act(S, "pr_decor", JSON.stringify({ id: f.id, picks: ch })); if (!res.ok) return toast([], res.msg); ui.prFlow = null; afterRes(res); });
+  q("[data-bag]", () => CU.bagWin(gcx())); q("[data-bagpack]", () => CU.bagWin(gcx())); // 가방(v4.25)
   q("[data-item]", (el) => { const r = E.buyItem(S, el.dataset.item); toast(r.lines || [], r.msg); save(); render(); });
   q("[data-qlock]", (el) => toast([], `🔒 ${el.dataset.qlock} 열려요`));
   q("[data-album]", () => albumWin());
@@ -1424,7 +1445,8 @@ async function renderTitle() {
     ${APP.isIOS() ? `<div class="tiny muted" style="margin-top:4px">아이폰: 공유 버튼 → '홈 화면에 추가'로 앱처럼 쓸 수 있어요.</div>` : ""}
     <div class="tiny muted" style="margin-top:6px">한 아이디에 인생 3개까지 저장돼요. 세 칸이 다 차면 한 칸을 지우고 시작합니다.</div>
     ${m.runs?.length ? `<div class="card" style="margin-top:10px;text-align:center"><div class="small">다음 인생은 <b class="gold">${ngNext(m)}회차</b> · 기억 포인트 <b class="gold">${ngPoints(m)}</b> · 최고 파이어 ${m.best ? m.best + "세" : "아직"}</div>${ngCollection(m)}</div>` : ""}
-    ${(hall || m.hall || []).length ? `<div class="card" style="margin-top:10px"><h3>명예의 전당 <small>${hall ? "전체 회원" : "내 기록"}</small></h3>${hallList(hall || m.hall)}</div>` : ""}</div>`;
+    ${hallBox(hall, m)}</div>`;
+  hallTabs($app);
   const pick = (n) => startWizard(n);
   $app.querySelector("[data-set]").onclick = () => settingsWin(slots);
   $app.querySelector("[data-album]").onclick = () => albumWin();
@@ -1441,7 +1463,41 @@ async function renderTitle() {
   $app.querySelectorAll("[data-sdel]").forEach((b) => b.onclick = () => { const n = +b.dataset.sdel; openWin(`<h2>${n}번 칸을 지울까요? <button class="x" data-close>✕</button></h2><div class="small muted">지운 인생은 되돌릴 수 없어요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>지우기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = async () => { closeWin(); await ST.remove(n); renderTitle(); }); });
 }
 
-function hallList(h) { return `<div class="hall">${(h || []).map((x, i) => `<div><b>${i + 1}</b><span class="grow">${esc(x.name)} · ${esc(x.path)}${x.full ? " · 전업" : ""}</span><span>${x.fireAt ? `${x.fireAt}세 파이어` : `${x.age}세`}</span><b class="gold">${won(x.nw)}</b></div>`).join("") || '<div class="muted small">아직 없어요</div>'}</div>`; }
+// 명예의 전당 탭(v4.25): 순자산 순위 / 파이어 나이 순위(어릴수록 위, 같으면 순자산)
+const fireM = (x) => x.fireM ?? x.fireAt * 12;
+const fireSort = (a, b) => fireM(a) - fireM(b) || b.nw - a.nw;
+const fireTxt = (x) => { const m = fireM(x); return `${Math.floor(m / 12)}세${m % 12 ? ` ${m % 12}개월` : ""}`; };
+function hallFireList(server, mine) {
+  const seen = new Set(), all = [];
+  for (const x of [...(server || []), ...(mine || [])]) { if (!x?.fireAt) continue; const k = `${x.name}|${x.t}|${x.nw}`; if (seen.has(k)) continue; seen.add(k); all.push(x); }
+  return all.sort(fireSort).slice(0, 10);
+}
+const HALL_D = []; // 명예의 전당 상자별 데이터(탭·투잡 고르기)
+function hallBox(server, m, title) {
+  const byNw = server || m.hall || [], mine = m.hallFire || (m.hall || []).filter((x) => x.fireAt);
+  if (!byNw.length && !mine.length) return "";
+  const pool = [...byNw, ...mine], jobs = [...new Set(pool.flatMap((x) => String(x.path || "회사원").split("·")))].filter(Boolean).sort((x, y) => (x === "회사원") - (y === "회사원") || x.localeCompare(y));
+  const id = HALL_D.push({ byNw, server, mine, tab: "nw", job: "" }) - 1;
+  return `<div class="card hallbox" style="margin-top:10px" data-hid="${id}"><h3>${title || "명예의 전당"} <small>${server ? "전체 회원" : "내 기록"}</small></h3>
+    <div class="halltabs"><button class="on" data-hallt="nw">순자산 순위</button><button data-hallt="age">파이어 나이 순위</button></div>
+    ${jobs.length > 1 ? `<div class="halljobs hscroll"><button class="on" data-hallj="">전체</button>${jobs.map((j) => `<button data-hallj="${esc(j)}">${esc(j)}</button>`).join("")}</div>` : ""}
+    <div data-hallp>${hallPanel(HALL_D[id])}</div></div>`;
+}
+function hallPanel(d) {
+  const has = (x) => !d.job || String(x.path || "회사원").split("·").includes(d.job);
+  if (d.tab === "nw") { const L = d.byNw.filter(has).sort((a, b) => b.nw - a.nw).slice(0, 10); return L.length ? hallList(L) : '<div class="muted small">이 투잡으로 남긴 기록이 아직 없어요</div>'; }
+  const L = hallFireList(d.server?.filter(has), d.mine.filter(has));
+  return L.length ? hallList(L) : '<div class="muted small">아직 파이어한 기록이 없어요</div>';
+}
+function hallTabs(root) {
+  root.querySelectorAll(".hallbox").forEach((box) => {
+    const d = HALL_D[+box.dataset.hid]; if (!d) return;
+    const draw = () => { box.querySelector("[data-hallp]").innerHTML = hallPanel(d); };
+    box.querySelectorAll("[data-hallt]").forEach((b) => b.onclick = () => { d.tab = b.dataset.hallt; box.querySelectorAll("[data-hallt]").forEach((x) => x.classList.toggle("on", x === b)); draw(); });
+    box.querySelectorAll("[data-hallj]").forEach((b) => b.onclick = () => { d.job = b.dataset.hallj; box.querySelectorAll("[data-hallj]").forEach((x) => x.classList.toggle("on", x === b)); draw(); });
+  });
+}
+function hallList(h) { return `<div class="hall">${(h || []).map((x, i) => `<div><b>${i + 1}</b><span class="grow">${esc(x.name)} · ${esc(x.path)}${x.full ? " · 전업" : ""}</span><span>${x.fireAt ? `${fireTxt(x)} 파이어` : `${x.age}세`}</span><b class="gold">${won(x.nw)}</b></div>`).join("") || '<div class="muted small">아직 없어요</div>'}</div>`; }
 // ───────── 새 인생 만들기: 나 → 능력치 룰렛 → 전공 → 회사·직무 → 성향 카드 ─────────
 const WSTEPS = ["나", "능력치", "전공", "회사·직무", "성향"];
 // ───────── N회차(회귀) ─────────
@@ -1664,9 +1720,9 @@ function renderEnding() {
     m.runs = m.runs || []; m.runs.push({ age, kind, nw: Math.round(f.nw), t: Date.now(), fireAt: S.fireAt || null });
     if (S.fireAt && (!m.best || S.fireAt < m.best)) m.best = S.fireAt;
     ngEndRecord(m, f);
-    const rec = { name: S.me.name, nw: Math.round(f.nw), fireAt: S.fireAt || null, age, path: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·") || "회사원", full: BIG.isFull(S), t: Date.now(), kind };
+    const rec = { name: S.me.name, nw: Math.round(f.nw), fireAt: S.fireAt || null, fireM: S.fireAtM || (S.fireAt ? S.fireAt * 12 : null), age, path: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·") || "회사원", full: BIG.isFull(S), t: Date.now(), kind };
     // 개인회생으로 끝난 판은 명예의 전당에 올리지 않는다
-    if (S.over !== "bankrupt") { m.hall = (m.hall || []).concat(rec).sort((a, b) => b.nw - a.nw).slice(0, 10); S.hallRank = m.hall.indexOf(rec) + 1; ST.hallSubmit(rec); }
+    if (S.over !== "bankrupt") { m.hall = (m.hall || []).concat(rec).sort((a, b) => b.nw - a.nw).slice(0, 10); S.hallRank = m.hall.indexOf(rec) + 1; if (rec.fireAt) { m.hallFire = (m.hallFire || []).concat(rec).sort(fireSort).slice(0, 10); S.hallFireRank = m.hallFire.indexOf(rec) + 1; } ST.hallSubmit(rec); }
     else S.hallRank = 0;
     setMeta(m); S.recorded = true; save();
   }
@@ -1675,9 +1731,10 @@ function renderEnding() {
     <div class="card"><div class="kv"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div><div><div class="k">파티룸</div><div class="v">${S.pr.rooms.length}곳 · Lv${S.pr.lv}</div></div><div><div class="k">컨설팅</div><div class="v">Lv${S.cs.lv} · 합격 ${S.cs.passes}</div></div><div><div class="k">인연</div><div class="v">${Object.keys(S.rel).length}명</div></div></div></div>
     ${jobEndCard()}
     <div class="card"><h3>그 뒤의 이야기</h3><div class="small" style="line-height:1.8">${epilogue().map(esc).join("<br>")}</div></div>
-    ${S.hallRank ? `<div class="card"><h3>명예의 전당 ${S.hallRank}위 등록!</h3>${hallList(m.hall)}</div>` : ""}
+    ${S.hallRank ? hallBox(null, m, `명예의 전당 ${S.hallRank}위 등록!${S.hallFireRank ? ` · 파이어 나이 ${S.hallFireRank}위` : ""}`) : ""}
     <div class="card"><h3>기억 포인트 +${S.ngGot?.pts || 0} <small>다음은 ${ngNext(m)}회차 · 모은 포인트 ${ngPoints(m)}</small></h3><div class="small">${(S.ngGot?.got || []).map(([p, why]) => `+${p} ${esc(why)}`).join("<br>")}</div>${S.ngGot?.newEnds?.length ? `<div class="small gold" style="margin-top:6px">새 엔딩을 도감에 올렸어요!</div>` : ""}${ngCollection(m)}<div class="tiny muted" style="margin-top:6px">지금까지 ${m.runs.length}판 · 최고 파이어 ${m.best ? m.best + "세" : "아직 없음"}</div></div>
     <button class="btn gold" style="padding:14px" data-again>이 칸에서 ${ngNext(m)}회차 인생</button><button class="btn" style="padding:12px" data-slots>저장 칸으로</button></div>`;
+  hallTabs($app);
   $app.querySelector("[data-again]").onclick = () => { S = null; startWizard(SLOT); };
   $app.querySelector("[data-slots]").onclick = () => { ST.flush(); S = null; renderTitle(); };
 }
@@ -1704,7 +1761,7 @@ function epilogue() {
 // ───────── 자동 시험(#auto) ─────────
 function autoTest(n) {
   S = E.newGame({ seed: "auto", gender: "F", name: "시험", major: "sw", company: "fin", job: "dfin", traits: ["insider", "cfo"], look: randomLook(Math.random, "F") });
-  SJ.hbJoin(S, "wine"); SJ.hbJoin(S, "book"); S.sj.open = true; SJ.found(S, "pr"); SJ.found(S, "cs"); SJ.found(S, "insta"); SJ.start(S, "pr"); if (location.hash.includes("ucf")) { SJ.found(S, "ucafe"); SJ.start(S, "ucafe"); UC.search(S, E.R(S), "apt"); UC.contract(S, S.uc.listings[0].id, { machine: "buy" }); UC.search(S, E.R(S), "academy"); } if (location.hash.includes("abnb")) { SJ.found(S, "airbnb"); SJ.start(S, "airbnb"); S.st.lang = 55; for (const rk of ["hongdae", "jongno"]) { AB.search(S, E.R(S), rk); const L = S.ab.listings.find((l) => l.rk === rk && l.house && l.owner) || S.ab.listings.find((l) => l.rk === rk); AB.contract(S, L.id, L.house && L.owner ? "legal" : "illegal"); } AB.search(S, E.R(S), "jeju"); } if (location.hash.includes("ins")) { SJ.start(S, "insta"); INS.setNiche(S, "space"); INS.setFace(S, true); S.ins.f = 4200; } else SJ.start(S, "cs"); if (location.hash.includes("grad")) { S.grad = { k: "mba", t0: 0, n: 0, done: false }; } S.cash += 20000;
+  S.flags.noProbation = true; SJ.hbJoin(S, "wine"); SJ.hbJoin(S, "book"); S.sj.open = true; SJ.found(S, "pr"); SJ.found(S, "cs"); SJ.found(S, "insta"); SJ.start(S, "pr"); if (location.hash.includes("ucf")) { SJ.found(S, "ucafe"); SJ.start(S, "ucafe"); UC.search(S, E.R(S), "apt"); UC.contract(S, S.uc.listings[0].id, { machine: "buy" }); UC.search(S, E.R(S), "academy"); } if (location.hash.includes("abnb")) { SJ.found(S, "airbnb"); SJ.start(S, "airbnb"); S.st.lang = 55; for (const rk of ["hongdae", "jongno"]) { AB.search(S, E.R(S), rk); const L = S.ab.listings.find((l) => l.rk === rk && l.house && l.owner) || S.ab.listings.find((l) => l.rk === rk); AB.contract(S, L.id, L.house && L.owner ? "legal" : "illegal"); } AB.search(S, E.R(S), "jeju"); } if (location.hash.includes("ins")) { SJ.start(S, "insta"); INS.setNiche(S, "space"); INS.setFace(S, true); S.ins.f = 4200; } else SJ.start(S, "cs"); if (location.hash.includes("grad")) { S.grad = { k: "mba", t0: 0, n: 0, done: false }; } S.cash += 20000;
   for (const P of REG.JOBS) if (new RegExp(`[-_]${P.key}(\\b|$)`).test(location.hash)) { if (S.sj.active.length >= SJ.slots(S)) S.sj.active.pop(); SJ.found(S, P.key); SJ.start(S, P.key); if (UJ[P.key]?.auto) UJ[P.key].auto(jctx()); } // #auto18-<key>
   if (location.hash.includes("rooms")) for (const dk of ["univ", "under", "office", "hot"]) { S.ap = 99; S.hp = S.hpMax; E.act(S, "pr_search", dk); while (S.pending) E.choose(S, 0); const L = S.pr.listings.find((l) => l.dk === dk); if (L) { const c = Object.keys(D.CONCEPTS).filter((k) => !PR.conceptOk(L, k)).sort((x, y) => (D.DISTRICTS[dk].fit[y] || 0) - (D.DISTRICTS[dk].fit[x] || 0))[0]; PR.contract(S, L.id, { concept: c, interior: 1 }); } S.pr.sys.cleanContract = true; }
   for (let m = 0; m < n && !S.over && !S.ended; m++) {
@@ -1721,9 +1778,11 @@ function autoTest(n) {
   const h = location.hash; ui.page = ["map", "people", "sj", "hobby", "co", "pr", "cs", "insta", "airbnb", "ucafe", "grad", "family", "me", ...REG.JOBS.map((P) => P.key)].find((k) => h.includes("-" + k)) || "home";
   if (h.includes("region")) ui.region = "town";
   { const av = h.match(/av=(p[FM][0-9])/); if (av) { S.me.avatar = av[1]; S.me.gender = av[1][1]; } const wh = h.match(/who=(c[0-9]+)/); if (wh) { S.cast.unshift(wh[1]); E.talkTo(S, wh[1]); while (S.pending) E.choose(S, 0); S.rel[wh[1]] = S.rel[wh[1]] || {}; const o = S.rel; S.rel = { [wh[1]]: o[wh[1]], ...o }; } const sp = h.match(/spot=([a-z]+)/); if (sp) ui.lastSpot = sp[1]; }
+  if (h.includes("-guide")) { S.flags.noProbation = false; S.sj.active = []; S.flags.coActs = 2; }
   if (h.includes("-wed") || h.includes("-lover")) { const ids = Object.keys(E.CHAR).filter((k) => E.isRomanceable(S, E.CHAR[k])); const id = ids[0]; E.ensureRel(S, id); if (h.includes("-wed")) { Object.assign(S.rel[id], { spouse: true, aff: 72 }); S.fam.spouse = id; S.fam.spouseType = "응원형"; S.fam.marriedT = S.t; if (h.includes("kid")) S.fam.kids.push({ born: S.t - 3, name: "하린" }); } else Object.assign(S.rel[id], { lover: true, loverSince: S.t, aff: 66 }); if (h.includes("-aff")) { E.ensureRel(S, ids[2]); Object.assign(S.rel[ids[2]], { affair: true, aff: 64 }); S.fam.affair = { who: ids[2], t: S.t, sus: 42, crisisT: S.t, used: [], asked: false }; } if (h.includes("two")) { E.ensureRel(S, ids[1]); Object.assign(S.rel[ids[1]], { lover: true, loverSince: S.t, aff: 55 }); } S.apMax = E.calcApMax(S); S.ap = S.apMax; }
   render();
   if (h.includes("hub")) openHub();
+  if (h.includes("-talk")) { const id = S.cast[1]; E.ensureRel(S, id); S.rel[id].stage = 99; S.ap = 5; const res = E.talkTo(S, id); if (res.ok && S.pending) showScene(); }
   if (h.includes("ending")) { S.fireAt = 41; S.cash += 280000; S.ended = "age"; if (h.includes("jobend")) { S.moments = S.moments || {}; for (const e of REG.ENDS.filter((x, i) => i % 7 === 0)) S.moments[e.key] = S.t; } render(); } // #auto18-ending-jobend: 투잡 엔딩 몇 개 받은 결산 화면
   if (h.includes("decor") && S.pr.rooms[0]) { const rm = S.pr.rooms[0]; ui.page = "pr"; ui.prFlow = { step: "decor", id: rm.id, picks: { ...rm.decor, light: 3, seat: 1, zone: 3 } }; render(); }
   if (/-dk(pr|ab)/.test(h)) DK.decoTest(dctx(), h); // 방 꾸미기 시험: -dkpr|-dkab [-dkauto|-dkask|-dkhand|-dkguide]
@@ -1738,6 +1797,12 @@ function autoTest(n) {
   // 연말 결산 시험(v4.24): #autoN-yr0(신호 없음) · -yr1 · -yr15 · -yr2 · -yr3 · -full(=yr1). 올해 투잡 이익을 그 배수로 맞춰 결산 화면을 띄운다
   { const ym = location.hash.match(/-yr(\d+)/), st = ym ? { 0: 0, 1: 1, 15: 1.5, 2: 2, 3: 3 }[ym[1]] ?? 1 : location.hash.includes("full") ? 1 : null;
     if (st !== null) { const ann = E.salary(S) * 12, H = S.hist.slice(-12); S.yr0 = { ...(S.yr0 || {}), t: H[0]?.t ?? S.t, nw: Math.round(E.netWorth(S) * 0.8), fire: Math.max(0, E.fireInfo(S).ratio - 0.05), burn: S.burnouts || 0 }; H.forEach((h) => { h.side = Math.round(ann * (st ? st + 0.2 : 0.4) / H.length); h.inv = 60; }); S.fullAsk = 0; S.cash = Math.max(S.cash, E.monthlySpend(S) * (location.hash.includes("poor") ? 1 : 7)); if (location.hash.includes("poor")) S.invest = 0; E.openScene(S, E.yearScene(S, E.R(S))); showScene(); } }
+  // 성장 카드·가방 시험(v4.25): #auto14-gcpick(연말 카드) · -gcpack(카드팩) · -gcbag[_탭](가방, 탭 gear·final·memo·cons·life·cards·sets)
+  { const gm = location.hash.match(/gc(pick|pack|bag)(?:_([a-z]+))?/); if (gm) setTimeout(() => { GC.ensure(S); const r = E.R(S); S.cash += 20000; if (gm[1] !== "pick") S.gc.offers = [];
+    if (gm[1] === "pick") { GC.yearOffer(S, r, { fire: 0.3, fire0: 0.2, ev: { g: "S" }, nw: 2, nw0: 1 }); CU.pickWin(gcx(), continueChain); }
+    else if (gm[1] === "pack") { GC.openPack(S, r, { free: true }); CU.pickWin(gcx(), () => CU.bagWin(gcx())); }
+    else { for (const id of ["pr_beam", "pr_karaoke", "cs_tpl", "m_kid", "m_letter", "perfume", "suit"]) IT_.grant(S, id, "ev"); IT_.grant(S, "c_drink", "mg"); IT_.grant(S, "c_drink", "mg"); IT_.grant(S, "c_vac", "gift"); for (const [id, lv] of [["h_shield", 1], ["r_pr", 2], ["c_ap", 1], ["l_fans", 1]]) S.gc.own[id] = lv; S.gc.shards = 3; CU.bagWin(gcx(), gm[2] || "gear"); }
+  }, 700); }
   if (location.hash.includes("hire")) { S.co.hired = S.co.hired || []; S.co.hired.push("c107"); const sc = E.meetScene(S, "c107"); sc.title = "새 사람이 왔다 · 봉다온"; E.openScene(S, sc); showScene(); }
   if (location.hash.includes("sw2")) { const sw = $app.querySelector("[data-sw2]"); if (sw) sw.scrollLeft = 9999; }
 }
@@ -1805,7 +1870,7 @@ function jobFlowTest(key, months) {
   if (!P) return say(false, ["엔진 플러그인이 등록되지 않음(engine/jobs/" + key + ".js 가 null 이거나 규약 오류, 콘솔 경고 확인)"]);
   const clear = () => { for (let g = 0; g < 80; g++) { const cn = $(".cine"); if (cn) { if (cn._skip) cn._skip(); else { cn.remove(); showScene(); } continue; } if (!$modal.innerHTML) break; const b = $("[data-ch]", $modal) || $("[data-ok]", $modal) || $("[data-force]", $modal) || $("[data-pick]", $modal) || $("[data-pa]", $modal) || $("[data-close]", $modal); if (b && !b.disabled) b.click(); else closeWin(); } };
   try {
-    S = E.newGame({ seed: "jobflow-" + key, gender: "F", name: "시험", traits: ["insider", "cfo"], look: randomLook(Math.random, "F") }); S.cash += 30000;
+    S = E.newGame({ seed: "jobflow-" + key, gender: "F", name: "시험", traits: ["insider", "cfo"], look: randomLook(Math.random, "F") }); S.cash += 30000; S.flags.noProbation = true;
     S.sj.open = true; SJ.found(S, key); ui.page = "sj"; ui.sjf = "all"; render();
     const st = $(`[data-sjstart="${key}"]`); if (!st) throw new Error("투잡 탐색에 시작하기 버튼이 없음");
     st.click(); $("[data-yes]", $modal).click(); clear();

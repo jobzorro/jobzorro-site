@@ -174,7 +174,7 @@ function makeLeads(s, r) {
   const base = [0, 0, 7, 11, 16][T.lv - 1] + T.follow / 300 + Math.min(14, T.reviews * 0.12);
   const rep = T.regulars * 0.7;
   const mult = seas * priceDemand(T) * (0.7 + T.rep / 100 * 0.6) * (T.niche ? NICHES[T.niche].lead : 1) * (SYN.on(s, "tr_insta") ? 1.12 : 1)
-    * mod(s, "trLead", 1) * (T.seen.includes("e12") ? (T.empathy ? 1.03 : T.bot ? 0.95 : 0.92) : 1) * (T.room === "lease" ? 1.15 : 1) * (T.boundary ? 0.92 : 1) * (s.era?.winter ? 0.95 : 1) * SJ.ramp(s, "tarot"); // 유료 첫 달부터 초반 고생
+    * mod(s, "trLead", 1) * (T.seen.includes("e12") ? (T.empathy ? 1.03 : T.bot ? 0.95 : 0.92) : 1) * (T.room === "lease" ? 1.15 : 1) * (T.boundary ? 0.92 : 1) * (s.era?.winter ? 0.95 : 1) * SJ.ramp(s, "tarot") * SJ.skillRamp(s, "tarot"); // 유료 첫 달부터 초반 고생 · v4.25b 배우는 기간
   const cap = LEAD_CAP[T.lv - 1] * (T.brand ? 1.4 : 1) * (s.fullJob === "tarot" ? 1.25 : 1);
   const raw = (base + rep) * mult;
   const lead = cap * (1 - Math.exp(-raw / cap)) * (1 + 0.1 * r.normal());

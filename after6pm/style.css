@@ -557,3 +557,28 @@ body[data-page="insta"] .card{border-radius:20px}
 .top .rchip.kid .rt i{color:var(--gold,#ffce5a)}
 .top .rchip.sec{border-color:rgba(160,120,255,.55);background:rgba(120,90,220,.14)}
 .top .rchip.sec .rt i{color:#b9a2ff}
+/* v4.25 첫 3개월 탐색 가이드 */
+.guide{margin:10px 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(245,192,78,.4);background:rgba(245,192,78,.07);display:flex;flex-direction:column;gap:6px}
+.guide .gh{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.guide .gh b{display:flex;align-items:center;gap:4px;color:var(--gold)}
+.guide .gh span{font-size:11px;color:var(--muted)}
+.guide .gd{display:flex;align-items:center;gap:8px;text-align:left;padding:6px 8px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:inherit}
+.guide .gd i{flex:0 0 20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px}
+.guide .gd.ok i{background:var(--green);border-color:var(--green);color:#0e1020}
+.guide .gd.ok b{text-decoration:line-through;opacity:.7}
+.guide .gd span{display:flex;flex-direction:column;min-width:0}
+.guide .gd b{font-size:13px}
+.guide .gd small{font-size:11px;color:var(--muted);line-height:1.35}
+.guide .gf{font-size:11px;color:var(--muted);line-height:1.4}
+.sjins{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;font-size:11px}
+.sjins span{padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.sjins .lk{color:var(--gold);border-color:rgba(245,192,78,.45)}
+.guide .gh svg{width:15px;height:15px;flex:0 0 15px}
+/* v4.25 명예의 전당 탭 */
+.halltabs{display:flex;gap:6px;margin:4px 0 8px}
+.halltabs button{flex:1;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;font-weight:700}
+.halltabs button.on{border-color:var(--gold);color:var(--gold);background:rgba(245,192,78,.1)}
+.halljobs{display:flex;gap:5px;overflow-x:auto;margin:0 0 8px;padding-bottom:2px;scrollbar-width:none}
+.halljobs::-webkit-scrollbar{display:none}
+.halljobs button{flex:0 0 auto;padding:4px 10px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:11px;font-weight:700;white-space:nowrap}
+.halljobs button.on{border-color:var(--pink);color:var(--pink);background:rgba(255,126,182,.1)}

@@ -20,23 +20,36 @@ export function fit(s, job) { // 궁합 등급(능력치 기반)
 // 관심도 올리기. 100이 되면 발견. hobby에서 오면 발견 장면으로 넘긴다(장면에서 확정).
 export function addInt(s, job, v, holdAt) {
   const sj = s.sj; if (!D.SIDEJOBS[job] || isFound(s, job)) return null;
+  if (v > 0) v = Math.max(1, Math.round(v * INFO));
   const before = sj.int[job] || 0; let after = clamp(before + v, 0, 100);
   if (holdAt && after >= holdAt) after = Math.min(after, 99);
   sj.int[job] = after;
   if (after >= 100) { found(s, job); return `${D.SIDEJOBS[job].n} 발견!`; }
-  return `${D.SIDEJOBS[job].n} 관심 +${Math.round(after - before)}`;
+  return `${D.SIDEJOBS[job].n} 이해도 +${Math.round(after - before)}%`;
 }
 export function found(s, job, how) {
   const sj = s.sj; if (isFound(s, job)) return;
   sj.int[job] = 100; sj.found[job] = s.t; sj.open = true;
   log(s, `투잡 발견: ${D.SIDEJOBS[job].n}${how ? ` (${how})` : ""}`, "work");
 }
+// 첫 3개월은 투잡 탐색만(v4.25): 시작은 4개월 차부터
+export const PROBATION = 3;
+export const NEED_CANDS = 2; // 투잡 후보(발견한 투잡)가 이만큼 있어야 고를 수 있다
+export const foundCount = (s) => Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && isFound(s, k)).length;
+export function startLock(s) {
+  if (s.flags?.noProbation) return null;
+  if (s.t < PROBATION) return `입사 첫 ${PROBATION}개월은 회사 적응과 탐색 기간이에요. ${PROBATION + 1}개월 차부터 시작할 수 있어요`;
+  if (foundCount(s) < NEED_CANDS) return `투잡 후보를 ${NEED_CANDS}개 이상 찾아야 고를 수 있어요(지금 ${foundCount(s)}개). 취미 모임·지도 장소·리포트·선배 찾아가기로 알아보세요`;
+  return null;
+}
+const INFO = 0.7; // 정보 구하기는 생각보다 어렵다(v4.25): 관심 오르는 양 30% 줄임
 export function start(s, job) {
   const j = D.SIDEJOBS[job], sj = s.sj;
   if (!j) return { ok: false, msg: "없는 투잡" };
   if (!isFound(s, job)) return { ok: false, msg: "아직 발견하지 못한 투잡" };
   if (!j.play) return { ok: false, msg: "이 투잡은 준비 중입니다(다음 업데이트)" };
   if (isActive(s, job)) return { ok: false, msg: "이미 하고 있습니다" };
+  { const why = startLock(s); if (why) return { ok: false, msg: why }; }
   if (sj.active.length >= slots(s)) return { ok: false, msg: `투잡은 지금 ${slots(s)}개까지. 매니저를 두면 한 칸 늘어요` };
   sj.active.push(job); log(s, `${jo(j.n, "을", "를")} 시작하기로 했다.`, "work");
   { const P = REG.get(job); if (P) { if (!s[job]) s[job] = P.init(s); if (P.onStart) P.onStart(s); } }
@@ -103,15 +116,22 @@ export function discScene(s, hobby, job) {
 export function discChoose(s, sc, i) {
   if (sc?.coach) return coachChoose(s, sc, i);
   if (i === 0) { found(s, sc.job, `${D.HOBBIES[sc.hobby]?.n || "취미"}에서`); return [`투잡 발견: ${D.SIDEJOBS[sc.job].n}`, D.SIDEJOBS[sc.job].play ? "투잡 탐색에서 시작할 수 있다" : "준비 중인 투잡"]; }
-  s.sj.int[sc.job] = 70; return ["관심 70에서 멈춤"];
+  s.sj.int[sc.job] = 70; return ["이해도 70%에서 멈춤"];
 }
 export function introScene() {
-  return { kind: "event", title: "옆 팀 김 대리의 비밀", tag: "투잡 탐색 열림", text: "탕비실에서 들은 이야기. 옆 팀 김 대리가 퇴근 후 파티룸 두 곳을 돌린단다. 다른 동기는 주말마다 자소서 첨삭으로 용돈을 번다고. 월급만으로는 집 한 채가 멀다. 나도... 뭘 해 볼까?", onChoose: "sj_intro", choices: [
-    { t: "오늘부터 투잡을 알아본다", eff: { mental: 2 }, text: "퇴근길 지하철에서 '직장인 부업'을 검색했다. 투잡 탐색이 열렸다." },
+  return { kind: "event", title: "옆 팀 김 대리의 비밀", tag: "투잡 탐색 열림", text: "탕비실에서 들은 이야기. 옆 팀 김 대리가 퇴근 후 파티룸 두 곳을 돌린단다. 회계팀 누구는 밤마다 웹소설을 연재하고, 신입 하나는 주말에 타로를 본다고. 월급만으로는 집 한 채가 멀다. 나도... 뭘 해 볼까? (첫 3개월은 회사 적응 기간. 투잡은 알아보기만 할 수 있어요)", onChoose: "sj_intro", choices: [
+    { t: "오늘부터 투잡을 알아본다", eff: { mental: 2 }, text: "퇴근길 지하철에서 '직장인 부업'을 검색했다. 투잡 탐색이 열렸다. 시작은 4개월 차부터." },
     { t: "일단 회사에 집중한다", eff: { stat: { career: 1 } }, text: "그래도 궁금하긴 하다. 투잡 탐색은 언제든 열어 볼 수 있다." },
   ] };
 }
-export function introChoose(s, i) { s.sj.open = true; addInt(s, "pr", i === 0 ? 30 : 15); addInt(s, "cs", i === 0 ? 30 : 15); return ["전체 메뉴: 투잡 탐색 열림"]; }
+export function introChoose(s, i) {
+  s.sj.open = true; const k = i === 0 ? 1 : 0.5;
+  // 파티룸·웹소설·타로는 이야기에 나왔으니 조금씩, 나머지는 판마다 하나 골라 조금
+  let h = 0; for (const c of String(s.seed ?? s.me?.name ?? "")) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const pool = ["cs", "insta", "airbnb", "ucafe", "tutoring", "vibe", "chicken"];
+  addInt(s, "pr", 14 * k); addInt(s, "webnovel", 10 * k); addInt(s, "tarot", 10 * k); addInt(s, pool[h % pool.length], 10 * k);
+  return ["전체 메뉴: 투잡 탐색 열림", `투잡 시작은 ${PROBATION + 1}개월 차부터`];
+}
 
 // ───────── 취미 ─────────
 export function hbLv(s, id) { const c = s.hb.cnt[id] || 0; let lv = 0; D.HOBBY_LV.forEach((x, i) => { if (c >= x.need) lv = i; }); return lv; }
@@ -337,6 +357,24 @@ function hadRevenue(s, job) { // 이익 난 달이 3달 이상이면 이미 자�
   return n(H.map((h) => h.px?.[job] || 0));
 }
 export const rampInfo = (s, job) => { const p = s.sj?.rp?.[job]; if (!p || p.t0 === undefined || !ENTRY[job]) return null; return { pct: p.done !== undefined ? 100 : Math.round((p.f ?? ENTRY[job].f0) * 100), done: p.done !== undefined, tip: p.tip || "", t0: p.t0 }; };
+// ───────── 역량형 투잡 '배우는 기간'(v4.25b) ─────────
+// 월세·권리금 없이 역량으로만 하는 투잡(cs·insta·tarot·webnovel·tutoring·vibe)은 바로 잘할 수 없다. 투자형(pr·airbnb·ucafe·chicken)은 해당 없음.
+// 역량 N = 핵심 능력치(ENTRY[job].st) + 경험(첫 영업 달 t0부터 한 달 +2.5, 최대 +30). 필요 M = SKILL[job].
+// 수입 배율은 N/M 계단(SKILL_STEP): 50% 미만 30% · 65% 미만 45% · 80% 미만 60% · 90% 미만 75% · 100% 미만 88% · 그 이상 100%.
+// 능력치 30 안팎으로 시작하면 보통 6~12달이 배우는 기간. 각 모듈이 수요(손님·의뢰·노출)를 계산할 때 SJ.ramp 와 함께 곱한다.
+export const SKILL = { cs: 72, insta: 70, tarot: 68, webnovel: 75, tutoring: 70, vibe: 76 };
+export const SKILL_STEP = [[0.5, 0.3], [0.65, 0.45], [0.8, 0.6], [0.9, 0.75], [1, 0.88]];
+export const SKILL_EXP = { per: 2.5, max: 30 };
+export function skillInfo(s, job) {
+  const M = SKILL[job], E = ENTRY[job]; if (!M || !E || !s?.sj) return null;
+  const p = s.sj.rp?.[job], t0 = p?.t0;
+  if (p && t0 !== undefined && p.done === t0 && p.grad === t0) return null; // 예전 저장: 이미 벌고 있던 투잡
+  const exp = t0 === undefined ? 0 : Math.min(SKILL_EXP.max, Math.max(0, s.t - t0) * SKILL_EXP.per);
+  const stat = s.st[E.st] || 0, N = Math.round(stat + exp), q = N / M;
+  const step = SKILL_STEP.find(([lim]) => q < lim), mult = step ? step[1] : 1;
+  return { N, M, mult, learning: mult < 1, stat: Math.round(stat), statN: D.STATS[E.st], exp: Math.round(exp), next: step ? Math.ceil(step[0] * M) : null };
+}
+export const skillRamp = (s, job) => skillInfo(s, job)?.mult ?? 1;
 // 행동 하나 끝날 때(core.act 에서 부름): 그 투잡의 마케팅·후기·품질 행동이면 노력 점수
 export function onAct(s, id) {
   const job = ACT_JOB[id]; if (!job || !isActive(s, job)) return;
@@ -423,4 +461,78 @@ function prepAct(s, job) {
   const memo = (s.sj.memo = s.sj.memo || {}); (memo[job] = memo[job] || []).push({ t: s.t, prep: 1, txt: `준비 ${p.prep}/3: ${item}` });
   const N = need(s, job);
   return { lines: [`${D.STATS[E.st]} +${g.toFixed(1)}`, `준비 ${p.prep}/3 · 초반 고생 −`, `준비비 −${won(c)}`], msg: `${D.SIDEJOBS[job].n} 준비: ${item}.${p.prep >= 3 ? " 이제 시작해도 덜 고생할 것 같다." : N.ok ? "" : ` 아직 ${N.n} ${N.cur}/${E.need}.`}` };
+}
+
+// ── 탐색의 3개월(v4.25): 첫 달 끝에 약속, 4개월 차에 결산 ──
+const PLAYABLE = () => Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play);
+export function grindScene() {
+  return { kind: "event", title: "나와의 약속: 탐색의 3개월", tag: "투잡 탐색", text: "달력에 빨간 동그라미를 쳤다. 앞으로 3개월. 회사 적응도 해야 하지만, 퇴근 후 시간을 어디에 쓸지는 내가 정한다. 남들 드라마 정주행할 때 나는 뭘 할까?", onChoose: "sj_grind", choices: [
+    { t: "평일 밤 2시간 + 주말 하루, 갈아넣는다", eff: { mental: -2 }, text: "OTT 구독을 해지했다. 3개월 동안 매달 행동력 −2, 멘탈 −3. 대신 투잡 관심이 쑥쑥 오른다." },
+    { t: "주말 오전만 쓴다", eff: {}, text: "토요일 오전 9시, 카페 구석 자리를 찜했다. 3개월 동안 매달 행동력 −1." },
+    { t: "취미 모임부터 나가 본다", eff: { mental: 3 }, text: "사람 많은 곳에 돈 버는 이야기도 많다. 취미 하나에 가입했다." },
+    { t: "일단 회사 적응부터", eff: { stat: { career: 1 } }, text: "투잡은 천천히. 탐색 메뉴는 언제든 열 수 있다." },
+  ] };
+}
+export function grindChoose(s, r, i) {
+  if (i === 3) { s.sj.grind = null; return ["탐색은 내 속도대로"]; }
+  if (i === 2) {
+    s.sj.grind = null;
+    const opts = Object.keys(D.HOBBIES).filter((k) => !s.hb.joined.includes(k) && !D.HOBBIES[k].lock);
+    const k = opts.length ? opts[Math.floor(r.range(0, opts.length))] : null;
+    const res = k ? hbJoin(s, k) : null;
+    return [res?.ok ? `${D.HOBBIES[k].n} 가입 · 취미 모임에서 투잡 이야기를 들을 수 있다` : "취미는 지도에서 골라 가입할 수 있다"];
+  }
+  const g = (s.sj.grind = { lv: i === 0 ? 2 : 1, until: PROBATION - 1, log: [] });
+  s.ap = Math.max(0, s.ap - g.lv); // 이번 달부터 시간을 쓴다
+  return [i === 0 ? "3개월 동안 매달 행동력 −2 · 멘탈 −3" : "3개월 동안 매달 행동력 −1", ...grindStep(s, r, g)];
+}
+function grindStep(s, r, g) {
+  if (g.lv >= 2) s.mental = Math.max(0, s.mental - 3);
+  const jobs = PLAYABLE().filter((k) => !isFound(s, k)).map((k) => [k, r.range(0, 1)]).sort((x, y) => x[1] - y[1]).map((x) => x[0]);
+  const lines = [];
+  for (const k of jobs.slice(0, g.lv + 1)) { const l = addInt(s, k, g.lv >= 2 ? r.int(14, 22) : r.int(8, 14)); if (l) lines.push(l); }
+  const deep = jobs[0]; if (deep && !s.sj.know[deep]) { s.sj.know[deep] = s.t; lines.push(`${D.SIDEJOBS[deep].n} 수익 구조를 알게 됐다`); }
+  g.log.push(...lines); return lines;
+}
+export function grindMonth(s, r, notes, scenes) {
+  const g = s.sj?.grind; if (!g) return;
+  if (s.t < g.until) s.apNext -= g.lv; // 다음 달 몫
+  if (s.t <= g.until) { const lines = grindStep(s, r, g); if (lines.length) notes.push(`퇴근 후 탐색: ${lines.join(", ")}`); }
+  if (s.t === g.until) {
+    s.sj.grind = null; log(s, "탐색의 3개월을 마쳤다.", "work");
+  }
+}
+
+// 후보가 모였다(v4.25): 3개월이 지나고 후보가 2개 이상이 되면 한 번 알려 준다
+export function candMonth(s, notes, scenes) {
+  if (s.sj.candT !== undefined || s.flags?.noProbation || s.t < PROBATION - 1) return;
+  const n = foundCount(s);
+  if (n < NEED_CANDS) { if (s.t === PROBATION - 1) notes.push(`투잡 후보 ${n}/${NEED_CANDS}: 후보가 ${NEED_CANDS}개는 모여야 고를 수 있어요`); return; }
+  s.sj.candT = s.t;
+  const c = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && isFound(s, k)).map((k) => D.SIDEJOBS[k].n);
+  scenes.push({ kind: "story", title: "후보가 모였다", tag: "투잡 탐색", text: `메모장에 적어 둔 후보: ${c.join(", ")}. 발품 팔아 모은 정보라 아직 다 믿을 수는 없다. 그래도 이제 고를 수 있다. 투잡 탐색에서 하나를 골라 시작하자.`, choices: [{ t: "좋아, 골라 보자", eff: { mental: 4 }, text: "" }] });
+}
+
+// 곳곳에서 조금씩 듣는 투잡 정보(v4.25): 회사·사람·이벤트에서 이해도가 조금씩 오른다
+const WHO_JOB = [[/디자이너|인테리어|포토|사진|스타일/, ["insta", "pr", "airbnb"]], [/개발|엔지니어|데이터|프로그래/, ["vibe"]], [/작가|에디터|기자|웹툰|PD|편집/, ["webnovel", "insta"]], [/교사|강사|선생|과외|대학원|연구/, ["tutoring", "cs"]], [/사장|카페|바리스타|요리|셰프|자영업|가게/, ["ucafe", "chicken", "pr"]], [/부동산|중개|건축|공인/, ["airbnb", "pr"]], [/인사|HR|채용|컨설/, ["cs"]], [/타로|명리|상담|심리/, ["tarot"]], [/마케|MD|브랜드|광고/, ["insta", "vibe"]]];
+export function hearInfo(s, r, src, who) {
+  const P = { co: 0.3, people: 0.35, event: 0.18 }[src] || 0.2;
+  if (!s.sj?.open || !r.chance(P)) return null;
+  let pool = null;
+  if (who && CHAR[who]) { const m = WHO_JOB.find(([re]) => re.test(CHAR[who].job || "")); if (m) pool = m[1]; }
+  let cands = (pool || Object.keys(D.SIDEJOBS)).filter((k) => D.SIDEJOBS[k]?.play && !isFound(s, k));
+  if (!cands.length) cands = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && !isFound(s, k));
+  if (!cands.length) return null;
+  const l = addInt(s, r.pick(cands), r.int(4, 8)); if (!l) return null;
+  const pre = { co: "회사에서 주워들은 얘기", people: who && CHAR[who] ? `${CHAR[who].name}에게 들은 얘기` : "사람들에게 들은 얘기", event: "흘려들은 얘기" }[src];
+  return `${pre} · ${l}`;
+}
+// 이해도 100%(후보)가 되면 보이는 것: 능력치 궁합과 내 특성카드 연계
+export function insight(s, job) {
+  if (!isFound(s, job)) return null;
+  const j = D.SIDEJOBS[job], f = fit(s, job);
+  const stats = (j.fit || []).map((k) => `${D.STATS[k]} ${Math.round(s.st[k] || 0)}`);
+  const links = [];
+  for (const id of s.me.traits || []) { const tr = D.TRAITS.find((x) => x.id === id); for (const h of tr?.hid || []) if (h.d === job) links.push(`${tr.n}: ${h.t}`); }
+  return { g: f.g, v: f.v, stats, links };
 }

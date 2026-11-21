@@ -70,7 +70,7 @@ export function act(s, r, id, arg, boost = 1) {
     return { lines: [`참여율 ${(I.eng * 100).toFixed(1)}%`, `팔로워 +${g}`], msg: "댓글 120개에 하나하나 답했다. 손가락이 아프다." };
   }
   if (id === "in_deal") {
-    I.deals--; I.dealsDone++; const pay = Math.round(dealPay(s) * SJ.ramp(s, "insta")); s.cash += pay; addMoney(s, "inc", "인별 수익", pay); I.monthRev += pay;
+    I.deals--; I.dealsDone++; const pay = Math.round(dealPay(s) * SJ.ramp(s, "insta") * SJ.skillRamp(s, "insta")); /* v4.25b 배우는 기간 */ s.cash += pay; addMoney(s, "inc", "인별 수익", pay); I.monthRev += pay;
     I.eng = clamp(I.eng - 0.004, 0.02, 0.16);
     return { lines: [`협찬비 +${won(pay)}`, "참여율 조금 −(광고 티)"], msg: r.pick(["협찬 화장품을 받고 솔직 후기를 올렸다.", "\"#광고\" 표시는 꼭 붙였다.", "브랜드 담당자와 수정만 세 번."]) };
   }

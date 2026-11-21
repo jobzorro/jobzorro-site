@@ -248,7 +248,7 @@ export default {
       w.retain = clamp(w.retain - up * 0.0016 * (SYN.on(s, "wn_club") ? 0.65 : 1) + (W.plot ? 0.01 : 0), 0.5, 0.98);
       // 노출
       if (W.expo.left > 0) W.expo.left--; else W.expo.x = 1;
-      const expo = (SCHED[W.sched]?.f || 0) * seas * (1 + W.buzz / 100) * W.expo.x * (hasTr(s, "writer") ? 1.25 : 1) * (w.title2 ? 1.12 : 1) * (w.cover ? 1.08 : 1) * (W.lv >= 3 && w.mgmt ? 1.1 : 1) * SJ.ramp(s, "webnovel"); // 초반 고생: 독자 소통·플롯이 쌓일수록 1로
+      const expo = (SCHED[W.sched]?.f || 0) * seas * (1 + W.buzz / 100) * W.expo.x * (hasTr(s, "writer") ? 1.25 : 1) * (w.title2 ? 1.12 : 1) * (w.cover ? 1.08 : 1) * (W.lv >= 3 && w.mgmt ? 1.1 : 1) * SJ.ramp(s, "webnovel") * SJ.skillRamp(s, "webnovel"); // v4.25b 배우는 기간 · 초반 고생: 독자 소통·플롯이 쌓일수록 1로
       const G = GENRES[w.g] || GENRES.hyun, cap = capOf(s, w), f0 = w.fans;
       if (up > 0 && cap > w.fans) w.fans += (cap - w.fans) * clamp(G.rate * expo * cons, 0, 0.6);
       w.fans *= 1 - 0.02 - (need && miss ? 0.12 * (1 - cons) : 0) - (need === 0 ? 0.07 : 0) - (W.tired >= 80 ? 0.02 : 0);

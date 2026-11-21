@@ -300,6 +300,7 @@ export default {
       if (!r.chance(0.3 + 0.7 * rf)) { if (ch === "friend") gainStat(s, "talk", 0.3); else gainStat(s, "mkt", 0.3); return { lines: ["답장 없음", "레퍼런스가 쌓이면 나아져요"], msg: r.pick(["견적 세 군데. 읽음 표시만 떴다.", "\"포트폴리오 있으세요?\" 그 한 줄에 말문이 막혔다.", "해외 팀이 반값을 불렀다. 이번에도 밀렸다."]) }; }
       const o = makeOffer(s, r, ch);
       if (rf < 1 && o.price) o.price = Math.max(5, Math.round(o.price * (0.7 + 0.3 * rf) / 5) * 5);
+      { const sk = SJ.skillRamp(s, "vibe"); if (sk < 1 && o.price) o.price = Math.max(5, Math.round(o.price * sk / 5) * 5); } // v4.25b 배우는 기간: 실력이 쌓이기 전엔 단가가 낮다
       if (ch === "post") { V.rep = clamp(V.rep + 2, 0, 100); gainStat(s, "write", 0.4); if (V.app?.live) V.app.buzz = Math.min(60, V.app.buzz + 6); }
       else if (ch === "friend") gainStat(s, "talk", 0.3); else gainStat(s, "mkt", 0.4);
       const extra = ch !== "friend" && r.chance(0.3 + V.rep / 300) ? makeOffer(s, r, ch) : null;

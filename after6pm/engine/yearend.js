@@ -4,6 +4,7 @@
 // - 본잡 전환 신호: 올해 투잡 이익(12달 합, 적자 달 포함) ÷ 지금 연봉. 1배 = 가능성, 1.5배 = 강하게 권유, 2배 = "나와라!", 3배 = 아직도 회사에?
 //   같은 단계는 다시 묻지 않고(s.fullAsk), 더 높은 단계에 오르면 다시 묻는다. 비상금 6개월치는 안내만 한다(막지 않음).
 import { D, won, jo, salary, netWorth, fireInfo, monthlySpend, jobYear } from "./core.js";
+import { yearOffer } from "./cards.js"; // 연말 성장 카드(v4.25)
 
 export const FULL_STEPS = [1, 1.5, 2, 3];
 
@@ -136,6 +137,7 @@ export function yearScene(s, r) {
       { t: g.no, eff: { mental: 2 }, text: `조금 더 다니며 모으기로 했다. ${f.next ? `내년 결산에서 연봉의 ${f.next}배를 넘으면 다시 이야기해요.` : "언제든 퇴사 버튼은 회사 화면에 있어요."}` },
     ];
   }
+  try { sc.cards = yearOffer(s, r, d); } catch (e) { console.warn("[연말 카드]", e); } // 3장 중 1장(화면은 결산 뒤 cards_ui.js)
   yearMark(s); s.yr0.t = s.t + 1; s.yr0.year = s.year + 1; // 다음 해 기준점
   return sc;
 }

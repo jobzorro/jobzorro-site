@@ -54,12 +54,12 @@ const EVS = [
     C("투잡 얘기는 이제 집에서 안 한다", { mental: -3 }, "말하지 않으니 걱정도 안 하신다. 대신 나도 자랑할 데가 없다.", { par: -1 }),
   ] }) },
   { id: "p_brag", g: true, ok: (s) => alive(s) && (s.lastSide ?? 0) >= 80, mk: (s) => ({ title: "엄마의 자랑", text: `동네 모임 단톡방에 엄마가 내 투잡 리뷰 캡처를 올렸다. 댓글 23개. 다들 "좋겠다"고 한다.`, choices: [
-    C("부끄럽지만 고맙다고 전화한다", { mental: 6 }, "\"우리 애가 원래 손이 야무져.\" 처음 듣는 얘기다.", { par: 2 }),
+    C("부끄럽지만 고맙다고 전화한다", { mental: 6, shard: 1 }, "\"우리 애가 원래 손이 야무져.\" 처음 듣는 얘기다.", { par: 2 }),
     C("효도 선물로 갈비 세트를 보낸다", { cash: -M(s, 30), mental: 4 }, "갈비 사진이 다시 단톡방에 올라갔다. 자랑이 자랑을 낳는다.", { par: 3 }),
     K("동네 분들께 리뷰를 부탁드린다", "charm", 35, O("어르신 리뷰 열두 개가 달렸다. 맞춤법은 자유롭지만 별은 전부 다섯 개.", { mental: 4, stat: { mkt: 1 } }), O("\"리뷰가 뭐냐?\" 설명하다 하루가 갔다.", { mental: 1 })),
   ] }) },
   { id: "p_70", g: true, ok: (s) => alive(s) && s.age >= 34, mk: (s) => ({ title: "아버지의 칠순", text: `다음 달이 아버지 칠순이다. 조용하던 형제 단톡방이 갑자기 회의실이 됐다.`, choices: [
-    C("식당을 빌려 제대로 잔치를 연다", { cash: -M(s, 300), mental: 6, family: 4 }, "아버지가 노래방 기계 앞에서 마이크를 놓지 않으셨다.", { par: 6, visit: 1 }),
+    C("식당을 빌려 제대로 잔치를 연다", { cash: -M(s, 300), mental: 6, family: 4, item: "m_photo" }, "아버지가 노래방 기계 앞에서 마이크를 놓지 않으셨다.", { par: 6, visit: 1 }),
     C("가족끼리 조촐하게 식사한다", { cash: -M(s, 80), mental: 3 }, "케이크 초를 일곱 개 꽂았다. \"하나에 10년이다.\" 아버지가 웃으셨다.", { par: 3, visit: 1 }),
     C("마감이 겹쳐 봉투만 보낸다", { cash: -M(s, 100), mental: -4 }, "바빠서 못 간다는 말이 목에 걸렸다.", { par: -2 }),
   ] }) },
@@ -69,7 +69,7 @@ const EVS = [
     C("당직이라며 이번엔 안 간다", { mental: -2, hp: 4 }, "혼자 보낸 연휴. 편했다. 조금 쓸쓸했다.", { par: -2 }),
   ] }) },
   { id: "p_box", g: true, ok: (s) => alive(s), mk: (s) => ({ title: "엄마의 택배", text: `현관 앞 아이스박스. 김치, 장조림, 멸치볶음, 그리고 꾹꾹 눌러 쓴 쪽지. "밥 꼭 챙겨 먹어."`, choices: [
-    C("바로 영상통화를 건다", { mental: 5 }, "\"장조림은 냉장고 맨 아래 칸!\" 20분 동안 보관법 강의를 들었다.", { par: 2 }),
+    C("바로 영상통화를 건다", { mental: 5, shard: 1 }, "\"장조림은 냉장고 맨 아래 칸!\" 20분 동안 보관법 강의를 들었다.", { par: 2 }),
     C("인증샷만 보내고 투잡하러 간다", { mental: 3, hp: 3, cash: M(s, 10) }, "장조림 덕에 이번 달 식비가 줄었다. 엄마 반찬은 최고의 재테크다."),
   ] }) },
   { id: "p_phish", g: false, ok: (s) => alive(s) && s.age >= 30, mk: (s) => ({ title: "엄마의 이상한 문자", text: `엄마 전화. "${child(s)}, 너 폰 깨져서 새 번호로 연락한다며?" 이미 상품권 번호를 반쯤 불러 준 상태였다.`, choices: [
@@ -169,7 +169,7 @@ const EVS = [
     C(`${nm(s)}에게 눈빛 SOS`, { family: s.fam.spouseType === "응원형" ? 4 : -1, mental: s.fam.spouseType === "응원형" ? 3 : -2 }, s.fam.spouseType === "응원형" ? "\"이 사람 진짜 열심히 해요.\" 어깨가 펴졌다." : "\"저도 잘 몰라요.\" 응원은 기대하지 말자."),
   ] }) },
   { id: "s_proud", g: true, ok: (s) => married(s) && (s.lastSide ?? 0) >= 50, mk: (s) => ({ who: s.fam.spouse, title: "배우자의 자랑", text: `${nm(s)} 회사 동료들이 내 투잡 얘기를 다 안다. 회식 때마다 ${I(nm(s))} 자랑을 한다고 한다.`, choices: [
-    C("쑥스럽지만 기분이 좋다", { mental: 6, family: 3 }, "\"우리 집 사장님\"이라는 별명이 생겼다."),
+    C("쑥스럽지만 기분이 좋다", { mental: 6, family: 3, item: "m_ring" }, "\"우리 집 사장님\"이라는 별명이 생겼다."),
     C("동료들에게 간식을 보낸다", { cash: -M(s, 20), family: 5, aff: 4 }, "그 팀에 내 팬클럽이 생겼다."),
   ] }) },
   { id: "s_car", g: false, ok: married, mk: (s) => ({ who: s.fam.spouse, title: "주차장 기둥", text: `${I(nm(s))} 주차장 기둥에 차를 긁었다. 견적 180만 원. "기둥이 갑자기 튀어나왔어."`, choices: [
@@ -180,8 +180,8 @@ const EVS = [
 
   // ───── 아이 ─────
   { id: "k_walk", g: true, w: 3, ok: (s) => !!kidIn(s, 0.8, 1.6), mk: (s) => { const k = kidIn(s, 0.8, 1.6); return { title: "첫걸음", text: `${kidIs(k)} 소파를 짚고 일어나 한 걸음, 두 걸음. 세 번째 걸음에 내 품으로 쏟아졌다.`, choices: [
-    C("영상 찍어 가족 단톡방에", { mental: 8, family: 6 }, "양가 할머니 할아버지 답장이 1분 만에 40개.", { famTime: 1, par: 1 }),
-    C("노트북을 덮고 같이 걷는다", { mental: 6, family: 8 }, "거실을 스무 바퀴 돌았다. 오늘 투잡은 없다. 후회도 없다.", { famTime: 1 }),
+    C("영상 찍어 가족 단톡방에", { mental: 8, family: 6, shard: 1 }, "양가 할머니 할아버지 답장이 1분 만에 40개.", { famTime: 1, par: 1 }),
+    C("노트북을 덮고 같이 걷는다", { mental: 6, family: 8, item: "m_kid" }, "거실을 스무 바퀴 돌았다. 오늘 투잡은 없다. 후회도 없다.", { famTime: 1 }),
   ] }; } },
   { id: "k_word", g: true, w: 3, ok: (s) => married(s) && !!kidIn(s, 0.8, 1.8), mk: (s) => { const k = kidIn(s, 0.8, 1.8); return { who: s.fam.spouse, title: "첫마디", text: `${kidI(k)}의 첫마디는 "${meCall(s)}"…가 아니라 "${spCall(s)}"였다. ${I(nm(s))} 의기양양하다.`, choices: [
     C("질투 대신 특훈 돌입", { family: 5, mental: 4, hp: -2 }, `사흘 만에 "${meCall(s)}"를 들었다. 출근길 내내 광대가 내려오지 않았다.`, { famTime: 1 }),
@@ -196,11 +196,11 @@ const EVS = [
     C("선생님께 맡기고 출근한다", { mental: -4, family: -2 }, "회의 내내 그 울음소리가 귀에서 맴돌았다. 하원할 땐 신나서 뛰어나왔다."),
   ] }; } },
   { id: "k_sports", g: true, ok: (s) => !!kidIn(s, 5, 12) && [5, 9, 10].includes(s.cal), mk: (s) => { const k = kidIn(s, 5, 12); return { title: "운동회", text: `운동회 학부모 계주. ${kidIs(k)} 소리쳤다. "${meCall(s)} 1등 해!" 다리가 벌써 후들거린다.`, choices: [
-    K("전력 질주", "body", 45, O(`1등. ${kidIs(k)} 반 친구들한테 3주 동안 자랑했다.`, { mental: 8, family: 8 }, { famTime: 1 }), O(`넘어졌다. 그래도 ${kidIs(k)} 제일 크게 박수를 쳤다.`, { hp: -6, family: 5, mental: 2 }, { famTime: 1 })),
+    K("전력 질주", "body", 45, O(`1등. ${kidIs(k)} 반 친구들한테 3주 동안 자랑했다.`, { mental: 8, family: 8, shard: 1 }, { famTime: 1 }), O(`넘어졌다. 그래도 ${kidIs(k)} 제일 크게 박수를 쳤다.`, { hp: -6, family: 5, mental: 2 }, { famTime: 1 })),
     C("사진 담당을 자처한다", { family: 4, mental: 2 }, "사진 400장. 그중 초점 맞은 게 12장.", { famTime: 1 }),
   ] }; } },
   { id: "k_school", g: true, w: 3, ok: (s) => !!kidIn(s, 6.5, 7.8), mk: (s) => { const k = kidIn(s, 6.5, 7.8); return { title: "초등학교 입학", text: `${kidI(k)} 책가방이 몸보다 크다. 입학식 날, 반 배정표 앞에서 작은 손을 꼭 잡았다.`, choices: [
-    C("휴가 내고 입학식에 간다", { cash: -M(s, 40), eye: 3, family: 8, mental: 5 }, "교문 앞 사진 한 장. 올해 가장 잘 쓴 휴가.", { famTime: 1 }),
+    C("휴가 내고 입학식에 간다", { cash: -M(s, 40), eye: 3, family: 8, mental: 5, shard: 1 }, "교문 앞 사진 한 장. 올해 가장 잘 쓴 휴가.", { famTime: 1 }),
     C("사진만 받는다", { family: -4, mental: -3 }, "사진 속 빈자리가 유난히 크게 보였다."),
   ] }; } },
   { id: "k_academy", g: false, ok: (s) => !!kidIn(s, 8, 15), mk: (s) => { const k = kidIn(s, 8, 15); return { title: "학원 견적서", text: `${kidI(k)} 반 친구들은 학원을 다섯 개씩 다닌단다. 상담실장이 웃으며 견적서를 내밀었다.`, choices: [
@@ -214,7 +214,7 @@ const EVS = [
     C("버릇없다고 혼낸다", { family: -8, mental: -4 }, "방문 너머로 음악 소리만 커졌다."),
   ] }; } },
   { id: "k_dream", g: true, ok: (s) => !!kidIn(s, 7, 12) && side(s), mk: (s) => { const k = kidIn(s, 7, 12); return { title: "장래희망", text: `${kidI(k)} 장래희망 숙제. "${meCall(s)}처럼 퇴근하고 또 일하는 사람." 선생님 메모: "부모님과 상담 바랍니다."`, choices: [
-    C("웃으며 꿈 얘기를 나눈다", { family: 6, mental: 5 }, "\"그럼 나는 사장 할래. 퇴근은 안 할래.\" 이미 나보다 낫다.", { famTime: 1 }),
+    C("웃으며 꿈 얘기를 나눈다", { family: 6, mental: 5, item: "m_kid" }, "\"그럼 나는 사장 할래. 퇴근은 안 할래.\" 이미 나보다 낫다.", { famTime: 1 }),
     C("투잡을 조금 줄여 본다", { ap: -1, family: 8, mental: 2 }, "다음 달 저녁 몇 번은 아이 숙제 담당이다.", { famTime: 1 }),
   ] }; } },
   { id: "k_call", g: false, ok: (s) => !!kidIn(s, 8, 14), mk: (s) => { const k = kidIn(s, 8, 14); return { title: "학교에서 온 전화", text: `담임 선생님 전화. "${kidIs(k)} 친구랑 다퉜어요. 오늘 상담 오실 수 있을까요?" 오후 세 시, 회의가 두 개다.`, choices: [
