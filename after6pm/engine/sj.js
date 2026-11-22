@@ -11,6 +11,31 @@ export function hbInit() { return { joined: [], cnt: {}, lastT: {}, since: {} };
 // ───────── 투잡 ─────────
 // 투잡 칸: 기본 2개, 매니저(파티룸 매니저·에어씨앤씨 코호스트·컨설팅 공동 코치)를 두면 3개
 export function slots(s) { const coach = Object.entries(s.rel || {}).some(([id, x]) => x.helper && CHAR[id]?.helper?.effect === "cs_coach"); const plug = REG.JOBS.some((P) => P.slot && s[P.key] && P.slot(s)); return D.SJ_SLOTS + (s.pr?.sys?.manager || s.ab?.cohost || s.uc?.agent || coach || plug ? 1 : 0); }
+// 버그 6: 투잡 칸 +1 을 주는 것(위탁·매니저·점장·코호스트·조교·하청·공동 코치)을 끄려 할 때, 끈 뒤 칸 수보다 하는 투잡이 많으면 막는다.
+// off = 잠깐 꺼 보는 함수(되돌리는 함수를 돌려준다). 막아야 하면 안내 글, 아니면 null
+export function slotLock(s, off) { const back = off(); const n = slots(s); back(); return (s.sj?.active?.length || 0) > n ? `투잡 하나를 먼저 접으세요(이걸 끊으면 투잡 칸이 ${n}개로 줄어요)` : null; }
+// 버그 2: 시작 달 기록이 없는 옛 저장은 '불러온 달'이 아니라 지난 기록으로 거꾸로 채운다.
+// 순서: 다른 쪽 기록(초반 고생 rp.t0 ↔ 부대비용 mk.t0) → 첫 매장 개월 수 → 투잡이 적어 둔 시작 달 → (이미 벌고 있던 투잡이면) 발견한 달 → 지금
+const placesOf = (s, job) => (job === "pr" ? s.pr?.rooms : job === "airbnb" ? s.ab?.units : job === "ucafe" ? s.uc?.stores : s[job]?.stores);
+const oldestM = (s, job) => { const L = placesOf(s, job); return Array.isArray(L) ? Math.max(0, ...L.map((x) => x?.months || 0)) : 0; };
+export function backT0(s, job) {
+  const ok = (v) => typeof v === "number" && isFinite(v) && v <= s.t;
+  const a = s.sj?.rp?.[job]?.t0, b = s.mk?.t0?.[job];
+  if (ok(a)) return a; if (ok(b)) return b;
+  const m = oldestM(s, job); if (m > 0) return s.t - m;
+  const own = job === "airbnb" ? s.ab?.t0 : (s[job]?.t0 ?? s[job]?.started);
+  if (ok(own) && own >= 0) return own;
+  if (hadRevenue(s, job)) { const f = s.sj?.found?.[job]; if (ok(f)) return Math.max(0, f); }
+  return s.t;
+}
+// 불러올 때 한 번: 이미 '불러온 달'로 굳어 버린 시작 달을 첫 매장 개월 수에 맞춰 당긴다(매장 있는 투잡만 알 수 있다)
+export function fixT0(s) {
+  for (const job of s.sj?.active || []) {
+    const m = oldestM(s, job); if (m < 2) continue; const t = s.t - m;
+    const V = s.mk?.t0; if (V && typeof V[job] === "number" && V[job] - t >= 2) V[job] = t;
+    const p = s.sj.rp?.[job]; if (p && typeof p.t0 === "number" && p.t0 - t >= 2) { const old = p.t0; p.t0 = t; for (const k of ["done", "grad", "shock"]) if (p[k] === old) p[k] = t; }
+  }
+}
 export const isActive = (s, job) => !!s.sj?.active.includes(job);
 export const isFound = (s, job) => s.sj?.found[job] !== undefined;
 export function fit(s, job) { // 궁합 등급(능력치 기반)
@@ -47,8 +72,8 @@ export function start(s, job) {
   const j = D.SIDEJOBS[job], sj = s.sj;
   if (!j) return { ok: false, msg: "없는 투잡" };
   if (!isFound(s, job)) return { ok: false, msg: "아직 발견하지 못한 투잡" };
-  if (!j.play) return { ok: false, msg: "이 투잡은 준비 중입니다(다음 업데이트)" };
-  if (isActive(s, job)) return { ok: false, msg: "이미 하고 있습니다" };
+  if (!j.play) return { ok: false, msg: "이 투잡은 준비 중이에요(다음 업데이트)" };
+  if (isActive(s, job)) return { ok: false, msg: "이미 하고 있어요" };
   { const why = startLock(s); if (why) return { ok: false, msg: why }; }
   if (sj.active.length >= slots(s)) return { ok: false, msg: `투잡은 지금 ${slots(s)}개까지. 매니저를 두면 한 칸 늘어요` };
   sj.active.push(job); log(s, `${jo(j.n, "을", "를")} 시작하기로 했다.`, "work");
@@ -58,9 +83,9 @@ export function start(s, job) {
   return { ok: true, hid, msg: `${j.n} 시작! 전체 메뉴에 ${j.n} 칸이 열렸어요${warn}${hid.length ? ` · 숨은 특성 ${hid.length}개 공개` : ""}` };
 }
 export function stop(s, job) {
-  if (!isActive(s, job)) return { ok: false, msg: "하고 있지 않습니다" };
-  if (job === "pr" && s.pr.rooms.length) return { ok: false, msg: "지점을 모두 양도해야 접을 수 있습니다" };
-  if (job === "cs" && s.cs.queue.length) return { ok: false, msg: "대기 고객을 먼저 끝내야 합니다" };
+  if (!isActive(s, job)) return { ok: false, msg: "하고 있지 않아요" };
+  if (job === "pr" && s.pr.rooms.length) return { ok: false, msg: "지점을 모두 양도해야 접을 수 있어요" };
+  if (job === "cs" && s.cs.queue.length) return { ok: false, msg: "대기 고객을 먼저 끝내야 해요" };
   const P = REG.get(job); if (P?.stopWhy) { const why = P.stopWhy(s); if (why) return { ok: false, msg: why }; }
   s.sj.active = s.sj.active.filter((x) => x !== job);
   if (job === "cs") { s.cs.open = false; s.cs.ads = 0; }
@@ -74,7 +99,7 @@ export function can(s, id, arg) {
   if (id === "sj_report" || id === "sj_interview") { if (!arg || !D.SIDEJOBS[arg]) return "투잡을 고르세요"; if (id === "sj_interview" && (s.sj.int[arg] || 0) < 30 && !isFound(s, arg)) return "관심 30 이상이어야 물어볼 사람을 찾는다"; if (id === "sj_interview" && s.sj.know[arg]) return "이미 들었다"; if (id === "sj_report" && isFound(s, arg)) return "이미 발견한 투잡"; }
   if ((id === "sj_youtube" || id === "sj_seminar") && !unfound(s).length) return "더 찾을 투잡이 없다";
   if (id === "sj_prep" || id === "sj_senior") { const E = ENTRY[arg]; if (!E) return "투잡을 고르세요"; if (!isFound(s, arg) && (s.sj.int[arg] || 0) < 30) return "관심 30 이상이어야 해요"; if (id === "sj_prep") { if (isActive(s, arg)) return "이미 시작했어요(준비는 시작 전에)"; if (rp(s, arg).prep >= 3) return "준비는 다 했어요(3/3)"; if (s.cash < E.prep.cost) return "준비비가 모자라요"; } else { const p = rp(s, arg); if (p.sen >= 3) return "선배에게 들을 건 다 들었어요(3/3)"; if (p.sen >= 1 && !isActive(s, arg)) return "다음 만남은 시작한 뒤에(첫 달 막혔을 때)"; if (p.sen >= 2 && (p.t0 === undefined || s.t - p.t0 < 2)) return "세 번째 만남은 영업 두 달 뒤에(다음 단계 앞)"; if (p.senT === s.t) return "이번 달은 이미 만났어요"; } }
-  if (id === "hb_go") { if (!s.hb.joined.includes(arg)) return "가입한 취미가 아닙니다"; if (s.hb.lastT[arg] === s.t) return "이번 달 모임은 다녀왔다"; }
+  if (id === "hb_go") { if (!s.hb.joined.includes(arg)) return "가입한 취미가 아니에요"; if (s.hb.lastT[arg] === s.t) return "이번 달 모임은 다녀왔다"; }
   return null;
 }
 export function act(s, r, id, arg) {
@@ -222,12 +247,12 @@ export const ENTRY = {
     shock: "첫 정산서. 토요일 저녁 몇 타임 빼고 예약표가 텅 비었다. 사진은 휴대폰으로 대충 찍었고, 후기는 0개, 가격은 옆 공간과 똑같다. 손님 입장에선 여기를 고를 이유가 없다.",
     tips: [{ a: "pr_promo", k: "mkt", t: "사진부터 다시 찍어요. 예약은 사진에서 갈려요. '홍보 사진 찍기' 한 번이면 예약표가 달라져요." }, { a: "pr_review", k: "rev", t: "후기 0개면 아무도 안 골라요. 음료 쿠폰 걸고 '리뷰 이벤트'로 첫 후기부터 모아요." }, { a: "pr_decor", k: "qual", t: "휑한 공간은 사진에서 걸러져요. '파티룸 꾸미기'로 포토존 하나만 채워도 달라요." }, { a: "pr_club", k: "mkt", t: "첫 손님은 아는 사람에게서 와요. 내 모임을 불러 '모임 대관 행사'를 열어 봐요." }, { a: "pr_meetup", k: "qual", t: "'파티룸 사장 모임'에 한 번 나가 봐요. 남의 가격표를 보면 내 실수가 보여요." }],
     sen: [
-      { t: "\"20평 하나 차리는 데 보증금까지 4,000만 원쯤 들어요. 월세는 매출의 30~50% 안으로 잡아야 남고요. 첫 달 0~50만, 둘째 달 100만, 셋째 달 150만이 보통이에요. 건물주가 파티룸을 싫어하면 시작도 못 해요. 계약 전에 꼭 물어봐요.\"", m: "보증금 포함 약 4,000만 · 월세는 매출의 30~50% 안 · 1달차 0~50만 → 3달차 150만 · 건물주 동의 먼저" },
-      { t: "\"예약 많은 곳은 거의 다 즉시결제예요. 토요일 저녁 7시가 제일 잘 팔리고, 평일은 비는 게 정상이에요. 평일 할인보다 생일·브라이덜샤워 같은 컨셉 사진을 먼저 올려요.\"", m: "즉시결제 켜기 · 토요일 저녁 7시가 피크 · 평일 공실은 정상 · 컨셉 사진 먼저" },
-      { t: "\"솔직히 하나만 하면 안 돼요. 방 하나면 공실·월세·청소비가 전부 그 한 곳에 걸려요. 보일러 한 번 고장 나면 그달은 끝이에요. 저는 세 곳이라 겹친 예약은 옆 방으로 넘기고, 청소 업체·예약 프로그램은 같이 써서 방당 비용이 확 줄었어요. 대신 2호점은 1호점이 6개월 넘게 흑자일 때만. 6개월 내내 적자면 그 방은 전략을 바꾸거나 접을 때고요. 새로 연 곳 상당수가 1년 안에 문 닫아요.\"", m: "하나만 하면 위험이 한 곳에 몰림 · 2~3곳이면 예약 넘기기·청소·예약 프로그램 나눠 쓰기 · 2호점은 1호점 6개월 흑자 뒤 · 6개월 적자면 전략 수정이나 정리" }],
-    ask: "\"대리석 테이블은 들이지 마요. 한 번 깨지면 수십만 원이에요. 소모품은 대용량으로 사고요.\"", help: ["hands", "주말에 선배 파티룸 청소를 같이 했다. 소파 틈에 케이크 크림이 끼어 있었다. 이게 현실이다."],
+      { t: "\"20평 하나 차리는 데 보증금까지 4,000만 원쯤 들어. 월세는 매출의 30~50% 안으로 잡아야 남고. 첫 달 0~50만, 둘째 달 100만, 셋째 달 150만이 보통이야. 건물주가 파티룸을 싫어하면 시작도 못 해. 계약 전에 꼭 물어봐.\"", m: "보증금 포함 약 4,000만 · 월세는 매출의 30~50% 안 · 1달차 0~50만 → 3달차 150만 · 건물주 동의 먼저" },
+      { t: "\"예약 많은 곳은 거의 다 즉시결제야. 토요일 저녁 7시가 제일 잘 팔리고, 평일은 비는 게 정상이야. 평일 할인보다 생일·브라이덜샤워 같은 컨셉 사진을 먼저 올려.\"", m: "즉시결제 켜기 · 토요일 저녁 7시가 피크 · 평일 공실은 정상 · 컨셉 사진 먼저" },
+      { t: "\"솔직히 하나만 하면 안 돼. 방 하나면 공실·월세·청소비가 전부 그 한 곳에 걸려. 보일러 한 번 고장 나면 그달은 끝이야. 나는 세 곳이라 겹친 예약은 옆 방으로 넘기고, 청소 업체·예약 프로그램은 같이 써서 방당 비용이 확 줄었어. 대신 2호점은 1호점이 6개월 넘게 흑자일 때만. 6개월 내내 적자면 그 방은 전략을 바꾸거나 접을 때고. 새로 연 곳 상당수가 1년 안에 문 닫아.\"", m: "하나만 하면 위험이 한 곳에 몰림 · 2~3곳이면 예약 넘기기·청소·예약 프로그램 나눠 쓰기 · 2호점은 1호점 6개월 흑자 뒤 · 6개월 적자면 전략 수정이나 정리" }],
+    ask: "\"대리석 테이블은 들이지 마. 한 번 깨지면 수십만 원이야. 소모품은 대용량으로 사고.\"", help: ["hands", "주말에 선배 파티룸 청소를 같이 했다. 소파 틈에 케이크 크림이 끼어 있었다. 이게 현실이다."],
     next: "예약이 자리 잡았어요. 이제 별점 4.6을 지키면서 가격을 조금씩 올려 봐요. 방 하나로 끝내진 마요. 1호점이 6개월 흑자면 2호점, 2~3곳은 돼야 위험이 나뉘어요." },
-  cs: { st: "career", need: 40, f0: 0.55, rm: 18, pt: 72, disc: 5, who: "c097", whoN: "자소서 첨삭 10년 차 강사",
+  cs: { st: "career", need: 40, f0: 0.55, rm: 18, pt: 72, disc: 5, who: "c030", whoN: "인사팀 출신 커리어 너튜버",
     prep: { cost: 5, list: ["합격 자소서 20개 구조 분석", "무료 첨삭 3명으로 포트폴리오 만들기", "컨설팅 입문 강의 듣기"] },
     acts: { cs_friend: "rev", cs_kmong: "mkt", cs_blog: "mkt", cs_insta: "mkt", cs_kakao: "mkt", cs_flyer: "mkt", cs_youtube: "mkt", cs_seminar: "mkt", cs_focus: "qual", cs_template: "qual", cs_soomgo: "mkt" },
     shock: "첫 달 문의 0~1건. 블로그는 검색에 안 잡히고, 재능장터엔 후기 수백 개짜리 선배들이 줄 서 있다. 내 첨삭 실력과 상관없이, 아직 아무도 나를 모른다.",
@@ -236,7 +261,7 @@ export const ENTRY = {
       { t: "\"자소서 첨삭은 건당 5~10만 원이에요. 첫 1년은 한 달에 몇 명 안 와요. 자리 잡는 데 1~2년, 마케팅까지 안정되려면 3년 걸려요. 다니는 회사 이름이 곧 신뢰예요. 대신 얼굴 내놓는 일이라 겸업 규정부터 봐요.\"", m: "건당 5~10만 · 자리 잡는 데 1~2년 · 회사 경력이 신뢰 · 겸업 규정 확인" },
       { t: "\"3월, 9월이 대란이에요. 그 전에 후기를 쌓아 둬야 해요. 재능장터는 수수료를 20%쯤 떼니까, 블로그·오픈채팅으로 직접 오는 손님을 만들어요.\"", m: "3·9월 성수기 전에 후기 · 재능장터 수수료 약 20% · 직접 유입 채널" },
       { t: "\"1:1은 한 달 2~8명이 한계예요. 밀리면 템플릿을 만들고 그룹으로 가요. 불합격 환불 요구도 와요. 환불 기준은 꼭 계약서에 적고, 세금 신고도 미리 챙겨요.\"", m: "1:1 한 달 2~8명 한계 · 템플릿·그룹 확장 · 환불 기준 계약서에 · 세금 신고" }],
-    ask: "\"첫 상담 30분은 무료로 해요. 거기서 약점 하나만 정확히 짚으면 계약해요.\"", help: ["write", "주말에 선배 첨삭 초안 정리를 도왔다. 빨간 펜이 문장 한 줄에 세 번 지나갔다."],
+    ask: "\"첫 상담 30분은 무료로 해요. 거기서 약점 하나만 정확히 짚으면 계약해요.\"", help: ["write", "주말에 선배 영상 대본 정리를 도왔다. 자소서 한 문장 고치는 장면을 세 번 다시 찍었다."],
     next: "문의가 꾸준해졌어요. 이제 성수기(3·9월) 전에 무료 특강을 열고, 템플릿으로 한 명당 시간을 줄여 봐요." },
   insta: { st: "sense", need: 40, f0: 0.7, rm: 18, pt: 72, disc: 0, who: "c071", whoN: "구독자 8만 크리에이터",
     prep: { cost: 3, list: ["같은 주제 계정 30개 저장 많은 글 분석", "사진·릴스 편집 강의 듣기", "피드 9칸 미리 찍어 두기"] },
@@ -255,10 +280,10 @@ export const ENTRY = {
     shock: "첫 달 예약률이 바닥이다. 후기 0개 숙소는 검색 뒤로 밀리고, 사진은 어둡다. 게스트 질문에 답이 늦어서 예약이 옆 숙소로 넘어갔다.",
     tips: [{ a: "ab_photo", k: "qual", t: "사진이 예약률이에요. '사진·소개 다듬기'로 밝은 낮 사진부터 다시 찍어요." }, { a: "ab_host", k: "rev", t: "답장 속도가 곧 별점이에요. '게스트 응대'로 첫 후기 5개를 만들어요." }],
     sen: [
-      { t: "\"하루 20만 원에 예약률 50%면 매출 300만, 순수익은 90만 남짓이에요. 청소비가 건당 5만이라 15번이면 75만이 나가요. 사업자 등록·영업신고 없으면 앱에서 내려가요. 제일 어려운 건 입주민 동의예요.\"", m: "1박 20만·예약률 50% → 순수익 약 90만 · 청소 건당 5만 · 영업신고 필수 · 입주민 동의" },
-      { t: "\"첫 후기 다섯 개까지는 가격을 조금 내려서라도 받아요. 답장은 1시간 안에. 체크인 안내를 사진으로 만들어 두면 질문이 반으로 줄어요.\"", m: "첫 후기 5개까진 가격 양보 · 답장 1시간 안 · 사진 체크인 안내" },
-      { t: "\"연 매출 4,800만 넘으면 세금 유형이 바뀌어요. 두 번째 숙소는 첫 숙소가 6개월 안정된 뒤에. 청소 이모님 휴가 때 대타도 미리 구해 둬요.\"", m: "연 매출 4,800만 넘으면 세금 유형 변경 · 2호는 6개월 안정 뒤 · 청소 대타" }],
-    ask: "\"머그컵은 같은 걸로 넉넉히. 깨지면 증거 사진부터 찍어요.\"", help: ["lang", "주말에 선배 숙소 외국인 체크인을 대신 맡았다. 와이파이 비밀번호를 세 번 설명했다."],
+      { t: "\"하루 20만 원에 예약률 50%면 매출 300만, 순수익은 90만 남짓이야. 청소비가 건당 5만이라 15번이면 75만이 나가. 사업자 등록·영업신고 없으면 앱에서 내려가. 제일 어려운 건 입주민 동의야.\"", m: "1박 20만·예약률 50% → 순수익 약 90만 · 청소 건당 5만 · 영업신고 필수 · 입주민 동의" },
+      { t: "\"첫 후기 다섯 개까지는 가격을 조금 내려서라도 받아. 답장은 1시간 안에. 체크인 안내를 사진으로 만들어 두면 질문이 반으로 줄어.\"", m: "첫 후기 5개까진 가격 양보 · 답장 1시간 안 · 사진 체크인 안내" },
+      { t: "\"연 매출 4,800만 넘으면 세금 유형이 바뀌어. 두 번째 숙소는 첫 숙소가 6개월 안정된 뒤에. 청소 이모님 휴가 때 대타도 미리 구해 둬.\"", m: "연 매출 4,800만 넘으면 세금 유형 변경 · 2호는 6개월 안정 뒤 · 청소 대타" }],
+    ask: "\"머그컵은 같은 걸로 넉넉히. 깨지면 증거 사진부터 찍어.\"", help: ["lang", "주말에 선배 숙소 외국인 체크인을 대신 맡았다. 와이파이 비밀번호를 세 번 설명했다."],
     next: "후기가 쌓였어요. 이제 별점 4.8을 지키면서 성수기 가격을 올려 봐요. 두 번째 숙소는 6개월 안정 뒤에요." },
   ucafe: { st: "num", need: 35, f0: 0.62, rm: 8, pt: 32, disc: 10, who: "c081", whoN: "무인카페 2곳 3년 차 사장님",
     prep: { cost: 5, list: ["반경 500m 저가커피 지도 그리기", "머신 관리·위생교육 듣기", "원가표 만들기(재료비 20~30%)"] },
@@ -275,7 +300,7 @@ export const ENTRY = {
     prep: { cost: 10, list: ["정보공개서 읽는 법 상담받기", "치킨집 주말 알바 체험", "원가표 만들기(재료비 47%·수수료 15%)"] },
     acts: { ch_market: "mkt", ch_shift: "qual", ch_crew: "qual" },
     shock: "오픈발 주문이 끝나자 배달앱 순위가 쭉 밀렸다. 리뷰 수는 옆 가게의 10분의 1. 매출은 본사가 말한 '초보 평균'에 한참 못 미치는데, 월세와 인건비는 그대로 나간다.",
-    tips: [{ a: "ch_market", k: "mkt", t: "배달앱 리뷰 답글이 순위예요. '배달통·플레이스 관리'를 매주 해요." }, { a: "ch_shift", k: "qual", t: "피크 타임엔 사장이 튀겨요. '매장 근무'로 맛과 속도를 잡아요." }, { a: "ch_crew", k: "qual", t: "알바가 그만두면 내가 튀겨야 해요. '알바 관리'로 빈자리부터 채워요." }],
+    tips: [{ a: "ch_market", k: "mkt", t: "배달앱 리뷰 답글이 순위예요. '배달퉁·플레이스 관리'를 매주 해요." }, { a: "ch_shift", k: "qual", t: "피크 타임엔 사장이 튀겨요. '매장 근무'로 맛과 속도를 잡아요." }, { a: "ch_crew", k: "qual", t: "알바가 그만두면 내가 튀겨야 해요. '알바 관리'로 빈자리부터 채워요." }],
     sen: [
       { t: "\"공시 창업비가 5,000만이라고 써 있어도 권리금·보증금·닥트 공사 붙으면 1.5억이에요. 재료비 47%, 배달수수료 15%, 인건비 17%, 월세 10% 빼면 남는 게 11%예요. 정보공개서는 계약 14일 전에 받아서 꼭 읽어요.\"", m: "실제 창업비 약 1.5억 · 영업이익 약 11% · 정보공개서 계약 14일 전 수령" },
       { t: "\"오픈발 끝나면 순위가 떨어져요. 리뷰 답글은 하루도 빼먹지 마요. 금요일 7시에 알바가 잠수 타면 내가 튀겨야 하니까, 사장이 튀길 줄 알아야 해요.\"", m: "오픈발 뒤 순위 하락 · 리뷰 답글 매일 · 사장이 튀길 줄 알기" },
@@ -338,7 +363,7 @@ export function need(s, job) { const E = ENTRY[job]; if (!E) return null; const 
 export function ramp(s, job) {
   const E = ENTRY[job]; if (!E || !s.sj) return 1;
   const p = rp(s, job); if (p.done !== undefined) return 1;
-  if (p.t0 === undefined) { p.t0 = s.t; if (hadRevenue(s, job)) { p.done = s.t; p.grad = s.t; p.shock = s.t; return 1; } } // 예전 저장: 이미 벌고 있던 투잡은 초반 고생 없음
+  if (p.t0 === undefined) { if (hadRevenue(s, job)) { p.t0 = backT0(s, job); p.done = p.t0; p.grad = p.t0; p.shock = p.t0; return 1; } p.t0 = s.t; } // 예전 저장: 이미 벌고 있던 투잡은 초반 고생 없음(시작 달은 지난 기록으로 거꾸로 채운다)
   const sk = clamp((s.st[E.st] || 0) / E.need, 0.4, 1.4);
   const f0 = clamp(E.f0 * (sk < 1 ? 0.6 + 0.4 * sk : 1) + Math.min(3, p.prep) * 0.03 + Math.min(3, p.sen) * 0.03, 0.15, 0.95); // 준비·선배 한 번에 +3%p
   const spd = sk < 1 ? 0.55 + 0.45 * sk : Math.min(1.2, 1 + (sk - 1) * 0.5);

@@ -1,4 +1,5 @@
 // 기존 투잡 '무인카페' 이야기 보강(engine/story/README.md). 상태 s.sx.ucafe
+// 11-23: 다른 투잡·엔진 사건과 틀이 겹치던 u05(회의 중 전화)·u14(건너편 저가커피)를 빼고 무인카페에서만 생기는 일 u24(정전)·u25(원두 납품 펑크)·u27(0원 키오스크)을 넣었다(24개).
 // 기획: 투잡연구소 unmanned.json(이벤트 16개 중 15개 + 새로 지은 8개 = 23개). 원래 엔진 ucEvent(먹튀·10대 아지트·얼음 기계·맘카페 후기)와 겹치지 않게.
 // 단계(기획 levels): 1 셔터 올린 날(개업, 기존 uc_open) → 2 동네 단골(월매출 300만 3달 + 리뷰 30) → 3 흑자 사장님(월매출 450만·순익 150만)
 //   → 4 2호점 → 5 무인 체인 오너(합산 월매출 1,000만). 원래 엔진에 단계가 없어서 여기서 플래그(f2~f5)로 센다.
@@ -30,7 +31,7 @@ function money(s, st, v, out, label) {
 // 이벤트 돈 기준: 최근 6달 무인카페 월 이익(만원). 효과는 이 값의 10~30%
 function base(s) { const h = s.uc.hist.slice(-6), pi = SYN.pi(s); const a = h.length ? h.reduce((x, y) => x + y, 0) / h.length : 0; return clamp(a, 100 * pi, 350 * pi); }
 
-// ───────── 이벤트 23개 ─────────
+// ───────── 이벤트 24개 ─────────
 function evList(s) {
   const X = s.sx.ucafe, U = s.uc, pi = SYN.pi(s), B = base(s), n = U.stores.length;
   const first = U.stores[0], newest = U.stores[n - 1];
@@ -39,7 +40,7 @@ function evList(s) {
   const dirty = U.stores.find((st) => !U.agent && st.months >= 3 && st.last && st.last.q < 0.5);
   const redRent = U.stores.find((st) => st.machine === "rent" && st.months >= 6 && st.hist.length >= 5 && st.hist.slice(-5).every((x) => x < 0));
   const office = U.stores.find((st) => st.ak === "office") || first;
-  const old24 = U.stores.find((st) => st.months >= 24 && !st.ucsRenew);
+  const old24 = U.stores.find((st) => st.months >= 24 && st.months < 36 && !st.ucsRenew); // 36달째는 space.js 가 +5% 하고 닫는다(같은 달에 둘 다 오르지 않게)
   const late = X.f3 || (first && first.months >= 12);
   const rentW = won(Math.round(UC.UC_BAL.rental * pi));
   const nm = (st) => st?.name || "매장";
@@ -64,10 +65,10 @@ function evList(s) {
       c: [{ t: "리뷰 쓰면 아메리카노 무료 쿠폰을 준다", eff: { ucs_cash: -Math.round(B * 0.1), ucs_rev: 12, ucs_buzz: 10, item: "m_receipt" }, text: "쿠폰 40장이 나갔다. '쿠폰 받으러 왔다가 단골 됐어요.'" },
           { t: "지인 단톡방에 리뷰를 부탁한다", check: { stat: "talk", dc: 40 }, ok: { text: "동창 단톡방이 의외로 뜨거웠다. '나 거기 매일 가' 거짓말도 섞였다.", eff: { ucs_rev: 8, family: -1 } }, ng: { text: "읽고 답 없는 사람 23명. 이모만 별 다섯 개를 줬다.", eff: { ucs_rev: 3, family: -4 } } }] },
     // ── 중반 ──
-    { id: "u05", ph: "mid", rep: true, sid: first?.id, ok: () => co && n >= 1 && first.months >= 2, t: "결제는 됐는데요",
-      x: "팀장 보고 중에 휴대폰이 진동한다. \"결제는 됐는데 커피가 안 나와요.\" 세 번째 전화다. 팀장이 말을 멈추고 내 주머니를 본다.",
-      c: [{ t: "회의에서 잠깐 빠져 전화를 받고 원격 환불한다", eff: { eye: 4, ucs_rating: 0.05 }, text: "\"잠깐만요.\" 손님은 고마워했고, 팀장은 펜을 내려놓았다." },
-          { t: "회의 끝나고 사과 문자와 1+1 쿠폰을 보낸다", eff: { ucs_cash: -Math.round(B * 0.1), ucs_rating: -0.05, mental: -2 }, text: "한 시간 뒤 답장이 왔다. \"맘카페에 올렸어요.\"" }] },
+    { id: "u27", ph: "mid", sid: first?.id, ok: () => n >= 1 && first.months >= 2, t: "전 메뉴 0원",
+      x: `아침 6시, ${nm(first)} 매출 알림이 이상하다. 밤사이 판매 41잔, 매출 0원. 새벽 2시 키오스크 원격 업데이트 뒤로 모든 메뉴가 0원으로 떠 있었다. CCTV 속 손님들은 한 잔 뽑고, 전화를 걸고, 친구를 불렀다.`,
+      c: [{ t: "'어젯밤은 깜짝 무료의 날이었습니다' 공지를 붙인다", eff: { ucs_cash: -Math.round(B * 0.1), ucs_buzz: 15 }, text: "원두값만 날렸다. 동네 단톡방에 '거기 사장님 쿨하다'가 돌았다." },
+          { t: "키오스크 업체에 손실을 물어내라고 한다", check: { stat: "talk", dc: 50 }, ok: { text: "업체가 41잔 값을 다음 달 유지보수비에서 빼 주기로 했다.", eff: { mental: 2 } }, ng: { text: "\"약관 14조, 설정 확인은 점주 책임입니다.\" 전화만 40분 했다.", eff: { ucs_cash: -Math.round(B * 0.1), mental: -4 } } }] },
     { id: "u06", ph: "mid", sid: first?.id, ok: () => n >= 1 && first.months >= 2 && ["univ", "academy", "apt", "newtown"].includes(first.ak), t: "아메리카노 한 잔, 여섯 시간",
       x: "새벽 3시 CCTV. 노트북 하나가 2,000원짜리 아메리카노 한 잔으로 여섯 시간째 자리를 지키고 있다. 콘센트 세 개도 같이 점령당했다.",
       c: [{ t: "장시간 이용 안내문을 붙인다", eff: { mental: 1 }, text: "'2시간 이후엔 추가 주문 부탁드려요.' 반은 지키고 반은 못 본 척한다." },
@@ -119,20 +120,25 @@ function evList(s) {
       c: [{ t: "싸게 인수해 내 방식으로 되살린다", eff: {}, text: "열쇠를 받았다. 그라인더 안에 석 달 묵은 원두가 굳어 있었다." },
           { t: "구형 머신은 안 된다며 넘긴다", eff: { stat: { num: 1 } }, text: "고장 수리비가 권리금보다 무섭다는 걸 이제 안다." }] },
     { id: "u19", ph: "late", rep: true, sid: old24?.id, ok: () => !!old24, t: "건물주의 재계약 통보",
-      x: `${nm(old24)} 2년 계약 만료 석 달 전. 건물주 문자: '주변 시세 반영해서 월세 12% 올리겠습니다.' 인테리어에 들인 돈이 생각나 쉽게 나갈 수가 없다.`,
-      c: [{ t: "받아들인다", eff: {}, text: "월세 자동이체 금액을 고쳤다." },
-          { t: "3년 장기 계약을 걸고 협상한다", check: { stat: "talk", dc: 50 }, ok: { text: "3년 계약에 5% 인상으로 합의했다.", eff: {} }, ng: { text: "\"싫으면 나가셔도 돼요.\" 결국 12%.", eff: { mental: -4 } } },
+      x: `${nm(old24)} 2년 계약이 끝났다. 재계약 도장을 찍기 전에 건물주 문자가 왔다. '주변 시세 반영해서 월세 12% 올리겠습니다.' 지금 월세 ${won(old24?.rent || 0)}. 인테리어에 들인 돈이 생각나 쉽게 나갈 수가 없다.`,
+      c: [{ t: "12% 인상을 받아들인다", eff: {}, text: "월세 자동이체 금액을 고쳤다." },
+          { t: "오래 있겠다며 인상 폭을 협상한다", check: { stat: "talk", dc: 50 }, ok: { text: "\"공실 나는 것보단 낫죠.\" 5% 인상으로 합의했다.", eff: {} }, ng: { text: "\"싫으면 나가셔도 돼요.\" 결국 12%.", eff: { mental: -4 } } },
           { t: "나간다(양도 매물로 내놓는다)", eff: { mental: -3 }, text: "보증금을 돌려받고 열쇠를 반납했다." }] },
     // ── 위기 ──
     { id: "u13", ph: "crisis", rep: true, sid: worst?.id, ok: () => n >= 1 && first.months >= 4, t: "자동문에 갇힌 도둑",
       x: `새벽 2시, ${nm(worst)} 침입 알림이 울렸다. 원격으로 문을 잠갔더니 도둑이 매장 안에 갇혔다. 경찰이 오는 동안 도둑은 공짜 커피를 한 잔 뽑았다. 키오스크 현금함은 뜯겨 있었다.`,
       c: [{ t: "신고하고 보험 처리한다", eff: { ucs_cash: -Math.round(B * 0.12), mental: -3, ucs_buzz: 15 }, text: "자기부담금만 냈다. 동네 단톡방에 '도둑 가둔 카페'가 돌았다." },
           { t: "이참에 CCTV·경보 장치를 업그레이드한다", eff: { ucs_cash: -Math.round(B * 0.3), ucs_cctv: 1, mental: -1 }, text: "AI 경보·비상벨·보안업체 출동. 밤에 알림이 울려도 덜 놀란다." }] },
-    { id: "u14", ph: "crisis", sid: worst?.id, ok: () => n >= 1 && first.months >= 6, t: "건너편 1,900원",
-      x: `${nm(worst)} 길 건너에 대형 저가커피 공사 가림막이 섰다. '곧 오픈, 아메리카노 1,900원.' 사람 있는 카페가 내 가격과 똑같다. 싸움이 붙으면 손님은 사람 있는 카페로 간다.`,
-      c: [{ t: "가격을 200원 더 내린다", eff: { ucs_price: -0.02, ucs_buzz: 10 }, text: "잔당 마진이 줄었다. 줄은 그대로다." },
-          { t: "맛·청결·심야 영업으로 차별화한다", eff: { hp: -6, ucs_rating: 0.12, ucs_clean: 25, shard: 1 }, text: "'새벽 2시에도 깨끗한 곳.' 낮 손님은 뺏겼지만 밤은 내 거다." },
-          { t: "손절하고 매장을 내놓는다", check: { stat: "num", dc: 45 }, ok: { text: "인수자가 나섰다. 보증금은 지켰다.", eff: { mental: -2 } }, ng: { text: "인수자가 안 나타나 위약금을 물고 나왔다.", eff: { mental: -6 } } }] },
+    { id: "u24", ph: "crisis", sid: worst?.id, ok: () => n >= 1 && first.months >= 6, t: "토요일 정전 공지",
+      x: `${nm(worst)} 건물 관리인 문자. '토요일 09~15시 변전실 점검으로 전체 정전.' 냉장고 우유, 제빙기 얼음이 여섯 시간을 못 버틴다. 전기가 돌아와도 키오스크와 머신은 누가 버튼을 눌러 줘야 켜진다.`,
+      c: [{ t: "토요일에 매장을 지킨다. 우유를 옮기고 전기 들어오면 바로 켠다", eff: { hp: -8, ucs_cash: -Math.round(B * 0.08) }, text: "아이스박스 두 개에 우유를 담았다. 3시 2분, 머신 예열 버튼을 눌렀다." },
+          { t: "'임시 휴무' 공지만 원격으로 띄운다", eff: { ucs_cash: -Math.round(B * 0.2), ucs_rating: -0.05 }, text: "전기는 3시에 돌아왔다. 키오스크는 월요일 아침까지 꺼져 있었다. 우유 한 상자를 버렸다." },
+          { t: "발전기를 빌려 머신과 냉장고만 돌린다", check: { stat: "hands", dc: 45 }, ok: { text: "건물에서 커피 나오는 곳이 여기뿐이었다. 점검 기사들까지 줄을 섰다.", eff: { ucs_cash: Math.round(B * 0.1), ucs_buzz: 10, shard: 1 } }, ng: { text: "전기가 돌아오는 순간 차단기가 튀었다. 머신 기판이 나갔다.", eff: { ucs_cash: -Math.round(B * 0.3), mental: -4 } } }] },
+    { id: "u25", ph: "crisis", sid: first?.id, ok: () => n >= 1 && first.months >= 4, t: "원두가 안 왔다",
+      x: `거래하던 로스터리에서 전화가 왔다. "로스터기가 고장 나서 이번 주 납품을 못 합니다." ${nm(first)} 호퍼에 남은 원두는 이틀 치. 무인카페는 '품절' 한 줄이 뜨면 손님이 그냥 돌아선다.`,
+      c: [{ t: "퀵으로 다른 로스터리 원두를 받는다", eff: { ucs_cash: -Math.round(B * 0.15), stat: { num: 0.5 } }, text: "퀵비에 소량 단가까지 비쌌다. 대신 공급처 연락처가 두 개가 됐다." },
+          { t: "마트 원두로 며칠 버틴다", eff: { ucs_rating: -0.08 }, text: "그라인더 굵기를 다시 맞출 시간은 없었다. '오늘 커피 왜 이래요' 리뷰 하나." },
+          { t: "아메리카노에 '품절'을 띄우고 아이스티·초코만 판다", eff: { ucs_cash: -Math.round(B * 0.1), ucs_buzz: -5 }, text: "나흘 동안 커피 없는 카페였다. 아침 손님 절반이 문 앞에서 돌아섰다." }] },
     { id: "u15", ph: "crisis", must: true, sid: redRent?.id, ok: () => !!redRent, t: "머신 렌탈료",
       x: `다섯 달째 ${jo(nm(redRent), "이", "가")} 적자다. 매출이 기대의 절반이다. 5년 약정 머신 렌탈료 ${rentW}은 어김없이 빠져나간다. 통장 잔고는 월세 두 달 치.`,
       c: [{ t: "상권 분석을 다시 하고 메뉴·가격을 손본다", eff: { mental: -5, stat: { num: 1 } }, text: "점심 대신 아침 7시 출근길을 노렸다. 메뉴 18개를 9개로 줄였다." },
@@ -272,10 +278,12 @@ export default {
         }
       }
       if (id === "u13") { X.thief++; }
-      if (id === "u14" && st) { if (i === 2) closeStore(s, st, ok ? 0 : (st.machine === "rent" ? Math.round(UC.UC_BAL.rental * pi * 6) : Math.round(80 * pi)), out); else { st.comp++; out.push(`${st.name} 경쟁 카페 ${st.comp}곳`); } }
+      if (id === "u14" && st) { // 11-23 뺀 사건. 옛 저장에 이 장면이 떠 있는 채로 남았을 때만 쓴다
+        if (i === 2) closeStore(s, st, ok ? 0 : (st.machine === "rent" ? Math.round(UC.UC_BAL.rental * pi * 6) : Math.round(80 * pi)), out); else { st.comp++; out.push(`${st.name} 경쟁 카페 ${st.comp}곳`); } }
       if (id === "u15" && st) { if (i === 0) { X.turn[st.id] = s.t + 6; out.push("메뉴 개편: 6개월 동안 입소문 +"); } else closeStore(s, st, Math.round(UC.UC_BAL.rental * pi * 12), out); }
       if (id === "u16" && i === 0) { X.fran = false; out.push("독립 매장: 로열티 없음"); }
-      if (id === "u19" && st) {
+      if (id === "u19" && st && st.ucsRenew) out.push(`${st.name}: 재계약은 이미 끝났어요`); // space.js 가 먼저 올린 매장(옛 저장)
+      else if (id === "u19" && st) {
         st.ucsRenew = 1;
         if (i === 2) closeStore(s, st, 0, out);
         else { const up = i === 1 && ok ? 1.05 : 1.12; st.rent = Math.round(st.rent * up); out.push(`${st.name} 월세 +${Math.round((up - 1) * 100)}% (${won(st.rent)})`); }

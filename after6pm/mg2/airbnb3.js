@@ -290,7 +290,7 @@ export const GAME = {
 .mg-airbnb3 .ab3-w{position:relative;flex:0 0 auto;border-radius:6px;overflow:hidden;box-shadow:0 0 0 2px #0009,0 10px 24px #000a}
 .mg-airbnb3 .ab3-w canvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
 .mg-airbnb3 .ab3-ov{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.mg-airbnb3 .ab3-lb{position:absolute;transform:translate(-50%,-50%);font-size:10.5px;font-weight:800;color:#fff;background:#1e2230e0;padding:0 5px;border-radius:5px;white-space:nowrap;line-height:15px;letter-spacing:-.4px;box-shadow:0 1px 2px #0006}
+.mg-airbnb3 .ab3-lb{position:absolute;transform:translate(-50%,-50%);font-size:11px;font-weight:800;color:#fff;background:#1e2230e0;padding:0 5px;border-radius:5px;white-space:nowrap;line-height:15px;letter-spacing:-.4px;box-shadow:0 1px 2px #0006}
 .mg-airbnb3 .ab3-lb.ex{background:#2f8a5a}.mg-airbnb3 .ab3-lb.bus{background:#2a6ab8}.mg-airbnb3 .ab3-lb.home{background:#ff4a6e;font-size:11px}
 .mg-airbnb3 .ab3-lb.wk{background:#e0701e}.mg-airbnb3 .ab3-lb.stp{background:#7a6a50}.mg-airbnb3 .ab3-lb.ow{background:#2a5ab0}.mg-airbnb3 .ab3-lb.rn{background:#3a6a9a}.mg-airbnb3 .ab3-lb.sto{background:#1f8a6a}
 .mg-airbnb3 .ab3-lb.pop{animation:ab3pop .45s cubic-bezier(.3,1.8,.5,1)}
@@ -299,7 +299,7 @@ export const GAME = {
 .mg-airbnb3 .ab3-bub::after{content:"";position:absolute;left:50%;bottom:-4px;margin-left:-4px;border:4px solid transparent;border-bottom:0;border-top-color:#fff}
 .mg-airbnb3 .ab3-bub.dn::after{bottom:auto;top:-4px;border:4px solid transparent;border-top:0;border-bottom-color:#fff}
 .mg-airbnb3 .ab3-bub b{display:block;font-size:11.5px;font-weight:900}
-.mg-airbnb3 .ab3-bub small{display:block;font-size:9px;color:#7a7f8c;font-weight:700}
+.mg-airbnb3 .ab3-bub small{display:block;font-size:11px;color:#7a7f8c;font-weight:700}
 .mg-airbnb3 .ab3-bub>i{display:block;height:3px;background:#0002;border-radius:2px;margin-top:2px;overflow:hidden}
 .mg-airbnb3 .ab3-bub>i em{display:block;height:100%;background:#3fbf7a;transform-origin:left}
 .mg-airbnb3 .ab3-bub.lo>i em{background:#ff4a5a}
@@ -325,12 +325,12 @@ export const GAME = {
 .mg-airbnb3 .ab3-tc{pointer-events:auto;background:#fffdf6;color:#1e2230;border-radius:14px;padding:8px 12px 7px;box-shadow:0 4px 0 #0006,0 0 0 2px #2a8ab8;max-width:290px;font-size:12.5px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-airbnb3 .ab3-tut.pop .ab3-tc{animation:ab3tpop .35s cubic-bezier(.3,1.8,.5,1)}
 @keyframes ab3tpop{0%{transform:scale(.3)}100%{transform:scale(1)}}
-.mg-airbnb3 .ab3-tc>em{font-style:normal;display:inline-block;background:#2a8ab8;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
+.mg-airbnb3 .ab3-tc>em{font-style:normal;display:inline-block;background:#2a8ab8;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
 .mg-airbnb3 .ab3-tc p{margin:0}.mg-airbnb3 .ab3-tc b{color:#1f6aa8}.mg-airbnb3 .ab3-tc b.rd{color:#d8402a}.mg-airbnb3 .ab3-tc b.pk{color:#e0244a}
 .mg-airbnb3 .ab3-leg{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin:6px 0 2px;text-align:left;font-size:11.5px;line-height:1.25}
 .mg-airbnb3 .ab3-leg div{display:flex;align-items:center;gap:5px}
 .mg-airbnb3 .ab3-leg img{width:32px;height:24px;flex:0 0 auto;border-radius:3px}
-.mg-airbnb3 .ab3-leg small{display:block;color:#7a7f8c;font-size:10px;font-weight:700}
+.mg-airbnb3 .ab3-leg small{display:block;color:#7a7f8c;font-size:11px;font-weight:700}
 .mg-airbnb3 .ab3-tb{margin-top:5px;display:flex;justify-content:center}
 .mg-airbnb3 .ab3-skip{background:none!important;border:0!important;box-shadow:none!important;color:#8a8070!important;font-size:11.5px;text-decoration:underline;padding:2px 6px!important;min-height:0!important;cursor:pointer}
 .mg-airbnb3 .ab3-go2{background:linear-gradient(#4fc3f7,#2a8ab8)!important;color:#fff!important;border:0!important;border-radius:10px!important;padding:8px 24px!important;font-weight:900;font-size:14px;box-shadow:0 3px 0 #1a5a7a!important;animation:ab3pulse .5s infinite alternate;cursor:pointer}

@@ -58,7 +58,7 @@ const EVS = [
     C("효도 선물로 갈비 세트를 보낸다", { cash: -M(s, 30), mental: 4 }, "갈비 사진이 다시 단톡방에 올라갔다. 자랑이 자랑을 낳는다.", { par: 3 }),
     K("동네 분들께 리뷰를 부탁드린다", "charm", 35, O("어르신 리뷰 열두 개가 달렸다. 맞춤법은 자유롭지만 별은 전부 다섯 개.", { mental: 4, stat: { mkt: 1 } }), O("\"리뷰가 뭐냐?\" 설명하다 하루가 갔다.", { mental: 1 })),
   ] }) },
-  { id: "p_70", g: true, ok: (s) => alive(s) && s.age >= 34, mk: (s) => ({ title: "아버지의 칠순", text: `다음 달이 아버지 칠순이다. 조용하던 형제 단톡방이 갑자기 회의실이 됐다.`, choices: [
+  { id: "p_70", g: true, ok: (s) => alive(s) && s.age >= 38, mk: (s) => ({ title: "아버지의 칠순", text: `다음 달이 아버지 칠순이다. 조용하던 형제 단톡방이 갑자기 회의실이 됐다.`, choices: [
     C("식당을 빌려 제대로 잔치를 연다", { cash: -M(s, 300), mental: 6, family: 4, item: "m_photo" }, "아버지가 노래방 기계 앞에서 마이크를 놓지 않으셨다.", { par: 6, visit: 1 }),
     C("가족끼리 조촐하게 식사한다", { cash: -M(s, 80), mental: 3 }, "케이크 초를 일곱 개 꽂았다. \"하나에 10년이다.\" 아버지가 웃으셨다.", { par: 3, visit: 1 }),
     C("마감이 겹쳐 봉투만 보낸다", { cash: -M(s, 100), mental: -4 }, "바빠서 못 간다는 말이 목에 걸렸다.", { par: -2 }),
@@ -94,7 +94,7 @@ const EVS = [
     K("일단 나가 본다", "charm", 40, O("연애까진 아니어도 말이 잘 통했다. 투잡 얘기로 두 시간이 갔다.", { mental: 5, stat: { talk: 1 } }), O("\"취미가 엑셀이세요?\" 대화가 거기서 끊겼다.", { mental: -2 })),
     C("정중히 거절한다", { mental: -1 }, "엄마는 \"알았다\" 하시고 바로 다음 후보를 찾으신다.", { par: -1 }),
   ] }) },
-  { id: "p_retire", g: true, ok: (s) => alive(s) && well(s) && s.age >= 31, mk: (s) => ({ title: "아버지의 정년퇴직", text: `33년 다닌 회사에서 아버지가 꽃다발을 들고 오셨다. "이제 뭐 하지?" 처음 보는 표정이었다.`, choices: [
+  { id: "p_retire", g: true, ok: (s) => alive(s) && well(s) && s.age >= 31 && s.age < 38 && s.flags.fe_p_70 === undefined, mk: (s) => ({ title: "아버지의 정년퇴직", text: `33년 다닌 회사에서 아버지가 꽃다발을 들고 오셨다. "이제 뭐 하지?" 처음 보는 표정이었다.`, choices: [
     K("내 투잡 장부 정리를 부탁드린다", "talk", 40, O("아버지가 장부를 맡으셨다. 1원도 안 틀린다. 영수증 잔소리는 덤.", { mental: 4, ap: 1 }, { par: 4 }), O("\"그건 너나 해라.\" 그래도 웃으셨다.", { mental: 1 }, { par: 1 })),
     C("등산화를 선물한다", { cash: -M(s, 30), mental: 3 }, "다음 주부터 매일 아침 산 정상 사진이 온다.", { par: 3 }),
   ] }) },
@@ -257,7 +257,7 @@ export function famMonth(s, r, scenes, notes) {
   if (scenes.length >= 3) return; // 이번 달 장면이 이미 많다
   if (scenes.some((x) => x && (x.onChoose === "baby" || x.onChoose === "fam_oppose" || x.kind === "wedding" || x.title === "아이가 태어났다" || x.title === "이혼"))) return;
   if (!r.chance(married(s) ? P_MARRIED : P_SINGLE)) return;
-  const L = EVS.filter((e) => s.flags["fe_" + e.id] === undefined && e.ok(s));
+  const L = EVS.filter((e) => s.flags["fe_" + e.id] === undefined && !(e.id[0] === "k" && !married(s)) && e.ok(s)); // 11-23 이혼 뒤(아이는 따로 산다)에는 같이 사는 아이 장면을 띄우지 않는다
   if (!L.length) return;
   const lastG = s.flags.famLastG; // 좋은 일·나쁜 일이 번갈아 나오기 쉽게
   const pairs = L.map((e) => { let w = typeof e.w === "function" ? e.w(s) : e.w ?? 1; if (lastG !== undefined && e.g !== !!lastG) w *= 1.6; if (married(s) && e.id[0] === "p") w *= 0.7; return [e, w]; });

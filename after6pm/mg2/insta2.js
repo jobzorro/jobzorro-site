@@ -157,7 +157,7 @@ export const GAME = {
 .mg-insta2 .lv-vw em{font-style:normal;min-width:2ch;display:inline-block}
 .mg-insta2 .lv-vw em.up{animation:lvup .3s}
 .mg-insta2 .lv-st.surge .lv-vw{background:linear-gradient(90deg,#ff3b5c,#ffb03b);box-shadow:0 0 14px #ffb03b}
-.mg-insta2 .lv-mood{position:absolute;left:8px;top:34px;z-index:5;display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;color:#fff;background:#0008;padding:3px 7px;border-radius:5px;pointer-events:none}
+.mg-insta2 .lv-mood{position:absolute;left:8px;top:34px;z-index:5;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:#fff;background:#0008;padding:3px 7px;border-radius:5px;pointer-events:none}
 .mg-insta2 .lv-mood i{width:58px;height:6px;border-radius:3px;background:#ffffff26;overflow:hidden}
 .mg-insta2 .lv-mood em{display:block;height:100%;width:var(--m,60%);background:linear-gradient(90deg,#ff7eb6,#ffd166);transition:width .3s,background .3s}
 .mg-insta2 .lv-mood.low em{background:linear-gradient(90deg,#5a6aa0,#8a9ad0)}
@@ -181,7 +181,7 @@ export const GAME = {
 .mg-insta2 .lv-link{position:absolute;right:8px;top:31%;z-index:8;width:76px;height:76px;border-radius:50%;border:0!important;padding:0!important;display:none;align-items:center;justify-content:center;flex-direction:column;gap:1px;background:conic-gradient(#ffd166 calc(var(--p,0) * 1turn),#ffffff2a 0)!important;box-shadow:0 4px 0 #0007;cursor:pointer}
 .mg-insta2 .lv-link::before{content:"";position:absolute;inset:6px;border-radius:50%;background:linear-gradient(#ff6fa8,#d81b60)}
 .mg-insta2 .lv-link b,.mg-insta2 .lv-link small{position:relative;color:#fff;line-height:1.1}
-.mg-insta2 .lv-link b{font-size:13px;font-weight:900}.mg-insta2 .lv-link small{font-size:10px;font-weight:800;opacity:.9}
+.mg-insta2 .lv-link b{font-size:13px;font-weight:900}.mg-insta2 .lv-link small{font-size:11px;font-weight:800;opacity:.9}
 .mg-insta2 .lv-link.on{display:flex;animation:lvpop .4s cubic-bezier(.3,1.8,.5,1)}
 .mg-insta2 .lv-link.ready{box-shadow:0 0 0 3px #7CFC9A,0 0 24px #7CFC9A;animation:lvpulse .3s infinite alternate}
 .mg-insta2 .lv-link.ready small{color:#eaffd0}
@@ -211,7 +211,7 @@ export const GAME = {
 .mg-insta2 .lv-me{position:absolute;z-index:1;background-repeat:no-repeat;background-size:300% 346.15%;opacity:0;transition:opacity .5s,filter .3s;transform-origin:50% 100%;pointer-events:none;filter:drop-shadow(0 0 5px #ffe2c066)}
 .mg-insta2 .lv-me.on{opacity:1}
 .mg-insta2 .lv-me.glow{filter:drop-shadow(0 0 9px #ffb03b) brightness(1.08)}
-.mg-insta2 .lv-m u.tg{display:none;text-decoration:none;margin-left:7px;font-size:10.5px;font-weight:900;padding:1px 7px;border-radius:8px;background:#ff5f9e;color:#fff;vertical-align:1px;text-shadow:none}
+.mg-insta2 .lv-m u.tg{display:none;text-decoration:none;margin-left:7px;font-size:11px;font-weight:900;padding:1px 7px;border-radius:8px;background:#ff5f9e;color:#fff;vertical-align:1px;text-shadow:none}
 .mg-insta2 .lv-st.tags .lv-m u.tg,.mg-insta2 .lv-m.warn u.tg{display:inline-block}
 .mg-insta2 .lv-m.bad u.tg{background:#e8ecff;color:#3a4270}
 .mg-insta2 .lv-m.gold u.tg{background:#2a1a00;color:#ffd166}
@@ -223,7 +223,7 @@ export const GAME = {
 .mg-insta2 .lv-tut.off{opacity:0;visibility:hidden}
 .mg-insta2 .lv-tc{pointer-events:auto;background:#fffdf8;color:#2a1e2e;border-radius:14px;padding:9px 12px 8px;box-shadow:0 4px 0 #0006,0 0 0 2px #ff7eb6;max-width:300px;font-size:13px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-insta2 .lv-tut.pop .lv-tc{animation:lvpop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-insta2 .lv-tc em{font-style:normal;display:inline-block;background:#ff5f9e;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
+.mg-insta2 .lv-tc em{font-style:normal;display:inline-block;background:#ff5f9e;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
 .mg-insta2 .lv-tc p{margin:0}
 .mg-insta2 .lv-tc b{background:none;padding:0}.mg-insta2 .lv-tut.low{bottom:14px}
 .mg-insta2 .lv-tc b.pk{color:#e0307a}.mg-insta2 .lv-tc b.rd{color:#c0392b}.mg-insta2 .lv-tc b.gd{color:#a87000}.mg-insta2 .lv-tc b.gr{color:#1f9a4a}

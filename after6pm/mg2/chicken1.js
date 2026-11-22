@@ -2,7 +2,7 @@
 // 주문표가 들어오면 반죽한 닭을 끌어 튀김 바구니에 넣는다. 연노랑 → 황금 → 갈색 → 탄 색.
 // 황금색일 때 바구니를 위로 쓱 끌어 올리면 '탁탁' 기름을 턴다. 주문대로 소스 통을 톡 → 볼을 문질러 버무리고,
 // 박스에 치킨무를 톡 넣으면 라이더가 가져간다. 가끔 불이 세져서 기름이 튄다(손잡이 톡).
-// 끝나면 배달통 리뷰 알림이 쏟아진다.
+// 끝나면 배달퉁 리뷰 알림이 쏟아진다.
 import { frame, timer, SFX, tone, noise, vib, rnd, rint, pick, shuffle, clamp, RM } from "../mg.js";
 
 const W = 160, T = 30, FY = 30, OT = FY + 8;
@@ -146,12 +146,12 @@ export const GAME = {
 .mg-c1w>canvas{width:100%;height:100%;display:block;image-rendering:auto;touch-action:none;cursor:pointer;border-radius:6px}
 .mg-chicken1 .mg-steps img{width:80px;height:68px;border-radius:11px;box-shadow:0 3px 10px #0006}
 .mg-chicken1 .mg-logo b{font-size:26px}
-.mg-c1w .c1lb b{position:absolute;display:block;text-align:center;font-size:10.5px;font-weight:800;color:#f4e6c8;background:#2a1d14e0;border-radius:4px;white-space:nowrap;overflow:hidden;pointer-events:none;letter-spacing:-.4px}
+.mg-c1w .c1lb b{position:absolute;display:block;text-align:center;font-size:11px;font-weight:800;color:#f4e6c8;background:#2a1d14e0;border-radius:4px;white-space:nowrap;overflow:hidden;pointer-events:none;letter-spacing:-.4px}
 .mg-c1w .c1lb b.on{background:#ffd23f;color:#3a2400;animation:c1blink .5s steps(2) infinite}
-.mg-c1w .c1lb b.tk{color:#fff;font-size:10px;border-radius:0 0 3px 3px}
+.mg-c1w .c1lb b.tk{color:#fff;font-size:11px;border-radius:0 0 3px 3px}
 .mg-c1w .c1lb b.tk.dim{opacity:.55}
 .mg-c1w .c1lb b.br{background:none;color:#ffcf5a;font-size:12px;font-weight:900;letter-spacing:1px;text-shadow:0 1px 0 #6a3a0a,0 0 4px #000a}
-.mg-c1w .c1lb b.ge{background:#0000;color:#ffe9a8;font-size:9.5px}
+.mg-c1w .c1lb b.ge{background:#0000;color:#ffe9a8;font-size:11px}
 @keyframes c1blink{50%{filter:brightness(1.3)}}
 .mg-c1w .c1go{position:absolute;z-index:9;width:0;height:0;display:none;pointer-events:none}
 .mg-c1w .c1go.on{display:block}
@@ -175,7 +175,7 @@ export const GAME = {
 .mg-c1w .c1tut.off{opacity:0;visibility:hidden}
 .mg-c1w .c1tc{pointer-events:auto;background:#fffdf6;color:#2a2018;border-radius:14px;padding:9px 12px 8px;box-shadow:0 4px 0 #0006,0 0 0 2px #ffb03b;max-width:290px;font-size:13px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-c1w .c1tut.pop .c1tc{animation:c1pop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-c1w .c1tc em{font-style:normal;display:inline-block;background:#d8701a;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
+.mg-c1w .c1tc em{font-style:normal;display:inline-block;background:#d8701a;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
 .mg-c1w .c1tc p{margin:0}.mg-c1w .c1tc b{color:#c0601a}.mg-c1w .c1tc b.rd{color:#c0392b}
 .mg-c1w .c1tb{margin-top:6px;display:flex;justify-content:center}
 .mg-c1w .c1skip{background:none!important;border:0!important;box-shadow:none!important;color:#8a8070!important;font-size:11.5px;text-decoration:underline;padding:2px 6px!important;min-height:0!important}
@@ -191,14 +191,14 @@ export const GAME = {
 .mg-c1w .c1scr{background:linear-gradient(#ffcf5a,#ff9a3b);border-radius:14px;padding:8px 6px 6px;min-height:300px;overflow:hidden}
 .mg-c1w .c1hd{display:flex;align-items:center;gap:6px;color:#4a2400;font-weight:900;font-size:12px;margin-bottom:6px}
 .mg-c1w .c1hd img{width:28px;height:28px;border-radius:7px;box-shadow:0 1px 2px #0004}
-.mg-c1w .c1hd p{margin:0;line-height:1.2}.mg-c1w .c1hd small{display:block;font-weight:700;font-size:10px;color:#7a4410}
+.mg-c1w .c1hd p{margin:0;line-height:1.2}.mg-c1w .c1hd small{display:block;font-weight:700;font-size:11px;color:#7a4410}
 .mg-c1w .c1avg{margin-left:auto;text-align:right;font-size:20px;color:#fff;text-shadow:0 2px 0 #b8501a;line-height:1}
-.mg-c1w .c1avg i{display:block;font-style:normal;font-size:9.5px;color:#fff8e0;text-shadow:none;letter-spacing:1px}
+.mg-c1w .c1avg i{display:block;font-style:normal;font-size:11px;color:#fff8e0;text-shadow:none;letter-spacing:1px}
 .mg-c1w .c1ls{display:flex;flex-direction:column;gap:5px}
 .mg-c1w .c1nt{display:flex;gap:6px;align-items:center;background:#fffdf6f2;border-radius:10px;padding:5px 7px;box-shadow:0 2px 0 #0003;animation:c1ntin .35s cubic-bezier(.3,1.5,.5,1)}
 .mg-c1w .c1nt img{width:32px;height:32px;flex:0 0 auto;border-radius:50%;background:#ffe9c0;box-shadow:0 0 0 2px #fff,0 0 0 3px #ffb03b}
 .mg-c1w .c1nt p{margin:0;font-size:11px;line-height:1.35;color:#3a2a1a;min-width:0}
-.mg-c1w .c1nt p b{display:block;font-size:10px;color:#d8701a;letter-spacing:.5px}
+.mg-c1w .c1nt p b{display:block;font-size:11px;color:#d8701a;letter-spacing:.5px}
 .mg-c1w .c1nt.bad p b{color:#8a8070}
 .mg-c1w .c1nt p span{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @keyframes c1ntin{0%{transform:translateY(-14px) scale(.9);opacity:0}100%{transform:none;opacity:1}}
@@ -836,7 +836,7 @@ function runGame(host, ez, finish, opts = {}) {
     requestAnimationFrame(loop);
   };
 
-  // ── 끝: 배달통 리뷰 알림 ──
+  // ── 끝: 배달퉁 리뷰 알림 ──
   const iconURL = () => { const c = document.createElement("canvas"); c.width = c.height = 64; const q = c.getContext("2d"); q.fillStyle = "#fff3d0"; q.fillRect(0, 0, 64, 64); vPiece(q, 8, 18, GOLD, 0, true, 2, 3.2); return c.toDataURL(); };
   const appURL = () => svgU(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f8ff0"/><stop offset="1" stop-color="#1f56b0"/></linearGradient></defs><rect width="32" height="32" rx="7" fill="url(#a)"/><path d="M7 12h14l-1.4 9H8.4z" fill="#fff"/><path d="M9 12V9.6A5 5 0 0 1 19 9.6V12" fill="none" stroke="#ffb03b" stroke-width="2"/><circle cx="11" cy="24.5" r="2" fill="#1a1a2a"/><circle cx="20" cy="24.5" r="2" fill="#1a1a2a"/><path d="M21 15h4l2 4v4h-6z" fill="#ffd23f"/></svg>`);
   // 리뷰 손님 얼굴: 별점에 따라 웃음·슬픔·화남
@@ -862,7 +862,7 @@ function runGame(host, ez, finish, opts = {}) {
     const av = avgStar();
     SFX.whoosh(); dim.classList.add("on");
     const box2 = document.createElement("div"); box2.className = "c1end";
-    box2.innerHTML = `<div class="c1ph"><div class="nt0"></div><div class="c1scr"><div class="c1hd"><img src="${appURL()}" alt=""><p>배달통 사장님<small>황금닭 · 오늘 저녁</small></p><div class="c1avg">${av === "-" ? "-" : "★" + av}<i>리뷰 ${served.length}개</i></div></div><div class="c1ls"></div></div></div>`;
+    box2.innerHTML = `<div class="c1ph"><div class="nt0"></div><div class="c1scr"><div class="c1hd"><img src="${appURL()}" alt=""><p>배달퉁 사장님<small>황금닭 · 오늘 저녁</small></p><div class="c1avg">${av === "-" ? "-" : "★" + av}<i>리뷰 ${served.length}개</i></div></div><div class="c1ls"></div></div></div>`;
     wrap.appendChild(box2);
     const ls = box2.querySelector(".c1ls"), ic = iconURL();
     const list = served.slice().sort((a, b) => a.stars - b.stars).slice(-7);
@@ -874,7 +874,7 @@ function runGame(host, ez, finish, opts = {}) {
       const top5 = o.stars >= 5 && k === list.length - 1;
       const txt = o.none ? "오늘은 주문을 하나도 못 보냈어요…" : o.cx ? pick(RVX) : top5 ? "바삭함 미쳤다" : o.stars >= 5 ? (pool5.length ? pool5.shift() : pick(RV5)) : !o.mu ? pick(RVMU) : pick(RV4);
       const d = document.createElement("div"); d.className = "c1nt" + (o.stars >= 5 ? "" : " bad");
-      d.innerHTML = `<img src="${(!o.none && custFace(k, o.cx ? 1 : o.stars)) || ic}" alt=""><p><b>${o.none ? "배달통" : stars(o.stars)}</b><span>${txt}</span></p>`;
+      d.innerHTML = `<img src="${(!o.none && custFace(k, o.cx ? 1 : o.stars)) || ic}" alt=""><p><b>${o.none ? "배달퉁" : stars(o.stars)}</b><span>${txt}</span></p>`;
       ls.prepend(d); while (ls.children.length > 6) ls.lastChild.remove();
       if (o.stars >= 5) { S.review(k); vib(8); } else tone(400, 0.1, "triangle", 0.06);
     }, 500 + k * gap));

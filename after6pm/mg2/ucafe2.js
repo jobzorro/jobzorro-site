@@ -175,7 +175,7 @@ export const GAME = {
 .mg-u2st{background:#1a130e!important;display:flex;align-items:center;justify-content:center}
 .mg-u2w{position:relative;flex:0 0 auto}
 .mg-u2w canvas{width:100%;height:100%;display:block;touch-action:none;cursor:pointer}
-.mg-u2hud{position:absolute;left:4px;top:4px;display:flex;gap:4px;align-items:center;pointer-events:none;z-index:6;font:700 10.5px ui-monospace,monospace}
+.mg-u2hud{position:absolute;left:4px;top:4px;display:flex;gap:4px;align-items:center;pointer-events:none;z-index:6;font:700 11px ui-monospace,monospace}
 .mg-u2hud .lv{color:#fff;background:#e0303ad0;padding:1px 6px;border-radius:4px;letter-spacing:.5px}
 .mg-u2hud .lv i{font-style:normal;animation:mgu2blink 1s steps(2) infinite}
 .mg-u2hud .tp{color:#fff;background:#0009;padding:1px 6px;border-radius:4px;transition:background .3s}
@@ -193,19 +193,19 @@ export const GAME = {
 @keyframes mgu2tear{0%{transform:rotate(0)}40%{transform:translateY(8px) rotate(-3deg)}100%{transform:translateY(14px) rotate(-2deg)}}
 .mg-u2rc .in{padding:12px 10px 16px;font:11.5px/1.5 ui-monospace,Menlo,monospace}
 .mg-u2rc .in b.h{display:block;text-align:center;font-size:13.5px;font-weight:900;letter-spacing:-.3px}
-.mg-u2rc .in small{display:block;text-align:center;color:#8a8478;font-size:10.5px}
+.mg-u2rc .in small{display:block;text-align:center;color:#8a8478;font-size:11px}
 .mg-u2rc .in hr{border:0;border-top:1px dashed #a8a090;margin:6px 0}
 .mg-u2rc .in p{margin:0;display:flex;justify-content:space-between;gap:6px;white-space:nowrap}
 .mg-u2rc .in p span:first-child{overflow:hidden;text-overflow:ellipsis}
 .mg-u2rc .in p.tot{font-size:14px;font-weight:900;margin-top:2px}
 .mg-u2rc .in p.bad{color:#c0392b}
 .mg-u2rc .in .bc{height:20px;margin-top:8px;background:repeating-linear-gradient(90deg,#222 0 1px,#0000 1px 3px,#222 3px 5px,#0000 5px 6px,#222 6px 7px,#0000 7px 10px)}
-.mg-u2rc .in .thx{text-align:center;font-size:10.5px;color:#8a8478;margin-top:4px}
+.mg-u2rc .in .thx{text-align:center;font-size:11px;color:#8a8478;margin-top:4px}
 .mg-u2rc .pap::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(-45deg,#fffef6 3px,#0000 0) 0 0/8px 6px,linear-gradient(45deg,#fffef6 3px,#0000 0) 0 0/8px 6px;opacity:0}
 .mg-u2rc .pap.torn::after{opacity:1}
 .mg-u2w .u2lb b{position:absolute;display:block;text-align:center;font-size:11px;font-weight:800;color:#e8d8bc;background:#2a1d14;border-radius:4px;white-space:nowrap;overflow:hidden;pointer-events:none;letter-spacing:-.3px}
 .mg-u2w .u2lb b.lo{background:#ffd23f;color:#3a2400;animation:u2blink .5s steps(2) infinite}
-.mg-u2w .u2lb b.pd{background:#1f4a66;color:#bfe8ff;font-size:10px}
+.mg-u2w .u2lb b.pd{background:#1f4a66;color:#bfe8ff;font-size:11px}
 .mg-u2w .u2lb b.lk{background:#555a66;color:#fff}
 .mg-u2w .u2lb b.bx{color:#ffe8b0;background:#1e140d}
 .mg-u2w .u2lb b.bx.lo{background:#a0302a;color:#fff}
@@ -228,7 +228,7 @@ export const GAME = {
 .mg-u2w .u2tut.off{opacity:0;visibility:hidden}
 .mg-u2w .u2tc{pointer-events:auto;background:#fffdf6;color:#2a2018;border-radius:14px;padding:9px 12px 8px;box-shadow:0 4px 0 #0006,0 0 0 2px #2f7a5a;max-width:290px;font-size:13px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-u2w .u2tut.pop .u2tc{animation:u2pop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-u2w .u2tc em{font-style:normal;display:inline-block;background:#2f7a5a;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
+.mg-u2w .u2tc em{font-style:normal;display:inline-block;background:#2f7a5a;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
 .mg-u2w .u2tc p{margin:0}.mg-u2w .u2tc b{color:#1f6a4a;background:none;padding:0}.mg-u2w .u2tc b.rd{color:#c0392b}.mg-u2w .u2tc b.bl{color:#1f6aa8}
 .mg-u2w .u2tb{margin-top:6px;display:flex;justify-content:center}
 .mg-u2w .u2skip{background:none!important;border:0!important;box-shadow:none!important;color:#8a8070!important;font-size:11.5px;text-decoration:underline;padding:2px 6px!important;min-height:0!important}

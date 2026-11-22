@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/favicon-48.png">
+<title>After 6PM · 배경 음악 들어 보기</title>
+<style>
+  :root { --bg:#0e1020; --panel:#171a2e; --panel2:#20243d; --line:#2f3456; --fg:#f2f1fb; --muted:#9ea3c0; --gold:#f5c04e; --green:#5fe0a0; --red:#ff6b7f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; -webkit-tap-highlight-color:transparent; }
+  main { max-width:720px; margin:0 auto; padding:16px 16px 120px; }
+  h1 { font-size:20px; margin:4px 0 2px; } h1 span { color:var(--gold); }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:12px; }
+  .bar { position:sticky; top:0; z-index:5; background:rgba(14,16,32,.96); border-bottom:1px solid var(--line); margin:0 -16px 14px; padding:10px 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .bar label { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); flex:1 1 180px; min-width:0; }
+  .bar input[type=range] { flex:1; min-width:0; accent-color:var(--gold); height:32px; }
+  button { font:inherit; color:inherit; cursor:pointer; border:1px solid var(--line); background:var(--panel2); border-radius:10px; min-height:44px; padding:8px 12px; }
+  button.gold { background:var(--gold); color:#1b1400; border-color:var(--gold); font-weight:700; }
+  button.on { border-color:var(--green); color:var(--green); }
+  .now { flex:1 1 100%; font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .now b { color:var(--gold); }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:14px; }
+  section h2 { font-size:16px; margin:0 0 2px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  section h2 code { font-size:12px; color:var(--muted); background:var(--panel2); padding:1px 6px; border-radius:6px; }
+  .mood { color:var(--muted); font-size:13px; margin-bottom:8px; }
+  .row { display:grid; grid-template-columns:52px 1fr; gap:10px; align-items:center; padding:10px 0; border-top:1px solid var(--line); }
+  .row .pl { width:52px; height:52px; border-radius:50%; font-size:20px; padding:0; }
+  .row .pl.playing { background:var(--gold); color:#1b1400; border-color:var(--gold); }
+  .t { font-weight:700; overflow-wrap:anywhere; }
+  .meta { color:var(--muted); font-size:12.5px; overflow-wrap:anywhere; }
+  .meta a { color:#b9c0ff; }
+  .tag { display:inline-block; font-size:11px; border-radius:6px; padding:1px 6px; margin-left:4px; vertical-align:1px; }
+  .tag.def { background:var(--gold); color:#1b1400; font-weight:700; }
+  .tag.pick { background:var(--green); color:#062a18; font-weight:700; }
+  .tag.cc0 { border:1px solid var(--green); color:var(--green); }
+  .acts { grid-column:2; display:flex; gap:8px; flex-wrap:wrap; }
+  .acts button { min-height:40px; font-size:13px; }
+  .edit { grid-column:2; color:var(--muted); font-size:12px; }
+  textarea { width:100%; min-height:120px; background:#0b0d1a; color:#dfe3ff; border:1px solid var(--line); border-radius:10px; padding:10px; font:13px/1.5 ui-monospace,Consolas,monospace; }
+  .err { background:#3a1620; border:1px solid var(--red); color:#ffd3da; border-radius:10px; padding:10px; margin-bottom:12px; display:none; }
+  .foot { color:var(--muted); font-size:12.5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>After <span>6</span>PM · 배경 음악 들어 보기</h1>
+  <div class="sub">자리마다 후보를 듣고 마음에 드는 곡을 고르세요. 고른 결과는 맨 아래 상자에 모입니다. 모든 곡은 CC0(상업 이용·수정 가능, 출처 표시 의무 없음)입니다.</div>
+  <div class="err" id="err"></div>
+  <div class="bar">
+    <button id="onBtn">음악 켜짐</button>
+    <button id="stopBtn">■ 정지</button>
+    <label>크기 <input id="vol" type="range" min="0" max="1" step="0.05"> <span id="volTxt"></span></label>
+    <div class="now" id="now">첫 곡을 눌러 보세요</div>
+  </div>
+  <div id="list"></div>
+  <section>
+    <h2>고른 결과</h2>
+    <div class="mood">자리마다 "이 곡으로"를 누르면 여기에 모입니다. 복사해서 그대로 보내 주시면 연결합니다.</div>
+    <textarea id="out" readonly></textarea>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="gold" id="copy">복사</button><button id="reset">처음 상태로</button></div>
+  </section>
+  <div class="foot" id="foot"></div>
+</main>
+<script type="module">
+import { BGM } from "./bgm.js";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const MOOD = { title: "저녁 6시, 설레는 퇴근", home: "잔잔한 로파이. 오래 들어도 안 질리게", board: "조금 경쾌하게", crisis: "긴장", ending: "뭉클하고 밝게", love: "따뜻하게", over: "실패로 끝난 인생(엔딩 곡을 같이 씀)" };
+const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+const mb = (b) => (b / 1048576).toFixed(2) + "MB";
+let cfg = null, cred = {}, picks = {}, curId = null, curSlot = null;
+
+function showErr(t) { const e = $("#err"); e.textContent = t; e.style.display = "block"; }
+function draw() {
+  $("#list").innerHTML = Object.entries(cfg.slots).filter(([k]) => !k.startsWith("_")).map(([k, s]) => {
+    const total = s.list.reduce((a, id) => a + (cfg.tracks[id]?.bytes || 0), 0);
+    return `<section><h2>${esc(s.name || k)} <code>${esc(k)}</code>${s.mode === "rotate" ? `<span class="tag cc0">후보끼리 돌려 듣기</span>` : ""}</h2>
+      <div class="mood">${esc(MOOD[k] || "")} · 후보 ${s.list.length}곡 ${mb(total)} <button data-slot="${esc(k)}" style="min-height:36px;font-size:12.5px;margin-left:6px">게임처럼 듣기(자리 전환)</button></div>
+      ${s.list.map((id) => { const t = cfg.tracks[id], c = cred[id] || {}; if (!t) return ""; const pk = (picks[k] || s.use) === id;
+        return `<div class="row"><button class="pl ${curId === id ? "playing" : ""}" data-play="${esc(id)}" aria-label="${esc(t.title)} 재생">${curId === id ? "■" : "▶"}</button>
+          <div><div class="t">${esc(t.title)}${s.use === id ? `<span class="tag def">지금 기본</span>` : ""}${picks[k] === id && s.use !== id ? `<span class="tag pick">고름</span>` : ""}</div>
+            <div class="meta">${esc(t.artist)} · ${mmss(t.sec)} · ${mb(t.bytes)} · <span class="tag cc0">${esc(t.license)}</span> · <a href="${esc(t.source)}" target="_blank" rel="noopener">곡 페이지</a></div></div>
+          ${c.edits ? `<div class="edit">손본 것: ${esc(c.edits)}</div>` : ""}
+          <div class="acts"><button data-pick="${esc(k)}|${esc(id)}" class="${pk ? "on" : ""}">${pk ? "✓ 이 자리 곡" : "이 곡으로"}</button></div></div>`; }).join("")}</section>`;
+  }).join("");
+  const lines = Object.entries(cfg.slots).filter(([k]) => !k.startsWith("_")).map(([k, s]) => { const id = picks[k] || s.use, t = cfg.tracks[id]; return `${s.name || k}(${k}) = ${t ? t.title : id} [${id}]${id !== s.use ? "  ← 바꿈" : ""}`; });
+  $("#out").value = lines.join("\n");
+  const on = BGM.isOn(); $("#onBtn").textContent = on ? "음악 켜짐" : "음악 꺼짐"; $("#onBtn").classList.toggle("on", on);
+  $("#vol").value = BGM.volume(); $("#volTxt").textContent = Math.round(BGM.volume() * 100) + "%";
+}
+function now() {
+  const st = BGM.state(), t = st.id && cfg?.tracks[st.id];
+  $("#now").innerHTML = t && st.playing ? `듣는 중: <b>${esc(t.title)}</b> · ${esc(t.artist)} · ${mmss(st.time)} / ${mmss(t.sec)}` : t && !st.on ? "음악이 꺼져 있어요. 왼쪽 버튼으로 켜세요" : t ? "받는 중…" : "정지";
+}
+document.addEventListener("click", (e) => {
+  const p = e.target.closest("[data-play]"), k = e.target.closest("[data-pick]"), s = e.target.closest("[data-slot]");
+  if (p) { const id = p.dataset.play; if (curId === id) { BGM.stop(); curId = null; } else { BGM.playTrack(id); curId = id; curSlot = null; } draw(); }
+  else if (s) { curSlot = s.dataset.slot; BGM.play(curSlot); setTimeout(() => { curId = BGM.state().id; draw(); }, 300); }
+  else if (k) { const [slot, id] = k.dataset.pick.split("|"); picks[slot] = id; try { localStorage.setItem("a6_bgm_test_picks", JSON.stringify(picks)); } catch (err) {} draw(); }
+});
+$("#onBtn").onclick = () => { BGM.setOn(!BGM.isOn()); draw(); };
+$("#stopBtn").onclick = () => { BGM.stop(); curId = null; draw(); };
+$("#vol").oninput = (e) => { BGM.setVolume(+e.target.value); $("#volTxt").textContent = Math.round(e.target.value * 100) + "%"; };
+$("#copy").onclick = async () => { const ta = $("#out"); try { await navigator.clipboard.writeText(ta.value); $("#copy").textContent = "복사했어요"; } catch (err) { ta.select(); $("#copy").textContent = "길게 눌러 복사"; } setTimeout(() => ($("#copy").textContent = "복사"), 1500); };
+$("#reset").onclick = () => { picks = {}; try { localStorage.removeItem("a6_bgm_test_picks"); } catch (err) {} draw(); };
+setInterval(now, 500);
+
+try { picks = JSON.parse(localStorage.getItem("a6_bgm_test_picks") || "{}") || {}; } catch (err) { picks = {}; }
+try {
+  cfg = await BGM.load();
+  try { const c = await (await fetch("audio/CREDITS.json", { cache: "no-cache" })).json(); for (const t of c.tracks || []) cred[t.id] = t;
+    $("#foot").textContent = `곡 ${c.tracks.length}개 · 전체 ${mb(c.total_bytes)} · 라이선스 확인일 ${c.checked} · 출처 ${c.site} · 여기서 바꾼 음악 켜기·크기는 게임 설정과 같은 곳에 저장됩니다.`; } catch (err) {}
+  draw();
+} catch (err) { showErr("곡 목록(audio/bgm.json)을 불러오지 못했어요: " + err.message); }
+window.__bgmTestReady = true;
+</script>
+</body>
+</html>

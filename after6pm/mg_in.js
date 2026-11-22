@@ -40,7 +40,7 @@ export const IN_CSS = `
 .mg-arrow{position:absolute;top:44%;z-index:4;background:#ff3b5c;color:#fff;font-weight:900;font-size:13px;padding:5px 11px;border-radius:99px;box-shadow:0 0 12px #ff3b5c;pointer-events:none;display:none;animation:mgblink .5s infinite alternate}
 .mg-arrow.l{left:12px;display:block}.mg-arrow.r{right:30px;display:block}
 @keyframes mgblink{to{opacity:.55;transform:scale(.94)}}
-.mg-hud{position:absolute;left:16px;bottom:14px;z-index:3;font:700 10px/1 ui-monospace,monospace;color:#ffffffc0;pointer-events:none;letter-spacing:.5px}
+.mg-hud{position:absolute;left:16px;bottom:14px;z-index:3;font:700 11px/1 ui-monospace,monospace;color:#ffffffc0;pointer-events:none;letter-spacing:.5px}
 .mg-hud b{color:#ff3b5c}
 .mg-drag{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);z-index:3;color:#fff;font-size:12px;font-weight:800;background:#0008;padding:4px 10px;border-radius:99px;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap}
 .mg-drag.on{opacity:1}

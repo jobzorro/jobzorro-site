@@ -84,9 +84,16 @@ export function abPanels(c) {
   <div class="card"><h3>후기 관리 <small>${A.super ? "★ 슈퍼호스트" : `슈퍼호스트: 모든 숙소 ★4.8 + 후기 ${RK.abSuperN}개`}</small></h3>
     <div class="tiny">후기 합계 <b>${sumRev}</b>/${RK.abSuperN} · 가장 낮은 별점 <b class="${minStar >= 4.8 ? "good" : "bad"}">${minStar.toFixed(2)}</b>/4.8 · 숙소마다 후기 ${RK.top.n}개+★${RK.top.star}면 상위 노출</div>
     <div style="margin-top:6px">${revSeg(S, "ab")}</div></div>
-  ${abF30(c)}
-  ${lawCard(c)}`;
+  ${abF30(c)}`;
 }
+// 화면 정리(v4.31): 명의 팀은 법 개정 사건 때만 뜨는 급한 칸이라 '운영 설정' 접기 밖에 둔다
+export function abLaw(c) { return c.S.ab.units.length ? lawCard(c) : ""; }
+// '운영 설정' 접힌 줄에 보이는 지금 값 한 줄
+const revN = (S, job) => D.PR_REVIEW.ev[(job === "pr" ? S.pr.revEv : S.ab.revEv) || "none"].n;
+const upN = (v) => (v === 1 ? "그대로" : `+${Math.round((v - 1) * 100)}%`);
+export function prOpsSum(c) { const S = c.S, P = S.pr; if (!P.rooms.some((x) => x.status === "open")) return `성수기 가격 <b>${upN(P.peak || 1)}</b> · 문을 열면 가격표·후기 관리가 생겨요`; return `성수기 가격 <b>${upN(P.peak || 1)}</b> · 후기 이벤트 <b>${c.esc(revN(S, "pr"))}</b>`; }
+export function abOpsSum(c) { const S = c.S, A = S.ab, K = AB.AB_F30, nb = AB.nbGet(S); return `성수기 1박 <b>${upN(A.peak || 1)}</b> · 청소 <b>${A.cohost ? "코호스트" : { self: "내가", gig: "건당 대행", team: "청소팀" }[A.clean || "self"]}</b> · 이웃 인심 <b class="${nb < K.nb.low ? "bad" : ""}">${nb}</b>`; }
+export function ucOpsSum(c) { const U = c.S.uc, nt = U.stores.filter((x) => x.night === false).length; return `${nt ? (nt === U.stores.length ? "밤엔 닫기" : `밤엔 닫기 ${nt}곳`) : "24시간"} · 원두 재고 <b>${{ small: "조금씩", mid: "보통", bulk: "많이" }[U.stock || "mid"]}</b>`; }
 function lawCard(c) {
   const S = c.S, A = S.ab, L = A.law, K = D.AB_NAME;
   if (!L || L.phase === 0) return ""; // 정리(v4.27): 법 개정 예고(1단계) 전에는 숨김

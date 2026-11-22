@@ -337,7 +337,7 @@ export const GAME = {
 .mg-vibe2 .v2-bub{position:absolute;z-index:4;background:#fffdf6;color:#2a2018;border-radius:11px;padding:4px 8px 5px;font-size:11.5px;line-height:1.3;font-weight:800;box-shadow:0 3px 0 #0006;word-break:keep-all;pointer-events:none;transform-origin:30% 100%;opacity:0;transform:scale(.6);transition:opacity .2s,transform .25s cubic-bezier(.3,1.6,.5,1)}
 .mg-vibe2 .v2-bub.on{opacity:1;transform:scale(1)}
 .mg-vibe2 .v2-bub::after{content:"";position:absolute;left:22px;bottom:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#fffdf6}
-.mg-vibe2 .v2-bub em{display:block;font-style:normal;font-size:9.5px;font-weight:900;color:#7c9cff}
+.mg-vibe2 .v2-bub em{display:block;font-style:normal;font-size:11px;font-weight:900;color:#7c9cff}
 .mg-vibe2 .v2-bub.no{background:#fff0ee;color:#b0302a}.mg-vibe2 .v2-bub.no::after{border-top-color:#fff0ee}
 .mg-vibe2 .v2-bub.ok{background:#eafff2;color:#1f7a4a}.mg-vibe2 .v2-bub.ok::after{border-top-color:#eafff2}
 .mg-vibe2 .v2-bub.big{font-size:15px;padding:6px 11px}
@@ -345,14 +345,14 @@ export const GAME = {
 .mg-vibe2 .v2-pan.hot{border-color:#ffd23f;background:#161b36}
 .mg-vibe2 .v2-pan.off{opacity:0;pointer-events:none}
 .mg-vibe2 .v2-ph{color:#c8d0f0;font-size:11.5px;line-height:1.35;font-weight:700;word-break:keep-all}
-.mg-vibe2 .v2-ph em{font-style:normal;display:inline-block;background:#7c9cff;color:#fff;font-size:10px;font-weight:900;padding:0 6px;border-radius:5px;margin-right:4px}
+.mg-vibe2 .v2-ph em{font-style:normal;display:inline-block;background:#7c9cff;color:#fff;font-size:11px;font-weight:900;padding:0 6px;border-radius:5px;margin-right:4px}
 .mg-vibe2 .v2-ph em.bug{background:#e8487a}
 .mg-vibe2 .v2-ph b{color:#ffd23f}
 .mg-vibe2 .v2-cnt{margin-top:auto;display:flex;flex-wrap:wrap;gap:3px}
-.mg-vibe2 .v2-cnt i{font-style:normal;font-size:10px;font-weight:800;color:#ff9ab8;background:#3a1a2c;border:1px solid #6a2a48;border-radius:6px;padding:1px 5px;white-space:nowrap}
+.mg-vibe2 .v2-cnt i{font-style:normal;font-size:11px;font-weight:800;color:#ff9ab8;background:#3a1a2c;border:1px solid #6a2a48;border-radius:6px;padding:1px 5px;white-space:nowrap}
 .mg-vibe2 .v2-cnt i.ok{color:#8ff0b8;background:#143a28;border-color:#2a6a48}
 .mg-vibe2 .v2-op{display:flex;align-items:center;gap:6px;width:100%;min-height:34px;padding:3px 8px!important;border-radius:9px!important;background:#262c4e!important;border:1px solid #3c4680!important;box-shadow:0 2px 0 #0008!important;color:#eef0ff!important;font-size:12.5px!important;font-weight:800!important;text-align:left;line-height:1.15;letter-spacing:-.3px;word-break:keep-all;animation:v2deal .3s cubic-bezier(.3,1.5,.5,1) backwards}
-.mg-vibe2 .v2-op span{flex:0 0 auto;width:17px;height:17px;border-radius:5px;background:#7c9cff;color:#fff;font-size:10.5px;display:flex;align-items:center;justify-content:center}
+.mg-vibe2 .v2-op span{flex:0 0 auto;width:17px;height:17px;border-radius:5px;background:#7c9cff;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
 .mg-vibe2 .v2-op:active{transform:translateY(2px)}
 .mg-vibe2 .v2-op.ok{background:#1d5a3c!important;border-color:#3fd08a!important;box-shadow:0 0 0 1px #3fd08a,0 2px 0 #0008!important}
 .mg-vibe2 .v2-op.bad{background:#4a1e2a!important;border-color:#ff5a5a!important;animation:v2shk .4s}
@@ -372,7 +372,7 @@ export const GAME = {
 .mg-vibe2 .v2-tut.off{opacity:0;visibility:hidden}
 .mg-vibe2 .v2-tc{pointer-events:auto;background:#fffdf6;color:#2a2018;border-radius:14px;padding:7px 12px 6px;box-shadow:0 4px 0 #0006,0 0 0 2px #7c9cff;max-width:300px;font-size:12.5px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-vibe2 .v2-tut.pop .v2-tc{animation:v2pop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-vibe2 .v2-tc em{font-style:normal;display:inline-block;background:#5a74e0;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
+.mg-vibe2 .v2-tc em{font-style:normal;display:inline-block;background:#5a74e0;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
 .mg-vibe2 .v2-tc p{margin:0}.mg-vibe2 .v2-tc b{color:#2f55c8}.mg-vibe2 .v2-tc b.rd{color:#c0392b}
 .mg-vibe2 .v2-tb{margin-top:4px;display:flex;justify-content:center}
 .mg-vibe2 .v2-skip{background:none!important;border:0!important;box-shadow:none!important;color:#8a8070!important;font-size:11.5px;text-decoration:underline;padding:2px 6px!important}
@@ -380,7 +380,7 @@ export const GAME = {
 @keyframes v2pulse{to{transform:scale(1.07);box-shadow:0 3px 0 #2a3a90,0 0 12px #8aa8ff}}
 @keyframes v2pop{0%{transform:scale(.3)}100%{transform:scale(1)}}
 .mg-vibe2 .v2-lb{position:absolute;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(#ff8a7a,#e0382a);color:#fff;font-weight:900;font-size:19px;letter-spacing:1px;box-shadow:0 6px 0 #8a1a10,0 0 0 3px #fff3;opacity:0;transform:scale(.4);transition:opacity .25s,transform .35s cubic-bezier(.3,1.7,.5,1);pointer-events:none}
-.mg-vibe2 .v2-lb small{font-size:9.5px;font-weight:700;letter-spacing:0;opacity:.9}
+.mg-vibe2 .v2-lb small{font-size:11px;font-weight:700;letter-spacing:0;opacity:.9}
 .mg-vibe2 .v2-lb.on{opacity:1;transform:scale(1)}
 .mg-vibe2 .v2-lb.on.press{transform:translateY(5px);box-shadow:0 1px 0 #8a1a10,0 0 22px #ffd23f}
 .mg-vibe2 .v2-ban{position:absolute;z-index:7;left:0;right:0;text-align:center;pointer-events:none;opacity:0;transform:scale(2.2);transition:opacity .2s,transform .45s cubic-bezier(.3,1.6,.5,1)}

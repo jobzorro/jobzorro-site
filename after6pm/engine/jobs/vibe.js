@@ -3,7 +3,7 @@
 // 현실 고생: 매달 바뀌는 도구·구독료, 끝없는 수정 요청, 새벽 장애, 보안 사고, 해외 반값 견적, 회사 겸직 눈치.
 // 규약: engine/jobs/README.md
 import * as D from "../defs.js";
-import { addMoney, log, won, gainStat, mod, applyEff, R } from "../core.js";
+import { addMoney, log, won, gainStat, mod, applyEff, R, jo } from "../core.js";
 import * as SYN from "../syn.js";
 import * as SJ from "../sj.js"; // 초반 고생 배율(ramp)
 
@@ -59,7 +59,7 @@ export const SEASON = [1.25, 1.2, 1.15, 1, 1, 0.95, 0.8, 0.8, 1, 1, 1.05, 1.15];
 // ───────── 계산 도우미 ─────────
 export function speed(s) {
   const V = s.vibe;
-  return TOOL[V.tool].sp * (V.tq || 1) * (1 + V.tech / 200) * (SYN.on(s, "vb_code") ? 1.15 : 1) * ((s.me?.traits || []).includes("analyst") ? 1.3 : 1) * mod(s, "vbSpeed", 1);
+  return TOOL[V.tool].sp * (V.tq || 1) * (1 + V.tech / 200) * (SYN.on(s, "vb_code") ? 1.15 : 1) * mod(s, "vbSpeed", 1); // 데이터 덕후 +30%는 defs 성향 카드(vbSpeed)에서 온다
 }
 export const maxProj = (s) => 2 + (s.vibe.lv >= 3 ? 1 : 0) + (s.vibe.agent ? 1 : 0);
 // 11-21 밸런스(10개 투잡 공통 비교, 기획 vibecode.json: 중위 월 100만·p75 200만·p95 500만, 리테이너 2~3건).
@@ -171,15 +171,15 @@ function deliver(s, r, p, lines) {
   }
 }
 
-// ───────── 이벤트(기획 데이터 16개 + 겸직·현장 고생 4개) ─────────
+// ───────── 이벤트(기획 데이터 15개 + AI 요금 폭탄 + 겸직·현장 고생 4개) ─────────
 function evPool(s) {
   const V = s.vibe, A = V.app, emp = employed(s), np = newestPaid(V), pi = SYN.pi(s);
-  const mo = Math.max(10, Math.round(mrr(s) - appServer(s)));
+  const mo = Math.max(10, Math.round(mrr(s) - appServer(s))), bill = r5(25 * pi);
   return [
     // 초반
-    { id: "e02", ph: "early", ok: V.lv <= 2 && V.site, once: 1, onChoose: "vb_ev", t: "요가원 원장님", x: "동네 요가원 원장님이 수업 예약 페이지가 있으면 좋겠다고 한다. 지금은 메신저으로 하나하나 받는다고. 첫 레퍼런스 기회다.",
+    { id: "e02", ph: "early", ok: V.lv <= 2 && V.site, once: 1, onChoose: "vb_ev", t: "요가원 원장님", x: "동네 요가원 원장님이 수업 예약 페이지가 있으면 좋겠다고 한다. 지금은 메신저로 하나하나 받는다고. 첫 레퍼런스 기회다.",
       c: [{ t: "무료로 만들고 후기·로고 사용 동의를 받는다", eff: {}, text: "\"정말요? 회원들한테 자랑할게요!\" 포트폴리오 첫 줄이 생겼다." },
-        { t: "30만 원 견적을 낸다", check: { stat: "talk", dc: 50 }, ok: { text: "\"그 정도면 하죠.\" 첫 유료 의뢰다.", eff: {} }, ng: { text: "\"생각해 볼게요.\" 원장님은 다시 메신저으로 예약을 받는다.", eff: { mental: -2 } } }] },
+        { t: "30만 원 견적을 낸다", check: { stat: "talk", dc: 50 }, ok: { text: "\"그 정도면 하죠.\" 첫 유료 의뢰다.", eff: {} }, ng: { text: "\"생각해 볼게요.\" 원장님은 다시 메신저로 예약을 받는다.", eff: { mental: -2 } } }] },
     { id: "e03", ph: "early", ok: V.lv <= 2 && V.m >= 1, once: 1, t: "구독료 네 줄", x: "코딩 도구, 개발 환경, DB, 배포 서비스. 무료 티어만으로는 부업이 안 된다는 걸 깨달았다. 카드 명세서에 달러가 찍힌다.",
       c: [{ t: "필수 도구 두 개만 유료로 쓴다 (월 5만)", eff: { vb_tool: 1 }, text: "코디가 빨라졌다. 하루 한도에 걸려 멈추는 일이 없어졌다." },
         { t: "무료로 버틴다", eff: { vb_tool: 0 }, text: "돈은 아꼈다. 대신 저녁마다 '오늘 한도 초과' 문구를 본다." }] },
@@ -205,12 +205,15 @@ function evPool(s) {
     { id: "x1", ph: "mid", ok: emp && (V.lv >= 2 || V.coRisk), t: "사내 코드 유출 오해", x: "보안팀에서 메일이 왔다. 내 PC에서 외부 AI 서비스로 코드가 올라간 기록이 있다고. 점심시간에 개인 프로젝트를 잠깐 열었을 뿐인데.",
       c: [{ t: "업무 코드와 무관하다는 자료를 정리해 낸다", check: { stat: "num", dc: 45 }, ok: { text: "\"확인했습니다. 다만 회사 PC에선 쓰지 마세요.\" 경고로 끝났다.", eff: { eye: 3, mental: -2 } }, ng: { text: "설명이 꼬였다. 팀장 면담까지 갔다.", eff: { eye: 10, mental: -6 } } },
         { t: "회사 PC에선 다시는 안 연다고 사과한다", eff: { eye: 5, mental: -3 }, text: "조용히 끝났다. 팀장의 눈빛이 한동안 달랐다." }] },
-    { id: "x2", ph: "mid", ok: emp && (V.rets.length >= 2 || !!A?.live), t: "회의 중 진동", x: "팀장 보고 중에 휴대폰이 계속 울린다. 고객 사장님이다. \"사이트가 안 열려요!! 손님 와 있어요!!\"",
-      c: [{ t: "회의를 끝까지 하고 점심에 고친다", eff: { vb_rep: -3, mental: -2 }, text: "점심에 고쳤다. 사장님 답장은 '...네'뿐이었다." },
-        { t: "화장실 간다며 나가 휴대폰으로 고친다", eff: { eye: 5, vb_rep: 1 }, text: "변기에 앉아 코디에게 명령했다. 돌아오니 보고가 끝나 있었다." }] },
-    { id: "x4", ph: "mid", ok: !!np, t: "열네 번째 수정 요청", x: `"시안 C 말고 B에서 버튼만 A로요. 아, 글씨는 조금만 더 크게…" ${np?.nm || "외주"} 수정 요청이 열네 번째다.`,
-      c: [{ t: "계약 범위 밖은 건당 비용이라고 정중히 말한다", check: { stat: "talk", dc: 50 }, ok: { text: "\"아… 그럼 꼭 필요한 것만 할게요.\" 추가금도 받았다.", eff: { vb_extra: r5(15 * pi) } }, ng: { text: "\"다른 데는 다 해 주던데요?\" 별점이 걱정된다.", eff: { vb_rep: -3, mental: -3 } } },
-        { t: "그냥 해 준다", eff: { hp: -6, vb_need: 1 }, text: "열다섯 번째 요청이 오기까지 하루 걸렸다." }] },
+    // 11-23: x2 '회의 중 진동'(파티룸 이야기와 같은 틀)·x4 '열네 번째 수정 요청'(범위 싸움 장면과 같은 사건)을 바이브코딩 고유 골치로 바꿨다
+    { id: "x5", ph: "mid", ok: !!np && np.price > 0 && np.done >= np.need / 2, onChoose: "vb_ev", t: "잠수 탄 의뢰인", x: `${np?.nm || "외주"} 중간 시안을 보낸 지 3주. 메신저의 '1'이 사라지지 않는다. 받은 건 착수금 ${won(np?.dep || 0)}뿐이고 잔금 ${won(Math.max(0, (np?.price || 0) - (np?.dep || 0)))}이 남았다. 사장님 가게 계정에는 어제도 새 글이 올라왔다.`,
+      c: [{ t: "중도금을 받기 전엔 작업을 멈춘다고 알린다", check: { stat: "talk", dc: 50 }, ok: { text: "\"아, 정신이 없어서요!\" 다음 날 중도금이 들어왔다.", eff: {} }, ng: { text: "'읽음'은 떴다. 답은 없다. 후기에 뭐라고 쓸지 걱정된다.", eff: { vb_rep: -3, mental: -3 } } },
+        { t: "믿고 끝까지 만들어 둔다", eff: { hp: -4 }, text: "한 달 뒤 답이 왔다. \"출장이 길었어요. 그런데 그사이 메뉴가 바뀌어서…\"" },
+        { t: "착수금만 받고 정리한다", eff: { mental: 2 }, text: "만든 데까지 압축해 보내고 계약 종료 메일을 썼다. 작업 칸이 하나 비었다." }] },
+    { id: "x6", ph: "mid", ok: V.delivered >= 1, t: "\"저도 AI로 고쳐 봤거든요\"", x: "납품한 가게 사장님 전화다. \"저도 AI한테 시켜서 좀 고쳐 봤거든요? 근데 결제 버튼이 없어졌어요.\" 관리자 계정으로 들어가 화면을 통째로 덮어쓴 모양이다. \"원래 좀 불안했던 거 아니에요?\"",
+      c: [{ t: "말없이 복구하고 사장님 계정 권한을 줄여 둔다", eff: { hp: -5, vb_rep: 2 }, text: "백업으로 되돌리고 사장님 계정은 글·사진만 고치게 바꿨다. 사장님은 끝까지 자기 탓인 줄 몰랐다." },
+        { t: "복구는 유상이라고 말한다", check: { stat: "talk", dc: 50 }, ok: { text: "\"…제가 건드린 건 맞죠.\" 복구비가 들어왔다.", eff: { vb_extra: r5(15 * pi) } }, ng: { text: "\"만든 사람이 책임져야죠.\" 전화가 끊겼다.", eff: { vb_rep: -3, mental: -3 } } },
+        { t: "직접 고친 부분은 보증 밖이라고 선을 긋는다", eff: { vb_rep: -2, mental: 2 }, text: "계약서의 '임의 수정 시 보증 제외' 줄을 캡처해 보냈다. 사장님은 다른 개발자를 알아본다고 했다." }] },
     // 후반
     { id: "e10", ph: "late", ok: V.lv >= 3 && !A && emp && !V.projects.some((p) => p.own === "app"), once: 1, onChoose: "vb_ev", t: "나를 위한 SaaS", x: "회사에서 매주 3시간씩 하던 보고서 정리를 자동화 툴로 만들어 쓰고 있다. 같은 팀 선배가 이거 돈 주고 쓰고 싶다고 한다.",
       c: [{ t: "회사 데이터는 빼고 월 2만 원 구독 서비스로 출시한다", eff: { stat: { num: 0.8 }, eye: 4 }, text: "다른 회사 사람들도 쓸 수 있게 처음부터 다시 만들었다. 선배가 첫 결제자다." },
@@ -234,9 +237,11 @@ function evPool(s) {
     { id: "e15", ph: "crisis", ok: !!A?.live && A.users >= 30 && !(V.bigFree > 0), onChoose: "vb_ev", t: "거대 플랫폼의 무료 기능", x: "내 앱과 똑같은 기능을 대형 플랫폼이 무료로 출시했다. 이번 달 해지율이 12%를 찍었다.",
       c: [{ t: `${INDS[A?.ind || "shop"].n} 한 업종에 특화해 깊게 판다`, eff: { stat: { sense: 0.8 } }, text: "업종 사장님들만 아는 기능을 넣었다. 잠깐 줄었다가 다시 늘 것이다." },
         { t: "가격을 절반으로 내린다", eff: {}, text: "이탈은 멈췄다. 남는 돈도 같이 멈췄다." }] },
-    { id: "e16", ph: "crisis", ok: V.lv >= 2, t: "도구 갈아타기", x: `쓰던 코디의 성능이 눈에 띄게 떨어졌다. 커뮤니티에선 다들 다른 도구로 옮겼다고 한다. 진행 중인 프로젝트는 ${V.projects.length}개다.`,
-      c: [{ t: "주말에 새 도구로 작업 방식을 옮긴다", eff: { hp: -10, vb_tq: 1.1 }, text: "주말이 사라졌다. 월요일부터 확실히 빠르다." },
-        { t: "프로젝트 끝날 때까지 버틴다", eff: { vb_tq: 0.85 }, text: "같은 명령을 세 번씩 보낸다. 토큰도 세 배." }] },
+    // 11-23: e16 '도구 갈아타기'는 '코디가 새 버전이 됐다'(modelScene)와 같은 사건이라 뺐다
+    { id: "e17", ph: "crisis", ok: V.lv >= 2 && V.tool >= 1, t: "AI 요금 폭탄", x: `아침에 메일이 와 있다. "이번 달 사용량이 한도를 넘었습니다." 어젯밤 코디에게 '테스트 통과할 때까지 고쳐 줘'라고 시키고 잤다. 코디는 밤새 같은 오류를 고치고 또 고쳤다. 추가 요금 ${won(bill)}.`,
+      c: [{ t: `그냥 낸다 (−${won(bill)})`, eff: { vb_cost: bill, mental: -2 }, text: "결제 버튼을 눌렀다. 유지보수 한 달 치가 통째로 코디 밥값이 됐다." },
+        { t: "고객센터에 사정을 적어 보낸다", check: { stat: "write", dc: 50 }, ok: { text: "\"이번 한 번만 조정해 드립니다.\" 절반이 깎였다.", eff: { vb_cost: Math.round(bill / 2) } }, ng: { text: "자동 답장이 왔다. \"사용량 관리는 고객 책임입니다.\"", eff: { vb_cost: bill, mental: -3 } } },
+        { t: `내고, 기록을 뒤져 어디서 샜는지 찾는다 (−${won(bill)})`, eff: { vb_cost: bill, hp: -5, vb_tech: 5 }, text: "같은 오류를 412번 고치고 있었다. 사용량 한도와 '세 번 실패하면 멈춰' 규칙을 걸었다." }] },
   ];
 }
 function vbEvent(s, r, force) {
@@ -276,8 +281,8 @@ function modelScene(s) {
     ] };
 }
 function storeScene(s) {
-  const A = s.vibe.app, n = A?.users || 5;
-  return { kind: "event", tag: "바이브코딩", title: "앱 심사 거절", onChoose: "vb_store",
+  const A = s.vibe.app, n = A?.users || 5, st1 = !s.vibe.storeCg; s.vibe.storeCg = 1;
+  return { kind: "event", tag: "바이브코딩", title: "앱 심사 거절", onChoose: "vb_store", ...(st1 ? { cine: "vb_store" } : {}), // 화보는 처음 한 번만
     text: `앱 장터 심사 결과: 거절. '최소 기능 요건 미달, 결제 방식 정책 위반.' 사유는 영어 세 줄이 전부다. 베타를 신청한 사장님 ${n}명이 출시를 기다린다.`,
     choices: [
       { t: `지적받은 곳을 고쳐 다시 낸다 (${VB_F30.store.holdM}달)`, eff: { hp: -4 }, text: "정책 문서 40쪽을 읽고 다시 냈다. 이제 기다린다." },
@@ -320,9 +325,9 @@ export default {
   can(s, id, arg) {
     const V = s.vibe;
     if (id === "vb_build") { if (arg === "app") return V.app?.live ? null : "앱이 없어요"; if (!V.projects.length && !V.app?.live) return "만들 게 없어요. 의뢰를 먼저 받으세요"; return null; }
-    if (id === "vb_sell") { const ch = arg && CH[arg] ? arg : "friend"; if (V.lv < CH[ch].lv) return `${CH[ch].n}은(는) Lv${CH[ch].lv}부터`; if (ch === "pkg" && !V.niche) return "업종을 먼저 정하세요(한 업종 사례 3건)"; if (V.offers.length >= 5) return "의뢰함이 꽉 찼어요"; return null; }
+    if (id === "vb_sell") { const ch = arg && CH[arg] ? arg : "friend"; if (V.lv < CH[ch].lv) return `${jo(CH[ch].n, "은", "는")} Lv${CH[ch].lv}부터`; if (ch === "pkg" && !V.niche) return "업종을 먼저 정하세요(한 업종 사례 3건)"; if (V.offers.length >= 5) return "의뢰함이 꽉 찼어요"; return null; }
     if (id === "vb_fix") return fixNeed(s) > 0 || V.as > 0 ? null : "고칠 게 없어요(유지보수 계약·내 앱이 생기면)";
-    if (id === "vb_agent") return V.agent || V.lv >= 4 ? null : "Lv4 업종 전문가부터";
+    if (id === "vb_agent") { if (V.agent) return SJ.slotLock(s, () => { V.agent = false; return () => { V.agent = true; }; }); return V.lv >= 4 ? null : "Lv4 업종 전문가부터"; }
     return null;
   },
   act(s, r, id, arg, boost = 1) {
@@ -333,7 +338,7 @@ export default {
       gainStat(s, "num", 0.3);
       if (arg === "app" || (!V.projects.length && V.app?.live)) {
         const A = V.app;
-        if (!A.web && r.chance(VB_F30.store.updRej)) return { lines: ["업데이트 심사 거절: 이번 기능은 다음에"], msg: "\"가이드라인 4.2 위반.\" 같은 기능을 지난달엔 통과시켜 줬다." };
+        if (!A.web && r.chance(VB_F30.store.updRej)) return { lines: ["업데이트 심사 거절: 이번 기능은 다음에"], msg: "\"최소 기능 요건 미달.\" 같은 기능을 지난달엔 통과시켜 줬다." };
         A.buzz = Math.min(60, A.buzz + 10 * u);
         return { lines: [`내 앱 기능 업데이트 (화제 +${Math.round(10 * u)})`], msg: r.pick(["\"정기 결제 알림 기능 넣어 줘.\" 코디가 20분 만에 만들었다. 테스트는 내가 두 시간.", "사용자 요청 게시판의 1등 기능을 넣었다. 댓글에 하트가 달렸다."]) };
       }
@@ -387,14 +392,14 @@ export default {
       if (p.own) continue;
       p.due--;
       if (r.chance(((p.spec ? 0.05 : 0.14) + (p.vague ? 0.2 : 0)) * scopeOf(s).creep)) {
-        p.need += 1; p.creep++; const sp = scopeOf(s);
+        p.need += 1; p.creep = (p.creep || 0) + 1; const sp = scopeOf(s);
         if (sp.paid && p.price > 0) { const add = r5(Math.max(5 * pi, (p.price - (p.dep || 0)) * sp.paid)); p.price += add; notes.push(`${p.nm}: 범위 밖 요청 → 추가 견적 +${won(add)}(작업 +1)`); }
         else notes.push(`${p.nm}: "버튼 하나만 더…" 수정 요청(작업 +1)`);
       }
       if (p.due < 0) {
         V.rep = clamp(V.rep - 2, 0, 100);
         if (p.due < -2) { V.projects = V.projects.filter((x) => x !== p); V.rep = clamp(V.rep - 6, 0, 100); notes.push(`${p.nm}: 마감을 석 달 넘겨 고객이 계약을 끊었다(잔금 없음)`); }
-        else notes.push(`${p.nm}: 마감이 지났다. 독촉 메신저이 온다`);
+        else notes.push(`${p.nm}: 마감이 지났다. 독촉 메신저가 온다`);
       }
     }
     // 2) 유지보수 리테이너
@@ -510,14 +515,20 @@ export default {
     vb_ev(s, r, i, ok) {
       const V = s.vibe, ev = s._vbEv?.id, pi = SYN.pi(s), out = [];
       if (ev === "e02") {
-        if (i === 0) { V.projects.push({ id: "P" + (++V.seq), ch: "friend", ind: "fit", nm: "요가원 수업 예약 페이지", price: 0, dep: 0, need: 2, done: 0, due: 4, logo: true, spec: true }); out.push("요가원 의뢰 수주(무료·로고 사용 동의)"); }
-        else if (ok) { const price = r5(30 * pi), dep = Math.round(price * 0.3); V.projects.push({ id: "P" + (++V.seq), ch: "friend", ind: "fit", nm: "요가원 수업 예약 페이지", price, dep, need: 3, done: 0, due: 4 }); income(s, "바이브코딩 외주", dep); out.push(`요가원 의뢰 수주 · 착수금 ${won(dep)}`); }
+        if (i === 0) { V.projects.push({ id: "P" + (++V.seq), ch: "friend", ind: "fit", nm: "요가원 수업 예약 페이지", price: 0, dep: 0, need: 2, done: 0, due: 4, creep: 0, mood: 0, vague: false, logo: true, spec: true }); out.push("요가원 의뢰 수주(무료·로고 사용 동의)"); }
+        else if (ok) { const price = r5(30 * pi), dep = Math.round(price * 0.3); V.projects.push({ id: "P" + (++V.seq), ch: "friend", ind: "fit", nm: "요가원 수업 예약 페이지", price, dep, need: 3, done: 0, due: 4, creep: 0, mood: 0, vague: false }); income(s, "바이브코딩 외주", dep); out.push(`요가원 의뢰 수주 · 착수금 ${won(dep)}`); }
       }
       if (ev === "e05" && i === 0) { const fee = r5((ok ? 30 : 15) * pi); V.rets.push({ id: "R" + (++V.seq), nm: "단골 고객 사이트", ind: "shop", fee, t: s.t }); out.push(`유지보수 계약 월 ${won(fee)}`); }
       if (ev === "e05" && i === 1) { V.as += 2; out.push("무상 AS +2(유지보수 일 +1)"); }
       if (ev === "e08") {
         if (i === 0) { V.niche = V.niche || "academy"; V.cases.academy = (V.cases.academy || 0) + 1; for (let k = 0; k < 2; k++) { const o = makeOffer(s, r, V.lv >= 3 ? "post" : "market"); o.ind = "academy"; o.nm = `학원 ${r.pick(INDS.academy.jobs)}`; } out.push("업종: 학원 · 학원 의뢰 2건"); }
         else { for (let k = 0; k < 3; k++) makeOffer(s, r, V.lv >= 3 ? "post" : "market"); out.push("의뢰 3건"); }
+      }
+      if (ev === "x5") {
+        const p = newestPaid(V); if (!p) return out;
+        if (i === 0) { if (ok) { const mid = r5(Math.max(0, p.price - p.dep) * 0.3), fee = CH[p.ch]?.fee || 0; income(s, "바이브코딩 외주", mid); if (fee) expense(s, "바이브코딩 수수료", Math.round(mid * fee)); p.dep += mid; out.push(`중도금 +${won(mid)}`); } }
+        else if (i === 1) { p.due += 1; p.need += 1; out.push("마감 +1달", "작업 +1"); }
+        else { V.projects = V.projects.filter((x) => x !== p); V.rep = clamp(V.rep - 1, 0, 100); out.push(`${p.nm} 정리(착수금은 그대로)`, "개발 평판 −1"); }
       }
       if (ev === "e10" && i === 0) { V.app = { live: true, web: true, ind: "biz", users: r.int(3, 6), price: 2, buzz: 20, t0: s.t, focus: false, best: 0 }; out.push("내 앱 출시: 보고서 자동화 구독"); }
       if (ev === "e11" && i === 0 && V.app) { const amt = Math.max(100, Math.round((mrr(s) - appServer(s)) * 20)); s.cash += amt; addMoney(s, "inc", "바이브코딩 앱 매각", amt); V.sold++; V.soldAmt += amt; log(s, `바이브코딩: 내 앱 매각 ${won(amt)}`, "work"); V.app = null; out.push(`매각 대금 +${won(amt)}`); }
@@ -529,7 +540,7 @@ export default {
       p.fight = 1;
       if (i === 0) { p.need += 2; V.rep = clamp(V.rep + 2, 0, 100); s.hp = clamp(s.hp - 3, 0, s.hpMax); return ["작업 +2", "개발 평판 +2", "스태미너 −3"]; }
       if (i === 1) { if (ok) { const add = r5(Math.max(10 * pi, (p.price - (p.dep || 0)) * 0.25)); p.price += add; return [`추가 견적 +${won(add)}`]; } V.rep = clamp(V.rep - 4, 0, 100); return ["개발 평판 −4"]; }
-      const cut = Math.min(p.creep, Math.max(0, p.need - p.done - 0.5)); p.need = Math.round((p.need - cut) * 10) / 10; V.rep = clamp(V.rep - 3, 0, 100); return [`작업 −${cut}`, "개발 평판 −3"];
+      const cut = Math.min(p.creep, Math.max(0, p.need - p.done - 0.5)); p.need = Math.round((p.need - cut) * 10) / 10; V.rep = clamp(V.rep - 3, 0, 100); return [`작업 −${Math.round(cut * 10) / 10}`, "개발 평판 −3"];
     },
     vb_model(s, r, i, ok) {
       const V = s.vibe, o = s._vbModel || { n: 1 }, M3 = VB_F30.model; s._vbModel = null; V.mdN = (V.mdN || 0) + 1;
@@ -552,7 +563,7 @@ export default {
     { key: "vb_lv3", title: "매달 들어오는 돈", test: (s) => (s.vibe?.lv || 0) >= 3, lines: ["월초마다 유지보수비가 들어온다.", "외주를 안 받은 달에도 통장이 비지 않는다."] },
     { key: "vb_app", title: "내 앱 출시", test: (s) => !!s.vibe?.app?.live && (s.vibe?.app?.users || 0) >= 1, lines: ["결제 알림이 울렸다. 모르는 사람이 내 앱에 2만 원을 냈다.", "출시 날 밤, 서버 그래프만 보다가 잠들었다."] },
     { key: "vb_lv4", title: "업종 전문가", test: (s) => (s.vibe?.lv || 0) >= 4, lines: ["같은 업종 사장님들이 서로 나를 소개한다.", "템플릿을 고쳐 쓰니 3주 일이 1주가 됐다."] },
-    { key: "vb_lv5", title: "솔로프리너", test: (s) => (s.vibe?.lv || 0) >= 5, lines: ["유지보수와 구독만으로 생활비가 된다.", "이제 퇴사는 용기가 아니라 계산의 문제다."] },
+    { key: "vb_lv5", title: "솔로프리너", test: (s) => (s.vibe?.lv || 0) >= 5, lines: ["유지보수와 구독만으로 생활비가 된다.", "회사 월급 없이도 달이 넘어간다. 이제는 용기가 아니라 계산의 문제다."] },
     { key: "vb_end_dev", end: true, kind: "good", epi: "퇴근 후 1인 개발사는 계속 돌아간다. 동네 가게 예약 버튼 열두 개가 내 코드다.", title: "퇴근 후 1인 개발사", test: (s) => (s.vibe?.goodM || 0) >= 24, lines: ["월 150만 원 넘는 달이 스물네 달 이어졌다. 회사도 그대로 다닌다.", "동네 가게 열두 곳의 예약 버튼이 내 코드다."] },
     { key: "vb_end_solo", end: true, kind: "good", epi: "사직서를 내고 솔로프리너가 됐다. 사원증 대신 서버 알림이 나를 깨운다.", title: "솔로프리너 독립", test: (s) => (s.vibe?.lv || 0) >= 5 && (s.fullJob === "vibe" || !!s.co?.quit), lines: ["런웨이를 계산하고 사직서를 냈다.", "사원증 대신 서버 알림이 나를 깨운다."] },
     { key: "vb_end_exit", end: true, kind: "good", epi: "주말에 만든 작은 서비스를 팔았다. 그 돈이 전세 보증금이 됐다.", title: "엑싯의 맛", test: (s) => (s.vibe?.sold || 0) >= 1, lines: ["실사 자료를 보내고 계약서에 서명했다.", "주말마다 만든 작은 서비스가 전세 보증금이 됐다."] },

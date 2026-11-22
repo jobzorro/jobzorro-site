@@ -110,7 +110,7 @@ export const GAME = {
 .mg-vibe3 .v3-tut.off{opacity:0;visibility:hidden}
 .mg-vibe3 .v3-tc{pointer-events:auto;background:#fffdf6;color:#2a2018;border-radius:14px;padding:7px 12px 6px;box-shadow:0 4px 0 #0006,0 0 0 2px #7c9cff;max-width:300px;font-size:12.5px;line-height:1.42;text-align:center;font-weight:600;word-break:keep-all}
 .mg-vibe3 .v3-tut.pop .v3-tc{animation:v3pop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-vibe3 .v3-tc em{font-style:normal;display:inline-block;background:#5a74e0;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
+.mg-vibe3 .v3-tc em{font-style:normal;display:inline-block;background:#5a74e0;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
 .mg-vibe3 .v3-tc p{margin:0}.mg-vibe3 .v3-tc b{color:#2f55c8}.mg-vibe3 .v3-tc b.rd{color:#c0392b}
 .mg-vibe3 .v3-tc ul{margin:4px 0 0;padding:0;list-style:none;text-align:left;font-size:12px}
 .mg-vibe3 .v3-tc li{padding-left:12px;position:relative;margin:1px 0}.mg-vibe3 .v3-tc li::before{content:"";position:absolute;left:2px;top:7px;width:5px;height:5px;background:#7c9cff}

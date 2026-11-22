@@ -13,19 +13,21 @@ import * as D from "./defs.js";
 import * as SYN from "./syn.js";
 import { addMoney, log, jo } from "./core.js";
 import { profitOf } from "./rival.js";
+import * as SJ from "./sj.js"; // 시작 달 거꾸로 채우기(backT0)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const M = (s, x) => Math.max(1, Math.round(x * SYN.pi(s) / 5) * 5); // 만원, 물가 반영
 const pct = (x) => `${Math.round(Math.abs(x) * 100)}%`;
 const sgn = (x) => (x > 0 ? "+" : "−");
 export const MK_BAL = { chance: 0.12, gap: 4, again: 24, lo: -0.4, hi: 0.3, rebound: [0.04, 3] };
+export const CUT_FLOOR = 0.6; // 11-23 결정: 순항·히든 길이 겹쳐도 부대비용은 기본값(SIDE_ADJ) − 0.6 아래로 안 내려간다
 export const MK_LABEL = "시장 영향", CUT_LABEL = "투잡 부대비용", CRUISE_LABEL = "단골·입소문";
 // v4.27 투잡별 부대비용(defs SIDE_ADJ) − 순항(defs CRUISE: 같은 투잡을 오래 할수록 덜 뗀다, 넘치면 보너스). 시작 달은 s.mk.t0 에 적는다
 export function sideCut(s, job) {
-  const V = st(s), t0 = ((V.t0 = V.t0 || {})[job] ??= s.t), y = (s.t - t0) / 12, C = D.CRUISE;
+  const V = st(s), t0 = ((V.t0 = V.t0 || {})[job] ??= SJ.backT0(s, job)), y = (s.t - t0) / 12, C = D.CRUISE;
   const base = job === "cs" && s.cs?.niches?.includes("career") && D.SIDE_ADJ?.cs_career !== undefined ? D.SIDE_ADJ.cs_career : (D.SIDE_ADJ?.[job] ?? D.SIDE_CUT ?? 0); // v4.28 컨설팅: 경력 이직 분야를 열면 따로
   const k = !C ? 0 : y >= C.full ? 1 : y > C.from ? (y - C.from) / (C.full - C.from) : 0;
-  return +(base - k * (C?.v || 0) - (s.hid?.cutNow?.[job] || 0) - (s.h2?.cut?.[job] || 0)).toFixed(3); // v4.30 다른 방식 히든 길(hidden2.js s.h2.cut, 음수면 비용↑) // v4.29 히든 길을 열면 부대비용을 줄인다(hidden.js HID_REW.cut)
+  return +Math.max(base - CUT_FLOOR, base - k * (C?.v || 0) - (s.hid?.cutNow?.[job] || 0) - (s.h2?.cut?.[job] || 0)).toFixed(3); // v4.30 다른 방식 히든 길(hidden2.js s.h2.cut, 음수면 비용↑) // v4.29 히든 길을 열면 부대비용을 줄인다(hidden.js HID_REW.cut)
 }
 const isOn = (s, job) => !!s.sj?.active?.includes(job);
 const ERA_HIT = { pr: ["winter", "pandemic", "slump", "bigcomp"], insta: ["winter", "algo"], airbnb: ["winter", "pandemic", "intl"], ucafe: ["winter"] }; // 엔진이 이미 깎는 시대
@@ -43,7 +45,7 @@ export const MK_EV = [
     ["switch", "2인 그룹 수업으로 바꿔 부담을 나눈다", ["둘이 반값씩 내니 오히려 더 붙었다. 친구 데려오는 학생까지 생겼다.", "짝이 안 맞았다. 시간 맞추다 한 명이 그만뒀다."], "talk"],
     ["hold", "가격은 그대로. 실력으로 버틴다", "몇 명이 떠났다. 남은 학생 성적표가 다음 학기 광고가 될 거다."],
   ] },
-  { id: "w_vibe", job: "vibe", g: false, v: -0.25, m: [8, 12], need: (s) => s.era?.winter, n: "한파 여파 · 외주 예산 동결", text: "\"내년 예산이 전부 동결이라서요.\" 견적까지 받은 고객사 세 곳이 같은 말을 했다. 본업 회사도 연봉 동결인데, 외주 시장은 먼저 얼었다.", ch: [
+  { id: "w_vibe", job: "vibe", g: false, v: -0.25, m: [8, 12], need: (s) => s.era?.winter, n: "한파 여파 · 외주 예산 동결", text: "\"내년 예산이 전부 동결이라서요.\" 견적까지 받은 고객사 세 곳이 같은 말을 했다. 본업 회사도 연봉 동결인데, 외주 시장은 먼저 얼었다.", textQ: "\"내년 예산이 전부 동결이라서요.\" 견적까지 받은 고객사 세 곳이 같은 말을 했다. 회사마다 연봉 동결이라더니, 외주 시장이 먼저 얼었다.", ch: [
     ["price", "유지보수 월정액 상품으로 바꿔 판다", "큰 건은 없지만 작은 월정액이 쌓였다. 버틸 만하다."],
     ["switch", "예산이 남은 공공·소상공인 쪽으로 간다", ["지원 사업 공고를 뒤져 두 건을 잡았다. 서류는 많아도 돈은 확실하다.", "서류만 쓰다 한 달이 갔다. 결과는 '탈락'."], "num"],
     ["hold", "포트폴리오를 다듬으며 기다린다", "일이 없는 달엔 내 앱을 고쳤다. 봄이 오면 이게 무기가 될 거다."],
@@ -53,10 +55,10 @@ export const MK_EV = [
     ["spend", "단골 쿠폰을 크게 뿌린다", "쿠폰 쓴 단골이 다시 왔다. 쿠폰값은 아프지만 순위는 지켰다.", null, 60],
     ["hold", "메뉴·가격 그대로 버틴다", "주문이 줄어도 맛은 안 줄였다. 한파가 끝나면 남는 가게는 이런 가게다."],
   ] },
-  { id: "w_cs", job: "cs", g: true, v: 0.18, m: [6, 10], need: (s) => s.era?.winter || s.era?.freeze, n: "구조조정 바람, 이직 상담이 몰린다", text: "회사마다 희망퇴직·구조조정 소식이다. \"지금 회사에 계속 있어도 될까요?\" 경력기술서 첨삭 문의가 평소의 두 배로 들어온다. 본업 우리 회사도 남 얘기가 아니다.", ch: [
+  { id: "w_cs", job: "cs", g: true, v: 0.18, m: [6, 10], need: (s) => s.era?.winter || s.era?.freeze, n: "구조조정 바람, 이직 상담이 몰린다", text: "회사마다 희망퇴직·구조조정 소식이다. \"지금 회사에 계속 있어도 될까요?\" 경력기술서 첨삭 문의가 평소의 두 배로 들어온다. 본업 우리 회사도 남 얘기가 아니다.", textQ: "회사마다 희망퇴직·구조조정 소식이다. \"지금 회사에 계속 있어도 될까요?\" 경력기술서 첨삭 문의가 평소의 두 배로 들어온다. 먼저 나온 내 얘기를 듣고 싶다는 사람도 있다.", ch: [
     ["ride", "이직 상담 상품을 따로 만들어 밀어붙인다", "경력기술서·면접 패키지가 매진됐다. 주말이 사라졌다."],
     ["steady", "하던 대로 받는다", "문의가 늘어난 만큼 조금 더 벌었다."],
-    ["save", "회사 눈치도 있으니 조용히 받는다", "욕심 내지 않았다. 대신 회사에서도 무사했다."],
+    ["save", "무리하지 않고 조용히 받는다", "욕심 내지 않았다. 대신 몸도 일정도 무사했다."],
   ] },
   { id: "w_novel", job: "webnovel", g: true, v: 0.12, m: [6, 10], need: (s) => s.era?.winter || s.era?.slump, n: "불황형 소확행, 결제가 늘었다", text: "외식도 여행도 줄인 사람들이 한 편에 몇백 원짜리 웹소설로 몰린다. 플랫폼 통계에 '퇴근길 결제'가 역대 최고라고 떴다.", ch: [
     ["ride", "연재 주기를 당겨 하루 한 편씩 올린다", "독자가 따라왔다. 손목이 비명을 지른다."],
@@ -273,7 +275,7 @@ function evScene(s, r, e, job) {
     const eff = k === "spend" ? { cash: -M(s, cost || 40) } : k === "price" ? { mental: -1 } : k === "hold" ? { mental: -2 } : k === "ride" ? { hp: -5, mental: -1 } : k === "save" ? { mental: 2 } : {};
     return { t: k === "spend" ? `${t} (${M(s, cost || 40)}만 원)` : t, eff, text: res };
   });
-  return { kind: "event", tag: "시장", title: `시장 ${e.g ? "호재" : "충격"} · ${e.n}`, text: `${e.text}\n(${nm} 이익 ${sgn(e.v)}${pct(e.v)} · 약 ${mo}개월. 고르는 대응에 따라 달라져요)`, onChoose: "mk_ev", mk: e.id, mkJob: job, mkMo: mo, choices };
+  return { kind: "event", tag: "시장", title: `시장 ${e.g ? "호재" : "충격"} · ${e.n}`, text: `${((s.co?.quit || s.co?.fired) && e.textQ) || e.text}\n(${nm} 이익 ${sgn(e.v)}${pct(e.v)} · 약 ${mo}개월. 고르는 대응에 따라 달라져요)`, onChoose: "mk_ev", mk: e.id, mkJob: job, mkMo: mo, choices };
 }
 
 export const MK_CHOOSE = {

@@ -2,7 +2,7 @@
 import * as D from "./defs.js";
 import * as SYN from "./syn.js";
 import * as BIG from "./big.js";
-import { CHAR, addMoney, applyEff, helperPower, helpers, mod, won, log, eyeMult, ensureRel, isRomanceable, addAff, gainStat, giveBrk } from "./core.js";
+import { CHAR, addMoney, applyEff, helperPower, helpers, mod, won, log, eyeMult, ensureRel, isRomanceable, addAff, gainStat, giveBrk, R } from "./core.js";
 import { jobEvent } from "./pr.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 
@@ -65,13 +65,13 @@ export function can(s, id) {
   const cs = s.cs;
   if (id === "cs_friend") { if (!cs.niche) return "포지션을 먼저 정하세요"; if (cs.friends >= 8) return "지인은 이제 다 봐줬다"; return null; }
   if (["cs_blog", "cs_insta", "cs_kakao", "cs_kmong", "cs_youtube", "cs_flyer"].includes(id)) { if (!cs.niche) return "포지션을 먼저 정하세요"; return null; }
-  if (id === "cs_work") { if (!cs.queue.length) return "대기 고객이 없습니다"; return null; }
+  if (id === "cs_work") { if (!cs.queue.length) return "대기 고객이 없어요"; return null; }
   if (id === "cs_soomgo") return cs.open ? null : "개업 후 가능";
-  if (id === "cs_seminar") { if (cs.reviews < 5) return "후기 5개부터"; if (cs.seminarT === s.t) return "이번 달엔 이미 했습니다"; return null; }
-  if (id === "cs_lecture") return cs.offers > 0 ? null : `강의 섭외가 와야 합니다(후기 ${D.CS_LECT.rev}개 또는 커리어센터 인연)`;
+  if (id === "cs_seminar") { if (!cs.niche) return "포지션을 먼저 정하세요"; if (cs.reviews < 5) return "후기 5개부터"; if (cs.seminarT === s.t) return "이번 달엔 이미 했어요"; return null; }
+  if (id === "cs_lecture") return cs.offers > 0 ? null : `강의 섭외가 와야 해요(후기 ${D.CS_LECT.rev}개 또는 커리어센터 인연)`;
   if (id === "cs_focus") return !cs.queue.length ? "대기 고객이 없어요" : null;
   if (id === "cs_template") return !cs.open ? "개업 후 가능" : cs.template >= 3 ? "템플릿 완성" : null;
-  if (id === "cs_group") { if (!(cs.ch.kakao.m >= 150 || cs.reviews >= 25)) return "오픈채팅 150명 또는 후기 25개"; if (cs.groupT === s.t) return "이번 달 진행함"; return null; }
+  if (id === "cs_group") { if (!cs.niche) return "포지션을 먼저 정하세요"; if (!(cs.ch.kakao.m >= 150 || cs.reviews >= 25)) return "오픈채팅 150명 또는 후기 25개"; if (cs.groupT === s.t) return "이번 달 진행함"; return null; }
   if (id === "cs_vod") return cs.reviews < 20 ? "후기 20개부터" : null;
   return null;
 }
@@ -114,7 +114,7 @@ export function act(s, r, id, arg, boost = 1) {
     ch.blog.posts++; ch.blog.lastT = s.t;
     let g = (2 + s.st.write / 25) * mod(s, "blogMult", 1) * boost * (1 + helperPower(s, "cs_writer") * 0.3);
     if (viral(0.03)) { g += 15; lines.push("검색 상위 노출! 방문자 폭증"); }
-    ch.blog.idx += g; gainStat(s, "write", 0.2); s.mental += mod(s, "soloMental", 0);
+    ch.blog.idx += g; gainStat(s, "write", 0.2); s.mental = clamp(s.mental + mod(s, "soloMental", 0), 0, 100);
     checkOpen(s, lines);
     return { lines: [`블로그 글 ${ch.blog.posts}개 · 검색 지수 ${Math.round(ch.blog.idx)}`, ...lines], msg: r.pick(["「자소서 두괄식, 첫 문장이 전부다」", "「면접관이 지원동기를 묻는 진짜 이유」", "「중고신입, 경력은 이렇게 쓴다」", "「공기업 NCS 자소서 3가지 함정」"]) };
   }
@@ -166,7 +166,7 @@ export function act(s, r, id, arg, boost = 1) {
     return { lines: [`그룹 스터디 ${n}명`, `+${won(fee)}`], msg: "한 명에게 하던 설명을 열 명에게. 시간은 그대로." };
   }
   if (id === "cs_vod") {
-    cs.vod.prog += 25 * mod(s, "vodMult", 1) * boost; s.mental += mod(s, "vodMental", 0);
+    cs.vod.prog += 25 * mod(s, "vodMult", 1) * boost; s.mental = clamp(s.mental + mod(s, "vodMental", 0), 0, 100);
     if (cs.vod.prog >= 100) { cs.vod.prog = 0; cs.vod.n++; cs.vod.income += Math.round(30 + cs.reviews * 0.6 + cs.ch.youtube.subs / 250); log(s, `VOD·전자책 ${cs.vod.n}호 출시`, "work"); return { lines: [`${cs.vod.n}호 출시! 매달 약 ${won(cs.vod.income)} 자동 판매`], msg: "\"자소서 한 권으로 끝내기\" 표지를 올렸다." }; }
     return { lines: [`제작 ${Math.round(cs.vod.prog)}%`], msg: "녹화 버튼을 누르고 같은 말을 세 번 했다." };
   }
@@ -299,13 +299,12 @@ export function month(s, r, notes, scenes) {
 }
 
 // ───────── 컨설팅 사건: 진상·환불·스토킹·연애·가격 대비 실력 ─────────
-const pk = () => (Math.random() < 0.5 ? 0 : 1);
 function csEvent(s, r, pass, fail) {
   const cs = s.cs, L = [];
   L.push([3, "jinsang"]); if (fail > 0) L.push([3, "refund"]); if (gap(s) > 0) L.push([4, "overprice"]);
   if (cs.nick === "real" || cs.ch.youtube.subs > 2000 || cs.ch.insta.f > 3000) L.push([1.2, "stalker"]);
   if (!s.fam.spouse && s.cast.some((id) => isRomanceable(s, CHAR[id]) && !s.rel[id]?.lover)) L.push([1.5, "romance"]);
-  L.push([2, "ai"]); if (!(s.co.quit || s.co.fired)) L.push([1.5, "colleague"]); L.push([1.5, "blame"]); L.push([1.5, "parent"]);
+  L.push([2, "ai"]); if (!(s.co.quit || s.co.fired)) L.push([1.5, "colleague"]); L.push([1.5, "blame"]); L.push([1.5, "parent"]); L.push([2, "ghost"]); L.push([1.5, "puff"]); // 11-23 컨설팅 고유 골치: 대필 요구 · 스펙 부풀리기
   if (pass > 0) L.push([2, "great"]); if (s.mental < 45) L.push([2, "heavy"]); L.push([1, "noshow"]);
   const tot = L.reduce((a, x) => a + x[0], 0); let x = r.next() * tot; let id = L[0][1];
   for (const [w, k] of L) { x -= w; if (x <= 0) { id = k; break; } }
@@ -318,10 +317,12 @@ function csEv(s, r, id) {
   if (id === "jinsang") return E("진상 고객", "새벽 2시, 고객 까톡 47개. \"선생님 이거 내일 마감인데 전체 다 다시 써 주세요. 추가금은 없는 거죠?\"", [c("정중하게 선을 긋는다", { stat: "talk", dc: 45 }), c("밤새 다 해 준다 (스태미너 −15, 멘탈 −8)"), c(`환불하고 끝낸다 (−${won(P)})`)]);
   if (id === "refund") return E("불합격 환불 요구", "최종 불합격한 고객. \"돈 아까워요. 전액 환불 안 해 주면 크멍에 후기 쓸게요.\"", [c(`전액 환불한다 (−${won(P * 2)})`), c("규정대로 거절한다", { stat: "talk", dc: 50 }), c("다음 시즌 무료 재첨삭을 약속한다 (다음 달 행동력 −2)")]);
   if (id === "overprice") return E("가격값 못 한다는 후기", `크멍 후기: "${D.CS_PRICE[cs.price].n} 가격 받고 맞춤법만 봐 줌. 비추." 지금 실력 ${skill(s)}, 이 가격이 요구하는 실력 ${priceNeed(s)}.`, [c("가격을 한 단계 내린다"), c("실력으로 메운다 (다음 달 행동력 −2, 핵심 능력 +5)"), c("그냥 둔다 (후기 −2)")]);
-  if (id === "stalker") return E("선 넘는 고객", "합격시켜 준 고객이 퇴근길에 회사 앞에 서 있었다. DM 하루 50개. \"선생님은 제 인생의 은인이에요. 우리 운명 아닐까요?\"", [c("단호하게 차단한다 (멘탈 −6, 다시 올 수 있음)"), c("경찰에 신고한다 (멘탈 −3, 회사에 소문)"), c("좋게 타이른다", { stat: "talk", dc: 55 })]);
-  if (id === "stalker2") return E("또 나타났다", "차단했던 그 사람이 새 계정으로 크멍 상담을 신청했다. 회사 로비에서 내 이름을 부르는 소리가 들린다.", [c("경찰에 신고하고 접근금지 신청 (돈 −50, 멘탈 −5)"), c("이사 가고 활동명을 바꾼다 (돈 −300, 오픈채팅 −30%)")]);
+  if (id === "stalker") return E("선 넘는 고객", `합격시켜 준 고객이 ${employedCs(s) ? "퇴근길에 회사 앞에" : "저녁마다 집 앞 골목에"} 서 있었다. DM 하루 50개. "선생님은 제 인생의 은인이에요. 우리 운명 아닐까요?"`, [c("단호하게 차단한다 (멘탈 −6, 다시 올 수 있음)"), c(employedCs(s) ? "경찰에 신고한다 (멘탈 −3, 회사에 소문)" : "경찰에 신고한다 (멘탈 −3)"), c("좋게 타이른다", { stat: "talk", dc: 55 })]);
+  if (id === "stalker2") return E("또 나타났다", `차단했던 그 사람이 새 계정으로 크멍 상담을 신청했다. ${employedCs(s) ? "회사 로비에서" : "집 앞 편의점에서"} 내 이름을 부르는 소리가 들린다.`, [c("경찰에 신고하고 접근금지 신청 (돈 −50, 멘탈 −5)"), c("이사 가고 활동명을 바꾼다 (돈 −300, 오픈채팅 −30%)")]);
   if (id === "romance") { const who = r.pick(s.cast.filter((x) => isRomanceable(s, CHAR[x]) && !s.rel[x]?.lover)); s._csWho = who; return E("고객에서 인연으로", `면접 코칭을 받던 ${CHAR[who].name}님이 합격 소식과 함께 물었다. "선생님, 축하 저녁 제가 사도 될까요?"`, [c("좋아요, 가요 (인연 시작, 호감 +25)"), c("고객과는 선을 긋는다 (신뢰 +)")], { who }); }
   if (id === "ai") return E("AI 탐지에 걸렸다", "고객 자소서가 기업 AI 탐지기에 걸렸다는 연락이 왔다. 내가 첨삭한 문단이다.", [c("내가 직접 다시 쓴다 (다음 달 행동력 −1)"), c("고객이 AI를 썼다고 한다 (후기 −2)"), c("'AI 티 점검' 단계를 만든다", { stat: "write", dc: 50 })]);
+  if (id === "ghost") return E("\"그냥 다 써 주세요\"", "마감 이틀 전, 고객 메시지. \"첨삭 말고 선생님이 처음부터 써 주시면 안 돼요? 두 배 드릴게요. 제 경험은 메모로 보낼게요.\" 메모는 세 줄이다.", [c("대필은 안 한다고 하고, 30분 통화로 경험을 끌어낸다", { stat: "talk", dc: 45 }), c(`두 배 받고 써 준다 (+${won(P * 2)})`), c("소제목과 첫 문장만 잡아 주고 본인이 채우게 한다 (다음 달 행동력 −1)")]);
+  if (id === "puff") return E("\"6개월로 써 주세요\"", "고객 이력서를 보다 멈췄다. 인턴 3개월이 6개월로, 프로젝트 '참여'가 '총괄'로 바뀌어 있다. \"다들 이 정도는 한다던데요. 문장만 다듬어 주세요.\"", [c("사실대로 돌려놓게 하고, 3개월에 한 일을 숫자로 살린다", { stat: "write", dc: 45 }), c(`못 본 척 문장만 다듬는다 (+${won(P)})`), c("증명서와 다르면 합격이 취소된다고만 알려 준다")]);
   if (id === "colleague") return E("회사 후배가 고객으로", "같은 회사 후배가 크멍으로 상담을 신청했다. 프로필 사진만 봐도 안다. 후배는 아직 모르는 것 같다.", [c(`받는다 (+${won(P * 2)}, 회사 눈치 +8)`), c("정중히 거절한다")]);
   if (id === "blame") return E("저격글", "블로그에 \"그 컨설턴트, 첨삭이 다 복붙\"이라는 글이 올라왔다. 댓글이 달리기 시작했다.", [c("근거를 들어 반박글을 쓴다", { stat: "write", dc: 50 }), c("무시한다 (블로그 지수 −8%)")]);
   if (id === "parent") return E("어머니가 대신 상담을", "고객 어머니가 매일 전화한다. \"우리 애는 대기업 가야 해요. 공기업은 안 돼요.\" 정작 본인은 공기업을 원한다.", [c(`어머니 뜻대로 진행한다 (+${won(P)}, 멘탈 −6)`), c("본인과만 이야기한다", { stat: "talk", dc: 45 })]);
@@ -350,12 +351,22 @@ export function csEvChoose(s, i, ok) {
   const rev = (v) => { cs.reviews = Math.max(0, cs.reviews + v); out.push(`후기 ${v > 0 ? "+" : ""}${v}`); };
   if (id === "jinsang") { if (i === 0) { if (ok) ment(-2); else { rev(-2); ment(-5); out.push("별점 테러"); } } else if (i === 1) { s.hp = clamp(s.hp - 15, 0, s.hpMax); ment(-8); rev(0.5); out.push("스태미너 −15"); } else { cash(-P, "환불"); ment(2); } }
   if (id === "refund") { if (i === 0) cash(-P * 2, "환불"); else if (i === 1) { if (!ok) { rev(-3); cs.ch.kmong.q = Math.max(0, cs.ch.kmong.q - 10); out.push("크멍 분쟁, 상세페이지 품질 −10"); } else out.push("규정을 차분히 설명했다. 고객이 수긍했다"); } else { s.apNext -= 2; rev(1); out.push("다음 달 행동력 −2"); } }
-  if (id === "overprice") { if (i === 0) { const ks = ["low", "mid", "high", "ultra"]; const k = ks[Math.max(0, ks.indexOf(cs.price) - 1)]; cs.price = k; out.push(`가격 ${D.CS_PRICE[k].n}(으)로`); } else if (i === 1) { s.apNext -= 2; out.push(`${D.STATS[D.NICHES[cs.niche].stat]} +${gainStat(s, D.NICHES[cs.niche].stat, 5).toFixed(1)}`, "다음 달 행동력 −2"); } else rev(-2); }
-  if (id === "stalker") { if (i === 0) { ment(-6); if (Math.random() < 0.4) cs.stalk = s.t + 3; } else if (i === 1) { ment(-3); out.push(...applyEff(s, { eye: 5 })); } else { if (ok) out.push("\"...죄송해요. 선을 넘었네요.\""); else { ment(-12); cs.stalk = s.t + 2; out.push("오히려 더 집착하기 시작했다"); } } }
+  if (id === "overprice") { if (i === 0) { const ks = ["low", "mid", "high", "ultra"]; const k = ks[Math.max(0, ks.indexOf(cs.price) - 1)]; cs.price = k; out.push(`가격을 '${D.CS_PRICE[k].n}' 단계로`); } else if (i === 1) { s.apNext -= 2; out.push(`${D.STATS[D.NICHES[cs.niche].stat]} +${gainStat(s, D.NICHES[cs.niche].stat, 5).toFixed(1)}`, "다음 달 행동력 −2"); } else rev(-2); }
+  if (id === "stalker") { if (i === 0) { ment(-6); if (R(s).chance(0.4)) cs.stalk = s.t + 3; } else if (i === 1) { ment(-3); if (employedCs(s)) out.push(...applyEff(s, { eye: 5 })); } else { if (ok) out.push("\"...죄송해요. 선을 넘었네요.\""); else { ment(-12); cs.stalk = s.t + 2; out.push("오히려 더 집착하기 시작했다"); } } }
   if (id === "stalker2") { if (i === 0) { cash(-50, "법률 비용"); ment(-5); } else { cash(-300, "이사 비용"); cs.ch.kakao.m = Math.round(cs.ch.kakao.m * 0.7); out.push("오픈채팅 −30%"); } }
   if (id === "romance") { const who = s._csWho; if (who) { ensureRel(s, who); if (i === 0) { out.push(`${CHAR[who].name} 호감 +${addAff(s, who, 25)}`); s.rel[who].last = s.t; } else { addAff(s, who, 5); cs.refer += 0.3; out.push("소개 +"); } } }
   if (id === "ai") { if (i === 0) { s.apNext -= 1; rev(0.5); out.push("다음 달 행동력 −1"); } else if (i === 1) rev(-2); else { if (ok) { cs.aiCheck = true; out.push("이제부터 합격률 +2%p(AI 티 점검)"); } else { s.apNext -= 1; out.push("만들다 말았다. 다음 달 행동력 −1"); } } }
   if (id === "colleague") { if (i === 0) { cash(P * 2, "컨설팅"); out.push(...applyEff(s, { eye: 8 })); } else out.push("\"아, 네... 알겠습니다.\""); }
+  if (id === "ghost") {
+    if (i === 0) { if (ok) { rev(1); cs.refer += 0.3; out.push("소개 +0.3", "고객이 자기 이야기를 처음으로 말로 했다. 그대로 받아 적게 했다"); } else { ment(-2); out.push("\"그럼 써 주는 데로 갈게요.\" 결제가 취소됐다"); } }
+    else if (i === 1) { cash(P * 2, "컨설팅"); if (R(s).chance(0.5)) { rev(-2); out.push("면접관이 자소서 내용을 묻자 고객이 답을 못 했다"); } else out.push("서류는 붙었다. 면접은 고객 혼자 들어간다"); }
+    else { s.apNext -= 1; rev(0.5); out.push("다음 달 행동력 −1"); }
+  }
+  if (id === "puff") {
+    if (i === 0) { if (ok) { rev(1); out.push("3개월 동안 처리한 건수를 세어 넣었다. 6개월보다 세 보였다"); } else { out.push("\"그럼 저만 손해잖아요.\" 고객이 환불을 요구했다"); cash(-P, "환불"); } }
+    else if (i === 1) { cash(P, "컨설팅"); if (R(s).chance(0.3)) { rev(-2); ment(-4); out.push("입사 서류 검증에서 걸려 합격이 취소됐다. 고객은 내 이름을 댔다"); } else out.push("아무 일도 없었다. 이번에는"); }
+    else { if (R(s).chance(0.5)) { rev(0.5); out.push("고객이 직접 3개월로 돌려놨다"); } else out.push("고객은 그대로 냈다. 내 손은 떠났다"); }
+  }
   if (id === "blame") { if (i === 0) { if (ok) { cs.ch.blog.idx += 5; out.push("반박글이 더 많이 읽혔다, 블로그 지수 +5"); } else { cs.ch.blog.idx *= 0.9; rev(-1); out.push("불난 집에 부채질, 블로그 지수 −10%"); } } else { cs.ch.blog.idx *= 0.92; out.push("블로그 지수 −8%"); } }
   if (id === "parent") { if (i === 0) { cash(P, "컨설팅"); ment(-6); } else { if (ok) { rev(1); out.push("본인이 원하는 공기업으로. 고객이 고맙다고 했다"); } else { out.push("어머니가 화를 내며 환불을 요구했다"); cash(-P, "환불"); } } }
   if (id === "great") { rev(3); cs.refer += 1; out.push("소개 +1"); }
@@ -381,7 +392,7 @@ export function csEvChoose(s, i, ok) {
       else if (employedCs(s)) { cs.leave = (cs.leave || 0) + B.days; out.push(`연차 ${B.days}일 사용(올해 ${cs.leave}/${B.leaveMax}일)`); if (cs.leave > B.leaveMax) out.push("연차가 모자라 반차·조퇴로 메웠다", ...applyEff(s, { eye: B.overEye })); }
     }
   }
-  if (id === "noshow") { if (i === 0) { if (Math.random() < 0.5) rev(-1); else out.push("고객이 수긍했다"); } else cash(-P, "환불"); }
+  if (id === "noshow") { if (i === 0) { if (R(s).chance(0.5)) rev(-1); else out.push("고객이 수긍했다"); } else cash(-P, "환불"); }
   return out;
 }
 export function passive(s) { return Math.round(s.cs.vod.income || 0); }

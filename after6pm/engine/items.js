@@ -6,7 +6,7 @@
 // - 얻는 길(how): shop 현금 상점 · ev 이벤트 보상 · mg 미니게임 대성공 · gift 인연 선물 · rival 라이벌 승부 · card 연말·조각 카드 · pack 카드팩
 // 이 파일은 defs.js 만 읽는다(core.js 와 서로 부르지 않게).
 import * as D from "./defs.js";
-const CORE_statCap = (s) => Math.min(D.STAT_MAX, D.STAT_CAP0 + D.STAT_CAP_NG * Math.max(0, (s?.ng?.n || 1) - 1)); // v4.28d 회차 천장(core.statCap 과 같은 식)
+const CORE_statCap = (s) => Math.min(D.STAT_MAX, D.STAT_CAP0 + D.STAT_CAP_NG * Math.max(0, (s?.ng?.n || 1) - 1)); // 능력치 천장(core.statCap 과 같은 식, 지금은 회차와 상관없이 200)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 export const CAT = { life: "생활·자기계발", gear: "투잡 장비", memo: "기념품", cons: "소모품", final: "최종" };

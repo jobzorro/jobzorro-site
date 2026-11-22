@@ -16,7 +16,7 @@ export default {
     return undefined;
   },
   cine: {
-    vb_auto: ["desk", "바이브코딩"], vb_lv2: ["cafe", "첫 외주"], vb_lv3: ["cowork", "리테이너"], vb_app: ["home", "내 앱 출시"],
+    vb_auto: ["desk", "바이브코딩"], vb_lv2: ["cafe", "첫 외주"], vb_lv3: ["cowork", "리테이너"], vb_app: ["home", "내 앱 출시"], vb_store: ["desk", "앱 심사 거절"],
     vb_lv4: ["cowork", "업종 전문가"], vb_lv5: ["cowork", "솔로프리너"], vb_end_dev: ["home", "퇴근 후 1인 개발사"],
     vb_end_solo: ["cowork", "솔로프리너 독립"], vb_end_exit: ["rooftop", "엑싯의 맛"], vb_close: ["home", "문 닫기"],
   },

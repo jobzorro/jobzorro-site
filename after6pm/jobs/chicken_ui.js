@@ -1,4 +1,4 @@
-// 프랜차이즈 치킨 보드: 매장 카드(배달통 별점·플레이스 순위·11% 막대·알바·점장), 창업 준비 체크리스트, 개인회생 위험 신호.
+// 프랜차이즈 치킨 보드: 매장 카드(배달퉁 별점·플레이스 순위·11% 막대·알바·점장), 창업 준비 체크리스트, 개인회생 위험 신호.
 import * as CH from "../engine/jobs/chicken.js";
 
 const pct = (v, t) => (t > 0 ? Math.round((v / t) * 100) : 0);
@@ -44,16 +44,19 @@ function storeCard(c, st) {
   const { S, esc, won, meter } = c, C = S.chicken, L = st.last, T = CH.TYPES[st.type], n = CH.needAp(S, st) + (C.selfFill && !st.mgr ? 1 : 0);
   const sp = CH.sellPrice(S, st), cc = CH.closeCost(S, st), pr = Math.round(2.4 * (S.pi || 1) * st.price * 10000 / 100) * 100;
   const tags = [`<span class="tag">${esc(T.n)}</span>`, st.mgr ? '<span class="tag blue">점장</span>' : "", st.fam ? '<span class="tag pink">가족</span>' : "", st.app ? '<span class="tag green">자사 앱</span>' : "", st.inc ? '<span class="tag gold">인센티브</span>' : "", st.months === 0 ? '<span class="tag gold">공사 중</span>' : "", st.revEv ? '<span class="tag pink">리뷰 이벤트</span>' : "", st.revOff > 0 ? `<span class="tag red">이벤트 끊은 여파 ${st.revOff}달</span>` : "", st.freshM > 0 ? `<span class="tag green">새 단장 ${st.freshM}달</span>` : "", st.old ? '<span class="tag red">리뉴얼 거부</span>' : ""].join("");
-  return `<div class="room"><div class="body">
+  // 화면 정리(v4.31): 접힌 한 줄 = 치킨의 핵심(지난달 주문·배달퉁 별점). 매장이 1곳이면 처음부터 펼친다.
+  const lowAp = st.months >= 1 && st.ap < n, crewLow = st.crew < st.crewNeed;
+  const sum = `<span class="tjx-s1"><b>${esc(st.name)}</b>${st.months === 0 ? '<span class="tag gold">공사 중</span>' : ""}${st.mgr ? '<span class="tag blue">점장</span>' : ""}</span><span class="tjx-s2">${L ? `지난달 주문 <b>${L.orders.toLocaleString()}건</b> · <span class="gold">배달퉁 ★${st.rating.toFixed(2)}</span> · <b class="${L.profit >= 0 ? "good" : "bad"}">${won(L.profit)}</b>` : "다음 정산부터 주문이 들어와요"}${lowAp ? ` · <b class="bad">근무 ${Math.round(st.ap * 10) / 10}/${n}</b>` : ""}${crewLow ? ` · <b class="bad">알바 ${st.crew}/${st.crewNeed}</b>` : ""}</span>`;
+  return c.fold("ch-" + st.id, sum, `<div class="body">
     <div class="row"><div class="grow"><div class="nm">${esc(st.name)}</div><div class="tiny muted">${esc(st.area)} · ${st.months}개월째</div><div class="tiny">${tags}</div></div>
-      <div style="text-align:right"><div class="gold" style="font-weight:900">배달통 ★ ${st.rating.toFixed(2)}</div><div class="tiny">플레이스 <b class="${st.rank <= 5 ? "good" : st.rank >= 20 ? "bad" : ""}">${st.rank}위</b>/30</div></div></div>
+      <div style="text-align:right"><div class="gold" style="font-weight:900">배달퉁 ★ ${st.rating.toFixed(2)}</div><div class="tiny">플레이스 <b class="${st.rank <= 5 ? "good" : st.rank >= 20 ? "bad" : ""}">${st.rank}위</b>/30</div></div></div>
     ${L ? `<div class="kv"><div><div class="k">월매출</div><div class="v">${won(L.rev)}</div></div><div><div class="k">주문</div><div class="v">${L.orders.toLocaleString()}건</div></div><div><div class="k">지난달 순익</div><div class="v ${L.profit >= 0 ? "good" : "bad"}">${won(L.profit)}</div></div></div>${costBar(c, L)}`
       : '<div class="tiny muted" style="margin-top:4px">이번 달은 공사·오픈 준비. 다음 정산부터 주문이 들어와요(첫 달은 반달 영업).</div>'}
     <div class="row small" style="margin-top:6px"><span>알바 <b class="${st.crew < st.crewNeed ? "bad" : "good"}">${st.crew}/${st.crewNeed}명</b></span><span class="grow"></span><span class="tiny muted">사기 ${Math.round(st.morale)}</span></div>
     ${meter(st.morale, 100, st.morale < 35 ? "var(--red)" : st.morale < 55 ? "var(--gold)" : "var(--green)")}
     <div class="row small" style="margin-top:4px"><span>입소문 ${Math.round(st.buzz)}</span><span class="grow"></span><span>튀김 품질 ${Math.round(st.fry * 100)}</span></div>
     <div class="row wrap" style="margin-top:6px"><span class="small">근무 <b class="${st.ap >= n ? "good" : "bad"}">${Math.round(st.ap * 10) / 10}/${n}</b></span><span class="grow"></span>
-      <button class="btn sm gold" data-act="ch_shift" data-arg="${st.id}">근무 ⚡1</button><button class="btn sm" data-act="ch_crew" data-arg="${st.id}">알바 ⚡1</button><button class="btn sm" data-act="ch_market" data-arg="${st.id}">배달통 ⚡1</button></div>
+      <button class="btn sm gold" data-act="ch_shift" data-arg="${st.id}">근무 ⚡1</button><button class="btn sm" data-act="ch_crew" data-arg="${st.id}">알바 ⚡1</button><button class="btn sm" data-act="ch_market" data-arg="${st.id}">배달퉁 ⚡1</button></div>
     <div class="row wrap small" style="margin-top:6px"><span class="muted">한 마리</span><div class="stepper"><button data-chprice="${st.id}:-0.02">−</button><b>${pr.toLocaleString()}원</b><button data-chprice="${st.id}:0.02">+</button></div><span class="grow"></span>
       <button class="btn sm" data-act="ch_mgr" data-arg="${st.id}">${st.mgr ? "점장 해지" : "점장 고용"}</button></div>
     <div class="row wrap small" style="margin-top:6px"><span class="muted">배달앱 깃발</span><div class="stepper"><button data-chflag="${st.id}:-1">−</button><b>${st.flags ?? 2}개</b><button data-chflag="${st.id}:1">+</button></div><span class="tiny ${(st.rv ?? 2) > (st.flags ?? 2) ? "bad" : "muted"}">옆 가게 ${st.rv ?? 2}개 · 주문 ×${CH.flagMul(st).toFixed(2)}</span><span class="grow"></span>
@@ -61,10 +64,10 @@ function storeCard(c, st) {
     <div class="row wrap" style="margin-top:6px">
       ${C.lv >= 2 ? `<button class="btn sm" data-chtg="${st.id}:app">${st.app ? "자사 앱 끄기" : "자사 앱 할인 켜기"}</button>` : ""}
       ${C.lv >= 3 ? `<button class="btn sm" data-chtg="${st.id}:fam">${st.fam ? "가족 빼기" : "가족 투입"}</button><button class="btn sm" data-chtg="${st.id}:inc">${st.inc ? "인센티브 끄기" : "인센티브 켜기"}</button>` : ""}</div>
-    <div class="row wrap" style="margin-top:6px"><span class="tiny muted">누적 ${won(Math.round(st.cum))} / 투자 ${won(st.invested)}</span><span class="grow"></span>
-      ${st.months >= 1 ? `<button class="btn sm" data-chsell="${st.id}">양수도 ${won(sp)}</button><button class="btn sm danger" data-chclose="${st.id}">폐점${cc.pen ? `(위약금 ${won(cc.pen)})` : ""}</button>` : ""}</div>
+    <div class="row small" style="margin-top:8px"><span>투자금 회수 <b class="gold">${pct(Math.max(0, st.cum), st.invested)}%</b></span><span class="grow"></span><span class="tiny muted">누적 ${won(Math.round(st.cum))} / 투자 ${won(st.invested)}</span></div>
     ${meter(Math.max(0, st.cum), st.invested, "var(--gold)")}
-  </div></div>`;
+    ${st.months >= 1 ? `<details class="more"><summary>양수도·폐점 · 더 보기 ▾</summary><div class="more-b"><div class="row wrap"><span class="grow tiny muted">매장을 넘기거나 닫아요. 누르면 한 번 더 물어봐요.</span><button class="btn sm" data-chsell="${st.id}">양수도 ${won(sp)}</button><button class="btn sm danger" data-chclose="${st.id}">폐점${cc.pen ? `(위약금 ${won(cc.pen)})` : ""}</button></div></div></details>` : ""}
+  </div>`, S.chicken.stores.length <= 1, "room", lowAp ? `<button class="btn sm" data-act="ch_shift" data-arg="${st.id}">근무 ⚡1</button>` : "");
 }
 
 export default {
@@ -75,7 +78,7 @@ export default {
   quick: (S) => (S.chicken.step < 3 ? "ch_prep" : S.chicken.stores.length ? "ch_shift" : null),
   defaultArg(S, id) { const ss = S.chicken.stores; if (!ss.length) return undefined; return [...ss].sort((a, b) => a.ap / CH.needAp(S, a) - b.ap / CH.needAp(S, b))[0].id; },
   fullBg: "pub",
-  cine: { ch_sign: ["meeting", "가맹 계약"], ch_lv2: ["pub", "배달통 별점"], ch_lv3: ["dinner", "가족 경영"], ch_lv4: ["pub", "BEP 돌파"], ch_lv5: ["alley", "치킨 3형제"], ch_end_ceo: ["pub", "엔딩"], ch_end_hq: ["alley", "엔딩"], ch_end_exit: ["pub", "엔딩"] },
+  cine: { ch_sign: ["meeting", "가맹 계약"], ch_lv2: ["pub", "배달퉁 별점"], ch_lv3: ["dinner", "가족 경영"], ch_lv4: ["pub", "BEP 돌파"], ch_lv5: ["alley", "치킨 3형제"], ch_flag: ["alley", "깃발 전쟁"], ch_end_ceo: ["pub", "엔딩"], ch_end_hq: ["alley", "엔딩"], ch_end_exit: ["pub", "엔딩"] },
   auto(c) { const S = c.S, C = S.chicken; S.cash += 6000; C.step = 2; C.trained = true; S.ap = Math.max(S.ap, 3); c.E.act(S, "ch_prep"); if (S.pending) c.E.choose(S, 1); const st = C.stores[0]; if (st) st.mgr = true;
     const m = location.hash.match(/f30([a-z]+)/); if (m) setTimeout(() => { const sc = CH.f30Scene(c.S, c.E.R(c.S), m[1]); if (sc) { c.E.openScene(c.S, sc); const pk = location.hash.match(/pick([0-9])/); if (pk) { c.E.choose(c.S, +pk[1]); c.save(); c.render(); } else c.afterRes({}); } }, 900); }, // 11-22 특이 요소 장면 시험(#auto3-chicken-f30flag|f30renew|f30deny|f30rev|f30trap)
   page(c) {

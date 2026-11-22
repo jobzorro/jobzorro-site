@@ -11,7 +11,7 @@ export default {
   quick: (S) => { const T = S.tarot; if (T.agent) return null; if (T.lv === 1 && T.notes < 20) return "tr_practice"; if (T.queue > 0 || T.lv === 1) return "tr_read"; return "tr_card"; },
   cine: {
     tr_lv2: ["home", "타로"], tr_paid: ["online", "타로"], tr_lv3: ["online", "타로"], tr_lv4: ["cafe", "타로"], tr_lv5: ["tarot", "타로"],
-    tr_brand: ["popup", "타로"], tr_end_wait: ["tarot", "타로 엔딩"], tr_end_goods: ["popup", "타로 엔딩"], tr_end_witch: ["home", "타로 엔딩"],
+    tr_brand: ["popup", "타로"], tr_heavy: ["home", "타로"],tr_end_wait: ["tarot", "타로 엔딩"], tr_end_goods: ["popup", "타로 엔딩"], tr_end_witch: ["home", "타로 엔딩"],
   },
   auto(c) { const T = c.S.tarot; Object.assign(T, { notes: 22, free: 10, reviews: 11, lv: 3, follow: 900, regulars: 3, rep: 45, queue: 12 }); },
   page(c) {

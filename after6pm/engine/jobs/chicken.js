@@ -1,5 +1,5 @@
 // 프랜차이즈 치킨(투자형): "알바가 그만두면 내가 튀긴다."
-// 가맹 상담·정보공개서 → 점주 교육 → 1억+ 창업(대출) → 오픈 → 배달통 별점·플레이스 순위 → 점장·2호점 → 3형제.
+// 가맹 상담·정보공개서 → 점주 교육 → 1억+ 창업(대출) → 오픈 → 배달퉁 별점·플레이스 순위 → 점장·2호점 → 3형제.
 // 매출에서 재료 47%·배달수수료 15%·인건비 17%·임차료 10%를 빼면 11%가 남는다. 그 11%를 지키는 게임.
 // 돈 단위 만원. 규약: engine/jobs/README.md
 import * as D from "../defs.js";
@@ -45,6 +45,15 @@ export function toggleRev(s, id) {
   if (st.revEv) { st.revEv = false; if ((st.revM || 0) >= CH_F30.rev.minM) { st.revOff = CH_F30.rev.offM; st.revM = 0; return `${st.name} 리뷰 이벤트 끝: ${CH_F30.rev.offM}달 동안 "이제 서비스 안 줘요?" 별점이 내려가요`; } st.revM = 0; return `${st.name} 리뷰 이벤트 끝`; }
   st.revEv = true; return `${st.name} 리뷰 이벤트 시작: 별점 +, 원가 매출의 ${Math.round(CH_F30.rev.cost * 100)}%`;
 }
+// 11-23 글 속 숫자가 읽는 값(효과는 그대로): 본사 논란 불매 동안 주문 ×scandal, 오토 운영(점장만·인센티브 없음) 주문 ×auto
+export const CH_TXT = { scandal: 0.78, auto: 0.95 };
+// 11-23 치킨집에서만 생기는 골치 4개(튀김기·라이더·닭 수급·기름). 효과 크기는 여기만 고친다
+export const CH_EV2 = {
+  fryer: { fix: 80, lost: 0.06, star: -0.03, close: 0.12, hp: 5 },       // 야간 출장 수리비(물가) / 한 대로 버티면 다음 달 매출·별점 / 주말 휴업
+  rider: { okStar: 0.03, ngStar: -0.08, ngLost: 0.04, hp: -10, eye: 4, selfStar: 0.04, zone: 0.96 }, // 대행사 교체(말빨) / 직접 배달 / 반경 축소
+  bird: { okLost: 0.02, ngLost: 0.06, soldout: 0.08, hp: 4, catchP: 0.35, fine: 100, mental: -4 }, // 메뉴 전환(마케팅) / 조기 품절 / 사입(적발 확률·위약 벌금)
+  oil: { cost: 40, star: 0.04, reuse: -0.06, save: 30, kit: 15, okStar: 0.02, ngStar: -0.03 },       // 매일 교체 / 하루 더 / 산가 측정(숫자)
+};
 export const renewCost = (s, st) => Math.round(CH_F30.renew.cost[st.type] * SYN.pi(s) / 10) * 10;
 // 큰돈 쓰기: 모자라면 신용대출
 function payBig(s, st, v, out) {
@@ -57,7 +66,7 @@ export function capacity(s) { return Math.max(0, s.cash) + LOAN_MAX - (s.chicken
 // 단계 5개(levels)
 export const LV = [
   { n: "가맹 상담 중", need: "상담·정보공개서 → 점주 교육 → 오픈", open: "" },
-  { n: "가맹 계약서에 서명", need: "월매출 4,000만 3개월 연속 + 배달통 별점 4.8", open: "본사 매뉴얼·오픈 마케팅·배달통 입점" },
+  { n: "가맹 계약서에 서명", need: "월매출 4,000만 3개월 연속 + 배달퉁 별점 4.8", open: "본사 매뉴얼·오픈 마케팅·배달퉁 입점" },
   { n: "별점 관리 사장님", need: "한 달 매출 5,000만 + 순이익 600만", open: "자사 앱 주문 할인·재주문 쿠폰" },
   { n: "가족 경영", need: "1호점 투자금 회수(BEP)", open: "가족 투입·직원 인센티브" },
   { n: "BEP 돌파", need: "매장 3곳 + 치킨 순이익이 월급의 1.5배", open: "2·3호점 출점·영업양수도" },
@@ -79,7 +88,7 @@ function newStore(s, type, disc, opts = {}) {
 // ───────── 이벤트 16개(+통장 경보) ─────────
 function scene(s, id, st, extra = {}) {
   const C = s.chicken; s._chEv = { id, st: st?.id || null, ...extra };
-  const nm = st?.name || `${BRAND} 매장`, P = Math.round(pi(s) * 10) / 10;
+  const nm = st?.name || `${BRAND} 매장`, P = Math.round(pi(s) * 10) / 10, E2 = CH_EV2;
   const L = {
     e01: { t: "오늘 계약하시면", x: `가맹 상담실. 담당자가 웃는다. "오늘 사인하시면 가맹비 반값입니다." 정보공개서는 아직 받지도 않았다.`,
       c: [{ t: "정보공개서를 받고 14일을 꽉 채워 검토한다", eff: { stat: { num: 1 }, hp: -4, ap: -1 }, text: "\"영업지역 반경 500m\"… 1km가 아니다. 불리한 조항에 밑줄을 쳤다." },
@@ -91,18 +100,18 @@ function scene(s, id, st, extra = {}) {
     e03: { t: "튀김기 앞 점주 교육", x: "본사 교육장, 180도 기름 앞에 섰다. 팔뚝에 작은 화상이 하나 생겼다. 교육은 평일 낮에 닷새다.",
       c: [{ t: "연차를 몰아 쓰고 끝까지 직접 배운다", eff: { eye: 8, stat: { hands: 2 }, hp: -6 }, text: "닭 염지부터 기름 교체까지 몸으로 배웠다. 팀장이 \"요즘 왜 이렇게 쉬어?\" 한다." },
         { t: "점장 될 직원만 교육 보낸다", eff: {}, text: "회사는 조용했다. 대신 매장 레시피는 남의 손에 있다." }] },
-    e04: { t: "오픈 주간 주문 폭주", x: `본사 오픈 마케팅이 터졌다. 금요일 저녁 7시, 배달통 대기 주문 40건. ${nm} 주방은 이미 전쟁터다.`,
+    e04: { t: "오픈 주간 주문 폭주", x: `본사 오픈 마케팅이 터졌다. 금요일 저녁 7시, 배달퉁 대기 주문 40건. ${nm} 주방은 이미 전쟁터다.`,
       c: [{ t: "조리 시간을 늘리고 주문을 조절한다", eff: { hp: -5 }, text: "\"조금 늦어도 바삭했어요\" 리뷰가 쌓였다." },
         { t: "다 받는다", eff: { hp: -14 }, text: "매출은 터졌다. \"늦고 식었어요\" 리뷰도 같이 터졌다." }] },
-    e05: { t: "배달통 수수료 인상 공지", x: "배달통에서 공지가 왔다. 다음 달부터 중개 수수료 인상. 매출의 15%였던 배달수수료가 17%가 된다. 남는 11%가 눈앞에서 녹는다.",
-      c: [{ t: "자사 앱 주문·포장 할인으로 손님을 옮긴다", eff: { stat: { mkt: 1 } }, text: "포장 손님에게 2천 원 할인. 수수료가 줄기 시작했다." },
+    e05: { t: "배달퉁 수수료 인상 공지", x: "배달퉁에서 공지가 왔다. 다음 달부터 중개 수수료 인상. 매출의 15%였던 배달수수료가 17%가 된다. 남는 11%가 눈앞에서 녹는다.",
+      c: [{ t: `자사 앱 주문·포장 할인으로 손님을 옮긴다 (${won(Math.round(30 * pi(s)))})`, eff: { stat: { mkt: 1 } }, text: "포장 손님에게 2천 원 할인. 수수료가 줄기 시작했다." },
         { t: "메뉴 가격을 2,000원 올린다", eff: {}, text: "\"치킨 한 마리 2만 6천 원 실화?\" 댓글이 달렸다." }] },
     e06: { t: "금요일 7시의 잠수", x: `금요일 저녁 6시 50분. ${nm} 튀김 담당 알바가 메시지를 읽지 않는다. 주문 알림은 계속 울리고, 나는 아직 회사 엘리베이터 안이다.`,
       c: [{ t: "택시 타고 달려가 직접 튀긴다 (택시비 3만)", eff: { hp: -12, stat: { hands: 0.5 } }, text: "넥타이를 풀고 앞치마를 맸다. 알바가 그만두면 내가 튀긴다." },
-        { t: "배달통을 두 시간 일시 중지한다", eff: { mental: -3 }, text: "금요일 피크 두 시간이 날아갔다. 별점도 조금." },
+        { t: "배달퉁을 두 시간 일시 중지한다", eff: { mental: -3 }, text: "금요일 피크 두 시간이 날아갔다. 별점도 조금." },
         { t: "가족에게 SOS를 친다", eff: { family: -6 }, text: "엄마가 앞치마를 맸다. \"이게 네가 말한 투잡이니?\"" }] },
     e07: { t: "별점 1점, 눅눅해요", x: `${nm} 새 리뷰. "눅눅하고 양념이 반밖에 없어요." 사진 속 치킨은 확실히 슬퍼 보인다. 별점 평균이 내려갔다.`,
-      c: [{ t: "정중히 사과하고 재주문 쿠폰을 보낸다", check: { stat: "talk", dc: 40 }, ok: { text: "\"사장님 답글 보고 다시 시켰어요\" 리뷰가 붙었다.", eff: { mental: 1 } }, ng: { text: "쿠폰은 썼는데 별점은 그대로다.", eff: { mental: -2 } } },
+      c: [{ t: `정중히 사과하고 재주문 쿠폰을 보낸다 (${won(Math.round(5 * pi(s)))})`, check: { stat: "talk", dc: 40 }, ok: { text: "\"사장님 답글 보고 다시 시켰어요\" 리뷰가 붙었다.", eff: { mental: 1 } }, ng: { text: "쿠폰은 썼는데 별점은 그대로다.", eff: { mental: -2 } } },
         { t: "\"저희는 레시피대로 했습니다\" 반박 답글", eff: { mental: 3 }, text: "속은 시원했다. 다음 날 그 답글이 캡처돼 동네 맘카페에 돌았다." }] },
     e08: { t: "옆집 커피와 영수증 바터", x: "옆 저가커피 사장님이 먼저 말을 걸었다. \"우리 영수증 보여 주면 치킨 3천 원 할인, 치킨 영수증이면 커피 사이즈업 어때요?\"",
       c: [{ t: "제휴한다", eff: { stat: { mkt: 0.5, talk: 0.5 } }, text: "카운터에 작은 안내판을 세웠다. 동네 사장님 친구가 생겼다." },
@@ -127,12 +136,28 @@ function scene(s, id, st, extra = {}) {
     e14: { t: "영업지역 축소 재계약", x: "재계약 시즌, 본사 공문이 왔다. 영업지역을 줄이는 변경 계약에 동의하지 않으면 재계약이 어렵다고 한다. 축소 폭은 최대 72%다.",
       c: [{ t: "다른 점주들과 연대해 신고하고 끝까지 다툰다", check: { stat: "num", dc: 55 }, ok: { text: "시정명령이 나왔다. 손해배상 2,500만 원.", eff: { mental: -6, hp: -8 } }, ng: { text: "1년을 다퉜다. 결론은 아직이다. 지쳤다.", eff: { mental: -12, hp: -8 } } },
         { t: "울며 겨자 먹기로 서명한다", eff: { mental: -6 }, text: "배달 반경이 줄었다. 지도 앱의 원이 작아졌다." }] },
-    e15: { t: "본사 오너가 뉴스에 나왔다", x: `포털 메인에 ${BRAND} 본사 오너 논란 기사가 떴다. 동네 맘카페에 "이 브랜드 안 먹어요" 글이 올라온다. 이번 주 주문이 30% 줄었다.`,
+    e15: { t: "본사 오너가 뉴스에 나왔다", x: `포털 메인에 ${BRAND} 본사 오너 논란 기사가 떴다. 동네 맘카페에 "이 브랜드 안 먹어요" 글이 올라온다. 주문이 ${Math.round((1 - CH_TXT.scandal) * 100)}% 줄었다.`,
       c: [{ t: "지역 행사 협찬으로 '우리 동네 사장님'을 판다 (50만)", eff: { stat: { mkt: 1 } }, text: "동네 축구 대회에 치킨 20마리. 아이들이 사장님 이름을 외웠다." },
         { t: "할인 쿠폰을 뿌려 버틴다 (쿠폰 120만)", eff: { mental: -2 }, text: "주문은 돌아왔다. 남는 건 없었다." }] },
-    e16: { t: "오토 운영의 배신", x: `본업 프로젝트로 석 달간 ${nm}을 점장에게 맡겼다. 정산표를 보니 매출이 20% 빠졌다. 점장은 아무 일도 없었다는 얼굴이다. 직원은 매출을 올릴 이유가 없다.`,
+    e16: { t: "오토 운영의 배신", x: `본업 프로젝트로 석 달간 ${nm}을 점장에게 맡겼다. 정산표를 보니 매출이 달마다 ${Math.round((1 - CH_TXT.auto) * 100)}%씩 덜 나왔다. 점장은 아무 일도 없었다는 얼굴이다. 직원은 매출을 올릴 이유가 없다.`,
       c: [{ t: "주말마다 매장에 복귀해 직접 운영한다", eff: { hp: -10, eye: 3 }, text: "토요일 오후, 튀김기 앞에 다시 섰다. 직원들 눈빛이 달라졌다." },
         { t: "일별 목표 매출 인센티브 제도를 만든다", eff: { stat: { num: 1 } }, text: "\"하루 180만 넘으면 다 같이 보너스.\" 점장이 처음으로 매출표를 봤다." }] },
+    e17: { t: "튀김기가 멈췄다", x: `금요일 오후 5시, ${nm} 튀김기 두 대 중 한 대가 온도를 못 올린다. 본사 수리 기사는 월요일에 온다고 한다. 주문 알림은 6시부터 몰린다.`,
+      c: [{ t: `사설 기사를 야간 출장으로 부른다 (${won(Math.round(E2.fryer.fix * pi(s)))})`, eff: {}, text: "밤 8시에 히터를 갈았다. 기사님이 치킨 한 마리를 들고 갔다." },
+        { t: "남은 한 대로 메뉴를 줄여 버틴다", eff: { hp: -6 }, text: "순살과 사이드를 품절로 돌렸다. 대기 70분. \"다음엔 다른 데 시킬게요\" 리뷰가 달렸다." },
+        { t: "주말 장사를 접고 월요일을 기다린다", eff: { hp: E2.fryer.hp }, text: "금요일 밤에 간판 불을 껐다. 몸은 쉬었고 통장은 못 쉬었다." }] },
+    e18: { t: "라이더가 안 잡힌다", x: `비 오는 금요일, 배달 대행 호출이 20분째 '배차 중'이다. 포장대에 치킨 여섯 봉지가 식어 간다. 대행 기사들이 콜비를 더 주는 옆 동네로 옮겨 갔다고 한다.`,
+      c: [{ t: "다른 대행사 지사장과 직접 담판한다 (말빨 판정)", check: { stat: "talk", dc: 50 }, ok: { text: "\"피크 시간엔 한 명을 붙여 드릴게요.\" 배차가 3분으로 줄었다.", eff: {} }, ng: { text: "\"저희도 기사가 없어요.\" 옮긴 대행사는 더 늦었다.", eff: { mental: -3 } } },
+        { t: "피크 시간엔 내가 오토바이를 탄다", eff: { hp: E2.rider.hp, eye: E2.rider.eye }, text: "헬멧을 쓰고 엘리베이터 거울을 봤다. 월요일 회의 자료는 아직 빈 문서다." },
+        { t: "배달 반경을 줄인다", eff: {}, text: "먼 아파트 단지를 배달 구역에서 뺐다. 식은 치킨은 줄었고 주문도 줄었다." }] },
+    e19: { t: "닭이 안 들어온다", x: `조류독감 뉴스가 사흘째다. 본사 물류가 문자를 보냈다. "당분간 매장당 하루 60마리만 공급합니다." ${nm}은 금요일에 120마리를 튀긴다. 가맹 계약서에는 '원재료는 본사 공급분만 쓴다'고 적혀 있다.`,
+      c: [{ t: "사이드·반마리 세트로 메뉴판을 바꾼다 (마케팅 판정)", check: { stat: "mkt", dc: 45 }, ok: { text: "'반반 세트+떡볶이'가 주문 1위에 올랐다. 닭은 덜 쓰고 매출은 거의 지켰다.", eff: {} }, ng: { text: "\"치킨집에 치킨이 없네요.\" 세트는 안 팔렸다.", eff: {} } },
+        { t: "저녁 8시에 품절을 걸고 일찍 닫는다", eff: { hp: E2.bird.hp }, text: "60마리가 나가자 앱을 닫았다. 오랜만에 9시 뉴스를 집에서 봤다." },
+        { t: "시장에서 닭을 따로 사다 쓴다 (본사에 걸리면 위약 벌금)", eff: {}, text: "새벽 도매시장에서 닭 두 상자를 실었다." }] },
+    e20: { t: "기름 한 통 값", x: `식용유 18L 한 통 값이 또 올랐다. ${nm} 점장이 묻는다. "사장님, 기름 하루만 더 쓰면 안 돼요? 옆 가게는 사흘 쓴대요." 본사 매뉴얼은 매일 교체다.`,
+      c: [{ t: `매뉴얼대로 매일 간다 (${won(Math.round(E2.oil.cost * pi(s)))})`, eff: {}, text: "\"여긴 기름 냄새가 안 나요\" 리뷰가 붙었다. 통장은 그 리뷰를 못 읽는다." },
+        { t: "하루 더 쓴다", eff: {}, text: "색이 조금 진해졌다. 손님 한 명이 사진을 찍어 올렸다." },
+        { t: `산가 측정지를 사서 숫자로 정한다 (${won(Math.round(E2.oil.kit * pi(s)))}, 숫자 판정)`, check: { stat: "num", dc: 45 }, ok: { text: "주문 적은 날은 하루 반, 금요일은 그날 교체. 기름값과 맛을 둘 다 지켰다.", eff: {} }, ng: { text: "기준을 헷갈려 주말에 묵은 기름으로 튀겼다.", eff: {} } }] },
     risk: { t: "통장 경보: 개인회생이 보인다", x: `${extra.why || "적자가 이어진다."} 창업대출 ${won(C.loan)}, 남은 신용 한도 ${won(creditRoom(s))}. 카드값을 3달 못 내면 개인회생이다.`,
       c: [{ t: "가족에게 1,000만 원을 빌린다", eff: { family: -10, mental: -3 }, text: "아버지가 말없이 이체했다. 고맙다는 말이 안 나왔다." },
         { t: `가장 약한 매장을 급매로 넘긴다 (약 ${won(extra.fire || 0)})`, eff: { mental: -6 }, text: "권리금을 반값에 넘겼다. 그래도 숨은 쉰다." },
@@ -145,8 +170,8 @@ function scene(s, id, st, extra = {}) {
 
 // ───────── 11-22 특이 요소 장면 ─────────
 function flagScene(s, st) {
-  const F3 = CH_F30.flag, c = Math.round(F3.cost * pi(s)); s._chFl = { id: st.id };
-  return { kind: "event", tag: "치킨", title: "깃발 전쟁", onChoose: "ch_flag",
+  const F3 = CH_F30.flag, c = Math.round(F3.cost * pi(s)), fl1 = !s.chicken.flagCg; s._chFl = { id: st.id }; s.chicken.flagCg = 1;
+  return { kind: "event", tag: "치킨", title: "깃발 전쟁", onChoose: "ch_flag", ...(fl1 ? { cine: "ch_flag" } : {}), // 화보는 처음 한 번만
     text: `${st.name} 근처 치킨집이 배달앱 광고 깃발을 ${st.rv}개로 늘렸다. 우리 동네 주문 화면 첫 줄을 그 집이 차지했다. 깃발은 하나에 월 ${won(c)}. 우리는 지금 ${st.flags}개.`,
     choices: [
       { t: "리뷰 답글·포장 할인으로 버틴다", eff: {}, text: "깃발 대신 단골을 챙겼다. 첫 줄은 내줬다." },
@@ -159,12 +184,13 @@ function renewScene(s, st, mode) {
   if (mode === "deny") return { kind: "event", tag: "치킨", title: "재계약 거절 통보", onChoose: "ch_renew",
     text: `${st.name}: 본사가 재계약 거절을 통보했다. 리뉴얼을 안 한 매장은 브랜드 기준 미달이라고. 계약 만료까지 석 달.`,
     choices: [{ t: `지금이라도 리뉴얼한다 (${won(Math.round(cost * R3.late))})`, eff: {}, text: "공사 가림막을 쳤다. 처음부터 할 걸 그랬다." }, { t: "간판을 내리고 폐점한다", eff: {}, text: "마지막 주문을 튀겼다." }] };
-  return { kind: "event", tag: "치킨", title: "5년 차 리뉴얼 공문", onChoose: "ch_renew",
-    text: `${st.name} 가맹 ${Math.round(st.months / 12)}년 차. 본사 공문: "브랜드 이미지 통일을 위해 매장 리뉴얼(인테리어·간판·주방 일부)을 진행해 주십시오." 견적 ${won(cost)}. 거부하면 재계약 심사에 반영된다고 한다.`,
+  const yr = Math.round(st.months / 12), again = st.months > R3.every; // 60달마다 다시 온다: 10년 차엔 10년 차라고
+  return { kind: "event", tag: "치킨", title: `${yr}년 차 리뉴얼 공문`, onChoose: "ch_renew",
+    text: `${st.name} 가맹 ${yr}년 차. ${again ? "5년 전 그 공문이 날짜만 바뀌어 또 왔다. " : ""}본사 공문: "브랜드 이미지 통일을 위해 매장 리뉴얼(인테리어·간판·주방 일부)을 진행해 주십시오." 견적 ${won(cost)}. 거부하면 재계약 심사에 반영된다고 한다.`,
     choices: [
       { t: `리뉴얼한다 (${won(cost)})`, eff: {}, text: "새 간판에 불이 들어왔다. 손님들이 \"새로 생긴 집이에요?\" 묻는다." },
       { t: "점주 협의회와 같이 비용 분담을 요구한다", check: { stat: "num", dc: 55 }, ok: { text: "본사가 절반을 대기로 했다. 점주 단톡방이 처음으로 박수 이모티콘으로 찼다.", eff: {} }, ng: { text: "\"분담 규정은 없습니다.\" 결국 전액이다.", eff: { mental: -4 } } },
-      { t: "거부한다", eff: {}, text: "아직 멀쩡한 매장이다. 본사 담당자가 메모를 했다." },
+      { t: "거부한다", eff: {}, text: again ? "5년 전에 간 간판이다. 본사 담당자가 메모를 했다." : "아직 멀쩡한 매장이다. 본사 담당자가 메모를 했다." },
     ] };
 }
 function revScene(s, mode) {
@@ -243,6 +269,10 @@ function evChoose(s, r, i, ok) {
     case "e14": if (st) { if (i === 0 && ok) { s.cash += 2500; addMoney(s, "inc", "치킨 손해배상", 2500); out.push("손해배상 +2,500만"); } else if (i === 0) { st.zone = (st.zone || 1) * 0.9; out.push("결론 없이 재계약: 매출 −10%"); } else { st.zone = (st.zone || 1) * 0.86; out.push("영업지역 축소: 매출 −14%"); } } break;
     case "e15": C.scandal = SYN.on(s, "ch_insta") ? 2 : 4; if (i === 0) { spend(50 * P); C.scandal = Math.max(1, C.scandal - 2); out.push(`불매 ${C.scandal}개월(지역 이미지로 빨리 회복)`); } else { spend(120 * P); out.push(`불매 ${C.scandal}개월`); } break;
     case "e16": if (st) { if (i === 0) { st.mgrIdle = 0; st.ap += 1; st.fry = Math.max(st.fry, 0.55); out.push("오토 운영 감소 회복"); } else { st.inc = true; st.mgrIdle = 0; out.push("일별 인센티브: 매출의 1.5%, 오토 운영 감소 없음"); } } break;
+    case "e17": if (st) { const F = CH_EV2.fryer; if (i === 0) { spend(F.fix * P); out.push("피크 지켰다"); } else if (i === 1) { st.lost = (st.lost || 0) + F.lost; rate(F.star); out.push(`다음 달 매출 −${Math.round(F.lost * 100)}%`); } else { st.lost = (st.lost || 0) + F.close; out.push(`주말 휴업: 다음 달 매출 −${Math.round(F.close * 100)}%`); } } break;
+    case "e18": if (st) { const F = CH_EV2.rider; if (i === 0) { if (ok) rate(F.okStar); else { rate(F.ngStar); st.lost = (st.lost || 0) + F.ngLost; out.push(`다음 달 매출 −${Math.round(F.ngLost * 100)}%`); } } else if (i === 1) rate(F.selfStar); else { st.zone = (st.zone || 1) * F.zone; out.push(`배달 반경 축소: 매출 −${Math.round((1 - F.zone) * 100)}%`); } } break;
+    case "e19": if (st) { const F = CH_EV2.bird; if (i === 0) { const v = ok ? F.okLost : F.ngLost; st.lost = (st.lost || 0) + v; out.push(`다음 달 매출 −${Math.round(v * 100)}%`); } else if (i === 1) { st.lost = (st.lost || 0) + F.soldout; out.push(`조기 품절: 다음 달 매출 −${Math.round(F.soldout * 100)}%`); } else if (r.chance(F.catchP)) { spend(F.fine * P, "치킨 비용"); s.mental = clamp(s.mental + F.mental, 0, 100); out.push("슈퍼바이저가 냉장고를 열어 봤다. 사입 적발, 위약 벌금", `멘탈 ${F.mental}`); } else out.push("이번엔 아무도 몰랐다. 매출은 지켰다"); } break;
+    case "e20": if (st) { const F = CH_EV2.oil; if (i === 0) { spend(F.cost * P); rate(F.star); } else if (i === 1) { const v = Math.round(F.save * P); s.cash += v; addMoney(s, "inc", "치킨 매출", v); out.push(`기름값 아낌 +${won(v)}`); rate(F.reuse); } else { spend(F.kit * P); rate(ok ? F.okStar : F.ngStar); } } break;
     case "risk": C.riskT = s.t;
       if (i === 1) { const w = [...C.stores].sort((a, b) => avgP(a) - avgP(b))[0]; if (w) out.push(...sellStore(s, w.id, 0.6)); }
       else if (i === 0) { s.cash += 1000; addMoney(s, "inc", "가족에게 빌린 돈", 1000); C.famDebt = (C.famDebt || 0) + 1000; out.push("현금 +1,000만(가족 빚)"); }
@@ -314,7 +344,11 @@ function pickEvent(s, r) {
   const add = (id, w, ok) => { if (ok) P.push([id, w]); };
   add("e05", 1, mo >= 4 && !seen("e05") && C.fee < 0.17);
   add("e06", 1 + (st.morale < 45 ? 2 : 0), mo >= 3 && !seen("e06", 10) && !st.mgr);
-  add("e07", 1 + (st.rating < 4.6 ? 1.5 : 0), mo >= 3 && !seen("e07", 8));
+  add("e07", 0.6 + (st.rating < 4.6 ? 1.5 : 0), mo >= 3 && !seen("e07", 12));
+  add("e17", 0.6, mo >= 12 && !seen("e17", 36));
+  add("e18", 0.6, mo >= 4 && !seen("e18", 30));
+  add("e19", 0.4, mo >= 6 && !seen("e19", 48));
+  add("e20", 0.6, mo >= 5 && !seen("e20", 36));
   add("e08", 0.8, mo >= 5 && !seen("e08"));
   add("e11", 0.7, C.lv >= 4 && !seen("e11", 24) && stores.every((x) => x.months >= 12));
   add("e13", 0.5, mo >= 10 && !seen("e13"));
@@ -324,6 +358,7 @@ function pickEvent(s, r) {
   const tot = P.reduce((a, x) => a + x[1], 0); let v = r.next() * tot, id = P[0][0];
   for (const [k, w] of P) { v -= w; if (v <= 0) { id = k; break; } }
   if (id === "e11") { const price = Math.round(stores.reduce((a, x) => a + sellPrice(s, x), 0) * r.range(1.0, 1.15)); return scene(s, id, st, { price }); }
+  if (id === "e17") return scene(s, id, [...stores].sort((a, b) => b.months - a.months)[0]); // 가장 오래된 매장 튀김기
   return scene(s, id, id === "e06" || id === "e07" ? (stores.find((x) => x.morale < 45 && !x.mgr) || st) : st);
 }
 
@@ -335,7 +370,7 @@ export default {
   actions: {
     ch_prep: { n: "창업·출점 준비", ap: 1, hp: 3, desc: "가맹 상담 → 점주 교육 → 계약·오픈. BEP 뒤엔 2·3호점" },
     ch_shift: { n: "매장 근무(튀김·피크)", ap: 1, hp: 6, desc: "직접 튀기고 피크를 막는다. 인건비 −, 별점 +" },
-    ch_market: { n: "배달통·플레이스 관리", ap: 1, hp: 2, desc: "리뷰 답글·사진·쿠폰. 플레이스 순위 +(광고비)" },
+    ch_market: { n: "배달퉁·플레이스 관리", ap: 1, hp: 2, desc: "리뷰 답글·사진·쿠폰. 플레이스 순위 +(광고비)" },
     ch_crew: { n: "알바 관리(면접·면담)", ap: 1, hp: 2, desc: "빈자리를 채우고 사기를 올린다. 이탈·태업 −" },
     ch_mgr: { n: "점장 고용/해지", ap: 0, hp: 0, desc: "점장 월급을 주고 매장을 맡긴다(투잡 칸 +1)" },
   },
@@ -355,6 +390,7 @@ export default {
     }
     if (!C.stores.length) return C.step < 3 ? "먼저 창업 준비(오픈)" : "매장이 없어요";
     if (id === "ch_shift") { const st = C.stores.find((x) => x.id === arg) || C.stores[0]; if (st.months === 0 && st.ap >= 2) return "오픈 준비 근무는 충분해요"; }
+    if (id === "ch_mgr") { const st = C.stores.find((x) => x.id === arg) || C.stores[0]; if (st.mgr) { const why = SJ.slotLock(s, () => { st.mgr = false; return () => { st.mgr = true; }; }); if (why) return why; } } // 버그 6: 마지막 점장을 끊으면 투잡 칸이 준다
     return null;
   },
   act(s, r, id, arg, boost = 1) {
@@ -422,8 +458,8 @@ export default {
       dem *= SJ.ramp(s, "chicken"); // 첫 매장 초반 고생: 배달앱 순위·리뷰가 쌓일수록 1로(sj.js ENTRY)
       if (unc) dem *= 1 - 0.08 * unc;
       if (st.morale < 35) dem *= 0.95;
-      if (st.mgr && !st.inc && st.shifts < 1) dem *= 0.95; // 오토 운영: 직원은 매출을 올릴 이유가 없다
-      if (C.scandal) dem *= 0.78;
+      if (st.mgr && !st.inc && st.shifts < 1) dem *= CH_TXT.auto; // 오토 운영: 직원은 매출을 올릴 이유가 없다
+      if (C.scandal) dem *= CH_TXT.scandal;
       if (st.lost) { dem *= 1 - st.lost; st.lost = 0; }
       if (s.era?.winter) dem *= 0.95;
       if (st.app) dem *= 0.985;
@@ -510,7 +546,7 @@ export default {
   migrate(s, T) { if (!T.v) T.v = 1; T.seen = T.seen || {}; T.stores = T.stores || []; if (T.v < 2) { T.v = 2; for (const st of T.stores) { st.flags ??= CH_F30.flag.def; st.rv ??= CH_F30.flag.def; st.revEv = !!st.revEv; st.revM = st.revM || 0; st.revOff = st.revOff || 0; st.renewAt ??= Math.floor(st.months / CH_F30.renew.every) * CH_F30.renew.every; } } },
   milestones: [
     { key: "ch_sign", title: "가맹 계약서에 서명", test: (s) => (s.chicken?.lv || 0) >= 1, lines: ["두꺼운 계약서 마지막 장에 이름을 썼다. 손에 땀이 났다.", "\"축하드립니다, 점주님.\" 점주님. 처음 듣는 호칭이다."] },
-    { key: "ch_lv2", title: "별점 관리 사장님", test: (s) => (s.chicken?.lv || 0) >= 2, lines: ["배달통 별점 4.8. 리뷰 알림이 울릴 때마다 심장이 먼저 뛴다.", "\"사장님 답글 보고 시켰어요.\" 답글도 장사다."] },
+    { key: "ch_lv2", title: "별점 관리 사장님", test: (s) => (s.chicken?.lv || 0) >= 2, lines: ["배달퉁 별점 4.8. 리뷰 알림이 울릴 때마다 심장이 먼저 뛴다.", "\"사장님 답글 보고 시켰어요.\" 답글도 장사다."] },
     { key: "ch_lv3", title: "가족 경영", test: (s) => (s.chicken?.lv || 0) >= 3, lines: ["월매출 5,500만. 토요일 저녁, 가족이 포장대에 섰다.", "엄마가 치킨무를 담으며 말했다. \"너 회사 다니는 거 맞니?\""] },
     { key: "ch_lv4", title: "BEP 돌파", test: (s) => (s.chicken?.lv || 0) >= 4, lines: ["1호점 투자금을 다 찾았다. 이제부터 튀기는 닭은 진짜 내 몫이다.", "엑셀의 빨간 숫자가 처음으로 검은색이 됐다."] },
     { key: "ch_lv5", title: "치킨 3형제", test: (s) => (s.chicken?.lv || 0) >= 5, lines: ["지도 앱에 황금닭 세 곳. 금요일 밤 세 매장 주문 알림이 동시에 울렸다.", "회사 월급의 1.5배. 사원증이 갑자기 가볍다."] },

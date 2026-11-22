@@ -202,14 +202,16 @@ function mapHtml() {
   // 사람 사이: 배우자 ↔ 아이(얇은 선)
   const sp = Lr.nodes.find((n) => S.rel[n.id]?.spouse), fam = sp ? Lr.nodes.filter((n) => n.id.startsWith("kid")).map((k) => `<line x1="${sp.x.toFixed(1)}" y1="${sp.y.toFixed(1)}" x2="${k.x.toFixed(1)}" y2="${k.y.toFixed(1)}" stroke="#ff7eb6" stroke-width="1" stroke-opacity=".55"/>`).join("") : "";
   const labels = Lr.dense ? "" : Lr.wedges.map((w) => { const t = (w.a0 + w.a1) / 2, G = GROUPS[w.k]; let x = cx + Math.cos(t) * RX * 1.17, y = cy + Math.sin(t) * RY * 1.13; x = Math.max(40, Math.min(W - 40, x)); y = Math.max(11, Math.min(H - 11, y)); return `<span class="pp-sl" style="left:${pct(x, W)};top:${pct(y, H)};--gc:${G.c}">${G.ic} ${esc(G.s)}</span>`; }).join("");
-  const nd = Lr.nodes.map((n) => `<button class="pp-n${n.rival ? " rv" : ""}${V.info === n.id ? " on" : ""}" data-pn="${esc(n.id)}" style="left:${pct(n.x, W)};top:${pct(n.y, H)};--gc:${GROUPS[n.g].c}">${n.emo ? `<i class="pp-f emo" style="width:${FS}px;height:${FS}px">${n.emo}</i>` : faceHtml(n.id, FS)}${n.ic ? `<em>${n.ic}</em>` : ""}<b>${esc(n.name)}</b></button>`).join("");
+  // 화면 정리(v4.31): 사람이 20명을 넘으면 이름표는 가까운 20명만. 나머지는 얼굴을 누르면 아래 칸에 이름이 나온다.
+  const nameOn = Lr.nodes.length > 20 ? new Set([...Lr.nodes].sort((p, q) => ((S.rel[q.id]?.spouse || S.rel[q.id]?.lover ? 1 : 0) - (S.rel[p.id]?.spouse || S.rel[p.id]?.lover ? 1 : 0)) || q.aff - p.aff).slice(0, 20).map((n) => n.id)) : null;
+  const nd = Lr.nodes.map((n) => `<button class="pp-n${n.rival ? " rv" : ""}${V.info === n.id ? " on" : ""}" data-pn="${esc(n.id)}" style="left:${pct(n.x, W)};top:${pct(n.y, H)};--gc:${GROUPS[n.g].c}">${n.emo ? `<i class="pp-f emo" style="width:${FS}px;height:${FS}px">${n.emo}</i>` : faceHtml(n.id, FS)}${n.ic ? `<em>${n.ic}</em>` : ""}${!nameOn || nameOn.has(n.id) || V.info === n.id ? `<b>${esc(n.name)}</b>` : ""}</button>`).join("");
   let me = ""; const mst = S.me.avatar && thumbStyle(S.me.avatar, 52);
   if (mst) me = `<i class="pp-f" style="width:52px;height:52px;${mst}"></i>`; else { let f = ""; try { f = X.meFace() || ""; } catch (e) {} me = `<i class="pp-f" style="width:52px;height:52px;background-image:url('${f}');background-size:cover"></i>`; }
   const sel = V.info && Lr.nodes.find((n) => n.id === V.info);
   const gcount = Lr.wedges.map((w) => `<span class="chip" style="border:1px solid ${GROUPS[w.k].c}66;color:${GROUPS[w.k].c}">${GROUPS[w.k].ic} ${esc(GROUPS[w.k].n)} ${Lr.nodes.filter((n) => n.g === w.k).length}</span>`).join("");
   const empty = !Lr.nodes.length;
   return `<h2>관계도 <span class="tag gold">${total}명</span><button class="x" data-close>✕</button></h2>
-    <div class="small muted">지금 인생의 사람들이에요. 가까울수록 안쪽, 선이 굵고 분홍일수록 호감이 높아요. 얼굴을 누르면 그 사람 창이 열려요.</div>
+    <div class="small muted">지금 인생의 사람들이에요. 가까울수록 안쪽, 선이 굵고 분홍일수록 호감이 높아요. 얼굴을 누르면 그 사람 창이 열려요.${nameOn ? " 사람이 많아서 이름표는 가까운 20명만 보여요." : ""}</div>
     <div class="pp-map" style="aspect-ratio:${W}/${H}"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${wedges}${lines}${fam}</svg>${labels}${nd}
       <div class="pp-me" style="left:${pct(cx, W)};top:${pct(cy, H)}">${me}<b>나</b></div>
       ${empty ? `<div class="pp-empty">아직 아는 사람이 없어요.<br>지도에서 '???'에게 말을 걸어 보세요.</div>` : ""}</div>

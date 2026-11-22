@@ -134,14 +134,14 @@ function dealScene(s) {
 }
 // 표절 시비: 내 작품이 의심받는다. ev=true 면 pickEvent 형식으로
 function plagScene(s, ev) {
-  const sc = { title: "표절 시비", onChoose: "wn_plag",
+  const sc = { title: "표절 시비", onChoose: "wn_plag", ...(s.webnovel?.seen?.p1 === undefined ? { cine: "wn_plag" } : {}), // 화보는 처음 한 번만
     text: "\"이거 그 작품이랑 설정 똑같은데?\" 댓글 하나가 커뮤니티로 퍼졌다. 회귀, 계약, 복수. 이 장르에서 안 겹치는 설정이 있나 싶지만 캡처가 돌기 시작했다.",
     choices: [
       { t: "작업 노트·날짜를 공개하고 차분히 해명", check: { stat: "write", dc: 48 }, ok: { text: "몇 년 전 날짜가 찍힌 설정 노트가 오히려 화제가 됐다.", eff: { wn_fans: 4, mental: -1 } }, ng: { text: "해명글이 변명처럼 읽혔다. 댓글이 더 붙었다.", eff: { wn_fans: -6, mental: -5 } } },
       { t: "무시하고 연재를 이어 간다", eff: {}, text: "대꾸하지 않았다." },
       { t: "겹친다는 장면을 고쳐 다시 올린다", eff: { wn_bank: -3, wn_hit: -5, mental: -1 }, text: "주말 내내 세 화를 고쳐 썼다. 시비는 조용히 가라앉았다." },
     ] };
-  return ev ? { t: sc.title, x: sc.text, onChoose: sc.onChoose, c: sc.choices } : { kind: "event", tag: "웹소설", ...sc };
+  return ev ? { t: sc.title, x: sc.text, onChoose: sc.onChoose, c: sc.choices, cine: sc.cine } : { kind: "event", tag: "웹소설", ...sc };
 }
 // 편집자 피드백: 매니지먼트 수수료 30%의 값어치
 function editScene(s, ev) {
@@ -164,7 +164,7 @@ export function f30Scene(s, r, what) {
   return plagScene(s);
 }
 
-// ───────── 이벤트(16개 + 필명 생활) ─────────
+// ───────── 이벤트(16개 + 웹소설 고유 골치 3개) ─────────
 function pickEvent(s, r) {
   const W = s.webnovel, w = W.work, seen = W.seen, once = (id) => seen[id] === undefined;
   const L = [];
@@ -195,11 +195,20 @@ function pickEvent(s, r) {
         { t: "다음 화에서 급히 반전", check: { stat: "write", dc: 52 }, ok: { text: "급하게 쓴 반전이 오히려 명장면이 됐다.", eff: { wn_fans: 6 } }, ng: { text: "복선 없이 뒤집었다. \"개연성 어디 감?\"", eff: { wn_ret: -8, wn_fans: -3, mental: -4 } } }] }));
     add("e15", once("e15") && W.lv >= 3 && w.fans >= 300 && r.chance(0.25), () => ({ t: "플랫폼 정책 변경", x: `주력 플랫폼이 공지를 냈다. 특정 장르 연재를 더 이상 받지 않는다고. 내 장르다. 독자 ${Math.round(w.fans).toLocaleString()}명이 하루아침에 길을 잃었다.`,
       c: [{ t: "다른 플랫폼으로 이사", eff: { wn_fans: -35, hp: -8 }, text: "이사 공지를 따라온 독자는 셋 중 둘." }, { t: "장르를 비틀어 남는다", eff: { stat: { write: 1 }, wn_fans: -20, wn_ret: -3 }, text: "검열을 피해 설정을 바꿨다. 일부 독자가 떠났다." }] }));
-    // 필명 생활: 회사에 들키면 안 된다
-    add("x1", working(s) && w.fans >= 200 && (s.t - (seen.x1 ?? -99)) >= 14, () => ({ t: "회사 단톡방의 링크", x: `점심시간, 옆자리 대리가 휴대폰을 내밀었다. "이 소설 봤어요? 작가가 우리 업계 사람 같아요." '${w.n}'이었다.`,
-      c: [{ t: "모르는 척 맞장구친다", check: { stat: "talk", dc: 45 }, ok: { text: "\"오 재밌겠네요.\" 표정 관리 성공.", eff: { mental: -1 } }, ng: { text: "귀가 빨개졌다. 대리가 눈을 가늘게 떴다.", eff: { eye: 6, mental: -3 } } },
-        { t: "\"사실… 저예요.\" 털어놓는다", eff: { eye: 5, mental: 4, wn_fans: 5 }, text: "사무실에 비밀 독자 모임이 생겼다. 팀장만 모른다. 아직은." },
-        { t: "필명 계정을 잠그고 프로필을 바꾼다", eff: { wn_fans: -3, mental: -1 }, text: "작가 SNS를 비공개로 돌렸다. 독자 몇이 서운해했다." }] }));
+    // x1 '회사 단톡방의 링크'(회사에 들킴)는 뺐다 → 들키는 장면은 engine/caught.js 가 투잡별로 맡는다
+    // 11-23 웹소설 고유 골치 3개: 프로모션 심사 탈락 · 담당 편집자 교체 · 불법 공유(텍본)
+    add("n1", w.paid && w.fans >= 150 && (s.t - (seen.n1 ?? -99)) >= 16, () => ({ t: "프로모션 심사 탈락", x: "매니지먼트 메일이 왔다. \"이번 달 플랫폼 프로모션 심사, 아쉽게 탈락입니다.\" 프로모션에 걸린 작품은 1화 조회수가 열 배다. 같은 날 연재를 시작한 옆 작품은 붙었다.",
+      c: [{ t: "초반 5화를 고쳐 다음 심사에 다시 낸다", check: { stat: "write", dc: 50 }, ok: { text: "1화 첫 문단을 사건으로 바꿨다. 다음 달, 배너 구석에 내 표지가 걸렸다.", eff: { wn_hit: 10, wn_bank: -2, hp: -4 } }, ng: { text: "\"이번에도 아쉽게…\" 지난번과 같은 문장의 메일이 왔다.", eff: { wn_bank: -2, hp: -4, mental: -3 } } },
+        { t: "프로모션 없이 연참으로 밀어 올린다", eff: { wn_bank: -3, wn_fans: 4, wn_tired: 8 }, text: "사흘 동안 하루 두 화. 실시간 순위에 잠깐 제목이 떴다." },
+        { t: "다음 작품 때 노리기로 한다", eff: { mental: -2 }, text: "'알겠습니다'라고 답장했다. 옆 작품 조회수는 안 보기로 했다." }] }));
+    add("n2", w.mgmt && !w.indie && w.ep >= 20 && !w.ev.n2, () => ({ t: "담당 편집자가 바뀌었다", x: `담당 편집자가 퇴사했다. 새 담당은 ${w.g === "rofan" ? "무협" : "로맨스판타지"}만 맡아 온 사람이다. 인수인계 메모는 두 줄. 피드백 메일이 2주째 없다. 회사 몫은 이번 달에도 그대로 나간다.`,
+      c: [{ t: "먼저 전화해 설정과 완결 계획을 설명한다", check: { stat: "talk", dc: 45 }, ok: { text: "한 시간 통화 끝에 새 담당이 말했다. \"다음 프로모션 후보로 올려 볼게요.\"", eff: { wn_hit: 6, wn_ret: 2 } }, ng: { text: "\"네, 네. 참고할게요.\" 수화기 너머로 타자 소리만 들렸다.", eff: { mental: -3 } } },
+        { t: "피드백 없이 내 판단으로 쓴다", eff: { wn_ret: -2, mental: 2 }, text: "빨간 줄 없는 원고는 편했다. 오타 지적 댓글이 조금 늘었다." },
+        { t: "회사에 담당을 바꿔 달라고 요청한다", eff: { wn_ret: 3, wn_tired: 5, mental: -2 }, text: "한 달을 기다려 장르 담당이 붙었다. 그동안 메일을 여섯 통 썼다." }] }));
+    add("n3", w.paid && w.fans >= 200 && (s.t - (seen.n3 ?? -99)) >= 20, () => ({ t: "40분 만에 텍본", x: `최신 화를 올린 지 40분. 불법 공유방에 텍스트 파일이 돌았다. 독자 ${Math.round(w.fans).toLocaleString()}명이 100원씩 내고 보는 화다. 공유방 조회수가 내 결제 수보다 많다.`,
+      c: [{ t: "매니지먼트에 넘기고 원고에 집중한다", eff: { mental: -2 }, text: "\"법무팀에 전달했습니다.\" 답은 그게 끝이었다. 다음 화를 썼다." },
+        { t: "밤새 링크를 찾아 하나하나 신고한다", eff: { hp: -6, wn_tired: 6, wn_fans: 3 }, text: "링크 서른 개를 내렸다. 아침에 서른한 번째가 올라왔다. 그래도 몇 명은 결제로 돌아왔다." },
+        { t: "작가의 말에 솔직하게 적는다", check: { stat: "write", dc: 48 }, ok: { text: "\"100원이 모여 다음 화가 됩니다.\" '정주행 결제하고 옴' 댓글이 줄줄이 달렸다.", eff: { wn_fans: 4, mental: 2 } }, ng: { text: "\"독자를 도둑 취급하네.\" 엉뚱한 사람들이 화를 냈다.", eff: { wn_fans: -3, mental: -3 } } }] }));
   }
   // 완결 뒤(late)
   add("e11", !W.ipOffer && W.lv >= 4 && W.ip < 2 && W.bestPeak >= WN_BAL.ipPeak && r.chance(clamp(W.bestPeak / WN_BAL.ipDiv, 0.02, 0.15)), () => {
@@ -214,8 +223,8 @@ function pickEvent(s, r) {
   });
   if (!L.length) return null;
   const [id, f] = r.pick(L), e = f();
-  seen[id] = s.t; if (w && id === "e13") w.ev.e13 = 1; if (id === "e11") W.ipOffer = s.t; if (id === "e12") W.audio = s.t;
-  return { kind: "event", tag: "웹소설", title: e.t, text: e.x, onChoose: e.onChoose, choices: e.c };
+  seen[id] = s.t; if (w && id === "e13") w.ev.e13 = 1; if (w && id === "n2") w.ev.n2 = 1; if (id === "e11") W.ipOffer = s.t; if (id === "e12") W.audio = s.t;
+  return { kind: "event", tag: "웹소설", title: e.t, text: e.x, onChoose: e.onChoose, choices: e.c, ...(e.cine ? { cine: e.cine } : {}) };
 }
 export const seasonId = (s) => `${s.year}-${s.cal <= 6 ? 1 : 2}`;
 
@@ -360,7 +369,7 @@ export default {
     let ev = null;
     if (wk && seen.e01 === undefined && wk.ep > 0) { seen.e01 = s.t; ev = { kind: "event", tag: "웹소설", title: "1화 조회수 7", onChoose: "wn_e01", text: "퇴근 후 세 시간을 쏟은 1화를 올렸다. 다음 날 아침 조회수는 7. 그중 하나는 내가 새로고침한 것이다.",
       choices: [{ t: "그래도 매일 밤 10시에 올린다", eff: { hp: -4, wn_ret: 3 }, text: "알림 설정 독자가 하나 생겼다. 내일도 10시." }, { t: "1화를 뜯어고친다", eff: { stat: { write: 1 }, wn_bank: -1, wn_hit: 8 }, text: "첫 문단을 사건으로 바꿨다. 이탈이 줄었다." }, { t: "조용히 접는다", eff: { mental: 4 }, text: "폴더 속에 1화 하나가 남았다." }] }; }
-    else if (wk && !wk.mgmt && wk.ep >= 40 && wk.fans >= 80 && (s.t - (wk.mgmtNo || -99)) >= 4 && (wk.mgmtNo ? r.chance(0.5) : true)) { ev = { kind: "event", tag: "웹소설", title: "매니지먼트의 쪽지", onChoose: "wn_mgmt", text: `연재 ${wk.ep}화째, 쪽지가 왔다. "작가님, 유료화 같이 해 보시죠." 분배는 작가 7, 회사 3. 선인세는 없다.`,
+    else if (wk && !wk.mgmt && wk.ep >= 40 && wk.fans >= 80 && (s.t - (wk.mgmtNo || -99)) >= 4 && (wk.mgmtNo ? r.chance(0.5) : true)) { ev = { kind: "event", tag: "웹소설", title: "매니지먼트의 쪽지", onChoose: "wn_mgmt", text: `연재 ${wk.ep}화째, 쪽지가 왔다. "작가님, 유료화 같이 해 보시죠." 분배는 작가 7, 회사 3. 독점 여부와 선인세는 계약 뒤에 따로 정하자고 한다.`,
       choices: [{ t: "계약한다", eff: {}, text: "표지와 홍보를 회사가 맡는다. 50화부터 유료 연재." }, { t: "더 큰 곳의 연락을 기다린다", eff: {}, text: "답장을 미뤘다. 쪽지함이 조용하다." }] }; wk.mgmtNo = s.t; }
     else if (wk && wk.mgmt && !wk.deal && !wk.indie && wk.ep >= WN_F30.deal.ep) { wk.deal = "ask"; ev = dealScene(s); }
     else if (W.firstPaid && W.firstPaid <= s.t + 1 && seen.e08 === undefined && wk?.paid && rev > 0) { seen.e08 = s.t; ev = { kind: "event", tag: "웹소설", title: "첫 정산서", onChoose: "wn_e08", text: `유료화 첫 달 정산서가 왔다. 독자 ${Math.round(wk.fans).toLocaleString()}명, 한 화 100원. 플랫폼 수수료와 매니지먼트 몫을 떼고 나니 ${won(rev)}. 치킨 ${Math.max(1, Math.round(rev / 2))}마리다.`,
@@ -443,7 +452,7 @@ export default {
     { key: "wn_paid", title: "유료화 작가", test: (s) => (s.webnovel?.lv || 0) >= 3, lines: ["51화 옆에 작은 동전 아이콘이 붙었다.", "내 문장에 누군가 100원을 냈다. 출근길 지하철에서 몇 번이고 다시 봤다."] },
     { key: "wn_done", title: "완결 작가", test: (s) => (s.webnovel?.lv || 0) >= 4, lines: ["완결 작품 비율은 열에 둘이 안 된다.", "'완결' 딱지가 붙은 표지를 바탕화면에 깔았다."] },
     { key: "wn_ip", end: true, kind: "good", epi: "내 소설이 웹툰이 됐다. 크레딧 '원작' 옆 필명은 회사 사람들이 끝까지 몰랐다.", title: "원작자", test: (s) => (s.webnovel?.ip || 0) >= 1, lines: ["웹툰 1화 첫 컷, 내가 상상한 장면이 색을 입고 있었다.", "엔딩 크레딧 첫 줄 '원작'. 그 옆에 내 필명이 있었다."] },
-    { key: "wn_steady", end: true, kind: "good", epi: "대박은 없었다. 완결작 인세가 매달 치킨값만큼 꼬박꼬박 들어온다.", title: "성실한 완결 작가", test: (s) => { const W = s.webnovel; return !!W && (W.done || 0) >= 3 && !(W.ip > 0) && W.t0 !== null && W.t0 !== undefined && s.t - W.t0 >= WN_BAL.steadyM && !(s.co?.quit || s.co?.fired); }, lines: ["완결 세 질. 대박은 없었지만 매달 치킨값 이상은 꼬박꼬박 들어왔다.", "회사에선 여전히 아무도 모른다. 사원증과 필명, 이름이 두 개인 삶."] },
+    { key: "wn_steady", end: true, kind: "good", epi: "대박은 없었다. 완결작 인세가 매달 치킨값만큼 꼬박꼬박 들어온다.", title: "성실한 완결 작가", test: (s) => { const W = s.webnovel; return !!W && (W.done || 0) >= 3 && !(W.ip > 0) && W.t0 !== null && W.t0 !== undefined && s.t - W.t0 >= WN_BAL.steadyM && !(s.co?.quit || s.co?.fired); }, lines: (s) => ["완결 세 질. 대박은 없었지만 매달 치킨값 이상은 꼬박꼬박 들어왔다.", (s?.co?.warns || 0) > 0 || Object.keys(s?.co?.cgSeen || {}).length ? "회사에는 한 번 들켰다. 그래도 연재는 멈추지 않았다. 사원증과 필명, 이름이 두 개인 삶." : "회사에선 여전히 아무도 모른다. 사원증과 필명, 이름이 두 개인 삶."] } /* 11-23 발각 이력이 있으면 다른 문장(lines 가 함수면 core.js checkPerks 가 불러 쓴다) */,
     { key: "wn_ghost", end: true, kind: "bad", epi: "폴더 속 1화만 열일곱 개. 20화의 벽은 끝내 넘지 못했다.", title: "20화의 유령", test: (s) => { const W = s.webnovel; return !!W && W.t0 !== null && W.t0 !== undefined && !!s.sj?.active?.includes(K) && s.t - W.t0 >= 36 && W.maxEp < 20; }, lines: ["3년. 폴더 속에는 1화만 열일곱 개가 남았다.", "다시 1화부터. 이번엔 20화까지 비축분을 먼저 쓰기로 했다."] },
   ],
   perks: [

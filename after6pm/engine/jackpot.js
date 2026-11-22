@@ -288,7 +288,7 @@ function resolve(s, r, x) {
   const tier = x.force || rollTier(r, x.ok, d.meh), o = d.out[tier];
   V.stat.tier[tier] = (V.stat.tier[tier] || 0) + 1;
   (V.hist = V.hist || []).push({ id: d.id, t: s.t, tier, k: x.k }); if (V.hist.length > 40) V.hist.shift();
-  const L = applyOut(s, r, d.job, o, x.k, d.id);
+  const L = applyOut(s, r, d.job, o, x.k, d.id); if ((d.id === "wn_drama" || d.id === "wn_toon") && tier !== "bust" && s.webnovel) s.webnovel.ipDrama = (s.webnovel.ipDrama || 0) + 1; // 히든 길 '2차 판권 1번'(엎어진 계약은 안 센다)
   if (tier === "big") { const bk = D.STAT_BRK.jp[d.job]; if (bk) L.push(giveBrk(s, bk, "대박")); L.push(`매력 +${gainStat(s, "charm", 2, "jp").toFixed(1)}`); } // v4.28 큰 성공의 자신감·돌파 계기
   if (o.fol) V.folQ.push({ id: o.fol.id, t: s.t + o.fol.after, k: x.k });
   log(s, `[한방] ${d.n} · ${TIER_N[tier]}`, "work");
@@ -309,7 +309,7 @@ export const JP_CHOOSE = {
     const c = d.ch[i]; if (!c) return []; // 거절
     const V = st(s);
     if (c.safe) { // 판권만 판다: 계약금만 확정
-      const a = M(s, r.range(1500, 2500)); book(s, a); log(s, `[한방] ${d.n} · 판권만 팔았다`, "work");
+      const a = M(s, r.range(1500, 2500)); book(s, a); log(s, `[한방] ${d.n} · 판권만 팔았다`, "work"); if (d.job === "webnovel" && s.webnovel) s.webnovel.ipDrama = (s.webnovel.ipDrama || 0) + 1; // 히든 길 '2차 판권 1번'
       return [`계약금 +${won(a)}`];
     }
     if (c.cost) book(s, -M(s, c.cost));

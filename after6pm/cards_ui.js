@@ -30,13 +30,14 @@ function css() {
 .gc-res{margin-top:12px;border-radius:12px;padding:12px;background:#ffffff0d;font-size:13px;line-height:1.6}.gc-res b{color:var(--gold,#ffd25e)}
 .gc-luck{display:inline-block;font-size:11px;font-weight:800;color:#2a1a00;background:var(--gold,#ffd25e);border-radius:999px;padding:1px 8px;margin-left:4px}
 .bag-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}.bag-top div{background:#ffffff0b;border-radius:10px;padding:8px;text-align:center}.bag-top b{display:block;font-size:17px}.bag-top span{font-size:11px;color:var(--muted,#9aa0b8)}
-.bag-tabs{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin:6px 0 8px;scrollbar-width:none}.bag-tabs button{flex:0 0 auto;font:inherit;font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid #ffffff26;background:none;color:inherit;cursor:pointer}.bag-tabs button.on{background:var(--gold,#ffd25e);color:#2a1a00;border-color:transparent;font-weight:800}
+.bag-tabs{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin:6px 0 8px;scrollbar-width:none}.bag-tabs button{flex:0 0 auto;font:inherit;font-size:12px;padding:6px 12px;min-height:40px;border-radius:999px;border:1px solid #ffffff26;background:none;color:inherit;cursor:pointer}.bag-tabs button.on{background:var(--gold,#ffd25e);color:#2a1a00;border-color:transparent;font-weight:800}
 .bag-l{display:flex;flex-direction:column;gap:6px}.bag-i{display:flex;align-items:center;gap:8px;background:#ffffff0a;border-radius:12px;padding:8px 10px}.bag-i.no{opacity:.55}
 .bag-i .ic{font-size:20px;width:26px;text-align:center;flex:0 0 auto}.bag-i .tx{flex:1;min-width:0}.bag-i .tx b{font-size:13px;display:block;word-break:keep-all}.bag-i .tx span{font-size:11.5px;color:var(--muted,#9aa0b8);display:block;line-height:1.4;word-break:keep-all}
-.bag-i button{flex:0 0 auto;font:inherit;font-size:12px;font-weight:700;padding:7px 10px;border-radius:10px;border:0;background:var(--gold,#ffd25e);color:#2a1a00;cursor:pointer}.bag-i button:disabled{background:#ffffff1a;color:#ffffff80;cursor:default}
+.bag-i button{flex:0 0 auto;font:inherit;font-size:12px;font-weight:700;padding:7px 12px;min-height:40px;min-width:56px;border-radius:10px;border:0;background:var(--gold,#ffd25e);color:#2a1a00;cursor:pointer}.bag-i button:disabled{background:#ffffff1a;color:#ffffff80;cursor:default}
 .bag-i em{font-style:normal;font-size:11px;color:#7fe3a5;flex:0 0 auto}
 .bag-set{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.bag-set div{border-radius:10px;padding:7px 9px;background:#ffffff08;border:1px solid #ffffff14;font-size:11.5px;line-height:1.4;word-break:keep-all}.bag-set div.on{border-color:#7fe3a5;background:#7fe3a514}.bag-set b{font-size:12px;display:block}
 .bag-pack{border-radius:14px;padding:12px;margin:8px 0;background:linear-gradient(135deg,#5aa8ff22,#b67bff22,#ffc43d22);border:1px solid #ffffff22}.bag-pack .row2{display:flex;gap:6px;margin-top:8px}.bag-pack .row2 button{flex:1;font:inherit;font-size:13px;font-weight:800;padding:10px 6px;border-radius:12px;border:0;cursor:pointer;background:var(--gold,#ffd25e);color:#2a1a00}.bag-pack .row2 button.ad{background:#ffffff1c;color:#fff}.bag-pack .row2 button:disabled{opacity:.45;cursor:default}
+.tjx-bagmore{margin-top:8px}.tjx-bagmore>summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center;padding:0 12px;border:1px dashed #ffffff33;border-radius:12px;font-size:13px;font-weight:700;color:#cfd4ea}.tjx-bagmore>summary::-webkit-details-marker{display:none}.tjx-bagmore[open]>summary{margin-bottom:6px}
 .bag-mini{font-size:11.5px;color:var(--muted,#9aa0b8);line-height:1.5;word-break:keep-all}
 .ad-box{border:1px dashed #ffffff44;border-radius:14px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:16px;background:#ffffff06}.ad-box b{font-size:13px;color:var(--gold,#ffd25e)}.ad-box span{font-size:12px;color:var(--muted,#9aa0b8)}
 .ad-bar{width:80%;height:6px;border-radius:4px;background:#ffffff14;overflow:hidden}.ad-bar i{display:block;height:100%;width:0;background:var(--gold,#ffd25e);transition:width 2.4s linear}`;
@@ -91,7 +92,7 @@ export function bagWin(ctx, tab0) {
   css();
   const { S, E, esc, won, save, toast, openWin, closeWin } = ctx;
   GC.ensure(S);
-  let tab = tab0 || "gear";
+  let tab = tab0 || "gear", otherOpen = false; // otherOpen: '다른 투잡 장비' 접기 상태(다시 그려도 유지)
   const draw = () => {
     const B = IT.bagInfo(S), g = S.gc, act = new Set(S.sj?.active || []);
     const tabs = [["gear", "장비"], ["final", "최종"], ["memo", "기념품"], ["cons", "소모품"], ["life", "생활"], ["cards", "카드"], ["sets", "세트"]];
@@ -107,7 +108,7 @@ export function bagWin(ctx, tab0) {
     } else {
       let list = B.cats[tab].list;
       if (tab === "gear") list = list.slice().sort((a, b) => (act.has(b.job) - act.has(a.job)) || (b.own - a.own));
-      body = `<div class="bag-l">${list.map((x) => {
+      const row = (x) => {
         const jn = x.job ? `${IT.jobN(x.job)} · ` : "";
         let right;
         if (x.cat === "cons") right = x.cnt ? `<button data-use="${x.id}">쓰기 ×${x.cnt}</button>` : x.price != null ? `<button data-buy="${x.id}">${won(x.price)}</button>` : `<em>선물·보상</em>`;
@@ -115,7 +116,10 @@ export function bagWin(ctx, tab0) {
         else if (x.cat === "memo") right = `<em style="color:var(--muted,#9aa0b8)">이벤트</em>`;
         else right = `<button data-buy="${x.id}">${won(x.price)}</button>`;
         return `<div class="bag-i ${x.own || x.cnt ? "" : "no"}"><span class="ic">${x.cat === "memo" && !x.own ? "❔" : CAT_IC[x.cat]}</span><div class="tx"><b>${x.cat === "memo" && !x.own ? "???" : esc(x.n)}</b><span>${esc(jn)}${x.cat === "memo" && !x.own ? "이벤트에서 좋은 선택을 하면 얻어요" : esc(x.d)}</span></div>${right}</div>`;
-      }).join("")}</div>`;
+      };
+      // 화면 정리(v4.31): 장비는 가진 것 + 지금 하는 투잡 것만 먼저. 나머지는 한 줄로 접는다.
+      const mine = tab === "gear" ? list.filter((x) => x.own || act.has(x.job)) : list, rest = tab === "gear" ? list.filter((x) => !(x.own || act.has(x.job))) : [];
+      body = `${mine.length ? `<div class="bag-l">${mine.map(row).join("")}</div>` : `<div class="bag-mini">아직 가진 장비가 없어요.</div>`}${rest.length ? `<details class="tjx-bagmore" ${otherOpen ? "open" : ""}><summary>다른 투잡 장비 ${rest.length}개 ▾</summary><div class="bag-l">${rest.map(row).join("")}</div></details>` : ""}`;
       if (tab === "final") body = `<div class="bag-mini" style="margin-bottom:6px">투잡 하나를 크게 바꾸지만 비싸요. 지금 살까, 모아서 파이어할까? 카드팩 전설 칸에서도 가끔 나와요.</div>` + body;
       if (tab === "gear") body = `<div class="bag-mini" style="margin-bottom:6px">하는 투잡 장비가 위에 있어요. 이벤트·라이벌 승부·미니게임 대성공으로도 얻어요.</div>` + body;
     }
@@ -130,6 +134,7 @@ export function bagWin(ctx, tab0) {
   const bind = (w) => {
     w.querySelectorAll("[data-close]").forEach((b) => b.onclick = () => { closeWin(); ctx.render?.(); });
     w.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { tab = b.dataset.tab; re(w); });
+    { const d = w.querySelector(".tjx-bagmore"); if (d) d.addEventListener("toggle", () => { otherOpen = d.open; }); }
     w.querySelectorAll("[data-buy]").forEach((b) => b.onclick = () => { const r = E.buyItem(S, b.dataset.buy); toast(r.lines || [], r.msg); if (r.ok) save(); re(w); });
     w.querySelectorAll("[data-use]").forEach((b) => b.onclick = () => { const r = IT.use(S, b.dataset.use); toast(r.lines || [], r.msg); if (r.ok) { if (S.gc.shards >= GC.SHARD_N) GC.addShard(S, E.R(S), 0); save(); } re(w); });
     w.querySelector("[data-pack]")?.addEventListener("click", () => packOpen(ctx, false));

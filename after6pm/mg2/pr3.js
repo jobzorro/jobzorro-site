@@ -208,7 +208,7 @@ export const GAME = {
 .mg-pr3 .p3tut.off{opacity:0;visibility:hidden}
 .mg-pr3 .p3tc{pointer-events:auto;background:#fffdf6;color:#2a2018;border-radius:14px;padding:9px 12px 8px;box-shadow:0 4px 0 #0006,0 0 0 2px #c77dff;max-width:292px;font-size:13px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-pr3 .p3tut.pop .p3tc{animation:mgp3pop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-pr3 .p3tc em{font-style:normal;display:inline-block;background:#8a3fc0;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
+.mg-pr3 .p3tc em{font-style:normal;display:inline-block;background:#8a3fc0;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
 .mg-pr3 .p3tc p{margin:0}.mg-pr3 .p3tc b{color:#6a2a9a}.mg-pr3 .p3tc b.p3rd{color:#c0392b}.mg-pr3 .p3tc b.p3gr{color:#1f8a5a}.mg-pr3 .p3tc b.p3pk{color:#d0407a}.mg-pr3 .p3tc b.p3bl{color:#1f5ac0}
 .mg-pr3 .p3tb{margin-top:6px;display:flex;justify-content:center}
 .mg-pr3 .p3skip{background:none!important;border:0!important;color:#8a8070!important;font-size:11.5px;text-decoration:underline;padding:2px 6px!important}

@@ -1,6 +1,7 @@
 // 기존 투잡 'airbnb'(에어씨앤씨) 이야기 보강. 규약: engine/story/README.md
 // 돈·행동·단속(AB_LAW)·기존 사건 5개(체크인 대소동·파티 금지 위반·외국어 후기 폭탄·고장 난 보일러·불법 숙박 단속)는 engine/abnb.js 그대로.
 // 여기서는 기획 데이터 stay.json 이벤트 16개 + 단기임대(shortrent.json)에서 숙소에 맞는 고생 4개 + 이 투잡만의 2개 = 22개,
+// 11-23: 다른 투잡·엔진 사건과 틀이 겹치던 5개(s07·s15·s16·s17·s19)를 숙소에서만 생기는 일(s23~s27)로 바꿨다. 옛 id 는 다시 쓰지 않는다(옛 저장의 seen).
 // 숙소 단계 5개(영업신고증 → 첫 리뷰 → 예약률 50% → 리뷰 50개 → 숙소 브랜드)에 맞춘 화보, 특전 2장, 시너지 2개.
 import * as D from "../defs.js";
 import { addMoney, won } from "../core.js";
@@ -72,9 +73,10 @@ function evList(s) {
     { id: "s06", ph: 1, u: best, ok: () => st >= 8 && !X.proof, on: true, t: "깨진 머그컵, 증거 없음", x: "체크아웃 후 점검. 머그컵 둘이 깨졌고 스탠드 갓이 찌그러졌다. 게스트는 원래 그랬다고 한다. 입실 전 사진이 없다.",
       c: [{ t: "이번엔 넘기고, 체크인 전 사진을 루틴으로 만든다", eff: { cash: -Math.round(6 * pi) }, text: "머그컵은 새로 샀다. 이제 청소가 끝나면 방 사진 12장부터 찍는다." },
           { t: "끝까지 배상을 요구한다", check: { stat: "talk", dc: 60 }, ok: { text: "게스트가 마지못해 2만 원을 보냈다. 메시지 스무 통이 오갔다.", eff: { cash: 2, mental: -3 } }, ng: { text: "\"You are accusing me?\" 보복 리뷰가 달렸다.", eff: { abs_star: -0.06, mental: -5 } } }] },
-    { id: "s07", ph: 1, u: best, ok: () => [3, 4, 10].includes(s.cal) && company(s) && !A.cohost, t: "청소 이모님의 휴가", x: "벚꽃·단풍 시즌 풀부킹인데 청소 담당 이모님이 일주일 휴가를 간다. 퇴실 11시, 입실 3시. 회사 점심시간은 1시간이다.",
-      c: [{ t: "구인 앱으로 예비 청소 인력을 급히 구한다", check: { stat: "sense", dc: 45 }, ok: { text: "꼼꼼한 대학생이 왔다. 사진으로 확인해 보니 수건 각도까지 맞췄다.", eff: { cash: -Math.round(8 * pi * us.length) } }, ng: { text: "침대 밑 머리카락. 리뷰에 \"not so clean\"이 달렸다.", eff: { cash: -Math.round(8 * pi * us.length), abs_star: -0.05 } } },
-          { t: "연차를 쓰고 직접 청소한다", eff: { eye: 5, hp: -14 }, text: "\"이 시즌에 연차를요?\" 팀장 눈썹이 올라갔다. 이불 네 채를 빨았다." }] },
+    { id: "s25", ph: 1, u: best, ok: () => [3, 4, 10].includes(s.cal) && st >= 8, t: "한 방에 두 팀", x: `${[3, 4].includes(s.cal) ? "벚꽃" : "단풍"} 주말, ${best.name}에 같은 날짜 예약이 두 건 잡혔다. 숙박앱 두 곳의 달력 연동이 하루 밀려 있었다. 한 팀은 넉 달 전에 잡았고, 다른 팀은 이미 공항철도 안이다.`,
+      c: [{ t: "늦게 잡은 팀을 근처 숙소로 옮기고 차액을 내가 낸다", eff: { cash: -Math.round(adr(best) * 1.5), hp: -3, abs_star: 0.02 }, text: "동네 호스트 단톡방에 빈방을 물었다. 차액과 택시비를 보냈다. \"Host fixed it in an hour.\"" },
+          { t: "사정을 설명하고 하루만 미뤄 달라고 부탁한다", check: { stat: "lang", dc: 45 }, ok: { text: "\"OK, we can do Busan first.\" 일정을 바꿔 줬다. 1박은 받지 않았다.", eff: { cash: -Math.round(adr(best)), stat: { lang: 0.5 } } }, ng: { text: "번역기 문장이 통보처럼 읽혔다. 손님이 직접 취소했고 긴 항의 글이 남았다.", eff: { cash: -Math.round(adr(best) * 0.5), abs_star: -0.06, mental: -3 } } },
+          { t: "늦게 잡은 예약을 호스트 권한으로 취소한다", eff: { abs_star: -0.08, mental: -3 }, text: "호스트 취소 벌점이 붙었다. 그 주 검색 순위가 눈에 띄게 내려갔다." }] },
     { id: "s08", ph: 1, u: best, ok: () => lv >= 3 && best.photo >= 55 && !X.shoot, on: true, t: "촬영 대관 문의", x: `식기 회사 마케팅팀에서 메시지가 왔다. ${best.name} 주방을 반나절 촬영용으로 빌리고 싶다고 한다. 대관료는 1박 요금의 두 배가 넘는다.`,
       c: [{ t: "촬영 대관을 받는다", eff: { abs_cash: Math.round(adr(best) * 2.5), hp: -4 }, text: "조명 장비 여섯 개가 들어왔다. 스태프가 \"여기 또 와도 돼요?\" 물었다." },
           { t: "숙박 예약과 겹칠까 봐 거절한다", eff: {}, text: "게스트 체크인 시간은 지켰다." }] },
@@ -82,16 +84,18 @@ function evList(s) {
       c: [{ t: "그림 사진을 숙소 소개에 올린다", eff: { abs_star: 0.04, abs_photo: 3, stat: { mkt: 0.5 } }, text: "\"이 집 호스트 좋아 보여요.\" 문의 메시지 첫 줄이 바뀌었다." },
           { t: "장기 숙박 할인(5박 이상 10%)을 상시로 만든다", eff: { cash: -Math.round(adr(best) * 1.5) }, text: "단가는 조금 깎였다. 대신 청소 횟수가 줄고, 장기 손님이 늘 것이다." }] },
     // ── 숙소용 단기임대 고생(shortrent) ──
-    { id: "s17", ph: 1, u: best, ok: () => st >= 12 && !X.autoMsg && !A.cohost, on: true, t: "와이파이 비번 문의 17통", x: "이번 달 메시지를 세어 봤다. 와이파이 비밀번호 17통, 분리수거 9통, 예약 안 할 사람의 가격 흥정 12통. 응대 시간만 한 달 100분이 넘는다. 절반은 회의 중에 왔다.",
-      c: [{ t: "4개 국어 자동 안내 메시지와 이용 매뉴얼을 만든다", eff: { hp: -4, stat: { write: 1, lang: 0.5 } }, text: "주소·비번·와이파이·쓰레기 버리는 날. 체크인 2시간 전에 자동으로 나간다." },
-          { t: "그때그때 답한다", eff: { hp: -3, eye: 2 }, text: "회의 중에 책상 밑으로 답장을 쳤다. 옆자리 대리가 힐끔 봤다." }] },
+    { id: "s23", ph: 1, u: best, ok: () => st >= 12 && !X.autoMsg && !A.cohost, on: true, t: "새벽 5시에 도착해요", x: "새벽 4시 10분, 휴대폰이 울렸다. \"We land at 5 AM. Can we check in early? Or just leave our bags?\" 체크인은 오후 3시다. 이번 달만 이런 문의가 아홉 통. 손님 시계는 전부 다른 나라에 맞춰져 있다.",
+      c: [{ t: "4개 국어 자동 안내와 짐 보관 지도를 만든다", eff: { hp: -4, stat: { write: 1, lang: 0.5 } }, text: "얼리 체크인 규칙, 역 물품보관함 위치, 와이파이, 쓰레기 버리는 날. 예약이 확정되면 자동으로 나간다." },
+          { t: "앞 손님이 없는 날만 얼리 체크인을 돈 받고 해 준다", eff: { abs_cash: Math.round(adr(best) * 0.5), hp: -3 }, text: "반일 요금을 받았다. 대신 달력을 볼 때마다 앞뒤 날짜를 세게 됐다." },
+          { t: "깰 때마다 답한다", eff: { hp: -3, mental: -2 }, text: "4시 12분에 답장을 보냈다. 다시 잠들지 못하고 출근했다." }] },
     { id: "s18", ph: 2, u: best, ok: () => st >= 40, on: true, t: "벽에 뚫린 구멍", x: `퇴실 점검을 갔다. ${best.name} 벽에 주먹만 한 구멍, 침구에 정체불명의 얼룩.${X.proof ? " 다행히 체크인 전 사진 12장이 있다." : " 입실 전 사진은… 이번에도 없다."}`,
       c: [{ t: "입실 사진을 근거로 플랫폼에 파손 신고한다", ...(X.proof ? { eff: { abs_cash: Math.round(30 * pi), hp: -2 }, text: "사진 12장이 증거가 됐다. 보상금이 들어왔다. 루틴이 돈이 됐다." } : { check: { stat: "talk", dc: 65 }, ok: { text: "게스트가 잘못을 인정했다. 운이 좋았다.", eff: { abs_cash: Math.round(20 * pi), mental: -3 } }, ng: { text: "\"증거가 부족합니다.\" 플랫폼 답변 한 줄. 수리는 내 돈으로.", eff: { cash: -Math.round(25 * pi), mental: -6 } } }) },
           { t: "보증금으로 끝내고 퍼티를 사다 직접 메운다", eff: { cash: -Math.round(8 * pi), hp: -7, stat: { hands: 1 } }, text: "퍼티, 사포, 페인트. 새벽 1시에 벽이 다시 하얘졌다." }] },
-    // ── 겸직(회사 눈치) ──
-    { id: "s19", ph: 1, u: best, ok: () => company(s) && st >= 25, rep: true, t: "동료가 예약했다", x: `예약 알림. 게스트 이름이 낯익다. 옆 팀 과장님이다. 부모님 서울 구경용으로 ${best.name}을 3박 잡았다. 호스트 프로필 사진은 뒷모습뿐이다.`,
-      c: [{ t: "셀프 체크인으로 끝까지 모른 척한다", check: { stat: "sense", dc: 45 }, ok: { text: "도어락 번호와 손글씨 카드만 남겼다. \"숙소 좋더라, 호스트가 센스 있어.\" 점심때 그 얘기를 들었다.", eff: { mental: 2 } }, ng: { text: "웰컴 카드 글씨체가 회의록 메모랑 똑같았다. \"혹시…?\"", eff: { eye: 6, mental: -3 } } },
-          { t: "먼저 연락해 털어놓고 1박을 빼 준다", eff: { cash: -Math.round(adr(best)), eye: 2, stat: { talk: 0.5 } }, text: "\"대박, 우리 팀엔 비밀로 할게.\" 비밀은 보통 일주일 간다." }] },
+    // ── 눌러앉은 손님 ── (회사에 들키는 장면은 engine/caught.js 가 맡는다)
+    { id: "s24", ph: 1, u: best, ok: () => st >= 25, rep: true, t: "퇴실일이 어제였는데요", x: `${best.name} 3주 손님의 퇴실일은 어제였다. 도어락 기록은 오늘 아침에도 찍혔다. 메시지가 왔다. "일이 꼬여서 며칠만 더 있을게요. 돈은 다음 주에 드릴게요." 내일 오후 3시에 다음 손님이 온다.`,
+      c: [{ t: "플랫폼에 신고하고 오늘 안에 나가 달라고 한다", check: { stat: "talk", dc: 50 }, ok: { text: "플랫폼 상담원이 손님에게 직접 전화했다. 저녁 8시, 복도에서 캐리어 끄는 소리가 났다.", eff: { mental: -2 } }, ng: { text: "자정이 다 돼서야 나갔다. 새벽 2시까지 침구를 갈았다.", eff: { hp: -8, mental: -4 } } },
+          { t: "연장 숙박비를 선불로 받고, 다음 손님을 다른 숙소로 옮긴다", eff: { abs_cash: Math.round(adr(best) * 2), abs_star: -0.04 }, text: "돈은 들어왔다. 옮겨 간 손님 후기에 \"예약한 방이 아니었어요\"가 남았다." },
+          { t: "다음 손님에게 환불하고 며칠 기다려 준다", eff: { cash: -Math.round(adr(best) * 2), mental: -3 }, text: "닷새 뒤에 나갔다. 연장 숙박비는 절반만 들어왔다." }] },
     // ── 후반: 리뷰 50개 · 숙소 브랜드 ──
     { id: "s10", ph: 2, u: best, ok: () => !X.taxDone && s.cal >= 8 && us.reduce((a, u) => a + (u.last?.rev || 0), 0) >= 380 * pi, on: true, t: "4,800만 원의 벽", x: "올해 숙소 매출이 4,500만 원을 넘어간다. 4,800만 원을 넘기면 과세 유형이 바뀔 수 있다. 공유숙박업 부가가치율은 25%. 세무 상담 예약 버튼 위에서 손가락이 멈춘다.",
       c: [{ t: "세무 상담을 받고 비용 증빙을 정리한다", eff: { cash: -Math.round(30 * pi), stat: { num: 1 } }, text: "영수증 상자 세 개를 쏟았다. 청소비·소모품·수수료가 다 경비였다." },
@@ -102,8 +106,8 @@ function evList(s) {
     { id: "s12", ph: 2, u: best, ok: () => us.length >= 2 && company(s) && us.every((u) => u.months >= 10), on: true, t: "숙소 둘, 사직서 하나", x: "숙소 수익이 1년째 안정적으로 들어온다. 성수기마다 청소 일정 조율하느라 본업 회의에 집중을 못 한다. 팀장이 묻는다. \"요즘 무슨 일 있어요? 자꾸 핸드폰 보던데.\"",
       c: [{ t: "\"집안일이 좀 있어서요\" 둘러대고 회의에 집중한다", check: { stat: "talk", dc: 50 }, ok: { text: "\"그래요, 힘내요.\" 그날부터 회의 중엔 휴대폰을 엎어 뒀다.", eff: { eye: -3 } }, ng: { text: "그날 오후에도 알림이 세 번 울렸다. 팀장이 고개를 저었다.", eff: { eye: 6, mental: -3 } } },
           { t: "성수기 석 달만 청소·응대 대행을 쓴다", eff: { cash: -p20, hp: 6, eye: -3 }, text: "\"체크인 안내는 제가 할게요.\" 저녁이 돌아왔다. 대행비 영수증을 보니 한 달 이익의 5분의 1이 사라졌다." }] },
-    { id: "s20", ph: 2, u: oldest, ok: () => oldest.months >= 24, rep: true, t: "샤워헤드부터 장판까지", x: `2년째, 집이 늙기 시작했다. ${oldest.name} 샤워헤드가 새고, 장판이 들뜨고, 벽지 모서리에 곰팡이가 피었다. 수리 견적서 맨 아래 숫자가 한 달 이익의 3분의 1이다.`,
-      c: [{ t: "직접 고칠 수 있는 건 고친다", eff: { hp: -10, cash: -p10, stat: { hands: 1.5 } }, text: "유튜브 보며 샤워헤드를 갈았다. 장판은 업체를 불렀다. 손바닥에 물집이 잡혔다." },
+    { id: "s20", ph: 2, u: oldest, ok: () => oldest.months >= 24, rep: true, t: "샤워헤드부터 장판까지", x: `${Math.floor(oldest.months / 12)}년째, 집이 늙기 시작했다. ${oldest.name} 샤워헤드가 새고, 장판이 들뜨고, 벽지 모서리에 곰팡이가 피었다. 수리 견적서 맨 아래 숫자가 한 달 이익의 3분의 1이다.`,
+      c: [{ t: "직접 고칠 수 있는 건 고친다", eff: { hp: -10, cash: -p10, stat: { hands: 1.5 } }, text: "너튜브 보며 샤워헤드를 갈았다. 장판은 업체를 불렀다. 손바닥에 물집이 잡혔다." },
           { t: "통째로 업체에 맡긴다", eff: { cash: -Math.round(P * 0.3), abs_photo: 5 }, text: "사흘 만에 새집 같아졌다. 사진도 다시 찍었다." }] },
     { id: "s21", ph: 2, u: us.find((u) => u.ty === "hanok") || best, ok: () => us.some((u) => u.ty === "hanok" || D.AB_REGIONS[u.rk].foreign >= 0.75) && lv >= 3, on: true, t: "드라마에 나온 골목", x: `해외에서 뜬 드라마에 숙소 앞 골목이 나왔다. 일주일 새 예약 문의가 서른 통. "Same alley as the drama?!" 근처 숙소들이 하나둘 요금을 올린다.`,
       c: [{ t: "요금을 10% 올린다", eff: {}, text: "올려도 찼다. 대신 기대치가 높아진 손님들은 별점이 박하다." },
@@ -120,12 +124,14 @@ function evList(s) {
     { id: "s14", ph: 2, u: best, ok: () => !!(s.era?.intl || s.era?.pandemic || s.era?.winter) || us.every((u) => (u.last?.occ ?? 1) < 0.4), rep: true, on: true, t: "관광객이 오지 않는다", x: `뉴스는 외교 갈등과 경기 침체 이야기뿐이다. 외국인 관광객은 늘지 않고, 내국인은 해외로 나간다. 다음 달 예약률이 25%다.${X.longStay || X.shoot ? " 그래도 장기 손님 연락처와 촬영팀 명함이 있다." : ""}`,
       c: [{ t: "장기 숙박·촬영 대관으로 수요를 바꾼다", check: { stat: "mkt", dc: X.longStay || X.shoot ? 25 : 45 }, ok: { text: "출장자 한 달 숙박 하나, 촬영 대관 둘. 빈 달력이 조금 찼다.", eff: { abs_cash: p20, hp: -4, stat: { mkt: 0.5 } } }, ng: { text: "공고만 열 군데 올렸다. 연락은 한 통.", eff: { abs_cash: Math.round(P * 0.05), hp: -5, mental: -3 } } },
           { t: "가격을 20% 내린다", eff: {}, text: "예약이 조금 돌아왔다. 가격은 올리는 게 내리는 것보다 어렵다." }] },
-    { id: "s15", ph: 1, u: us.find((u) => u.ty !== "detached") || best, ok: () => st >= 20 && us.some((u) => u.ty !== "detached"), rep: true, on: true, t: "밤 11시의 캐리어 소리", x: `관리사무소에서 연락이 왔다. 밤 11시에 캐리어 끄는 소리가 복도를 울린다는 민원이 세 건이다.${X.nb >= 60 ? " 그래도 305호 할머니는 \"요즘은 조용하던데\" 하고 편을 들어 주셨다." : " 동의서에 서명했던 이웃도 표정이 굳었다."}`,
-      c: [{ t: "체크인 시간을 당기고 이웃에게 작은 선물을 돌린다", eff: { cash: -Math.round(10 * pi), abs_nb: 15 }, text: "체크인 3~8시. 늦게 오는 손님은 못 받는다. 롤케이크 다섯 개를 돌렸다." },
-          { t: "게스트 안내문만 붙인다", check: { stat: "lang", dc: X.nb >= 60 ? 30 : 50 }, ok: { text: "\"Please lift your luggage :)\" 다섯 개 국어 안내문이 통했다.", eff: { abs_nb: 3 } }, ng: { text: "안내문은 아무도 안 읽었다. 민원이 다섯 건이 됐다.", eff: { abs_nb: -15, mental: -4, abs_star: -0.03 } } }] },
-    { id: "s16", ph: 2, u: best, ok: () => st >= 30 && maxRating(s) >= 4.7, rep: true, pre: true, t: "별점 1개짜리 장문", x: "새벽에 장문의 리뷰가 올라왔다. 수건이 부족했고, 사진과 다르고, 호스트 답장이 느렸다고 한다. 평점이 4.9에서 4.7로 떨어졌다.",
-      c: [{ t: "정중한 공개 답글과 개선 사항을 올린다", check: { stat: "write", dc: 45 }, ok: { text: "\"수건은 1인 3장으로 늘렸습니다.\" 다음 손님이 \"답글 보고 예약했어요\"라고 했다.", eff: { abs_star: 0.14, stat: { talk: 0.3 } } }, ng: { text: "답글이 조금 딱딱했다. 그래도 안 쓴 것보다는 낫다.", eff: { abs_star: 0.06, item: "m_postcard" } } },
-          { t: "억울함을 담아 반박한다", eff: { abs_star: -0.06, mental: 2 }, text: "속은 시원했다. 다음 예약 문의자가 그 답글을 캡처해 보냈다. \"Is this you?\"" }] },
+    { id: "s27", ph: 1, u: us.find((u) => u.ty !== "detached") || best, ok: () => st >= 20 && us.some((u) => u.ty !== "detached"), on: true, t: "관리규약 개정 투표", x: `엘리베이터에 공고문이 붙었다. '단기 숙박 영업 금지 조항 신설. 입주민 투표 다음 주 수요일.' 통과되면 이 건물 숙소는 접어야 한다.${X.nb >= 60 ? " 305호 할머니가 \"그 집은 조용하던데\" 하고 반상회에서 한마디 해 주셨다고 한다." : " 발의자 명단에 동의서에 서명했던 이웃 이름이 있다."}`,
+      c: [{ t: "집집마다 찾아가 소음 규칙과 내 연락처를 건넨다", check: { stat: "talk", dc: X.nb >= 60 ? 35 : 55 }, ok: { text: "\"밤 10시 넘으면 바로 전화하세요.\" 투표는 부결됐다. 반대표가 생각보다 많았다.", eff: { hp: -5, abs_nb: 10 } }, ng: { text: "부결은 됐는데 조건이 붙었다. 밤 9시 이후 체크인 금지. 늦은 비행기 손님을 못 받는다.", eff: { hp: -5, abs_nb: -5, abs_star: -0.04 } } },
+          { t: "투표 전에 스스로 인원·체크인 시간을 줄인다", eff: { cash: -p10, abs_nb: 12 }, text: "최대 2인, 체크인 저녁 8시까지. 예약이 조금 줄었다. 안건은 투표 전날 철회됐다." },
+          { t: "결과를 기다린다", eff: { abs_nb: -10, mental: -4 }, text: "한 표 차로 부결됐다. 찬성표가 누구였는지, 엘리베이터에서 자꾸 세어 보게 된다." }] },
+    { id: "s26", ph: 2, u: best, ok: () => st >= 30, rep: true, t: "결항, 그리고 환불 불가", x: `${best.name} 3박 손님 메시지. "${[12, 1, 2].includes(s.cal) ? "Heavy snow" : "Typhoon"}. Flight cancelled. Please refund." 내 취소 정책은 '엄격'이라 규정상 한 푼도 안 돌려줘도 된다. 체크인이 내일이라 그 사흘을 다른 손님에게 팔 시간도 없다.`,
+      c: [{ t: "규정대로 환불하지 않는다", eff: { mental: -3 }, text: "돈은 지켰다. 메시지함에 긴 원망이 남았다. 빈 숙소에 사흘 동안 불이 꺼져 있었다." },
+          { t: "전액 환불해 준다", eff: { cash: -Math.round(adr(best) * 3), abs_star: 0.04, item: "m_postcard" }, text: "석 달 뒤 그 손님이 다시 예약했다. 이번엔 친구 둘을 데려왔고, 후기가 길었다." },
+          { t: "환불 대신 날짜를 옮겨 주겠다고 한다", check: { stat: "lang", dc: 45 }, ok: { text: "\"That works. See you in spring.\" 돈도 손님도 남았다.", eff: { abs_star: 0.03, stat: { lang: 0.5 } } }, ng: { text: "말이 엇갈려 플랫폼 분쟁으로 넘어갔다. 절반을 돌려주라는 결정이 났다.", eff: { cash: -Math.round(adr(best) * 1.5), mental: -3 } } }] },
     { id: "s22", ph: 2, u: oldest, ok: () => oldest.months >= 18 && us.length >= 1, t: "집주인이 집을 판대요", x: `${oldest.name} 집주인에게서 전화가 왔다. 집을 팔게 됐으니 계약 끝나면 나가 달라고 한다. 이미 받아 둔 예약 여섯 건이 계약 만료일을 넘는다.`, on: true,
       c: [{ t: "새 집주인과 재계약을 협상한다", check: { stat: "talk", dc: 50 }, ok: { text: "새 집주인도 숙박업 동의서에 서명했다. 대신 월세가 조금 올랐다.", eff: { hp: -3 } }, ng: { text: "재계약은 됐다. 월세가 꽤 올랐다. 그래도 리뷰 쌓인 숙소를 잃는 것보단 낫다.", eff: { hp: -3, mental: -4 } } },
           { t: "게스트를 근처 숙소로 옮겨 주고 정리한다", eff: { cash: -Math.round(adr(oldest) * 3), hp: -8 }, text: "여섯 팀에게 일일이 사과 메시지를 보냈다. 보증금은 돌려받았다. 리뷰는 지켰다." }] },
@@ -147,7 +153,6 @@ function pickEvent(s, r) {
   if (!e) return null;
   if (!X.seen.includes(e.id)) X.seen.push(e.id);
   X.evT = s.t; X.evN++; X.lastU = e.u?.id || null; s._absEv = { id: e.id, u: e.u?.id || null };
-  if (e.pre && e.id === "s16" && e.u) e.u.rating = clamp(e.u.rating - 0.2, 3.4, 4.99); // 장문 리뷰: 떨어진 채로 고르게
   return { kind: "event", tag: "에어씨앤씨", title: e.t, text: e.x, onChoose: "abs_ev", choices: e.c };
 }
 
@@ -194,7 +199,7 @@ export default {
       if (ev === "s06" && i === 0) { X.proof = true; return ["체크인 전 사진 루틴(파손 이벤트에서 증거가 된다)"]; }
       if (ev === "s08" && i === 0) { X.shoot = (X.shoot || 0) + 1; return ["촬영 대관 연락처 확보(비수기에 쓸모)"]; }
       if (ev === "s09" && i === 1) { X.longStay = true; return ["장기 숙박 할인 상시(비수기에 쓸모)"]; }
-      if (ev === "s17" && i === 0) { X.autoMsg = true; return ["자동 안내 메시지(밤 메시지 시너지 해제)"]; }
+      if ((ev === "s23" || ev === "s17") && i === 0) { X.autoMsg = true; return ["자동 안내 메시지(밤 메시지 시너지 해제)"]; }
       if (ev === "s10" && i === 0) { X.taxDone = true; return ["비용 증빙 정리 완료"]; }
       if (ev === "s11" && i === 0) {
         const rk = Object.keys(D.AB_REGIONS).filter((k) => !D.AB_REGIONS[k].city || k === "seongsu");
@@ -227,7 +232,7 @@ export default {
     { key: "abs_lv5", title: "숙소 브랜드", test: (s) => (s.ab?.units || []).length >= 2 && (s.sx?.airbnb?.goodM || 0) >= 12 && (s.ab?.units || []).reduce((a, u) => a + (u.stays || 0), 0) >= 50, lines: ["숙소 두 채가 1년 내내 흑자였다. 숙소 이름으로 계정을 따로 만들었다.", "\"We stayed at your other place last year!\" 다시 온 손님이 생겼다."] },
   ],
   perks: [
-    { id: "p_abs_manual", n: "4개 국어 매뉴얼", line: "와이파이 비번은 이제 기계가 알려 준다", pro: "외국어 응대 +15%", m: { abLang: 1.15 }, got: "자동 안내 메시지 + 숙박 3,500팀", test: (s) => !!s.sx?.airbnb?.autoMsg && (s.ab?.units || []).reduce((a, u) => a + (u.stays || 0), 0) >= 3500 },
+    { id: "p_abs_manual", n: "4개 국어 매뉴얼", line: "새벽 문의는 이제 기계가 답한다", pro: "외국어 응대 +15%", m: { abLang: 1.15 }, got: "자동 안내 메시지 + 숙박 3,500팀", test: (s) => !!s.sx?.airbnb?.autoMsg && (s.ab?.units || []).reduce((a, u) => a + (u.stays || 0), 0) >= 3500 },
     { id: "p_abs_nb", n: "동네가 아는 호스트", line: "할머니가 귤을 주신다", pro: "숙소 별점 +0.05", m: { abStar: 0.05 }, got: "이웃 인심 55 + 숙소 운영 2년", test: (s) => (s.sx?.airbnb?.nb || 0) >= 55 && (s.ab?.units || []).some((u) => u.months >= 24) },
   ],
   perkCine: { p_abs_manual: "abs_lv4", p_abs_nb: "abs_legal" },

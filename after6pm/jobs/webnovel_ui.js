@@ -18,7 +18,7 @@ export default {
   quick: (S) => (S.webnovel?.work ? "wn_write" : "wn_new"),
   defaultArg: (S, id) => (id === "wn_new" ? "hyun" : undefined),
   cine: {
-    wn_first: ["home", "웹소설"], wn_wall: ["library", "웹소설"], wn_paid: ["desk", "웹소설"], wn_done: ["library", "웹소설"],
+    wn_first: ["home", "웹소설"], wn_wall: ["library", "웹소설"], wn_paid: ["desk", "웹소설"], wn_done: ["library", "웹소설"], wn_plag: ["desk", "웹소설"],
     wn_ip: ["gallery", "원작자"], wn_steady: ["desk", "성실한 완결 작가"], wn_ghost: ["home", "20화의 유령"],
   },
   auto(c) { const S = c.S; WN.newWork(S, c.E.R(S), "hyun"); S.webnovel.bank = 30; S.st.write = Math.max(S.st.write, 70); S.hb.joined.includes("write") || S.hb.joined.length >= 2 || c.SJ.hbJoin(S, "write");
@@ -53,7 +53,8 @@ export default {
         <div class="small" style="margin-top:6px">${need ? `이번 달 <b>${need}화</b> 올려요 · 비축 <b class="${lack ? "bad" : "good"}">${W.bank}화</b>${lack ? ` → <b class="bad">${lack}화 모자람(펑크 위험)</b>` : " · 넉넉해요"}` : `휴재 중: 독자가 매달 7%쯤 빠지고, 피로가 크게 풀려요${W.resume ? ` · 비축 10화가 모이면 다시 연재(지금 ${W.bank}화)` : ""}`}</div>
         <details><summary class="tiny muted" style="cursor:pointer">주기별 차이 자세히 ▾</summary><div class="tiny muted">주 5회는 노출 +22%지만 피로·멘탈이 크게 깎여요. 회사 다니면서 주 5회면 매달 스태미너 −3.</div></details>
         <div class="row wrap" style="margin-top:8px;gap:4px">${actBtn(c, "wn_write", undefined, `원고 쓰기 +${WN.writeEps(S)}화`, "gold")}${actBtn(c, "wn_plot", undefined, "플롯 다듬기")}${actBtn(c, "wn_reader", undefined, "독자 소통")}</div>
-        <div class="row wrap" style="margin-top:6px;gap:4px"><button class="btn sm" data-wnai="1">${W.ai ? "AI 도구 해지" : "AI 도구 월 5만"}</button>${w.cover ? "" : `<button class="btn sm" data-wncover="1">표지 15만</button>`}${w.ep >= 80 && w.goal > w.ep ? `<button class="btn sm" data-wnfin="1">조기 완결</button>` : ""}<span class="grow"></span><button class="btn sm danger" data-wndrop="1">연재 중단</button></div>
+        <div class="row wrap" style="margin-top:6px;gap:4px"><button class="btn sm" data-wnai="1">${W.ai ? "AI 도구 해지" : "AI 도구 월 5만"}</button>${w.cover ? "" : `<button class="btn sm" data-wncover="1">표지 15만</button>`}${w.ep >= 80 && w.goal > w.ep ? `<button class="btn sm" data-wnfin="1">조기 완결</button>` : ""}</div>
+        <details class="more"><summary>연재 중단 · 더 보기 ▾</summary><div class="more-b"><div class="row"><span class="grow tiny muted">지금 작품을 접어요. 누르면 한 번 더 물어봐요.</span><button class="btn sm danger" data-wndrop="1">연재 중단</button></div></div></details>
       </div></div>`;
     } else {
       body = `<div class="card"><h3>새 작품 기획 <small>장르 고르기</small></h3><div class="tiny muted">${W.pen ? `필명 팬 ${n0(W.pen)}명 중 절반이 새 작품으로 따라와요.` : "필명 팬 0명. 1화부터 맨땅이에요."} 장르마다 독자가 붙는 속도와 커질 수 있는 크기가 달라요.</div>
@@ -75,7 +76,7 @@ export default {
       <div class="tiny muted" style="margin-top:6px">완결작 인세 합계 월 ${won(Math.round(tails))}(매달 4%씩 줄어요)${W.ip ? ` · 2차 판권 ${W.ip}건${W.ipPay.left ? `, 원작료 월 ${won(W.ipPay.amt)} × ${W.ipPay.left}개월 남음` : ""}` : ""}</div></div>` : "";
     // 엔딩 길 3개
     const ghostLeft = W.t0 === null || W.t0 === undefined ? 36 : Math.max(0, 36 - (S.t - W.t0));
-    const ends = `<div class="card"><details><summary style="cursor:pointer;list-style:none"><h3 style="display:inline">작가의 길 <small>엔딩 3개 · 자세히 ▾</small></h3></summary><div style="margin-top:6px">
+    const ends = `<div class="card"><details><summary style="cursor:pointer;list-style:none;min-height:40px;display:flex;align-items:center"><h3 style="display:inline;margin:0">작가의 길 <small>엔딩 3개 · 자세히 ▾</small></h3></summary><div style="margin-top:6px">
       <div class="small"><b class="${W.ip ? "good" : "gold"}">원작자</b> · 2차 판권(웹툰화) 계약 1건 <span class="tiny muted">${W.ip ? "달성" : W.lv >= 4 ? "완결작이 커지면 제안이 와요" : "Lv4 완결 작가부터 제안"}</span></div>
       <div class="small" style="margin-top:4px"><b class="${W.done >= 3 && working ? "good" : "gold"}">성실한 완결 작가</b> · 완결 3질 + 회사 유지 <span class="tiny muted">${Math.min(3, W.done)}/3질${working ? "" : " · 회사를 나왔어요"}</span></div>
       <div class="small" style="margin-top:4px"><b class="${W.maxEp >= 20 ? "muted" : "bad"}">20화의 유령</b> · 3년 동안 20화를 못 넘김 <span class="tiny muted">${W.maxEp >= 20 ? "벗어났어요" : `${ghostLeft}개월 남음 · 지금 최대 ${W.maxEp}화`}</span></div>

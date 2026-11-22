@@ -1,7 +1,7 @@
 // 에어씨앤씨 보드: 파티룸과 다르게 '1박' 장사. 외국인 손님(외국어), 합법 등록 vs 미등록(단속), 슈퍼호스트, 환율·국제 이슈.
 // v4.28 타이쿤 규칙: 주변 숙소 가격표·성수기 1박 가격·가격 전쟁 / 후기 이벤트·답글·후기 사건 / 쓰는 만큼 늘어나는 전기·난방비 / 법 개정과 명의 팀(defs AB_NAME)
 import * as D from "./defs.js";
-import { addMoney, log, mod, won, gainStat, applyEff, creditRoom, addLoan, helperPower, addAff, CHAR } from "./core.js";
+import { addMoney, log, mod, won, gainStat, applyEff, creditRoom, addLoan, helperPower, addAff, CHAR, jo } from "./core.js";
 import * as SYN from "./syn.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 import * as DF from "./decofx.js"; // 방 꾸미기 감성 점수 효과(사진 클릭·별점)
@@ -65,9 +65,9 @@ export function setAdr(s, id, v) { const u = s.ab.units.find((x) => x.id === id)
 export const needAp = (s, u) => { const A = s.ab, far = D.AB_REGIONS[u.rk].far * 0.5, m = A.clean || "self"; if (A.cohost) return 0.25; if (m !== "self") return Math.max(0.5, Math.round((far + AB_F30.clean[m].ap) * 2) / 2); return Math.max(0.5, Math.round(((u.last?.shortStays ?? u.last?.stays ?? 8) / 4 + far) * 2) / 2); }; // v4.29 청소 방식
 export function can(s, id, arg) {
   const A = s.ab;
-  if (id === "ab_search") return null;
+  if (id === "ab_search") return arg && !D.AB_REGIONS[arg] ? "없는 지역이에요" : null;
   if (!A.units.length) return "숙소가 없어요";
-  if (id === "ab_cohost") return A.units.length < 2 ? "숙소 2채부터" : null;
+  if (id === "ab_cohost") { if (A.cohost) { const why = SJ.slotLock(s, () => { A.cohost = false; return () => { A.cohost = true; }; }); if (why) return why; } return A.units.length < 2 ? "숙소 2채부터" : null; }
   if (id === "ab_reply") return A.units.some((u) => (u.unrep || 0) >= 1) ? null : "답글 달 후기가 없어요";
   if (id === "ab_ask") { if (!A.law || A.law.phase < 1) return "법이 바뀐다는 소식이 오면 필요해요"; if (legalSlots(s) > A.units.length) return "명의가 이미 넉넉해요(숙소보다 많음)"; const C = askCands(s); if (!C.length) return "부탁할 사람이 없어요"; if (arg && !C.find((c) => c.id === arg)) return "이 사람은 지금 부탁할 수 없어요"; return null; }
   return null;
@@ -198,10 +198,10 @@ function askTry(s, r, c, plus) {
     const h = { id: c.id, kind, t0: s.t, mult: plus ? K.ask.plusFee : 1, owed: 0, debt: 0 }; A.names.push(h);
     if (CHAR[c.id]) addAff(s, c.id, kind === "spouse" ? 0 : -2);
     log(s, `${nameLabel(h)} 명의를 빌렸다(월 용돈 ${won(feeOf(s, h))})`, "work");
-    return { ok: true, lines: [`명의 확보: ${nameLabel(h)}`, `매달 용돈 ${won(feeOf(s, h))}`, `명의 ${legalSlots(s)}개(나 포함)`], msg: kind === "mateParent" ? `"우리 엄마 시골집 주소 써. 대신 엄마 용돈은 네가 챙겨." ${nm}이(가) 웃었다.` : kind === "spouse" ? "\"우리 집 일인데 뭘.\" 배우자가 도장을 꺼냈다." : kind === "broker" ? "\"주소지는 책임지고 맞춰 드립니다. 대신 매달 정산은 칼같이.\" 찜찜하다." : `"너니까 해 주는 거다." ${nm}이(가) 신분증 사본을 보냈다.` };
+    return { ok: true, lines: [`명의 확보: ${nameLabel(h)}`, `매달 용돈 ${won(feeOf(s, h))}`, `명의 ${legalSlots(s)}개(나 포함)`], msg: kind === "mateParent" ? `"우리 엄마 시골집 주소 써. 대신 엄마 용돈은 네가 챙겨." ${jo(nm, "이", "가")} 웃었다.` : kind === "spouse" ? "\"우리 집 일인데 뭘.\" 배우자가 도장을 꺼냈다." : kind === "broker" ? "\"주소지는 책임지고 맞춰 드립니다. 대신 매달 정산은 칼같이.\" 찜찜하다." : `"너니까 해 주는 거다." ${jo(nm, "이", "가")} 신분증 사본을 보냈다.` };
   }
   A.askCool = A.askCool || {}; A.askCool[c.id] = s.t + K.ask.cool; if (CHAR[c.id]) addAff(s, c.id, K.ask.failAff);
-  return { ok: false, lines: [`${nm}: 거절`, CHAR[c.id] ? `호감 ${K.ask.failAff}` : ""].filter(Boolean), msg: r.pick([`"그거 걸리면 나도 과태료잖아." ${nm}이(가) 고개를 저었다.`, `"청약 넣어야 해서 주소 못 옮겨." ${nm}이(가) 미안해했다.`, `"우리 엄마가 절대 안 된대." ${nm}의 답장이 짧다.`]) };
+  return { ok: false, lines: [`${nm}: 거절`, CHAR[c.id] ? `호감 ${K.ask.failAff}` : ""].filter(Boolean), msg: r.pick([`"그거 걸리면 나도 과태료잖아." ${jo(nm, "이", "가")} 고개를 저었다.`, `"청약 넣어야 해서 주소 못 옮겨." ${jo(nm, "이", "가")} 미안해했다.`, `"우리 엄마가 절대 안 된대." ${nm}의 답장이 짧다.`]) };
 }
 function lawMonth(s, r, notes, scenes, n0 = 0) {
   const A = s.ab, K = D.AB_NAME;
@@ -369,7 +369,7 @@ function raceScene(s, u) {
     text: `낮 12시, 청소 대행 문자. "죄송해요, 오늘 못 가요." ${u.name} 다음 손님은 3시 체크인, 비행기는 이미 착륙했다. 나는 회사 책상 앞이다.`,
     choices: [
       { t: `긴급 청소를 웃돈 주고 부른다 (${won(fee)})`, eff: {}, text: "두 배 값에 다른 업체가 잡혔다. 2시 50분, 침대 위 수건 백조가 완성됐다." },
-      { t: "점심시간에 회사를 빠져나와 직접 한다 (체력 −8, 회사 눈치)", eff: {}, text: "택시 안에서 김밥을 먹었다. 오후 회의에 땀에 젖은 셔츠로 들어갔다." },
+      { t: "점심시간에 회사를 빠져나와 직접 한다 (스태미너 −8, 회사 눈치)", eff: {}, text: "택시 안에서 김밥을 먹었다. 오후 회의에 땀에 젖은 셔츠로 들어갔다." },
       { t: `체크인을 2시간 늦추고 할인해 준다 (${won(disc)})`, eff: {}, text: "\"No problem…\" 손님 답장에 점이 세 개다." },
     ] };
 }
@@ -389,7 +389,7 @@ function nbScene(s) {
     text: `관리소장님 전화. "엘리베이터 바닥에 캐리어 자국, 분리수거장엔 영어 영수증 붙은 쓰레기봉투. 주민들이 다 알아요." 이웃 인심 ${nbGet(s)}.${ill ? " 미등록 숙소는 이웃 신고 한 통이면 단속이다." : ""}`,
     choices: [
       { t: `음료 돌리고 분리수거 규칙을 게스트 안내에 넣는다 (${won(fee)})`, eff: {}, text: "\"이렇게 와 주니 고맙네.\" 소장님이 음료를 경비실 냉장고에 넣었다." },
-      { t: "주말마다 내가 분리수거를 맡는다 (체력 −6, 인심 크게 +)", eff: {}, text: "일요일 아침 7시, 재활용장에서 경비 아저씨와 친해졌다." },
+      { t: "주말마다 내가 분리수거를 맡는다 (스태미너 −6, 인심 크게 +)", eff: {}, text: "일요일 아침 7시, 재활용장에서 경비 아저씨와 친해졌다." },
       { t: "모른 척한다", eff: {}, text: "전화를 끊었다. 엘리베이터에서 마주친 주민이 눈을 피했다." },
     ] };
 }

@@ -1,7 +1,8 @@
 // 공간형 투잡 공통 유지비(v4.27): 에어씨앤씨·무인카페·치킨. 파티룸은 pr.js 안에 같은 규칙이 있다(defs PR_HARD).
 // 1) 재계약(2년)마다 월세 +5% (치킨은 chicken.js 에 이미 있음)
 // 2) 가구·설비 교체: furn 달마다 처음 설비비 × furnCost 를 다시 쓴다(안 쓰면 영업이 안 되니 자동 집행)
-// 3) 규모 문제: 2호점부터 지점 하나당 달마다 새벽 전화(체력·멘탈) · 잔고장 수리비
+// 3) 규모 문제: 2호점부터 지점 하나당 달마다 새벽 전화(스태미너·멘탈) · 잔고장 수리비
+// 4) 무인카페 첫 재계약(24달)은 이야기 장면 '건물주의 재계약 통보'(story/ucafe.js u19)가 정한다. 장면이 36달까지 안 뜨면 그때 +5% 하고 장면을 닫는다(두 번 오르지 않게)
 // core.js 에서 marketMonth 바로 앞에 spaceMonth(s, r, notes) 를 부른다. 난수는 r 만.
 import { addMoney, won } from "./core.js";
 import * as SYN from "./syn.js";
@@ -22,7 +23,12 @@ export function spaceMonth(s, r, notes) {
     const L = (C.units(s) || []).filter((u) => u && u.months > 0);
     if (!L.length) continue;
     for (const u of L) {
-      if (C.rent && u.months % 24 === 0 && u.rentUpT !== u.months) { u.rentUpT = u.months; u.rent = Math.round(u.rent * (1 + SPACE_RENT)); notes.push(`${u.name}: 재계약, 월세 +5% (${won(u.rent)})`); }
+      const up = () => { u.rent = Math.round(u.rent * (1 + SPACE_RENT)); notes.push(`${u.name}: 재계약, 월세 +5% (${won(u.rent)})`); };
+      const ucStory = job === "ucafe" && !!s.sx?.ucafe; // 재계약 장면이 있는 투잡
+      if (ucStory && u.rentUpT && !u.ucsRenew && !u.rentWait) u.ucsRenew = 1; // 옛 저장: 자동 인상을 이미 받은 매장은 장면을 닫는다
+      if (C.rent && u.months % 24 === 0 && u.rentUpT !== u.months) { u.rentUpT = u.months; if (ucStory && u.months === 24 && !u.ucsRenew) u.rentWait = 1; /* 첫 재계약은 장면이 정한다 */ else up(); }
+      if (u.rentWait && u.ucsRenew) u.rentWait = 0; // 장면에서 정했다
+      if (u.rentWait && u.months >= 36) { u.rentWait = 0; u.ucsRenew = 1; up(); } // 장면이 안 떴다: 한 번만 올리고 닫는다
       if (u.furnAt === undefined) u.furnAt = u.months + r.int(C.furn[0], C.furn[1]);
       if (u.months >= u.furnAt) {
         const c = Math.round(C.base(u) * C.furnCost * pi / 10) * 10;
@@ -32,7 +38,7 @@ export function spaceMonth(s, r, notes) {
     }
     if (L.length >= 2) {
       const extra = L.length - 1;
-      if (r.chance(C.call * extra)) { s.hp = Math.max(0, s.hp - 3); s.mental = Math.max(0, s.mental - 3); notes.push(`${r.pick(C.calls)} 잠을 설쳤다 (체력·멘탈 −3)`); }
+      if (r.chance(C.call * extra)) { s.hp = Math.max(0, s.hp - 3); s.mental = Math.max(0, s.mental - 3); notes.push(`${r.pick(C.calls)} 잠을 설쳤다 (스태미너·멘탈 −3)`); }
       if (r.chance(0.15 * extra)) { const c = Math.round(r.int(C.fix[0], C.fix[1]) * pi); s.cash -= c; addMoney(s, "exp", C.label, c); notes.push(`${r.pick(L).name}: 잔고장 수리 −${won(c)}`); }
     }
   }

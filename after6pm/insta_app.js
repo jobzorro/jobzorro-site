@@ -23,11 +23,11 @@ export function board(ctx) {
   const n = INS.upsThisMonth(s), need = INS.needOf(s), st = INS.stageOf(i);
   return `${ctx.boardHead("insta")}<div class="card igboard"><div class="row"><div class="grow"><h3 style="margin:0">인별그램 <small>${esc(D_LV(ctx, i.f))}</small></h3>
       <div class="tiny muted">${i.cc ? esc(INS.ccName(i.cc)) : "아직 컨셉이 없어요. 앱을 열어 컨셉부터 설계하세요"}</div></div>
-      <button class="btn gold" data-igopen="feed">📱 앱 열기</button></div>
+      <button class="btn gold" data-igopen="feed">📱 앱 열기${b.inbox + b.dm + b.deal ? ` <b class="tjx-igb">${b.inbox + b.dm + b.deal}</b>` : ""}</button></div>
     <div class="kv" style="margin-top:8px"><div><div class="k">팔로워</div><div class="v gold">${i.f.toLocaleString()}</div></div><div><div class="k">일관성</div><div class="v">${Math.round(i.cons)}</div></div><div><div class="k">약속 · 연속</div><div class="v ${n >= need ? "good" : ""}">${n}/${need} · ${i.streak}달</div></div></div>
     ${INS.banned(s) ? `<div class="tiny" style="margin-top:6px;color:#e0245e;font-weight:700">⛔ 계정 정지 중(${i.ban.left}달 남음)${i.sub?.on ? ` · 부계정 ${i.sub.f.toLocaleString()}명` : ""}</div>` : ""}
     ${i.cc ? `<div class="tiny muted" style="margin-top:6px">컨셉 수명 '${st.n}' · 팬심 ${Math.round(i.fan)} · 논란 ${Math.round(i.ctrv)}${i.trend ? ` · 요즘 유행 ${esc(INS.TOPICS[i.trend.topic].n)} × ${esc(INS.FMTS[i.trend.fmt].n)}` : ""}</div>` : ""}
-    <div class="igquick">${[["inbox", "💬 댓글함", b.inbox], ["dm", "✉ DM", b.dm], ["deal", "🤝 협찬함", b.deal], ["ins", "📈 인사이트", 0]].map(([k, t, c]) => `<button data-igopen="${k}">${t}${c ? ` <b>${c}</b>` : ""}</button>`).join("")}</div>
+    ${b.inbox + b.dm + b.deal ? `<div class="igquick">${[["inbox", "💬 댓글함", b.inbox], ["dm", "✉ DM", b.dm], ["deal", "🤝 협찬함", b.deal]].filter((x) => x[2]).map(([k, t, c]) => `<button data-igopen="${k}">${t} <b>${c}</b></button>`).join("")}</div>` : ""}
     <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">인별이 크는 법 자세히 ▾</summary><div class="tiny muted">인별은 매력이 아니라 컨셉·꾸준함·댓글 관리로 커요. 약속한 만큼 못 올리면 연속 기록이 끊기고, 한 달을 통째로 쉬면 두 달간 노출이 반토막 나요.</div></details></div>`;
 }
 function D_LV(ctx, f) { const L = ctx.D.INSTA_LV; let k = 0; L.forEach((x, j) => { if (f >= x.f) k = j; }); return L[k].n + " 계정"; }
@@ -142,7 +142,7 @@ function pgDm() {
   return `<div class="igpad"><div class="igtt">DM</div><div class="igsub">협찬 중엔 진짜와 사기가 섞여 있어요(선입금·수상한 링크 주의). 답하는 데 행동력은 들지 않아요.</div>${L.map((d) => {
     const face = d.k === "celeb" && d.who && X.faceSrc ? X.faceSrc(d.who, "smile") : "";
     const tag = { fan: "팬", deal: "협찬", scam: "협찬?", revise: "수정 요청", hidead: "광고 표시", celeb: "유명인" }[d.k];
-    return `<div class="igdm ${d.done ? "done" : ""} ${d.k}"><div class="igdmh"><span class="igdav">${face ? `<img src="${face}" alt="">` : esc((d.from || "?").slice(0, 1))}</span><b>${esc(d.from)}</b><small>${tag}</small></div><p>${esc(d.tx)}</p>
+    return `<div class="igdm ${d.done ? "done" : ""} ${d.k}"><div class="igdmh"><span class="igdav">${face ? `<img class="face" src="${face}" alt="">` : esc((d.from || "?").slice(0, 1))}</span><b>${esc(d.from)}</b><small>${tag}</small></div><p>${esc(d.tx)}</p>
       ${d.done ? `<div class="igres">답함: ${esc(d.ch[d.pick] || "")}</div>` : `<div class="igdmc">${d.ch.map((c, k) => `<button data-igdm="${d.id}:${k}">${esc(c)}</button>`).join("")}</div>`}</div>`; }).join("")}</div>`;
 }
 

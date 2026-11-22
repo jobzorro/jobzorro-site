@@ -42,13 +42,13 @@ export function setBean(s, id, v) { const st = s.uc.stores.find((x) => x.id === 
 export function buyCctv(s, id) { const st = s.uc.stores.find((x) => x.id === id); if (!st || st.cctv) return { ok: false, msg: "이미 있어요" }; const c = Math.round(80 * SYN.pi(s)); s.cash -= c; addMoney(s, "exp", "무인카페 CCTV·결제 경보", c); st.cctv = true; return { ok: true, msg: `${st.name} CCTV·미결제 경보 설치(${won(c)})` }; }
 export const needAp = (s, st) => (s.uc.agent ? 0.25 : Math.max(0.5, Math.round((1 + (st.last?.cups ?? 1800) / 2500 + stockOf(s).ap) * 2) / 2)); // v4.29 원두 재고 방식
 
-export function can(s, id) { if (id === "uc_search") return null; if (!s.uc.stores.length) return "매장이 없어요"; if (id === "uc_agent" && s.uc.stores.length < 2) return "매장 2곳부터"; return null; }
+export function can(s, id, arg) { if (id === "uc_search") return arg && !D.UC_AREAS[arg] ? "없는 지역이에요" : null; if (!s.uc.stores.length) return "매장이 없어요"; if (id === "uc_agent" && s.uc.agent) { const U = s.uc; const why = SJ.slotLock(s, () => { U.agent = false; return () => { U.agent = true; }; }); if (why) return why; } if (id === "uc_agent" && s.uc.stores.length < 2) return "매장 2곳부터"; return null; }
 export function act(s, r, id, arg, boost = 1) {
   const U = s.uc;
   if (id === "uc_search") { const ls = search(s, r, arg || "apt"); return { lines: [`${D.UC_AREAS[arg || "apt"].n} 매물 ${ls.length}개`], msg: D.UC_AREAS[arg || "apt"].tip }; }
   if (id === "uc_agent") { U.agent = !U.agent; return { lines: [U.agent ? "관리 대행 계약: 매장당 월 40만, 청소·재고를 맡겨요" : "관리 대행 해지"], msg: U.agent ? "\"매일 아침 7시에 들러서 원두 채울게요.\"" : "다시 내가 새벽에 간다." }; }
   const st = U.stores.find((x) => x.id === arg) || U.stores[0];
-  if (id === "uc_check") { const hf = clamp(0.85 + (s.st.hands || 0) / 300, 0.85, 1.25); st.ap += boost * hf; st.clean = Math.min(100, st.clean + Math.round(30 * boost * hf)); if (st.broken) { st.broken = 0; } gainStat(s, "hands", 0.3); return { lines: [`${st.name} 점검 ${st.ap}/${needAp(s, st)}`, "청결 +"], msg: r.pick(["새벽 6시, 원두 채우고 얼음통 비우고 테이블 닦기.", "컵 뚜껑이 다 떨어져 있었다. 편의점으로 뛰었다.", "그라인더 청소. 커피 가루가 손톱에 꼈다."]) }; }
+  if (id === "uc_check") { const hf = clamp(0.85 + (s.st.hands || 0) / 300, 0.85, 1.25); st.ap += boost * hf; st.clean = Math.min(100, st.clean + Math.round(30 * boost * hf)); if (st.broken) { st.broken = 0; } gainStat(s, "hands", 0.3); return { lines: [`${st.name} 점검 ${Math.round(st.ap * 10) / 10}/${needAp(s, st)}`, "청결 +"], msg: r.pick(["새벽 6시, 원두 채우고 얼음통 비우고 테이블 닦기.", "컵 뚜껑이 다 떨어져 있었다. 편의점으로 뛰었다.", "그라인더 청소. 커피 가루가 손톱에 꼈다."]) }; }
   if (id === "uc_promo") { st.buzz = Math.min(100, (st.buzz || 0) + 12 + s.st.mkt / 10); gainStat(s, "mkt", 0.4); return { lines: [`${st.name} 동네 입소문 +`], msg: "아파트 단톡방에 \"첫 잔 1,000원\" 쿠폰을 뿌렸다." }; }
   return null;
 }
@@ -150,7 +150,7 @@ function nightScene(s, r, st) {
     text: `${x} 24시간 매장의 밤은 내 몫이다.`,
     choices: [
       { t: `경찰·보안 업체에 맡기고 아침에 치운다 (${won(k === 2 ? c * 4 : c)})`, eff: {}, text: "출근 전 6시에 들러 바닥을 닦았다." },
-      { t: "지금 바로 달려간다 (체력 −10, 별점 +)", eff: {}, text: "새벽 택시. 매장을 정리하고 해 뜨는 걸 보며 출근했다." },
+      { t: "지금 바로 달려간다 (스태미너 −10, 별점 +)", eff: {}, text: "새벽 택시. 매장을 정리하고 해 뜨는 걸 보며 출근했다." },
       { t: "이참에 밤엔 닫는다", eff: {}, text: "자동문 잠금 견적을 받았다." },
     ] };
 }
@@ -186,5 +186,5 @@ export const UC_CHOOSE = {
     return [res.msg || "양도", `${D.UC_AREAS[nk].n} 매물 3곳을 받아 뒀어요(보드 '보던 자리')`];
   },
 };
-// 체력·멘탈만 바꾸는 가벼운 효과(core applyEff 를 부르지 않아 순환 import 를 늘리지 않는다)
-function applyEffLite(s, e) { const out = []; if (e.hp) { s.hp = clamp(s.hp + e.hp, 0, s.hpMax || 100); out.push(`체력 ${e.hp}`); } if (e.mental) { s.mental = clamp(s.mental + e.mental, 0, 100); out.push(`멘탈 ${e.mental}`); } return out; }
+// 스태미너·멘탈만 바꾸는 가벼운 효과(core applyEff 를 부르지 않아 순환 import 를 늘리지 않는다)
+function applyEffLite(s, e) { const out = []; if (e.hp) { s.hp = clamp(s.hp + e.hp, 0, s.hpMax || 100); out.push(`스태미너 ${e.hp}`); } if (e.mental) { s.mental = clamp(s.mental + e.mental, 0, 100); out.push(`멘탈 ${e.mental}`); } return out; }

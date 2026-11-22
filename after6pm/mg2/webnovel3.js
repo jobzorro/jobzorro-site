@@ -121,8 +121,8 @@ export const GAME = {
 .mg-webnovel3 .mg-steps img{width:76px;height:76px}
 .mg-webnovel3 .mg-msg{z-index:24}
 .mg-webnovel3 .wr-hd{position:absolute;left:8px;right:8px;z-index:3;display:flex;align-items:center;gap:6px;color:#fff;font-size:11px;font-weight:800;pointer-events:none;white-space:nowrap}
-.mg-webnovel3 .wr-hd i{font-style:normal;background:#5fb8ff;color:#0a1a33;border-radius:5px;padding:1px 6px;font-size:10.5px;font-weight:900}
-.mg-webnovel3 .wr-hd .lv{color:#ff5a7a;font-size:10px}
+.mg-webnovel3 .wr-hd i{font-style:normal;background:#5fb8ff;color:#0a1a33;border-radius:5px;padding:1px 6px;font-size:11px;font-weight:900}
+.mg-webnovel3 .wr-hd .lv{color:#ff5a7a;font-size:11px}
 .mg-webnovel3 .wr-hd .lv::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff3b5c;margin-right:3px;vertical-align:1px;animation:wrblink 1s steps(2) infinite}
 .mg-webnovel3 .wr-clk{margin-left:auto;font:900 13px ui-monospace,Menlo,monospace;color:#ffd166;background:#0008;border-radius:5px;padding:0 6px;letter-spacing:1px}
 .mg-webnovel3 .wr-clk.hot{color:#ff5a6a;animation:wrblink .5s steps(2) infinite}
@@ -144,8 +144,8 @@ export const GAME = {
 .mg-webnovel3 .wr-cov.flip{animation:wrflip .55s ease-in-out}
 .mg-webnovel3 .wr-tt{flex:1 1 auto;min-width:0;line-height:1.2}
 .mg-webnovel3 .wr-tt b{display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mg-webnovel3 .wr-tt small{display:flex;gap:4px;align-items:center;font-size:9.5px;color:#9a90b8;white-space:nowrap}
-.mg-webnovel3 .wr-tt small em{font-style:normal;font-weight:900;font-size:9px;padding:0 4px;border-radius:4px;background:#5fb8ff;color:#06203a;display:none}
+.mg-webnovel3 .wr-tt small{display:flex;gap:4px;align-items:center;font-size:11px;color:#9a90b8;white-space:nowrap}
+.mg-webnovel3 .wr-tt small em{font-style:normal;font-weight:900;font-size:11px;padding:0 4px;border-radius:4px;background:#5fb8ff;color:#06203a;display:none}
 .mg-webnovel3 .wr-row.me .wr-tt small em.mine{display:inline-block}
 .mg-webnovel3 .wr-tt small em.rec{background:#ff8fc8;color:#3a0a24}
 .mg-webnovel3 .wr-tt small em.bomb{background:#ff3b4f;color:#fff;animation:wrblink .3s steps(2) infinite}
@@ -154,7 +154,7 @@ export const GAME = {
 .mg-webnovel3 .wr-pt{flex:none;text-align:right;min-width:62px}
 .mg-webnovel3 .wr-pt b{display:block;font:900 12.5px ui-monospace,Menlo,monospace;color:#fff}
 .mg-webnovel3 .wr-row.me .wr-pt b{color:#9fd8ff}
-.mg-webnovel3 .wr-pt small{display:block;height:12px;font-size:10px;font-weight:900;opacity:0;transition:opacity .3s}
+.mg-webnovel3 .wr-pt small{display:block;height:12px;font-size:11px;font-weight:900;opacity:0;transition:opacity .3s}
 .mg-webnovel3 .wr-pt small.u{color:#5fe08a;opacity:1}.mg-webnovel3 .wr-pt small.d{color:#ff5a6a;opacity:1}
 .mg-webnovel3 .wr-row.gl{animation:wrgl .6s}
 .mg-webnovel3 .wr-row.me.gl{animation:wrglm .7s}
@@ -164,37 +164,37 @@ export const GAME = {
 .mg-webnovel3 .wr-row.fin{box-shadow:inset 0 0 0 2px #ffd166,0 0 18px #ffd16688;background:linear-gradient(90deg,#ffd16655,#ffd16618)}
 .mg-webnovel3 .wr-cov img.wr-crown{position:absolute;left:50%;top:-13px;width:33px;height:21px;margin-left:-16px;opacity:0;pointer-events:none;filter:drop-shadow(0 2px 0 #0008)}
 .mg-webnovel3 .wr-cov img.wr-crown.on{animation:wrcrown .7s cubic-bezier(.3,1.6,.5,1) forwards}
-.mg-webnovel3 .wr-gl{position:absolute;left:8px;right:8px;z-index:3;display:flex;justify-content:space-between;font-size:9.5px;color:#8a80a8;font-weight:700;pointer-events:none}
+.mg-webnovel3 .wr-gl{position:absolute;left:8px;right:8px;z-index:3;display:flex;justify-content:space-between;font-size:11px;color:#8a80a8;font-weight:700;pointer-events:none}
 .mg-webnovel3 .wr-gl span.pk{color:#ffd166}
-.mg-webnovel3 .wr-gx{position:absolute;left:8px;z-index:3;font-size:10.5px;font-weight:800;color:#c8c0e0;pointer-events:none;white-space:nowrap}
+.mg-webnovel3 .wr-gx{position:absolute;left:8px;z-index:3;font-size:11px;font-weight:800;color:#c8c0e0;pointer-events:none;white-space:nowrap}
 .mg-webnovel3 .wr-gx b{font:900 12px ui-monospace,Menlo,monospace;color:#9fd8ff}
 .mg-webnovel3 .wr-gx.pk b{color:#ffd166}
-.mg-webnovel3 .wr-gx.pk::after{content:"피크!";margin-left:5px;font-size:9.5px;font-weight:900;color:#3a2400;background:#ffd166;border-radius:4px;padding:0 4px;animation:wrblink .5s steps(2) infinite}
+.mg-webnovel3 .wr-gx.pk::after{content:"피크!";margin-left:5px;font-size:11px;font-weight:900;color:#3a2400;background:#ffd166;border-radius:4px;padding:0 4px;animation:wrblink .5s steps(2) infinite}
 .mg-webnovel3 .wr-rc{position:absolute;left:0;right:0;z-index:1;overflow:hidden;pointer-events:none}
 .mg-webnovel3 .wr-me{position:absolute;background-repeat:no-repeat;background-size:300% 346.15%;opacity:0;transition:opacity .5s;transform-origin:50% 90%}
 .mg-webnovel3 .wr-me.on{opacity:1}
-.mg-webnovel3 .wr-loy{position:absolute;right:8px;z-index:4;display:flex;align-items:center;gap:4px;background:#0009;border-radius:7px;padding:2px 6px 2px 4px;font-size:10px;font-weight:800;color:#fff;pointer-events:none}
+.mg-webnovel3 .wr-loy{position:absolute;right:8px;z-index:4;display:flex;align-items:center;gap:4px;background:#0009;border-radius:7px;padding:2px 6px 2px 4px;font-size:11px;font-weight:800;color:#fff;pointer-events:none}
 .mg-webnovel3 .wr-loy img{width:14px;height:14px}
 .mg-webnovel3 .wr-loy u{position:relative;display:block;width:56px;height:7px;border-radius:4px;background:#ffffff22;overflow:hidden;text-decoration:none}
 .mg-webnovel3 .wr-loy u i{position:absolute;left:0;top:0;bottom:0;width:var(--w,0%);background:linear-gradient(90deg,#ff8fc8,#ff5a7a);transition:width .25s}
 .mg-webnovel3 .wr-loy.pop{animation:wrpop .35s cubic-bezier(.3,1.8,.5,1)}
 .mg-webnovel3 .wr-cms{position:absolute;left:0;right:0;z-index:5;pointer-events:none}
 .mg-webnovel3 .wr-cm{position:absolute;left:0;top:0;max-width:178px;box-sizing:border-box;padding:4px 8px 5px;border-radius:10px 10px 10px 2px;background:#fffaf0;color:#2a1e2e;box-shadow:0 3px 0 #0007;font-size:11.5px;line-height:1.25;font-weight:700;pointer-events:auto;cursor:pointer;word-break:keep-all;animation:wrcmin .3s cubic-bezier(.3,1.6,.5,1)}
-.mg-webnovel3 .wr-cm b{display:flex;align-items:center;gap:3px;font-size:9.5px;color:#1f6fd0;font-weight:900}
+.mg-webnovel3 .wr-cm b{display:flex;align-items:center;gap:3px;font-size:11px;color:#1f6fd0;font-weight:900}
 .mg-webnovel3 .wr-cm b img{width:11px;height:11px}
 .mg-webnovel3 .wr-cm span{display:block}
 .mg-webnovel3 .wr-cm.tr{background:#3a3248;color:#c8c0d8;border:1px dashed #8a7aa8}
 .mg-webnovel3 .wr-cm.tr b{color:#9a8ab8}
 .mg-webnovel3 .wr-cm.ok{animation:wrcmok .45s ease-in forwards;pointer-events:none}
 .mg-webnovel3 .wr-cm.no{animation:wrcmno .45s ease-out forwards;pointer-events:none}
-.mg-webnovel3 .wr-cm.ok::after{content:"답글 완료";position:absolute;right:6px;top:-9px;font-size:9.5px;font-weight:900;background:#1f6fd0;color:#fff;padding:0 5px;border-radius:5px}
+.mg-webnovel3 .wr-cm.ok::after{content:"답글 완료";position:absolute;right:6px;top:-9px;font-size:11px;font-weight:900;background:#1f6fd0;color:#fff;padding:0 5px;border-radius:5px}
 .mg-webnovel3 .wr-cm.fade{opacity:0;transition:opacity .35s;pointer-events:none}
 .mg-webnovel3 .wr-bt{position:absolute;left:6px;right:6px;bottom:6px;z-index:6;display:flex;gap:5px}
 .mg-webnovel3 .wr-b{position:relative;flex:1 1 0;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:0!important;border-radius:11px!important;padding:4px 2px!important;min-height:0!important;background:linear-gradient(#3a3060,#2a2248)!important;box-shadow:0 4px 0 #120c22,inset 0 0 0 2px #5a4a8a!important;color:#fff!important;cursor:pointer;transition:transform .08s,filter .2s}
 .mg-webnovel3 .wr-b.up{flex:1.35 1 0}
 .mg-webnovel3 .wr-b img{width:30px;height:30px;position:relative}
 .mg-webnovel3 .wr-b b{position:relative;font-size:12px;font-weight:900;white-space:nowrap}
-.mg-webnovel3 .wr-b small{position:relative;font-size:9.5px;font-weight:800;color:#b8b0d8;white-space:nowrap}
+.mg-webnovel3 .wr-b small{position:relative;font-size:11px;font-weight:800;color:#b8b0d8;white-space:nowrap}
 .mg-webnovel3 .wr-b:active{transform:translateY(2px)}
 .mg-webnovel3 .wr-b::before{content:"";position:absolute;left:0;bottom:0;height:100%;width:var(--cd,0%);background:#00000066;transition:width .1s linear}
 .mg-webnovel3 .wr-b.off{filter:grayscale(.85) brightness(.6)}
@@ -228,7 +228,7 @@ export const GAME = {
 .mg-webnovel3 .wr-mail.op .env{animation:wrenv .4s}
 .mg-webnovel3 .wr-lt{position:relative;z-index:1;background:#fffaf0;color:#2a1e2e;border-radius:12px;padding:28px 12px 10px;box-shadow:0 5px 0 #0007,0 0 0 2px #ffd166,0 0 30px #ffd16666;font-size:12px;line-height:1.5;text-align:center;word-break:keep-all;transform:translateY(-14px);opacity:0;transition:transform .5s cubic-bezier(.2,.9,.3,1),opacity .3s}
 .mg-webnovel3 .wr-mail.op .wr-lt{transform:none;opacity:1}
-.mg-webnovel3 .wr-lt i{font-style:normal;display:inline-block;font-size:10px;font-weight:900;background:#1f6fd0;color:#fff;border-radius:5px;padding:1px 7px;margin-bottom:4px}
+.mg-webnovel3 .wr-lt i{font-style:normal;display:inline-block;font-size:11px;font-weight:900;background:#1f6fd0;color:#fff;border-radius:5px;padding:1px 7px;margin-bottom:4px}
 .mg-webnovel3 .wr-lt b{display:block;font-size:15px;font-weight:900;color:#1f3a70;margin-bottom:2px}
 .mg-webnovel3 .wr-lt s{position:absolute;right:10px;bottom:8px;text-decoration:none;font-size:11px;font-weight:900;color:#d0303a;border:2px solid #d0303a;border-radius:6px;padding:0 5px;transform:rotate(-12deg) scale(2);opacity:0;transition:transform .25s cubic-bezier(.3,1.6,.5,1) .5s,opacity .2s .5s}
 .mg-webnovel3 .wr-mail.op .wr-lt s{transform:rotate(-12deg) scale(1);opacity:.9}
@@ -238,7 +238,7 @@ export const GAME = {
 .mg-webnovel3 .wr-tut.off{opacity:0;visibility:hidden}
 .mg-webnovel3 .wr-tc{pointer-events:auto;background:#fffdf8;color:#2a1e2e;border-radius:14px;padding:8px 12px 7px;box-shadow:0 4px 0 #0006,0 0 0 2px #5fb8ff;max-width:310px;font-size:13px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-webnovel3 .wr-tut.pop .wr-tc{animation:wrpop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-webnovel3 .wr-tc em{font-style:normal;display:inline-block;background:#1f6fd0;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
+.mg-webnovel3 .wr-tc em{font-style:normal;display:inline-block;background:#1f6fd0;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
 .mg-webnovel3 .wr-tc p{margin:0}
 .mg-webnovel3 .wr-tc b.bl{color:#1f6fd0}.mg-webnovel3 .wr-tc b.rd{color:#c0392b}.mg-webnovel3 .wr-tc b.gd{color:#b07800}.mg-webnovel3 .wr-tc b.pk{color:#c0306a}
 .mg-webnovel3 .wr-tb{margin-top:5px;display:flex;justify-content:center}

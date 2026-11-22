@@ -142,7 +142,7 @@ const CSS2 = `
 .mg-clock{position:absolute;right:10px;top:8px;z-index:21;color:#b8ffcf;font:12px ui-monospace,monospace;text-shadow:0 0 4px #3f8}
 .mg-cctv .mg-msg{z-index:22}
 .mg-prop{position:absolute;z-index:2;transform:translate(-50%,-50%);font-size:30px;text-align:center;line-height:1;pointer-events:none}
-.mg-prop small{display:block;font-size:10px;color:#b8ffcf;margin-top:3px;font-family:ui-monospace,monospace;white-space:nowrap}
+.mg-prop small{display:block;font-size:11px;color:#b8ffcf;margin-top:3px;font-family:ui-monospace,monospace;white-space:nowrap}
 .mg-prop.chair.fall{animation:mgfall .4s forwards}
 @keyframes mgfall{to{transform:translate(-50%,-50%) rotate(90deg)}}
 .mg-cu{position:absolute;transform:translate(-50%,-80%);font-size:30px;line-height:1;padding:6px;touch-action:none;cursor:pointer;border:2px solid transparent;border-radius:12px;user-select:none}

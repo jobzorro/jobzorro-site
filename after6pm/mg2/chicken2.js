@@ -3,7 +3,7 @@
 // 가게 앞 라이더를 끌어 주문 핀까지 길을 긋는다. 핀 여러 개를 차례로 지나가면 한 번에 묶어 배달(가방 최대 3개).
 // 핀마다 식는 시계가 있어 늦으면 별점이 깎이고 식은 치킨 리뷰가 달린다.
 // 사건: 라이더 이탈, 배달대행 호출(수수료), 오배송(옆집 회수 → 원래 집), 단체 주문 폭탄.
-// 끝나면 배달통 사장님 화면에 평점·매출이 집계되고, 지친 사장님이 셔터를 내린다.
+// 끝나면 배달퉁 사장님 화면에 평점·매출이 집계되고, 지친 사장님이 셔터를 내린다.
 import { frame, timer, SFX, tone, noise, vib, rnd, rint, pick, shuffle, clamp, RM } from "../mg.js";
 
 const W = 160, T = 30, VX = [6, 80, 154], CAP = 3;
@@ -39,7 +39,7 @@ function vBox(q, x, y, s = 1) {
   q.fillStyle = "#e0402a"; q.fillRect(0, 2, 7, 0.9); q.fillStyle = "#ffcf5a"; q.beginPath(); q.arc(3.5, 2.45, 0.9, 0, 6.3); q.fill();
   q.restore();
 }
-// 스쿠터 탄 라이더(위에서 본 그림, 오른쪽을 보는 모양을 돌린다). c: 헬멧·재킷·배달통 색
+// 스쿠터 탄 라이더(위에서 본 그림, 오른쪽을 보는 모양을 돌린다). c: 헬멧·재킷·배달퉁 색
 function vScooter(q, x, y, dir, c, tm, mv) {
   q.save(); q.translate(x, y);
   if (dir === "l") q.scale(-1, 1); else if (dir === "d") q.rotate(Math.PI / 2); else if (dir === "u") q.rotate(-Math.PI / 2);
@@ -52,7 +52,7 @@ function vScooter(q, x, y, dir, c, tm, mv) {
   // 핸들·헤드라이트
   q.strokeStyle = "#2a2a30"; q.lineWidth = 0.8; q.lineCap = "round"; q.beginPath(); q.moveTo(4.6, -3); q.lineTo(4.6, 3); q.stroke();
   q.fillStyle = "#fff6b0"; q.beginPath(); q.arc(6.4, 0, 0.8, 0, 6.3); q.fill();
-  // 배달통
+  // 배달퉁
   rr(q, -8.6, -3.2, 5, 6.4, 0.8); q.fillStyle = lgr(q, -8.6, 0, -3.6, 0, [[0, mix(c.box, "#000000", 0.25)], [0.5, mix(c.box, "#ffffff", 0.2)], [1, c.box]]); q.fill(); q.strokeStyle = "rgba(0,0,0,.4)"; q.lineWidth = 0.3; q.stroke();
   q.fillStyle = c.bx2; q.fillRect(-8.6, -0.6, 5, 1.2);
   // 사람: 어깨(재킷) + 헬멧
@@ -123,7 +123,7 @@ export const GAME = {
 .mg-c2w>canvas{width:100%;height:100%;display:block;image-rendering:auto;touch-action:none;cursor:pointer;border-radius:6px}
 .mg-chicken2 .mg-steps img{width:80px;height:68px;border-radius:11px;box-shadow:0 3px 10px #0006}
 .mg-chicken2 .mg-logo b{font-size:26px}
-.mg-c2w .c2hud{position:absolute;left:4px;top:3px;z-index:6;display:flex;gap:3px;pointer-events:none;font:800 10px/1 ui-monospace,monospace}
+.mg-c2w .c2hud{position:absolute;left:4px;top:3px;z-index:6;display:flex;gap:3px;pointer-events:none;font:800 11px/1 ui-monospace,monospace}
 .mg-c2w .c2hud span{background:#0d1020d8;color:#e8ecff;padding:3px 5px;border-radius:4px;letter-spacing:.2px}
 .mg-c2w .c2hud span.fb{background:#1f6a3ad8;color:#e8ffe8}
 .mg-c2w .c2hud span.fb.on{animation:c2goal .25s steps(2) 6}
@@ -132,11 +132,11 @@ export const GAME = {
 .mg-c2w .c2lb b.br{color:#ffcf5a;font-size:11px;letter-spacing:1px;text-shadow:0 1px 0 #6a3a0a,0 0 5px #ff9a3b}
 .mg-c2w .c2lb b.br.off{color:#6a5a40;text-shadow:none}
 .mg-c2w .c2ag{position:absolute;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(#4fc07a,#2f8a52)!important;color:#fff!important;border:0!important;border-radius:8px!important;box-shadow:0 2px 0 #1a5030,0 0 0 2px #0d2a18!important;font-weight:900;font-size:11.5px;line-height:1.1;padding:0!important;min-height:0!important;touch-action:manipulation}
-.mg-c2w .c2ag small{font-size:9.5px;font-weight:700;color:#e0ffe8}
+.mg-c2w .c2ag small{font-size:11px;font-weight:700;color:#e0ffe8}
 .mg-c2w .c2ag.hot{animation:c2pulse .45s infinite alternate}
 .mg-c2w .c2ag.dis{filter:grayscale(.8) brightness(.7)}
 .mg-c2w .c2ag:active{transform:translateY(2px)}
-.mg-c2w .c2cnt{position:absolute;z-index:6;pointer-events:none;color:#ffe9b0;font:800 10px/1.2 ui-monospace,monospace;text-align:right;text-shadow:0 1px 0 #000}
+.mg-c2w .c2cnt{position:absolute;z-index:6;pointer-events:none;color:#ffe9b0;font:800 11px/1.2 ui-monospace,monospace;text-align:right;text-shadow:0 1px 0 #000}
 .mg-c2w .c2go{position:absolute;z-index:9;width:0;height:0;display:none;pointer-events:none}
 .mg-c2w .c2go.on{display:block}
 .mg-c2w .c2go i{position:absolute;width:39px;height:39px;left:-14px;background-size:100% 100%;filter:drop-shadow(0 2px 1px #0009)}
@@ -156,7 +156,7 @@ export const GAME = {
 .mg-c2w .c2tut.off{opacity:0;visibility:hidden}
 .mg-c2w .c2tc{pointer-events:auto;background:#fffdf6;color:#2a2018;border-radius:14px;padding:9px 12px 8px;box-shadow:0 4px 0 #0006,0 0 0 2px #ffb03b;max-width:292px;font-size:13px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-c2w .c2tut.pop .c2tc{animation:c2pop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-c2w .c2tc em{font-style:normal;display:inline-block;background:#d8701a;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
+.mg-c2w .c2tc em{font-style:normal;display:inline-block;background:#d8701a;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
 .mg-c2w .c2tc p{margin:0}.mg-c2w .c2tc b{color:#c0601a}.mg-c2w .c2tc b.rd{color:#c0392b}.mg-c2w .c2tc b.bl{color:#1f6aa8}.mg-c2w .c2tc b.gr{color:#2f8a52}
 .mg-c2w .c2tb{margin-top:6px;display:flex;justify-content:center}
 .mg-c2w .c2skip{background:none!important;border:0!important;box-shadow:none!important;color:#8a8070!important;font-size:11.5px;text-decoration:underline;padding:2px 6px!important;min-height:0!important}
@@ -172,10 +172,10 @@ export const GAME = {
 .mg-c2w .c2scr{background:linear-gradient(#ffcf5a,#ff9a3b);border-radius:14px;padding:8px 7px 7px;overflow:hidden}
 .mg-c2w .c2hd{display:flex;align-items:center;gap:6px;color:#4a2400;font-weight:900;font-size:12px;margin-bottom:6px}
 .mg-c2w .c2hd img{width:28px;height:28px;border-radius:7px;box-shadow:0 1px 2px #0004}
-.mg-c2w .c2hd p{margin:0;line-height:1.2}.mg-c2w .c2hd small{display:block;font-weight:700;font-size:10px;color:#7a4410}
+.mg-c2w .c2hd p{margin:0;line-height:1.2}.mg-c2w .c2hd small{display:block;font-weight:700;font-size:11px;color:#7a4410}
 .mg-c2w .c2big{background:#fffdf6;border-radius:10px;padding:6px 8px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 0 #0003;margin-bottom:5px}
 .mg-c2w .c2big b{font-size:24px;color:#e07a10;letter-spacing:-.5px}
-.mg-c2w .c2big small{font-size:10px;color:#8a6a40;font-weight:800;display:block}
+.mg-c2w .c2big small{font-size:11px;color:#8a6a40;font-weight:800;display:block}
 .mg-c2w .c2big .st{font-size:13px;color:#ffb000;letter-spacing:1px;text-align:right}
 .mg-c2w .c2rows{background:#fffdf6e8;border-radius:10px;padding:4px 8px;margin-bottom:5px;font-size:11px;color:#3a2a1a}
 .mg-c2w .c2rows p{margin:2px 0;display:flex;justify-content:space-between;font-weight:700}
@@ -185,8 +185,8 @@ export const GAME = {
 .mg-c2w .c2ls{display:flex;flex-direction:column;gap:4px;min-height:84px}
 .mg-c2w .c2nt{display:flex;gap:6px;align-items:center;background:#fffdf6f2;border-radius:9px;padding:4px 7px;box-shadow:0 2px 0 #0003;animation:c2ntin .35s cubic-bezier(.3,1.5,.5,1)}
 .mg-c2w .c2nt img{width:28px;height:28px;flex:0 0 auto;border-radius:50%;background:#ffe9c0;box-shadow:0 0 0 2px #fff,0 0 0 3px #ffb03b}
-.mg-c2w .c2nt p{margin:0;font-size:10.5px;line-height:1.3;color:#3a2a1a;min-width:0}
-.mg-c2w .c2nt p b{display:block;font-size:9.5px;color:#d8701a;letter-spacing:.5px}
+.mg-c2w .c2nt p{margin:0;font-size:11px;line-height:1.3;color:#3a2a1a;min-width:0}
+.mg-c2w .c2nt p b{display:block;font-size:11px;color:#d8701a;letter-spacing:.5px}
 .mg-c2w .c2nt.bad p b{color:#4f8ad9}
 .mg-c2w .c2nt p span{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @keyframes c2ntin{0%{transform:translateY(-14px) scale(.9);opacity:0}100%{transform:none;opacity:1}}
@@ -827,7 +827,7 @@ function runGame(host, ez, finish, opts = {}) {
     requestAnimationFrame(loop);
   };
 
-  // ── 끝: 배달통 사장님 화면 → 셔터 내리기 ──
+  // ── 끝: 배달퉁 사장님 화면 → 셔터 내리기 ──
   const appURL = () => svgU(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f8ff0"/><stop offset="1" stop-color="#1f56b0"/></linearGradient></defs><rect width="32" height="32" rx="7" fill="url(#a)"/><path d="M7 12h14l-1.4 9H8.4z" fill="#fff"/><path d="M9 12V9.6A5 5 0 0 1 19 9.6V12" fill="none" stroke="#ffb03b" stroke-width="2"/><circle cx="11" cy="24.5" r="2" fill="#1a1a2a"/><circle cx="20" cy="24.5" r="2" fill="#1a1a2a"/><path d="M21 15h4l2 4v4h-6z" fill="#ffd23f"/></svg>`);
   const custFace = (k, st) => {
     const a = artOf(custs[k % custs.length]); if (!a.ok) return "";
@@ -852,7 +852,7 @@ function runGame(host, ez, finish, opts = {}) {
     const fee = agUses * AGFEE, gross = sales + fee;
     SFX.end?.(); dim.classList.add("on");
     const box = document.createElement("div"); box.className = "c2end";
-    box.innerHTML = `<div class="c2ph"><div class="nt0"></div><div class="c2scr"><div class="c2hd"><img src="${appURL()}" alt=""><p>배달통 사장님<small>황금닭 · 금요일 마감</small></p></div>
+    box.innerHTML = `<div class="c2ph"><div class="nt0"></div><div class="c2scr"><div class="c2hd"><img src="${appURL()}" alt=""><p>배달퉁 사장님<small>황금닭 · 금요일 마감</small></p></div>
       <div class="c2big"><div><small>오늘 리뷰 평점</small><b class="av">★0.0</b></div><div class="st">${av === "-" ? "" : stars(Math.round(+av))}</div></div>
       <div class="c2rows"><p><span>배달 완료</span><b class="n1">0건</b></p><p><span>매출</span><b class="n2">0원</b></p>${fee ? `<p class="neg"><span>배달대행 수수료</span><b>-${won(fee)}원</b></p>` : ""}${cx.length ? `<p class="neg"><span>식어서 취소</span><b>${cx.length}건</b></p>` : ""}<p class="tot"><span>오늘 남은 돈</span><b class="n3">0원</b></p></div>
       <div class="c2ls"></div></div></div>`;

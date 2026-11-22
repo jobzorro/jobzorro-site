@@ -7,7 +7,7 @@
 // - 효과: extraMods(s) 를 core.js mod()/growMult 가 성향·특전 카드 뒤에 이어서 읽는다.
 // - 난수는 엔진의 r(makeRng)만 받는다.
 import * as D from "./defs.js";
-const CORE_statCap = (s) => Math.min(D.STAT_MAX, D.STAT_CAP0 + D.STAT_CAP_NG * Math.max(0, (s?.ng?.n || 1) - 1)); // v4.28d 회차 천장(core.statCap 과 같은 식)
+const CORE_statCap = (s) => Math.min(D.STAT_MAX, D.STAT_CAP0 + D.STAT_CAP_NG * Math.max(0, (s?.ng?.n || 1) - 1)); // 능력치 천장(core.statCap 과 같은 식, 지금은 회차와 상관없이 200)
 import * as IT from "./items.js";
 import { makeRng } from "./rng.js";
 // 카드 전용 난수(엔진 makeRng, 저장 s.gc.rs): 카드를 뽑아도 본 판의 난수 흐름이 바뀌지 않게. 받은 r 은 쓰지 않는다

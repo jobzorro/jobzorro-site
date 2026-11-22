@@ -1123,7 +1123,7 @@ export function openDeco(host, opts = {}) {
     if (p.lightS < 0.6) out.push("조명이 좀 어두워요");
     else if (p.lightS >= 1) out.push(pick(["조명 분위기 최고예요", "밤 사진이 예쁘게 나와요"]));
     if (p.decoS >= 0.8) out.push("소품 하나하나 귀여워요");
-    if (st.tg.fun || (S.kind === "pr" && st.tg.party >= 2)) out.push(S.kind === "pr" ? "노래하고 놀다 보니 막차 놓침 ㅋㅋ" : "넷플릭스 보다 잠들었어요");
+    if (st.tg.fun || (S.kind === "pr" && st.tg.party >= 2)) out.push(S.kind === "pr" ? "노래하고 놀다 보니 막차 놓침 ㅋㅋ" : "냇플릭스 보다 잠들었어요");
     if (!out.length) out.push(pick(["깔끔하고 좋았어요", "무난무난, 또 올게요"]));
     return out;
   }

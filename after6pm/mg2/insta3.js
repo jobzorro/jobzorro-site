@@ -300,7 +300,7 @@ export const GAME = {
 .mg-insta3 .rl-tut.off{opacity:0;visibility:hidden}
 .mg-insta3 .rl-tc{background:#fffdf8;color:#2a1e2e;border-radius:14px;padding:9px 12px 8px;box-shadow:0 4px 0 #0006,0 0 0 2px #b06cff;max-width:300px;font-size:13px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-insta3 .rl-tut.pop .rl-tc{animation:rlpop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-insta3 .rl-tc em{font-style:normal;display:inline-block;background:#b06cff;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
+.mg-insta3 .rl-tc em{font-style:normal;display:inline-block;background:#b06cff;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
 .mg-insta3 .rl-tc p{margin:0}
 .mg-insta3 .rl-tc b.pk{color:#e0307a}.mg-insta3 .rl-tc b.pu{color:#8a3ad8}.mg-insta3 .rl-tc b.gd{color:#a87000}.mg-insta3 .rl-tc b.rd{color:#d0283c}
 .mg-insta3 .rl-tc .rl-dots{display:inline-flex;gap:4px;margin-top:4px}.mg-insta3 .rl-tc .rl-dots i{width:9px;height:9px;border-radius:50%;background:#ddd;display:block}.mg-insta3 .rl-tc .rl-dots i.on{background:#7CFC9A;box-shadow:0 0 0 1px #1f9a4a}

@@ -171,13 +171,13 @@ const CSS = `
 .mg-cs3 .cs3pf canvas{position:static;flex:0 0 auto;border-radius:6px;box-shadow:0 0 0 2px #0b0d18;background:#cfe4ff}
 .mg-cs3 .cs3pf .in{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .mg-cs3 .cs3pf .t1{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:#5a6078;white-space:nowrap}
-.mg-cs3 .cs3pf .t1 em{font-style:normal;background:#ff6b6b;color:#fff;border-radius:4px;padding:0 5px;font-size:10.5px}
-.mg-cs3 .cs3pf .t1 i{font-style:normal;margin-left:auto;background:#1f2a50;color:#ffd166;border-radius:4px;padding:0 5px;font-size:10px}
+.mg-cs3 .cs3pf .t1 em{font-style:normal;background:#ff6b6b;color:#fff;border-radius:4px;padding:0 5px;font-size:11px}
+.mg-cs3 .cs3pf .t1 i{font-style:normal;margin-left:auto;background:#1f2a50;color:#ffd166;border-radius:4px;padding:0 5px;font-size:11px}
 .mg-cs3 .cs3pf .t2{display:flex;align-items:baseline;gap:5px;white-space:nowrap}
-.mg-cs3 .cs3pf .t2 small{font-size:10.5px;color:#6a7088;font-weight:700}
+.mg-cs3 .cs3pf .t2 small{font-size:11px;color:#6a7088;font-weight:700}
 .mg-cs3 .cs3pf .t2 b{font-size:17px;font-weight:900;color:#c0392b;letter-spacing:-.5px}
-.mg-cs3 .cs3pf .t2 span{font-size:10.5px;color:#3a4060;font-weight:800;overflow:hidden;text-overflow:ellipsis}
-.mg-cs3 .cs3pf .t3{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:10.5px;font-weight:800;color:#3a4060}
+.mg-cs3 .cs3pf .t2 span{font-size:11px;color:#3a4060;font-weight:800;overflow:hidden;text-overflow:ellipsis}
+.mg-cs3 .cs3pf .t3{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:11px;font-weight:800;color:#3a4060}
 .mg-cs3 .cs3pf .t3 span{background:#e3ecff;color:#2a4aa0;border-radius:4px;padding:0 5px}
 .mg-cs3 .cs3pf .t3 b{background:#22252f;color:#fff;border-radius:4px;padding:0 5px;font-weight:800}
 .mg-cs3 .cs3pf.flash{animation:cs3pfl .5s}
@@ -194,16 +194,16 @@ const CSS = `
 .mg-cs3 .cs3cd .hd img{width:36px;height:36px;flex:0 0 auto;background:#ffffff2a;border-radius:6px}
 .mg-cs3 .cs3cd .hd span{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.15}
 .mg-cs3 .cs3cd .hd b{font-size:14px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mg-cs3 .cs3cd .hd small{font-size:10.5px;font-weight:800;opacity:.85}
+.mg-cs3 .cs3cd .hd small{font-size:11px;font-weight:800;opacity:.85}
 .mg-cs3 .cs3cd .dd{font-style:normal;font-size:12px;font-weight:900;background:#fff;color:#3a4060;border-radius:6px;padding:2px 6px;flex:0 0 auto;box-shadow:0 2px 0 #0003}
 .mg-cs3 .cs3cd.urg .dd{background:#ff3b4e;color:#fff;animation:cs3dd .5s steps(2) infinite}
 @keyframes cs3dd{50%{background:#ffd166;color:#7a1020}}
 .mg-cs3 .cs3cd .jb{padding:6px 10px 2px;display:flex;align-items:baseline;gap:6px}
-.mg-cs3 .cs3cd .jb small{font-size:10.5px;color:#7a8098;font-weight:800}
+.mg-cs3 .cs3cd .jb small{font-size:11px;color:#7a8098;font-weight:800}
 .mg-cs3 .cs3cd .jb b{font-size:23px;font-weight:900;letter-spacing:-.8px;color:#16182a}
 .mg-cs3 .cs3cd .rw{display:flex;flex-direction:column;gap:3px;padding:3px 10px}
 .mg-cs3 .cs3cd .rw span{font-size:13px;font-weight:800;color:#2a2e44;display:flex;gap:6px;align-items:center}
-.mg-cs3 .cs3cd .rw i{font-style:normal;font-size:10px;font-weight:800;color:#fff;background:#8a90ad;border-radius:4px;padding:0 5px;min-width:36px;text-align:center}
+.mg-cs3 .cs3cd .rw i{font-style:normal;font-size:11px;font-weight:800;color:#fff;background:#8a90ad;border-radius:4px;padding:0 5px;min-width:36px;text-align:center}
 .mg-cs3 .cs3cd .tg{margin:auto 8px 8px;padding:5px 7px;background:#f1ece0;border-radius:6px;font-size:12px;font-weight:800;color:#4a4a5a;line-height:1.3}
 .mg-cs3 .cs3cd .tg.tr{background:#ffd6dc;color:#b0202f;box-shadow:0 0 0 2px #ff5a6a}
 .mg-cs3 .cs3cd .tg.tt{background:#fff1b8;box-shadow:0 0 0 2px #f5c04e}
@@ -211,7 +211,7 @@ const CSS = `
 .mg-cs3 .cs3cd .fz i{position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,#ff3b4e,#ffb03b);transform-origin:left}
 .mg-cs3 .cs3cd .fz em{position:absolute;top:-4px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:radial-gradient(#fff 0 2px,#ffd166 3px,#ff5a3a 5px,transparent 6px);animation:cs3sp .12s steps(2) infinite}
 @keyframes cs3sp{50%{transform:scale(1.4) rotate(45deg)}}
-.mg-cs3 .cs3cd .rb{position:absolute;right:-30px;top:52px;transform:rotate(35deg);background:#2f7ad8;color:#fff;font-size:10.5px;font-weight:900;padding:2px 30px;box-shadow:0 2px 0 #0004;white-space:nowrap}
+.mg-cs3 .cs3cd .rb{position:absolute;right:-30px;top:52px;transform:rotate(35deg);background:#2f7ad8;color:#fff;font-size:11px;font-weight:900;padding:2px 30px;box-shadow:0 2px 0 #0004;white-space:nowrap}
 .mg-cs3 .cs3cd .st{position:absolute;z-index:3;font-size:30px;font-weight:900;border:4px solid currentColor;border-radius:8px;padding:0 8px;opacity:0;pointer-events:none;background:#fffdf7cc}
 .mg-cs3 .cs3cd .st.r{left:12px;top:56px;color:#22a86a;transform:rotate(-16deg)}
 .mg-cs3 .cs3cd .st.l{right:12px;top:56px;color:#e0313f;transform:rotate(16deg)}
@@ -220,7 +220,7 @@ const CSS = `
 @keyframes cs3stx{from{transform:translate(-50%,-50%) scale(2.4) rotate(-30deg);opacity:0}}
 .mg-cs3 .cs3cd.urg{box-shadow:0 0 0 2px #0b0d18,0 0 0 5px #ff3b4e88,0 6px 0 2px #0b0d1888}
 .mg-cs3 .cs3cd.drag{cursor:grabbing}
-.mg-cs3 .cs3fd{position:absolute;z-index:3;font-size:10px;font-weight:900;color:#ffd166;text-align:center;pointer-events:none;line-height:1.1}
+.mg-cs3 .cs3fd{position:absolute;z-index:3;font-size:11px;font-weight:900;color:#ffd166;text-align:center;pointer-events:none;line-height:1.1}
 .mg-cs3 .cs3fd b{display:inline-block;min-width:16px;background:#ffd166;color:#2a1a00;border-radius:8px;padding:0 4px;font-size:11px}
 .mg-cs3 .cs3bd{position:absolute;z-index:3;min-width:18px;height:18px;border-radius:9px;background:#22c070;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 0 0 2px #0b0d18;pointer-events:none;transition:transform .15s}
 .mg-cs3 .cs3bd.pop{transform:scale(1.5)}
@@ -254,7 +254,7 @@ const CSS = `
 .mg-cs3 .cs3tc{pointer-events:auto;background:#fffdf6;color:#2a2018;border-radius:14px;padding:8px 12px 7px;box-shadow:0 4px 0 #0006,0 0 0 2px #ff6b6b;max-width:300px;font-size:12.5px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-cs3 .cs3tut.pop .cs3tc{animation:cs3pop .35s cubic-bezier(.3,1.8,.5,1)}
 @keyframes cs3pop{0%{transform:scale(.3)}100%{transform:scale(1)}}
-.mg-cs3 .cs3tc em{font-style:normal;display:inline-block;background:#ff6b6b;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
+.mg-cs3 .cs3tc em{font-style:normal;display:inline-block;background:#ff6b6b;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
 .mg-cs3 .cs3tc p{margin:0}.mg-cs3 .cs3tc b{color:#1f6a4a}.mg-cs3 .cs3tc b.rd{color:#c0392b}.mg-cs3 .cs3tc b.yl{color:#b07a00}.mg-cs3 .cs3tc b.bl{color:#1f6aa8}
 .mg-cs3 .cs3tb{margin-top:5px;display:flex;justify-content:center}
 .mg-cs3 .cs3skip{background:none!important;border:0!important;color:#8a8070!important;font-size:11.5px;text-decoration:underline;padding:2px 6px!important}
@@ -267,11 +267,11 @@ const CSS = `
 .mg-cs3 .cs3big.buzz{animation:cs3buzz .18s}
 @keyframes cs3buzz{25%{transform:translateX(-3px) rotate(-1deg)}75%{transform:translateX(3px) rotate(1deg)}}
 .mg-cs3 .cs3big .tm{text-align:center;color:#fff;font-size:22px;font-weight:900;letter-spacing:1px;line-height:1}
-.mg-cs3 .cs3big .dt{text-align:center;color:#9ea3c0;font-size:10.5px;font-weight:700;margin:2px 0 6px}
+.mg-cs3 .cs3big .dt{text-align:center;color:#9ea3c0;font-size:11px;font-weight:700;margin:2px 0 6px}
 .mg-cs3 .cs3big .ls{display:flex;flex-direction:column;gap:4px;min-height:40px}
 .mg-cs3 .cs3big .ls div{display:flex;align-items:center;gap:6px;background:#ffffffee;color:#16301f;border-radius:9px;padding:3px 7px;font-size:11px;white-space:nowrap;overflow:hidden;font-weight:900;line-height:1.2;animation:cs3drop .35s cubic-bezier(.3,1.5,.5,1)}
 .mg-cs3 .cs3big .ls div img{width:20px;height:16px;flex:0 0 auto}
-.mg-cs3 .cs3big .ls div span{min-width:0;overflow:hidden;text-overflow:ellipsis}.mg-cs3 .cs3big .ls div small{display:block;font-size:9.5px;color:#4a6a5a;font-weight:700}
+.mg-cs3 .cs3big .ls div span{min-width:0;overflow:hidden;text-overflow:ellipsis}.mg-cs3 .cs3big .ls div small{display:block;font-size:11px;color:#4a6a5a;font-weight:700}
 .mg-cs3 .cs3big .ls div.no{background:#c9ccd8;color:#3a3f55}
 .mg-cs3 .cs3big .ls div.more{justify-content:center;background:#5fe0a0;color:#0b2a1a}
 .mg-cs3 .cs3big .ls p{margin:8px 0;text-align:center;color:#9ea3c0;font-size:12px;font-weight:700}

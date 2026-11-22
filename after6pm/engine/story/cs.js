@@ -6,7 +6,7 @@
 //  Lv2 크멍 첨삭러          → 합격 캡처 · 3월/9월의 대란 · 합격률 광고 폭격 · 중고신입 · AI 자소서 · 파일 47개 · 합격률 몇 %
 //  Lv3 면접 코치            → 평일 오후 특강 · 최종 면접 전날 밤 · 오픈채팅 방장 · 처우협상 · 출생아 23만 · 헤드헌터 제휴
 //  Lv4~5 종합 컨설턴트·브랜드 → 책 출간(8개월) · 대기 명단 20명 · 동업 제안
-//  위기                     → 패키지 불합격 환불 · 세무서 우편 → 가산세 · 번아웃 주간 · 회사에 걸렸다 · 과장 광고 신고 · 비수기 달력
+//  위기                     → 후기 품앗이 단톡방 · 같은 공고의 내 고객 두 명 · 세무서 우편 → 가산세 · 번아웃 주간 · 회사에 걸렸다 · 과장 광고 신고 · 비수기 달력
 //  인물                     → 합격시킨 고객의 청첩장 · "저 그만두고 싶어요"(선퇴사 금지, 환승 이직)
 //  선배                     → 업계 선배 취업조로에게 한 수 배우기(판당 최대 2번): z1 합격률 정체 → 한 항목 한 이야기·두괄식 / z2 경력 이직 → 직소싱·회사가 직무보다·환승
 //  퇴사 고민(p16 세 번째)   → 환승 조건(quitReady: 최근 연말 결산 투잡 이익 ≥ 연봉 + 비상금 6개월치)이 되면 본잡 전환 장면(cine full_cs · onChoose full_ev), 안 되면 모자란 배수·돈을 보여 주고 조건이 차면 한 번 더 묻는다
@@ -37,7 +37,7 @@ function base(s) {
 }
 const exClients = (s) => (s.cast || []).filter((id) => CHAR[id] && s.rel[id]?.client);
 
-// ───────── 이벤트(기획 16개 p01~p16 + 새로 지은 n01~n13) ─────────
+// ───────── 이벤트(기획 16개 중 15개(p13 뺌) + 새로 지은 n01~n15) ─────────
 // ph: early·mid·late·crisis, ok: 뜰 수 있는 때, on: 선택 뒤 css_ev 처리, rep: 다 본 뒤 가끔 다시, who: 예전 고객이 장면에 선다
 function evList(s, who) {
   const cs = s.cs, X = s.sx.cs, pi = SYN.pi(s), b = base(s), co = company(s);
@@ -103,13 +103,7 @@ function evList(s, who) {
       x: "뉴스에 작년 출생아 수가 나왔다. 23만 8천 명. 지금 취준생 세대의 절반도 안 된다. 15년 뒤 내 고객은 어디에 있을까.",
       c: [{ t: "경력 이직 컨설팅으로 축을 넓힌다", eff: { stat: { career: 1.5, mkt: 0.5 } }, text: "신입은 줄어도 이직은 늘어난다. 경력기술서 첨삭 사례를 모으기 시작했다." },
           { t: "강의·콘텐츠 자산을 만든다", eff: { hp: -4, css_vod: 30 }, text: "한 번 찍어 두면 15년 뒤에도 팔린다. 녹화 버튼을 눌렀다." }] },
-    { id: "p13", ph: "crisis", ok: () => cs.lv >= 3 && cs.reviews >= 15 && cs.fails >= 3, t: "패키지 고객의 불합격",
-      x: "합격까지 패키지를 받은 고객이 최종에서 떨어졌다. 부모님이 직접 전화했다. \"합격 못 하면 의미 없는 거 아닌가요? 전액 환불해 주세요.\"",
-      c: [{ t: "남은 회차를 연장해 주며 설득한다", check: { stat: "talk", dc: 50 },
-            ok: { text: "\"다음 시즌까지 같이 가 보죠.\" 부모님이 한숨을 쉬고 수긍했다.", eff: { hp: -6, ap: -1 } },
-            ng: { text: "설득은 실패. 결국 절반을 돌려줬다.", eff: { hp: -4, css_refund: half } } },
-          { t: `절반 환불한다 (−${won(half)})`, eff: { css_refund: half, mental: -3 }, text: "계약서에 없던 돈이 나갔다. 대신 조용히 끝났다." },
-          { t: "계약서대로 거절한다", eff: { css_rev: -2.5, mental: -4 }, text: "규정은 내 편이었다. 취준 커뮤니티 글은 아니었다." }] },
+    // 11-23: p13 '패키지 고객의 불합격'(환불 요구)은 엔진의 '불합격 환불 요구'·'어머니가 대신 상담을'과 같은 일이라 뺐다(옛 jobEvent 가 다시 띄우지 않게 takeover 표시는 그대로 16개)
     { id: "p14", ph: "crisis", ok: () => cs.lv >= 2 && cs.clients >= 30 && !X.taxClean, t: "세무서에서 온 우편", on: true,
       x: "계좌이체로, 가끔은 현금으로 받은 상담료가 꽤 쌓였다. 어느 날 우편함에 세무서 안내문이 꽂혀 있다. 업계 세무조사 소문이 돈다.",
       c: [{ t: `세무사를 쓰고 지난 소득을 정리해 신고한다 (−${won(tx)})`, eff: { css_tax: tx, mental: 6 }, text: "영수증 상자를 통째로 넘겼다. 마음이 가벼워졌다." },
@@ -195,6 +189,19 @@ function evList(s, who) {
       x: "경력 이직 고객을 돕다 알게 된 헤드헌터가 연락했다. \"후보자 경력기술서를 다듬어 주시면 건당 수수료 드릴게요. 대신 저희 포지션 위주로요.\"",
       c: [{ t: `제휴한다 (+${won(sm)}, 소개 +)`, eff: { css_cash: sm, css_refer: 1.2 }, text: "소개가 꾸준히 들어온다. 가끔은 고객에게 맞지 않는 포지션을 권하게 된다." },
           { t: "고객 편에 서고 싶어 거절한다", eff: { css_rev: 1 }, text: "\"직무보다 회사가 중요해요.\" 내 고객에게는 그 말만 하고 싶다." }] },
+    // 11-23 컨설팅에서만 생기는 골치 2개(엔진 쪽 '대필 요구'·'스펙 부풀리기'와 한 묶음)
+    { id: "n14", ph: "mid", ok: () => cs.ch.kmong.on && cs.lv >= 2 && cs.reviews >= 8, t: "후기 품앗이 단톡방", on: true,
+      x: `크멍 판매자 단톡방에 초대됐다. 공지는 한 줄. "서로 상품 하나씩 사 주고 별 다섯 개. 수수료만 내면 후기가 생깁니다." 내 후기는 ${Math.floor(cs.reviews)}개, 방장 상품은 400개다.`,
+      c: [{ t: "방을 나간다. 합격한 고객에게 후기를 부탁한다", eff: { css_rev: 1, mental: 1 }, text: "열 명에게 보냈고 한 명이 썼다. 느리다. 대신 지워질 일이 없다." },
+          { t: "이번 한 번만 품앗이한다", eff: { css_rev: 3 }, text: "하룻밤에 후기 세 개. 셋 다 '친절하고 꼼꼼해요'로 시작한다." },
+          { t: "캡처해서 운영팀에 신고한다", eff: { css_kq: 5, mental: -2 }, text: "다음 주에 방이 사라졌다. 누가 신고했는지 다들 궁금해한다." }] },
+    { id: "n15", ph: "mid", ok: () => cs.lv >= 3 && cs.clients >= 40, t: "같은 공고, 내 고객 두 명",
+      x: "면접 코칭 고객 둘이 같은 회사 같은 직무 최종 면접에 올랐다. 면접은 같은 날 오전과 오후. 둘 다 내가 짜 준 1분 자기소개를 외우고 있다.",
+      c: [{ t: "밤새 두 사람 답을 각자 경험으로 다시 짠다 (스태미너 −8)", check: { stat: "write", dc: 50 },
+            ok: { text: "한 명은 숫자로, 한 명은 사건으로. 겹치는 문장이 하나도 없다. 발표 날, 한 명이 붙었다.", eff: { hp: -8, css_rev: 1.5 } },
+            ng: { text: "시간이 모자랐다. 면접관이 오후 지원자에게 말했다. \"오전에도 같은 답을 들었는데요.\"", eff: { hp: -8, css_rev: -1.5 } } },
+          { t: "둘에게 사실을 알리고 한 명은 다른 코치에게 소개한다", eff: { css_refer: 0.4, mental: 2 }, text: "\"말씀해 주셔서 고마워요.\" 소개받아 간 쪽이 오히려 친구를 데려왔다." },
+          { t: "말하지 않고 하던 대로 한다", eff: { css_rev: -0.5 }, text: "둘은 같은 첫 문장으로 시작했다. 면접 후기 게시판에 '요즘 컨설팅 받은 답은 티 난다'는 글이 올라왔다." }] },
 
     // ── 업계 선배 취업조로에게 한 수 배우기(판당 최대 2번, 두 번째는 더 깊을 때) ──
     { id: "z1", ph: "mid", ok: () => cs.lv >= 2 && cs.passes >= 5 && cs.reviews >= 12 && s.t >= 18 && rate < 60, t: "선배 컨설턴트, 취업조로", on: true,
@@ -327,33 +334,38 @@ export default {
       if (id === "p08" && i === 1) { if (r.chance(0.4)) { cs.offers = Math.min(2, cs.offers + 1); out.push("주말 강의 섭외가 따로 왔다(강의 섭외 +1)"); } else out.push("다시 연락은 오지 않았다"); }
       if (id === "p09") {
         if (i === 0 && ok && !cs.aiCheck) { cs.aiCheck = true; out.push("'AI 티 점검' 단계 생김(합격률 +2%p)"); }
-        if (i === 1) { const ks = ["low", "mid", "high"], k = ks[Math.max(0, ks.indexOf(cs.price) - 1)]; if (k !== cs.price) { cs.price = k; out.push(`가격 ${jo(D.CS_PRICE[k].n, "으로", "로")}`); } }
+        if (i === 1) { const ks = ["low", "mid", "high", "ultra"], k = ks[Math.max(0, ks.indexOf(cs.price) - 1)]; /* 초고액이면 프리미엄으로 한 단계만(전에는 목록에 없어 저가까지 떨어졌다) */ if (k !== cs.price) { cs.price = k; out.push(`가격 ${jo(D.CS_PRICE[k].n, "으로", "로")}`); } }
       }
       if (id === "p10" && i === 0) { X.bookT = s.t + 8; out.push("책 계약: 8달 뒤 출간"); }
       // p11 '단가를 올려 1:1만': 가격 단계는 플레이어가 컨설팅 화면에서 고른다(자동으로 프리미엄을 켜면 판 전체 수입이 30% 뛰어 밸런스가 깨짐)
-      if (id === "p11" && i === 1 && cs.price !== "high") out.push(cs.reviews >= (D.CS_PRICE.high.req || 30) ? "프리미엄 가격을 켤 수 있다(컨설팅 화면 → 가격)" : `프리미엄 가격은 후기 ${D.CS_PRICE.high.req || 30}개부터`);
+      if (id === "p11" && i === 1 && cs.price !== "high") out.push(cs.reviews >= (D.CS_PRICE.high.req || 30) ? "프리미엄 가격을 켤 수 있어요(컨설팅 화면 → 가격)" : `프리미엄 가격은 후기 ${D.CS_PRICE.high.req || 30}개부터`);
       if (id === "p12" && i === 0) {
         // 포지션 추가는 플레이어가 컨설팅 화면에서 직접 고른다(자동으로 넣으면 문의·단가가 한꺼번에 뛰어 밸런스가 깨짐)
         if (cs.niches.includes("career")) out.push("경력 이직 고객 사례를 블로그에 따로 묶었다");
-        else out.push(s.st.career >= D.NICHES.career.req.career && s.co.years >= D.NICHES.career.req.years ? "경력 이직 포지션을 열 수 있다(컨설팅 화면 → 포지션 추가, Lv3부터)" : `경력 이직 포지션은 커리어 ${D.NICHES.career.req.career}·회사 ${D.NICHES.career.req.years}년부터. 공부부터 시작했다`);
+        else { const q = D.NICHES.career.req, need = D.CS_CAREER_PASS || 0; // 실제 문(engine/cs.js setNiche): 커리어·회사 경력·Lv3·합격자 수
+          out.push(s.st.career >= q.career && s.co.years >= q.years && cs.lv >= 3 && (cs.passes || 0) >= need ? "경력 이직 포지션을 열 수 있어요(컨설팅 화면 → 포지션 추가)" : `경력 이직 포지션은 커리어 ${q.career}·회사 ${q.years}년·합격자 ${need}명·Lv3부터(지금 커리어 ${Math.round(s.st.career)}·회사 ${Math.floor(s.co.years || 0)}년·합격자 ${cs.passes || 0}명). 사례부터 모으기로 했다`); }
       }
       if (id === "p14") { if (i === 0) X.taxClean = true; else X.taxRisk = s.t; }
       if (id === "p15" && i === 0) { const n = Math.min(2, cs.queue.length); if (n) { cs.queue.splice(cs.queue.length - n, n); out.push(`대기 고객 ${n}명은 정중히 다른 곳을 안내했다`); } }
       if (id === "p16" && i === 1 && cs.nick === "real") { cs.nick = "nick"; out.push("활동명: 닉네임으로(실명 신뢰 −, 매달 회사 눈치 없음)"); }
       if (id === "p16" && i === 2) {
         const q = quitNeed(s), yearQ = (s.sceneQ || []).some((sc) => sc?.onChoose === "full_ev");
-        if (q.ok && !yearQ) { X.quitAsked = true; s.sceneQ.unshift(fullScene(s, false)); out.push("환승 조건 충족: 본잡 전환을 정할 수 있다"); }
-        else if (q.ok) out.push("환승 조건 충족: 이어지는 연말 결산에서 정할 수 있다");
+        if (q.ok && !yearQ) { X.quitAsked = true; s.sceneQ.unshift(fullScene(s, false)); out.push("환승 조건 충족: 본잡 전환을 정할 수 있어요"); }
+        else if (q.ok) out.push("환승 조건 충족: 이어지는 연말 결산에서 정할 수 있어요");
         else {
           X.quitWish = s.t + 1; // 다음 달부터 다시 확인(0 이면 꺼짐)
           out.push(`지난 연말 결산 투잡 이익: 연봉의 ${q.x.toFixed(1)}배${q.yearOk ? " 충족" : " (1배부터. 12월 결산에서 다시 확인)"}`);
           out.push(`비상금 ${won(Math.max(0, q.have))} / 6개월치 ${won(q.need)}${q.emer ? " 충족" : ` (${won(q.need - Math.max(0, q.have))} 더)`}`);
-          out.push("선퇴사 금지, 환승부터. 조건이 차면 다시 묻는다");
+          out.push("선퇴사 금지, 환승부터. 조건이 차면 다시 물어요");
         }
       }
       if (id === "z1") { X.z1T = s.t; if (i === 0) X.zVisit++; X.z2Ok = r.chance(i === 0 ? 0.45 : 0.35); } // 두 번째 만남은 일부 판에서만(판당 1~2번)
       if (id === "z2") { X.z2T = s.t; if (i === 0) X.zVisit++; }
       if (id === "n02" && i === 0) X.hype = s.t;
+      if (id === "n14" && i === 1) { // 맞교환 후기: 35% 확률로 걸러진다(방금 받은 3개 + 진짜 후기 2개까지)
+        if (r.chance(0.35)) { cs.reviews = Math.max(0, cs.reviews - 5); cs.ch.kmong.q = clamp(cs.ch.kmong.q - 10, 0, 200); out.push("크멍이 맞교환 후기를 걸러 냈다: 후기 −5", "크멍 상세페이지 품질 −10"); }
+        else out.push("이번엔 걸리지 않았다");
+      }
       if (id === "n11") { X.taxRisk = 0; X.taxClean = true; }
       return out;
     },

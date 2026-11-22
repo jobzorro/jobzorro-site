@@ -251,7 +251,8 @@ img.face{image-rendering:pixelated;display:block}
 #err{position:fixed;left:8px;right:8px;top:8px;z-index:99;background:#3a0d18;border:1px solid var(--red);color:#ffd5dc;border-radius:10px;padding:10px;font-size:12px;white-space:pre-wrap}
 .btn svg{width:18px;height:18px;flex:none}
 .next .btn{flex-direction:row;line-height:1.2}
-.next .btn svg{width:20px;height:20px}
+.next .btn svg{width:20px;height:20px;flex:none}
+.next .btn .nx{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;white-space:nowrap;min-width:0}/* 11-23 투자 금액이 길어도 줄이 깨지지 않게 글·금액을 두 줄로 */
 
 /* ── 화면 지도(허브)·넘기기 ── */
 .pager{display:flex;align-items:center;gap:6px;margin:8px 0 2px}
@@ -725,3 +726,115 @@ details.pp-miss .pp-grid{margin-top:6px}
 details.sjline>summary{list-style:none;cursor:pointer}
 details.sjline>summary::-webkit-details-marker{display:none}
 .sjgrid details.sjline{padding:6px 10px}
+
+/* ───────── 화면 정리 v4.31 (2026-11-23 화면 전수조사 반영) · 새 클래스는 tjx- 로 시작 ───────── */
+/* 설정 창 스위치 */
+.setrow{display:flex;align-items:center;gap:10px;width:100%;min-height:54px;padding:8px 2px;text-align:left;border-bottom:1px solid var(--line)}
+.setrow .grow{display:flex;flex-direction:column;gap:1px}
+.setrow .grow b{font-size:14.5px}
+.setrow .tjx-onoff{flex:none;font-size:12px;font-weight:700;color:var(--muted);min-width:18px;text-align:right}
+.setrow .tjx-onoff.on{color:var(--gold)}
+.setrow .tgl{flex:none;width:46px;height:26px;border-radius:999px;background:var(--panel3);border:1px solid var(--line);position:relative;transition:background .15s}
+.setrow .tgl i{position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#8b90b5;transition:transform .15s,background .15s}
+.setrow .tgl.on{background:var(--gold);border-color:var(--gold)}
+.setrow .tgl.on i{transform:translateX(20px);background:#fff}
+/* 엔딩 결산: 순자산은 한 줄 전체 */
+.kv.tjx-endkv{grid-template-columns:repeat(3,1fr)}
+.kv.tjx-endkv>div:first-child{grid-column:1/-1;padding:10px 12px}
+.kv.tjx-endkv>div:first-child .v{font-size:26px;line-height:1.2}
+.kv.tjx-endkv .v{white-space:normal;overflow:visible;text-overflow:clip;word-break:keep-all;font-size:13.5px}
+/* 통계 칸이 4개면 2×2 */
+.kv:has(>div:nth-child(4):last-child){grid-template-columns:1fr 1fr}
+/* 누르는 곳은 40px 이상 */
+.btn.sm{min-height:40px;padding:5px 11px}
+.stepper button{width:40px;height:40px}
+.win .x{width:40px;height:40px}
+.hhead .x{min-width:40px;min-height:40px}
+.pager .pback,.pager .pmenu{min-height:40px}
+.filters button{min-height:40px;padding:5px 14px}
+.page details.more>summary,#modal details.more>summary,.page summary.tiny,#modal summary.tiny,.stwhere summary{min-height:40px;box-sizing:border-box;padding-top:11px;padding-bottom:11px;list-style:none}
+.page summary.tiny::-webkit-details-marker,#modal summary.tiny::-webkit-details-marker{display:none}
+.coach .x{min-height:40px;padding:3px 12px}
+.swhint{min-height:40px;margin-top:-10px}
+/* 홈 바로 하기: 낱글자로 꺾이지 않게 */
+.grid4 button{word-break:keep-all;overflow-wrap:break-word;line-height:1.25;text-align:center}
+/* 접는 칸(지점·숙소·매장 카드, 운영 설정) */
+.tjx-fold>summary{display:flex;align-items:center;gap:8px;min-height:52px;padding:8px 12px;cursor:pointer;list-style:none}
+.tjx-fold>summary::-webkit-details-marker{display:none}
+.tjx-sum{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.tjx-s1{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;font-size:14.5px;line-height:1.3}
+.tjx-s1>b{font-weight:900}
+.tjx-s2{font-size:12.5px;color:#cfd2ea;line-height:1.4}
+.tjx-arr{flex:none;font-style:normal;color:var(--muted);font-size:14px;transition:transform .15s}
+.tjx-fold[open]>summary .tjx-arr{transform:rotate(180deg)}
+.tjx-fold.room[open]>summary{border-bottom:1px solid var(--line)}
+.tjx-fold.room>summary .btn.sm{flex:none}
+.tjx-opsbox{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.tjx-opsbox[open]{background:transparent;border-color:transparent}
+.tjx-opsbox[open]>summary{background:var(--panel);border:1px solid var(--gold);border-radius:14px}
+.tjx-ops{display:flex;flex-direction:column;gap:12px;margin-top:8px;padding-left:8px;border-left:2px solid #f5c04e55}
+.kv.tjx-endkv.tjx-endkv:has(>div:nth-child(4)){grid-template-columns:repeat(3,1fr)}
+/* 펼친 지점 카드: 요약 줄과 겹치는 이름·숫자는 한 번만 */
+.tjx-fold.room[open]>summary .tjx-s2{display:none}
+.tjx-fold.room[open] .body>.row:first-child .nm{display:none}
+/* 장소 장면: 사람이 4명 넘으면 위쪽 칩으로 넘겨 보기 */
+.pstage .more.tjx-stmore{top:auto;bottom:52px;right:8px;background:rgba(10,8,30,.78);/* 11-23: 위쪽(top:40px)에 두면 키 큰 사람 얼굴을 가려 이름표 바로 위(허리께)로 내림 */min-height:40px;display:flex;align-items:center;padding:0 12px;color:#fff;font-weight:700;border:1px solid #ffffff44}
+/* 화면 첫 방문 한 줄 안내 · 급한 일 수 */
+.coach.tjx-tip{padding-bottom:54px}
+.coach.tjx-tip .x{top:auto;bottom:8px}
+.tjx-urg{background:var(--red);color:#fff;border-radius:999px;font-size:11px;font-weight:900;padding:1px 8px;letter-spacing:0}
+/* 홈 큰 그림: 투잡 칩은 둘째 줄 오른쪽 */
+.stage .when{right:12px;flex-wrap:wrap}
+.stage .side{top:42px}
+/* 홈 아래 고정 버튼 줄과 하단 탭 사이로 본문이 비치지 않게 */
+.next{box-shadow:0 14px 0 var(--bg)}
+/* 인별 앱: 30초 댓글함 답 고르기·DM 답 버튼을 크게 */
+.igopt{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.igopt button{min-height:40px;padding:6px 10px;font-size:13px;border-radius:12px}
+.igdmc{gap:6px}
+.igdmc button{min-height:40px;padding:8px 10px;font-size:13px}
+.igx{width:40px;height:40px}
+.igboard .igquick button{min-height:40px}
+.tjx-igb{background:#e1306c;color:#fff;border-radius:99px;padding:0 7px;font-size:11px;margin-left:2px}
+/* 미니게임 다시 하기: 잠긴 것은 투잡별 한 줄 */
+.tjx-mglock{margin:6px 0 2px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px;font-size:12px;color:var(--muted);line-height:1.5}
+.tjx-mglock span{display:block;font-size:11.5px}.tjx-mglock em{display:block;font-style:normal;font-size:11px;opacity:.8}
+/* 전체 메뉴: 잠긴 곳은 맨 아래 작은 줄 */
+.tjx-hlock{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:12px}
+.tjx-hlock button{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px;border-radius:12px;background:#11131f;border:1px solid #23263a;text-align:left;color:var(--muted)}
+.tjx-hlock button svg{width:14px;height:14px;flex:none}
+.tjx-hlock button b{font-size:13px;color:#cfd2ea;white-space:nowrap}
+.tjx-hlock button span{font-size:11.5px;margin-left:auto;text-align:right}
+/* 캐릭터 만들기: 이전·다음은 화면 아래에 붙어 있다 */
+.tjx-wiznav{position:sticky;bottom:0;z-index:6;margin:0 -16px -16px;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line)}
+.tjx-wiznav .btn{min-height:46px;padding:10px 18px}
+.gift .row .btn.sm{min-width:40px}
+/* 사람들 목록·지도: 한 줄에서 잘리던 직업·동네 설명은 두 줄까지 */
+.pgrid .person .rl{white-space:normal;max-width:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;word-break:keep-all}
+.region .rn+.rd{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;word-break:keep-all}
+/* 누르는 곳 40px: 인별 댓글함 '다 했어요', 미니게임 '건너뛰기' */
+.iggauge button{min-height:40px;padding-left:14px;padding-right:14px}
+#modal .mghost button[data-skip]{min-height:40px!important;padding:10px 14px!important}
+/* 안내 카드의 '알겠어요'는 글을 가리지 않게 아래로 */
+.coach{padding-bottom:56px}
+.coach .x{top:auto;bottom:8px}
+.tjx-hlock{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.tjx-hlock>div{grid-column:1/-1}
+.tjx-hlock button{padding:6px 8px;gap:5px}
+.tjx-hlock button b{font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.tjx-hlock button span{display:none}
+.btn{min-height:40px}
+select.btn{min-height:40px}
+.ending .halltabs button,.ending .halljobs button{min-height:40px}
+.tjx-fold.room[open]>summary .btn{display:none}
+.wiz select{min-height:40px}
+.gift .chips .chip{min-height:40px;display:inline-flex;align-items:center;padding:0 12px}
+.tjx-s2 b,.tjx-s2 span{white-space:nowrap}
+.seg button,.todo button{min-height:40px}
+#modal .yr-skip{min-height:40px}
+.page .card>details>summary{min-height:40px;box-sizing:border-box}
+/* 설정 창: 음악 크기 막대(11-23) */
+.setrow.tjx-vol .grow{flex:none}
+.setrow.tjx-vol input[type=range]{flex:1;min-width:0;height:40px;margin:0;accent-color:var(--gold);background:transparent;touch-action:pan-y}
+.setrow.tjx-vol .tjx-onoff{min-width:24px}
+.setrow.tjx-vol.off{opacity:.5}

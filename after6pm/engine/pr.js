@@ -121,15 +121,16 @@ function landlordListing(s, r) { // 건물주 인연이 주는 매물
 // ───────── 행동 ─────────
 export function can(s, id, arg) {
   const pr = s.pr;
+  if (id === "pr_search" && arg && !D.DISTRICTS[arg]) return "없는 지역이에요";
   if (id === "pr_search" || id === "pr_meetup" || id === "pr_decor") return null;
   if (id === "pr_course") return s.t - pr.courseT < 6 ? `다음 교육은 ${6 - (s.t - pr.courseT)}달 뒤` : pr.know >= 80 ? "배울 만큼 배웠어요" : null;
   if (id === "pr_teach") return pr.rooms.length < 3 || pr.know < 50 ? `지점 3곳·노하우 50부터(지금 ${pr.rooms.length}곳·${Math.round(pr.know)})` : pr.teachT === s.t ? "이번 달은 강의했어요" : null;
   if (id === "pr_club") return !SYN.on(s, "club") ? "파티룸과 이어진 취미 모임에 다녀야 해요(와인·보드게임·밴드·러닝·사진)" : pr.clubT === s.t ? "이번 달 행사를 열었어요" : null;
   if (id === "pr_reply") return pr.rooms.some((x) => x.status === "open" && (x.unrep || 0) >= 1) ? null : "답글 달 후기가 없어요";
   if (id === "pr_review") return pr.rooms.some((x) => x.status === "open") ? null : "운영 중인 지점이 없어요";
-  if (["pr_visit", "pr_landlord", "pr_appcheck"].includes(id)) { const L = pr.listings.find((x) => x.id === arg); if (!L) return "매물을 먼저 고르세요"; const k = { pr_visit: "visit", pr_landlord: "meet", pr_appcheck: "app" }[id]; if (L.seen[k]) return "이미 확인했습니다"; return null; }
-  if (id === "pr_setup") { const rm = pr.rooms.find((x) => x.id === arg) || pr.rooms.find((x) => x.status === "setup" && x.self > 0); if (!rm || !(rm.self > 0)) return "셀프 공사 중인 지점이 없습니다"; return null; }
-  if (id === "pr_manage" || id === "pr_promo") { const rm = pr.rooms.find((x) => x.id === arg) || pr.rooms.find((x) => x.status === "open"); if (!rm || rm.status !== "open") return "운영 중인 지점이 없습니다"; return null; }
+  if (["pr_visit", "pr_landlord", "pr_appcheck"].includes(id)) { const L = pr.listings.find((x) => x.id === arg); if (!L) return "매물을 먼저 고르세요"; const k = { pr_visit: "visit", pr_landlord: "meet", pr_appcheck: "app" }[id]; if (L.seen[k]) return "이미 확인했어요"; return null; }
+  if (id === "pr_setup") { const rm = pr.rooms.find((x) => x.id === arg) || pr.rooms.find((x) => x.status === "setup" && x.self > 0); if (!rm || !(rm.self > 0)) return "셀프 공사 중인 지점이 없어요"; return null; }
+  if (id === "pr_manage" || id === "pr_promo") { const rm = pr.rooms.find((x) => x.id === arg) || pr.rooms.find((x) => x.status === "open"); if (!rm || rm.status !== "open") return "운영 중인 지점이 없어요"; return null; }
   return null;
 }
 export function act(s, r, id, arg, boost = 1) {
@@ -220,10 +221,10 @@ const fmt = (x) => Math.round(x * 10) / 10;
 
 // 계약 (UI에서 직접 부름, 행동력 0)
 export function contract(s, listingId, o) {
-  const pr = s.pr; const L = pr.listings.find((x) => x.id === listingId); if (!L) return { ok: false, msg: "매물이 없습니다" };
+  const pr = s.pr; const L = pr.listings.find((x) => x.id === listingId); if (!L) return { ok: false, msg: "매물이 없어요" };
   const it = D.INTERIORS[o.interior ?? 1];
   const why = conceptOk(L, o.concept); if (why) return { ok: false, msg: `${D.CONCEPTS[o.concept].n}: ${why}` };
-  if (o.ondol && !L.hid.ondolOk && L.seen.ondolOk) return { ok: false, msg: "이 매물은 온돌 시공이 안 됩니다" };
+  if (o.ondol && !L.hid.ondolOk && L.seen.ondolOk) return { ok: false, msg: "이 매물은 온돌 시공이 안 돼요" };
   const qt = quote(s, L, { ...o, ondol: o.ondol && L.hid.ondolOk }); const total = qt.total;
   const lack = total - s.cash;
   if (lack > 0) { const lim = 6000 - (s.loans.find((l) => l.n === "사업자대출")?.amt || 0); if (lack > lim + creditRoom(s) * 0.5) return { ok: false, msg: `돈이 ${won(lack)} 모자랍니다(사업자대출 한도 ${won(Math.max(0, lim))})` }; addLoan(s, "사업자대출", Math.min(lack + 100, Math.max(0, lim)), 0.048); s.cash += Math.min(lack + 100, Math.max(0, lim)); }
@@ -247,6 +248,7 @@ export function buySystem(s, key, roomId) {
   if (nOpen < def.need) return { ok: false, msg: `지점 ${def.need}곳부터` };
   if (key === "smartlock") { const rm = s.pr.rooms.find((x) => x.id === roomId && !sys.smartlock.includes(x.id)) || s.pr.rooms.find((x) => !sys.smartlock.includes(x.id)); if (!rm) return { ok: false, msg: "모든 지점에 설치됨" }; s.cash -= def.cost; addMoney(s, "exp", "운영 시스템", def.cost); sys.smartlock.push(rm.id); return { ok: true, msg: `${rm.name} 스마트락 설치` }; }
   if (key === "bulk") return { ok: false, msg: "3곳부터 자동 적용" };
+  if (key === "manager" && sys.manager) { const why = SJ.slotLock(s, () => { sys.manager = false; return () => { sys.manager = true; }; }); if (why) return { ok: false, msg: why }; } // 버그 6
   sys[key] = !sys[key];
   if (sys[key] && def.cost) { s.cash -= def.cost; addMoney(s, "exp", "운영 시스템", def.cost); }
   return { ok: true, msg: `${def.n} ${sys[key] ? "시작" : "중단"}` };
@@ -309,7 +311,7 @@ export function bundle(s) {
 export function storyListing(s, kind, near) {
   const r = R(s), dk = near?.dk && D.DISTRICTS[near.dk] ? near.dk : "univ";
   const L = makeListing(s, r, dk);
-  if (kind === "small") { L.size = r.int(8, 12); L.rent = rentFor(s, L, r.next()); L.dep = Math.round(L.rent * 10 / 100) * 100; L.key = Math.round(L.key * 0.4 / 10) * 10; L.walk = Math.min(L.walk, near?.walk || L.walk); L.tagN = "소형 2호점 후보"; }
+  if (kind === "small") { L.size = r.int(8, 12); L.rent = rentFor(s, L, r.next()); L.dep = Math.round(L.rent * 10 / 100) * 100; L.key = Math.round(L.key * 0.4 / 10) * 10; L.walk = Math.min(L.walk, near?.walk || L.walk); L.tagN = `소형 ${(s.pr.rooms || []).length + 1}호점 후보`; }
   if (kind === "quiet") { L.hid.sound = "좋음"; L.hid.landlord = "환영"; L.seen.sound = L.seen.landlord = L.seen.meet = true; L.tagN = "옮길 자리(조용한 건물)"; }
   s.pr.listings.push(L);
   return L;
@@ -401,7 +403,7 @@ export function month(s, r, notes, scenes) {
   // v4.27 규모가 커지면 생기는 일: 새벽 전화(매니저 없으면)
   if (open.length >= 2 && !pr.sys.manager && r.chance(D.PR_HARD.nightCall * (open.length - 1))) {
     const rm = r.pick(open), L = ["새벽 2시, 손님 전화. \"비밀번호가 안 열려요.\"", "새벽 3시, \"보일러가 안 돌아요\" 문자.", "새벽 1시, 옆 가게 사장님 전화. \"거기 문 열려 있던데요?\"", "새벽 4시, \"화장실이 막혔어요\" 사진 세 장.", "새벽 2시, \"와이파이가 안 돼요. 환불해 주세요.\""];
-    s.hp = Math.max(0, s.hp - 3); s.mental = Math.max(0, s.mental - 3); notes.push(`${rm.name}: ${r.pick(L)} 잠을 설쳤다 (체력·멘탈 −3)`);
+    s.hp = Math.max(0, s.hp - 3); s.mental = Math.max(0, s.mental - 3); notes.push(`${rm.name}: ${r.pick(L)} 잠을 설쳤다 (스태미너·멘탈 −3)`);
   }
   // 공통 고정비
   const pi = SYN.pi(s);
@@ -569,9 +571,9 @@ const CRISIS = [
   { id: "boiler", n: "보일러 고장", ok: (s, rm) => [12, 1, 2].includes(s.cal) && !rm.ondol, stat: "hands", text: (rm) => `토요일 밤 9시, ${rm.name} 손님 전화. "사장님, 바닥이 얼음장이에요!" 보일러가 멈췄다. 이번 주말 예약이 줄줄이 걸려 있다.` },
   { id: "ondol", n: "온돌 배관 터짐", ok: (s, rm) => [12, 1, 2].includes(s.cal) && rm.ondol, stat: "hands", text: (rm) => `${rm.name} 바닥에서 물이 스며 나온다. 온돌 배관이 얼어 터졌다. 크리스마스 예약이 코앞이다.` },
   { id: "aircon", n: "에어컨 고장", ok: (s) => [7, 8].includes(s.cal), stat: "hands", text: (rm) => `35도 폭염, ${rm.name} 에어컨에서 미지근한 바람만 나온다. 후기에 "사우나인 줄"이 달리기 직전이다.` },
-  { id: "double", n: "이중 예약", ok: (s) => !s.pr.sys.booking, stat: "talk", text: (rm) => `${rm.name} 문 앞에 두 팀이 서 있다. 우주공간와 네이바 예약이 같은 시간에 잡혔다. 둘 다 생일 케이크를 들고 있다.` },
+  { id: "double", n: "이중 예약", ok: (s) => !s.pr.sys.booking, stat: "talk", text: (rm) => `${rm.name} 문 앞에 두 팀이 서 있다. 우주공간과 네이바 예약이 같은 시간에 잡혔다. 둘 다 생일 케이크를 들고 있다.` },
   { id: "leak", n: "윗집 누수", ok: () => true, stat: "talk", text: (rm) => `${rm.name} 천장에서 물이 떨어진다. 윗집 배관이 샜다. 이번 주 예약 손님들이 걱정스러운 까톡을 보낸다.` },
-  { id: "party", n: "단체 손님 파손", ok: (s, rm) => ["party", "mega", "game"].includes(rm.concept), stat: "talk", text: (rm) => `${rm.name} 송년회 단체가 빠져나간 자리. 소파 찢김, 빔프로젝터 박살, 벽에 케이크. 다음 예약은 3시간 뒤.` },
+  { id: "party", n: "단체 손님 파손", ok: (s, rm) => ["party", "mega", "game"].includes(rm.concept), stat: "talk", text: (rm) => `${rm.name} 스무 명 단체가 빠져나간 자리. 소파 찢김, 빔프로젝터 박살, 벽에 케이크. 다음 예약은 3시간 뒤.` },
   { id: "cleaner", n: "청소 업체 펑크", ok: (s) => s.cal === 12 && s.pr.sys.cleanContract, stat: "hands", text: (rm) => `12월 연속 예약 한가운데, 청소 업체가 "인력이 없어요" 문자 한 통. ${rm.name} 다음 손님 입실까지 2시간.` },
   { id: "police", n: "소음 신고·경찰 출동", ok: (s, rm) => s.cal === 12 && rm.hid.sound !== "좋음", stat: "talk", text: (rm) => `새벽 1시, ${rm.name} 앞에 경찰차가 섰다. 옆 건물에서 소음 신고. 건물주에게서도 전화가 온다.` },
 ];
@@ -626,7 +628,7 @@ export function textToEff(text, job) {
     const neg = /-|−|감소|하락|손실|줄|악화/.test(part) && !/위험 대 감소|위험 감소/.test(part);
     const sign = neg ? -1 : 1;
     if (/돈|비용|수입|매출|순수익|광고비/.test(part)) eff.cash = (eff.cash || 0) + sign * (job === "partyroom" ? [0, 30, 90, 250] : [0, 10, 40, 120])[mag];
-    else if (/체력/.test(part)) eff.hp = sign * [0, 5, 10, 18][mag];
+    else if (/체력|스태미너/.test(part)) eff.hp = sign * [0, 5, 10, 18][mag];
     else if (/멘탈|스트레스/.test(part)) eff.mental = sign * [0, 4, 8, 15][mag];
     else if (/회사\s?눈치|발각/.test(part)) eff.eye = sign * [0, 5, 10, 20][mag];
     else if (/가족|배우자/.test(part)) eff.family = sign * [0, 4, 8, 15][mag];

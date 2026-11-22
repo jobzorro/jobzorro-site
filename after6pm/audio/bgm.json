@@ -1,0 +1,213 @@
+{
+ "_": "자리 → 곡 연결. use 만 바꾸면 그 자리 곡이 바뀐다. mode: loop(한 곡 반복) / rotate(list 순서로 돌려 듣기). gain 은 곡별 크기 보정(없으면 1).",
+ "base": "audio/",
+ "fade": 0.8,
+ "slots": {
+  "title": {
+   "name": "시작 화면",
+   "use": "starlight_city",
+   "mode": "loop",
+   "list": [
+    "starlight_city",
+    "night_life",
+    "city_rearview"
+   ]
+  },
+  "home": {
+   "name": "평소",
+   "use": "blue_skies",
+   "mode": "rotate",
+   "list": [
+    "blue_skies",
+    "clouds",
+    "chill_loop"
+   ]
+  },
+  "board": {
+   "name": "투잡 보드·바쁠 때",
+   "use": "new_shoes",
+   "mode": "loop",
+   "list": [
+    "new_shoes",
+    "day_dreams"
+   ]
+  },
+  "crisis": {
+   "name": "위기·연체",
+   "use": "fight_left",
+   "mode": "loop",
+   "list": [
+    "fight_left",
+    "cyber_anxiety"
+   ]
+  },
+  "ending": {
+   "name": "엔딩·파이어",
+   "use": "letting_go",
+   "mode": "loop",
+   "list": [
+    "letting_go",
+    "everything_dreamed"
+   ]
+  },
+  "love": {
+   "name": "연애·가족 장면",
+   "use": "puppy_love",
+   "mode": "loop",
+   "list": [
+    "puppy_love",
+    "families"
+   ]
+  },
+  "over": {
+   "name": "실패 엔딩(개인회생·정년)",
+   "use": "letting_go",
+   "mode": "loop",
+   "list": [
+    "letting_go"
+   ]
+  }
+ },
+ "tracks": {
+  "starlight_city": {
+   "file": "bgm/starlight_city.mp3",
+   "title": "Starlight City (Loop)",
+   "artist": "Zane Little Music",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/starlight-city-loop-included",
+   "sec": 100.2,
+   "bytes": 1203605,
+   "loopSrc": true
+  },
+  "night_life": {
+   "file": "bgm/night_life.mp3",
+   "title": "Night Life",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/retro-wave-collection",
+   "sec": 115.0,
+   "bytes": 1381003,
+   "loopSrc": false
+  },
+  "city_rearview": {
+   "file": "bgm/city_rearview.mp3",
+   "title": "City In The Rearview",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/chill-beats-collection",
+   "sec": 115.0,
+   "bytes": 1381014,
+   "loopSrc": false
+  },
+  "blue_skies": {
+   "file": "bgm/blue_skies.mp3",
+   "title": "Blue Skies",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/happy-lo-fi-lofi-collection",
+   "sec": 115.0,
+   "bytes": 1381009,
+   "loopSrc": false
+  },
+  "clouds": {
+   "file": "bgm/clouds.mp3",
+   "title": "Clouds",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/happy-lo-fi-lofi-collection",
+   "sec": 115.0,
+   "bytes": 1381005,
+   "loopSrc": false
+  },
+  "chill_loop": {
+   "file": "bgm/chill_loop.mp3",
+   "title": "Chill (Loopable)",
+   "artist": "Pro Sensory",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/chill-loopable",
+   "sec": 67.2,
+   "bytes": 807041,
+   "loopSrc": true
+  },
+  "new_shoes": {
+   "file": "bgm/new_shoes.mp3",
+   "title": "New Shoes",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/happy-lo-fi-lofi-collection",
+   "sec": 115.0,
+   "bytes": 1381008,
+   "loopSrc": false
+  },
+  "day_dreams": {
+   "file": "bgm/day_dreams.mp3",
+   "title": "Day Dreams",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/retro-wave-collection",
+   "sec": 115.0,
+   "bytes": 1381003,
+   "loopSrc": false
+  },
+  "fight_left": {
+   "file": "bgm/fight_left.mp3",
+   "title": "All The Fight Left!",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/all-the-fight-left",
+   "sec": 115.0,
+   "bytes": 1381009,
+   "loopSrc": false
+  },
+  "cyber_anxiety": {
+   "file": "bgm/cyber_anxiety.mp3",
+   "title": "Cyber Anxiety",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/retro-wave-collection",
+   "sec": 115.0,
+   "bytes": 1381006,
+   "loopSrc": false
+  },
+  "letting_go": {
+   "file": "bgm/letting_go.mp3",
+   "title": "Letting Go Of The Past",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/happy-lo-fi-lofi-collection",
+   "sec": 115.0,
+   "bytes": 1381021,
+   "loopSrc": false
+  },
+  "everything_dreamed": {
+   "file": "bgm/everything_dreamed.mp3",
+   "title": "Everything You Ever Dreamed",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/lo-fi-and-chill-collection",
+   "sec": 115.0,
+   "bytes": 1381025,
+   "loopSrc": false
+  },
+  "puppy_love": {
+   "file": "bgm/puppy_love.mp3",
+   "title": "Puppy Love",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/happy-lo-fi-lofi-collection",
+   "sec": 115.0,
+   "bytes": 1381009,
+   "loopSrc": false
+  },
+  "families": {
+   "file": "bgm/families.mp3",
+   "title": "Families",
+   "artist": "HoliznaCC0",
+   "license": "CC0 1.0",
+   "source": "https://opengameart.org/content/chill-beats-collection",
+   "sec": 115.0,
+   "bytes": 1381002,
+   "loopSrc": false
+  }
+ }
+}

@@ -9,7 +9,7 @@
 // onChoose: h2_hint(0 귀담아듣기) · h2_era(0 매물 줍기 · 1 온라인 전환 · 2 지켜보기) · h2_tf(0 TF 간다) · h2_resv(0 예약제) · h2_deja(0 알아본다, 감각 판정)
 // 난수는 r 만.
 import * as D from "./defs.js";
-import { CHAR, log, addMoney, netWorth, monthlySpend } from "./core.js";
+import { CHAR, log, addMoney, netWorth, monthlySpend, jo } from "./core.js";
 import * as SJ from "./sj.js";
 import { HID, hidSee, hidReveal } from "./hidden.js";
 
@@ -49,8 +49,8 @@ export const H2_P = {
   rvM: 36, rvRel: 70, rvY: 4, mtY: 6, mtAff: 70, landAff: 70, landY: 3, // 인연
   eraP: 0.03, eraLong: 3, eraBust: 7, eraCush: 6, // 시대: 위기 중 제안 확률(한 판에 한 번만), 들어간 뒤 3달 넘게 위기면 매달 손실, 7달이면 무너짐, 제안은 생활비 6달 치 현금이 있을 때
   tfA: 3, tfBoss: 75, tfY: 3, tfAgain: 24, // 회사
-  longY: 20, longPlace: 12, longStar: 4.9, longQY: 5, // 버티기(기획 15년 → 봇에서 너무 자주 열려 20년·평판 4.9 5년)
-  famY: 5, famHappy: 70, heirAge: 20, heirY: 10, heirHappy: 60, // 가족
+  longY: 15, longPlace: 12, longStar: 4.9, longQY: 5, // 버티기(11-23 결정: 20년은 한 판 20년에서 못 엶 → 15년. 공간형 투잡만. 평판 4.9 5년은 그대로)
+  famY: 5, famHappy: 70, heirAge: 14, heirY: 10, heirHappy: 60, // 가족(11-23 결정: 아이 대학생 20살 → 14살 이상)
   dejaT: 36, dejaDc: 45, regY: 3, // 회차
   hideStar: 4.9, hideKeep: 24, hideHint: 4.8, // 역주행
 };
@@ -84,6 +84,7 @@ function qual(s, job) {
   const lv = job === "cs" ? s.cs?.lv : s[job]?.lv; return r1(3.1 + (lv || 0) * 0.3 + (QUAL_ACH[job]?.(s) ? 0.3 : 0)); // 등급만으론 4.6, 대표 실적까지 있어야 4.9
 }
 const longest = (s) => (s.sj?.active || []).slice().sort((a, b) => yrs(s, b) - yrs(s, a))[0] || null;
+const longestSpace = (s) => (s.sj?.active || []).filter((j) => SPACE.includes(j)).sort((a, b) => yrs(s, b) - yrs(s, a))[0] || null; // 동네 장인은 가게가 있는 투잡만
 const sideLoss = (s) => (s.hist || []).slice(-6).reduce((a, h) => a + (h.side || 0), 0) < 0;
 const countA = (s) => (s.co?.grades || []).filter((g) => g === "S" || g === "A").length;
 const inCo = (s) => s.co && !s.co.quit && !s.co.fired;
@@ -161,11 +162,11 @@ export const P2 = {
     R: () => ({ ap: H2_REW.tf.ap }),
     each: (s) => { s.co.eye = 0; s.co.perf = clamp(s.co.perf + H2_REW.tf.perf, 0, 100); s.co.boss = clamp(s.co.boss + H2_REW.tf.boss, 0, 100); } },
   long: { cat: "버티기", n: "동네 장인", bg: "alley",
-    c: [["같은 투잡 20년", (s, f) => r1(yrs(s, f.job)), H2_P.longY], ["첫 자리 12년 지키기", (s, f) => r1(SPACE.includes(f.job) ? Math.max(0, ...places(s, f.job).map((x) => x.months || 0)) / 12 : yrs(s, f.job)), H2_P.longPlace], ["평판 4.9 5년 지키기", (s, f) => r1((f.qM || 0) / 12), H2_P.longQY]],
+    c: [[`같은 가게 투잡 ${H2_P.longY}년`, (s, f) => r1(yrs(s, f.job)), H2_P.longY], ["첫 자리 12년 지키기", (s, f) => r1(SPACE.includes(f.job) ? Math.max(0, ...places(s, f.job).map((x) => x.months || 0)) / 12 : yrs(s, f.job)), H2_P.longPlace], ["평판 4.9 5년 지키기", (s, f) => r1((f.qM || 0) / 12), H2_P.longQY]],
     where: (s, f) => (f.job && act(s, f.job) ? [f.job] : null), live: (s, f) => act(s, f.job),
-    hintOk: (s, f) => f.job && yrs(s, f.job) >= 12,
+    hintOk: (s, f) => f.job && SPACE.includes(f.job) && yrs(s, f.job) >= 10,
     hint: { title: "\"여기 10년째죠?\"", text: (s, f) => `단골이 말했다. "여기 10년째죠? 우리 애가 여기서 ${f.job === "pr" ? "생일 파티를 했었는데" : "처음 와 봤는데"} 벌써 고등학생이에요."` },
-    open: (s, f) => `방송국에서 전화가 왔다. '우리 동네 명물' 촬영. 방송이 나간 주말, 처음 보는 손님들이 줄을 섰다. ${JN(f.job)} 20년이 동네 이름이 됐다.`,
+    open: (s, f) => `방송국에서 전화가 왔다. '우리 동네 명물' 촬영. 방송이 나간 주말, 처음 보는 손님들이 줄을 섰다. ${JN(f.job)} ${H2_P.longY}년이 동네 이름이 됐다.`,
     rew: (s, f) => `동네 명물: ${JN(f.job)} 부대비용 −${Math.round(H2_REW.long.cut * 100)}%p(손님 자동)·월 고정 수입(방송·권리금)`,
     R: (s, f) => ({ fix: H2_REW.long.fix, cut: { [f.job]: H2_REW.long.cut } }) },
   fam_biz: { cat: "가족", n: "부부 사업", bg: "home",
@@ -177,17 +178,17 @@ export const P2 = {
     rew: () => `부부 사업: 행동력 +${H2_REW.famBiz.ap}(공유)·월 고정 수입`,
     R: () => ({ ap: H2_REW.famBiz.ap, fix: H2_REW.famBiz.fix }), risk: "famBiz" },
   fam_heir: { cat: "가족", n: "물려받기", bg: "home",
-    c: [["아이 대학생(20살)", (s) => r1(kidAge(s)), H2_P.heirAge], ["같은 투잡 10년", (s, f) => r1(yrs(s, f.job)), H2_P.heirY], ["가족 행복 60", (s) => Math.round(s.fam?.happy || 0), H2_P.heirHappy]],
+    c: [[`아이 ${H2_P.heirAge}살 이상`, (s) => r1(kidAge(s)), H2_P.heirAge], ["같은 투잡 10년", (s, f) => r1(yrs(s, f.job)), H2_P.heirY], ["가족 행복 60", (s) => Math.round(s.fam?.happy || 0), H2_P.heirHappy]],
     where: (s, f) => (f.job && act(s, f.job) ? [f.job] : null), live: (s, f) => act(s, f.job),
-    hintOk: (s, f) => f.job && kidAge(s) >= 16,
+    hintOk: (s, f) => f.job && kidAge(s) >= 10,
     hint: { title: "\"나중에 내가 해도 돼?\"", text: (s, f) => `아이가 ${JN(f.job)} 장부를 들여다보다 물었다. "이거 나중에 내가 해도 돼?"` },
-    open: (s, f) => `아이가 방학 내내 ${JN(f.job)}에 붙어 있었다. "졸업하면 내가 맡을게. 이름은 안 바꿀게."`,
+    open: (s, f) => `아이가 방학 내내 ${JN(f.job)}에 붙어 있었다. "나중에 크면 내가 맡을게. 이름은 안 바꿀게."`,
     rew: (s, f) => `물려받기: 아이가 일을 돕는다(${JN(f.job)} 부대비용 −${Math.round(H2_REW.heir.cut * 100)}%p)·물려받기 엔딩`,
     R: (s, f) => ({ cut: { [f.job]: H2_REW.heir.cut } }) },
   ng_deja: { cat: "회차", n: "어디선가 본 장면", bg: "rooftop",
     c: [["2회차 이상", (s) => s.ng?.n || 1, 2], ["지난 인생에서 연 히든 길", (s, f) => (f.tgt ? 1 : 0), 1], ["초반 3년 안에 알아보기", (s, f) => (f.know ? 1 : 0), 1]],
     where: () => null,
-    open: (s, f) => `분명히 본 장면이다. 지난 인생에서 '${pathName(s, f.tgt)}'(으)로 가던 길. 이번엔 처음부터 문이 어디 있는지 안다.`,
+    open: (s, f) => `분명히 본 장면이다. 지난 인생에서 '${pathName(s, f.tgt)}' 쪽으로 가던 길. 이번엔 처음부터 문이 어디 있는지 안다.`,
     rew: (s, f) => `'${pathName(s, f.tgt)}' 낌새·조건 전부 공개(문 앞까지)·기억의 덤(월 고정 수입)`,
     R: () => ({ fix: H2_REW.deja.fix }) },
   ng_regress: { cat: "회차", n: "회귀자의 길", bg: "rooftop",
@@ -281,7 +282,7 @@ function track(s, r, k, f, x, notes, nw) {
   if (k === "bd_mentee") { if (!open) f.who = mentee(s); return; }
   if (k === "bd_land") { if (s.debtLate >= 1) f.late = 1; if (!open) f.who = landlord(s); return; }
   if (k === "era") { if (!open) eraTrack(s, r, f, x, notes); return; }
-  if (k === "long") { if (open) return; const j = longest(s); if (j !== f.job) { f.job = j; f.qM = 0; } f.qM = j && qual(s, j) >= H2_P.longStar ? (f.qM || 0) + 1 : 0; return; }
+  if (k === "long") { if (open) return; const j = longestSpace(s); if (j !== f.job) { f.job = j; f.qM = 0; } f.qM = j && qual(s, j) >= H2_P.longStar ? (f.qM || 0) + 1 : 0; return; }
   if (k === "fam_biz") { if (!open && s.fam?.spouse && (s.sj.active || []).length) f.togM = (f.togM || 0) + 1; return; }
   if (k === "fam_heir") { if (!open) f.job = longest(s); return; }
   if (k === "ng_deja") { if (!open) dejaTrack(s, r, f, x); return; }
@@ -321,7 +322,7 @@ function dejaTrack(s, r, f, x) {
   if (!f.tgt) f.tgt = r.pick(ks);
   const L = s._h2scenes;
   if (!f.know && x.seen === undefined && s.t >= 3 && s.t <= H2_P.dejaT && L && !L.some((y) => y.kind === "event") && s.t >= (x.hintNo ?? -1) && r.chance(0.12)) {
-    L.push({ kind: "event", tag: "히든 길 낌새", title: "어디선가 본 장면", text: `처음 와 본 골목인데 간판 글씨가 낯익다. 누군가 지나가며 한 말도, 그다음에 할 말도 안다. 지난 인생의 '${pathName(s, f.tgt)}'(으)로 가던 길목이다.`, onChoose: "h2_deja", h2: "ng_deja",
+    L.push({ kind: "event", tag: "히든 길 낌새", title: "어디선가 본 장면", text: `처음 와 본 골목인데 간판 글씨가 낯익다. 누군가 지나가며 한 말도, 그다음에 할 말도 안다. 지난 인생의 '${pathName(s, f.tgt)}' 쪽으로 가던 길목이다.`, onChoose: "h2_deja", h2: "ng_deja",
       choices: [{ t: "이 장면, 알아본다", check: { stat: "sense", dc: H2_P.dejaDc }, ok: { text: "기억이 맞았다. 문이 어디 있는지 안다.", eff: { mental: 2 } }, ng: { text: "기분 탓인가. 골목을 빠져나오자 기억이 흐려졌다.", eff: {} } }, { t: "기분 탓이겠지", eff: {}, text: "그냥 지나쳤다." }] });
   }
 }

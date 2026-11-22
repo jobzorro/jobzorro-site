@@ -102,7 +102,7 @@ export const GAME = {
 .mg-webnovel1 .wn-me{position:absolute;background-repeat:no-repeat;background-size:300% 346.15%;opacity:0;transition:opacity .5s,filter .4s;transform-origin:50% 90%}
 .mg-webnovel1 .wn-me.on{opacity:1}
 .mg-webnovel1 .wn-me.sl{filter:brightness(.72) saturate(.8)}
-.mg-webnovel1 .wn-gn{position:absolute;left:6px;top:6px;z-index:6;display:flex;align-items:center;gap:5px;background:#0009;border:1px solid var(--gc);color:#fff;font-size:10.5px;font-weight:700;padding:3px 8px 3px 5px;border-radius:7px;pointer-events:none}
+.mg-webnovel1 .wn-gn{position:absolute;left:6px;top:6px;z-index:6;display:flex;align-items:center;gap:5px;background:#0009;border:1px solid var(--gc);color:#fff;font-size:11px;font-weight:700;padding:3px 8px 3px 5px;border-radius:7px;pointer-events:none}
 .mg-webnovel1 .wn-gn i{width:16px;height:16px;background-size:100% 100%}
 .mg-webnovel1 .wn-gn b{color:var(--gc);font-size:13px;font-weight:900}
 .mg-webnovel1 .wn-gn.pop{animation:wnpop .5s cubic-bezier(.3,1.8,.5,1)}
@@ -112,10 +112,10 @@ export const GAME = {
 .mg-webnovel1 .wn-say.gd{background:#ffd166;color:#3a2400}
 .mg-webnovel1 .wn-pp{position:absolute;left:8px;right:8px;z-index:4;background:#fbf6ea;border-radius:9px;box-shadow:0 3px 0 #0007,inset 0 0 0 1px #e6dcc6;display:flex;flex-direction:column;overflow:hidden;transition:box-shadow .3s}
 .mg-webnovel1 .wn-st.spurt .wn-pp{box-shadow:0 3px 0 #0007,0 0 0 2px #ff5a6a,0 0 14px #ff5a6a88}
-.mg-webnovel1 .wn-ph{display:flex;align-items:center;gap:6px;padding:4px 8px;background:#ece3cf;color:#5a4a3a;font-size:10.5px;flex:none}
+.mg-webnovel1 .wn-ph{display:flex;align-items:center;gap:6px;padding:4px 8px;background:#ece3cf;color:#5a4a3a;font-size:11px;flex:none}
 .mg-webnovel1 .wn-ph b{font-weight:900;color:#3a2a1e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .mg-webnovel1 .wn-ph span{white-space:nowrap;font-weight:700}
-.mg-webnovel1 .wn-ph em{margin-left:auto;font-style:normal;font-weight:900;font-size:10.5px;color:#fff;background:#1f6fd0;border-radius:5px;padding:1px 6px;opacity:0;white-space:nowrap;transition:opacity .2s}
+.mg-webnovel1 .wn-ph em{margin-left:auto;font-style:normal;font-weight:900;font-size:11px;color:#fff;background:#1f6fd0;border-radius:5px;padding:1px 6px;opacity:0;white-space:nowrap;transition:opacity .2s}
 .mg-webnovel1 .wn-ph em.on{opacity:1}
 .mg-webnovel1 .wn-ph em.bump{animation:wnbump .25s}
 .mg-webnovel1 .wn-tx{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:3px 9px 2px;font-family:"Nanum Myeongjo","Noto Serif KR",Batang,serif;font-size:12.5px;line-height:1.45;color:#2a2018;white-space:pre-wrap;word-break:keep-all}
@@ -132,9 +132,9 @@ export const GAME = {
 .mg-webnovel1 .wn-c{box-sizing:border-box;padding:4px 5px 5px 7px;border-radius:8px;background:#fffaf0;color:#2a1e2e;box-shadow:0 3px 0 #0007;border-left:5px solid var(--gc);font-size:11.5px;line-height:1.25;font-weight:700;cursor:pointer;word-break:keep-all;animation:wnin .25s ease-out}
 .mg-webnovel1 .wn-c .r{display:flex;align-items:center;gap:4px;margin-bottom:2px}
 .mg-webnovel1 .wn-c i{width:16px;height:16px;background-size:100% 100%;flex:none;filter:drop-shadow(0 1px 0 #0003)}
-.mg-webnovel1 .wn-c em{font-style:normal;font-size:9.5px;font-weight:900;color:#fff;background:var(--gc);padding:0 5px;border-radius:4px;text-shadow:0 1px 0 #0004}
+.mg-webnovel1 .wn-c em{font-style:normal;font-size:11px;font-weight:900;color:#fff;background:var(--gc);padding:0 5px;border-radius:4px;text-shadow:0 1px 0 #0004}
 .mg-webnovel1 .wn-c s{text-decoration:underline wavy #ff2f45;text-decoration-thickness:2px;text-underline-offset:2px}
-.mg-webnovel1 .wn-c u{display:none;margin-left:auto;text-decoration:none;font-size:9.5px;font-weight:900;padding:0 5px;border-radius:6px;background:#1f9a4a;color:#fff;white-space:nowrap}
+.mg-webnovel1 .wn-c u{display:none;margin-left:auto;text-decoration:none;font-size:11px;font-weight:900;padding:0 5px;border-radius:6px;background:#1f9a4a;color:#fff;white-space:nowrap}
 .mg-webnovel1 .wn-st.tags .wn-c u{display:inline-block}
 .mg-webnovel1 .wn-c.k-off u,.mg-webnovel1 .wn-c.k-typo u,.mg-webnovel1 .wn-c.k-dist u{background:#5a5a6a}
 .mg-webnovel1 .wn-c.k-dist{background:#2c2440;color:#d8ccf0}
@@ -149,7 +149,7 @@ export const GAME = {
 .mg-webnovel1 .wn-c.pass{opacity:.5;transition:opacity .3s}
 .mg-webnovel1 .wn-c.nope{animation:wnnope .35s}
 .mg-webnovel1 .wn-c.fade{opacity:0;transition:opacity .4s}
-.mg-webnovel1 .wn-hl{position:absolute;right:8px;z-index:3;transform:translateY(-100%);font-size:9.5px;font-weight:900;color:#9fd8ff;letter-spacing:.5px;pointer-events:none;opacity:.85;text-shadow:0 1px 0 #000}
+.mg-webnovel1 .wn-hl{position:absolute;right:8px;z-index:3;transform:translateY(-100%);font-size:11px;font-weight:900;color:#9fd8ff;letter-spacing:.5px;pointer-events:none;opacity:.85;text-shadow:0 1px 0 #000}
 .mg-webnovel1 .wn-lid{position:absolute;left:0;right:0;z-index:15;height:var(--lh,0%);pointer-events:none;transition:height .12s}
 .mg-webnovel1 .wn-lid.t{top:0;background:linear-gradient(#030208 0,#030208 calc(100% - 26px),#03020800)}
 .mg-webnovel1 .wn-lid.b{bottom:0;background:linear-gradient(#03020800,#030208 26px,#030208)}
@@ -169,7 +169,7 @@ export const GAME = {
 .mg-webnovel1 .wn-tut.off{opacity:0;visibility:hidden}
 .mg-webnovel1 .wn-tc{pointer-events:auto;background:#fffdf8;color:#2a1e2e;border-radius:14px;padding:8px 12px 7px;box-shadow:0 4px 0 #0006,0 0 0 2px #5fb8ff;max-width:310px;font-size:13px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-webnovel1 .wn-tut.pop .wn-tc{animation:wnpop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-webnovel1 .wn-tc em{font-style:normal;display:inline-block;background:#1f6fd0;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
+.mg-webnovel1 .wn-tc em{font-style:normal;display:inline-block;background:#1f6fd0;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:3px}
 .mg-webnovel1 .wn-tc p{margin:0}
 .mg-webnovel1 .wn-tc b.bl{color:#1f6fd0}.mg-webnovel1 .wn-tc b.rd{color:#c0392b}.mg-webnovel1 .wn-tc b.br{color:#8a5a3a}.mg-webnovel1 .wn-tc b.gc{color:var(--gd)}
 .mg-webnovel1 .wn-tb{margin-top:5px;display:flex;justify-content:center}
@@ -185,16 +185,16 @@ export const GAME = {
 .mg-webnovel1 .wn-es{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .mg-webnovel1 .wn-es div{background:#ffffff12;border-radius:9px;padding:6px 2px;text-align:center;opacity:0;animation:wnst .4s cubic-bezier(.3,1.6,.5,1) forwards}
 .mg-webnovel1 .wn-es div:nth-child(2){animation-delay:.2s}.mg-webnovel1 .wn-es div:nth-child(3){animation-delay:.4s}
-.mg-webnovel1 .wn-es span{display:block;font-size:10.5px;color:#a8c0e0}
+.mg-webnovel1 .wn-es span{display:block;font-size:11px;color:#a8c0e0}
 .mg-webnovel1 .wn-es b{display:block;font-size:18px;font-weight:900;color:#5fb8ff}
 .mg-webnovel1 .wn-es div:nth-child(2) b{color:#ffd166}.mg-webnovel1 .wn-es div:nth-child(3) b{color:#ff8fc8}
 .mg-webnovel1 .wn-sum{text-align:center;font-size:12px;color:#c8d8f0;font-weight:700;opacity:0;animation:wnst .4s .6s forwards}
 .mg-webnovel1 .wn-sum b{color:#fff;font-size:14px}.mg-webnovel1 .wn-sum em{font-style:normal;color:#ffd166}.mg-webnovel1 .wn-sum i{font-style:normal;color:#ff8fa0}
 .mg-webnovel1 .wn-cl{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:5px;-webkit-mask-image:linear-gradient(transparent,#000 22%);mask-image:linear-gradient(transparent,#000 22%)}
 .mg-webnovel1 .wn-cm{background:#ffffff10;border-radius:9px;padding:5px 9px;color:#fff;font-size:12.5px;line-height:1.3;animation:wncm .35s cubic-bezier(.2,.9,.3,1);display:flex;align-items:center;gap:6px}
-.mg-webnovel1 .wn-cm b{font-size:10.5px;color:#9fd8ff;font-weight:800;white-space:nowrap}
+.mg-webnovel1 .wn-cm b{font-size:11px;color:#9fd8ff;font-weight:800;white-space:nowrap}
 .mg-webnovel1 .wn-cm span{flex:1}
-.mg-webnovel1 .wn-cm small{font-size:10px;color:#ff8fc8;font-weight:800;white-space:nowrap}
+.mg-webnovel1 .wn-cm small{font-size:11px;color:#ff8fc8;font-weight:800;white-space:nowrap}
 .mg-webnovel1 .wn-cm.best{background:linear-gradient(90deg,#1f6fd0aa,#5fb8ff55);box-shadow:inset 0 0 0 1px #9fd8ff}
 .mg-webnovel1 .wn-cm.best b::before{content:"베댓 ";color:#ffd166}
 .mg-webnovel1 .wn-cm.meh{background:#ff5a6a22}

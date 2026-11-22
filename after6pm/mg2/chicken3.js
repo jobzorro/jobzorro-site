@@ -142,31 +142,31 @@ export const GAME = {
 .mg-chicken3 .c3me.shk{animation:c3shk .18s infinite}
 @keyframes c3shk{50%{transform:translate(1px,1px)}}
 .mg-chicken3 .c3lb{position:absolute;inset:0;pointer-events:none;z-index:3}
-.mg-chicken3 .c3lb b{position:absolute;display:block;text-align:center;font-size:10px;font-weight:800;color:#3a2a1a;white-space:nowrap;overflow:hidden;letter-spacing:-.5px;line-height:1.05}
+.mg-chicken3 .c3lb b{position:absolute;display:block;text-align:center;font-size:11px;font-weight:800;color:#3a2a1a;white-space:nowrap;overflow:hidden;letter-spacing:-.5px;line-height:1.05}
 .mg-chicken3 .c3lb b.dy{font-size:11.5px;font-weight:900}
 .mg-chicken3 .c3lb b.dy.pk{color:#d8302a}
-.mg-chicken3 .c3lb b.rw{font-size:9.5px;color:#6a5a48;display:flex;flex-direction:column;justify-content:center}
+.mg-chicken3 .c3lb b.rw{font-size:11px;color:#6a5a48;display:flex;flex-direction:column;justify-content:center}
 .mg-chicken3 .c3lb b.rw i{font-style:normal;font-size:8.5px;color:#8a7a68;font-weight:700}
 .mg-chicken3 .c3lb b.sm{font-size:8.5px;color:#8a7a68;font-weight:700}
-.mg-chicken3 .c3lb b.cost{font-size:10px;text-align:left;color:#3a2a1a}
+.mg-chicken3 .c3lb b.cost{font-size:11px;text-align:left;color:#3a2a1a}
 .mg-chicken3 .c3lb b.cost.ov{color:#d8302a;animation:c3bl .4s steps(2) infinite}
-.mg-chicken3 .c3lb b.nm{font-size:10.5px;font-weight:900;text-align:left;color:#2a1d14}
-.mg-chicken3 .c3lb b.wg{font-size:9px;text-align:left;color:#7a5a3a;font-weight:800}
+.mg-chicken3 .c3lb b.nm{font-size:11px;font-weight:900;text-align:left;color:#2a1d14}
+.mg-chicken3 .c3lb b.wg{font-size:11px;text-align:left;color:#7a5a3a;font-weight:800}
 .mg-chicken3 .c3lb b.sk{font-size:8.5px;color:#6a5a48;font-weight:800}
 .mg-chicken3 .c3lb b.sk.no{color:#c8bca8;text-decoration:line-through}
-.mg-chicken3 .c3lb b.tr{font-size:9px;border-radius:4px;background:#efe6d2;color:#5a4632}
+.mg-chicken3 .c3lb b.tr{font-size:11px;border-radius:4px;background:#efe6d2;color:#5a4632}
 .mg-chicken3 .c3lb b.tr.warn{background:#ffe0d8;color:#c0392b}
 .mg-chicken3 .c3lb b.tr.good{background:#e0f2dc;color:#2f7a3e}
 .mg-chicken3 .c3lb b.hr{font-size:8.5px;color:#fff;text-shadow:0 1px 0 #0008;font-weight:900}
 .mg-chicken3 .c3lb b.st{font-size:12px;font-weight:900;color:#fff;background:#c0392b;border-radius:4px;transform:rotate(-12deg);box-shadow:0 0 0 2px #fff,0 2px 0 3px #0006;line-height:1.5}
-.mg-chicken3 .c3lb b.nw{font-size:10px;font-weight:900;color:#3a2400;background:#ffd23f;border-radius:4px;line-height:1.5;animation:c3bl .5s steps(2) infinite}
-.mg-chicken3 .c3lb b.hd{font-size:10px;color:#ffe9a8;font-weight:800;text-align:left}
+.mg-chicken3 .c3lb b.nw{font-size:11px;font-weight:900;color:#3a2400;background:#ffd23f;border-radius:4px;line-height:1.5;animation:c3bl .5s steps(2) infinite}
+.mg-chicken3 .c3lb b.hd{font-size:11px;color:#ffe9a8;font-weight:800;text-align:left}
 .mg-chicken3 .c3lb b.ff{font-size:15px;font-weight:900;color:#fff;text-shadow:0 2px 0 #000a,0 0 6px #000;text-align:left}
 .mg-chicken3 .c3lb b.ff em{font-style:normal;font-size:11px;background:#e0402a;border-radius:5px;padding:1px 6px;margin-left:5px;vertical-align:2px}
 .mg-chicken3 .c3lb b.ff em.ok{background:#3fae5a}
 .mg-chicken3 .c3lb b.fw{font-size:13px;font-weight:900;color:#ffd23f;text-shadow:0 1px 0 #000;text-align:right;letter-spacing:-1px}
-.mg-chicken3 .c3lb b.fs{font-size:10px;color:#ffe9a8;text-align:left}
-.mg-chicken3 .c3lb b.mn{font-size:10.5px;font-weight:900;color:#ffd23f;letter-spacing:0}
+.mg-chicken3 .c3lb b.fs{font-size:11px;color:#ffe9a8;text-align:left}
+.mg-chicken3 .c3lb b.mn{font-size:11px;font-weight:900;color:#ffd23f;letter-spacing:0}
 @keyframes c3bl{50%{filter:brightness(1.35)}}
 .mg-chicken3 .c3av{position:absolute;z-index:3;border-radius:50%;background-repeat:no-repeat;background-color:#fff3e0;box-shadow:0 0 0 2px #2a1d14;pointer-events:none}
 .mg-chicken3 .c3ok{position:absolute;z-index:4;display:none;background:linear-gradient(#ffb03b,#d8701a);color:#fff;border:0;border-radius:10px;font-weight:900;font-size:14px;box-shadow:0 3px 0 #8a4410;letter-spacing:-.3px}
@@ -189,7 +189,7 @@ export const GAME = {
 .mg-chicken3 .c3tut.off{opacity:0;visibility:hidden}
 .mg-chicken3 .c3tc{pointer-events:auto;background:#fffdf6;color:#2a2018;border-radius:14px;padding:9px 12px 8px;box-shadow:0 4px 0 #0006,0 0 0 2px #ffb03b;max-width:296px;font-size:13px;line-height:1.45;text-align:center;font-weight:600;word-break:keep-all}
 .mg-chicken3 .c3tut.pop .c3tc{animation:c3pop .35s cubic-bezier(.3,1.8,.5,1)}
-.mg-chicken3 .c3tc em{font-style:normal;display:inline-block;background:#d8701a;color:#fff;font-size:10.5px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
+.mg-chicken3 .c3tc em{font-style:normal;display:inline-block;background:#d8701a;color:#fff;font-size:11px;font-weight:900;padding:1px 8px;border-radius:6px;margin-bottom:4px}
 .mg-chicken3 .c3tc p{margin:0}.mg-chicken3 .c3tc b{color:#c0601a}.mg-chicken3 .c3tc b.rd{color:#c0392b}
 .mg-chicken3 .c3tb{margin-top:6px;display:flex;justify-content:center}
 .mg-chicken3 .c3skip{background:none!important;border:0!important;box-shadow:none!important;color:#8a8070!important;font-size:11.5px;text-decoration:underline;padding:2px 6px!important;min-height:0!important}
@@ -200,7 +200,7 @@ export const GAME = {
 .mg-chicken3 .c3nt.out{transition:transform .35s,opacity .35s;transform:translateY(-120%);opacity:0}
 .mg-chicken3 .c3nt img{width:42px;height:42px;flex:0 0 auto;background:#efe6d2;border-radius:50%;box-shadow:0 0 0 2px #fff,0 0 0 3.5px #e0402a}
 .mg-chicken3 .c3nt p{margin:0;font-size:12.5px;line-height:1.35;color:#2a2018;font-weight:700;word-break:keep-all}
-.mg-chicken3 .c3nt p b{display:block;font-size:10.5px;color:#c0392b}
+.mg-chicken3 .c3nt p b{display:block;font-size:11px;color:#c0392b}
 @keyframes c3ntin{0%{transform:translateY(-130%)}100%{transform:none}}
 @keyframes c3buzz{50%{transform:translateX(3px)}}
 .mg-chicken3 .c3dim{position:absolute;inset:0;background:#0000;transition:background .4s;pointer-events:none;z-index:7}

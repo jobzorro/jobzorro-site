@@ -1,10 +1,11 @@
 // 앱 느낌: 설정(효과음·진동·글자 크기) + 효과음(파일 없이 기기에서 바로 만든 소리) + 진동
 // 설정은 기기마다 따로 저장한다(after6pm_set). 저장이 막힌 환경에서도 게임은 그대로 돈다.
 import { isApp } from "./app.js";
+import { duck as bgmDuck } from "./bgm.js";
 
 export const VERSION = "0.9.1";
 const KEY = "after6pm_set";
-const DEF = () => ({ sound: isApp(), vib: true, big: false }); // 브라우저에서는 소리를 꺼 둔다(회사에서 여는 사람이 많다)
+const DEF = () => ({ sound: isApp(), vib: true, big: false, music: isApp(), musicVol: 0.35 }); // 브라우저에서는 소리를 꺼 둔다(회사에서 여는 사람이 많다)
 let set = DEF();
 try { Object.assign(set, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
 export const get = () => ({ ...set });
@@ -39,6 +40,7 @@ const SND = {
 const VIB = { tap: 8, ok: 12, coin: [10, 40, 14], bad: [30, 50, 30], scene: 14, month: 10, win: [20, 60, 20, 60, 40] };
 export function play(k) {
   try { SND[k]?.(); } catch (e) {}
+  try { if (set.sound && k !== "tap" && SND[k]) bgmDuck(k === "win" ? 900 : 450, 0.5); } catch (e) {} // 효과음이 날 때 배경 음악을 잠깐 낮춘다(누르는 소리는 빼고)
   try { if (set.vib && navigator.vibrate && VIB[k]) navigator.vibrate(VIB[k]); } catch (e) {}
 }
 // 누를 수 있는 것을 누르면 '톡'

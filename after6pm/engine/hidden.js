@@ -61,7 +61,7 @@ export const HID = {
   tarot: { n: "심리 타로 센터", c: [["상담심리 대학원 수료", (s) => (s.grad?.k === "counsel" && s.grad.done ? 1 : 0), 1], ["타로 Lv4", (s) => s.tarot?.lv || 0, 4], ["평판(적중률) 70", (s) => Math.round(s.tarot?.rep || 0), 70]],
     hint: { who: "c034", title: "카드보다 필요한 것", text: (n) => `${n}: "매일 오는 손님 있죠? 그분한테 필요한 건 카드가 아닐 수도 있어요. 상담 공부, 해 볼 생각 없어요?"` },
     open: "기업 복지팀에서 연락이 왔다. '임직원 심리 상담 프로그램, 타로로 열어 주실 수 있나요?' 센터 간판을 달았다.", rew: "자격 있는 상담(단가 3배)·기업 복지 계약" },
-  webnovel: { n: "내 IP 스튜디오", c: [["완결 3편", (s) => s.webnovel?.done || 0, 3], ["웹소설 공장 성공", (s, f) => (f.fac ? 1 : 0), 1], ["2차 판권 1번", (s) => s.webnovel?.ip || 0, 1]],
+  webnovel: { n: "내 IP 스튜디오", c: [["완결 3편", (s) => s.webnovel?.done || 0, 3], ["웹소설 공장 성공", (s, f) => (f.fac ? 1 : 0), 1], ["2차 판권 1번", (s) => (s.webnovel?.ip || 0) + (s.webnovel?.ipDrama || 0), 1]],
     hint: { who: "c031", title: "혼자 쓰기 아까운 세계관", text: (n) => `${n}: "작가님 세계관, 혼자 쓰기 아깝네요. 완결 몇 편 더 쌓이면 같이 쓰는 작가들 붙여 볼 수 있어요."` },
     open: "작가 셋이 내 세계관으로 쓰고 싶다고 찾아왔다. 스튜디오 이름을 정했다.", rew: "세계관 나눠 쓰기(작품 수 ×3)·2차 판권 독점" },
   tutoring: { n: "입시 컨설팅", c: [["입시 대박 4번", (s, f) => f.ipBig || 0, 4], ["학부모 별점 4.9", (s) => Math.round((s.tutoring?.stars || 0) * 10) / 10, 4.9], ["말빨 160", (s) => s.st.talk, 160, "talk"], ["숫자 100(입시 데이터)", (s) => s.st.num, 100, "num"]],
@@ -77,6 +77,20 @@ export const HID = {
     open: "회사가 내 앱을 분사하자고 했다. 지분 투자 계약서에 회사 도장이 찍혔다. 본잡과 투잡이 하나가 됐다.", rew: "회사 지분 투자·겸업 눈치 줄어듦·매각 기회" },
 };
 const cName = (k) => D.CONCEPTS?.[k]?.n || "새 컨셉";
+// 37번: 낌새 장면은 글이 전제하는 만큼 진행됐을 때만 뜬다(팔로워 0 에 "팬 모임에 백 명" 같은 일이 없게)
+const HINT_OK = {
+  cs: (s) => !!s.cs?.open && (s.cs?.passes || 0) >= 5,
+  pr: (s) => (s.pr?.rooms || []).some((x) => x.status === "open"),
+  airbnb: (s) => (s.ab?.units || []).length >= 1,
+  ucafe: (s, f) => (f.beanM || 0) >= 3,
+  insta: (s) => (s.ins?.f || 0) >= 10000 && (s.ins?.fan || 0) >= 30,
+  tarot: (s) => (s.tarot?.lv || 0) >= 3,
+  webnovel: (s) => (s.webnovel?.done || 0) >= 1,
+  tutoring: (s, f) => (f.ipBig || 0) >= 1 || ((s.tutoring?.studs || []).length >= 3 && (s.tutoring?.stars || 0) >= 4.5),
+  chicken: (s) => (s.chicken?.stores || []).some((x) => (x.months || 0) >= 6),
+  vibe: (s) => (s.vibe?.lv || 0) >= 2,
+};
+const hintOk = (s, job, f) => { try { return HINT_OK[job] ? !!HINT_OK[job](s, f) : true; } catch (e) { return true; } };
 function trendRoom(s, f) { return !!f.trend && (s.pr?.rooms || []).some((rm) => rm.concept === f.trend && rm.status !== "closed" && (rm.months || 0) >= 1); }
 
 // ───────── 상태 ─────────
@@ -132,7 +146,7 @@ export function hiddenMonth(s, r, notes, scenes) {
     if (job === "pr") prCycle(s, r, f, notes, rows);
     if (scenes.some((y) => y.kind === "event")) continue;
     // 낌새 장면
-    if (x.seen === undefined && since >= HID_P.after && s.t >= (x.hintNo ?? -1) && r.chance(ready || rows.filter((c) => c.ok).length >= 2 ? HID_P.hintReady : HID_P.hint)) { scenes.push(hintScene(s, job, f)); continue; }
+    if (x.seen === undefined && since >= HID_P.after && s.t >= (x.hintNo ?? -1) && hintOk(s, job, f) && r.chance(ready || rows.filter((c) => c.ok).length >= 2 ? HID_P.hintReady : HID_P.hint)) { scenes.push(hintScene(s, job, f)); continue; }
     // 인연·타이밍 장면(치킨 협의회·바이브 사내 도입)
     const T = HID[job].time;
     if (T && x.seen !== undefined && !timeDone(job, f) && s.t >= (f.timeT ?? -1) && timeReady(s, job) && r.chance(HID_P.time)) scenes.push({ kind: "event", tag: "히든 길", title: T.title, text: T.text, onChoose: "hd_time", hd: job,

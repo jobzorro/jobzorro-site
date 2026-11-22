@@ -3,8 +3,10 @@
 // 기획 데이터 16장(JOBEV partyroom)은 원래 engine/pr.js jobEvent 가 일반 효과로 띄우던 것을 여기서 제대로 된 효과로 다시 지어 띄운다(j01~j16).
 // 같은 장면이 두 번 뜨지 않게 init/migrate 에서 s.seen["job_partyroom_eXX"] = -1 로 jobEvent 쪽을 쉬게 한다(TAKEOVER).
 // 나머지 새 이벤트는 원래 엔진 장면(성수기 사고 7종, 권리금·인수 제안, 건물주 내용증명 통보)과 겹치지 않게 새로 지었다.
+// 11-23: 엔진과 같은 사건을 따로 내던 4개를 파티룸 고유 사건으로 바꿨다. j06 파손비(=pr.js 보증금 분쟁) → n01 다친 손님 · m03/c02 교복 단체(=pr.js 미성년자) → n02/n03 몰래 한 상업 촬영 ·
+// m06 1점 테러(=review.js 별점 테러) → n04 퇴실 안 하는 팀 · l01 2년 된 소파(=pr.js 가구 교체) → n05 법인카드 손님. 옛 저장의 seen 에 남은 옛 id 는 그냥 둔다.
 import * as SYN from "../syn.js";
-import { addMoney, won, CHAR } from "../core.js";
+import { addMoney, won, CHAR, jo } from "../core.js";
 import * as PR from "../pr.js"; // 정리(양도·폐업)·매물·손절 진단은 원래 엔진 함수를 쓴다(함수 안에서만 부름)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -15,7 +17,7 @@ const TAG = "파티룸";
 const TAKEOVER = true; // false 로 바꾸면 기획 16장은 원래 jobEvent 가 다시 띄우고, 이 파일의 j01~j16 은 안 뜬다
 const JIDS = Array.from({ length: 16 }, (_, i) => String(i + 1).padStart(2, "0"));
 
-const DEF = () => ({ seen: [], evT: -99, cum: 0, inv1: 0, goodM: 0, roomM: 0, fixN: 0, instant: null, fake: null, teen: null, pump: false, marble: null, safety: null, story: 0 });
+const DEF = () => ({ seen: [], evT: -99, cum: 0, inv1: 0, goodM: 0, roomM: 0, fixN: 0, instant: null, fake: null, teen: null, pump: false, marble: null, safety: null, story: 0, shoot: null });
 
 // 이벤트 돈 크기 기준: 최근 3달 파티룸 이익(80만~500만, 물가 반영). 효과는 이 값의 10~30%
 function unit(s) {
@@ -45,6 +47,8 @@ function evList(s) {
   const noticed = P.rooms.find((x) => x.notice && x.notice - s.t >= 1);
   const weak = open.slice().sort((a, b) => PR.avgProfit(a) - PR.avgProfit(b))[0];
   const only = open.length === 1 ? open[0] : null;
+  const nextN = P.rooms.length + 1, meet = [11, 12].includes(s.cal) ? "송년회" : [1, 2].includes(s.cal) ? "신년회" : "팀 회식";
+  const mb = X.marble === true;
   return [
     // ── 기획 데이터 16장(partyroom.json events). 원래 jobEvent 대신 여기서 띄운다(TAKEOVER) ──
     { id: "j01", ph: "early", ok: () => !!newest && newest.months <= 1, room: newest, t: "건물주에게 말할까",
@@ -67,10 +71,11 @@ function evList(s) {
       x: `새벽 1시, ${loud?.name || ""} 아래층 세입자에게서 전화가 왔다. 노래방 소리에 천장이 울린다고 한다. 이번 달만 세 번째다.`,
       c: [{ t: `방음 폼보드 + 밤 11시 이후 노래방 잠금 (${won(m(u, 0.2))})`, eff: { prs_cash: -m(u, 0.2), prs_rating: -0.03, prs_sound: 1, prs_fix: 1 }, text: "\"노래방 왜 안 돼요?\" 후기가 하나 달렸다. 아래층 전화는 끊겼다." },
           { t: "사과만 하고 넘어간다", eff: { prs_comp: 1, mental: -2 }, text: "\"네네, 죄송합니다.\" 다음 주에 같은 번호가 또 떴다. 건물주에게도 말이 들어갔다." }] },
-    { id: "j06", ph: "mid", ok: () => lv >= 2 && open.length >= 1, room: first, t: X.marble === true ? "깨진 대리석" : "와인 지도",
-      x: `체크아웃 사진을 확인했다. ${X.marble === true ? "대리석 테이블 모서리가 깨졌고, " : ""}와인 얼룩이 소파에 지도를 그렸다. 손님은 원래 그랬다고 한다.`,
-      c: [{ t: "입실 전 사진을 근거로 파손비를 청구한다", check: { stat: "talk", dc: 45 }, ok: { text: "입실 사진을 보내자 조용히 입금됐다. 이용 규칙에 사진 촬영 안내를 넣었다.", eff: { prs_cash: m(u, X.marble === true ? 0.12 : 0.08) } }, ng: { text: "\"사장이 협박해요.\" 돈은 반만 받았고 별 1개가 따라왔다.", eff: { prs_cash: m(u, 0.04), prs_rating: -0.05 } } },
-          { t: "넘어가고 다음부터 규칙을 강화한다", eff: { prs_cash: -m(u, X.marble === true ? 0.15 : 0.08), mental: -3 }, text: "세탁비와 수리비는 내 몫. 보증금 제도를 만들까 한참 고민했다." }] },
+    { id: "n01", ph: "mid", ok: () => lv >= 2 && open.length >= 1, room: first, t: mb ? "대리석 모서리" : "바닥의 빔프로젝터 선",
+      x: `${first?.name || "지점"} 손님에게서 사진이 왔다. ${mb ? "대리석 테이블 모서리에 찧은" : "바닥에 늘어진 빔프로젝터 선에 걸려 넘어진"} 무릎이다. 세 바늘 꿰맸다고 한다. "치료비는 사장님이 내 주셔야죠." 공간에서 다친 건 주인 책임이 될 수 있다.`,
+      c: [{ t: `치료비를 보내고 ${mb ? "모서리에 보호대를 붙인다" : "선을 몰딩으로 정리한다"} (${won(m(u, mb ? 0.15 : 0.1))})`, eff: { prs_cash: -m(u, mb ? 0.15 : 0.1), prs_rating: 0.02, prs_fix: 1 }, text: mb ? "투명 보호대를 붙였다. 사진발은 조금 죽었다. 손님은 \"빨리 처리해 주셔서 감사해요\"라고 남겼다." : "선을 벽으로 돌리고 몰딩을 붙였다. 손님은 \"빨리 처리해 주셔서 감사해요\"라고 남겼다." },
+          { t: `영업배상책임보험에 들고 보험으로 처리한다 (${won(m(u, 0.08))})`, eff: { prs_cash: -m(u, 0.08), mental: 3 }, text: "1년 보험료가 치료비 한 번보다 싸다. 다음 사고부터는 전화 한 통이면 된다." },
+          { t: "이용 안내의 '부주의 사고는 본인 책임'을 들어 거절한다", check: { stat: "talk", dc: 50 }, ok: { text: "\"…알겠어요.\" 연락이 끊겼다. 마음이 편하지는 않다.", eff: { mental: -2 } }, ng: { text: "동네 커뮤니티에 무릎 사진이 올라왔다. 결국 치료비도 보냈다.", eff: { prs_cash: -m(u, 0.1), prs_rating: -0.06, mental: -4 } } }] },
     { id: "j07", ph: "mid", ok: () => lv >= 2 && (open.some((x) => x.concept === "bridal") || [3, 4, 9].includes(s.cal)), t: "브라이덜샤워 성지",
       x: "결혼 준비 카페에 '가성비 브라이덜샤워 공간 추천' 후기가 올라왔다. 우리 파티룸이다. 하루 만에 다음 달 토요일이 전부 찼다.",
       c: [{ t: "브라이덜 데코 세트를 유료 옵션으로 판다", eff: { prs_cash: m(u, 0.25), hp: -5, stat: { sense: 1 }, prs_buzz: 4 }, text: "베일·가랜드·꽃 장식 세트. 객단가가 25% 올랐다. 금요일 밤이 데코 준비로 사라졌다." },
@@ -87,11 +92,11 @@ function evList(s) {
       x: "12월 주말이 11월 초에 이미 매진됐다. 문의가 하루 스무 통이다. 토요일 저녁 7시는 앱 전체에서 가장 붐비는 시간이다.",
       c: [{ t: "성수기 요금을 30% 올린다", eff: { prs_cash: m(u, 0.3), prs_rating: -0.04 }, text: "그래도 다 찼다. '연말이라고 바가지' 후기가 하나 섞였다." },
           { t: "가격은 두고 단골에게 우선 예약권을 준다", eff: { prs_cash: m(u, 0.12), prs_rating: 0.05, prs_buzz: 6 }, text: "\"사장님 저희 기억하세요?\" 작년 크리스마스 팀이 또 왔다." }] },
-    { id: "j11", ph: "late", ok: () => P.rooms.length <= 2 && !!first && first.months >= 8 && lv >= 3, t: "2호점은 4인용",
-      x: "1호점이 자리를 잡았다. 같은 동네에 8평 공실이 나왔다. 지금 지점은 10명용, 여기는 4명 소모임용으로 쓰면 손님을 서로 뺏지 않을 것 같다.",
-      c: [{ t: "소형 2호점 매물을 보러 간다", eff: { hp: -4, prs_know: 3, stat: { num: 0.5 }, prs_listing: "small" }, text: "평수·월세·화장실을 수첩에 적었다. 파티룸 보드 매물 목록에 올려 뒀다. 계약은 숨은 정보부터 확인하고(매물은 두 달 뒤 빠진다)." },
+    { id: "j11", ph: "late", ok: () => P.rooms.length <= 2 && !!first && first.months >= 8 && lv >= 3, t: `${nextN}호점은 4인용`,
+      x: `${P.rooms.length >= 2 ? "지점 두 곳이" : "1호점이"} 자리를 잡았다. 같은 동네에 열 평 남짓한 공실이 나왔다. 지금 ${P.rooms.length >= 2 ? "지점들은 단체용" : "지점은 10명용"}, 여기는 4명 소모임용으로 쓰면 손님을 서로 뺏지 않을 것 같다.`,
+      c: [{ t: `소형 ${nextN}호점 매물을 보러 간다`, eff: { hp: -4, prs_know: 3, stat: { num: 0.5 }, prs_listing: "small" }, text: "평수·월세·화장실을 수첩에 적었다. 파티룸 보드 매물 목록에 올려 뒀다. 계약은 숨은 정보부터 확인하고(매물은 두 달 뒤 빠진다)." },
           { t: "렌탈 스튜디오를 공부해 본다", eff: { hp: -3, stat: { sense: 1 } }, text: "촬영 수요는 평일 낮에 있다. 조명 장비 값을 보고 한숨이 나왔다." },
-          { t: "아직은 1호점에 집중한다", eff: { mental: 3 }, text: "한 곳을 제대로 돌리는 것도 일이다." }] },
+          { t: P.rooms.length >= 2 ? "아직은 지금 지점들에 집중한다" : "아직은 1호점에 집중한다", eff: { mental: 3 }, text: P.rooms.length >= 2 ? "두 곳을 제대로 돌리는 것도 일이다." : "한 곳을 제대로 돌리는 것도 일이다." }] },
     { id: "j12", ph: "late", ok: () => co && open.length >= 3 && prof >= 400 * pi, t: "연봉만큼 버는 부업",
       x: `세 곳 합산 월 순익 ${won(prof)}. 내 월급을 넘었다. 사직서를 쓸까, 4호점을 낼까. 선퇴사는 하지 말라는 말이 떠오른다.`,
       c: [{ t: "6개월~1년 생활비부터 모으고 결정한다", eff: { mental: 4, stat: { num: 1 } }, text: "엑셀에 '전업 D-day' 시트를 만들었다. 비수기 석 달 치 월세가 먼저다." },
@@ -162,10 +167,10 @@ function evList(s) {
       x: "모르는 번호에서 문자가 왔다. \"사장님, 실사용 후기 10건 5만 원. 사진 포함. 걸린 적 없습니다.\" 경쟁 지점 별점이 왜 4.9인지 알 것 같다.",
       c: [{ t: "한 번만 해 본다", eff: { prs_cash: -5, prs_rating: 0.08, prs_set: "fake" }, text: "다음 날 별 5개가 열 개 달렸다. 말투가 다 비슷하다." },
           { t: "차단한다", eff: { mental: 1, prs_set: "nofake" }, text: "별점 4.6은 내가 진짜로 번 숫자다." }] },
-    { id: "m03", ph: "mid", ok: () => lv >= 2 && X.teen === null, t: "교복 입은 단체",
-      x: "금요일 밤 예약 손님이 들어가는 걸 CCTV로 봤다. 여섯 명 중 둘이 교복 바지다. 편의점 봉투가 묵직하다. 예약자는 스물두 살로 돼 있다.",
-      c: [{ t: "전화해서 신분증을 확인하고, 안 되면 환불한다", check: { stat: "talk", dc: 45 }, ok: { text: "\"…죄송해요.\" 순순히 나갔다. 환불은 해 줬다.", eff: { prs_cash: -m(u, 0.06), mental: -2, prs_set: "noteen", prs_fix: 1 } }, ng: { text: "실랑이 끝에 내보냈다. '불친절' 별 1개가 달렸다.", eff: { prs_cash: -m(u, 0.06), prs_rating: -0.05, prs_set: "noteen" } } },
-          { t: "예약자가 성인이니 모른 척한다", eff: { prs_set: "teen" }, text: "아무 일도 없었다. 아직은." }] },
+    { id: "n02", ph: "mid", ok: () => lv >= 2 && open.length >= 1 && X.shoot === null, room: first, t: "친구들끼리 프로필 촬영",
+      x: `평일 낮 ${first?.name || "지점"}, '친구들끼리 프로필 촬영 3시간' 예약. CCTV를 보니 조명 스탠드 여섯 개에 옷 행거 두 줄, 스태프가 열 명이다. 쇼핑몰 룩북 촬영이다. 소파와 테이블은 전부 벽으로 밀려 있다. 상업 촬영은 요금이 두 배라고 이용 안내에 적어 뒀다.`,
+      c: [{ t: "전화해서 상업 촬영 요금 차액을 청구한다", check: { stat: "talk", dc: 45 }, ok: { text: "\"아, 네… 입금할게요.\" 받은 차액은 긁힌 바닥 보수와 추가 청소비로 그대로 나갔다.", eff: { prs_cash: -m(u, 0.04), prs_set: "noshoot", prs_fix: 1 } }, ng: { text: "\"친구들끼리 찍는 거 맞는데요?\" 실랑이 끝에 별 1개가 달렸다. 긁힌 바닥은 내 돈으로 고쳤다.", eff: { prs_cash: -m(u, 0.06), prs_rating: -0.05, prs_set: "noshoot" } } },
+          { t: "그냥 둔다. 평일 낮 예약이 어디냐", eff: { prs_set: "shoot" }, text: "아무 일도 없었다. 아직은." }] },
     { id: "m04", ph: "mid", rep: true, ok: () => lv >= 2 && open.length >= 1, t: "50리터 일곱 봉지",
       x: "생일파티가 끝난 자리. 50리터 봉투 일곱 개에 음식물·캔·풍선이 뒤섞여 있다. 수거일에 건물 관리인이 전화했다. \"분리수거 안 하면 다음부터 안 가져갑니다.\"",
       c: [{ t: "'미분리 시 청소비 2만 원' 규칙을 이용 안내에 넣는다", eff: { prs_rating: -0.03, mental: 3 }, text: "몇몇은 투덜댔다. 대신 일요일 밤이 돌아왔다." },
@@ -174,10 +179,10 @@ function evList(s) {
       x: "어젯밤 프러포즈 대관 팀이 나간 자리, 소파 틈에서 반지 케이스가 나왔다. 열어 보니 반짝인다. 연락하니 \"오늘 부모님 상견례인데…\" 목소리가 떨린다.",
       c: [{ t: `퀵으로 바로 보내 준다 (${won(m(u, 0.04))})`, eff: { prs_cash: -m(u, 0.04), prs_buzz: 8, prs_rating: 0.03 }, text: "\"사장님 덕분에 살았어요.\" 그날 밤 인별에 우리 공간 사진이 올라왔다." },
           { t: "보관해 두고 찾으러 오라고 한다", eff: { prs_buzz: 1 }, text: "저녁에 숨이 턱까지 찬 손님이 왔다. 고맙다는 말은 짧았다." }] },
-    { id: "m06", ph: "mid", rep: true, ok: () => lv >= 2 && open.length >= 1, t: "1점 테러",
-      x: "네이바 지도에 별 1개. \"벌레 나왔어요. 위생 최악.\" 예약 기록에는 그런 이름이 없다. 길 건너 새로 생긴 파티룸이 떠오른다.",
-      c: [{ t: "예약 내역·청소 사진으로 신고서를 쓴다", check: { stat: "write", dc: 45 }, ok: { text: "사흘 뒤 리뷰가 내려갔다. 신고서 양식은 저장해 뒀다.", eff: { prs_rating: 0.03, stat: { write: 0.5 }, prs_fix: 1 } }, ng: { text: "\"이용자의 의견으로 판단됩니다.\" 리뷰는 그대로다.", eff: { prs_rating: -0.05, mental: -5 } } },
-          { t: "정중한 답글만 단다", eff: { prs_rating: -0.02, mental: -2 }, text: "\"방문 기록이 확인되지 않아 연락 부탁드립니다.\" 다른 손님들이 그 답글을 읽었다." }] },
+    { id: "n04", ph: "mid", rep: true, ok: () => lv >= 2 && open.length >= 1, room: first, t: "6시 퇴실, 지금 6시 40분",
+      x: `토요일 오후 6시 40분, ${first?.name || "지점"}. 6시에 나가야 할 팀이 CCTV 속에서 이제 케이크 촛불을 켠다. 7시 팀은 벌써 건물 1층에 와 있다. 청소는 아무리 빨라도 30분이다.`,
+      c: [{ t: "전화해서 지금 나가 달라고 한다", check: { stat: "talk", dc: 45 }, ok: { text: "\"헉, 죄송해요!\" 10분 만에 비웠다. 청소는 뛰면서 했다.", eff: { hp: -5, prs_fix: 1 } }, ng: { text: "\"돈 냈는데 10분도 못 봐줘요?\" 나가는 팀도 기다린 팀도 기분이 상했다.", eff: { prs_rating: -0.05, mental: -4 } } },
+          { t: "초과 요금을 받고, 7시 팀은 30분 늦게 시작하는 대신 1시간을 더 준다", eff: { prs_rating: -0.02, hp: -3 }, text: "7시 팀은 1층 카페에서 기다렸다. 받은 초과 요금은 그 팀 음료값으로 나갔다. 마지막 팀이 나간 건 자정이 넘어서였다." }] },
     { id: "m07", ph: "mid", ok: () => lv >= 2 && (P.sys?.cleanContract || open.length >= 2), t: "청소 이모님의 문자",
       x: "\"사장님, 다음 달부터 회당 2만5천 원 받아야겠어요. 다른 데는 3만 원 줘요.\" 한 달 청소만 40번이 넘는다.",
       c: [{ t: `올려 드린다 (한 번에 ${won(m(u, 0.12))} 정도)`, eff: { prs_cash: -m(u, 0.12), mental: 2 }, text: "\"사장님은 깔끔하게 쓰니까 오래 할게요.\" 그 말이 제일 비쌌다." },
@@ -193,19 +198,19 @@ function evList(s) {
 
     // ── 회사 눈치(겸직) ──
     { id: "x01", ph: "mid", ok: () => co && lv >= 2 && open.length >= 1, room: first, t: "팀 회식 장소 후보",
-      x: `팀장님이 모니터를 돌렸다. "이번 송년회 여기 어때? 후기가 좋던데." 화면 속 사진은 ${first?.name || "내 지점"}이다. 소파에 걸린 담요까지 내가 산 거다.`,
+      x: `팀장님이 모니터를 돌렸다. "이번 ${meet} 여기 어때? 후기가 좋던데." 화면 속 사진은 ${first?.name || "내 지점"}이다. 소파에 걸린 담요까지 내가 산 거다.`,
       c: [{ t: "\"좋네요\" 하고 당일엔 청소 업체만 보낸다", check: { stat: "talk", dc: 48 }, ok: { text: "회식 내내 표정 관리를 했다. 팀장님이 별 5개를 남겼다.", eff: { prs_cash: m(u, 0.08), eye: 2 } }, ng: { text: "막내가 화장실 앞 안내문 글씨체를 알아봤다. \"이거 선배 글씨 아니에요?\"", eff: { prs_cash: m(u, 0.08), eye: 10, mental: -4 } } },
-          { t: "\"거기 주차가 별로래요\" 다른 데를 민다", eff: { eye: -2, prs_buzz: -2 }, text: "다른 파티룸에서 송년회를 했다. 우리 공간이 더 예뻤다." }] },
+          { t: "\"거기 주차가 별로래요\" 다른 데를 민다", eff: { eye: -2, prs_buzz: -2 }, text: "결국 다른 파티룸에서 모였다. 우리 공간이 더 예뻤다." }] },
     { id: "x02", ph: "mid", rep: true, ok: () => co && open.length >= 1, t: "회의 중 진동 17번",
       x: "금요일 오후 주간 회의. 주머니 속 휴대폰이 17번 떨었다. 예약 문의, 입실 안내, \"사장님 와이파이 비번이요\". 옆자리 과장이 힐끗 본다.",
       c: [{ t: `자동응답 문구와 입실 안내 링크를 만든다 (${won(m(u, 0.05))})`, eff: { prs_cash: -m(u, 0.05), eye: -3, stat: { num: 0.5 } }, text: "와이파이·주차·쓰레기, 질문의 80%가 같았다. 링크 하나로 끝." },
           { t: "책상 밑으로 몰래 답장한다", eff: { eye: 6, prs_rating: 0.02 }, text: "답장은 빨랐다. 회의록에 내 발언은 없었다." }] },
 
     // ── 후반: 2호점 이후 ──
-    { id: "l01", ph: "late", ok: () => !!old, room: old, t: "2년 된 소파",
-      x: `${old?.name || ""} 후기에 "사진이랑 달라요"가 또 달렸다. 오픈 때 산 패브릭 소파는 보풀투성이, 조명 하나는 깜빡인다. 가구도 감가상각이 된다는 걸 숫자로 배운다.`,
-      c: [{ t: `가구·조명을 새로 들인다 (${won(m(u, 0.3))})`, eff: { prs_cash: -m(u, 0.3), prs_rating: 0.1, prs_buzz: 8 }, text: "사진을 다시 찍었다. 오픈 첫 달 같은 문의가 들어왔다." },
-          { t: "커버만 씌우고 조금 더 버틴다", check: { stat: "sense", dc: 50 }, ok: { text: "톤을 맞춘 커버 하나로 새것 같다. 1년은 더 간다.", eff: { prs_cash: -m(u, 0.05), prs_rating: 0.03 } }, ng: { text: "커버가 자꾸 흘러내린다. \"관리 안 하는 곳\" 소리를 들었다.", eff: { prs_cash: -m(u, 0.05), prs_rating: -0.06 } } }] },
+    { id: "n05", ph: "late", ok: () => !!first && (open.length >= 2 || lv >= 3), room: first, t: "법인카드 손님",
+      x: `평일 오후, 어느 스타트업 총무 담당자의 문의. "분기마다 워크숍으로 스무 명이 네 시간씩 쓰고 싶어요. 세금계산서 발행되죠? 화이트보드랑 HDMI 선도 있나요?" 주말 생일 손님과는 묻는 것부터 다르다.`,
+      c: [{ t: `화이트보드와 긴 테이블을 들이고 기업 대관 상품을 만든다 (집기 ${won(m(u, 0.25))})`, check: { stat: "mkt", dc: 48 }, ok: { text: "분기 계약서에 도장을 찍었다. 소개로 한 회사가 더 왔다. 평일 낮 달력에 처음으로 색이 찼다. 집기 값은 아직 다 못 뽑았다.", eff: { prs_cash: -m(u, 0.12), prs_rating: 0.05, prs_buzz: 8, stat: { mkt: 1 } } }, ng: { text: "집기만 늘었다. 그 회사는 호텔 세미나실로 갔다.", eff: { prs_cash: -m(u, 0.25), stat: { mkt: 0.5 } } } },
+          { t: "있는 그대로 한 번만 받는다", eff: { prs_cash: m(u, 0.03), prs_rating: -0.03 }, text: "의자가 모자라 소파에 여섯 명이 끼어 앉았다. 세금계산서는 끊어 줬다. 후기에는 \"회의하기엔 불편\"이 남았고 다음 분기 연락은 없었다." }] },
     { id: "l02", ph: "late", ok: () => open.length >= 2 || (lv >= 3 && !!first && first.months >= 10), room: first, t: "비밀번호 단톡방",
       x: `새벽 3시, ${first?.name || "지점"} 문열림 알림. 예약은 없다. CCTV 속 낯선 네 명. 지난주 손님이 비밀번호를 동아리 단톡방에 올렸단다.`,
       c: [{ t: `예약마다 일회용 번호가 나오는 도어락으로 바꾼다 (${won(m(u, 0.15))})`, eff: { prs_cash: -m(u, 0.15), mental: 3, prs_fix: 1 }, text: "이제 번호는 입실 30분 전에만 열린다. 새벽 알림이 사라졌다." },
@@ -213,7 +218,7 @@ function evList(s) {
     { id: "l03", ph: "late", ok: () => lv >= 4, t: "간이과세 졸업",
       x: "세무서 안내문. \"직전 연도 공급대가가 기준을 넘어 일반과세자로 전환됩니다.\" 이제 부가세를 제대로 떼고, 매입 영수증을 다 챙겨야 한다. 영수증은 차 안 컵홀더에 구겨져 있다.",
       c: [{ t: `세무 대리인에게 맡긴다 (연 ${won(m(u, 0.2))})`, eff: { prs_cash: -m(u, 0.2), mental: 4 }, text: "\"사장님, 청소 용품도 다 경비예요.\" 낸 돈보다 돌려받은 게 많았다." },
-          { t: "홈택스 강의를 보며 직접 한다", check: { stat: "num", dc: 52 }, ok: { text: "엑셀 시트 하나로 지점별 매입·매출을 정리했다. 뿌듯하다.", eff: { stat: { num: 1 }, hp: -4 } }, ng: { text: "가산세 고지서가 날아왔다. 배운 값이라 치기엔 아깝다.", eff: { prs_cash: -m(u, 0.25), mental: -6 } } }] },
+          { t: "홈택수 강의를 보며 직접 한다", check: { stat: "num", dc: 52 }, ok: { text: "엑셀 시트 하나로 지점별 매입·매출을 정리했다. 뿌듯하다.", eff: { stat: { num: 1 }, hp: -4 } }, ng: { text: "가산세 고지서가 날아왔다. 배운 값이라 치기엔 아깝다.", eff: { prs_cash: -m(u, 0.25), mental: -6 } } }] },
     { id: "l04", ph: "late", ok: () => lv >= 4 || s.era?.bigcomp, room: first, t: "길 건너 체인점",
       x: `${first?.name || "1호점"} 길 건너에 체인 파티룸이 문을 열었다. 오픈 특가 시간당 1만 원대, 무인 키오스크, 통일된 인테리어. 다음 주 예약이 세 건 빠졌다.`,
       c: [{ t: `한 달 15% 할인으로 맞불 (${won(m(u, 0.2))} 덜 번다)`, eff: { prs_cash: -m(u, 0.2), prs_buzz: 5 }, text: "예약은 지켰다. 체인점은 6개월을 버틸 돈이 있다. 나는?" },
@@ -232,10 +237,10 @@ function evList(s) {
       x: "앱 공지. \"부정 리뷰가 확인된 공간은 검색 노출이 제한됩니다.\" 내 공간 이름 옆에 회색 딱지가 붙었다. 그때 그 열 개다.",
       c: [{ t: "솔직하게 사과문을 올린다", eff: { prs_rating: -0.1, prs_buzz: -6, mental: -4, prs_set: "fakeDone" }, text: "\"한 번이었고, 다시는 안 하겠습니다.\" 댓글이 반반으로 갈렸다." },
           { t: "모른다고 버틴다", check: { stat: "talk", dc: 60 }, ok: { text: "한 달 뒤 딱지가 풀렸다. 등에 식은땀이 아직 남아 있다.", eff: { prs_rating: -0.05, prs_set: "fakeDone" } }, ng: { text: "다른 사장님이 캡처를 돌렸다. 노출 제한 석 달.", eff: { prs_rating: -0.2, prs_buzz: -15, mental: -8, prs_set: "fakeDone" } } }] },
-    { id: "c02", ph: "crisis", ok: () => typeof X.teen === "number" && s.t - X.teen >= 3, t: "새벽 2시의 전화",
-      x: "모르는 번호. \"여기 파출소인데요, 파티룸 사장님이시죠? 미성년자 음주 신고가 들어와서요.\" 그때 그 교복 바지가 떠올랐다.",
-      c: [{ t: `바로 가서 조사에 협조하고 사과한다 (${won(m(u, 0.25))})`, eff: { prs_cash: -m(u, 0.25), hp: -8, prs_rating: -0.05, prs_set: "teenDone", prs_fix: 1 }, text: "아이들 부모님들과 새벽 4시까지 있었다. 그 뒤로 신분증 확인 문구를 크게 붙였다." },
-          { t: "\"예약자는 성인이었어요\" 전화로만 해명한다", check: { stat: "talk", dc: 55 }, ok: { text: "이번엔 넘어갔다. 다음은 없다.", eff: { mental: -6, prs_set: "teenDone" } }, ng: { text: "건물주 귀에도 들어갔다. \"우리 건물에서 이런 일은 곤란해요.\"", eff: { prs_cash: -m(u, 0.15), prs_rating: -0.12, mental: -8, prs_set: "teenDone" } } }] },
+    { id: "n03", ph: "crisis", ok: () => typeof X.shoot === "number" && s.t - X.shoot >= 3, t: "광고에 나온 내 소파",
+      x: "인별 광고에 낯익은 소파가 떴다. 그때 그 쇼핑몰이다. 우리 공간에서 찍은 사진 마흔 장이 상세 페이지에 걸려 있다. 벽지엔 조명 테이프 자국, 러그엔 행거 바퀴 자국이 남았다. 같은 업체가 \"지난번처럼요\" 하고 또 예약을 넣었다.",
+      c: [{ t: `상업 촬영 요금표를 따로 만들고 이번부터 제대로 받는다 (벽지·러그 복구 ${won(m(u, 0.12))})`, eff: { prs_cash: -m(u, 0.12), stat: { num: 0.5 }, prs_set: "shootDone" }, text: "요금 두 배, 스태프 인원 제한, 가구 원위치. 업체는 군말 없이 결제했다. 지난번 벽지와 러그는 내 돈으로 갈았다." },
+          { t: "지난번 차액과 복구비까지 청구한다", check: { stat: "talk", dc: 55 }, ok: { text: "차액이 입금됐다. 상세 페이지 맨 아래에 '장소 협찬' 한 줄이 붙었다.", eff: { prs_cash: m(u, 0.04), prs_buzz: 4, prs_set: "shootDone" } }, ng: { text: "\"그런 안내는 못 봤는데요.\" 예약은 취소됐고 테이프 자국은 내 돈으로 지웠다.", eff: { prs_cash: -m(u, 0.2), mental: -5, prs_set: "shootDone" } } }] },
     { id: "c03", ph: "crisis", rep: true, ok: () => !!base && [7, 8].includes(s.cal), room: base, t: "반지하의 장마",
       x: `장마 사흘째 밤, ${base?.name || "지하 지점"} 계단으로 빗물이 흘러든다. 바닥이 찰방거린다. 내일 오후 2시 돌잔치 예약이 있다.`,
       c: [{ t: `양수기·제습기 대여하고 밤새 퍼낸다 (${won(m(u, 0.12))})`, check: { stat: "hands", dc: 45 }, ok: { text: "새벽 5시, 바닥이 말랐다. 돌잔치는 아무 일 없다는 듯 열렸다.", eff: { prs_cash: -m(u, 0.12), hp: -12, prs_fix: 1 } }, ng: { text: "벽지 아래까지 물이 찼다. 결국 예약을 옮겼다.", eff: { prs_cash: -m(u, 0.25), hp: -12, prs_rating: -0.06 } } },
@@ -259,8 +264,8 @@ const ORD = { early: 0, mid: 1, crisis: 1, late: 2 };
 function pickEvent(s, r) {
   const X = s.sx.pr, L = evList(s).filter((e) => { if (!TAKEOVER && e.id[0] === "j") return false; try { return !!e.ok(); } catch (x) { return false; } });
   const fresh = L.filter((e) => !X.seen.includes(e.id));
-  // 꼭 그때 나와야 하는 것: 첫 지점 검수, 셀프 공사, 조건이 걸린 후속 위기(리뷰 작업·미성년자)
-  let e = null; for (const id of ["s01", "s02", "j01", "j03", "j14", "c01", "c02", "c07"]) { e = fresh.find((x) => x.id === id); if (e) break; } e = e || null;
+  // 꼭 그때 나와야 하는 것: 첫 지점 검수, 셀프 공사, 조건이 걸린 후속 위기(리뷰 작업·몰래 한 상업 촬영)
+  let e = null; for (const id of ["s01", "s02", "j01", "j03", "j14", "c01", "n03", "c07"]) { e = fresh.find((x) => x.id === id); if (e) break; } e = e || null;
   if (e && s.t - X.evT < 1) e = null;
   if (!e && fresh.length && s.t - X.evT >= 2 && r.chance(0.3)) {
     const lo = Math.min(...fresh.map((x) => ORD[x.ph]));
@@ -309,8 +314,8 @@ function coachMonth(s, X, open, notes, scenes) {
   // 2) 확장: 하나만 운영하면 위험이 한 곳에 몰린다
   const n = P.rooms.length, first = open.slice().sort((a, b) => b.months - a.months)[0];
   const setupNew = P.rooms.find((x) => x.status === "setup" && !X.cw["w" + x.id]);
-  if (setupNew && first && first !== setupNew && !PR.stable(first) && open.length <= 1) { X.cw["w" + setupNew.id] = s.t; say(`${first.name}이 아직 자리 잡기 전이에요(6달 흑자 전). 이제 월세가 두 곳에서 같이 나가요. 비수기 대비금(월세 4달 치+생활비 2달 치 ${won(PR.reserveNeed(s))})부터 확인해요.`); }
-  if (n === 1 && PR.stable(first) && (X.cw.two === undefined || (s.t - X.cw.two >= 8 && (X.cw.twoN || 0) < 3))) { X.cw.two = s.t; X.cw.twoN = (X.cw.twoN || 0) + 1; say(`${first.name}이 6달 넘게 흑자예요. 이제 2호점을 볼 때예요. 방 하나면 공실·월세·청소 위험이 전부 한 곳에 걸려요. 두 곳부터는 겹친 예약을 옆 방으로 넘기고 청소·소모품·보험 같은 공용 비용을 나눠 써요(묶음 효과: 예약 +4%, 관리비 −7%).`); }
+  if (setupNew && first && first !== setupNew && !PR.stable(first) && open.length <= 1) { X.cw["w" + setupNew.id] = s.t; say(`${jo(first.name, "이", "가")} 아직 자리 잡기 전이에요(6달 흑자 전). 이제 월세가 두 곳에서 같이 나가요. 비수기 대비금(월세 4달 치+생활비 2달 치 ${won(PR.reserveNeed(s))})부터 확인해요.`); }
+  if (n === 1 && PR.stable(first) && (X.cw.two === undefined || (s.t - X.cw.two >= 8 && (X.cw.twoN || 0) < 3))) { X.cw.two = s.t; X.cw.twoN = (X.cw.twoN || 0) + 1; say(`${jo(first.name, "이", "가")} 6달 넘게 흑자예요. 이제 2호점을 볼 때예요. 방 하나면 공실·월세·청소 위험이 전부 한 곳에 걸려요. 두 곳부터는 겹친 예약을 옆 방으로 넘기고 청소·소모품·보험 같은 공용 비용을 나눠 써요(묶음 효과: 예약 +4%, 관리비 −7%).`); }
   const B = PR.bundle(s);
   if (B.n >= 2 && !X.cw.b2) { X.cw.b2 = s.t; say(`두 곳이 되면서 묶음 효과가 켜졌어요: 예약 +${Math.round(B.occ * 100)}%, 관리비 −${Math.round(B.cost * 100)}%. 통합 예약관리를 켜면 예약이 2%p 더 붙어요.`); }
   if (n === 2 && open.length === 2 && open.every(PR.stable) && !X.cw.three) { X.cw.three = s.t; say("두 곳 다 안정됐어요. 세 곳이면 관리비가 12%까지 줄고, 운영 매니저를 둘 수 있어요. 무리하지 말고 통장에 비수기 대비금이 있을 때만요."); }
@@ -393,6 +398,7 @@ export default {
       if (k === "instant") X.instant = true; else if (k === "noinstant") X.instant = false;
       else if (k === "fake") X.fake = s.t; else if (k === "nofake") X.fake = false; else if (k === "fakeDone") X.fake = true;
       else if (k === "teen") X.teen = s.t; else if (k === "noteen") X.teen = false; else if (k === "teenDone") X.teen = true;
+      else if (k === "shoot") X.shoot = s.t; else if (k === "noshoot") X.shoot = false; else if (k === "shootDone") X.shoot = true;
       else if (k === "pump") X.pump = true;
       else if (k === "marble") X.marble = true; else if (k === "wood") X.marble = false;
       else if (k === "wait") X.safety = s.t; else if (k === "safe") X.safety = true;
@@ -412,7 +418,7 @@ export default {
     { key: "prs_lv3", title: "토요일 7시 만석", test: (s) => (s.pr?.lv || 0) >= 3,
       lines: ["달력의 토요일 저녁 칸이 석 달 치 다 찼다.", "월세를 내고도 150만이 남았다. 첫 달 0원이던 통장이 생각났다."] },
     { key: "prs_payback", title: "본전", test: (s) => { const X = s.sx?.pr; return !!X && X.inv1 > 0 && X.cum >= X.inv1; },
-      lines: ["누적 이익이 1호점에 넣은 돈을 넘었다. 이제부터 버는 건 진짜 내 돈이다.", "보증금·공사비·중고 가구 영수증 뭉치를 상자에 넣고 테이프를 붙였다."] },
+      lines: ["누적 이익이 1호점에 넣은 돈을 넘었다. 소파도 빔프로젝터도 이제 값을 다 치렀다.", "보증금·공사비·중고 가구 영수증 뭉치를 상자에 넣고 테이프를 붙였다."] },
     { key: "prs_lv4", title: "컨셉 2호점", test: (s) => (s.pr?.lv || 0) >= 4,
       lines: ["두 번째 열쇠를 받았다. 이번엔 실수 목록부터 적고 시작했다.", "방음, 화장실, 주차, 건물주. 1호점이 가르쳐 준 네 단어."] },
     { key: "prs_lv5", title: "공간 사업가", test: (s) => (s.pr?.lv || 0) >= 5,

@@ -14,7 +14,7 @@ function css() {
   if (cssDone || typeof document === "undefined") return; cssDone = true;
   const s = document.createElement("style"); s.id = "hidcss";
   s.textContent = `.hdbox{padding:7px 10px;margin-bottom:8px;font-size:12px}
-.hdbox summary{cursor:pointer;list-style:none;display:flex;gap:6px;align-items:center;color:var(--muted);opacity:.85}
+.hdbox summary{cursor:pointer;list-style:none;display:flex;gap:6px;align-items:center;color:var(--muted);opacity:.85;min-height:40px;margin:-7px 0}
 .hdbox summary::-webkit-details-marker{display:none}
 .hdbox .hd-q{font-weight:800;letter-spacing:1px;color:var(--gold);opacity:.7}
 .hdbox .hd-k{margin-left:auto;font-size:11px}
@@ -28,11 +28,11 @@ function css() {
 }
 export function hidBox(S, k) {
   const h = hidInfo(S, k); if (!h) return ""; css();
-  if (h.open) return `<div class="card hdbox open">🗝 <b>히든 길 · ${esc(h.n)}</b><span class="tiny muted">${h.on ? "열림" + (h.until != null ? ` · ${h.until}달 남음` : "") : h.pause ? `위기 · ${h.pause}달 쉼` : "효과 끝"}</span><div class="hd-t" style="flex-basis:100%">${esc(h.rew)}</div></div>`;
+  if (h.open) return `<div class="card hdbox open">🗝 <b>히든 길 · ${esc(h.n)}</b><span class="tiny muted">${h.on ? "열림" + (h.until != null ? ` · ${h.until}달 남음` : "") : h.pause ? `위기 · ${h.pause}달 쉼` : "효과 끝"}</span><div class="hd-t" style="flex-basis:100%">${esc(h.rew)}</div>${h.on ? `<div class="hd-t" style="flex-basis:100%">따로 누를 것은 없어요. 이 보드에 저절로 적용돼요.</div>` : ""}</div>`;
   const rows = h.conds.map((c) => `<li class="${c.ok ? "ok" : ""}"><b>${c.ok ? "✓" : "·"}</b><span>${esc(c.t)}</span><span>${esc(c.prog)}</span></li>`).join("");
   const tip = h.rev < h.m ? "??? 조건은 스승을 만나면 하나씩 보여요" : "조건을 다 채우면 문이 열려요";
   const tr = h.trend ? `<div class="hd-t">다음 유행 짐작: ${esc(h.trend)}${h.left != null ? ` · 약 ${h.left}달 뒤` : ""} (30%는 헛다리)</div>` : "";
-  return `<details class="card hdbox"><summary><span class="hd-q">???</span><span>히든 길</span><span class="hd-k">조건 ${h.k}/${h.m}</span></summary><ul>${rows}</ul>${tr}<div class="hd-t">${tip}</div></details>`;
+  return `<details class="card hdbox"><summary><span class="hd-q">???</span><span>히든 길 · 낌새를 느꼈어요</span><span class="hd-k">조건 ${h.k}/${h.m} ▾</span></summary><ul>${rows}</ul>${tr}<div class="hd-t">${tip}</div></details>`;
 }
 
 // ───────── 시험 ─────────

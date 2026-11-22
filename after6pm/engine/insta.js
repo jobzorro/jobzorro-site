@@ -135,7 +135,7 @@ export function ens(s) {
     if (I.niche && !I.cc) I.cc = { topic: OLD_TOPIC[I.niche] || "daily", tone: "film", fmt: "photo", face: I.face ? "face" : "hand" };
     I.plan = 2; I.cons = I.niche ? 55 : 50; I.ccAge = I.niche ? 8 : 0; I.v = 2;
   }
-  if (!I.seed) I.seed = hashStr(String(s.rs?.v ?? 0) + (s.me?.name || "") + "ins") || 7;
+  if (!I.seed) I.seed = hashStr(String(s.seed ?? s.rs?.v ?? 0) + (s.me?.name || "") + "ins") || 7; // 버그 10: 판 시드에서(난수 진행 상태는 달마다 달라진다)
   if (!I.ev) I.ev = { seen: {}, t: -99 };
   if (!I.met) I.met = {};
   ensF30(I);
@@ -583,7 +583,7 @@ const CK = (t, stat, dc, ok, ng) => ({ t, check: { stat, dc }, ok: { text: ok[0]
 function collabScene(s, r, who) {
   const c = CHAR[who], I = s.ins, u = Math.round(dealPay(s) * 0.4);
   const big = (CELEBS[who]?.minF || 0) >= 20000;
-  return EV("collab", `콜라보 · ${c?.name || "유명인"}`, `${c?.job || ""} ${c ? jo(c.name, "과", "와") : "유명인과"} 촬영 날. 카메라가 돌기 전에 그가 내 피드를 넘겨 보며 말했다. "이 계정은 색이 분명해서 좋아요. 그거 지켜요."`, [
+  return EV("collab", `콜라보 · ${c?.name || "유명인"}`, `${CELEBS[who]?.role ? CELEBS[who].role + " " : ""}${c ? jo(c.name, "과", "와") : "유명인과"} 촬영 날. 카메라가 돌기 전에 그가 내 피드를 넘겨 보며 말했다. "이 계정은 색이 분명해서 좋아요. 그거 지켜요."`, [
     C("내 컨셉 톤으로 같이 찍자고 제안한다", { meet: who, aff: 10, fp: big ? 14 : 10, fcap: big ? 12000 : 7000, fadd: 300, cons: 3, cine: "in_collab", cineTitle: `${c ? jo(c.name, "과", "와") : "유명인과"} 한 컷`, cineText: "같은 프레임에 선 순간, 알림이 멈추지 않았다." }, "둘 다 만족한 컷이 나왔다."),
     C("상대 스타일에 맞춰 찍는다", { meet: who, aff: 12, fp: big ? 16 : 12, fcap: big ? 14000 : 8000, fadd: 300, cons: -8, cine: "in_collab", cineTitle: `${c ? jo(c.name, "과", "와") : "유명인과"} 한 컷`, cineText: "그의 팬들이 내 계정으로 몰려왔다. 다만 피드가 조금 낯설다." }, "조회수는 컸다. 내 피드 같지는 않다."),
     C("사진 한 장만 남기고 사적인 대화를 나눈다", { meet: who, aff: 16, fp: 3, fcap: 2000, cash: 0 }, `"다음엔 일 얘기 말고 밥 먹어요." 연락처가 생겼다.`),
@@ -652,9 +652,11 @@ function evList(s, r) {
   const I = s.ins, f = I.f, pi = SYN.pi(s), u = Math.round(dealPay(s));
   const st = stageOf(I), cc = I.cc, hotK = Object.keys(HOTS).find((k) => HOTS[k].tp.includes(cc.topic)) || "roof";
   const celeb = Object.keys(CELEBS).find((id) => CHAR[id] && f >= CELEBS[id].minF && (!CELEBS[id].tp.length || CELEBS[id].tp.includes(cc.topic)) && s.t - (I.met[id] ?? -99) >= 10 && !(I.dm || []).some((d) => d.who === id && !d.done));
+  const accM = s.sx?.insta?.months || 0, oldTx = accM >= 36 ? "3년 전 올린 글" : accM >= 12 ? `${Math.floor(accM / 12)}년 전 올린 글` : "계정을 막 열었을 때 올린 글"; // 계정 나이에 맞춘다
+  const spot = { food: "카페", daily: "카페", fit: "헬스장", space: "쇼룸", travel: "게스트하우스 라운지", pet: "애견 카페", fashion: "편집숍", career: "스터디카페" }[cc.topic] || "카페";
   const L = [
     // ── 위기 ──
-    { id: "cv_old", w: 0.4 + I.ctrv / 25, ok: () => f >= 1500 && I.ctrv >= 15, mk: () => EV("cv_old", "박제된 옛 게시물", `3년 전 올린 글 캡처가 돌기 시작했다. 지금 컨셉과 정반대인 말. 논란 게이지 ${Math.round(I.ctrv)}. 댓글창이 빠르게 차오른다.`, [
+    { id: "cv_old", w: 0.4 + I.ctrv / 25, ok: () => f >= 1500 && I.ctrv >= 15, mk: () => EV("cv_old", "박제된 옛 게시물", `${oldTx} 캡처가 돌기 시작했다. 지금 컨셉과 정반대인 말. 논란 게이지 ${Math.round(I.ctrv)}. 댓글창이 빠르게 차오른다.`, [
       CK("사과문을 직접 쓴다", "write", 40 + Math.round(I.ctrv / 4), ["담백한 사과가 통했다. \"사람이 변할 수도 있지.\"", { ctrv: -20, fan: -2 }], ["변명처럼 읽혔다. 2차 캡처가 돌았다.", { ctrv: -6, fan: -6, fp: -4 }]),
       C("침묵하고 업로드를 이어 간다", { ctrv: -6, fp: -3, cons: 2 }, "한 달 지나자 조용해졌다. 몇몇은 떠났다."),
       CK("조목조목 반박한다", "talk", 55, ["논리에 팬들이 고개를 끄덕였다.", { ctrv: -10, fan: 6 }], ["싸움이 커졌다. 반박문까지 박제됐다.", { ctrv: 20, fp: -8, fan: -4 }]),
@@ -664,7 +666,7 @@ function evList(s, r) {
       CK("콜라보를 제안해 끌어안는다", "talk", 45, ["\"원조 등판\" 콜라보가 화제가 됐다.", { fp: 8, fcap: 5000, fan: 3 }], ["읽씹당했다. 그쪽 팬들이 나를 '시샘한다'고 했다.", { ctrv: 6, fp: -2 }]),
       C("신고하고 기다린다", { ctrv: 2, fan: 1 }, "몇 주 뒤 계정이 비공개로 바뀌었다."),
     ], { rec: 0 }) },
-    { id: "cv_algo", w: 0.6, ok: () => f >= 800 && !(I.algoHit && I.algoHit.until > s.t), mk: () => EV("cv_algo", "알고리즘 개편", `플랫폼이 '${FMTS[cc.fmt].n}' 노출을 줄인다고 발표했다. 반년쯤 내 게시물 도달이 반토막 날 수 있다.`, [
+    { id: "cv_algo", w: 0.6, ok: () => f >= 800 && !(I.algoHit && I.algoHit.until > s.t), mk: () => EV("cv_algo", "노출 축소 공지", `플랫폼이 '${FMTS[cc.fmt].n}' 노출을 줄인다고 발표했다. 반년쯤 내 게시물 도달이 반토막 날 수 있다.`, [
       C(`포맷을 ${jo(FMTS[cc.fmt === "reels" ? "photo" : "reels"].n, "으로")} 바꾼다`, { fmtTo: cc.fmt === "reels" ? "photo" : "reels", cons: -10 }, "새 포맷이 낯설다. 그래도 도달은 지켰다."),
       C("버틴다: 내 팬은 포맷이 아니라 나를 본다", { algo: 1, fan: 4 }, "도달은 줄었지만 남은 사람들은 더 끈끈해졌다."),
     ], { rec: I.fan >= 60 ? 1 : 0 }) },
@@ -673,11 +675,12 @@ function evList(s, r) {
       C("약속을 한 단계 낮춘다", { plan: I.plan === 5 ? 3 : 2, streakHalf: 1, tired: -10, mental: 6 }, "주 2~3회면 숨이 쉬어진다."),
       C("버틴다", { tired: -4, mental: -8 }, "또 캡션을 썼다. 거울 속 얼굴이 낯설다."),
     ], { rec: s.mental < 45 ? 0 : 1 }) },
-    { id: "cv_boss", w: 2, ok: () => cc.face === "face" && company(s) && f >= 3000 && (s.co.eye || 0) >= 25, mk: () => EV("cv_boss", "팀장이 내 릴스를 봤다", `점심시간, 팀장이 휴대폰을 내밀었다. "이거 ○○씨 맞죠?" 화면 속에서 내가 웃고 있다.`, [
-      CK("솔직하게 말하고 업무엔 지장 없다고 한다", "talk", 45, ["\"재밌네. 대신 업무 시간엔 안 돼요.\" 의외로 쿨했다.", { fan: 2 }], ["분위기가 싸해졌다. 다음 평가가 걱정이다.", { eye: 10 }]),
-      C("얼굴 공개를 접는다(손만 나오는 컨셉으로)", { face: "hand", cons: -15, fp: -6 }, "얼굴이 사라진 피드에 '무슨 일 있어요?' 댓글이 달렸다."),
-      C("모른 척 웃어넘긴다", { ctrv: 2, eye: 6 }, "팀장은 더 묻지 않았다. 대신 시선이 자주 느껴진다."),
-    ], { rec: (s.st.talk || 0) >= 45 ? 0 : 1 }) },
+    // 11-23: '팀장이 내 릴스를 봤다'(cv_boss)는 뺐다. 회사에 들키는 장면은 engine/caught.js 가 투잡별로 맡는다. 그 자리에 인별만의 골치를 넣었다
+    { id: "cv_rude", w: 0.8, ok: () => f >= 2000, mk: () => EV("cv_rude", "촬영 민폐 논란", `동네 커뮤니티에 사진이 올라왔다. ${spot} 통로에 삼각대를 펴고 조명까지 켠 내 뒷모습. 제목은 "요즘 인별 하는 사람들 왜 이래요". 댓글이 80개를 넘었다.`, [
+      C("찾아가 사과하고, 앞으로 촬영은 허락받고 한다고 올린다(스태미너 −3)", { hp: -3, ctrv: -8, fan: 3 }, "사장님이 사과 글에 직접 댓글을 달았다. \"다음엔 한가한 시간에 오세요.\""),
+      CK("다른 손님은 안 찍혔다고 해명한다", "talk", 50, ["원본 영상을 올리자 분위기가 돌아섰다.", { ctrv: -4, fan: 2 }], ["\"통로 막은 건 맞잖아요.\" 해명 글까지 캡처돼 퍼졌다.", { ctrv: 15, fp: -5, fan: -4 }]),
+      C("글이 묻히길 기다린다", { ctrv: 8, fp: -2 }, `글은 일주일 만에 묻혔다. 그 ${spot}에는 다시 못 간다.`),
+    ], { rec: 0 }) },
     // ── 인별 전용 ──
     { id: "hot", w: 1.4, ok: () => f >= 300, mk: () => { const k = r.pick(Object.keys(HOTS).filter((x) => HOTS[x].tp.includes(cc.topic)).concat([hotK])); const H = HOTS[k], fitH = H.tp.includes(cc.topic), cost = Math.round(H.cost * pi); const meet = celeb && r.chance(0.35) ? celeb : null;
       return EV("hot", `핫플 오픈 · ${H.n}`, `${jo(H.n, "이", "가")} 요즘 난리다. 오픈 시간 전부터 줄이 섰다고 한다. ${fitH ? "내 컨셉이랑 딱 맞는 곳." : "내 컨셉이랑은 조금 결이 다르다."}`, [

@@ -8,8 +8,10 @@ const pc = (x) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.round(Math.abs(x) *
 // inCard: '초반 고생 중' 카드 안에 한 줄로 합칠 때(v4.27 화면 정리)
 export function skillLine(S, k, inCard) {
   const q = skillInfo(S, k); if (!q || !q.learning) return "";
-  if (inCard) return `<div class="tiny skline" style="font-size:11px;margin-top:4px;color:var(--muted)"><b class="gold">배우는 기간</b> · 역량 ${q.N}/필요 ${q.M} · 수입 ${Math.round(q.mult * 100)}%${q.next ? ` · ${q.next} 되면 ↑` : ""}</div>`;
-  return `<div class="tiny skline" style="font-size:11px;margin:-2px 0 8px;color:var(--muted)"><b class="gold">배우는 기간</b> · 역량 ${q.N}/필요 ${q.M} · 수입 ${Math.round(q.mult * 100)}%<span style="opacity:.8"> (${esc(q.statN)} ${q.stat} + 경험 ${q.exp}${q.next ? ` · ${q.next} 되면 한 칸 ↑` : ""})</span></div>`;
+  // 화면 정리(v4.31): 결론(지금 수입 몇 %, 언제 오르나)만 먼저. 계산은 둘째 줄에 흐리게.
+  const head = `<b class="gold">배우는 기간</b> · 지금 수입 <b>${Math.round(q.mult * 100)}%</b>${q.next ? ` · 역량 ${q.next}이 되면 한 칸 올라요` : ""}`, sub = `지금 역량 ${q.N}(${esc(q.statN)} ${q.stat} + 경험 ${q.exp}) · ${q.M}이면 다 배운 거예요`;
+  if (inCard) return `<div class="tiny skline" style="font-size:11.5px;margin-top:4px;color:var(--muted)">${head}<div style="opacity:.75">${sub}</div></div>`;
+  return `<div class="tiny skline" style="font-size:11.5px;margin:-2px 0 8px;color:var(--muted)">${head}<div style="opacity:.75">${sub}</div></div>`;
 }
 export function marketBox(S, k, noSkill) {
   try { if (/-mktest/.test(location.hash) && !S.mk?.list?.length) marketDemo(S, k); } catch (e) {} // 시험용 해시

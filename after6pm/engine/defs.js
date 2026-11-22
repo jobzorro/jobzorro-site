@@ -4,7 +4,7 @@
 export const STATS = { talk: "말빨", write: "글쓰기", sense: "감각", mkt: "마케팅", hands: "손재주", num: "숫자", career: "커리어", charm: "매력", body: "체력", lang: "외국어" };
 export const STAT_KEYS = Object.keys(STATS);
 export const STAT_MAX = 200;
-export const STAT_CAP0 = 190, STAT_CAP_NG = 10, NG_GROW_T = [1, 1.2, 2.6]; // v4.28d 회차 천장: 1회차 190 → 2회차부터 200. 회차마다 성장·월 상한 +15%(3회차 +30%까지)
+export const STAT_CAP0 = 200, STAT_CAP_NG = 0, NG_GROW_T = [1, 1.2, 2.6]; // 11-23 결정: 천장은 회차와 상관없이 200(1회차 190 없앰). 회차마다 달라지는 것은 성장 속도·월 상한뿐
 // ───────── 능력치 성장(v4.28 개편) ─────────
 // 세 갈래: 공부형은 공부 효과 100%, 경험형 30%, 생활형 0%(공부 목록에서 빠짐)
 export const STAT_KIND = { write: "study", num: "study", lang: "study", mkt: "study", talk: "exp", career: "exp", hands: "exp", sense: "exp", charm: "life", body: "life" };
@@ -359,18 +359,18 @@ MOMENTS.push(
   ME("cs", "cs_end_mentor", "합격자 1,500명의 선생님", "good", (s) => s.cs.passes >= 1500,
     ["합격 캡처가 1,500장을 넘었다. 사진첩 폴더 이름을 '합격'으로 바꿨다.", "새벽 1시 \"저 붙었어요!!!\" 이 알림 하나로 10년을 버텼다."],
     "합격자 1,500명이 넘었다. 명절마다 \"선생님 덕분에\" 문자가 온다."),
-  ME("cs", "cs_end_night", "퇴근 후 첨삭 20년", "good", (s) => !(s.co.quit || s.co.fired) && s.hist.filter((h) => h.cs > 0).length >= 240,
-    ["퇴근 후 첨삭만 240달. 회사 사람들은 아직도 내 닉네임을 모른다.", "월급날과 첨삭 정산일이 같은 주에 온다. 둘 다 끊긴 적이 없다."],
-    "회사도 첨삭도 20년을 버텼다. 두 개의 명함은 끝까지 따로 들고 다녔다."),
+  ME("cs", "cs_end_night", "퇴근 후 첨삭 15년", "good", (s) => !(s.co.quit || s.co.fired) && s.hist.filter((h) => h.cs > 0).length >= 180, /* 11-23: 240달은 한 판(240달)에서 사실상 못 봄 → 180달 */
+    ["퇴근 후 첨삭만 180달. 회사 사람들은 아직도 내 닉네임을 모른다.", "월급날과 첨삭 정산일이 같은 주에 온다. 둘 다 끊긴 적이 없다."],
+    "회사도 첨삭도 15년을 버텼다. 두 개의 명함은 끝까지 따로 들고 다녔다."),
   ME("cs", "cs_end_refund", "환불 문자의 밤", "bad", (s) => (s.cs.refundAll || 0) >= 25 && (s.cs.refundAll || 0) >= (s.cs.clients || 0) * 0.15, /* v4.28 비율 조건 */
     ["환불 25건. \"기대했는데 아쉬워요\" 한 줄이 스물다섯 번 잠을 깨웠다.", "가격만 올리고 실력은 그대로였다. 크멍 별점이 4점 밑으로 내려갔다."],
     "환불 문자에 잠을 깬 밤이 많았다. 가격보다 실력을 먼저 올렸어야 했다."),
   ME("insta", "in_end_100k", "팔로워 30만", "good", (s) => (s.ins.peak || s.ins.f || 0) >= 300000,
     ["팔로워 30만. 지하철에서 누가 내 릴스를 보고 있었다. 모른 척했다.", "숫자 옆에 'K'가 붙었다. 협찬 DM은 이제 하루에 열 통이다."],
     "인별 팔로워 30만. 계정은 아직 살아 있고, 가끔 옛날 릴스가 다시 돈다."),
-  ME("insta", "in_end_gong", "공구 사장님", "good", (s) => (s.ins.gongN || 0) >= 72,
-    ["공동구매 일흔두 번째. 18년 동안 석 달에 한 번. 택배사 기사님이 내 이름을 외웠다.", "배송 문의 DM 400개를 새벽 2시에 다 읽었다. 거실은 이제 창고다."],
-    "공동구매를 일흔 번 넘게 열었다. 거실은 끝내 창고에서 돌아오지 못했다."),
+  ME("insta", "in_end_gong", "공구 사장님", "good", (s) => (s.ins.gongN || 0) >= 40, /* 11-23: 72회 → 40회 */
+    ["공동구매 마흔 번째. 10년 동안 석 달에 한 번. 택배사 기사님이 내 이름을 외웠다.", "배송 문의 DM 400개를 새벽 2시에 다 읽었다. 거실은 이제 창고다."],
+    "공동구매를 마흔 번 넘게 열었다. 거실은 끝내 창고에서 돌아오지 못했다."),
   ME("insta", "in_end_ghost", "알고리즘이 떠난 계정", "bad", (s) => (s.ins.peak || 0) >= 5000 && s.ins.f <= s.ins.peak * 0.5,
     ["팔로워가 최고의 절반이 됐다. 같은 시간에 올려도 좋아요가 3분의 1이다.", "알고리즘은 이유를 말해 주지 않았다. 나는 매일 같은 시간에 올렸다."],
     "알고리즘은 떠났지만 기록은 남았다. 그 계정을 지우지는 않았다."),
@@ -408,10 +408,10 @@ export const TRAITS = [
     hid: [H("co", "회사 스트레스를 덜 받는다(매달 멘탈 +1)", { workMental: 1 }), H("cs", "블로그 효과 +20%", { blogMult: 1.2 }), H("pr", "현장에 잘 안 가서 사고 피해 +20%", { damageMult: 1.2 }), H("webnovel", "웹소설 연재 스태미너 소모 −1", { wnHp: -1 })] },
   { id: "meticulous", g: "일", n: "꼼꼼이", line: "가계부를 엑셀로 쓴다", pro: "숫자 +8", con: "감각 성장 −20%", m: { stat: { num: 8 }, growMult: { sense: 0.8 } }, hint: ["평가", "파손", "첨삭", "정산"],
     hid: [H("co", "연말 평가가 한 칸 위로 나올 확률 +", { gradeBonus: 0.25 }), H("pr", "파티룸 파손·사고 피해 −30%", { damageMult: 0.7 }), H("cs", "첨삭 실수가 없다: 합격률 +3%p", { passBonus: 0.03 }), H("ucafe", "무인카페 먹튀·정산 손실 −50%", { ucTheft: 0.5 })] },
-  { id: "goldhand", g: "손", n: "금손", line: "다있소 재료로 백화점 느낌", pro: "손재주 +10", con: "말빨 성장 −20%", m: { stat: { hands: 10 }, growMult: { talk: 0.8 } }, hint: ["행사", "셀프 공사", "카드뉴스", "굿즈"],
-    hid: [H("co", "회사 행사 준비에 차출된다: 성과 +10%", { perfMult: 1.1 }), H("pr", "셀프 인테리어 별점 +0.1", { selfStar: 0.1 }), H("cs", "카드뉴스를 직접 만든다: 인별 +15%", { snsMult: 1.15 }), H("goods", "굿즈 제작 단가 −20%")] },
-  { id: "writer", g: "글", n: "글쟁이", line: "까톡도 퇴고한다", pro: "글쓰기 +10", con: "마케팅 −3으로 시작", m: { stat: { write: 10, mkt: -3 } }, hint: ["보고서", "블로그", "보도자료", "연재"],
-    hid: [H("co", "보고서로 성과 +10%", { perfMult: 1.1 }), H("cs", "블로그 효과 +30%", { blogMult: 1.3 }), H("press", "보도자료 단가 +20%"), H("webnovel", "웹소설 작품 크기 +10%", { wnCap: 1.1 })] },
+  { id: "goldhand", g: "손", n: "금손", line: "다있소 재료로 백화점 느낌", pro: "손재주 +10", con: "말빨 성장 −20%", m: { stat: { hands: 10 }, growMult: { talk: 0.8 } }, hint: ["행사", "셀프 공사", "카드뉴스", "기계 수리"],
+    hid: [H("co", "회사 행사 준비에 차출된다: 성과 +10%", { perfMult: 1.1 }), H("pr", "셀프 인테리어 별점 +0.1", { selfStar: 0.1 }), H("cs", "카드뉴스를 직접 만든다: 인별 +15%", { snsMult: 1.15 }), H("ucafe", "기계를 손수 고친다: 무인카페 일 스태미너 소모 −1", { ucHp: -1 })] },
+  { id: "writer", g: "글", n: "글쟁이", line: "까톡도 퇴고한다", pro: "글쓰기 +10", con: "마케팅 −3으로 시작", m: { stat: { write: 10, mkt: -3 } }, hint: ["보고서", "블로그", "리포트", "연재"],
+    hid: [H("co", "보고서로 성과 +10%", { perfMult: 1.1 }), H("cs", "블로그 효과 +30%", { blogMult: 1.3 }), H("tutoring", "수업 리포트가 읽힌다: 화상과외 소개 +10%", { tuRefer: 1.1 }), H("webnovel", "웹소설 작품 크기 +10%", { wnCap: 1.1 })] },
   { id: "spotlight", g: "사람", n: "관종", line: "인생은 콘텐츠다", pro: "매력 +8", con: "혼자 있는 시간엔 멘탈 −1", m: { stat: { charm: 8 }, soloMental: -1 }, hint: ["눈치", "영상", "무대", "피드"],
     hid: [H("co", "회사 눈치 1.5배", { eyeMult: 1.5 }), H("cs", "인별·너튜브 +30%", { snsMult: 1.3 }), H("cs", "특강 효과 +20%", { lectureMult: 1.2 }), H("insta", "인별 릴스 대박 확률 2배", { instaViral: 2 })] },
   { id: "earlybird", g: "생활", n: "새벽형 인간", line: "5시 기상, 미라클 모닝", pro: "매달 행동력 +1", con: "스태미너 자연 회복 −3", m: { apBonus: 1, hpRec: -3 }, hint: ["출근", "새벽 청소", "집필", "오픈"],
@@ -421,23 +421,23 @@ export const TRAITS = [
   { id: "iron", g: "몸", n: "체력왕", line: "주 6일 헬스", pro: "체력 +12, 행동할 때 스태미너 소모 −25%", con: "글쓰기 성장 −15%", m: { stat: { body: 12 }, hpCostMult: 0.75, growMult: { write: 0.85 } }, hint: ["야근", "셀프 공사", "강의", "운동 인증"],
     hid: [H("co", "야근 시즌에도 성과가 덜 떨어진다", { perfDecay: 0.7 }), H("pr", "셀프 인테리어 별점 +0.05", { selfStar: 0.05 }), H("cs", "강의·특강 스태미너 −2", { lectureHp: -2 }), H("insta", "운동 계정이면 팔로워 +30%", { instaFit: 1.3 })] },
   { id: "companyman", g: "일", n: "회사형 인간", line: "팀장님이 먼저 찾는 사람", pro: "커리어 +6", con: "투잡 행동 스태미너 소모 +1", m: { stat: { career: 6 }, sideHp: 1 }, hint: ["승진", "평가", "부업", "과외"],
-    hid: [H("co", "회사 성과 +50%", { perfMult: 1.5 }), H("co", "승진 심사에 유리", { promoBonus: 0.15 }), H("cs", "부업에 시큰둥: 신규 문의 −10%", { leadMult: 0.9 }), H("tutoring", "화상과외 학부모 신뢰 +")] },
+    hid: [H("co", "회사 성과 +50%", { perfMult: 1.5 }), H("co", "승진 심사에 유리", { promoBonus: 0.15 }), H("cs", "부업에 시큰둥: 신규 문의 −10%", { leadMult: 0.9 }), H("tutoring", "화상과외 학부모 신뢰 +: 시범수업 전환 +5%p", { tuTrust: 0.05 })] },
   { id: "familyfirst", g: "생활", n: "가정적", line: "저녁 7시엔 집에 있다", pro: "가족 행복이 덜 깎인다(−40%)", con: "가족과 시간을 안 보내면 멘탈 −3", m: { familyDecay: 0.6, needFamily: 3 }, hint: ["회식", "동네", "학부모", "가족 손님"],
     hid: [H("co", "회식을 빠진다: 팀장 호감 −20%", { bossMult: 0.8 }), H("pr", "동네 단골이 별점을 지켜 준다(하락 −20%)", { ratingGuard: 0.8 }), H("cs", "학부모 소개 +30%", { referMult: 1.3 }), H("airbnb", "가족 손님 후기: 숙소 별점 +0.03", { abStar: 0.03 })] },
-  { id: "romantic", g: "사람", n: "금사빠", line: "눈 마주치면 이미 결혼식장", pro: "매력 +5, 연애 호감 +30%", con: "연인이 있으면 투잡 행동 때 멘탈 −1", m: { stat: { charm: 5 }, romanceMult: 1.3, loverSideMental: -1 }, hint: ["사내 소문", "브라이덜", "공감", "꽃"],
-    hid: [H("co", "사내 연애 소문: 회사 눈치 +10%", { eyeMult: 1.1 }), H("pr", "감성 인테리어: 별점 +0.05", { star: 0.05 }), H("cs", "공감 상담: 전환율 +3%p", { convBonus: 0.03 }), H("bouquet", "웨딩 부케 단가 +20%")] },
+  { id: "romantic", g: "사람", n: "금사빠", line: "눈 마주치면 이미 결혼식장", pro: "매력 +5, 연애 호감 +30%", con: "연인이 있으면 투잡 행동 때 멘탈 −1", m: { stat: { charm: 5 }, romanceMult: 1.3, loverSideMental: -1 }, hint: ["사내 소문", "브라이덜", "공감", "연애운"],
+    hid: [H("co", "사내 연애 소문: 회사 눈치 +10%", { eyeMult: 1.1 }), H("pr", "감성 인테리어: 별점 +0.05", { star: 0.05 }), H("cs", "공감 상담: 전환율 +3%p", { convBonus: 0.03 }), H("tarot", "연애운 상담에 진심이다: 타로 문의 +10%", { trLead: 1.1 })] },
   { id: "nightconsult", g: "조로의 길", n: "낮엔 기획, 밤엔 컨설턴트", line: "13년 동안 회사를 다니며 투잡을 했다", pro: "숫자 +5, 글쓰기 +5, 커리어 +6", con: "투잡 행동 스태미너 소모 +1", m: { stat: { num: 5, write: 5, career: 6 }, sideHp: 1 }, hint: ["눈치", "자소서", "성장", "과외"],
     hid: [H("co", "회사 눈치 −30%", { eyeMult: 0.7 }), H("cs", "합격률 +5%p", { passBonus: 0.05 }), H("cs", "첨삭할 때마다 능력치가 더 오른다", { workGrow: 0.4 }), H("tutoring", "합격 노하우: 화상과외 소개 +15%", { tuRefer: 1.15 })] },
   { id: "transfer", g: "조로의 길", n: "환승 이직러", line: "떨어질 데 없이 갈아탄다", pro: "커리어 +5, 말빨 +3", con: "숫자 성장 −10%", m: { stat: { career: 5, talk: 3 }, growMult: { num: 0.9 } }, hint: ["헤드헌터", "면접", "승진", "경력 고객"],
     hid: [H("co", "헤드헌터 연락이 자주 온다", { headhunt: 1 }), H("co", "재취업 성공률 2배", { rejobMult: 2 }), H("co", "승진이 조금 느리다", { promoBonus: -0.08 }), H("cs", "Lv4부터 컨설팅 단가 +10%", { csLv4Price: 1.1 })] },
   { id: "noprequit", g: "조로의 길", n: "선퇴사 금지론자", line: "마음이 뜬 순간의 행동은 다 보인다", pro: "커리어 +4, 글쓰기 +2", con: "쉬기 효과 −10%", m: { stat: { career: 4, write: 2 }, restMult: 0.9 }, hint: ["버티기", "성과", "사직서", "소개"],
     hid: [H("co", "회사에 다니는 동안 매달 멘탈 +2", { workMental: 2 }), H("co", "성과가 절반만 떨어진다", { perfDecay: 0.5 }), H("co", "환승 조건 전에는 퇴사 버튼이 잠긴다", { quitLock: true }), H("cs", "합격 고객 소개 +20%", { referMult: 1.2 })] },
-  { id: "kakaoowner", g: "조로의 길", n: "오픈채팅방 방장", line: "방 다섯 개, 인원 5천 명", pro: "말빨 +5", con: "알림 지옥: 매달 멘탈 −1", m: { stat: { talk: 5 }, monthMental: -1 }, hint: ["채팅방", "운영", "소문", "오픈 알림"],
-    hid: [H("cs", "오픈채팅 300명으로 시작", { kakaoStart: 300 }), H("cs", "오픈채팅방 효과 +50%", { kakaoMult: 1.5 }), H("co", "회사에 소문이 난다: 눈치 +15%", { eyeMult: 1.15 }), H("popup", "팝업 오픈 첫날 손님 +")] },
-  { id: "sheepherd", g: "조로의 길", n: "양치기", line: "많이 써 본 사람이 결국 붙는다", pro: "글쓰기 +6, 글쓰기 성장 +20%", con: "감각 성장 −15%", m: { stat: { write: 6 }, growMult: { write: 1.2, sense: 0.85 } }, hint: ["반복", "합격", "지침", "글 50개"],
-    hid: [H("cs", "첨삭할 때마다 능력치가 더 오른다", { workGrow: 0.6 }), H("cs", "합격률 +5%p", { passBonus: 0.05 }), H("cs", "같은 일을 반복하면 멘탈 −1", { csWorkMental: -1 }), H("tistory", "글 50개부터 방문자 +30%")] },
-  { id: "infowar", g: "조로의 길", n: "정보 싸움꾼", line: "취업은 정보 싸움, 메타인지 싸움", pro: "숫자 +4, 시대 사건 충격 −30%", con: "쉬기 효과 −20%", m: { stat: { num: 4 }, eraMult: 0.7, restMult: 0.8 }, hint: ["앱 조사", "평가", "상담", "부동산"],
-    hid: [H("pr", "앱 조사가 숨은 정보 2개를 공개", { appReveal: 2 }), H("co", "평가 등급이 위로 나올 확률 +", { gradeBonus: 0.15 }), H("cs", "상담 전환율 +2%p", { convBonus: 0.02 }), H("realtyblog", "부동산 블로그 유입 +25%")] },
+  { id: "kakaoowner", g: "조로의 길", n: "오픈채팅방 방장", line: "방 다섯 개, 인원 5천 명", pro: "말빨 +5", con: "알림 지옥: 매달 멘탈 −1", m: { stat: { talk: 5 }, monthMental: -1 }, hint: ["채팅방", "운영", "소문", "첫 팔로워"],
+    hid: [H("cs", "오픈채팅 300명으로 시작", { kakaoStart: 300 }), H("cs", "오픈채팅방 효과 +50%", { kakaoMult: 1.5 }), H("co", "회사에 소문이 난다: 눈치 +15%", { eyeMult: 1.15 }), H("insta", "방 사람들이 먼저 팔로우한다: 인별 팔로워 증가 +10%", { instaMult: 1.1 })] },
+  { id: "sheepherd", g: "조로의 길", n: "양치기", line: "많이 써 본 사람이 결국 붙는다", pro: "글쓰기 +6, 글쓰기 성장 +20%", con: "감각 성장 −15%", m: { stat: { write: 6 }, growMult: { write: 1.2, sense: 0.85 } }, hint: ["반복", "합격", "지침", "매일 5천 자"],
+    hid: [H("cs", "첨삭할 때마다 능력치가 더 오른다", { workGrow: 0.6 }), H("cs", "합격률 +5%p", { passBonus: 0.05 }), H("cs", "같은 일을 반복하면 멘탈 −1", { csWorkMental: -1 }), H("webnovel", "매일 쓰는 근육: 웹소설 연재 피로 −10%", { wnTired: 0.9 })] },
+  { id: "infowar", g: "조로의 길", n: "정보 싸움꾼", line: "취업은 정보 싸움, 메타인지 싸움", pro: "숫자 +4, 시대 사건 충격 −30%", con: "쉬기 효과 −20%", m: { stat: { num: 4 }, eraMult: 0.7, restMult: 0.8 }, hint: ["앱 조사", "평가", "상담", "후기 통계"],
+    hid: [H("pr", "앱 조사가 숨은 정보 2개를 공개", { appReveal: 2 }), H("co", "평가 등급이 위로 나올 확률 +", { gradeBonus: 0.15 }), H("cs", "상담 전환율 +2%p", { convBonus: 0.02 }), H("airbnb", "후기 데이터를 읽는다: 숙소 별점 +0.03", { abStar: 0.03 })] },
   { id: "lecturer", g: "조로의 길", n: "명강사", line: "강의 50회, 마이크만 잡으면 사람이 바뀐다", pro: "말빨 +10", con: "손재주 성장 −20%", m: { stat: { talk: 10 }, growMult: { hands: 0.8 } }, hint: ["발표", "특강", "목소리", "재등록"],
     hid: [H("cs", "특강·강의 효과 +40%", { lectureMult: 1.4 }), H("cs", "강의·특강 스태미너 소모 +3", { lectureHp: 3 }), H("co", "발표를 잘한다: 팀장 호감 +20%", { bossMult: 1.2 }), H("tutoring", "수업이 재밌다: 화상과외 학생 만족 +15%", { tuSat: 1.15 })] },
   { id: "author", g: "글", n: "책 쓰는 직장인", line: "저서 3권, 마감은 늘 새벽 3시", pro: "글쓰기 +8", con: "스태미너 자연 회복 −2", m: { stat: { write: 8 }, hpRec: -2 }, hint: ["마감", "전자책", "보고서", "완결"],
@@ -446,22 +446,22 @@ export const TRAITS = [
     hid: [H("pr", "파티룸 고정비 −5%", { prCost: 0.95 }), H("co", "평가 등급이 위로 나올 확률 +", { gradeBonus: 0.2 }), H("cs", "숫자만 보다 신규 문의 −5%", { leadMult: 0.95 }), H("chicken", "원가표를 본다: 튀김 품질 +0.02", { chFry: 0.02 })] },
   { id: "aesthete", g: "감각", n: "감각파", line: "카페 인테리어를 보면 견적이 나온다", pro: "감각 +10", con: "숫자 성장 −20%", m: { stat: { sense: 10 }, growMult: { num: 0.8 } }, hint: ["견적", "별점", "엑셀", "피드"],
     hid: [H("pr", "인테리어 비용 −10%", { interiorCost: 0.9 }), H("pr", "별점 +0.1", { star: 0.1 }), H("co", "엑셀이 약하다: 회사 성과 −5%", { perfMult: 0.95 }), H("insta", "피드 감성: 참여율 +30%", { instaSave: 1.3 })] },
-  { id: "thumbnail", g: "감각", n: "썸네일 장인", line: "제목보다 썸네일이 먼저다", pro: "감각 +5, 마케팅 +4", con: "글쓰기 성장 −10%", m: { stat: { sense: 5, mkt: 4 }, growMult: { write: 0.9 } }, hint: ["썸네일", "상세페이지", "완벽주의", "영상"],
-    hid: [H("cs", "인별·너튜브 효과 +25%", { snsMult: 1.25 }), H("cs", "크멍 상세페이지 +25%", { kmongMult: 1.25 }), H("cs", "완벽주의: 콘텐츠 만들 때 스태미너 +1", { contentHp: 1 }), H("aivideo", "AI 영상 클릭률 +")] },
-  { id: "brandfreak", g: "감각", n: "브랜딩 집착", line: "로고부터 만들고 시작한다", pro: "감각 +4, 마케팅 +5", con: "씀씀이 +5%", m: { stat: { sense: 4, mkt: 5 }, livingMult: 1.05 }, hint: ["2호점", "단가", "초기 비용", "팬덤"],
-    hid: [H("pr", "지점 2개부터 브랜드 후광 2배", { haloMult: 2 }), H("cs", "Lv4부터 컨설팅 단가 +15%", { csLv4Price: 1.15 }), H("pr", "초기 비용 +15%", { openCost: 1.15 }), H("goods", "굿즈 팬덤 +")] },
-  { id: "performance", g: "마케팅", n: "퍼포먼스 마케터", line: "ROAS 300% 아니면 끈다", pro: "마케팅 +10", con: "매력 성장 −15%", m: { stat: { mkt: 10 }, growMult: { charm: 0.85 } }, hint: ["광고", "수수료", "성과", "팝업"],
-    hid: [H("cs", "광고 효율 1.6배", { adsMult: 1.6 }), H("pr", "플랫폼 수수료 인상 피해 2배", { feeShock: 2 }), H("co", "숫자로 보고한다: 성과 +10%", { perfMult: 1.1 }), H("popup", "팝업 광고 효율 +")] },
+  { id: "thumbnail", g: "감각", n: "썸네일 장인", line: "제목보다 썸네일이 먼저다", pro: "감각 +5, 마케팅 +4", con: "글쓰기 성장 −10%", m: { stat: { sense: 5, mkt: 4 }, growMult: { write: 0.9 } }, hint: ["썸네일", "상세페이지", "완벽주의", "표지"],
+    hid: [H("cs", "인별·너튜브 효과 +25%", { snsMult: 1.25 }), H("cs", "크멍 상세페이지 +25%", { kmongMult: 1.25 }), H("cs", "완벽주의: 콘텐츠 만들 때 스태미너 +1", { contentHp: 1 }), H("webnovel", "표지와 제목이 클릭을 부른다: 웹소설 독자 소통 효과 +15%", { wnBuzz: 1.15 })] },
+  { id: "brandfreak", g: "감각", n: "브랜딩 집착", line: "로고부터 만들고 시작한다", pro: "감각 +4, 마케팅 +5", con: "씀씀이 +5%", m: { stat: { sense: 4, mkt: 5 }, livingMult: 1.05 }, hint: ["2호점", "단가", "초기 비용", "컵 홀더"],
+    hid: [H("pr", "지점 2개부터 브랜드 후광 2배", { haloMult: 2 }), H("cs", "Lv4부터 컨설팅 단가 +15%", { csLv4Price: 1.15 }), H("pr", "초기 비용 +15%", { openCost: 1.15 }), H("ucafe", "컵 홀더까지 로고를 맞춘다: 무인카페 단골 판매 +5%", { ucRepeat: 1.05 })] },
+  { id: "performance", g: "마케팅", n: "퍼포먼스 마케터", line: "ROAS 300% 아니면 끈다", pro: "마케팅 +10", con: "매력 성장 −15%", m: { stat: { mkt: 10 }, growMult: { charm: 0.85 } }, hint: ["광고", "수수료", "성과", "검색 광고"],
+    hid: [H("cs", "광고 효율 1.6배", { adsMult: 1.6 }), H("pr", "플랫폼 수수료 인상 피해 2배", { feeShock: 2 }), H("co", "숫자로 보고한다: 성과 +10%", { perfMult: 1.1 }), H("tarot", "검색 광고를 돌린다: 타로 손님 +5%", { trMult: 1.05 })] },
   { id: "viral", g: "마케팅", n: "바이럴 메이커", line: "밈은 내가 만든다", pro: "마케팅 +6, 매력 +3", con: "숫자 성장 −15%", m: { stat: { mkt: 6, charm: 3 }, growMult: { num: 0.85 } }, hint: ["대박", "구설수", "후광", "릴스"],
     hid: [H("cs", "대박 확률 2배(인별·너튜브·블로그)", { viralMult: 2 }), H("co", "구설수: 회사 눈치 1.3배", { eyeMult: 1.3 }), H("pr", "입소문 후광 1.3배", { haloMult: 1.3 }), H("insta", "릴스 대박 확률 2배", { instaViral: 2 })] },
-  { id: "copywriter", g: "글", n: "카피라이터", line: "한 줄로 지갑을 연다", pro: "글쓰기 +5, 마케팅 +5", con: "손재주 성장 −15%", m: { stat: { write: 5, mkt: 5 }, growMult: { hands: 0.85 } }, hint: ["전환율", "보고서", "블로그", "보도자료"],
-    hid: [H("cs", "상담 전환율 +4%p", { convBonus: 0.04 }), H("co", "제목 잘 뽑는 보고서: 성과 +5%", { perfMult: 1.05 }), H("cs", "블로그 효과 +10%", { blogMult: 1.1 }), H("press", "보도자료 채택률 +")] },
+  { id: "copywriter", g: "글", n: "카피라이터", line: "한 줄로 지갑을 연다", pro: "글쓰기 +5, 마케팅 +5", con: "손재주 성장 −15%", m: { stat: { write: 5, mkt: 5 }, growMult: { hands: 0.85 } }, hint: ["전환율", "보고서", "블로그", "제안서"],
+    hid: [H("cs", "상담 전환율 +4%p", { convBonus: 0.04 }), H("co", "제목 잘 뽑는 보고서: 성과 +5%", { perfMult: 1.05 }), H("cs", "블로그 효과 +10%", { blogMult: 1.1 }), H("vibe", "제안서 첫 줄이 다르다: 바이브코딩 단가 +5%", { vbPrice: 1.05 })] },
   { id: "crm", g: "사람", n: "단골 관리왕", line: "손님 이름과 생일을 다 외운다", pro: "말빨 +4, 매력 +4", con: "마케팅 성장 −15%", m: { stat: { talk: 4, charm: 4 }, growMult: { mkt: 0.85 } }, hint: ["별점", "소개", "신규", "쿠폰"],
     hid: [H("pr", "별점이 잘 안 떨어진다(−50%)", { ratingGuard: 0.5 }), H("cs", "합격 고객이 소개를 2배로 데려온다", { referMult: 2 }), H("cs", "신규 문의 −10%", { leadMult: 0.9 }), H("ucafe", "단골 쿠폰: 무인카페 판매 +8%", { ucRepeat: 1.08 })] },
   { id: "analyst", g: "일", n: "데이터 덕후", line: "엑셀 피벗이 취미", pro: "숫자 +8, 커리어 +2", con: "매력 성장 −15%", m: { stat: { num: 8, career: 2 }, growMult: { charm: 0.85 } }, hint: ["평가", "상권", "상세페이지", "코딩"],
-    hid: [H("co", "평가 등급이 위로 나올 확률 +", { gradeBonus: 0.2 }), H("pr", "앱 조사가 숨은 정보 2개를 공개", { appReveal: 2 }), H("cs", "크멍 상세페이지 +10%", { kmongMult: 1.1 }), H("vibe", "바이브코딩 완성 속도 +30%")] },
-  { id: "traveler", g: "몸", n: "역마살", line: "주말마다 KTX를 탄다", pro: "감각 +5, 체력 +5", con: "한곳에 오래 있으면 지친다(매달 멘탈 −1)", m: { stat: { sense: 5, body: 5 }, monthMental: -1 }, hint: ["지방 발령", "현장", "숙소", "공실"],
-    hid: [H("co", "지방 발령도 괜찮다(피해 절반)", { relocResist: 1 }), H("pr", "자리를 자주 비워 사고 피해 +10%", { damageMult: 1.1 }), H("airbnb", "여행자 마음을 안다: 숙소 별점 +0.03", { abStar: 0.03 }), H("shortstay", "단기임대 공실 −")] },
+    hid: [H("co", "평가 등급이 위로 나올 확률 +", { gradeBonus: 0.2 }), H("pr", "앱 조사가 숨은 정보 2개를 공개", { appReveal: 2 }), H("cs", "크멍 상세페이지 +10%", { kmongMult: 1.1 }), H("vibe", "바이브코딩 완성 속도 +30%", { vbSpeed: 1.3 })] },
+  { id: "traveler", g: "몸", n: "역마살", line: "주말마다 KTS를 탄다", pro: "감각 +5, 체력 +5", con: "한곳에 오래 있으면 지친다(매달 멘탈 −1)", m: { stat: { sense: 5, body: 5 }, monthMental: -1 }, hint: ["지방 발령", "현장", "숙소", "여행 피드"],
+    hid: [H("co", "지방 발령도 괜찮다(피해 절반)", { relocResist: 1 }), H("pr", "자리를 자주 비워 사고 피해 +10%", { damageMult: 1.1 }), H("airbnb", "여행자 마음을 안다: 숙소 별점 +0.03", { abStar: 0.03 }), H("insta", "여행지 사진이 쌓인다: 인별 팔로워 증가 +10%", { instaMult: 1.1 })] },
 ];
 export const DOMAIN_N = { co: "회사" }; // 투잡은 SIDEJOBS 이름을 쓴다
 
@@ -570,49 +570,52 @@ export const FIRE_TARGET = { single: 300000, married: 400000 }; // 30억(집 12�
 // ───────── 투잡 탐색 (21개, 지금은 파티룸·취업컨설팅만 플레이 가능) ─────────
 // type: 투잡연구소 유형. fit: 궁합 계산에 쓰는 능력치. cap: 시작 자본(만원). hours: 주당 시간. inc: 문서에 적힌 수익.
 export const SIDEJOBS = {
-  pr: { n: "파티룸", type: "투자", ic: "door", play: true, fit: ["num", "sense", "hands"], cap: "3,000만~", hours: "주 6~10시간", inc: "월 순수익 약 200만", line: "입지가 전부. 청소·민원은 덤.", hint: "모임 뒤풀이 장소를 빌려 본 적 있다면" },
-  cs: { n: "취업컨설팅", type: "전문성", ic: "pen", play: true, fit: ["career", "write", "talk"], cap: "거의 0", hours: "주 5~15시간", inc: "월 200~300만, 잘되면 연 1억+", line: "진입과 마케팅이 전부. 첫 후기는 지인에게서.", hint: "후배 자소서를 봐 준 적 있다면" },
-  insta: { n: "인별그램 인플루언서", type: "네트워크", ic: "cam", play: true, fit: ["sense", "mkt", "charm"], cap: "0", hours: "주 9시간", inc: "나노 → 마이크로 단계별", line: "팔로워보다 '저장'이 돈이 된다.", hint: "사진·운동 인증을 즐긴다면" },
-  tistory: { n: "티스토리 애드센스", type: "네트워크", ic: "pen", fit: ["write", "mkt", "num"], cap: "0", hours: "주 5시간", inc: "다수가 월 10만 미만", line: "검색 유입 싸움. 오래 버티는 사람이 이긴다.", hint: "글쓰기·코딩 모임에서" },
+  pr: { n: "파티룸", type: "투자", ic: "door", play: true, fit: ["num", "sense", "hands"], cap: "3,000만~", hours: "주 6~10시간", inc: "월 순수익 약 200만", line: "입지가 전부. 청소·민원은 덤.", hint: "러닝크루·와인·보드게임 모임 뒤풀이에서" },
+  cs: { n: "취업컨설팅", type: "전문성", ic: "pen", play: true, fit: ["career", "write", "talk"], cap: "거의 0", hours: "주 5~15시간", inc: "월 200~300만, 잘되면 연 1억+", line: "진입과 마케팅이 전부. 첫 후기는 지인에게서.", hint: "독서·글쓰기 모임, 멘토링 봉사에서" },
+  insta: { n: "인별그램 인플루언서", type: "네트워크", ic: "cam", play: true, fit: ["sense", "mkt", "charm"], cap: "0", hours: "주 9시간", inc: "나노 → 마이크로 단계별", line: "팔로워보다 '저장'이 돈이 된다.", hint: "러닝·클라이밍·사진 모임에서" },
+  tistory: { n: "티스터리 애드센서", type: "네트워크", ic: "pen", fit: ["write", "mkt", "num"], cap: "0", hours: "주 5시간", inc: "다수가 월 10만 미만", line: "검색 유입 싸움. 오래 버티는 사람이 이긴다.", hint: "글쓰기·코딩 모임에서" },
   realtyblog: { n: "부동산 블로그", type: "네트워크", ic: "bld", fit: ["num", "write", "mkt"], cap: "0", hours: "주 5시간", inc: "월 방문 1만이면 5~20만", line: "임장 다닐 핑계가 생긴다.", hint: "여행·집 구경을 좋아한다면" },
-  ucafe: { n: "무인카페", type: "노동", ic: "glass", play: true, fit: ["hands", "num", "sense"], cap: "5,000만~", hours: "주 7시간", inc: "월매출 330~450만, 이익률 30~40%", line: "기계가 일하고 나는 청소한다.", hint: "홈카페 취미에서" },
-  chicken: { n: "프랜차이즈 치킨", type: "투자", ic: "coin", fit: ["num", "talk", "hands"], cap: "1억~", hours: "주 20시간+", inc: "월 500~750만(영업이익 10~15%)", line: "알바가 그만두면 내가 튀긴다.", hint: "회사 선배의 은퇴 계획에서" },
+  ucafe: { n: "무인카페", type: "노동", ic: "glass", play: true, fit: ["hands", "num", "sense"], cap: "5,000만~", hours: "주 7시간", inc: "월매출 330~450만, 이익률 30~40%", line: "기계가 일하고 나는 청소한다.", hint: "홈카페·캠핑·플라워 클래스에서" },
+  chicken: { n: "프랜차이즈 치킨", type: "투자", ic: "coin", fit: ["num", "talk", "hands"], cap: "1억~", hours: "주 20시간+", inc: "월 500~750만(영업이익 10~15%)", line: "알바가 그만두면 내가 튀긴다.", hint: "러닝·클라이밍 뒤풀이, 쿠킹 클래스에서" },
   coffee: { n: "저가 프랜차이즈 커피", type: "투자", ic: "glass", fit: ["num", "talk", "hands"], cap: "1억~", hours: "주 15시간+", inc: "월 450~600만, BEP 약 3년", line: "최저임금이 오르면 내 월급이 내린다.", hint: "쿠킹·홈카페 클래스에서" },
   popup: { n: "팝업스토어", type: "투자", ic: "spark", fit: ["sense", "mkt", "talk"], cap: "1,000만~", hours: "몰아서 주 30시간", inc: "월 순이익 수백만(편차 큼)", line: "2주짜리 승부. 줄이 서면 대박.", hint: "와인·플라워·쿠킹 모임에서" },
   shortstay: { n: "단기공간·주택임대", type: "투자", ic: "bld", fit: ["num", "hands", "sense"], cap: "1,000만~", hours: "주 5시간", inc: "지역별 건 단위", line: "한 달 살기 손님을 받는다.", hint: "캠핑·여행 모임에서" },
-  airbnb: { n: "에어씨앤씨", type: "투자", ic: "bld", play: true, fit: ["lang", "sense", "hands"], cap: "2,000만~", hours: "주 6시간", inc: "월세 90만 기준 비용 구조", line: "후기 한 줄에 한 달이 갈린다.", hint: "캠핑·여행 모임에서" },
-  tutoring: { n: "화상과외", type: "전문성", ic: "video", fit: ["talk", "career", "write"], cap: "0", hours: "주 6시간", inc: "월 100~200만", line: "퇴근 후 화상 수업 두 타임.", hint: "멘토링 봉사에서" },
+  airbnb: { n: "에어씨앤씨", type: "투자", ic: "bld", play: true, fit: ["lang", "sense", "hands"], cap: "2,000만~", hours: "주 6시간", inc: "월세 90만 기준 비용 구조", line: "후기 한 줄에 한 달이 갈린다.", hint: "캠핑·여행·사진 모임에서" },
+  tutoring: { n: "화상과외", type: "전문성", ic: "video", fit: ["talk", "career", "write"], cap: "0", hours: "주 6시간", inc: "월 100~200만", line: "퇴근 후 화상 수업 두 타임.", hint: "멘토링 봉사, 독서·코딩 모임에서" },
   thesis: { n: "논문교정", type: "전문성", ic: "book", fit: ["write", "career", "num"], cap: "0", hours: "주 5시간", inc: "건당 단가", line: "마감 전날 밤에 일이 몰린다.", hint: "독서모임의 대학원생에게서" },
   press: { n: "보도자료 작가", type: "전문성", ic: "pen", fit: ["write", "mkt", "career"], cap: "0", hours: "주 4시간", inc: "월 30~80만(건당 2~15만)", line: "회사 홍보팀 경험이 무기.", hint: "글쓰기 모임에서" },
-  webnovel: { n: "웹소설", type: "전문성", ic: "book", fit: ["write", "sense", "mkt"], cap: "0", hours: "주 10시간+", inc: "상위 20% 연 300~500만", line: "매일 5,000자. 연재는 체력이다.", hint: "독서·글쓰기 모임에서" },
-  tarot: { n: "타로", type: "전문성", ic: "spark", fit: ["talk", "sense", "charm"], cap: "10만", hours: "주 5시간", inc: "월 30~50만", line: "카드보다 상담이 본업.", hint: "타로 원데이 클래스에서" },
+  webnovel: { n: "웹소설", type: "전문성", ic: "book", fit: ["write", "sense", "mkt"], cap: "0", hours: "주 10시간+", inc: "상위 20% 연 300~500만", line: "매일 5,000자. 연재는 체력이다.", hint: "독서·글쓰기·여행 모임에서" },
+  tarot: { n: "타로", type: "전문성", ic: "spark", fit: ["talk", "sense", "charm"], cap: "10만", hours: "주 5시간", inc: "월 30~50만", line: "카드보다 상담이 본업.", hint: "타로 클래스, 와인·글쓰기 모임에서" },
   saju: { n: "사주", type: "전문성", ic: "book", fit: ["talk", "num", "write"], cap: "0", hours: "주 5시간", inc: "건당 단가", line: "공부할 게 생각보다 많다.", hint: "타로 원데이 클래스에서" },
   bouquet: { n: "웨딩 부케", type: "전문성", ic: "heart", fit: ["sense", "hands", "mkt"], cap: "100만", hours: "주말 몰아서", inc: "월 60~100만(월 3~5건)", line: "결혼 시즌에만 바쁘다.", hint: "플라워 클래스에서" },
   goods: { n: "굿즈", type: "전문성", ic: "spark", fit: ["sense", "mkt", "hands"], cap: "100만~", hours: "주 6시간", inc: "월 순이익 약 50만", line: "재고가 쌓이면 방이 좁아진다.", hint: "보드게임·클라이밍 모임에서" },
   aivideo: { n: "AI 영상 제작", type: "전문성", ic: "video", fit: ["sense", "num", "mkt"], cap: "구독료", hours: "주 6시간", inc: "월 50~150만", line: "툴이 매달 바뀐다.", hint: "사진·밴드·코딩 모임에서" },
-  vibe: { n: "바이브코딩", type: "전문성", ic: "wrench", fit: ["num", "write", "sense"], cap: "구독료", hours: "주 6시간", inc: "월 100만 안팎", line: "AI에게 말로 시켜 만든다.", hint: "코딩 스터디에서" },
+  vibe: { n: "바이브코딩", type: "전문성", ic: "wrench", fit: ["num", "write", "sense"], cap: "구독료", hours: "주 6시간", inc: "월 100만 안팎", line: "AI에게 말로 시켜 만든다.", hint: "코딩 스터디, 보드게임·밴드 모임에서" },
 };
+// 11-23 투잡 갈래(장면 조건 req "space"·"online"·"platform", 라이벌 사건 글 갈래가 같이 쓴다)
+export const SJ_SPACE = ["pr", "airbnb", "ucafe", "chicken"]; // 가게·공간이 있는 투잡
+export const SJ_PLATFORM = ["pr", "cs", "airbnb", "chicken", "tarot", "webnovel", "tutoring", "vibe"]; // 손님을 플랫폼에서 받아 수수료를 내는 투잡
 export const SJ_SLOTS = 2; // 매니저(파티룸 매니저·에어씨앤씨 코호스트·컨설팅 공동 코치)를 두면 +1
 
 // ───────── 취미 (여기서 인연과 투잡을 발견한다) ─────────
 // like: 이 취미에 오는 인연의 취향, jobs: 발견할 수 있는 투잡, stat: 한 번 갈 때 오르는 능력치
 export const HOBBIES = {
-  run: { n: "한강 러닝크루", like: ["운동"], fee: 2, hp: 5, mental: 4, stat: { charm: 0.3 }, hpMax: 0.6, jobs: ["pr", "insta"], desc: "토요일 아침 5km. 뒤풀이가 본게임" },
-  climb: { n: "클라이밍", like: ["운동"], fee: 12, hp: 6, mental: 4, stat: { hands: 0.6, charm: 0.2 }, hpMax: 0.5, jobs: ["insta", "goods"], desc: "벽에 매달리면 회사 생각이 안 난다" },
-  book: { n: "독서모임", like: ["책"], fee: 3, hp: 3, mental: 3, stat: { write: 1.2 }, jobs: ["cs", "webnovel", "thesis"], desc: "한 달에 한 권, 이야기는 열 권" },
+  run: { n: "한강 러닝크루", like: ["운동"], fee: 2, hp: 5, mental: 4, stat: { charm: 0.3 }, hpMax: 0.6, jobs: ["pr", "insta", "chicken"], desc: "토요일 아침 5km. 뒤풀이가 본게임" },
+  climb: { n: "클라이밍", like: ["운동"], fee: 12, hp: 6, mental: 4, stat: { hands: 0.6, charm: 0.2 }, hpMax: 0.5, jobs: ["insta", "chicken"], desc: "벽에 매달리면 회사 생각이 안 난다" },
+  book: { n: "독서모임", like: ["책"], fee: 3, hp: 3, mental: 3, stat: { write: 1.2 }, jobs: ["cs", "webnovel", "tutoring"], desc: "한 달에 한 권, 이야기는 열 권" },
   mentor: { n: "취준생 멘토링 봉사", like: ["책", "카페"], fee: 0, hp: 4, mental: 3, stat: { career: 1.0, talk: 0.6 }, jobs: ["cs", "tutoring"], desc: "후배 자소서를 봐 준다. 고맙다는 말이 남는다" },
-  photo: { n: "사진 동호회", like: ["전시"], fee: 5, hp: 4, mental: 4, stat: { sense: 1.2 }, jobs: ["insta", "pr", "aivideo"], desc: "출사 나가서 남의 공간을 찍는다" },
-  wine: { n: "와인 모임", like: ["와인"], fee: 15, hp: 4, mental: 5, stat: { charm: 0.8, talk: 0.4 }, jobs: ["pr", "popup"], desc: "모임 장소는 늘 파티룸" },
-  board: { n: "보드게임 모임", like: ["게임"], fee: 3, hp: 3, mental: 5, stat: { num: 1.0 }, jobs: ["pr", "goods"], desc: "한 판만 더가 새벽 2시" },
-  cook: { n: "홈카페·쿠킹 클래스", like: ["카페", "맛집"], fee: 10, hp: 3, mental: 4, stat: { hands: 1.0, sense: 0.4 }, jobs: ["ucafe", "coffee", "popup"], desc: "라테 아트 하트가 아직 감자" },
-  camp: { n: "캠핑 동호회", like: ["캠핑"], fee: 8, hp: 6, mental: 6, stat: { hands: 0.8 }, jobs: ["airbnb", "shortstay"], desc: "장비는 늘고 통장은 준다" },
-  band: { n: "직장인 밴드", like: ["음악"], fee: 6, hp: 5, mental: 6, stat: { sense: 0.8, charm: 0.5 }, jobs: ["pr", "aivideo"], desc: "합주실 대관비가 제일 무섭다" },
-  travel: { n: "여행 모임", like: ["여행"], fee: 10, hp: 5, mental: 6, stat: { sense: 0.5, mkt: 0.5, lang: 0.6 }, jobs: ["airbnb", "shortstay", "realtyblog"], desc: "숙소 고르는 눈이 생긴다" },
-  tarot: { n: "타로 원데이 클래스", like: ["영화", "쇼핑"], fee: 8, hp: 3, mental: 3, stat: { talk: 1.0 }, jobs: ["tarot", "saju"], desc: "카드 78장, 사람 고민은 무한" },
-  flower: { n: "플라워 클래스", like: ["쇼핑", "전시"], fee: 12, hp: 3, mental: 4, stat: { sense: 1.0 }, jobs: ["bouquet", "popup"], desc: "꽃값이 생각보다 비싸다" },
-  code: { n: "코딩 스터디", like: ["게임"], fee: 3, hp: 4, mental: 1, stat: { num: 1.0, mkt: 0.3 }, jobs: ["vibe", "aivideo", "tistory"], desc: "AI한테 시키는 법을 배운다" },
-  write: { n: "글쓰기 모임", like: ["책", "영화"], fee: 3, hp: 3, mental: 2, stat: { write: 1.3 }, jobs: ["webnovel", "press", "tistory", "cs"], desc: "합평은 아프고 글은 는다" },
-  lingo: { n: "언어 교환 모임", like: ["여행", "카페"], fee: 4, hp: 3, mental: 4, stat: { lang: 1.3, talk: 0.3 }, jobs: ["airbnb", "tutoring", "shortstay"], desc: "영어 반, 손짓 반. 외국인 친구가 생긴다" }, // v4.28 외국어 길
+  photo: { n: "사진 동호회", like: ["전시"], fee: 5, hp: 4, mental: 4, stat: { sense: 1.2 }, jobs: ["insta", "pr", "airbnb"], desc: "출사 나가서 남의 공간을 찍는다" },
+  wine: { n: "와인 모임", like: ["와인"], fee: 15, hp: 4, mental: 5, stat: { charm: 0.8, talk: 0.4 }, jobs: ["pr", "tarot"], desc: "모임 장소는 늘 파티룸" },
+  board: { n: "보드게임 모임", like: ["게임"], fee: 3, hp: 3, mental: 5, stat: { num: 1.0 }, jobs: ["pr", "vibe"], desc: "한 판만 더가 새벽 2시" },
+  cook: { n: "홈카페·쿠킹 클래스", like: ["카페", "맛집"], fee: 10, hp: 3, mental: 4, stat: { hands: 1.0, sense: 0.4 }, jobs: ["ucafe", "chicken", "insta"], desc: "라테 아트 하트가 아직 감자" },
+  camp: { n: "캠핑 동호회", like: ["캠핑"], fee: 8, hp: 6, mental: 6, stat: { hands: 0.8 }, jobs: ["airbnb", "ucafe"], desc: "장비는 늘고 통장은 준다" },
+  band: { n: "직장인 밴드", like: ["음악"], fee: 6, hp: 5, mental: 6, stat: { sense: 0.8, charm: 0.5 }, jobs: ["pr", "vibe"], desc: "합주실 대관비가 제일 무섭다" },
+  travel: { n: "여행 모임", like: ["여행"], fee: 10, hp: 5, mental: 6, stat: { sense: 0.5, mkt: 0.5, lang: 0.6 }, jobs: ["airbnb", "vibe", "webnovel"], desc: "숙소 고르는 눈이 생긴다" },
+  tarot: { n: "타로 원데이 클래스", like: ["영화", "쇼핑"], fee: 8, hp: 3, mental: 3, stat: { talk: 1.0 }, jobs: ["tarot", "insta"], desc: "카드 78장, 사람 고민은 무한" },
+  flower: { n: "플라워 클래스", like: ["쇼핑", "전시"], fee: 12, hp: 3, mental: 4, stat: { sense: 1.0 }, jobs: ["ucafe", "airbnb"], desc: "꽃값이 생각보다 비싸다" },
+  code: { n: "코딩 스터디", like: ["게임"], fee: 3, hp: 4, mental: 1, stat: { num: 1.0, mkt: 0.3 }, jobs: ["vibe", "tutoring", "webnovel"], desc: "AI한테 시키는 법을 배운다" },
+  write: { n: "글쓰기 모임", like: ["책", "영화"], fee: 3, hp: 3, mental: 2, stat: { write: 1.3 }, jobs: ["webnovel", "tutoring", "tarot", "cs"], desc: "합평은 아프고 글은 는다" },
+  lingo: { n: "언어 교환 모임", like: ["여행", "카페"], fee: 4, hp: 3, mental: 4, stat: { lang: 1.3, talk: 0.3 }, jobs: ["airbnb", "tutoring"], desc: "영어 반, 손짓 반. 외국인 친구가 생긴다" }, // v4.28 외국어 길
 };
 export const HOBBY_LV = [
   { n: "새내기", need: 0 }, { n: "단골", need: 3 }, { n: "고인물", need: 8 }, { n: "운영진", need: 15 }, { n: "모임장", need: 25 },
@@ -669,11 +672,11 @@ export const SYNERGY = [
 
 // ───────── 나쁜 경제 사건 (판마다 무작위로 몇 번) ─────────
 export const MACRO = [
-  { id: "winter", n: "경기 한파", m: 12, w: 3, text: "소비가 얼어붙었다. 회식도 모임도 줄고, 회사는 연봉 동결을 발표했다. 1년 동안 파티룸 예약 −20%, 협찬 −40%, 구조조정 3배, 투자 수익도 나빠져요.", news: "경기 한파 본격화… 자영업 매출 '뚝', 기업 채용 동결" },
+  { id: "winter", n: "경기 한파", m: 12, w: 3, text: "소비가 얼어붙었다. 회식도 모임도 줄고, 회사는 연봉 동결을 발표했다. 1년 동안 파티룸 예약 −20%, 협찬 −40%, 구조조정 3배, 투자 수익도 나빠져요.", textQ: "소비가 얼어붙었다. 회식도 모임도 줄고, 뉴스는 연봉 동결과 구조조정 소식뿐이다. 1년 동안 파티룸 예약 −20%, 협찬 −40%, 투자 수익도 나빠져요.", news: "경기 한파 본격화… 자영업 매출 '뚝', 기업 채용 동결" },
   { id: "infl", n: "물가 급등", m: 12, w: 2, text: "장바구니 물가가 무섭게 오른다. 1년 동안 물가가 해마다 4%씩 더 올라요. 생활비, 청소비, 공사비가 모두 비싸져요.", news: "소비자물가 5%대… 외식비·공과금 줄인상" },
-  { id: "rentup", n: "상가 임대료 급등", m: 18, w: 2, text: "상권마다 월세가 뛰었다. 새 매물 월세 +20%, 재계약 인상 +12%.", news: "핫플 상가 임대료 급등… 젠트리피케이션 우려" },
-  { id: "bigcomp", n: "대형 파티룸 프랜차이즈 진출", m: 18, w: 2, need: (s) => act(s, "pr"), text: "대기업 계열 공간 브랜드가 파티룸 시장에 들어왔다. 근처에 깔끔한 체인점이 줄줄이 생긴다. 1년 반 동안 예약 −12%.", news: "대기업 공간 브랜드, 파티룸 시장 진출 선언" },
-  { id: "algo", n: "인별 알고리즘 변경", m: 6, w: 2, need: (s) => act(s, "insta") || (s.cs?.ch?.insta?.f || 0) > 500, text: "인별가 알고리즘을 바꿨다. 팔로워 증가가 반토막 났다. 6개월 동안.", news: "인별 알고리즘 개편… 크리에이터 도달률 급감" },
+  { id: "rentup", n: "상가 임대료 급등", m: 18, w: 2, text: "상권마다 월세가 뛰었다. 1년 반 동안 새 매물 월세가 파티룸 +20%, 숙소·무인카페 +15%. 이미 계약한 곳은 재계약 때 법정 상한 5%까지만 올라요.", news: "핫플 상가 임대료 급등… 젠트리피케이션 우려" },
+  { id: "bigcomp", n: "대형 파티룸 프랜차이즈 진출", m: 18, w: 2, need: (s) => act(s, "pr"), text: "대기업 계열 공간 브랜드가 파티룸 시장에 들어왔다. 근처에 깔끔한 체인점이 줄줄이 생긴다. 1년 반 동안 예약 −6%, 주변 경쟁도 더 빨리 늘어요.", news: "대기업 공간 브랜드, 파티룸 시장 진출 선언" },
+  { id: "algo", n: "인별 알고리즘 변경", m: 6, w: 2, need: (s) => act(s, "insta") || (s.cs?.ch?.insta?.f || 0) > 500, text: "인별이 알고리즘을 바꿨다. 팔로워 증가가 반토막 났다. 6개월 동안.", news: "인별 알고리즘 개편… 크리에이터 도달률 급감" },
   { id: "intl", n: "국제 관계 악화", m: 9, w: 1.5, need: (s) => act(s, "airbnb"), text: "외교 갈등으로 단체 관광이 끊겼다. 9개월 동안 외국인 예약 −50%.", news: "외교 갈등 장기화… 외국인 관광객 '반토막'" },
   { id: "crash", n: "주식시장 폭락", m: 0, w: 1, need: (s) => s.invest > 500, text: "코스피가 하루 만에 8% 빠졌다. 내 투자 계좌도 −28%.", news: "증시 폭락, 서킷브레이커 발동" },
   { id: "tax", n: "부업 세무조사 강화", m: 12, w: 1, need: (s) => (s.sj?.active || []).length > 0, text: "국세청이 N잡러 소득 신고를 들여다본다. 종합소득세 +20%, 회사에도 소문이 돈다(눈치 +5).", news: "국세청, 부업 소득 집중 점검… '신고 누락 주의'" },
@@ -706,7 +709,7 @@ export const INV_EV = [
       { t: "회비 내고 큰돈까지 맡긴다", style: "rash", fee: 300, stake: { inv: 0.3 }, outs: [[0.75, -0.85, "운영자가 잠수를 탔다. 단톡방이 통째로 사라졌다."], [0.25, -0.3, "몇 번 따라 샀다가 고점에 물렸다. 겨우 손절했다."]] },
     ] },
   { id: "coin", title: "신규 코인, 지금 들어가면 열 배", w: 1, need: (s) => s.invest >= 1000,
-    text: "회사 동기가 새로 상장한 코인으로 차를 바꿨단다. \"지금 들어가면 열 배야.\" 링크가 왔다.",
+    text: "회사 동기가 새로 상장한 코인으로 차를 바꿨단다. \"지금 들어가면 열 배야.\" 링크가 왔다.", textQ: "옛 회사 동기가 새로 상장한 코인으로 차를 바꿨단다. \"지금 들어가면 열 배야.\" 링크가 왔다.",
     choices: [
       { t: "모르는 건 안 산다", style: "calm", out: "동기의 새 차가 부럽긴 했다. 그래도 내 계좌는 내가 아는 것만.", eff: { mental: -1 } },
       { t: "계좌의 5%만 넣어 본다", style: "mid", stake: { inv: 0.05 }, outs: [[0.55, -0.9, "일주일 만에 거의 다 녹았다. 비싼 수업이었다."], [0.3, -0.3, "조금 잃고 뺐다. 차트 보느라 잠을 설쳤다."], [0.15, 2, "진짜 세 배가 됐다! …이 기억이 다음 판단을 망칠지도."]] },
@@ -727,7 +730,7 @@ export const INV_EV = [
       { t: "한도를 꽉 채워 두 배로 산다", style: "rash", stake: { loan: 3000 }, outs: [[0.45, 0.25, "운 좋게 올랐다. 다음엔 더 크게 하고 싶어진다. 그게 제일 위험하다."], [0.55, -0.6, "하락장에 반대매매가 나갔다. 주식은 사라지고 빚만 남았다."]] },
     ] },
   { id: "theme", title: "오늘도 상한가라는 그 테마주", w: 1, need: (s) => s.invest >= 1000,
-    text: "옆 팀 과장이 테마주로 두 배를 벌었다는 소문. 오늘도 상한가란다. 점심시간 내내 그 얘기뿐이다.",
+    text: "옆 팀 과장이 테마주로 두 배를 벌었다는 소문. 오늘도 상한가란다. 점심시간 내내 그 얘기뿐이다.", textQ: "옛 회사 과장이 테마주로 두 배를 벌었다는 소문. 오늘도 상한가란다. 동기 단톡방이 종일 그 얘기뿐이다.",
     choices: [
       { t: "구경만 한다", style: "calm", out: "점심 메뉴에 집중했다. 김치찌개가 맛있었다.", eff: { mental: -1 } },
       { t: "5분의 1만 따라 산다", style: "mid", stake: { inv: 0.2 }, outs: [[0.35, 0.3, "운 좋게 먹고 나왔다. 손이 떨렸다."], [0.65, -0.4, "다음 날부터 내리막. 뉴스가 끝나자 주가도 끝났다."]] },
@@ -797,7 +800,7 @@ export const INV_EV = [
       { t: "신용대출까지 끌어 몰빵한다", style: "rash", stake: { loan: 3000 }, outs: [[0.1, 0.6, "대박. 회사 주가가 날았다. 사내 메신저가 축제 분위기다."], [0.4, 0.1, "조금 벌었다. 대출 이자를 빼니 남는 게 없다."], [0.5, -0.5, "회사가 흔들렸다. 주식은 반토막, 대출은 그대로. 출근길이 무겁다."]], eff: { mental: -2 } },
     ] },
   { id: "nightus", title: "새벽 3시, 해외 주식 알림", w: 0.8, need: (s) => s.invest >= 1000,
-    text: "새벽 3시, 해외 주식 급등락 알림이 울렸다. 잠이 확 깼다. 아침 9시엔 팀장님 보고가 있다.",
+    text: "새벽 3시, 해외 주식 급등락 알림이 울렸다. 잠이 확 깼다. 아침 9시엔 팀장님 보고가 있다.", textQ: "새벽 3시, 해외 주식 급등락 알림이 울렸다. 잠이 확 깼다. 아침 9시엔 고객 약속이 있다.",
     choices: [
       { t: "알림을 끄고 다시 잔다", style: "calm", out: "아침에 보니 어제랑 비슷했다. 잠이 남는 장사다. 알림은 영영 껐다.", eff: { hp: 2, mental: 1 } },
       { t: "일어나서 차트 보다 조금 산다", style: "mid", stake: { inv: 0.1 }, outs: [[0.45, 0.08, "조금 벌었다. 대신 회의 시간에 하품을 세 번 했다."], [0.55, -0.12, "산 뒤에 더 빠졌다. 잠도 돈도 잃었다."]], eff: { hp: -3, eye: 2 } },
@@ -861,7 +864,7 @@ export const INV_EV = [
     ] },
   // ── v4.27 코인 이벤트 10개 (좋은 일: bigcoin·kimchi·parentcoin / 나머지는 나쁜 일). 실제 코인·거래소 이름은 쓰지 않는다
   { id: "bigcoin", title: "대장 코인이 신고가", w: 0.8, need: (s) => s.invest >= 1000,
-    text: "대장 코인이 신고가를 찍었다. 뉴스마다 '지금이라도?'. 탕비실 화제도 온통 코인이다.",
+    text: "대장 코인이 신고가를 찍었다. 뉴스마다 '지금이라도?'. 탕비실 화제도 온통 코인이다.", textQ: "대장 코인이 신고가를 찍었다. 뉴스마다 '지금이라도?'. 단톡방 화제도 온통 코인이다.",
     choices: [
       { t: "계좌의 3%만 넣고 잊는다", style: "calm", stake: { inv: 0.03 }, outs: [[0.5, 0.6, "1년 뒤 열어 보니 올라 있었다. 조금 넣어서 웃었다."], [0.3, 0, "제자리. 넣은 걸 잊고 살았다."], [0.2, -0.45, "반토막 가까이. 그래도 3%라 웃어넘겼다."]] },
       { t: "계좌의 20%를 옮긴다", style: "mid", stake: { inv: 0.2 }, outs: [[0.35, 0.5, "올랐다. 매일 시세 확인하느라 바빴지만."], [0.25, 0, "1년을 오르락내리락. 결국 제자리."], [0.4, -0.5, "고점에 샀다. 1년 내내 물려 있었다."]] },
@@ -938,7 +941,7 @@ export const DECOR = {
   light: { n: "조명", ic: "💡", opts: [{ n: "기본 형광등", c: 0, tags: [] }, { n: "웜톤 간접조명", c: 80, tags: ["cozy", "photo"] }, { n: "미러볼·무빙라이트", c: 120, tags: ["party"] }, { n: "핑크 네온사인", c: 60, tags: ["photo", "party"] }, { n: "강의용 밝은 LED", c: 50, tags: ["work"] }] },
   seat: { n: "소파·의자", ic: "🛋️", opts: [{ n: "접이식 의자", c: 20, tags: ["work"] }, { n: "대형 ㄷ자 소파", c: 180, tags: ["party", "cozy"] }, { n: "빈백·좌식 매트", c: 70, tags: ["cozy", "kids", "game"] }, { n: "강의용 책상 세트", c: 150, tags: ["work"] }, { n: "벨벳 소파", c: 220, tags: ["photo", "cozy"] }] },
   wall: { n: "벽", ic: "🧱", opts: [{ n: "흰 페인트", c: 30, tags: ["work"] }, { n: "파스텔 웨인스코팅", c: 120, tags: ["photo", "kids"] }, { n: "블랙 무광·네온 포인트", c: 90, tags: ["party", "game"] }, { n: "우드 패널", c: 140, tags: ["cozy"] }, { n: "화이트보드 벽", c: 60, tags: ["work"] }] },
-  fun: { n: "놀거리", ic: "🎲", opts: [{ n: "없음", c: 0, tags: [] }, { n: "닌텐도·보드게임 장", c: 150, tags: ["game", "party"] }, { n: "노래방 기계", c: 200, tags: ["party"] }, { n: "빔프로젝터·스크린", c: 120, tags: ["work", "game", "cozy"] }, { n: "볼풀·미끄럼틀", c: 160, tags: ["kids"] }] },
+  fun: { n: "놀거리", ic: "🎲", opts: [{ n: "없음", c: 0, tags: [] }, { n: "닌텐두·보드게임 장", c: 150, tags: ["game", "party"] }, { n: "노래방 기계", c: 200, tags: ["party"] }, { n: "빔프로젝터·스크린", c: 120, tags: ["work", "game", "cozy"] }, { n: "볼풀·미끄럼틀", c: 160, tags: ["kids"] }] },
   zone: { n: "포토존", ic: "📸", opts: [{ n: "없음", c: 0, tags: [] }, { n: "풍선 아치·이니셜", c: 70, tags: ["photo", "kids"] }, { n: "생화 벽", c: 180, tags: ["photo"] }, { n: "거울·레터링", c: 60, tags: ["photo", "party"] }, { n: "포디움·현수막 거치대", c: 50, tags: ["work"] }] },
   kitchen: { n: "주방", ic: "🍳", opts: [{ n: "전자레인지만", c: 10, tags: ["work"] }, { n: "홈카페 바", c: 140, tags: ["cozy", "photo"] }, { n: "대형 냉장고·인덕션", c: 120, tags: ["party", "kids"] }, { n: "케이터링 테이블", c: 90, tags: ["work", "party"] }] },
 };

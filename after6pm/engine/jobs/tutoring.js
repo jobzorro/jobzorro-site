@@ -102,7 +102,7 @@ export function trialP(s, L) {
   if (SYN.on(s, "tu_cs")) p += 0.1;
   if (SYN.on(s, "tu_mentor")) p += 0.05;
   if (T.lic === 1) p += TU_F30.lic.trust; // f30 교습자 신고증: 학부모 신뢰
-  if (s.me?.traits?.includes("companyman")) p += 0.05; // 회사형 인간: 학부모 신뢰 +
+  p += mod(s, "tuTrust", 0); // 회사형 인간(defs 성향 카드 tuTrust): 학부모 신뢰 +5%p
   if (L.mood === "까다로움") p -= 0.1;
   return clamp(p, 0.15, 0.92);
 }
@@ -176,11 +176,12 @@ function evList(s, r, rev) {
       x: "학부모가 같은 반 엄마를 소개해 줬다. \"그 선생님 화상인데 꼼꼼하대.\" 광고비 0원으로 문의가 하나 늘었다.",
       c: [{ t: "소개해 준 가정에 한 회 무료 보강", eff: { cash: -Math.round(4 * pi), tu_ref: 1, tu_rev: 2, tu_par: 4 }, text: "엄마 단톡방에 내 이야기가 한 번 더 돌았다." },
           { t: "감사 문자만 보낸다", eff: { tu_ref: 1, tu_rev: 1 }, text: "\"별말씀을요~\" 이모티콘이 왔다." }] },
-    { id: "e07", ph: "mid", ok: () => T.cut < 0.25 && T.studs.some((x) => x.how === "app"), t: "수수료 인상 공지",
-      x: "과외온에 공지가 떴다. 다음 달부터 수수료를 올린다고. 이미 20%를 떼이고 있었다.",
-      pre: () => { T.cut = 0.27; },
-      c: [{ t: "기존 학생은 직거래로 돌린다", eff: { tu_direct: 1 }, text: "계좌이체로 바꿨다. 대신 과외온 검색 순위가 뚝 떨어졌다." },
-          { t: "단가를 올려 흡수한다", eff: { tu_feeup: 1 }, text: "\"다음 달부터 조금 오릅니다.\" 한 집이 고민해 보겠다고 했다." }] },
+    { id: "e07", ph: "mid", ok: () => !T.feeUp && T.expo >= 0.99 && T.studs.some((x) => x.how === "app"), t: "앱 밖에서 하시죠",
+      pre: () => { T.cut = Math.max(T.cut, 0.27); }, // 11-23: 수수료 인상(20→27%)은 예전 그대로 일어난다(밸런스 유지). 결정은 '직거래로 빠질까'
+      x: `${T.cut < 0.25 ? "과외온이 이번 달부터 수수료를 27%로 올렸다. 소식은 학부모 단톡에 먼저 돌았다. " : ""}석 달 본 학생의 어머니가 문자를 보냈다. "선생님, 과외온이 ${Math.round(Math.max(T.cut, 0.27) * 100)}%나 떼 간다면서요. 다음 달부터는 계좌로 바로 드릴게요." 과외온 약관은 앱 밖 결제를 막는다. 걸리면 검색 노출이 깎인다.`,
+      c: [{ t: "직거래로 돌린다 (수수료 0, 과외온 노출 −30%)", eff: { tu_direct: 1 }, text: "계좌이체로 바꿨다. 며칠 뒤 과외온에서 경고 메일이 왔고 검색 순위가 뚝 떨어졌다." },
+          { t: "앱 결제를 지키고, 다음 달부터 수업료를 10% 올린다", eff: { tu_feeup: 1 }, text: "\"수수료는 제가 안고 갈게요. 대신 수업료를 조금 조정하겠습니다.\" 한 집이 고민해 보겠다고 했다." },
+          { t: "약관대로 지금처럼 한다", eff: { tu_par: -2 }, text: "\"약관이 그래서요.\" 답장은 '네' 한 글자였다." }] },
     { id: "e08", ph: "mid", ok: () => !T.autoRep && T.studs.length >= 1, t: "한 달 피드백 문자",
       x: "첫 달이 지났다. 잘한 것, 약한 단원, 다음 달 계획을 정리해 학부모에게 문자를 보냈다. 답장이 길게 왔다.",
       c: [{ t: "매달 정기 리포트로 만든다", eff: { tu_auto: 1, tu_par: 6 }, text: "매달 말일은 리포트 쓰는 날. 스태미너는 들지만 재등록이 확 는다." },
@@ -201,12 +202,34 @@ function evList(s, r, rev) {
       x: "학년 초, 동네 학원 두 곳이 문을 닫았다는 소식. 학령인구가 줄고 있다. 내 학생도 졸업하면 끝이다.",
       c: [{ t: "성인 대상 과목(회화·코딩)으로 넓힌다", eff: { tu_adult: 1, stat: { lang: 0.6 } }, text: "퇴근한 직장인에게 영어 회화. 시험이 없어서 오히려 편하다." },
           { t: "입시 전문으로 단가를 높인다", eff: { tu_exam: 1 }, text: "프로필 제목을 '고등 내신·수능 전문'으로 바꿨다. 단가 +10%." }] },
+    // 11-23 화상과외에서만 생기는 골치 4개
+    { id: "e17", ph: "mid", ok: () => kids(s).some((x) => !x.grp) && !!examOf(s.cal % 12 + 1), t: "시험 범위가 바뀌었다",
+      x: `${examOf(s.cal % 12 + 1) || "시험"} 3주 전, 학생이 가정통신문 사진을 보냈다. "쌤, 범위에 다음 단원까지 들어간대요." 한 달 동안 만든 대비 프린트 절반이 쓸모없어졌다.`,
+      c: [{ t: "주말을 털어 새 범위 프린트를 다시 만든다", eff: { hp: -8, tu_prep: 4, tu_par: 5 }, text: "일요일 밤 11시, 새 프린트 42쪽을 보냈다. 어머니 답장: \"학원보다 빠르시네요.\"" },
+          { t: "학교 필기를 받아 수업 중에 같이 푼다 (커리어 판정)", check: { stat: "career", dc: 45 }, ok: { text: "처음 보는 문제인데 그 자리에서 풀렸다. \"쌤은 원래 다 알아요?\"", eff: { tu_par: 4, tu_sat: 5 } }, ng: { text: "풀이가 중간에 막혔다. 화면 너머 침묵이 길었다.", eff: { tu_par: -5, mental: -2 } } },
+          { t: "원래 범위만 확실히 한다", eff: { tu_par: -4 }, text: "\"새 단원은 학교 수업 잘 들어.\" 학생은 끄덕였지만 눈이 불안했다." }] },
+    { id: "e18", ph: "mid", ok: () => kids(s).some((x) => !x.grp), t: "화면이 안 켜진다",
+      x: "8시 수업인데 8시 10분에도 입장이 없다. 메신저의 숫자 1이 안 사라진다. 이번 달만 세 번째다. 화상은 방문을 두드릴 수도 없다.",
+      c: [{ t: "학부모에게 바로 알린다", eff: { tu_par: 3, tu_sat: -6 }, text: "5분 뒤 화면이 켜졌다. 학생 뒤로 엄마 그림자가 지나갔다. 수업 내내 대답이 짧았다." },
+          { t: "학생과 둘만의 규칙을 정한다 (말빨 판정)", check: { stat: "talk", dc: 45 }, ok: { text: "\"정시 입장 세 번이면 숙제 하루 면제.\" 그 뒤로 2분 먼저 들어온다.", eff: { tu_sat: 8 } }, ng: { text: "\"네네.\" 다음 주에도 화면은 안 켜졌다. 어머니가 먼저 알아챘다.", eff: { tu_par: -5 } } },
+          { t: "결석으로 치고 넘어간다", eff: { tu_par: -3 }, text: "수업료는 그대로 들어왔다. 진도는 한 주 밀렸다." }] },
+    { id: "e19", ph: "mid", ok: () => T.studs.length >= 2 && kids(s).some((x) => !x.grp), t: "동생도 맡길 테니",
+      x: "학부모 전화. \"둘째도 선생님께 맡기려고요. 둘이 하면 좀 깎아 주시죠? 옆집은 형제 할인을 30% 받는대요.\"",
+      c: [{ t: `동생 첫 달은 깎아 준다 (−${won(sm)})`, eff: { cash: -sm, tu_ref: 1, tu_par: 4 }, text: "문의 칸에 동생 이름이 올라왔다. 한번 깎은 값은 다시 올리기 어렵다." },
+          { t: "정가를 지키고 이유를 설명한다 (말빨 판정)", check: { stat: "talk", dc: 50 }, ok: { text: "\"학년이 다르면 준비도 따로예요.\" 한참 듣더니 그대로 하기로 했다.", eff: { tu_ref: 1 } }, ng: { text: "\"생각해 볼게요.\" 통화가 짧게 끝났다.", eff: { tu_par: -4 } } },
+          { t: "시간표가 찼다고 정중히 거절한다", eff: { mental: 1 }, text: "\"자리 나면 꼭 연락 주세요.\" 아쉬운 목소리였다." }] },
+    { id: "e20", ph: "late", ok: () => T.lv >= 3 && T.studs.length >= 3, t: "녹화본이 돌아다닌다",
+      x: "모르는 학생이 메시지를 보냈다. \"쌤 함수 강의 잘 봤어요!\" 가르친 적 없는 아이다. 누가 수업 화면을 녹화했고, 그 파일이 사촌에게, 사촌의 친구에게 갔다.",
+      c: [{ t: "수업 안내문에 '녹화·공유 금지'를 넣는다", eff: { tu_par: -3, stat: { write: 0.4 } }, text: "안내문이 한 줄 늘었다. 한 어머니가 \"복습용인데요\" 하고 서운해했다." },
+          { t: "녹화본 끝에 내 프로필을 붙여 홍보로 쓴다", eff: { mental: -2, tu_buzz: 12, tu_lead: 1 }, text: "어차피 도는 영상이면 명함이라도 붙인다. 공짜로 듣는 아이가 늘었고, 문의도 하나 왔다." },
+          { t: "모른 척한다", eff: { mental: -3 }, text: "다음 수업부터 화면 구석의 녹화 표시가 자꾸 눈에 밟혔다." }] },
     // 위기(조건으로 따로 부른다)
-    { id: "e14", ph: "crisis", ok: () => T.lv >= 2 && avgPar(s) < 58, t: "별점 2개",
-      x: "과외온에 첫 별점 2개가 달렸다. \"피드백이 늦어요.\" 맞는 말이라 더 아프다. 검색 순위가 다섯 칸 내려갔다.",
+    { id: "e14", ph: "crisis", ok: () => T.lv >= 2 && avgPar(s) < 58, t: "엄마 단톡의 소문",
+      x: "그만둔 학생 어머니가 반 엄마 단톡에 한 줄을 남겼다고 한다. \"그 화상 선생님, 회사 다니면서 하는 거라 답이 늦어요.\" 틀린 말이 아니라 더 아프다. 그 얘기가 과외온 후기 칸까지 올라와 별점이 0.3 내려갔다.",
       pre: () => { T.stars = clamp(T.stars - 0.3, 2.5, 5); },
-      c: [{ t: "공개 답글로 사과하고 개선 약속", eff: { mental: -3, tu_stars: 0.15, tu_par: 4 }, text: "\"솔직한 답글 보고 오히려 믿음이 갔어요\"라는 문의가 왔다." },
-          { t: "후기 이벤트로 덮는다", eff: { cash: -Math.round(5 * pi), tu_stars: 0.2, tu_rev: 2 }, text: "커피 쿠폰 후기가 쌓였다. 마음 한구석이 찜찜하다." }] },
+      c: [{ t: "학부모 모두에게 답장 시간 약속을 돌린다", eff: { mental: -3, tu_stars: 0.15, tu_par: 4 }, text: "\"질문은 밤 10시 전에 꼭 답합니다.\" 약속을 글로 박았다. 이제 지켜야 한다." },
+          { t: "한 주 동안 학부모 참관 수업을 연다", eff: { hp: -6, tu_stars: 0.2, tu_rev: 2 }, text: "화면 구석에 어머니 얼굴이 하나씩 떴다. 평소보다 판서를 두 배로 했다. 후기가 두 개 붙었다." },
+          { t: "소문은 수업으로 덮는다", eff: { tu_par: -3 }, text: "아무 말도 하지 않았다. 단톡은 내가 못 들어가는 방이다." }] },
     { id: "e15", ph: "crisis", ok: () => used(s) >= 7 && s.hp < 55, t: "목이 나갔다",
       x: `주 ${used(s)}시간 수업에 회사 회의까지. 아침에 목소리가 안 나온다. 오늘 수업이 세 개다.`,
       c: [{ t: "이번 주 전부 휴강하고 보강 약속", eff: { hp: 20, cash: -sm, tu_stars: -0.05, tu_par: -4 }, text: "꿀물과 도라지즙. 보강 일정 짜느라 주말이 사라졌다." },
@@ -236,7 +259,7 @@ function crisisEvent(s, r, rev, id) { const e = evList(s, r, rev).find((x) => x.
 function dropScene(s, st, from, to) {
   s._tuEv = { id: st.id };
   T_(s).seen.e13 = (T_(s).seen.e13 || 0) + 1;
-  return { kind: "event", tag: "화상과외", title: "성적이 떨어졌다", onChoose: "tu_drop",
+  return { kind: "event", tag: "화상과외", title: "성적이 떨어졌다", onChoose: "tu_drop", ...(T_(s).seen.e13 === 1 ? { cine: "tu_drop" } : {}), // 화보는 처음 한 번만
     text: `${studLabel(st)}(${regionN(st.reg)}) 시험 결과가 나왔다. ${from}점에서 ${to}점. 학부모의 문자가 짧다. "이번 달까지만 할게요."`,
     choices: [{ t: "오답 분석표를 만들어 설득 통화", check: { stat: "talk", dc: 45 }, ok: { text: "\"이렇게까지 봐 주시는 줄 몰랐어요.\" 한 달만 더 보기로 했다.", eff: { hp: -8 } }, ng: { text: "\"죄송하지만 학원으로 옮길게요.\"", eff: { hp: -8, mental: -3 } } },
       { t: "깔끔하게 보내 드린다", eff: { mental: -3 }, text: "마지막 수업에 \"그동안 감사했어요\"라고 학생이 먼저 말했다." }] };
@@ -560,6 +583,7 @@ export default {
     if (e.tu_ref) { for (let i = 0; i < e.tu_ref; i++) newLeadDet(s, "ref"); out.push(`소개 문의 +${e.tu_ref}`); }
     if (e.tu_prof) { T.prof = clamp(T.prof + e.tu_prof, 0, 100); out.push(`과외온 프로필 +${e.tu_prof}`); }
     if (e.tu_conv) { T.conv = clamp(T.conv + e.tu_conv, 0, 0.3); out.push(`시범수업 전환 +${Math.round(e.tu_conv * 100)}%p`); }
+    if (e.tu_sat) { for (const st of T.studs) st.sat = clamp(st.sat + e.tu_sat, 0, 100); if (T.studs.length) out.push(`학생 만족 ${e.tu_sat > 0 ? "+" : ""}${e.tu_sat}`); }
     if (e.tu_par) { for (const st of T.studs) st.par = clamp(st.par + e.tu_par, 0, 100); if (T.studs.length) out.push(`학부모 만족 ${e.tu_par > 0 ? "+" : ""}${e.tu_par}`); }
     if (e.tu_rev) { T.reviews += e.tu_rev; out.push(`학부모 후기 +${e.tu_rev}`); }
     if (e.tu_stars) { T.stars = clamp(T.stars + e.tu_stars, 2.5, 5); out.push(`과외온 별점 ${e.tu_stars > 0 ? "+" : ""}${e.tu_stars}`); }
@@ -601,7 +625,7 @@ export default {
     { key: "tu_lv3", title: "학부모 단톡의 선생님", test: (s) => (s[K]?.lv || 1) >= 3,
       lines: ["모르는 번호. \"○○ 엄마 소개로 연락드려요.\" 광고비 0원.", "학부모 단톡방에 내 이름이 '그 화상 선생님'으로 돌고 있었다."] },
     { key: "tu_lv4", title: "입시 전문 화상 강사", test: (s) => (s[K]?.lv || 1) >= 4,
-      lines: ["시간당 7만 원. 처음 3만 원 받던 날이 생각났다.", "평일 저녁 시간표가 빈칸 없이 찼다. 회사 캘린더보다 빽빽하다."] },
+      lines: [`시간당 ${LV[4].hr}만 원. 처음 ${LV[1].hr}만 원 받던 날이 생각났다.`, "평일 저녁 시간표가 빈칸 없이 찼다. 회사 캘린더보다 빽빽하다."] },
     { key: "tu_lv5", title: "화상과외 브랜드", test: (s) => (s[K]?.lv || 1) >= 5,
       lines: ["자료집 판매 알림이 새벽에도 울린다. 내가 자는 동안에도 누군가 내 설명을 듣고 있다.", "조교를 뽑았다. 면접 질문은 하나였다. \"학생이 졸면 어떻게 깨워요?\""] },
     // 엔딩 3개
@@ -632,7 +656,7 @@ export default {
 // ───────── 보드에서 쓰는 조작(화면 플러그인이 부른다) ─────────
 export function setOpen(s, v) { const T = T_(s); T.open = clamp(Math.round(v), Math.max(1, usedAll(s)), maxOpen(s)); }
 export function toggleAd(s) { const T = T_(s); T.ad = !T.ad; return T.ad ? `유료 광고 켬: 월 ${won(Math.round(20 * SYN.pi(s)))}, 문의 +` : "유료 광고 끔"; }
-export function toggleAgent(s) { const T = T_(s); if (T.lv < 5 && !T.agent) return "조교는 5단계부터"; T.agent = !T.agent; return T.agent ? `조교 채용: 월 ${won(Math.round(45 * SYN.pi(s)))}, 채점·질문 응대(투잡 칸 +1)` : "조교 계약 종료"; }
+export function toggleAgent(s) { const T = T_(s); if (T.lv < 5 && !T.agent) return "조교는 5단계부터"; if (T.agent) { const why = SJ.slotLock(s, () => { T.agent = false; return () => { T.agent = true; }; }); if (why) return why; } T.agent = !T.agent; return T.agent ? `조교 채용: 월 ${won(Math.round(45 * SYN.pi(s)))}, 채점·질문 응대(투잡 칸 +1)` : "조교 계약 종료"; }
 export function openGroup(s) {
   const T = T_(s); if (T.lv < 4) return false; if (usedAll(s) + 1 > T.open) return false;
   const st = { id: "S" + (++T.seq), g: T.exam ? "고2" : "중3", subj: "수학", reg: "seoul", wk: 1, how: "dir", grp: true, size: 2, sat: 55, par: 60, sc: 65, last: 0, pg: 0, pm: 0, months: 0, pause: false, joinT: s.t };

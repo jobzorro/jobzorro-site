@@ -14,7 +14,7 @@ export default {
   quick: (S) => (TU.needAp(S) > S.tutoring.ap ? "tu_class" : S.tutoring.leads.length ? "tu_trial" : "tu_find"),
   defaultArg: (S, id) => (id === "tu_trial" ? S.tutoring.leads[0]?.id : undefined),
   cine: {
-    tu_first: ["home", "화상과외"], tu_far: ["online", "화상과외"], tu_lv3: ["apt", "화상과외"], tu_lv4: ["studyst", "화상과외"], tu_lv5: ["online", "화상과외"],
+    tu_first: ["home", "화상과외"], tu_far: ["online", "화상과외"], tu_lv3: ["apt", "화상과외"], tu_lv4: ["studyst", "화상과외"], tu_lv5: ["online", "화상과외"], tu_drop: ["home", "화상과외"],
     tu_end_star: ["online", "화상과외 엔딩"], tu_end_local: ["home", "화상과외 엔딩"], tu_end_cash: ["home", "화상과외 엔딩"],
   },
   auto(c) { TU.demoSetup(c.S); },

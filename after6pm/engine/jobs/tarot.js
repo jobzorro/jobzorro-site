@@ -103,7 +103,7 @@ function checkLv(s, out) {
   return up;
 }
 
-// ───────── 이벤트(기획 데이터 16개 + 겸직 1개) ─────────
+// ───────── 이벤트(기획 데이터 16개 + 타로 고유 골치 2개) ─────────
 // 효과 숫자는 그때그때 계산. 복잡한 결과는 onChoose "tr_ev" 에서.
 function evList(s) {
   const T = s.tarot, pi = SYN.pi(s), u = Math.max(1, unitPrice(s)), boothRev = Math.round(10 * 4 * pi * 0.8);
@@ -117,7 +117,7 @@ function evList(s) {
     { id: "e03", ph: "early", ok: () => T.lv >= 2 && T.lv <= 3 && !T.series, t: "카드 이미지 한 장", x: "\"이 카드를 뽑은 당신, 오늘은 한 걸음 물러서야 합니다.\" 카드 사진에 문장 하나를 얹어 올렸다. 저장 수 230.",
       c: [{ t: "매일 '오늘의 카드' 시리즈로 만든다", eff: { stat: { sense: 1 }, tr_follow: 180 }, text: "매일 아침 7시 업로드. 오늘의 카드 효과 +25%" },
           { t: "가끔만 올린다", eff: {}, text: "저장 수는 금방 잊혔다." }] },
-    { id: "e04", ph: "early", ok: () => T.paid >= 1, t: "첫 유료 5,000원", x: "텍스트 리딩 첫 결제가 들어왔다. 5,000원. 질문은 \"이직할까요?\" 퇴사 고민은… 내 전문이다. 매일 하는 고민이니까.",
+    { id: "e04", ph: "early", ok: () => T.paid >= 1, t: "첫 유료 5,000원", x: "텍스트 리딩 첫 결제가 들어왔다. 5,000원. 질문은 \"이직할까요?\" 퇴사 고민은… 내 전문이다. " + (s.co?.quit || s.co?.fired ? "매일 하던 고민이니까." : "매일 하는 고민이니까."),
       c: [{ t: "정성 리딩에 카드 이미지 리포트까지", eff: { hp: -3, tr_reg: 1, tr_rep: 3 }, text: "\"이걸 5천 원에 받아도 돼요?\" 단골 1호가 생겼다." },
           { t: "템플릿 문구로 빠르게", eff: { hp: 2, tr_rep: 1 }, text: "10분 만에 끝. 손님은 '감사합니다' 한 줄." }] },
     { id: "e05", ph: "mid", ok: () => T.lv >= 3 && s.cal === 12, t: "12월 31일 밤", x: `연말이다. 신년운세 문의가 하루 40건 쌓였다.${company(s) ? " 본업 종무식 뒤풀이 중에 화장실에서 카드를 뽑고 있다." : ""}`,
@@ -138,7 +138,7 @@ function evList(s) {
     { id: "e10", ph: "late", ok: () => T.lv >= 4 && !T.partner, t: "북카페 팝업 부스", x: "동네 북카페 사장님이 제안했다. 주말 이틀 '타로의 밤' 부스. 30분 4만 원, 장소 수수료 20%. 사진 찍기 좋은 조명이 있다.", on: true,
       c: [{ t: "1인 예약 시 동행자 무료로 참여한다", eff: { tr_booth: boothRev, tr_reg: 3, tr_follow: 250, hp: -8 }, text: "이틀 동안 20명. 동행자가 다음 손님이 됐다. 이 카페와 단골 협업 시작." },
           { t: "온라인에만 집중한다", eff: {}, text: "주말은 지켰다." }] },
-    { id: "e11", ph: "late", ok: () => T.kits >= 1, t: "리딩 키트 출시", x: "자주 받는 질문 30개와 해석법을 정리해 노션 키트로 만들었다. 19,000원. 자는 동안 7개가 팔렸다.", on: true,
+    { id: "e11", ph: "late", ok: () => T.kits >= 1, t: "리딩 키트 출시", x: "자주 받는 질문 30개와 해석법을 정리해 노숀 키트로 만들었다. 19,000원. 자는 동안 7개가 팔렸다.", on: true,
       c: [{ t: "시리즈로 늘린다(이직·연애·관계)", eff: { hp: -4 }, text: "다음 키트 작업 절반이 끝났다." },
           { t: "하나로 끝낸다", eff: { tr_kit: Math.round(1.9 * 7 * pi) }, text: "부수입은 부수입대로 둔다." }] },
     { id: "e12", ph: "late", ok: () => T.lv >= 4 && !T.bot && !T.empathy, t: "AI 타로 앱", x: "\"AI가 3초 만에 카드를 해석해 드려요. 무료.\" 광고가 계속 뜬다. 문의가 눈에 띄게 줄었다. 그런데 단골 하나가 \"그래도 사람이 낫더라고요\" 하고 돌아왔다.", on: true,
@@ -147,9 +147,10 @@ function evList(s) {
     { id: "e13", ph: "crisis", ok: () => T.follow >= 1200, rep: true, t: "\"사기 아니에요?\"", x: "게시물에 댓글이 달렸다. \"이런 걸로 돈 받는 거 사기 아님?\" 좋아요가 80개다. 단골 하나가 언팔했다.",
       c: [{ t: "'심리적 조망 도구'라는 상담 철학을 정리해 공지", check: { stat: "write", dc: 40 }, ok: { text: "차분한 글에 '저장'이 쌓였다. 오히려 신뢰가 올랐다.", eff: { tr_rep: 3, mental: -2 } }, ng: { text: "변명처럼 읽혔다. 댓글이 더 달렸다.", eff: { tr_rep: -1, mental: -5 } } },
           { t: "댓글을 지운다", eff: { tr_rep: -4, tr_reg: -1 }, text: "캡처가 돌았다. '댓글 지우는 타로'." }] },
-    { id: "e14", ph: "crisis", ok: () => T.paid >= 30, rep: true, t: "엇나간 리딩", x: "\"재회할 수 있다면서요. 그 사람 결혼했대요.\" 별점 1개와 환불 요구가 함께 왔다. 후기 탭 맨 위에 박혔다.",
-      c: [{ t: "환불하고 정중히 사과한다", eff: { tr_cost: Math.round(u * 2), tr_rep: -1 }, text: "\"카드는 가능성이지 확정이 아니었어요. 제 설명이 부족했습니다.\" 별점이 3으로 바뀌었다." },
-          { t: "카드는 가능성일 뿐이라며 거절한다", eff: { tr_rep: -6, mental: -3 }, text: "맞는 말인데, 후기 탭은 맞는 말을 안 봐준다." }] },
+    { id: "e14", ph: "crisis", ok: () => T.paid >= 30, rep: true, t: "엇나간 리딩", x: "석 달 전 손님이 그때 리딩을 캡처해 보냈다. \"재회할 수 있다면서요. 그 사람 지난주에 결혼했대요.\" 리딩비를 돌려 달라고 한다. 캡처 속 내 문장은 '다시 닿을 가능성이 보여요'였다.",
+      c: [{ t: "리딩비를 돌려주고 설명이 모자랐다고 사과한다", eff: { tr_cost: Math.round(u * 2), tr_rep: -1 }, text: "\"카드는 가능성이지 확정이 아니었어요. 제 설명이 부족했습니다.\" 답장은 '네' 한 글자였다." },
+          { t: "환불 대신 지금 마음을 다시 읽어 주겠다고 한다", check: { stat: "talk", dc: 45 }, ok: { text: "한 시간 통화. 카드는 세 장만 뽑았다. \"사실 답은 알고 있었어요.\" 손님이 다음 달 예약을 잡았다.", eff: { tr_rep: 2, tr_reg: 1, mental: -3 } }, ng: { text: "\"또 카드로 넘어가시네요.\" 통화가 끊겼다. 타로 카페에 긴 글이 올라왔다.", eff: { tr_rep: -4, mental: -4 } } },
+          { t: "카드는 가능성일 뿐이라며 거절한다", eff: { tr_rep: -6, mental: -3 }, text: "맞는 말이다. 맞는 말이 위로가 되는 날은 아니었다." }] },
     { id: "e15", ph: "crisis", ok: () => T.lv >= 3 && s.cal === 2, t: "2월의 정적", x: "신년 특수가 끝났다. 2월 둘째 주 문의는 하루 1건. 지난달 번 돈으로 산 조명이 방 한구석에서 빛난다.",
       c: [{ t: "비수기용 니치 콘텐츠 시리즈를 올린다", eff: { hp: -4, tr_follow: 200, stat: { write: 0.5 } }, text: "'퇴근길 1장 리딩' 시리즈. 저장이 조금씩 쌓인다." },
           { t: "지인 추천 50% 할인권을 뿌린다", eff: { tr_cost: Math.round(5 * pi), tr_q: 6 }, text: "할인권 들고 친구의 친구가 왔다." }] },
@@ -157,9 +158,15 @@ function evList(s) {
       c: [{ t: "시간제 공간 대여로 주말만", eff: {}, text: "주말 대면 상담 시작. 단가 +10%, 월 대여비가 나간다." },
           { t: "상담실을 계약한다", eff: {}, text: "보증금·인테리어가 한 번에 나갔다. 대면 단가 +30%, 수수료 절반. 예약이 비면 월세가 아프다." },
           { t: "아직은 온라인으로", eff: {}, text: "고정비 0원의 평화." }] },
-    { id: "e17", ph: "mid", ok: () => T.lv >= 3 && company(s), rep: true, t: "탕비실의 손님", x: "DM이 왔다. \"혹시… 3층 기획팀 아니세요? 저 옆 팀이에요. 저도 봐 주실 수 있어요?\" 회사 사람에게 들켰다.",
-      c: [{ t: "웃으며 무료로 봐 주고 비밀을 부탁한다", check: { stat: "talk", dc: 42 }, ok: { text: "\"대박, 저 이직 얘기 아무한테도 안 했는데.\" 비밀 동맹이 생겼다.", eff: { eye: 1, tr_reg: 1 } }, ng: { text: "다음 날 팀 단톡방에 '우리 회사 타로 선생님' 이야기가 돌았다.", eff: { eye: 8 } } },
-          { t: "정중히 거절하고 계정 노출을 줄인다", eff: { tr_follow: -Math.round(T.follow * 0.05), eye: -2 }, text: "얼굴 나온 사진을 다 내렸다." }] },
+    // e17 '탕비실의 손님'(회사 사람에게 들킴)은 뺐다 → 들키는 장면은 engine/caught.js 가 투잡별로 맡는다
+    { id: "e18", ph: "crisis", ok: () => T.paid >= 40 && T.follow >= 300, t: "캡처된 점괘", x: "손님이 내 리딩 전문을 캡처해 익명 게시판에 올렸다. 제목은 '이 타로 소름'. 댓글이 300개다. 그런데 리딩 안에 손님 전 애인의 직장과 이니셜이 그대로 있다. 당사자라는 사람이 DM을 보냈다. \"이거 내려 주세요.\"",
+      c: [{ t: "손님에게 글을 내려 달라고 하고, 리딩마다 '공유 금지'를 붙인다", eff: { tr_rep: 2, tr_reg: -1 }, text: "글은 내려갔다. 손님은 \"홍보해 준 건데요\" 하고 서운해했다." },
+          { t: "그대로 둔다. 문의가 몰려오는 중이다", eff: { tr_follow: 250, tr_q: 5, tr_rep: -4, mental: -3 }, text: "문의 알림이 밤새 울렸다. 그 DM에는 끝내 답하지 못했다." },
+          { t: "당사자에게 사과하고 내 계정에 경위를 적는다", check: { stat: "write", dc: 42 }, ok: { text: "\"남의 이야기는 리딩 밖으로 나가지 않게 하겠습니다.\" 그 글이 다시 캡처돼 돌았다. 이번엔 좋은 쪽으로.", eff: { tr_rep: 3, mental: -2 } }, ng: { text: "사과문에 이니셜을 또 적어 버렸다. 급히 고쳤지만 본 사람은 봤다.", eff: { tr_rep: -2, mental: -4 } } }] },
+    { id: "e19", ph: "mid", ok: () => T.lv >= 3 && T.paid >= 15, t: "카드로 답하면 안 되는 질문", x: "결제 알림과 함께 질문이 왔다. \"다음 주가 수술이에요. 받아도 될까요? 카드로 봐 주세요.\" 건강, 소송, 빌려준 돈. 이 셋은 카드로 답하지 않는 게 이 바닥 불문율이다.",
+      c: [{ t: "\"그건 의사 선생님과 정하실 일이에요.\" 환불하고 응원 카드 한 장만 보낸다", eff: { tr_cost: Math.round(u), tr_rep: 3, mental: -1 }, text: "별 카드 사진에 '잘 다녀오세요'를 적어 보냈다. 한 달 뒤 퇴원했다는 후기가 달렸다." },
+          { t: "카드는 뽑되 '결정은 병원에서'를 못 박는다", check: { stat: "talk", dc: 45 }, ok: { text: "\"수술 말고, 수술을 앞둔 마음을 볼게요.\" 손님은 그 말에 오히려 안심했다.", eff: { tr_rep: 2, tr_reg: 1, mental: -2 } }, ng: { text: "손님은 '탑' 카드만 기억했다. \"안 좋다는 거죠?\" 밤새 메시지가 왔다.", eff: { tr_rep: -3, mental: -5 } } },
+          { t: "좋은 말만 골라 해 준다", eff: { tr_cash: Math.round(u), mental: -4 }, text: "\"잘 될 거예요.\" 결과가 나쁘면 이 문장은 내 책임이 된다. 일주일 동안 알림이 무서웠다." }] },
   ];
 }
 function pickEvent(s, r) {
@@ -228,14 +235,14 @@ function doRead(s, r, boost) {
   T.served += n; gainStat(s, "talk", 0.3);
   const msg = T.lv < 3 ? r.pick(["친구가 카드를 보다가 갑자기 울었다. 카드는 핑계였다.", "\"너 이거 진짜 잘 맞는다?\" 연습이 칭찬으로 돌아왔다.", "3장 펼치기. 과거·현재·미래. 손님 표정이 먼저 답을 말했다."])
     : callsOn(T) ? r.pick(["통화 30분. 카드는 세 장, 질문은 열 개.", "\"그 사람 마음이요?\" 카드보다 손님 목소리를 먼저 들었다.", "밤 11시 통화. 끝나고 물 한 잔 마시고 멍하니 앉아 있었다."])
-    : r.pick(["퇴근 지하철에서 텍스트 리딩 세 건. 카드 사진 찍고 답장.", "같은 '연인' 카드도 사람마다 다르게 읽힌다.", "\"이직할까요?\" 내가 매일 하는 질문이었다."]);
+    : r.pick([s.co?.quit || s.co?.fired ? "저녁 지하철에서 텍스트 리딩 세 건. 카드 사진 찍고 답장." : "퇴근 지하철에서 텍스트 리딩 세 건. 카드 사진 찍고 답장.", "같은 '연인' 카드도 사람마다 다르게 읽힌다.", "\"이직할까요?\" 내가 매일 하던 질문이었다."]);
   return { lines, msg, n };
 }
 
 // ───────── f30 특이 요소 장면: 매일 찾아오는 단골 · 적중 기록부(말투) · 수능·신년 운세 대목 ─────────
 function heavyScene(s) {
-  const T = s.tarot, H = TR_F30.heavy, rv = Math.round(H.pay * Math.max(0.5, unitPrice(s))); T.hvT = s.t; s._trF30 = { k: "ask" };
-  return { kind: "event", tag: "타로", title: "매일 찾아오는 손님", onChoose: "tr_heavy",
+  const T = s.tarot, hv1 = (T.hvT ?? -99) < 0, H = TR_F30.heavy, rv = Math.round(H.pay * Math.max(0.5, unitPrice(s))); T.hvT = s.t; s._trF30 = { k: "ask" };
+  return { kind: "event", tag: "타로", title: "매일 찾아오는 손님", onChoose: "tr_heavy", ...(hv1 ? { cine: "tr_heavy" } : {}), // 화보는 처음 한 번만
     text: `석 달째 하루에도 세 번씩 묻는 손님이 있다. 아침엔 "오늘 연락 올까요?", 점심엔 "지금은요?", 밤엔 "내일은요?" 이 손님만으로 한 달 ${won(rv)}. 그런데 답할수록 손님은 더 불안해진다.`,
     choices: [{ t: "하루 한 번, 주 3번까지로 선을 긋는다", eff: {}, text: "\"자주 보면 카드도 흐려져요.\" 손님은 잠시 서운해했다." },
       { t: "원하는 만큼 계속 받는다 (매달 돈 +, 멘탈이 점점 닳는다)", eff: {}, text: "알림이 울릴 때마다 카드를 섞었다." },
@@ -259,7 +266,7 @@ function styleScene(s) {
 function peakScene(s) {
   const T = s.tarot, P = TR_F30.peak, c = Math.round(P.cost * SYN.pi(s)); T.pkAsk = s.t; s._trF30 = { cost: c };
   return { kind: "event", tag: "타로", title: "대목 준비", onChoose: "tr_peak",
-    text: `달력을 넘겼다. 11월 수능, 12월·1월 신년운세. 작년엔 문의가 두 배로 몰려 절반을 놓쳤다. 지금 '신년 운세 패키지'(정해진 스프레드·리포트 양식)를 만들어 두면 한 번에 더 많이, 더 비싸게 읽을 수 있다.`,
+    text: `달력을 넘겼다. 11월 수능, 12월·1월 신년운세. ${T.months >= 12 ? "작년엔 문의가 두 배로 몰려 절반을 놓쳤다." : "선배 리더들 말로는 이때 문의가 두 배로 몰려 절반은 놓친다고 한다."} 지금 '신년 운세 패키지'(정해진 스프레드·리포트 양식)를 만들어 두면 한 번에 더 많이, 더 비싸게 읽을 수 있다.`,
     choices: [{ t: "평소대로 그때그때 받는다", eff: {}, text: "준비는 없다. 몸으로 버티기로." },
       { t: `신년 운세 패키지를 만든다 (−${won(c)}, 다음 달 행동력 −${P.ap[0]})`, eff: {}, text: "'2년 치 흐름 12장 리포트' 양식이 완성됐다." },
       { t: `수능 응원 리딩까지 같이 (−${won(c * 2)}, 다음 달 행동력 −${P.ap[1]})`, eff: {}, text: "수험생 부모용 '시험 운 3장 리딩'도 만들었다. 11월이 기다려진다." }] };
@@ -323,7 +330,7 @@ export default {
     if (id === "tr_card") return T.lv < 2 ? "Lv2부터(연습 노트 20건)" : null;
     if (id === "tr_booth") { if (T.lv < 3) return "Lv3부터(유료 리딩을 시작해야)"; if (T.boothT === s.t) return "이번 달 부스는 이미 했어요"; return null; }
     if (id === "tr_kit") { if (T.lv < 4) return "Lv4부터"; if (T.kits >= (T.brand ? 5 : 3)) return `키트는 ${T.brand ? 5 : 3}개까지`; return null; }
-    if (id === "tr_agent") return T.lv < 4 && !T.agent ? "Lv4부터(믿을 만한 후배가 생겨야)" : null;
+    if (id === "tr_agent") { if (T.agent) return SJ.slotLock(s, () => { T.agent = false; return () => { T.agent = true; }; }); return T.lv < 4 ? "Lv4부터(믿을 만한 후배가 생겨야)" : null; }
     return null;
   },
   act(s, r, id, arg, boost = 1) {
@@ -355,7 +362,7 @@ export default {
     }
     if (id === "tr_kit") {
       const g = Math.round((28 + (s.st.write || 0) / 3) * boost); T.kitProg += g;
-      if (T.kitProg >= 100) { T.kitProg = 0; T.kits++; T.kitAge.push(0); checkLv(s, up); return { lines: [`리딩 키트 ${T.kits}호 출시!`, `${T.brand ? "굿즈 포함 " : ""}1개 ${T.brand ? "2.5" : "1.9"}만, 다음 달부터 팔려요`, ...up], msg: r.pick(["'이직 앞둔 당신을 위한 3장 스프레드' 노션 키트 완성.", "PDF 32쪽. 내 연습 노트가 상품이 됐다."]) }; }
+      if (T.kitProg >= 100) { T.kitProg = 0; T.kits++; T.kitAge.push(0); checkLv(s, up); return { lines: [`리딩 키트 ${T.kits}호 출시!`, `${T.brand ? "굿즈 포함 " : ""}1개 ${T.brand ? "2.5" : "1.9"}만, 다음 달부터 팔려요`, ...up], msg: r.pick(["'이직 앞둔 당신을 위한 3장 스프레드' 노숀 키트 완성.", "PDF 32쪽. 내 연습 노트가 상품이 됐다."]) }; }
       return { lines: [`키트 작업 ${T.kitProg}%`], msg: "자주 받는 질문 30개를 정리 중. 답이 늘 비슷하다는 게 신기하다." };
     }
     if (id === "tr_agent") {
@@ -382,7 +389,7 @@ export default {
       const n = Math.round(T.queue * 0.7), rev = Math.round(n * unitPrice(s) * 0.85), cut = Math.round(rev * 0.4), fee = Math.round(rev * feeRate(T));
       s.cash += rev - cut - fee; addMoney(s, "inc", "타로 상담료", rev); addMoney(s, "exp", "타로 수수료", cut + fee);
       T.queue -= n; T.paid += n; T.served += n; T.gross += rev;
-      notes.push(`타로 위탁: 후배가 ${n}건 읽음(수익 40%·수수료 −${won(cut + fee)})`);
+      notes.push(`타로 위탁: 후배가 ${n}건 읽음(수익 40%${cut + fee >= 0.5 ? `·수수료 −${won(cut + fee)}` : ""})`);
     }
     // 남은 문의: 일부는 예약 대기로, 나머지는 떠난다
     if (T.lv >= 3) {
@@ -432,7 +439,7 @@ export default {
     // 고정비
     const fix = Math.round(1 * pi) + (T.room === "hourly" ? Math.round(12 * pi) : 0);
     s.cash -= fix; addMoney(s, "exp", "타로 비용", fix);
-    if (T.room === "lease") { const rent = Math.round(55 * pi); s.cash -= rent; addMoney(s, "exp", "타로 상담실", rent); if (T.served < 20) notes.push(`상담실 예약률 미달(${T.served}건): 월세 ${won(rent)}만 나갔다`); }
+    if (T.room === "lease") { const rent = Math.round(55 * pi); s.cash -= rent; addMoney(s, "exp", "타로 상담실", rent); if (T.served < 20) notes.push(`상담실 예약률 미달(${T.served}건): 월세만 ${won(rent)} 나갔다`); }
     if (SYN.on(s, "tr_late")) s.hp = clamp(s.hp - 3, 0, s.hpMax);
     // 집계
     const sum = (o, ks) => ks.reduce((a, k) => a + (o[k] || 0), 0);
@@ -490,7 +497,7 @@ export default {
       const T = s.tarot, ev = s._trEv?.id, pi = SYN.pi(s); s._trEv = null;
       if (ev === "e03" && i === 0) T.series = true;
       if (ev === "e06" && i === 0) { T.tail = true; return ["꼬리 질문 옵션 켜짐(리딩당 수입 +)"]; }
-      if (ev === "e07" && i === 0) { T.subOn = true; T.subs = Math.max(1, T.subs); return ["월 구독 리딩 시작(1명 월 4만)"]; }
+      if (ev === "e07" && i === 0) { T.subOn = true; T.subs = Math.max(1, T.subs); return [`월 구독 리딩 시작(1명 월 ${Math.round(3.5 * pi * 10) / 10}만)`]; }
       if (ev === "e08" && i === 0) { T.niche = "career"; return ["전문 분야: 퇴사·이직(단가 +25%, 문의 −10%)"]; }
       if (ev === "e09" && i === 0) { T.boundary = true; return ["상담 범위 안내문(멘탈 소모 −35%)"]; }
       if (ev === "e10" && i === 0) { T.partner = true; T.boothT = s.t; return ["북카페 협업: 부스 수수료 15%"]; }
