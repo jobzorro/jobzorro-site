@@ -66,16 +66,29 @@ export const maxProj = (s) => 2 + (s.vibe.lv >= 3 ? 1 : 0) + (s.vibe.agent ? 1 :
 // 원래: 유지보수 계약 최대 5건, 앱 사용자 상한 20 + 단계×12 + 평판×0.4(→ appBase + 단계×appLv + 평판×appRep) → 3년 차 중앙 월 220만, 10년 차 430만.
 // devGood: '퇴근 후 1인 개발사' 엔딩에 세는 좋은 달 기준(원래 100만 → 보통 플레이 100%가 받아 150만으로)
 export const VB_BAL = { retMax: 2, appBase: 12, appLv: 6, appRep: 0.2, devGood: 150 };
+// 11-22 특이 요소 3개(범위 싸움, 모델이 바뀌면 코드가 깨진다, 앱 심사 거절). 효과 크기는 여기만 고친다.
+export const VB_F30 = {
+  scope: { // 계약서 범위: 의뢰 답장 확률 ×win, 수정 요청 확률 ×creep, 꼼꼼하면 범위 밖 요청마다 추가 견적(잔금 × paid)
+    loose: { n: "느슨하게", win: 1.3, creep: 1.8, paid: 0, tip: "\"네, 다 돼요!\" 수주는 쉽지만 추가 요청이 끝이 없어요" },
+    std: { n: "보통", win: 1, creep: 1, paid: 0, tip: "기능 목록만 적어요" },
+    tight: { n: "꼼꼼하게", win: 0.75, creep: 0.4, paid: 0.12, tip: "화면·횟수까지 적어요. 깐깐해 보여 답장이 줄지만 범위 밖은 추가 견적" },
+  },
+  fight: 3, // 한 의뢰의 수정 요청이 이만큼 쌓이면 '범위 싸움' 장면(꼼꼼하면 없음)
+  model: { p: 0.04, gap: 14, debtM: 6, debtFix: 1, debtOut: 0.04, debtQuit: 0.01, pay: 20, tq: 1.1 }, // 모델 업데이트: 달마다 4%(14달 간격). 버전 고정 = 기술 부채 6달(유지보수 +1칸, 장애 +4%p, 계약 해지 +1%p)
+  store: { rejectP: 0.5, holdM: 2, webCap: 0.85, noPayChurn: 0.015, updRej: 0.08 }, // 첫 심사 거절 50%. 재심사 2달, 웹으로 돌리면 사용자 한도 ×0.85, 바깥 결제는 해지율 +1.5%p, 앱 업데이트 심사 거절 8%
+};
+export const scopeOf = (s) => VB_F30.scope[s.vibe?.scope] || VB_F30.scope.std;
+export function setScope(s, k) { if (VB_F30.scope[k]) s.vibe.scope = k; return { ok: true, msg: `계약서 범위: ${VB_F30.scope[s.vibe.scope].n}` }; }
 export const maxRets = (s) => Math.min(VB_BAL.retMax + (s.vibe.lv >= 5 ? 1 : 0), s.vibe.lv);
 export function fixNeed(s) {
   const V = s.vibe; if (V.agent) return 0;
-  const n = V.rets.length * 0.5 + (V.app?.live ? 1 + V.app.users / 150 : 0) + V.as * 0.5;
+  const n = V.rets.length * 0.5 + (V.app?.live ? 1 + V.app.users / 150 : 0) + V.as * 0.5 + (V.debt > 0 && (V.rets.length || V.app?.live) ? VB_F30.model.debtFix : 0);
   return Math.round(n * 2) / 2;
 }
 export const toolCost = (s) => Math.round(TOOL[s.vibe.tool].c * (s.vibe.tp || 1) * SYN.pi(s));
 export function appCap(s) {
   const V = s.vibe, A = V.app; if (!A) return 0;
-  return Math.round((VB_BAL.appBase + VB_BAL.appLv * V.lv + V.rep * VB_BAL.appRep) * Math.pow(2 / A.price, 0.9) * (A.focus ? 1.2 : 1) * (V.bigFree > 0 ? 0.7 : 1));
+  return Math.round((VB_BAL.appBase + VB_BAL.appLv * V.lv + V.rep * VB_BAL.appRep) * Math.pow(2 / A.price, 0.9) * (A.focus ? 1.2 : 1) * (V.bigFree > 0 ? 0.7 : 1) * (A.web ? VB_F30.store.webCap : 1));
 }
 export const appServer = (s) => (s.vibe.app?.live ? Math.round((3 + s.vibe.app.users * 0.03) * SYN.pi(s)) : 0);
 export const mrr = (s) => (s.vibe.app?.live ? Math.round(s.vibe.app.users * s.vibe.app.price * SYN.pi(s)) : 0);
@@ -139,7 +152,11 @@ function deliver(s, r, p, lines) {
     return;
   }
   if (p.own === "site") { V.site = true; V.rep = clamp(V.rep + 5, 0, 100); lines.push("내 소개 사이트 오픈!", "지인·동네 의뢰가 늘어요"); return; }
-  if (p.own === "app") { V.app = { live: true, ind: p.ind, users: r.int(4, 9), price: 2, buzz: 10, t0: s.t, focus: false, best: 0 }; lines.push("내 앱 출시! 첫 유료 사용자"); return; }
+  if (p.own === "app") {
+    V.app = { live: true, ind: p.ind, users: r.int(4, 9), price: 2, buzz: 10, t0: s.t, focus: false, best: 0 };
+    if (r.chance(VB_F30.store.rejectP)) { V.app.live = false; V.app.hold = 99; V.storeAsk = 1; lines.push("내 앱 완성! 그런데 앱 장터 심사에서 거절됐다"); return; }
+    lines.push("앱 장터 심사 통과! 내 앱 출시, 첫 유료 사용자"); return;
+  }
   const fee = CH[p.ch].fee, rest = Math.max(0, p.price - p.dep);
   if (rest) { income(s, "바이브코딩 외주", rest); if (fee) expense(s, "바이브코딩 수수료", Math.round(rest * fee)); }
   V.delivered++; V.refs++; V.cases[p.ind] = (V.cases[p.ind] || 0) + 1;
@@ -237,6 +254,45 @@ function vbEvent(s, r, force) {
   s._vbEv = { id: e.id };
   return { kind: "event", tag: "바이브코딩", title: e.t, text: e.x, choices: e.c, ...(e.onChoose ? { onChoose: e.onChoose } : {}) };
 }
+// ───────── 11-22 특이 요소 장면 ─────────
+function scopeScene(s, p) {
+  s._vbScope = { id: p.id };
+  return { kind: "event", tag: "바이브코딩", title: "\"이것도 원래 포함 아니에요?\"", onChoose: "vb_scope",
+    text: `${p.nm} 수정 요청이 ${p.creep}번째다. 이번엔 회원 등급제와 정산 화면. 사장님은 처음부터 말한 거라고 한다. 계약서에는 '예약 기능 일체'라고만 적혀 있다.`,
+    choices: [
+      { t: "그냥 해 준다(관계가 먼저)", eff: {}, text: "\"역시 믿고 맡기길 잘했어요.\" 작업 목록이 두 줄 늘었다." },
+      { t: "범위 밖은 추가 견적이라고 말한다", check: { stat: "talk", dc: 50 }, ok: { text: "\"아, 그건 따로 맞죠.\" 추가 견적서에 도장을 받았다.", eff: {} }, ng: { text: "\"이 정도는 해 주는 거 아닌가요?\" 목소리가 차가워졌다.", eff: { mental: -3 } } },
+      { t: "계약서 범위까지만 하고 마무리한다", eff: {}, text: "정중하게 선을 그었다. 납품일이 당겨졌다. 후기는 별 셋일 것 같다." },
+    ] };
+}
+function modelScene(s) {
+  const V = s.vibe, n = Math.max(1, V.rets.length + (V.app?.live ? 1 : 0)); s._vbModel = { n };
+  return { kind: "event", tag: "바이브코딩", title: "코디가 새 버전이 됐다", onChoose: "vb_model",
+    text: `코딩 AI 코디가 대규모 업데이트를 했다. 새 버전은 더 똑똑하다는데, 어제까지 돌던 코드를 다시 고치게 하자 엉뚱하게 다시 짠다. 관리하는 서비스 ${n}곳이 한꺼번에 흔들린다.`,
+    choices: [
+      { t: "주말을 갈아 넣어 전부 새 버전에 맞춘다", eff: { hp: -10 }, text: "토·일 이틀을 갈아 넣었다. 월요일, 새 버전이 확실히 빠르다." },
+      { t: "예전 버전에 묶어 두고 급한 곳만 막는다", eff: { hp: -3 }, text: "일단 돌아간다. 언젠가 갚아야 할 숙제가 쌓였다." },
+      { t: `고객에게 유상 업그레이드를 제안한다 (곳당 ${won(Math.round(VB_F30.model.pay * SYN.pi(s)))})`, check: { stat: "talk", dc: 50 }, ok: { text: "\"보안 때문이라면 해야죠.\" 견적서가 하나씩 돌아왔다.", eff: { hp: -6 } }, ng: { text: "\"고장 난 걸 고치는데 돈을 내라고요?\"", eff: { hp: -6, mental: -3 } } },
+    ] };
+}
+function storeScene(s) {
+  const A = s.vibe.app, n = A?.users || 5;
+  return { kind: "event", tag: "바이브코딩", title: "앱 심사 거절", onChoose: "vb_store",
+    text: `앱 장터 심사 결과: 거절. '최소 기능 요건 미달, 결제 방식 정책 위반.' 사유는 영어 세 줄이 전부다. 베타를 신청한 사장님 ${n}명이 출시를 기다린다.`,
+    choices: [
+      { t: `지적받은 곳을 고쳐 다시 낸다 (${VB_F30.store.holdM}달)`, eff: { hp: -4 }, text: "정책 문서 40쪽을 읽고 다시 냈다. 이제 기다린다." },
+      { t: "앱 대신 웹으로 바로 연다", eff: {}, text: "주소 하나 보내면 끝. 대신 앱 장터 검색에는 안 걸린다." },
+      { t: "앱 안 결제를 빼고 바깥 결제로 낸다 (1달)", eff: {}, text: "결제는 웹에서. 사장님들이 한 번 더 눌러야 한다." },
+    ] };
+}
+// 시험용: #auto…-vibe-f30scope|f30model|f30store
+export function f30Scene(s, r, what) {
+  const V = s.vibe; V.lv = Math.max(V.lv, 2);
+  if (what === "model") { if (!V.rets.length) V.rets.push({ id: "R" + (++V.seq), nm: "학원 출결 앱", ind: "academy", fee: 30, t: s.t }); return modelScene(s); }
+  if (what === "store") { V.app = { live: false, hold: 99, ind: "shop", users: 6, price: 2, buzz: 10, t0: s.t, focus: false, best: 0 }; return storeScene(s); }
+  const p = { id: "P" + (++V.seq), ch: "market", ind: "shop", nm: "식당·카페 예약·주문 페이지", price: 80, dep: 24, need: 5, done: 2, due: 3, mood: 0, spec: false, vague: false, creep: VB_F30.fight };
+  V.projects.push(p); return scopeScene(s, p);
+}
 // 첫 사이트를 만들 때 바로 뜨는 장면(e01)
 function firstSite() {
   return { kind: "event", tag: "바이브코딩", title: "10분 만의 첫 사이트", text: "말로 시켰을 뿐인데 사이트가 10분 만에 떴다. 소름이 돋는다. 그런데 로그인 버튼을 누르자 하얀 화면만 나온다.",
@@ -248,7 +304,7 @@ function firstSite() {
 const MONEY = { inc: ["바이브코딩 외주", "바이브코딩 유지보수", "바이브코딩 구독 매출", "바이브코딩 강의"], exp: ["바이브코딩 도구·서버", "바이브코딩 수수료", "바이브코딩 하청"] };
 export default {
   key: "vibe", prefix: "vb_", hubName: "바이브코딩",
-  init: () => ({ v: 1, lv: 1, m: 0, tool: 0, tp: 1, tq: 1, tqT: 0, tech: 10, rep: 0, refs: 0, site: false, delivered: 0, builds: 0, fixes: 0, fx: 0, as: 0,
+  init: () => ({ v: 2, scope: "std", debt: 0, lv: 1, m: 0, tool: 0, tp: 1, tq: 1, tqT: 0, tech: 10, rep: 0, refs: 0, site: false, delivered: 0, builds: 0, fixes: 0, fx: 0, as: 0,
     projects: [{ id: "P0", own: "auto", ind: "shop", nm: "사내 보고서 자동화(내 업무)", need: 2, done: 0, price: 0 }],
     offers: [], rets: [], app: null, cases: { academy: 0, fit: 0, shop: 0, salon: 0 }, niche: null, agent: false, seq: 1,
     hist: [], revH: [], recH: [], recStreak: 0, goodM: 0, sold: 0, soldAmt: 0, closed: 0, outages: 0, bigFree: 0, ban: 0, bomb: 0, coRisk: 0, ok: 0, hide: 0, seen: [], seenT: {}, last: null }),
@@ -276,13 +332,16 @@ export default {
       const u = Math.round(boost * speed(s) * 10) / 10;
       gainStat(s, "num", 0.3);
       if (arg === "app" || (!V.projects.length && V.app?.live)) {
-        const A = V.app; A.buzz = Math.min(60, A.buzz + 10 * u);
+        const A = V.app;
+        if (!A.web && r.chance(VB_F30.store.updRej)) return { lines: ["업데이트 심사 거절: 이번 기능은 다음에"], msg: "\"가이드라인 4.2 위반.\" 같은 기능을 지난달엔 통과시켜 줬다." };
+        A.buzz = Math.min(60, A.buzz + 10 * u);
         return { lines: [`내 앱 기능 업데이트 (화제 +${Math.round(10 * u)})`], msg: r.pick(["\"정기 결제 알림 기능 넣어 줘.\" 코디가 20분 만에 만들었다. 테스트는 내가 두 시간.", "사용자 요청 게시판의 1등 기능을 넣었다. 댓글에 하트가 달렸다."]) };
       }
       const p = curProj(V, arg); const first = p.own === "site" && p.done === 0, firstPaid = !p.own && V.delivered === 0 && p.done === 0 && !V.seen.includes("e04");
       p.done = Math.round((p.done + u) * 10) / 10;
       const lines = [`${p.nm} ${Math.min(p.done, p.need)}/${p.need}`];
       if (p.done >= p.need) deliver(s, r, p, lines);
+      if (V.storeAsk) { V.storeAsk = 0; return { lines, msg: "앱 장터에 올리고 사흘을 기다렸다.", scene: storeScene(s) }; }
       const msg = r.pick(["\"예약 버튼을 화면 아래에 크게. 색은 가게 간판처럼.\" 코디가 타자를 친다.", "코디가 300줄을 썼다. 나는 그중 세 줄을 고쳤다. 그 세 줄이 제일 오래 걸렸다.", "퇴근 지하철에서 프롬프트를 다듬고, 집에 오자마자 실행.", "\"로그인 안 한 사람은 못 보게 해 줘.\" 이번엔 보안까지 말로 챙겼다."]);
       if (first) { V.seen.push("e01"); V.seenT.e01 = s.t; return { lines, msg, scene: firstSite() }; }
       if (firstPaid && p.ch !== "friend") { const sc = vbEvent(s, r, "e04"); if (sc) return { lines, msg, scene: sc }; }
@@ -297,16 +356,16 @@ export default {
     if (id === "vb_sell") {
       const ch = arg && CH[arg] ? arg : "friend";
       const rf = SJ.ramp(s, "vibe"); // 레퍼런스 없는 초반: 답장이 잘 안 오고 단가도 깎인다
-      if (!r.chance(0.3 + 0.7 * rf)) { if (ch === "friend") gainStat(s, "talk", 0.3); else gainStat(s, "mkt", 0.3); return { lines: ["답장 없음", "레퍼런스가 쌓이면 나아져요"], msg: r.pick(["견적 세 군데. 읽음 표시만 떴다.", "\"포트폴리오 있으세요?\" 그 한 줄에 말문이 막혔다.", "해외 팀이 반값을 불렀다. 이번에도 밀렸다."]) }; }
+      if (!r.chance(Math.min(0.97, (0.3 + 0.7 * rf) * scopeOf(s).win))) { if (ch === "friend") gainStat(s, "talk", 0.3); else gainStat(s, "mkt", 0.3); return { lines: ["답장 없음", "레퍼런스가 쌓이면 나아져요"], msg: r.pick(["견적 세 군데. 읽음 표시만 떴다.", "\"포트폴리오 있으세요?\" 그 한 줄에 말문이 막혔다.", "해외 팀이 반값을 불렀다. 이번에도 밀렸다."]) }; }
       const o = makeOffer(s, r, ch);
       if (rf < 1 && o.price) o.price = Math.max(5, Math.round(o.price * (0.7 + 0.3 * rf) / 5) * 5);
       { const sk = SJ.skillRamp(s, "vibe"); if (sk < 1 && o.price) o.price = Math.max(5, Math.round(o.price * sk / 5) * 5); } // v4.25b 배우는 기간: 실력이 쌓이기 전엔 단가가 낮다
       if (ch === "post") { V.rep = clamp(V.rep + 2, 0, 100); gainStat(s, "write", 0.4); if (V.app?.live) V.app.buzz = Math.min(60, V.app.buzz + 6); }
       else if (ch === "friend") gainStat(s, "talk", 0.3); else gainStat(s, "mkt", 0.4);
-      const extra = ch !== "friend" && r.chance(0.3 + V.rep / 300) ? makeOffer(s, r, ch) : null;
+      const extra = ch !== "friend" && r.chance(Math.min(0.95, (0.3 + V.rep / 300) * scopeOf(s).win)) ? makeOffer(s, r, ch) : null;
       return { lines: [`새 의뢰: ${o.nm} ${o.price ? won(o.price) : "(파일럿·무료)"}`, ...(extra ? [`하나 더: ${extra.nm}`] : [])], msg: { friend: "동네 단골 가게 사장님께 \"홈페이지 하나 만들어 드릴까요?\" 말을 꺼냈다.", market: "재능마켓 견적 요청 세 건에 답을 달았다. 해외 팀 견적이 늘 반값이다.", post: "'퇴근 후 개발 일지 #' 글을 올렸다. 댓글이 달리기 시작했다.", pkg: `${INDS[V.niche || "shop"].n} 사장님 모임에 패키지 소개서를 돌렸다.` }[ch] };
     }
-    if (id === "vb_study") { V.tech = clamp(V.tech + 5 * (1 - V.tech / 110), 0, 100); return { lines: [`기술 이해 ${Math.round(V.tech)}`], msg: r.pick(["DB 인덱스가 뭔지 드디어 알았다. 코디가 왜 그렇게 짰는지 보인다.", "로그인·권한 점검표를 만들었다. 다음 납품부터 이걸 체크한다.", "API 요금표를 읽었다. 무료가 무료가 아니었다."]) }; }
+    if (id === "vb_study") { V.tech = clamp(V.tech + 5 * (1 - V.tech / 110), 0, 100); const dz = V.debt > 0 ? (V.debt = Math.max(0, V.debt - 3), true) : false; return { lines: [`기술 이해 ${Math.round(V.tech)}`, ...(dz ? [V.debt ? `기술 부채 ${V.debt}달 남음` : "기술 부채 정리 끝"] : [])], msg: r.pick(["DB 인덱스가 뭔지 드디어 알았다. 코디가 왜 그렇게 짰는지 보인다.", "로그인·권한 점검표를 만들었다. 다음 납품부터 이걸 체크한다.", "API 요금표를 읽었다. 무료가 무료가 아니었다."]) }; }
     if (id === "vb_agent") { V.agent = !V.agent; return { lines: [V.agent ? "하청 개발자 계약: 유지보수 전부 + 월 2칸 작업" : "하청 계약 해지"], msg: V.agent ? "\"코드 리뷰는 매주 금요일에 같이 봐요.\"" : "다시 새벽 알림은 내 휴대폰으로 온다." }; }
     return null;
   },
@@ -318,14 +377,20 @@ export default {
   month(s, r, notes, scenes) {
     const V = s.vibe, pi = SYN.pi(s), M = s.month;
     V.m++;
+    // 11-22 앱 재심사 대기
+    if (V.app && !V.app.live && V.app.hold > 0) { if (V.app.hold >= 99) V.app.hold = VB_F30.store.holdM; V.app.hold--; if (V.app.hold <= 0) { V.app.live = true; V.app.hold = 0; notes.push("재심사 통과! 내 앱이 앱 장터에 올라갔다"); } else notes.push(`내 앱 재심사 대기(${V.app.hold}달)`); }
     // 0) 하청 개발자: 진행 중 일 2칸
-    if (V.agent) { let left = 2 * speed(s); for (const p of V.projects.slice()) { if (left <= 0) break; const u = Math.min(left, p.need - p.done); p.done += u; left -= u; if (p.done >= p.need - 0.01) { const ls = []; deliver(s, r, p, ls); notes.push(`하청 개발자: ${ls.join(" · ")}`); } } if (left > 0 && V.app?.live) V.app.buzz = Math.min(60, V.app.buzz + 5 * left); }
+    if (V.agent) { let left = 2 * speed(s); for (const p of V.projects.slice()) { if (left <= 0) break; const u = Math.min(left, p.need - p.done); p.done += u; left -= u; if (p.done >= p.need - 0.01) { const ls = []; deliver(s, r, p, ls); notes.push(`하청 개발자: ${ls.join(" · ")}`); if (V.storeAsk) { V.storeAsk = 0; scenes.push(storeScene(s)); } } } if (left > 0 && V.app?.live) V.app.buzz = Math.min(60, V.app.buzz + 5 * left); }
     const need = fixNeed(s), q = V.agent || need <= 0 ? 1 : clamp(V.fx / need, 0, 1);
     // 1) 진행 중 외주: 마감·수정 요청
     for (const p of V.projects.slice()) {
       if (p.own) continue;
       p.due--;
-      if (r.chance((p.spec ? 0.05 : 0.14) + (p.vague ? 0.2 : 0))) { p.need += 1; p.creep++; notes.push(`${p.nm}: "버튼 하나만 더…" 수정 요청(작업 +1)`); }
+      if (r.chance(((p.spec ? 0.05 : 0.14) + (p.vague ? 0.2 : 0)) * scopeOf(s).creep)) {
+        p.need += 1; p.creep++; const sp = scopeOf(s);
+        if (sp.paid && p.price > 0) { const add = r5(Math.max(5 * pi, (p.price - (p.dep || 0)) * sp.paid)); p.price += add; notes.push(`${p.nm}: 범위 밖 요청 → 추가 견적 +${won(add)}(작업 +1)`); }
+        else notes.push(`${p.nm}: "버튼 하나만 더…" 수정 요청(작업 +1)`);
+      }
       if (p.due < 0) {
         V.rep = clamp(V.rep - 2, 0, 100);
         if (p.due < -2) { V.projects = V.projects.filter((x) => x !== p); V.rep = clamp(V.rep - 6, 0, 100); notes.push(`${p.nm}: 마감을 석 달 넘겨 고객이 계약을 끊었다(잔금 없음)`); }
@@ -335,7 +400,7 @@ export default {
     // 2) 유지보수 리테이너
     let ret = 0;
     for (const t of V.rets.slice()) {
-      if (r.chance(0.015 + (1 - q) * 0.25)) { V.rets = V.rets.filter((x) => x !== t); V.rep = clamp(V.rep - 3, 0, 100); notes.push(q < 1 ? `${t.nm}: 문의 답장이 늦어 유지보수 계약 해지` : `${t.nm}: 가게가 문을 닫아 유지보수 종료`); continue; }
+      if (r.chance(0.015 + (1 - q) * 0.25 + (V.debt > 0 ? VB_F30.model.debtQuit : 0))) { V.rets = V.rets.filter((x) => x !== t); V.rep = clamp(V.rep - 3, 0, 100); notes.push(q < 1 ? `${t.nm}: 문의 답장이 늦어 유지보수 계약 해지` : `${t.nm}: 가게가 문을 닫아 유지보수 종료`); continue; }
       ret += t.fee;
     }
     income(s, "바이브코딩 유지보수", ret);
@@ -346,11 +411,12 @@ export default {
       const cap = appCap(s);
       const grow = Math.max(0, cap - A.users) * (0.1 + A.buzz / 300) * (0.6 + 0.4 * q);
       let churn = 0.06 - (SYN.on(s, "vb_num") ? 0.015 : 0) - V.tech / 2500 + (1 - q) * 0.05 + (V.bigFree > 0 ? 0.05 : 0) - (A.focus ? 0.01 : 0);
+      churn += A.noPay ? VB_F30.store.noPayChurn : 0;
       churn = clamp(churn * (A.users > cap ? 1.5 : 1), 0.015, 0.25);
       A.users = Math.max(0, Math.round(A.users + grow - A.users * churn + r.normal() * Math.sqrt(A.users + 1) * 0.5));
       A.buzz = A.buzz * 0.6; A.best = Math.max(A.best || 0, A.users); A.churn = +churn.toFixed(3);
       // 장애
-      const outP = clamp(0.05 + A.users / 3000 - V.tech / 1500 - q * 0.03, 0.01, 0.2);
+      const outP = clamp(0.05 + A.users / 3000 - V.tech / 1500 - q * 0.03 + (V.debt > 0 ? VB_F30.model.debtOut : 0), 0.01, 0.24);
       if (r.chance(outP)) {
         V.outages++; const lost = Math.round(A.users * 0.04 * mod(s, "vbOps", 1)); A.users -= lost;
         notes.push(`새벽 3시 서버 장애: 사용자 ${lost}명 이탈${employed(s) ? ", 다음 날 회사에서 졸았다" : ""}`);
@@ -390,7 +456,7 @@ export default {
     for (const h of [V.hist, V.revH, V.recH]) if (h.length > 24) h.shift();
     V.goodM = profit >= VB_BAL.devGood * pi && employed(s) ? V.goodM + 1 : 0; // 연속으로 센다
     V.recStreak = rec >= 250 * pi && rec >= rev * 0.4 ? V.recStreak + 1 : 0;
-    V.fx = 0; V.as = Math.max(0, V.as - 0.5);
+    V.fx = 0; V.as = Math.max(0, V.as - 0.5); if (V.debt > 0) V.debt--;
     V.rep = clamp(V.rep * 0.995, 0, 100);
     // 8) 단계 오르기
     const a3 = avg3(V), bc = bestCase(V);
@@ -403,6 +469,8 @@ export default {
     if (!scenes.some((x) => x?.tag === "바이브코딩")) {
       if (V.site && V.lv <= 2 && !V.seen.includes("e02")) scenes.push(vbEvent(s, r, "e02"));
       else if (V.m === 2 && !V.seen.includes("e03")) scenes.push(vbEvent(s, r, "e03"));
+      else if (V.scope !== "tight" && V.projects.some((p) => !p.own && !p.fight && p.creep >= VB_F30.fight)) { const p = V.projects.find((x) => !x.own && !x.fight && x.creep >= VB_F30.fight); p.fight = 1; scenes.push(scopeScene(s, p)); }
+      else if (V.lv >= 2 && (V.rets.length || A?.live) && s.t - (V.mdT ?? -99) >= VB_F30.model.gap && r.chance(VB_F30.model.p)) { V.mdT = s.t; scenes.push(modelScene(s)); }
       else if (r.chance(V.lv >= 2 ? 0.22 : 0.12)) { const sc = vbEvent(s, r); if (sc) scenes.push(sc); }
     }
     return Math.round(profit);
@@ -451,18 +519,38 @@ export default {
         if (i === 0) { V.niche = V.niche || "academy"; V.cases.academy = (V.cases.academy || 0) + 1; for (let k = 0; k < 2; k++) { const o = makeOffer(s, r, V.lv >= 3 ? "post" : "market"); o.ind = "academy"; o.nm = `학원 ${r.pick(INDS.academy.jobs)}`; } out.push("업종: 학원 · 학원 의뢰 2건"); }
         else { for (let k = 0; k < 3; k++) makeOffer(s, r, V.lv >= 3 ? "post" : "market"); out.push("의뢰 3건"); }
       }
-      if (ev === "e10" && i === 0) { V.app = { live: true, ind: "biz", users: r.int(3, 6), price: 2, buzz: 20, t0: s.t, focus: false, best: 0 }; out.push("내 앱 출시: 보고서 자동화 구독"); }
+      if (ev === "e10" && i === 0) { V.app = { live: true, web: true, ind: "biz", users: r.int(3, 6), price: 2, buzz: 20, t0: s.t, focus: false, best: 0 }; out.push("내 앱 출시: 보고서 자동화 구독"); }
       if (ev === "e11" && i === 0 && V.app) { const amt = Math.max(100, Math.round((mrr(s) - appServer(s)) * 20)); s.cash += amt; addMoney(s, "inc", "바이브코딩 앱 매각", amt); V.sold++; V.soldAmt += amt; log(s, `바이브코딩: 내 앱 매각 ${won(amt)}`, "work"); V.app = null; out.push(`매각 대금 +${won(amt)}`); }
       if (ev === "e15" && V.app) { if (i === 0) { V.app.focus = true; V.bigFree = 4; V.app.users = Math.round(V.app.users * 0.9); out.push("업종 특화: 한동안 이탈, 이후 사용자 한도 +20%"); } else { V.app.price = Math.max(1, Math.round(V.app.price / 2 * 10) / 10); V.app.users = Math.round(V.app.users * 0.97); out.push(`구독료 월 ${V.app.price}만으로`); } }
       return out;
     },
+    vb_scope(s, r, i, ok) {
+      const V = s.vibe, p = V.projects.find((x) => x.id === s._vbScope?.id), pi = SYN.pi(s); s._vbScope = null; if (!p) return [];
+      p.fight = 1;
+      if (i === 0) { p.need += 2; V.rep = clamp(V.rep + 2, 0, 100); s.hp = clamp(s.hp - 3, 0, s.hpMax); return ["작업 +2", "개발 평판 +2", "스태미너 −3"]; }
+      if (i === 1) { if (ok) { const add = r5(Math.max(10 * pi, (p.price - (p.dep || 0)) * 0.25)); p.price += add; return [`추가 견적 +${won(add)}`]; } V.rep = clamp(V.rep - 4, 0, 100); return ["개발 평판 −4"]; }
+      const cut = Math.min(p.creep, Math.max(0, p.need - p.done - 0.5)); p.need = Math.round((p.need - cut) * 10) / 10; V.rep = clamp(V.rep - 3, 0, 100); return [`작업 −${cut}`, "개발 평판 −3"];
+    },
+    vb_model(s, r, i, ok) {
+      const V = s.vibe, o = s._vbModel || { n: 1 }, M3 = VB_F30.model; s._vbModel = null; V.mdN = (V.mdN || 0) + 1;
+      if (i === 0) { V.tech = clamp(V.tech + 4, 0, 100); V.tq = M3.tq; V.tqT = 6; V.debt = 0; return ["기술 이해 +4", `작업 속도 +${Math.round((M3.tq - 1) * 100)}% (6개월)`]; }
+      if (i === 1) { V.debt = M3.debtM; const out = [`기술 부채 ${M3.debtM}달: 유지보수 +${M3.debtFix}칸·장애 위험 ↑`]; if (V.app?.live) { const d = Math.round(V.app.users * 0.04); V.app.users -= d; if (d) out.push(`앱 사용자 −${d}`); } return out; }
+      if (ok) { const amt = Math.round(o.n * M3.pay * SYN.pi(s)); income(s, "바이브코딩 유지보수", amt); V.tech = clamp(V.tech + 2, 0, 100); V.debt = 0; return [`업그레이드 비용 +${won(amt)}`, "기술 이해 +2"]; }
+      const lost = V.rets.pop(); V.rep = clamp(V.rep - 3, 0, 100); V.debt = Math.round(M3.debtM / 2); return [...(lost ? [`${lost.nm} 유지보수 해지`] : []), "개발 평판 −3", `기술 부채 ${V.debt}달`];
+    },
+    vb_store(s, r, i) {
+      const A = s.vibe.app, S3 = VB_F30.store; if (!A) return [];
+      if (i === 0) { A.hold = S3.holdM; return [`재심사 ${S3.holdM}달 뒤 출시`]; }
+      if (i === 1) { A.live = true; A.web = true; A.hold = 0; return ["웹으로 바로 출시", `사용자 한도 ×${S3.webCap} · 앞으로 심사 없음`]; }
+      A.hold = 1; A.noPay = true; return ["1달 뒤 출시", `바깥 결제: 해지율 +${(S3.noPayChurn * 100).toFixed(1)}%p`];
+    },
   },
-  migrate(s, V) { if (!V.v) V.v = 1; V.seen = V.seen || []; V.seenT = V.seenT || {}; },
+  migrate(s, V) { if (!V.v) V.v = 1; if (V.v < 2) { V.v = 2; V.scope = V.scope || "std"; V.debt = V.debt || 0; } V.seen = V.seen || []; V.seenT = V.seenT || {}; },
   milestones: [
     { key: "vb_auto", title: "회사 일을 코디가 했다", test: (s) => (s.vibe?.builds || 0) >= 1 && !(s.vibe.projects || []).some((p) => p.own === "auto"), lines: ["월요일마다 세 시간 걸리던 보고서 정리가 버튼 하나로 끝났다.", "\"이거 어떻게 했어?\" 옆자리가 물었다. 웃기만 했다."] },
     { key: "vb_lv2", title: "첫 외주", test: (s) => (s.vibe?.lv || 0) >= 2, lines: ["동네 가게 예약 버튼에 내가 만든 화면이 떴다.", "후기 세 줄. 포트폴리오 첫 페이지가 찼다."] },
     { key: "vb_lv3", title: "매달 들어오는 돈", test: (s) => (s.vibe?.lv || 0) >= 3, lines: ["월초마다 유지보수비가 들어온다.", "외주를 안 받은 달에도 통장이 비지 않는다."] },
-    { key: "vb_app", title: "내 앱 출시", test: (s) => (s.vibe?.app?.users || 0) >= 1, lines: ["결제 알림이 울렸다. 모르는 사람이 내 앱에 2만 원을 냈다.", "출시 날 밤, 서버 그래프만 보다가 잠들었다."] },
+    { key: "vb_app", title: "내 앱 출시", test: (s) => !!s.vibe?.app?.live && (s.vibe?.app?.users || 0) >= 1, lines: ["결제 알림이 울렸다. 모르는 사람이 내 앱에 2만 원을 냈다.", "출시 날 밤, 서버 그래프만 보다가 잠들었다."] },
     { key: "vb_lv4", title: "업종 전문가", test: (s) => (s.vibe?.lv || 0) >= 4, lines: ["같은 업종 사장님들이 서로 나를 소개한다.", "템플릿을 고쳐 쓰니 3주 일이 1주가 됐다."] },
     { key: "vb_lv5", title: "솔로프리너", test: (s) => (s.vibe?.lv || 0) >= 5, lines: ["유지보수와 구독만으로 생활비가 된다.", "이제 퇴사는 용기가 아니라 계산의 문제다."] },
     { key: "vb_end_dev", end: true, kind: "good", epi: "퇴근 후 1인 개발사는 계속 돌아간다. 동네 가게 예약 버튼 열두 개가 내 코드다.", title: "퇴근 후 1인 개발사", test: (s) => (s.vibe?.goodM || 0) >= 24, lines: ["월 150만 원 넘는 달이 스물네 달 이어졌다. 회사도 그대로 다닌다.", "동네 가게 열두 곳의 예약 버튼이 내 코드다."] },

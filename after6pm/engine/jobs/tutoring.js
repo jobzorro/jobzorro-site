@@ -25,6 +25,16 @@ export const LV = [
 // 원래: 그룹반 1인당 1:1의 45%, 자료집 기본 판매 18만, 4·5단계 시급 6·7만 그대로 → 회사 다니며 10년 차 중앙 월 417만(기획 p95 수준).
 // hrLate: 4·5단계 실제 받는 시급 배율(화면 안내 '시간당 6만'은 정가, 할인·결석 보강을 빼면 이만큼).
 export const TU_BAL = { grp: 0.4, mat: 12, hrLate: 0.92 };
+// v4.28 특이 요소(f30). 효과 크기는 여기 숫자만 바꾸면 된다
+export const TU_F30 = {
+  // 성적표 심판의 날: 시험 전 달 보강 결정(처음 first번은 꼭, 그 뒤엔 확률 p). pg = 시험 점수 진도 보너스(약 ×14점), 무료 = 학생당 스태미너·다음 달 행동력, 유료 = 월 수업료의 fee 비율을 더 받고 학부모 만족 par
+  boost: { p: 0.4, first: 2, free: { pg: 0.35, hp: 2, hpMax: 14, ap: 1 }, paid: { pg: 0.2, fee: 0.3, par: -4 } },
+  judge: { leaveD: -4, leaveP: 0.3, refD: 7, refP: 0.4 }, // 이만큼 떨어지면 학원으로(확률) · 이만큼 오르면 소개(확률)
+  // 입시 결과(2월): 점수+학부모 만족 보정 ≥ big 대박, ≥ ok 선방. 대박이면 대기 명단(upM달: 문의 +upLam, 수업료 ×upFee), 불합격이 몰리면 소개 끊김(downM달: 소개 ×downRef, 문의 −downLam)
+  ipsi: { big: 90, ok: 72, sd: 8, upM: 6, upM2: 12, upLam: 0.6, upFee: 1.08, downM: 8, downRef: 0.3, downLam: 0.4 },
+  // 개인과외교습자 신고: minHeads 명부터 안내. 미신고면 달마다 학생 수 × p(상한 cap) 확률로 적발, 과태료 fine. 신고하면 수업료의 taxR 를 세금으로, 회사 눈치 eye, 시범수업 전환 +trust
+  lic: { minHeads: 2, p: 0.004, cap: 0.05, fine: [150, 300], taxR: 0.03, eye: 4, trust: 0.04 },
+};
 const GRADES = ["초6", "중1", "중2", "중3", "고1", "고2", "고3"];
 const GRADE_F = { 초6: 0.8, 중1: 0.85, 중2: 0.85, 중3: 0.9, 고1: 1, 고2: 1, 고3: 1.1, 성인: 0.95 };
 // 시공간 파괴: 화상이라 어디 학생이든 받는다
@@ -50,7 +60,7 @@ export const used = (s) => (T_(s)?.studs || []).reduce((a, x) => a + (x.pause ? 
 export const usedAll = (s) => (T_(s)?.studs || []).reduce((a, x) => a + x.wk, 0); // 쉬는 학생 자리도 비워 둔다
 export const heads = (s) => (T_(s)?.studs || []).reduce((a, x) => a + (x.grp ? x.size : 1), 0);
 export const needAp = (s) => { const u = used(s); if (!u) return 0; const per = T_(s).agent ? 6 : 3; return Math.max(1, Math.ceil(u * (T_(s).ai ? 0.85 : 1) / per)); };
-export const hourFee = (s) => { const T = T_(s); let h = LV[T.lv].hr * (T.lv >= 4 ? TU_BAL.hrLate : 1) * (T.exam ? 1.1 : 1) * (T.wait ? 1.08 : 1) * (T.feeUp ? 1.1 : 1); if (s.me?.traits?.includes("nightconsult")) h *= 1.15; return h * SYN.pi(s); };
+export const hourFee = (s) => { const T = T_(s); let h = LV[T.lv].hr * (T.lv >= 4 ? TU_BAL.hrLate : 1) * (T.exam ? 1.1 : 1) * (T.wait ? 1.08 : 1) * (T.feeUp ? 1.1 : 1) * ((T.ipUp || -1) > s.t ? TU_F30.ipsi.upFee : 1); if (s.me?.traits?.includes("nightconsult")) h *= 1.15; return h * SYN.pi(s); };
 // 학생 한 명(또는 그룹 한 반) 월 수업료(만원)
 export function feeOf(s, st) {
   const R = REGION.find((x) => x.k === st.reg) || REGION[0];
@@ -91,6 +101,7 @@ export function trialP(s, L) {
   let p = 0.3 + (s.st.talk || 0) / 250 + T.prof / 500 + (L.how === "ref" ? 0.25 : L.how === "sns" ? 0.12 : 0) + T.conv;
   if (SYN.on(s, "tu_cs")) p += 0.1;
   if (SYN.on(s, "tu_mentor")) p += 0.05;
+  if (T.lic === 1) p += TU_F30.lic.trust; // f30 교습자 신고증: 학부모 신뢰
   if (s.me?.traits?.includes("companyman")) p += 0.05; // 회사형 인간: 학부모 신뢰 +
   if (L.mood === "까다로움") p -= 0.1;
   return clamp(p, 0.15, 0.92);
@@ -231,12 +242,97 @@ function dropScene(s, st, from, to) {
       { t: "깔끔하게 보내 드린다", eff: { mental: -3 }, text: "마지막 수업에 \"그동안 감사했어요\"라고 학생이 먼저 말했다." }] };
 }
 
+// ───────── f30 특이 요소 장면: 성적표 심판의 날(보강) · 입시 결과 시즌 · 개인 과외 신고 ─────────
+const kids = (s) => T_(s).studs.filter((x) => x.g !== "성인" && !x.pause);
+function boostScene(s, nextCal) {
+  const T = T_(s), B = TU_F30.boost, n = kids(s).length, hp = Math.min(B.free.hpMax, B.free.hp * n);
+  const extra = Math.round(kids(s).reduce((a, x) => a + feeOf(s, x), 0) * B.paid.fee);
+  T.seen.f30b = (T.seen.f30b || 0) + 1; s._tuF30 = { cal: nextCal, hp, extra };
+  return { kind: "event", tag: "화상과외", title: "성적표 심판의 날 D-21", onChoose: "tu_boost",
+    text: `다음 달은 ${examOf(nextCal)}. 학생 ${n}명. 학부모 단톡이 술렁인다. "선생님, 시험 전에 보강 안 해 주세요?" 성적이 오르면 소개가 오고, 떨어지면 학원으로 빠져나간다.`,
+    choices: [{ t: "평소 진도대로 간다", eff: {}, text: "흔들리지 않고 하던 대로." },
+      { t: `주말 무료 보강 (스태미너 −${hp}, 다음 달 행동력 −${B.free.ap})`, eff: {}, text: "토요일 오전, 화면 속 얼굴들이 졸린 눈을 비볐다." },
+      { t: `유료 내신 대비반 (+${won(extra)}, 학부모 만족 ${B.paid.par})`, eff: {}, text: "\"대비반은 따로 받아요.\" 결제는 됐는데 답장이 짧다." }] };
+}
+function ipsiScene(s, r) {
+  const T = T_(s), I = TU_F30.ipsi, G = T.grads || []; T.grads = [];
+  let big = 0, ok = 0, fail = 0;
+  for (const g of G) { const v = g.sc + (g.par - 60) / 5 + r.normal() * I.sd; if (v >= I.big) big++; else if (v >= I.ok) ok++; else fail++; }
+  s._tuF30 = { big, ok, fail };
+  const sum = `작년 고3 ${G.length}명: 대박 ${big} · 선방 ${ok} · 불합격 ${fail}.`;
+  if (big >= 1) { T.ipUp = s.t + I.upM; return { kind: "event", tag: "화상과외", title: "입시 결과 발표", onChoose: "tu_ipsi",
+    text: `정시 발표가 끝났다. ${sum} 합격한 학생 어머니가 떡을 보냈다. 학부모 단톡에서 '그 화상 선생님' 대기 명단 얘기가 나온다.`,
+    choices: [{ t: `조용히 축하만 한다 (대기 명단 ${I.upM}달)`, eff: {}, text: "\"선생님 덕분이에요.\" 문자 한 통이면 충분했다." },
+      { t: `합격 수기를 받아 홍보한다 (대기 명단 ${I.upM2}달)`, check: { stat: "talk", dc: 45 }, ok: { text: "\"우리 애 이야기가 도움이 된다면요.\" 수기가 프로필 맨 위에 올라갔다.", eff: {} }, ng: { text: "\"애가 그런 거 싫어해서요.\" 정중히 거절당했다.", eff: {} } }] }; }
+  if (fail >= 1 && fail > big + ok) { T.ipDown = s.t + I.downM; return { kind: "event", tag: "화상과외", title: "입시 결과 발표", onChoose: "tu_ipsi",
+    text: `정시 발표가 끝났다. ${sum} 소개해 주던 어머니들 단톡이 조용하다. 당분간 소개는 기대하기 어렵다(${I.downM}달).`,
+    choices: [{ t: "받아들이고 내신 학생에 집중한다", eff: {}, text: "고3은 한 해 농사다. 다음 해를 준비했다." },
+      { t: "재수생 무료 진로 상담을 돌린다 (스태미너 −10, 소개 끊김 절반)", eff: {}, text: "떨어진 학생들과 한 명씩 통화했다. 마음이 무겁지만 어머니들 반응이 달라졌다." }] }; }
+  return null; // 선방이 많으면 장면 없이 조용히 지나간다
+}
+function licScene(s, kind) {
+  const T = T_(s), L = TU_F30.lic, pi = SYN.pi(s);
+  if (kind === "ask") { T.licT = s.t; return { kind: "event", tag: "화상과외", title: "개인과외교습자 신고", onChoose: "tu_lic",
+    text: `학생이 ${heads(s)}명이 됐다. 과외 카페 공지: "개인 과외도 교육청에 교습자 신고를 해야 합니다. 안 하면 과태료." 신고하면 소득이 잡히고, 회사에 겸직이 알려질 수도 있다.`,
+    choices: [{ t: `교육청에 신고한다 (수업료의 ${Math.round(L.taxR * 100)}% 세금, 회사 눈치 +${L.eye})`, eff: {}, text: "신고증이 나왔다. 학부모에게 영수증을 줄 수 있게 됐다." },
+      { t: "일단 신고 없이 받는다 (적발되면 과태료)", eff: {}, text: "계좌이체 내역이 조금씩 쌓인다." }] }; }
+  const fine = Math.round((L.fine[0] + (s.t % 7) / 6 * (L.fine[1] - L.fine[0])) * pi); s._tuF30 = { fine };
+  return { kind: "event", tag: "화상과외", title: "과태료 고지서", onChoose: "tu_lic",
+    text: `교육청에서 우편이 왔다. 미신고 개인 과외 신고가 들어왔다고 한다. 과태료 ${won(fine)}. 그만둔 학생 학부모가 신고했다는 소문이 돈다.`,
+    choices: [{ t: `과태료를 내고 바로 신고한다 (−${won(fine)})`, eff: {}, text: "비싼 수업료를 냈다. 이제 떳떳하다." },
+      { t: "사정을 적어 의견서를 낸다", check: { stat: "write", dc: 50 }, ok: { text: "처음이라 감경됐다. 과태료 절반.", eff: {} }, ng: { text: "받아들여지지 않았다.", eff: {} } }] };
+}
+function f30Scene(s, r, cal) {
+  const T = T_(s), L = TU_F30.lic, nx = cal % 12 + 1;
+  if (cal === 2 && (T.grads || []).length) { const sc = ipsiScene(s, r); if (sc) return sc; }
+  if (T.lic === 2 && r.chance(Math.min(L.cap, L.p * heads(s)))) return licScene(s, "fine");
+  if (!T.lic && T.lv >= 2 && heads(s) >= L.minHeads && s.t - (T.licT ?? -99) >= 6) return licScene(s, "ask");
+  if (examOf(nx) && kids(s).length && ((T.seen.f30b || 0) < TU_F30.boost.first || r.chance(TU_F30.boost.p))) return boostScene(s, nx); // 처음 두 번은 꼭, 그 뒤엔 가끔
+  return null;
+}
+const F30_CHOOSE = {
+  tu_boost(s, r, i) {
+    const T = T_(s), B = TU_F30.boost, o = s._tuF30 || {}; s._tuF30 = null;
+    if (i === 1) { T.bst = { cal: o.cal, k: "free" }; s.hp = clamp(s.hp - (o.hp || 0), 0, s.hpMax); s.apNext -= B.free.ap; return [`스태미너 −${o.hp || 0}`, `다음 달 행동력 −${B.free.ap}`, "시험 성적 +(보강)"]; }
+    if (i === 2) { T.bst = { cal: o.cal, k: "paid" }; const v = o.extra || 0; s.cash += v; addMoney(s, "inc", "화상과외 수업료", v); for (const st of T.studs) st.par = clamp(st.par + B.paid.par, 0, 100); return [`대비반 수업료 +${won(v)}`, `학부모 만족 ${B.paid.par}`, "시험 성적 +(대비반)"]; }
+    return [];
+  },
+  tu_ipsi(s, r, i, ok) {
+    const T = T_(s), I = TU_F30.ipsi, o = s._tuF30 || {}; s._tuF30 = null;
+    if (o.big >= 1) { if (i === 1 && ok) T.ipUp = s.t + I.upM2; const m = T.ipUp - s.t; return [`대기 명단 ${m}달: 문의 +, 수업료 +${Math.round((I.upFee - 1) * 100)}%`]; }
+    if (i === 1) { s.hp = clamp(s.hp - 10, 0, s.hpMax); T.ipDown = s.t + Math.ceil(I.downM / 2); }
+    return [`소개 끊김 ${Math.max(0, T.ipDown - s.t)}달: 소개 −${Math.round((1 - I.downRef) * 100)}%`, ...(i === 1 ? ["스태미너 −10"] : [])];
+  },
+  tu_lic(s, r, i, ok) {
+    const T = T_(s), L = TU_F30.lic, o = s._tuF30; s._tuF30 = null;
+    if (o?.fine) { const f = i === 1 && ok ? Math.round(o.fine / 2) : o.fine; s.cash -= f; addMoney(s, "exp", "화상과외 비용", f); T.lic = 1; const out = [`과태료 −${won(f)}`, "교습자 신고 완료"]; if (i === 1 && !ok) { s.mental = clamp(s.mental - 3, 0, 100); out.push("멘탈 −3"); } return out; }
+    if (i === 0) return licOn(s);
+    T.lic = 2; return ["미신고: 적발 위험(학생이 많을수록 ↑)"];
+  },
+};
+function licOn(s) {
+  const T = T_(s), L = TU_F30.lic; T.lic = 1; const out = ["교습자 신고 완료: 시범수업 전환 +" + Math.round(L.trust * 100) + "%p", `수업료의 ${Math.round(L.taxR * 100)}% 세금`];
+  if (employed(s)) { s.co.eye = clamp(s.co.eye + L.eye, 0, 100); out.push(`회사 눈치 +${L.eye}`); }
+  return out;
+}
+export function doLicense(s) { const T = T_(s); if (T.lic === 1) return "이미 신고했어요"; return licOn(s).join(" · "); }
+// 시험(#autoN-tutoring-f30boost|f30ipsi|f30lic|f30fine)
+export function f30Test(s, r, what) {
+  const T = T_(s); if (!T.studs.length) demoSetup(s);
+  if (what === "boost") return boostScene(s, 4);
+  if (what === "ipsi") { T.grads = [{ sc: 95, par: 85 }, { sc: 70, par: 60 }, { sc: 60, par: 50 }]; return ipsiScene(s, r); }
+  if (what === "ipsibad") { T.grads = [{ sc: 50, par: 40 }, { sc: 55, par: 45 }]; return ipsiScene(s, r); }
+  if (what === "lic") return licScene(s, "ask");
+  if (what === "fine") { T.lic = 2; return licScene(s, "fine"); }
+  return null;
+}
+
 // ───────── 엔진 ─────────
 export default {
   key: K, prefix: "tu_", hubName: "화상과외",
   init: () => ({ v: 1, lv: 1, lvT: 0, studs: [], leads: [], seq: 0, open: 4, ap: 0, mgb: 1, prof: 20, conv: 0, stars: 4.3, reviews: 0, wins: 0, trials: 0, lost: 0, ups: 0, refN: 0,
     msgs: 0, prep: 0, cut: 0.2, expo: 1, buzz: 0, ad: false, agent: false, ai: false, autoRep: false, series: false, mid: false, adult: false, exam: false, wait: false, feeUp: false,
-    rec: 0, mats: 0, matT: [], gtot: 0, classes: 0, rep: 0, repT: -99, taxed: 0, yr: 0, hist: [], last: null, seen: {}, evT: -99, mon: 0, streak: 0, low: 0, everMax: 0, far: 0, gm: [], started: false, rest: 0 }),
+    rec: 0, mats: 0, matT: [], gtot: 0, bst: null, grads: [], ipUp: -1, ipDown: -1, lic: 0, licT: -99, classes: 0, rep: 0, repT: -99, taxed: 0, yr: 0, hist: [], last: null, seen: {}, evT: -99, mon: 0, streak: 0, low: 0, everMax: 0, far: 0, gm: [], started: false, rest: 0 }),
 
   actions: {
     tu_class: { n: "화상 수업", ap: 1, hp: 4, desc: "이번 달 수업을 한다. 빠지면 펑크 · 학생 만족·성적 ↑" },
@@ -349,25 +445,35 @@ export default {
       if (st.months >= 2 && r.chance(churn)) { lose(s, st, st.par < 50 ? "학부모가 그만두기로 했다(만족 낮음)" : r.pick(["학원으로 옮긴다고 한다", "이사·전학으로 그만둔다"]), notes); continue; }
       // 후기·소개
       if (st.par >= 70 && r.chance(T.autoRep ? 0.1 : 0.06)) { T.reviews++; T.stars = clamp(T.stars + 0.01, 2.5, 5); }
-      if (T.lv >= 3 && st.par >= 75 && r.chance(0.05 * (st.grp ? 1.5 : 1) * mod(s, "tuRefer", 1))) { newLead(s, r, "ref"); notes.push(`화상과외: ${studLabel(st)} 학부모가 친구 엄마를 소개해 줬다`); }
+      if (T.lv >= 3 && st.par >= 75 && r.chance(0.05 * (st.grp ? 1.5 : 1) * mod(s, "tuRefer", 1) * ((T.ipDown || -1) > s.t ? TU_F30.ipsi.downRef : 1))) { newLead(s, r, "ref"); notes.push(`화상과외: ${studLabel(st)} 학부모가 친구 엄마를 소개해 줬다`); }
     }
     // 4) 시험 결과
     const ex = examOf(cal);
     if (ex) {
-      let best = null, drop = null;
+      let best = null, drop = null, nUp = 0, nDn = 0; const evd = new Set();
+      const bst = T.bst && T.bst.cal === cal ? TU_F30.boost[T.bst.k] : null; T.bst = null; // f30 시험 전 보강
       for (const st of T.studs) {
         if (st.g === "성인" || !st.pm) continue;
-        const avg = st.pg / st.pm; st.pg = 0; st.pm = 0;
+        const avg = st.pg / st.pm + (bst ? bst.pg : 0); st.pg = 0; st.pm = 0;
         const d = clamp(Math.round((avg - 0.95) * 14 + r.normal() * 4), -15, 15), from = st.sc;
         st.sc = clamp(st.sc + d, 30, 100); st.last = d;
+        evd.add(st); if (d >= TU_F30.judge.refD) nUp++; if (d <= TU_F30.judge.leaveD) nDn++;
         if (d >= 7) { T.ups++; st.par = clamp(st.par + 15, 0, 100); if (r.chance(0.4)) T.reviews++; if (!best || d > best.d) best = { st, d }; if (T.lv >= 3 && r.chance(0.35)) newLead(s, r, "ref"); }
         else if (d <= -7) { st.par = clamp(st.par - 15, 0, 100); if (!drop || d < drop.d) drop = { st, d, from }; }
       }
       if (best && best.d >= 7) notes.push(`화상과외 ${ex}: ${studLabel(best.st)} ${best.d > 0 ? "+" : ""}${best.d}점! 학부모 단톡에 캡처가 돌았다`);
       if (drop && scenes.length < 3) scenes.push(dropScene(s, drop.st, drop.from, drop.from + drop.d));
+      // f30 성적표 심판의 날: 떨어진 학생은 학원으로, 오른 학생은 소개를 데려온다(3단계 전에도)
+      const J = TU_F30.judge; let gone = 0, refs = 0;
+      for (const st of [...T.studs]) {
+        if (!evd.has(st) || st === drop?.st) continue;
+        if (st.last <= J.leaveD && r.chance(J.leaveP)) { lose(s, st, null, null); gone++; }
+        else if (st.last >= J.refD && T.lv < 3 && r.chance(J.refP)) { newLead(s, r, "ref"); refs++; }
+      }
+      if (nUp + nDn) notes.push(`화상과외 성적표 심판의 날: 오름 ${nUp} · 내림 ${nDn}${gone ? ` · 학원으로 ${gone}명` : ""}${refs ? ` · 소개 ${refs}건` : ""}${bst ? " (보강 효과)" : ""}`);
     }
     // 5) 학년 올라가기(3월) · 고3 졸업(12월 수능 뒤)
-    if (cal === 12) for (const st of [...T.studs]) if (st.g === "고3" && !st.grp) { lose(s, st, st.par >= 70 ? "수능 끝! 졸업. \"동생도 부탁드려요\"" : "수능이 끝나 졸업했다", notes); T.lost--; if (st.par >= 70 && T.lv >= 2) newLead(s, r, "ref"); }
+    if (cal === 12) for (const st of [...T.studs]) if (st.g === "고3" && !st.grp) { (T.grads = T.grads || []).push({ sc: st.sc, par: st.par }); lose(s, st, st.par >= 70 ? "수능 끝! 졸업. \"동생도 부탁드려요\"" : "수능이 끝나 졸업했다", notes); T.lost--; if (st.par >= 70 && T.lv >= 2) newLead(s, r, "ref"); }
     if (cal === 3) for (const st of T.studs) if (!st.grp) { const i = GRADES.indexOf(st.g); if (i >= 0 && i < GRADES.length - 1) st.g = GRADES[i + 1]; }
     // 6) 그룹반 채우기(4단계): 빈자리는 소개·문의로 차오른다
     for (const st of T.studs) if (st.grp) { if (st.size >= 3 && r.chance(0.08)) st.size--; if (st.size < 4 && r.chance(0.35 * SEASON[cal - 1])) { st.size++; T.gtot++; } }
@@ -379,7 +485,8 @@ export default {
     }
     // 8) 비용: 과외온 수수료 · 툴 구독 · 광고 · 조교 · 자료 수수료
     const tool = Math.round(2 * pi), ad = T.ad ? Math.round(20 * pi) : 0, agent = T.agent ? Math.round(45 * pi) : 0, matCut = Math.round(mat * 0.2);
-    const cost = Math.round(cutAmt + tool + ad + agent + matCut);
+    const licTax = T.lic === 1 ? Math.round(rev * TU_F30.lic.taxR) : 0; // f30 교습자 신고: 소득이 잡힌다
+    const cost = Math.round(cutAmt + tool + ad + agent + matCut + licTax);
     rev = Math.round(rev);
     s.cash += rev + mat - cost;
     if (rev) addMoney(s, "inc", "화상과외 수업료", rev);
@@ -392,7 +499,8 @@ export default {
     if (SYN.on(s, "tu_late")) s.hp = clamp(s.hp - 3, 0, s.hpMax);
     // 10) 문의 들어오기(시즌·후기·별점·영상·광고). 지난 문의는 한 달 지나면 사라진다
     T.leads = T.leads.filter((L) => s.t - L.t < 2);
-    const lam = (0.15 + Math.min(1, T.reviews / 20) + (T.stars - 4.2) * 0.6 + T.buzz / 50 + (T.ad ? 0.8 : 0) + (T.lv >= 3 ? 0.3 : 0) + (T.series && [3, 5, 9, 11].includes(cal) ? 0.6 : 0))
+    const IP = TU_F30.ipsi, up = (T.ipUp || -1) > s.t, dn = (T.ipDown || -1) > s.t;
+    const lam = (0.15 + (up ? IP.upLam : 0) - (dn ? IP.downLam : 0) + Math.min(1, T.reviews / 20) + (T.stars - 4.2) * 0.6 + T.buzz / 50 + (T.ad ? 0.8 : 0) + (T.lv >= 3 ? 0.3 : 0) + (T.series && [3, 5, 9, 11].includes(cal) ? 0.6 : 0))
       * SEASON[cal - 1] * T.expo * (SYN.on(s, "tu_insta") ? 1.2 : 1) * (T.exam ? 0.9 : 1);
     let nIn = Math.floor(Math.max(0, lam)) + (r.chance(Math.max(0, lam) % 1) ? 1 : 0); nIn = Math.min(nIn, 3);
     for (let i = 0; i < nIn; i++) newLead(s, r, T.buzz > 15 && r.chance(0.4) ? "sns" : "app");
@@ -413,8 +521,8 @@ export default {
     lvCheck(s, notes);
     // 12) 장면: 위기 → 단계 이벤트
     if (scenes.length < 3) {
-      let sc = null;
-      if (T.studs.length && r.chance(0.35)) sc = crisisEvent(s, r, rev, "e14") || crisisEvent(s, r, rev, "e15");
+      let sc = f30Scene(s, r, cal);
+      if (!sc && T.studs.length && r.chance(0.35)) sc = crisisEvent(s, r, rev, "e14") || crisisEvent(s, r, rev, "e15");
       if (!sc && [12, 1].includes(cal) && r.chance(0.5)) sc = crisisEvent(s, r, rev, "e16");
       if (!sc && employed(s) && s.co.crunchM && !T.seen.e05) sc = crisisEvent(s, r, rev, "e05");
       if (!sc && s.t - T.evT >= 2 && r.chance(T.mon <= 3 ? 0.4 : 0.16)) sc = tuEvent(s, r, rev);
@@ -433,6 +541,7 @@ export default {
     if (T.leads.length) t.push({ lv: 1, text: `시범수업 문의 ${T.leads.length}건` });
     if (!T.studs.length && !T.leads.length) t.push({ lv: 1, text: "과외온에서 학생 모집" });
     if (T.studs.length && avgPar(s) < 55 && T.repT !== s.t) t.push({ lv: 1, text: "학부모 만족이 낮아요: 리포트 보내기" });
+    if (T.bst && examOf(T.bst.cal)) t.push({ lv: 0, text: `${examOf(T.bst.cal)} 대비 ${T.bst.k === "free" ? "무료 보강" : "유료 대비반"} 중` });
     return t;
   },
 
@@ -473,6 +582,7 @@ export default {
     }
   },
   choose: {
+    ...F30_CHOOSE,
     tu_drop(s, r, i, ok) {
       const T = T_(s), st = T.studs.find((x) => x.id === s._tuEv?.id); s._tuEv = null;
       if (!st) return [];
@@ -480,7 +590,7 @@ export default {
       lose(s, st, null, null); return [`${studLabel(st)} 그만둠`];
     },
   },
-  migrate(s, T) { if (!T.v) T.v = 1; for (const k of ["gm", "matT", "hist", "studs", "leads"]) if (!Array.isArray(T[k])) T[k] = []; if (!T.seen) T.seen = {}; },
+  migrate(s, T) { if (!T.v) T.v = 1; if (!Array.isArray(T.grads)) T.grads = []; for (const k of ["gm", "matT", "hist", "studs", "leads"]) if (!Array.isArray(T[k])) T[k] = []; if (!T.seen) T.seen = {}; },
 
   // 단계 화보(성장 마일스톤) + 엔딩 3개
   milestones: [

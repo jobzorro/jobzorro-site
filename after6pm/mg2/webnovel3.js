@@ -3,6 +3,7 @@
 // 가운데: 시간대별 독자 수 그래프(밤 10~12시 피크). 아래: 침대에 앉아 폰으로 관리하는 나 + 작업 버튼.
 // 할 일: 떠오르는 독자 댓글에 답글(악플은 무시), 표지 바꾸기(1번), 이벤트 참여, 원고 5편을 피크에 연재 올리기.
 // 라이벌이 '연참 폭탄'을 터뜨리면 피크 연재로 맞받아친다. 자정에 최종 순위 발표, 1~3위면 왕관 + 유료 연재 제안 메일.
+// 그림(11-22 2차): 방은 실제 배경 그림(img/bg/home.webp)+흐림, 나는 캐릭터 그림 표정 시트, 랭킹 판·표지·그래프·폰·이불·아이콘은 기기 해상도 벡터.
 // mg.js 와 서로 불러 쓰므로, 맨 위에서는 불러온 것을 바로 쓰지 않는다(함수 안에서만).
 import { frame, timer, SFX, tone, noise, vib, rnd, rint, pick, shuffle, clamp, RM, uOutline } from "../mg.js";
 
@@ -21,88 +22,84 @@ const RIVALS = [
 ];
 const MINE = { t: "퇴근 후, 마탑의 주인", g: "판타지", m: "tower", bg: "#1f3a70", fg: "#5fb8ff" };
 const START = [7400, 6900, 6400, 5900, 5000], RATE = [1.12, 1.06, 1.0, 0.95, 0.88], ME0 = 5500;
-// 7x7 표지 무늬(a 주색, b 밝은색)
+// 표지 무늬(가운데 0,0 기준 벡터, F=주색)
 const MOTIF = {
-  sword: ["......b", ".....a.", "....a..", "...a...", "b.a....", ".b.....", "a.b...."],
-  heart: [".aa.aa.", "abaaaaa", "aaaaaaa", "aaaaaaa", ".aaaaa.", "..aaa..", "...a..."],
-  coin: ["..aaa..", ".abbba.", "aab.baa", "aab.baa", "aabbbaa", ".aaaaa.", "..aaa.."],
-  store: ["aaaaaaa", "bbbbbbb", "a.a.a.a", "aaaaaaa", "a..a..a", "a..a..a", "aaaaaaa"],
-  crown: [".......", "a..a..a", "aa.a.aa", "aaaaaaa", "abababa", "aaaaaaa", "......."],
-  tower: ["...b...", "..aaa..", "..aba..", "..aaa..", ".aaaaa.", ".abaaa.", "aaaaaaa"],
-  draft: ["......a", ".....aa", "....aa.", "...aa..", "..aa...", ".bb....", "b......"],
+  sword: (F) => `<g transform="rotate(40)"><path d="M0-19l3.4 4.6v18.4h-6.8v-18.4z" fill="#fff"/><path d="M0-16v18" stroke="${F}" stroke-width="1.2" opacity=".6"/><rect x="-8" y="4" width="16" height="3.6" rx="1.8" fill="${F}"/><rect x="-1.8" y="7.6" width="3.6" height="8" rx="1.2" fill="${F}"/><circle cy="17" r="2.2" fill="#fff"/></g>`,
+  heart: (F) => `<path d="M0 15C-12 7-15 1-15-4.5-15-9.5-11.2-13-7-13c3.2 0 5.6 1.7 7 4.4 1.4-2.7 3.8-4.4 7-4.4 4.2 0 8 3.5 8 8.5C15 1 12 7 0 15z" fill="${F}"/><path d="M-10-6c1-2.4 3-3.4 5-3" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+  coin: (F) => `<circle r="14" fill="${F}"/><circle r="10.5" fill="none" stroke="#fff" stroke-width="1.6" opacity=".8"/><text y="5.6" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="15" fill="#fff">₩</text>`,
+  store: (F) => `<path d="M-14-6h28v20h-28z" fill="${F}"/><path d="M-16-14h32l-2 8h-28z" fill="#fff"/><path d="M-10-14l-2 8M-2-14v8M6-14l1 8M13-14l2 8" stroke="${F}" stroke-width="3"/><rect x="-10" y="0" width="8" height="14" fill="#fff" opacity=".9"/><rect x="2" y="0" width="9" height="7" rx="1" fill="#fff" opacity=".7"/>`,
+  crown: (F) => `<path d="M-15 10l-2-17 9 7 8-11 8 11 9-7-2 17z" fill="${F}"/><rect x="-15" y="9" width="30" height="5" rx="1.5" fill="#fff"/><circle cy="2" r="2.6" fill="#fff"/>`,
+  tower: (F) => `<path d="M-6-10h12v24h-12z" fill="${F}"/><path d="M-9-10L0-21 9-10z" fill="${F}"/><path d="M-11 14h22v4h-22z" fill="${F}"/><rect x="-2.2" y="-5" width="4.4" height="6" rx="2.2" fill="#fff"/><rect x="-2.2" y="5" width="4.4" height="5" rx="1" fill="#fff" opacity=".7"/><path d="M0-27l1.4 3 3 .4-2.2 2 .6 3L0-20l-2.8 1.4.6-3-2.2-2 3-.4z" fill="#fff"/>`,
+  draft: (F) => `<g transform="rotate(-40)"><rect x="-3.4" y="-15" width="6.8" height="24" fill="${F}"/><rect x="-3.4" y="-17" width="6.8" height="3" fill="#ffd6a0"/><path d="M-3.4 9L0 16 3.4 9z" fill="#ffd6a0"/><path d="M-1 14l1 2 1-2z" fill="#3a3448"/></g>`,
 };
 // 독자 댓글(닉네임은 지어낸 말 조합)
 const NICK_A = ["새벽", "퇴근한", "정주행", "야식", "졸린", "말랑", "꿈꾸는", "통통", "밤샘", "느긋한", "출근길", "주말"];
 const NICK_B = ["독자", "감자", "고양이", "만두", "펭귄", "라떼", "도토리", "호떡", "두부", "판다", "치즈", "붕어빵"];
 const C_GOOD = ["작가님 다음 화 언제요ㅠ", "공모전 응원해요!", "이 작품 1위 가자!", "주인공 너무 좋아요", "정주행 끝! 다음 화요", "선작하고 갑니다", "오늘 연재 있나요?", "출근길 유일한 낙", "답글 주시면 평생 독자", "마탑 장면 미쳤어요", "투표하고 왔어요!", "오늘 밤 기다릴게요"];
 const C_TROLL = ["노잼… 하차함", "1화부터 뻔하네", "이게 공모전작?", "광고 보고 왔는데 별로", "표절 아님?ㅋ"];
-const DIG = ["111101101101111", "010110010010111", "111001111100111", "111001111001111", "101101111001001", "111100111001111", "111100111101111", "111001001001001", "111101111101111", "111101111001111"];
-const FINGER = ["....XX.......", "...XooX......", "...XooX......", "...XooXXX....", "...XooXooXXX.", ".XXXooXooXooX", "XooXooooooooX", "XoooooooooooX", ".XooooooooooX", "..XoooooooooX", "..XooooooooX.", "...XoooooooX.", "...XXXXXXXXX."];
-// 작은 그림들(X 테두리)
-const PIX = {
-  up: ["..XXXXXX..", ".XwwwwwwX.", ".XwwbwwwX.", ".XwbbbwwX.", ".XbbbbbwX.", ".XwwbwwwX.", ".XwwbwwwX.", ".XwwwwwwX.", ".XwgggwwX.", ".XwwwwwwX.", "..XXXXXX.."],
-  cover: ["XXXXXXXXX.", "XppppppppX", "XpyppppppX", "XpppppyppX", "XppwwwppX.", "XpwwwwwpX.", "XppwwwppX.", "XppppppppX", "XpggggggpX", "XXXXXXXXX."],
-  event: [".......XX.", "......XrX.", "....XXrrX.", "XXXXrrrrX.", "XwwXrrrrX.", "XwwXrrrrX.", "XXXXrrrrX.", "..XXXrrrX.", "..XwX.XrX.", "..XXX..XX."],
-  heart: [".XX.XX.", "XrrXrrX", "XrwrrrX", "XrrrrrX", ".XrrrX.", "..XrX..", "...X..."],
-  plane: ["X.........", "XwX.......", "XwwXX.....", "XwwwwXX...", ".XwwwwwXXX", ".XggXwwwwX", "..XgXXXX..", "..XX......"],
-  crown: ["y....y....y", "yX..yXy..Xy", "XyX.XyX.XyX", "XyyXyyyXyyX", "XyyyyryyyyX", "XyryyyyyryX", "XXXXXXXXXXX"],
-  env: ["XXXXXXXXXXXXXXXXXX", "XwXwwwwwwwwwwwwXwX", "XwwXwwwwwwwwwwXwwX", "XwwwXXwwwwwwXXwwwX", "XwwwwwXXwwXXwwwwwX", "XwwwwwwrrrrwwwwwwX", "XwwwwwrrwwrrwwwwwX", "XwwwwwwrrrrwwwwwwX", "XwwwwwwwrrwwwwwwwX", "XggggggggggggggggX", "XXXXXXXXXXXXXXXXXX"],
-};
-const PCOL = { X: "#1a1424", w: "#fffaf0", b: "#1f6fd0", g: "#9aa0c0", p: "#5fb8ff", y: "#ffd166", r: "#ff5a7a" };
-
 const tint = (c, f) => { const n = parseInt(c.slice(1, 7), 16); return "#" + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.min(255, Math.round(v * f)).toString(16).padStart(2, "0")).join(""); };
 const fmt = (n) => Math.round(n).toLocaleString("ko-KR");
 const hm = (g) => { const m = Math.min(300, Math.floor(g * 10)), h = 19 + Math.floor(m / 60); return h >= 24 ? "00:00" : `${h}:${String(m % 60).padStart(2, "0")}`; };
-const cache = {};
-function pixURL(k, pal = PCOL) {
-  const key = k + JSON.stringify(pal === PCOL ? 0 : pal); if (cache[key]) return cache[key];
-  const rows = PIX[k], c = document.createElement("canvas"); c.width = rows[0].length; c.height = rows.length; const g = c.getContext("2d");
-  rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === ".") return; g.fillStyle = pal[ch] || "#fff"; g.fillRect(x, y, 1, 1); }));
-  return (cache[key] = c.toDataURL());
+// ── 벡터 그림 도구(도트 대신 기기 해상도 그림) ──
+const svgU = (s) => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
+const svgW = (vb, inner) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${inner}</svg>`;
+// 둥근 네모 길
+function rr(c, x, y, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+const lin = (c, x0, y0, x1, y1, st) => { const g = c.createLinearGradient(x0, y0, x1, y1); st.forEach(([o, col]) => g.addColorStop(o, col)); return g; };
+const rad = (c, x, y, r0, r1, st) => { const g = c.createRadialGradient(x, y, r0, x, y, r1); st.forEach(([o, col]) => g.addColorStop(o, col)); return g; };
+function star5(c, x, y, r, fill, stroke) { c.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr2 = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(a) * rr2, y + Math.sin(a) * rr2); } c.closePath(); c.fillStyle = fill; c.fill(); if (stroke) { c.strokeStyle = stroke; c.lineWidth = r * 0.18; c.stroke(); } }
+// 7세그먼트 숫자(디지털 시계)
+const SEG7 = ["abcdef", "bc", "abged", "abgcd", "fgbc", "afgcd", "afgedc", "abc", "abcdefg", "abcdfg"];
+function seg7(c, d, x, y, w, h, col, dim) {
+  const t = w * 0.26, m = y + h / 2, S = { a: [x + t, y, x + w - t, y], b: [x + w, y + t, x + w, m - t * 0.6], c: [x + w, m + t * 0.6, x + w, y + h - t], d: [x + t, y + h, x + w - t, y + h], e: [x, m + t * 0.6, x, y + h - t], f: [x, y + t, x, m - t * 0.6], g: [x + t, m, x + w - t, m] };
+  c.lineCap = "round"; c.lineWidth = t;
+  for (const k of "abcdefg") { const on = SEG7[d].includes(k); if (!on && !dim) continue; c.strokeStyle = on ? col : dim; c.beginPath(); c.moveTo(S[k][0], S[k][1]); c.lineTo(S[k][2], S[k][3]); c.stroke(); }
 }
-// 표지 14x18(+테두리). fancy=false 면 회색 임시 표지
-function coverC(d, fancy = true) {
-  const c = document.createElement("canvas"); c.width = 16; c.height = 20; const g = c.getContext("2d");
-  const P = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x + 1, y + 1, w, h); };
-  const bg = fancy ? d.bg : "#6a6878", fg = fancy ? d.fg : "#c8c6d4";
-  for (let y = 0; y < 18; y++) P(0, y, 14, 1, tint(bg, 1.25 - y * 0.03));
-  if (fancy) { for (let i = 0; i < 6; i++) P(rint(14), rint(10), 1, 1, "#ffffff55"); P(0, 0, 14, 1, tint(bg, 1.6)); }
-  else for (let y = 2; y < 18; y += 3) P(0, y, 14, 1, "#ffffff10");
-  const mo = MOTIF[fancy ? d.m : "draft"];
-  mo.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === "a") P(3 + x, 3 + y, 1, 1, fg); if (ch === "b") P(3 + x, 3 + y, 1, 1, fancy ? "#ffffff" : "#ffd6a0"); }));
-  P(1, 12, 12, 4, fancy ? "#00000055" : "#00000030"); P(2, 13, 10, 1, fancy ? "#fffaf0" : "#e8e6f0"); P(3, 15, 7, 1, fancy ? fg : "#b0aec0");
-  if (!fancy) { P(9, 1, 4, 3, "#ffe27a"); P(9, 1, 4, 1, "#f0c850"); }
-  if (fancy && d === MINE) { P(1, 1, 1, 1, "#fff"); P(12, 5, 1, 1, "#fff"); P(11, 4, 3, 1, "#ffffff88"); P(12, 3, 1, 3, "#ffffff88"); }
-  uOutline(c); return c;
+// 아래를 가리키는 손(리허설 안내)
+const HAND_URL = svgU(svgW("0 0 40 40", `<rect x="10" y="0.8" width="24" height="5.4" rx="2" fill="#5fb8ff" stroke="#2a1e2e" stroke-width="1.6"/><g stroke="#2a1e2e" stroke-width="2" stroke-linejoin="round"><rect x="8.5" y="4" width="27" height="19" rx="7" fill="#ffe6d6"/><rect x="10" y="12" width="9.6" height="26" rx="4.8" fill="#fff4ec"/></g><path d="M23 12.5v7.5M28 12.5v7.5M32.4 13.5v5.5" stroke="#d8a898" stroke-width="1.5" stroke-linecap="round"/><path d="M12.6 33.4a2.3 2.3 0 0 0 4.4 0" fill="none" stroke="#e8b8a8" stroke-width="1.3"/><path d="M12 15v8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>`));
+// 장르·조각 아이콘(32칸 기준 벡터)
+const ICON_SVG = {
+  reg: `<rect x="7" y="2.5" width="18" height="3.8" rx="1.6" fill="#ffd166" stroke="#5a3a10" stroke-width="1.2"/><rect x="7" y="25.7" width="18" height="3.8" rx="1.6" fill="#ffd166" stroke="#5a3a10" stroke-width="1.2"/><path d="M9.6 6.3h12.8c0 6-6.2 7-6.2 9.7s6.2 3.7 6.2 9.7H9.6c0-6 6.2-7 6.2-9.7S9.6 12.3 9.6 6.3z" fill="#d6f0ff" stroke="#2a3a5a" stroke-width="1.2"/><path d="M12.2 9h7.6c-.6 2.6-3.8 3.4-3.8 5.6-.1-2.2-3.2-3-3.8-5.6z" fill="#ffb03b"/><path d="M11.6 25.4c.6-3 4.4-3.8 4.4-6.4 0 2.6 3.8 3.4 4.4 6.4z" fill="#ffb03b"/><path d="M16 15.5v3.3" stroke="#ffb03b" stroke-width="1"/><path d="M11 7.5c.4 2 1 3.2 2.2 4.2" stroke="#fff" stroke-width="1" fill="none" opacity=".8"/>`,
+  rof: `<path d="M16 17c-1.2 5-1.2 9 0 13" stroke="#3f9a4c" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M16 24.5c3-3.2 7.4-3.2 8.6-1-2.2 2.4-5.6 3.2-8.6 1z" fill="#5fc06c" stroke="#2f6a3a" stroke-width=".8"/><path d="M15.6 22c-2.6-2.6-6.4-2.4-7.4-.4 2 2 5 2.4 7.4.4z" fill="#5fc06c" stroke="#2f6a3a" stroke-width=".8"/><circle cx="16" cy="11" r="8.2" fill="#ff6fa8" stroke="#8a1f4a" stroke-width="1.2"/><path d="M10.5 11.5c.8-4.6 10.2-4.6 11 0-2.4-2.4-8.4-2.4-11 0z" fill="#ffb0d0"/><path d="M12.6 13.2c2 2.4 5.4 2.2 6.8-1" stroke="#b8205a" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M13.4 9.4c1.6-1.8 4.4-1.8 5.6.2" stroke="#b8205a" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="12.8" cy="7.8" r="1.3" fill="#fff" opacity=".7"/>`,
+  mur: `<g transform="rotate(45 16 16)"><path d="M16 .8l2.2 3.4v15.4h-4.4V4.2z" fill="#e8ecf4" stroke="#3a3e50" stroke-width="1.1"/><path d="M16 2.6v16.6" stroke="#fff" stroke-width=".9"/><rect x="9.6" y="19.4" width="12.8" height="2.8" rx="1.3" fill="#ffb03b" stroke="#5a3a10" stroke-width="1"/><rect x="14.6" y="22.2" width="2.8" height="6" rx="1" fill="#7a4a2a" stroke="#3a2010" stroke-width=".8"/><circle cx="16" cy="29.6" r="1.9" fill="#ffd166" stroke="#5a3a10" stroke-width=".8"/></g>`,
+  dist: `<rect x="8.5" y="3" width="15" height="26" rx="3.2" fill="#4a3f66" stroke="#d8ccf0" stroke-width="1.2"/><rect x="10.4" y="6.2" width="11.2" height="18.4" rx="1.2" fill="#7fc8ff"/><path d="M14 11.8v7l5.6-3.5z" fill="#fff"/><rect x="13.5" y="26" width="5" height="1.2" rx=".6" fill="#d8ccf0"/><circle cx="22.6" cy="5.6" r="4.2" fill="#ff3b5c" stroke="#fff" stroke-width="1.2"/><path d="M22.6 3.6v2.6" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/><circle cx="22.6" cy="7.8" r=".8" fill="#fff"/>`,
+  cof: `<path d="M6.5 12.5h15.5v9.5a5.2 5.2 0 0 1-5.2 5.2h-5.1a5.2 5.2 0 0 1-5.2-5.2z" fill="#f2e6d8" stroke="#2a1a10" stroke-width="1.3"/><path d="M22 14.6h2a3.6 3.6 0 0 1 0 7.2h-2" fill="none" stroke="#2a1a10" stroke-width="1.6"/><ellipse cx="14.25" cy="12.7" rx="7.4" ry="1.9" fill="#8a5a3a" stroke="#2a1a10" stroke-width="1"/><rect x="6.6" y="17" width="15.3" height="3" fill="#ffd166"/><path d="M10.5 9.4c-1.6-2 1.6-3 0-5.4M14.5 9.4c-1.6-2 1.6-3 0-5.4M18.5 9.4c-1.6-2 1.6-3 0-5.4" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".9"/>`,
+};
+const icCache = {};
+const iconURL = (k) => icCache[k] || (icCache[k] = svgU(svgW("0 0 32 32", ICON_SVG[k])));
+const icG = (k, x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})">${ICON_SVG[k]}</g>`;
+const handG = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})"><rect x="10" y="0.8" width="24" height="5.4" rx="2" fill="#5fb8ff" stroke="#2a1e2e" stroke-width="1.6"/><g stroke="#2a1e2e" stroke-width="2" stroke-linejoin="round"><rect x="8.5" y="4" width="27" height="19" rx="7" fill="#ffe6d6"/><rect x="10" y="12" width="9.6" height="26" rx="4.8" fill="#fff4ec"/></g><path d="M23 12.5v7.5M28 12.5v7.5" stroke="#d8a898" stroke-width="1.5" stroke-linecap="round"/></g>`;
+const sparkG = (x, y, r, c) => `<path d="M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}z" fill="${c}"/>`;
+// 작은 아이콘(벡터): 연재·표지·이벤트·하트·종이비행기·왕관·편지
+const VIC = {
+  up: ["0 0 32 32", () => `<rect x="6" y="3" width="20" height="26" rx="3" fill="#fffaf0" stroke="#1a1424" stroke-width="1.4"/><path d="M6 8V6a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v2z" fill="#9fd8ff"/><path d="M16 9.5l-6.2 6.2h4.1v6.6h4.2v-6.6h4.1z" fill="#1f6fd0"/><rect x="10" y="24.4" width="12" height="2" rx="1" fill="#9aa0c0"/>`],
+  cover: ["0 0 32 32", () => `<rect x="7" y="3" width="19" height="26" rx="2.4" fill="#5fb8ff" stroke="#1a1424" stroke-width="1.4"/><path d="M7 5.4A2.4 2.4 0 0 1 9.4 3H11v26H9.4A2.4 2.4 0 0 1 7 26.6z" fill="#1f6fd0"/><path d="M12 22l4.5-6 3 3.5 2-2.2 3.5 4.7z" fill="#fffaf0"/><circle cx="20.5" cy="10" r="2.4" fill="#ffd166"/>${sparkG(26, 5, 4.2, "#ffd166")}`],
+  event: ["0 0 32 32", () => `<path d="M4.5 12.5h5.5l11.5-6.5v19.5L10 19H4.5z" fill="#ff5a7a" stroke="#1a1424" stroke-width="1.4" stroke-linejoin="round"/><rect x="4.5" y="12.5" width="5.5" height="6.5" fill="#ffd0e0" stroke="#1a1424" stroke-width="1.2"/><rect x="6.5" y="19" width="4" height="7" rx="1.5" fill="#fffaf0" stroke="#1a1424" stroke-width="1.2"/><path d="M24.5 12c1.8 1.6 1.8 6 0 7.6M27.5 9c3.4 3.2 3.4 10.6 0 13.8" stroke="#ffd166" stroke-width="1.9" fill="none" stroke-linecap="round"/>`],
+  heart: ["0 0 32 32", () => `<path d="M16 27.5C6 20.4 3.4 15.2 3.4 10.8 3.4 7 6.4 4.4 10 4.4c2.6 0 4.6 1.4 6 3.6 1.4-2.2 3.4-3.6 6-3.6 3.6 0 6.6 2.6 6.6 6.4 0 4.4-2.6 9.6-12.6 16.7z" fill="#ff5a7a" stroke="#1a1424" stroke-width="1.6"/><path d="M8 9.6c.8-1.7 2.2-2.3 3.6-2.1" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>`],
+  plane: ["0 0 40 32", () => `<path d="M2 14.5L37.5 3 26.5 29l-7.2-9.2z" fill="#fffaf0" stroke="#1a1424" stroke-width="1.6" stroke-linejoin="round"/><path d="M19.3 19.8L37.5 3 13.6 17.5z" fill="#c8cce0" stroke="#1a1424" stroke-width="1.3" stroke-linejoin="round"/><path d="M19.3 19.8l-2 8 4.6-4.7" fill="#9aa0c0" stroke="#1a1424" stroke-width="1.2" stroke-linejoin="round"/>`],
+  crown: ["0 0 44 28", () => `<path d="M3.5 23L1.6 6.5l10.4 7.6L22 2.6l10 11.5 10.4-7.6L40.5 23z" fill="#ffd166" stroke="#5a3a00" stroke-width="1.6" stroke-linejoin="round"/><path d="M6 20.5L5 11l7 5 10-10" stroke="#fff3b0" stroke-width="1.2" fill="none"/><rect x="3" y="21.5" width="38" height="5.4" rx="1.6" fill="#e0a020" stroke="#5a3a00" stroke-width="1.4"/><circle cx="22" cy="15.5" r="2.8" fill="#ff5a7a" stroke="#5a3a00" stroke-width=".8"/><circle cx="11.5" cy="17" r="1.9" fill="#5fb8ff"/><circle cx="32.5" cy="17" r="1.9" fill="#5fb8ff"/><circle cx="1.8" cy="6.3" r="1.8" fill="#fff3b0" stroke="#5a3a00" stroke-width=".8"/><circle cx="22" cy="2.4" r="1.9" fill="#fff3b0" stroke="#5a3a00" stroke-width=".8"/><circle cx="42.2" cy="6.3" r="1.8" fill="#fff3b0" stroke="#5a3a00" stroke-width=".8"/>`],
+  env: ["0 0 108 66", (o) => `<rect x="2" y="2" width="104" height="62" rx="7" fill="${o.w || "#fff3d0"}" stroke="#1a1424" stroke-width="2.6"/><path d="M4.5 6l49.5 33L103.5 6" fill="none" stroke="#1a1424" stroke-width="2.6" stroke-linejoin="round"/><path d="M4.5 62L40 30M103.5 62L68 30" stroke="#1a1424" stroke-width="1.6" opacity=".35"/><path d="M54 47.5c-6-4.2-7.6-7.4-7.6-10 0-2.3 1.8-3.9 3.9-3.9 1.6 0 2.8.9 3.7 2.2.9-1.3 2.1-2.2 3.7-2.2 2.1 0 3.9 1.6 3.9 3.9 0 2.6-1.6 5.8-7.6 10z" fill="#ff5a7a" stroke="#a0203a" stroke-width="1.2"/>`],
+};
+const vCache = {};
+function vURL(k, o = {}) { const key = k + JSON.stringify(o); return vCache[key] || (vCache[key] = svgU(svgW(VIC[k][0], VIC[k][1](o)))); }
+const vG = (k, x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})">${VIC[k][1]({})}</g>`;
+// 표지(56x72 벡터). fancy=false 면 회색 임시 표지
+function coverURL(d, fancy = true, mine = false) {
+  const bg = fancy ? d.bg : "#6a6878", fg = fancy ? d.fg : "#c8c6d4", id = "c" + (fancy ? d.m : "draft");
+  const dots = fancy ? [[12, 10], [44, 14], [40, 40], [14, 44], [48, 30], [20, 22]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 0.9 : 1.4}" fill="#fff" opacity=".55"/>`).join("") : [12, 20, 28, 36, 44].map((y) => `<path d="M10 ${y}h40" stroke="#fff" stroke-width="1" opacity=".1"/>`).join("");
+  const glow = fancy ? `<circle cx="28" cy="30" r="18" fill="${fg}" opacity=".22"/>` : "";
+  const shine = fancy ? `<path d="M30 1h12L18 71H6z" fill="#fff" opacity="${mine ? 0.2 : 0.1}"/>` : `<rect x="34" y="4" width="16" height="11" rx="1" fill="#ffe27a" transform="rotate(6 42 9)"/><text x="42" y="12.6" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="6.5" fill="#7a5a10" transform="rotate(6 42 9)">임시</text>`;
+  return svgU(svgW("0 0 56 72", `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${tint(bg, fancy ? 1.55 : 1.15)}"/><stop offset="1" stop-color="${tint(bg, 0.75)}"/></linearGradient></defs><rect x="1" y="1" width="54" height="70" rx="4" fill="url(#${id})" stroke="#0a0814" stroke-width="2"/><path d="M2 5a4 4 0 0 1 4-4v70a4 4 0 0 1-4-4z" fill="#000" opacity=".25"/>${dots}${glow}<g transform="translate(29 29)">${MOTIF[fancy ? d.m : "draft"](fg)}</g><rect x="7" y="50" width="44" height="15" rx="2.5" fill="#000" opacity="${fancy ? 0.45 : 0.25}"/><rect x="11" y="54" width="36" height="2.8" rx="1.4" fill="${fancy ? "#fffaf0" : "#e8e6f0"}"/><rect x="11" y="59.2" width="24" height="2.2" rx="1.1" fill="${fancy ? fg : "#b0aec0"}"/>${shine}`));
 }
-function fingerURL() {
-  if (cache.finger) return cache.finger;
-  const c = document.createElement("canvas"); c.width = 13; c.height = 13; const g = c.getContext("2d");
-  FINGER.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === ".") return; g.fillStyle = ch === "X" ? "#2a1e2e" : x <= 4 && y < 6 ? "#fff" : "#ffe6d6"; g.fillRect(x, 12 - y, 1, 1); }));
-  return (cache.finger = c.toDataURL());
-}
-// 방법 화면 그림(40x40 도트 3장)
+// 방법 화면 그림(벡터 3장)
 function stepPics() {
-  const mk = (fn) => { const c = document.createElement("canvas"); c.width = 40; c.height = 40; const g = c.getContext("2d"); fn((x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); }, g); return c.toDataURL(); };
-  const fin = (P, ox, oy) => FINGER.forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== ".") P(ox + x, oy + 12 - y, 1, 1, ch === "X" ? "#2a1e2e" : "#ffe6d6"); }));
-  const pix = (P, k, ox, oy) => PIX[k].forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== ".") P(ox + x, oy + y, 1, 1, PCOL[ch]); }));
-  const a = mk((P) => {
-    P(3, 6, 30, 13, "#0006"); P(2, 5, 30, 13, "#fffaf0"); P(6, 18, 4, 3, "#fffaf0"); P(7, 21, 2, 1, "#fffaf0");
-    pix(P, "heart", 4, 8); P(13, 9, 15, 1, "#5a4a5a"); P(13, 12, 11, 1, "#5a4a5a");
-    fin(P, 18, 24); for (const [x, y] of [[34, 4], [36, 14]]) { P(x, y, 1, 3, "#ffd166"); P(x - 1, y + 1, 3, 1, "#ffd166"); }
-  });
-  const b = mk((P) => {
-    P(0, 28, 40, 1, "#5a5070");
-    for (let i = 0; i < 12; i++) { const h = Math.round(trAt(i * 2.5) * 6), pk = trAt(i * 2.5) >= PEAK; P(2 + i * 3, 28 - h, 2, h, pk ? "#ffd166" : "#4a6aa0"); }
-    P(26, 2, 12, 12, "#0006"); pix(P, "up", 27, 2);
-    for (let i = 0; i < 5; i++) P(25 + i * 3, 33, 2, 2, "#5fb8ff");
-    P(25, 30, 14, 1, "#ffd16688");
-  });
-  const c = mk((P) => {
-    for (let i = 0; i < 3; i++) { const y = 12 + i * 9; P(4, y, 32, 8, i === 0 ? "#3a2e10" : "#221a3e"); P(4, y, 1, 8, i === 0 ? "#ffd166" : "#5a5070"); P(14, y + 2, 18 - i * 4, 1, "#c8c0e0"); P(14, y + 5, 10, 1, "#7a7090"); P(7, y + 1, 5, 6, i === 0 ? "#5fb8ff" : i === 1 ? "#ff8fc8" : "#7fe0a8"); }
-    pix(P, "crown", 4, 3); P(30, 2, 1, 4, "#fff3b0"); P(28, 4, 5, 1, "#fff3b0");
-  });
-  return [[`<img src="${a}" alt="">`, "댓글엔 답글 톡"], [`<img src="${b}" alt="">`, "피크에 연재 올리기"], [`<img src="${c}" alt="">`, "자정에 순위 발표"]];
+  const bg = `<rect width="80" height="80" rx="12" fill="#17142c"/>`;
+  const a = svgW("0 0 80 80", bg + `<path d="M8 10h56a6 6 0 0 1 6 6v18a6 6 0 0 1-6 6H26l-9 8v-8h-9a6 6 0 0 1-6-6V16a6 6 0 0 1 6-6z" fill="#fffaf0"/>` + vG("heart", 8, 14, 0.5) + `<rect x="26" y="17" width="34" height="3.4" rx="1.7" fill="#1f6fd0"/><rect x="26" y="26" width="26" height="3" rx="1.5" fill="#8a7a8a"/>` + handG(34, 40, 0.8) + sparkG(72, 8, 5, "#ffd166") + sparkG(74, 52, 4, "#ff8fc8"));
+  const bars = [...Array(12)].map((_, i) => { const t = trAt(i * 2.5 + 1), h = Math.round(t * 13), pk = t >= PEAK; return `<rect x="${5 + i * 6}" y="${66 - h}" width="4.4" height="${h}" rx="1.4" fill="${pk ? "#ffd166" : "#4a6aa0"}"/>`; }).join("");
+  const b = svgW("0 0 80 80", bg + `<rect x="4" y="22" width="72" height="50" rx="5" fill="#0e0a1c"/><rect x="47" y="24" width="28" height="46" fill="#ffd166" opacity=".12"/>` + bars + `<path d="M4 66.5h72" stroke="#5a5070" stroke-width="1.2"/><rect x="46" y="2" width="26" height="26" rx="6" fill="#ffd166"/>` + vG("up", 47, 3, 0.75) + sparkG(40, 10, 4, "#fff3b0"));
+  const row = (y, c, gold) => `<rect x="5" y="${y}" width="70" height="15" rx="3" fill="${gold ? "#3a2e10" : "#221a3e"}" stroke="${gold ? "#ffd166" : "#3a3060"}" stroke-width="1.2"/><rect x="10" y="${y + 2.5}" width="8" height="10" rx="1.5" fill="${c}"/><rect x="22" y="${y + 4}" width="${gold ? 36 : 30}" height="2.6" rx="1.3" fill="#c8c0e0"/><rect x="22" y="${y + 9}" width="16" height="2" rx="1" fill="#7a7090"/>`;
+  const c = svgW("0 0 80 80", bg + row(26, "#5fb8ff", true) + row(44, "#ff8fc8") + row(62, "#7fe0a8") + vG("crown", 4, 4, 0.62) + sparkG(44, 10, 5, "#fff3b0") + sparkG(66, 14, 3.5, "#ffd166"));
+  return [[`<img src="${svgU(a)}" alt="">`, "댓글엔 답글 톡"], [`<img src="${svgU(b)}" alt="">`, "피크에 연재 올리기"], [`<img src="${svgU(c)}" alt="">`, "자정에 순위 발표"]];
 }
 
 export const GAME = {
@@ -115,12 +112,14 @@ export const GAME = {
   steps: () => { try { return stepPics(); } catch (e) { return [["", "댓글엔 답글 톡"], ["", "피크에 연재 올리기"], ["", "자정에 순위 발표"]]; } },
   css: `
 .mg-webnovel3 .wr-st{background:#120c22!important;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden}
-.mg-webnovel3 .wr-cv{position:absolute;left:0;top:0;z-index:0;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;pointer-events:none}
+.mg-webnovel3 .wr-cv{position:absolute;left:0;top:0;z-index:0;touch-action:none;pointer-events:none}
+.mg-webnovel3 .wr-bgi{position:absolute;left:0;right:0;z-index:0;overflow:hidden;pointer-events:none;background:#1a1530}
+.mg-webnovel3 .wr-bgi::before{content:"";position:absolute;inset:-6px;background:url("img/bg/home.webp") 22% 36%/150% auto no-repeat;filter:brightness(.6) saturate(1.1) blur(1px)}
+.mg-webnovel3 .wr-bgi::after{content:"";position:absolute;inset:0;background:linear-gradient(#120c22cc,transparent 22%,transparent 70%,#0a0616aa),radial-gradient(120% 90% at 40% 50%,transparent 50%,#05031088)}
 .mg-webnovel3 .wr-cv.fg{z-index:2}
 .mg-webnovel3 .wr-cv.fx{z-index:19}
-.mg-webnovel3 .mg-steps img{width:76px;height:76px;image-rendering:pixelated}
+.mg-webnovel3 .mg-steps img{width:76px;height:76px}
 .mg-webnovel3 .mg-msg{z-index:24}
-.mg-webnovel3 img{image-rendering:pixelated}
 .mg-webnovel3 .wr-hd{position:absolute;left:8px;right:8px;z-index:3;display:flex;align-items:center;gap:6px;color:#fff;font-size:11px;font-weight:800;pointer-events:none;white-space:nowrap}
 .mg-webnovel3 .wr-hd i{font-style:normal;background:#5fb8ff;color:#0a1a33;border-radius:5px;padding:1px 6px;font-size:10.5px;font-weight:900}
 .mg-webnovel3 .wr-hd .lv{color:#ff5a7a;font-size:10px}
@@ -141,7 +140,7 @@ export const GAME = {
 .mg-webnovel3 .wr-row.r2 .wr-rk{color:#e6ecf8}
 .mg-webnovel3 .wr-row.r3 .wr-rk{color:#e8a070}
 .mg-webnovel3 .wr-cov{position:relative;flex:none}
-.mg-webnovel3 .wr-cov img{display:block;width:100%;height:100%}
+.mg-webnovel3 .wr-cov img{display:block;width:100%;height:100%;filter:drop-shadow(0 1px 1px #0008)}
 .mg-webnovel3 .wr-cov.flip{animation:wrflip .55s ease-in-out}
 .mg-webnovel3 .wr-tt{flex:1 1 auto;min-width:0;line-height:1.2}
 .mg-webnovel3 .wr-tt b{display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -274,15 +273,15 @@ export const GAME = {
     const dbg = typeof window !== "undefined" && window.__mgdbg;
     const F = frame(host, "webnovel3", "작가님 1위 가즈아", "wr-st");
     const st = F.stage;
-    st.insertAdjacentHTML("beforeend", `<canvas class="wr-cv"></canvas><div class="wr-rc"><div class="wr-me"></div></div><canvas class="wr-cv fg"></canvas>
+    st.insertAdjacentHTML("beforeend", `<div class="wr-bgi"></div><canvas class="wr-cv"></canvas><div class="wr-rc"><div class="wr-me"></div></div><canvas class="wr-cv fg"></canvas>
       <div class="wr-hd"><i>노블리</i><span>공모전 실시간 랭킹</span><span class="lv">LIVE</span><span class="wr-clk">19:00</span></div><div class="wr-bd"></div>
       <div class="wr-gx">지금 독자 <b>×0.5</b></div><div class="wr-gl"><span>7시</span><span>8시</span><span>9시</span><span class="pk">10시</span><span class="pk">11시</span><span class="pk">12시</span></div>
-      <div class="wr-loy"><img src="${pixURL("heart")}" alt=""><span>충성도</span><u><i></i></u></div><div class="wr-cms"></div><div class="wr-say"></div>
-      <div class="wr-bt"><button class="wr-b up" data-a="up"><img src="${pixURL("up")}" alt=""><b>연재 올리기</b><span class="wr-pips"></span></button><button class="wr-b" data-a="cov"><img src="${pixURL("cover")}" alt=""><b>표지 바꾸기</b><small>1번만</small></button><button class="wr-b off" data-a="ev"><img src="${pixURL("event")}" alt=""><b>이벤트</b><small>대기 중</small></button></div>
+      <div class="wr-loy"><img src="${vURL("heart")}" alt=""><span>충성도</span><u><i></i></u></div><div class="wr-cms"></div><div class="wr-say"></div>
+      <div class="wr-bt"><button class="wr-b up" data-a="up"><img src="${vURL("up")}" alt=""><b>연재 올리기</b><span class="wr-pips"></span></button><button class="wr-b" data-a="cov"><img src="${vURL("cover")}" alt=""><b>표지 바꾸기</b><small>1번만</small></button><button class="wr-b off" data-a="ev"><img src="${vURL("event")}" alt=""><b>이벤트</b><small>대기 중</small></button></div>
       <div class="wr-red"></div><div class="wr-dim"></div><canvas class="wr-cv fx"></canvas><div class="wr-ban"></div><div class="wr-mail"><img class="env" alt=""><div class="wr-lt"></div></div>
       <div class="wr-tut off"><div class="wr-tc"><em>리허설</em><p></p><div class="wr-tb"></div></div></div><div class="wr-hand"></div>`);
     const $ = (s) => st.querySelector(s);
-    const cv = $(".wr-cv"), gB = cv.getContext("2d"), cvF = $(".wr-cv.fg"), gF = cvF.getContext("2d"), cvX = $(".wr-cv.fx"), gX = cvX.getContext("2d");
+    const bgiEl = $(".wr-bgi"), cv = $(".wr-cv"), gB = cv.getContext("2d"), cvF = $(".wr-cv.fg"), gF = cvF.getContext("2d"), cvX = $(".wr-cv.fx"), gX = cvX.getContext("2d");
     const hdEl = $(".wr-hd"), clkEl = $(".wr-clk"), bdEl = $(".wr-bd"), gxEl = $(".wr-gx"), glEl = $(".wr-gl"), loyEl = $(".wr-loy"), loyI = $(".wr-loy u i"), cmsEl = $(".wr-cms"), sayEl = $(".wr-say");
     const rcEl = $(".wr-rc"), meEl = $(".wr-me"), btEl = $(".wr-bt"), bUp = $('[data-a="up"]'), bCov = $('[data-a="cov"]'), bEv = $('[data-a="ev"]'), pipsEl = $(".wr-pips");
     const redEl = $(".wr-red"), dimEl = $(".wr-dim"), ban = $(".wr-ban"), mailEl = $(".wr-mail"), envEl = $(".wr-mail .env"), ltEl = $(".wr-lt");
@@ -293,7 +292,9 @@ export const GAME = {
     // ── 크기: 논리 폭 112칸 안팎을 정수배로 ──
     const sw = st.clientWidth || 336, sh = st.clientHeight || 560;
     const K = Math.max(2, Math.round(sw / 112)), LW = Math.ceil(sw / K), LH = Math.ceil(sh / K);
-    for (const c of [cv, cvF, cvX]) { c.width = LW; c.height = LH; c.style.width = LW * K + "px"; c.style.height = LH * K + "px"; }
+    const DPR = Math.min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1), KS = K * DPR;
+    for (const c of [cv, cvF, cvX]) { c.width = Math.round(LW * KS); c.height = Math.round(LH * KS); c.style.width = LW * K + "px"; c.style.height = LH * K + "px"; }
+    for (const x of [gB, gF, gX]) x.setTransform(KS, 0, 0, KS, 0, 0);
     const rowH = clamp(Math.floor(sh * 0.066), 33, 42), hdH = 24, bTop = 4, rowsTop = bTop + hdH, bH = hdH + rowH * 6 + 4;
     const gTop = bTop + bH + 5, gH = clamp(Math.round(sh * 0.11), 52, 70), btH = clamp(Math.round(sh * 0.115), 58, 70);
     const pTop = gTop + gH + 4, btTop = sh - btH - 10, pH = btTop - pTop - 4;
@@ -301,6 +302,7 @@ export const GAME = {
     Object.assign(bdEl.style, { top: rowsTop + "px", height: rowH * 6 + "px" });
     gxEl.style.top = gTop + 3 + "px"; glEl.style.top = gTop + gH - 14 + "px";
     Object.assign(rcEl.style, { top: pTop + "px", height: pH + "px" });
+    Object.assign(bgiEl.style, { top: pTop - 2 + "px", height: btTop - pTop + 2 + "px" });
     Object.assign(cmsEl.style, { top: pTop + "px", height: pH + "px" });
     loyEl.style.top = pTop + 5 + "px"; btEl.style.height = btH + "px";
     ban.style.top = gTop + gH / 2 + "px"; mailEl.style.top = Math.round(rowsTop + rowH * 0.6) + "px"; tutEl.style.top = rowsTop + 4 + "px";
@@ -324,51 +326,62 @@ export const GAME = {
     let meX = "", meT = "";
     const phX = L(meCX) - 6, phY = L(pTop + pH) - 21;
 
-    // ── 배경(한 번만) ──
-    const BG = document.createElement("canvas"); BG.width = LW; BG.height = LH;
-    const stars = [], wins = [], bulbs = [];
-    const pT = L(pTop), pB = L(btTop - 4), winX = LW - 30, winY = pT + 4, winW = 24, winH = Math.max(14, Math.round((pB - pT) * 0.42));
+    // ── 배경(한 번만): 랭킹 판·그래프 판은 벡터, 방은 실제 그림(.wr-bgi) 위에 줄 전구 ──
+    const hiC = () => { const c = document.createElement("canvas"); c.width = Math.round(LW * KS); c.height = Math.round(LH * KS); const x = c.getContext("2d"); x.setTransform(KS, 0, 0, KS, 0, 0); return [c, x]; };
+    const [BG, b0] = hiC();
+    const bulbs = [];
+    const pT = (pTop - 2) / K, pB = (btTop - 4) / K;
     {
-      const b = BG.getContext("2d"), P = (x, y, w, h, c) => { b.fillStyle = c; b.fillRect(x, y, w, h); };
-      for (let y = 0; y < LH; y++) { const t = y / LH; P(0, y, LW, 1, `rgb(${Math.round(18 + t * 8)},${Math.round(12 + t * 6)},${Math.round(34 + t * 14)})`); }
-      // 랭킹 보드 틀
-      const bx = 1, by = L(bTop), bw = LW - 2, bh = L(bTop + bH) - by;
-      P(bx, by, bw, bh, "#ffd166"); P(bx + 1, by + 1, bw - 2, bh - 2, "#7a5a1e"); P(bx + 2, by + 2, bw - 4, bh - 4, "#191230");
-      P(bx + 2, by + 2, bw - 4, L(hdH) - 2, "#24306a"); P(bx + 2, by + L(hdH), bw - 4, 1, "#5fb8ff");
-      for (let x = bx + 4; x < bx + bw - 4; x += 4) P(x, by + 3, 2, 1, "#5fb8ff44");
-      for (const [x, y] of [[bx, by], [bx + bw - 3, by], [bx, by + bh - 3], [bx + bw - 3, by + bh - 3]]) { P(x, y, 3, 3, "#fff3b0"); P(x + 1, y + 1, 1, 1, "#ffd166"); }
+      const b = b0;
+      b.fillStyle = lin(b, 0, 0, 0, pT, [[0, "#140e28"], [1, "#1a1232"]]); b.fillRect(0, 0, LW, pT);
+      // 랭킹 보드 틀(금테)
+      const bx = 1, by = bTop / K, bw = LW - 2, bh = (bTop + bH) / K - by;
+      b.save(); b.shadowColor = "rgba(255,209,102,.35)"; b.shadowBlur = 4 * KS;
+      rr(b, bx, by, bw, bh, 3); b.fillStyle = lin(b, 0, by, 0, by + bh, [[0, "#ffe9a8"], [0.5, "#e0a838"], [1, "#a8701a"]]); b.fill(); b.restore();
+      rr(b, bx + 0.9, by + 0.9, bw - 1.8, bh - 1.8, 2.4); b.fillStyle = "#5a3e12"; b.fill();
+      rr(b, bx + 1.6, by + 1.6, bw - 3.2, bh - 3.2, 2); b.fillStyle = lin(b, 0, by, 0, by + bh, [[0, "#1c1438"], [1, "#150f2a"]]); b.fill();
+      b.save(); rr(b, bx + 1.6, by + 1.6, bw - 3.2, bh - 3.2, 2); b.clip();
+      b.fillStyle = lin(b, 0, by, 0, by + hdH / K, [[0, "#2e3c86"], [1, "#1e2858"]]); b.fillRect(bx, by, bw, hdH / K - 0.2);
+      b.restore();
+      b.fillStyle = "#5fb8ff"; b.fillRect(bx + 1.6, by + hdH / K - 0.4, bw - 3.2, 0.4);
+      for (const [x, y] of [[bx + 1.8, by + 1.8], [bx + bw - 1.8, by + 1.8], [bx + 1.8, by + bh - 1.8], [bx + bw - 1.8, by + bh - 1.8]]) { b.fillStyle = rad(b, x - 0.3, y - 0.3, 0.1, 1.3, [[0, "#fffbe0"], [1, "#c89020"]]); b.beginPath(); b.arc(x, y, 1.2, 0, 7); b.fill(); }
       // 순위 칸(1·2·3위 금·은·동)
-      const SL = ["#3a2c0c", "#262a3a", "#34200f", "#1c1636", "#201a3c", "#1c1636"], SE = ["#ffd166", "#c8d0e0", "#d08a50", "#3a3060", "#3a3060", "#3a3060"];
-      for (let i = 0; i < 6; i++) { const y0 = L(rowsTop + i * rowH), y1 = L(rowsTop + (i + 1) * rowH); P(bx + 3, y0, bw - 6, y1 - y0 - 1, SL[i]); P(bx + 3, y0, 1, y1 - y0 - 1, SE[i]); if (i < 3) for (let x = bx + 6; x < bx + bw - 4; x += 7) P(x, y0, 1, 1, SE[i] + "55"); }
+      const SL = [["#4a3a12", "#2e230a"], ["#30364a", "#1e2232"], ["#40280f", "#2a1a0a"], ["#221a40", "#1a1434"], ["#251d46", "#1c1638"], ["#221a40", "#1a1434"]], SE = ["#ffd166", "#d8e0f0", "#e09858", "#3a3060", "#3a3060", "#3a3060"];
+      for (let i = 0; i < 6; i++) {
+        const y0 = (rowsTop + i * rowH) / K, h = rowH / K - 0.6;
+        rr(b, bx + 2.6, y0 + 0.3, bw - 5.2, h, 1.6); b.fillStyle = lin(b, bx, 0, bx + bw, 0, [[0, SL[i][0]], [1, SL[i][1]]]); b.fill();
+        if (i < 3) { b.fillStyle = lin(b, 0, y0, 0, y0 + h, [[0, "rgba(255,255,255,.12)"], [0.5, "rgba(255,255,255,0)"]]); b.fill(); }
+        rr(b, bx + 2.6, y0 + 0.3, 1, h, 0.5); b.fillStyle = SE[i]; b.fill();
+      }
       // 그래프 판
-      P(2, L(gTop), LW - 4, L(gTop + gH) - L(gTop), "#0e0a1c"); P(2, L(gTop), LW - 4, 1, "#3a3060"); P(2, L(gTop + gH) - 1, LW - 4, 1, "#3a3060");
-      for (let y = gyT; y < gyB; y += 4) for (let x = gx0; x < gx1; x += 2) P(x, y, 1, 1, "#ffffff08");
-      const pkX = gx0 + Math.round(18 * gStep); P(pkX, gyT - 3, gx1 - pkX, gyB - gyT + 3, "#ffd16612"); for (let y = gyT - 3; y < gyB; y += 2) P(pkX, y, 1, 1, "#ffd16666");
-      // 방(밤): 벽지 줄무늬, 창문, 줄 전구, 포스터, 선반
-      for (let y = pT; y < pB; y++) { const t = (y - pT) / Math.max(1, pB - pT); P(0, y, LW, 1, `rgb(${Math.round(40 + t * 12)},${Math.round(30 + t * 8)},${Math.round(62 + t * 10)})`); }
-      for (let x = 3; x < LW; x += 6) for (let y = pT + 2; y < pB; y += 2) P(x, y, 1, 1, "#ffffff0a");
-      P(winX - 2, winY - 2, winW + 4, winH + 4, "#6a5a7e"); P(winX - 1, winY - 1, winW + 2, winH + 2, "#3a2e4e");
-      for (let y = 0; y < winH; y++) { const t = y / winH; P(winX, winY + y, winW, 1, `rgb(${Math.round(12 + t * 26)},${Math.round(14 + t * 16)},${Math.round(44 + t * 30)})`); }
-      P(winX + 16, winY + 2, 5, 5, "#fff3c0"); P(winX + 18, winY + 1, 4, 4, "rgb(12,14,44)");
-      for (let i = 0; i < 6; i++) stars.push([winX + 1 + rint(winW - 2), winY + 1 + rint(Math.max(2, winH >> 1))]);
-      let wx = winX; while (wx < winX + winW) { const ww = 3 + rint(4), wh = 4 + rint(Math.max(3, winH - 9)), w2 = Math.min(ww, winX + winW - wx); P(wx, winY + winH - wh, w2, wh, "#141a32"); for (let yy = winY + winH - wh + 2; yy < winY + winH - 1; yy += 3) for (let xx = wx + 1; xx < wx + w2 - 1; xx += 2) if (rnd() < 0.45) wins.push([xx, yy]); wx += ww + 1; }
-      P(winX + (winW >> 1), winY, 1, winH, "#3a2e4e"); P(winX, winY + (winH >> 1), winW, 1, "#3a2e4e88");
-      for (let x = 0; x < LW; x++) { const y = pT + 2 + Math.round(Math.sin(x / 9) * 1.5 + 1.5); P(x, y, 1, 1, "#5a4a5a"); if (x % 7 === 3) bulbs.push([x, y + 1]); }
-      const shY = winY + winH + 9; P(winX - 4, shY, winW + 6, 2, "#8a5a3a"); P(winX - 4, shY + 2, winW + 6, 1, "#4a2e1e");
-      let sx = winX - 3; const bc = ["#5fb8ff", "#ff8fc8", "#ffb03b", "#b89cff", "#7fe0a8", "#e05a5a"]; while (sx < winX + winW - 6) { const h = 5 + rint(3), w2 = 2, c = pick(bc); P(sx, shY - h, w2, h, c); P(sx, shY - h, w2, 1, tint(c, 1.3)); sx += w2; }
-      P(winX + winW - 6, shY - 6, 5, 6, "#ffd166"); P(winX + winW - 5, shY - 8, 3, 2, "#ffd166"); P(winX + winW - 4, shY - 9, 1, 1, "#fff3b0");
+      const gy0 = gTop / K, gh2 = gH / K;
+      rr(b, 2, gy0, LW - 4, gh2, 2.4); b.fillStyle = lin(b, 0, gy0, 0, gy0 + gh2, [[0, "#140f28"], [1, "#0b0818"]]); b.fill(); b.strokeStyle = "#3a3060"; b.lineWidth = 0.4; b.stroke();
+      b.strokeStyle = "rgba(255,255,255,.05)"; b.lineWidth = 0.25; for (let y = gyT; y < gyB; y += 4) { b.beginPath(); b.moveTo(gx0, y); b.lineTo(gx1, y); b.stroke(); }
+      const pkX = gx0 + 18 * gStep;
+      b.fillStyle = lin(b, 0, gyT - 3, 0, gyB, [[0, "rgba(255,209,102,.04)"], [1, "rgba(255,209,102,.14)"]]); b.fillRect(pkX, gyT - 3, gx1 - pkX, gyB - gyT + 3);
+      b.strokeStyle = "rgba(255,209,102,.55)"; b.lineWidth = 0.35; b.setLineDash([1, 1]); b.beginPath(); b.moveTo(pkX, gyT - 3); b.lineTo(pkX, gyB); b.stroke(); b.setLineDash([]);
+      // 방: 줄 전구(전선)
+      b.strokeStyle = "#3a3040"; b.lineWidth = 0.4; b.beginPath();
+      for (let x = 0; x <= LW; x += 0.5) { const y = pT + 3 + Math.sin(x / 9) * 1.6 + 1.6; x ? b.lineTo(x, y) : b.moveTo(x, y); if (Math.abs((x % 7) - 3) < 0.25) bulbs.push([x, y + 1.2]); }
+      b.stroke();
       // 작업 패널 바닥
-      P(0, L(btTop) - 2, LW, LH - L(btTop) + 2, "#0c0818"); P(0, L(btTop) - 2, LW, 1, "#3a3060");
+      b.fillStyle = lin(b, 0, btTop / K - 2, 0, LH, [[0, "#140e26"], [1, "#0a0614"]]); b.fillRect(0, btTop / K - 2, LW, LH - btTop / K + 2);
+      b.fillStyle = "#3a3060"; b.fillRect(0, btTop / K - 2, LW, 0.35);
     }
-    // 앞(이불·폰)
-    const FG = document.createElement("canvas"); FG.width = LW; FG.height = LH;
+    // 앞(이불·베개)
+    const [FG, f0] = hiC();
     {
-      const b = FG.getContext("2d"), P = (x, y, w, h, c) => { b.fillStyle = c; b.fillRect(x, y, w, h); };
-      const by0 = pB - 9;
-      for (let y = by0; y < pB; y++) for (let x = 0; x < LW; x++) { const w = Math.round(Math.sin(x / 6 + 1) * 1.2); if (y - by0 >= w) P(x, y, 1, 1, ((Math.floor(x / 4) + Math.floor((y - by0) / 3)) % 2) ? "#8a7ac8" : "#a898e0"); }
-      for (let x = 0; x < LW; x++) { const w = Math.round(Math.sin(x / 6 + 1) * 1.2); P(x, by0 + Math.max(0, w), 1, 1, "#d0c4ff"); }
+      const b = f0, by0 = pB - 9;
+      const wave = (x) => Math.sin(x / 6 + 1) * 1.2;
+      b.beginPath(); b.moveTo(0, pB); for (let x = 0; x <= LW; x += 0.5) b.lineTo(x, by0 + wave(x)); b.lineTo(LW, pB); b.closePath();
+      b.fillStyle = lin(b, 0, by0, 0, pB, [[0, "#b8a8f0"], [0.35, "#9a88d8"], [1, "#6a5aa8"]]); b.fill();
+      b.save(); b.clip(); b.strokeStyle = "rgba(255,255,255,.16)"; b.lineWidth = 0.3;
+      for (let x = -20; x < LW + 20; x += 5) { b.beginPath(); b.moveTo(x, by0 - 2); b.lineTo(x + 10, pB); b.stroke(); b.beginPath(); b.moveTo(x + 10, by0 - 2); b.lineTo(x, pB); b.stroke(); }
+      b.restore();
+      b.beginPath(); for (let x = 0; x <= LW; x += 0.5) { const y = by0 + wave(x); x ? b.lineTo(x, y) : b.moveTo(x, y); } b.strokeStyle = "#e0d8ff"; b.lineWidth = 0.5; b.stroke();
       // 베개
-      P(LW - 44, by0 - 5, 16, 6, "#f2ecff"); P(LW - 44, by0 - 5, 16, 1, "#ffffff"); P(LW - 44, by0, 16, 1, "#b8acd8");
+      b.save(); b.shadowColor = "rgba(0,0,0,.35)"; b.shadowBlur = 2 * KS; rr(b, LW - 45, by0 - 5.5, 17, 6.5, 2.6); b.fillStyle = lin(b, 0, by0 - 5.5, 0, by0 + 1, [[0, "#ffffff"], [1, "#cfc4ec"]]); b.fill(); b.restore();
+      b.strokeStyle = "rgba(160,140,210,.6)"; b.lineWidth = 0.3; b.beginPath(); b.moveTo(LW - 40, by0 - 2); b.quadraticCurveTo(LW - 36.5, by0 - 3, LW - 33, by0 - 2); b.stroke();
     }
 
     // ── 상태 ── tut: 0 대기 / 1 댓글 / 2 표지 / 3 이벤트 / 4 연재 / 5 시작 카드 / -1 본게임
@@ -397,10 +410,10 @@ export const GAME = {
     for (const e of ents) {
       e.rkEl = e.el.querySelector(".wr-rk"); e.ptEl = e.el.querySelector(".wr-pt b"); e.dlEl = e.el.querySelector(".wr-pt small"); e.covEl = e.el.querySelector(".wr-cov"); e.img = e.el.querySelector(".wr-cov img");
       e.tags = {}; e.el.querySelectorAll(".wr-tt em").forEach((t) => (e.tags[t.className] = t));
-      e.img.src = coverC(e.d, !e.me).toDataURL(); e.slot = -1; e.rank = 0; e.dlT = 0; e.shownS = -1; e.tagT = {};
+      e.img.src = coverURL(e.d, !e.me); e.slot = -1; e.rank = 0; e.dlT = 0; e.shownS = -1; e.tagT = {};
     }
-    const crownEl = ME.el.querySelector(".wr-crown"); crownEl.src = pixURL("crown");
-    const coverNew = coverC(MINE, true).toDataURL(), coverOld = ME.img.src;
+    const crownEl = ME.el.querySelector(".wr-crown"); crownEl.src = vURL("crown");
+    const coverNew = coverURL(MINE, true, true), coverOld = ME.img.src;
     const tag = (e, k, sec) => { e.tags[k].classList.add("on"); e.tagT[k] = sec; };
 
     // ── 소리 ──
@@ -476,7 +489,7 @@ export const GAME = {
       updPips(); flash = 0.35;
       // 종이비행기: 폰 → 내 줄
       const from = [(phX + 6.5) * K, (phY + 8) * K], to = at(ME.covEl);
-      const pl = document.createElement("img"); pl.className = "wr-plane"; pl.src = pixURL("plane"); st.appendChild(pl);
+      const pl = document.createElement("img"); pl.className = "wr-plane"; pl.src = vURL("plane"); st.appendChild(pl);
       const mid = [(from[0] + to[0]) / 2 + 60, Math.min(from[1], to[1]) - 30];
       const kf = [from, mid, to].map(([x, y], i) => ({ transform: `translate(${x - 15}px,${y - 12}px) rotate(${i === 0 ? -20 : i === 1 ? -50 : -80}deg) scale(${i === 1 ? 1.4 : 1})` }));
       pl.style.transform = kf[0].transform; pl.style.opacity = "1";
@@ -525,7 +538,7 @@ export const GAME = {
       if (cms.filter((c) => !c.gone).length >= 3) return null;
       const troll = o.troll ?? (rnd() < 0.24 && el > 3);
       const e = document.createElement("div"); e.className = "wr-cm" + (troll ? " tr" : "");
-      e.innerHTML = `<b>${troll ? "" : `<img src="${pixURL("heart")}" alt="">`}${troll ? "익명" : nk()}</b><span>${troll ? pick(C_TROLL) : pick(C_GOOD)}</span>`;
+      e.innerHTML = `<b>${troll ? "" : `<img src="${vURL("heart")}" alt="">`}${troll ? "익명" : nk()}</b><span>${troll ? pick(C_TROLL) : pick(C_GOOD)}</span>`;
       cmsEl.appendChild(e);
       const xMin = Math.round(avX + avW * 0.78), w = Math.min(178, e.offsetWidth || 150), x = clamp(xMin + rnd() * Math.max(0, sw - 8 - w - xMin), 4, sw - w - 4);
       const c = { el: e, troll, x, y: pH - 26 - (e.offsetHeight || 34) - rnd() * 10, vy: -(pH * 0.42) / (3.4 * ez), life: 3.4 * ez, gone: false, hold: !!o.hold };
@@ -580,45 +593,56 @@ export const GAME = {
     };
 
     // ── 그리기 ──
-    let g = gB; const P = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+    let g = gB;
     const render = () => {
-      g = gB; g.drawImage(BG, 0, 0);
-      stars.forEach(([x, y], i) => { if (Math.sin(tm * 2 + i * 1.7) > 0) P(x, y, 1, 1, "#fff8"); });
-      wins.forEach(([x, y], i) => { if (Math.sin(tm * 0.5 + i * 2.3) > -0.4) P(x, y, 1, 1, i % 3 ? "#ffd56a" : "#ffeebb"); });
+      g = gB; g.clearRect(0, 0, LW, LH); g.drawImage(BG, 0, 0, LW, LH);
       const BC = ["#ff6a8a", "#ffd166", "#7fe0a8", "#5fb8ff", "#c79cff"];
-      bulbs.forEach(([x, y], i) => { const on = Math.sin(tm * 3 + i * 1.3) > -0.3; P(x, y, 1, 2, on ? BC[i % 5] : tint(BC[i % 5], 0.45)); if (on) { g.globalAlpha = 0.25; P(x - 1, y, 3, 3, BC[i % 5]); g.globalAlpha = 1; } });
-      // LIVE 점
-      // 그래프 막대
+      bulbs.forEach(([x, y], i) => {
+        const on = Math.sin(tm * 3 + i * 1.3) > -0.3, c = BC[i % 5];
+        if (on) { g.fillStyle = rad(g, x, y + 0.6, 0.2, 3.2, [[0, c + "88"], [1, c + "00"]]); g.beginPath(); g.arc(x, y + 0.6, 3.2, 0, 7); g.fill(); }
+        g.fillStyle = "#2a2430"; g.fillRect(x - 0.45, y - 0.7, 0.9, 0.7);
+        g.fillStyle = on ? c : tint(c, 0.45); g.beginPath(); g.ellipse(x, y + 0.6, 0.75, 1.05, 0, 0, 7); g.fill();
+        if (on) { g.fillStyle = "rgba(255,255,255,.7)"; g.beginPath(); g.arc(x - 0.25, y + 0.3, 0.25, 0, 7); g.fill(); }
+      });
+      // 그래프 막대(둥근 벡터)
       const G0 = curG(), cur = Math.min(29, Math.floor(G0));
       for (let i = 0; i < 30; i++) {
-        const t = trAt(i + 0.5), h = Math.max(2, Math.round((t / 3.3) * (gyB - gyT))), x = gx0 + Math.round(i * gStep), w = Math.max(2, Math.floor(gStep) - 1);
+        const t = trAt(i + 0.5), h = Math.max(1.5, (t / 3.3) * (gyB - gyT)), x = gx0 + i * gStep, w = Math.max(1.4, gStep - 0.8);
         const pk = t >= PEAK, past = i < cur, now = i === cur;
-        let col = pk ? "#ffd166" : "#5a7ac8";
-        if (past) col = pk ? "#7a6430" : "#33456e";
-        if (now) col = Math.floor(tm * 6) % 2 ? "#ffffff" : pk ? "#fff3b0" : "#9fd8ff";
-        P(x, gyB - h, w, h, col); P(x, gyB - h, w, 1, tint(col, 1.25));
-        if (now) { const ax = x + (w >> 1); P(ax - 2, gyB - h - 5, 5, 1, "#fff"); P(ax - 1, gyB - h - 4, 3, 1, "#fff"); P(ax, gyB - h - 3, 1, 1, "#fff"); }
+        let c0 = pk ? "#ffe08a" : "#7a9ae0", c1 = pk ? "#e0a020" : "#3a56a0";
+        if (past) { c0 = pk ? "#8a7038" : "#3a4c78"; c1 = pk ? "#5a4620" : "#26345a"; }
+        if (now) { const fl = Math.floor(tm * 6) % 2; c0 = fl ? "#ffffff" : pk ? "#fff3b0" : "#bfe6ff"; c1 = fl ? "#dfe8ff" : pk ? "#ffd166" : "#5fb8ff"; }
+        rr(g, x, gyB - h, w, h + 0.4, Math.min(0.9, w / 2)); g.fillStyle = lin(g, 0, gyB - h, 0, gyB, [[0, c0], [1, c1]]); g.fill();
+        if (now) { const ax = x + w / 2, ay = gyB - h - 1.2; g.fillStyle = "#fff"; g.beginPath(); g.moveTo(ax - 2, ay - 2.6); g.lineTo(ax + 2, ay - 2.6); g.lineTo(ax, ay); g.closePath(); g.fill(); }
       }
-      P(gx0, gyB, gx1 - gx0, 1, "#5a5070");
+      g.fillStyle = "#5a5070"; g.fillRect(gx0, gyB, gx1 - gx0, 0.4);
       // 독자 머리(지금 막대 위에서 퐁퐁)
-      heads.forEach((h) => { g.globalAlpha = clamp(h.t * 1.6, 0, 1); P(Math.round(h.x), Math.round(h.y), 2, 2, h.c); P(Math.round(h.x), Math.round(h.y) + 2, 2, 1, "#2a2448"); }); g.globalAlpha = 1;
+      heads.forEach((h) => { g.globalAlpha = clamp(h.t * 1.6, 0, 1); g.fillStyle = h.c; g.beginPath(); g.arc(h.x + 1, h.y + 1.2, 1.05, 0, 7); g.fill(); g.fillStyle = "#2a2448"; g.beginPath(); g.arc(h.x + 1, h.y + 0.9, 1.1, Math.PI, 0); g.fill(); }); g.globalAlpha = 1;
       // 앞: 이불·폰
-      g = gF; g.clearRect(0, 0, LW, LH); g.drawImage(FG, 0, 0);
+      g = gF; g.clearRect(0, 0, LW, LH); g.drawImage(FG, 0, 0, LW, LH);
       const sg = g.createRadialGradient(phX + 6, phY + 4, 1, phX + 6, phY + 4, 22); sg.addColorStop(0, `rgba(140,200,255,${0.22 + flash})`); sg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = sg; g.fillRect(phX - 20, phY - 22, 52, 44);
       {
-        const pw = 11, ph = 17, x0 = phX + 1, y0 = phY + 3, sx = x0 + 1, sy = y0 + 1, sW = pw - 2, sH = ph - 3, my = Math.min(3, ME.slot), SKIN_C = "#f2c9a8";
-        P(x0 - 1, y0 - 1, pw + 2, ph + 2, "#1a1424"); P(x0, y0, pw, ph, "#ff8fc8"); P(x0, y0, pw, 1, "#ffc8e4"); P(x0 + pw - 1, y0, 1, ph, "#d0609a");
-        P(sx, sy, sW, sH, flash > 0 ? "#ffffff" : "#0e1838");
+        const pw = 11, ph = 17, x0 = phX + 1, y0 = phY + 3, sx = x0 + 1, sy = y0 + 1.2, sW = pw - 2, sH = ph - 3, my = Math.min(3, ME.slot), SKIN = "#f2c9a8";
+        g.save(); g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = 2 * KS; rr(g, x0, y0, pw, ph, 1.8); g.fillStyle = lin(g, x0, y0, x0 + pw, y0 + ph, [[0, "#ffb0d8"], [1, "#d0609a"]]); g.fill(); g.restore();
+        rr(g, sx, sy, sW, sH, 0.9); g.fillStyle = flash > 0 ? "#ffffff" : lin(g, 0, sy, 0, sy + sH, [[0, "#14204a"], [1, "#0a1230"]]); g.fill();
         if (flash <= 0) {
-          P(sx, sy, sW, 2, "#1f6fd0"); P(sx + 1, sy, 3, 1, "#9fd8ff");
-          for (let i = 0; i < 4; i++) { const yy = sy + 3 + i * 3; if (i === my) P(sx, yy - 1, sW, 3, "#5fb8ff55"); P(sx + 1, yy, 1, 1, i === 0 ? "#ffd166" : i === my ? "#9fd8ff" : "#6a6a8a"); P(sx + 3, yy, i === my ? 5 : 4, 1, i === my ? "#9fd8ff" : "#4a4a6a"); }
+          g.save(); rr(g, sx, sy, sW, sH, 0.9); g.clip();
+          g.fillStyle = "#1f6fd0"; g.fillRect(sx, sy, sW, 2); g.fillStyle = "#9fd8ff"; g.fillRect(sx + 0.8, sy + 0.7, 3, 0.6);
+          for (let i = 0; i < 4; i++) { const yy = sy + 3.4 + i * 2.8; if (i === my) { g.fillStyle = "rgba(95,184,255,.35)"; g.fillRect(sx, yy - 1, sW, 2.4); } g.fillStyle = i === 0 ? "#ffd166" : i === my ? "#9fd8ff" : "#6a6a8a"; g.beginPath(); g.arc(sx + 1.2, yy + 0.2, 0.55, 0, 7); g.fill(); rr(g, sx + 2.4, yy - 0.2, i === my ? 5.4 : 4.4, 0.8, 0.4); g.fillStyle = i === my ? "#9fd8ff" : "#4a4a6a"; g.fill(); }
+          g.fillStyle = "rgba(255,255,255,.08)"; g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx + sW * 0.6, sy); g.lineTo(sx, sy + sH * 0.5); g.closePath(); g.fill();
+          g.restore();
         }
-        P(x0 + 4, y0 + ph - 1, 3, 1, "#ffffff88");
-        P(x0 - 3, y0 + 8, 3, 7, SKIN_C); P(x0 - 3, y0 + 8, 3, 1, "#ffdcc0"); P(x0 - 1, y0 + 9, 2, 2, SKIN_C); P(x0 + pw, y0 + 8, 3, 7, SKIN_C); P(x0 + pw, y0 + 8, 3, 1, "#ffdcc0"); P(x0 + pw - 1, y0 + 9, 2, 2, SKIN_C);
+        rr(g, x0 + 3.8, y0 + ph - 0.9, 3.4, 0.45, 0.2); g.fillStyle = "rgba(255,255,255,.6)"; g.fill();
+        // 손(양쪽에서 폰을 쥔)
+        for (const [hx, dir] of [[x0 - 0.6, -1], [x0 + pw + 0.6, 1]]) {
+          g.fillStyle = lin(g, hx - 2, 0, hx + 2, 0, dir < 0 ? [[0, "#e0b090"], [1, SKIN]] : [[0, SKIN], [1, "#e0b090"]]);
+          g.beginPath(); g.ellipse(hx, y0 + 11.5, 2.2, 3.8, dir * 0.15, 0, 7); g.fill();
+          g.fillStyle = "#ffdcc0"; g.beginPath(); g.ellipse(hx - dir * 0.6, y0 + 8.2, 1.2, 0.9, 0, 0, 7); g.fill();
+        }
       }
       // 색종이
       g = gX; g.clearRect(0, 0, LW, LH);
-      conf.forEach((c) => P(Math.round(c.x), Math.round(c.y), c.t % 2 ? 1 : 2, c.t % 2 ? 2 : 1, c.c));
+      conf.forEach((c, i) => { g.save(); g.translate(c.x, c.y); g.rotate(tm * 6 + i); g.scale(1, Math.cos(tm * 9 + i)); g.fillStyle = c.c; g.fillRect(-1, -0.55, 2, 1.1); g.restore(); });
     };
 
     // ── 나(표정·몸짓) ──
@@ -636,7 +660,7 @@ export const GAME = {
     };
 
     // ── 손가락 ──
-    hand.style.backgroundImage = `url(${fingerURL()})`;
+    hand.style.backgroundImage = `url("${HAND_URL}")`;
     let handKey = null;
     const handAt = (n) => {
       if (!n) { if (handKey) { hand.className = "wr-hand"; handKey = null; } return; }
@@ -782,7 +806,7 @@ export const GAME = {
         }
         setTimeout(() => {
           if (done) return;
-          envEl.src = pixURL("env", { ...PCOL, w: win ? "#fff3d0" : "#e0dcec" });
+          envEl.src = vURL("env", { w: win ? "#fff3d0" : "#e0dcec" });
           ltEl.innerHTML = win
             ? `<i>노블리 편집부</i><b>유료 연재 제안드립니다</b>공모전 ${finalRank}위 축하드려요!<br>'${MINE.t}', 다음 달부터<br>유료 연재로 함께해요.<s>계약 제안</s>`
             : `<i>노블리 알림</i><b>공모전 결과: ${finalRank}위</b>수상은 놓쳤지만 오늘 밤<br>선작 ${fmt(40 + replies * 12 + upTr.length * 20)}명이 늘었어요.<br>다음 공모전을 노려 봐요!`;

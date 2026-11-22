@@ -20,8 +20,8 @@ const P_QUIET = 0.3; // 이 확률로 그 투잡엔 라이벌이 안 나온다(�
 const AFTER = 4; // 시작하고 이만큼 지나야 나온다(달)
 const P_APPEAR = 0.05, GAP_APPEAR = 6;
 // v4.25b: 압박 1.5배(P_MUL, 1명당 압박 = 표의 p × 1.5), 한 달 하한 −22% → −33%, 이벤트로 바뀌는 압박 범위 2~14% → 3~21%
-export const P_MUL = 1.5;
-const P_EV = 0.2, GAP_EV = 3, NET_LO = -0.33, NET_HI = 0.15, ALLY_BONUS = 0.03, P_MIN = 0.03, P_MAX = 0.21;
+export const P_MUL = 1.2; // v4.27 1.5 → 1.2
+const P_EV = 0.2, GAP_EV = 3, NET_LO = -0.27, NET_HI = 0.15, ALLY_BONUS = 0.03, P_MIN = 0.03, P_MAX = 0.21;
 
 // ── 투잡별 낱말: c 손님, i 상품, sh 가게, st 같이 일하는 사람, rv 후기, sup 거래처, acc 사고, fee 오르는 비용, q 품질 능력치 ──
 export const WORDS = {

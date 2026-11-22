@@ -61,7 +61,7 @@ export const CARDS = [
   K("r_pace", "r", "체력 안배", "행동 스태미너 소모 −3%", { m: { hpCostMult: 0.97 } }),
   K("r_tax", "r", "절세 노트", "종합소득세 −8%", { m: { taxMult: 0.92 } }),
   K("r_boss", "r", "상사의 신뢰", "승진 확률 +, 연말 평가 +", { m: { promoBonus: 0.02, gradeBonus: 0.1 } }),
-  // ── 영웅 9 ──
+  // ── 영웅 10 ──
   K("h_shield", "h", "마음의 방패", "번아웃을 한 번 막아 준다", { guard: 1 }),
   K("h_morning", "h", "아침형 루틴", "앞으로 12달 행동력 +1", { tmp: [{ apBonus: 1 }, 12] }),
   K("h_muscle", "h", "투잡 근육", "앞으로 24달 투잡 행동 스태미너 −1", { tmp: [{ sideHp: -1 }, 24] }),
@@ -70,6 +70,7 @@ export const CARDS = [
   K("h_stars", "h", "별점 수호자", "파티룸 별점 하락 −15%, 숙소·치킨 별점 +0.01", { m: { ratingGuard: 0.85, abStar: 0.01, chStar: 0.01 } }),
   K("h_viral", "h", "떡상 예감", "떡상·입소문 확률 +8%", { m: { instaViral: 1.08, viralMult: 1.08, wnBuzz: 1.04 } }),
   K("h_steel", "h", "단단한 멘탈", "매달 멘탈 +0.5", { m: { monthMental: 0.5 } }),
+  K("h_break", "h", "벽 깨기", "가장 높은 능력치 6달 돌파 중(높은 구간이 덜 막힘)", { now: { brk: "top" } }),
   K("h_heal", "h", "회복 체질", "앞으로 24달 스태미너 회복 +2", { tmp: [{ hpRec: 2 }, 24] }),
   // ── 전설 5 ──
   K("l_day25", "l", "하루 25시간", "앞으로 36달 행동력 +1", { tmp: [{ apBonus: 1 }, 36] }),
@@ -214,6 +215,7 @@ function shardOnly(s, n) { const g = ensure(s); g.shards += n; return [`카드 �
 function applyNow(s, now, f) {
   const out = [];
   if (now.stat) for (const [k, v] of Object.entries(now.stat)) { if (s.st?.[k] === undefined) continue; const a = Math.round(v * f * 10) / 10; s.st[k] = clamp(s.st[k] + a, 0, D.STAT_MAX); out.push(`${D.STATS[k]} +${a}`); }
+  if (now.brk) { const k = now.brk === "top" ? Object.keys(D.STATS).sort((a, b) => (s.st?.[b] || 0) - (s.st?.[a] || 0))[0] : now.brk; s.brk = s.brk || {}; s.brk[k] = Math.max(s.brk[k] ?? -1, s.t + D.STAT_BRK.months); out.push(`${D.STATS[k]} 돌파 중 ${D.STAT_BRK.months}달`); } // v4.28
   if (now.hp) { s.hp = clamp((s.hp || 0) + now.hp, 0, s.hpMax || 100); out.push(now.hp >= 999 ? "스태미너 가득" : `스태미너 +${now.hp}`); }
   if (now.mental) { const a = Math.round(now.mental * f); s.mental = clamp((s.mental || 0) + a, 0, 100); out.push(`멘탈 +${a}`); }
   if (now.cash) { const a = Math.round(now.cash * f * Math.max(1, s.pi || 1)); s.cash += a; out.push(`현금 +${a}만`); }

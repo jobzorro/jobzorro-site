@@ -1,5 +1,5 @@
 // 인별그램 미니게임 "결정적 순간": 여행 중 "뭘 올리지…" 하다가 갑자기 나타난 장관(고래·토네이도·유성·번개·오로라·불꽃)을 찍는다.
-// 도트 캔버스(가로 160칸)를 정수배로 키워 그린다. 화면을 끌어 카메라를 돌리고, 분위기가 꼭대기일 때 셔터.
+// 가로 160칸 논리 좌표로 그리되, 캔버스는 기기 해상도로 키워 매끈하게 그린다(11-22 도트 → 고해상도). 화면을 끌어 카메라를 돌리고, 분위기가 꼭대기일 때 셔터.
 // mg.js 와 서로 불러 쓰므로, 이 파일 맨 위에서는 불러온 것을 바로 쓰지 않는다(함수 안에서만).
 import { frame, SFX, tone, noise, vib, rnd, pick, shuffle, clamp, RM, shutterSound } from "./mg.js";
 
@@ -17,7 +17,7 @@ const fmtLike = (n) => (n >= 10000 ? (n / 10000).toFixed(1).replace(/\.0$/, "") 
 
 export const IN_CSS = `
 .mg-trip{background:#000!important}
-.mg-tcv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;touch-action:none;cursor:grab;z-index:0}
+.mg-tcv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;z-index:0}
 .mg-tcv:active{cursor:grabbing}
 .mg-vf{position:absolute;inset:10px;pointer-events:none;z-index:2;background:linear-gradient(#fff0 33.2%,#ffffff1c 33.3%,#ffffff1c 33.6%,#fff0 33.7%,#fff0 66.4%,#ffffff1c 66.5%,#ffffff1c 66.8%,#fff0 66.9%),linear-gradient(90deg,#fff0 33.2%,#ffffff1c 33.3%,#ffffff1c 33.6%,#fff0 33.7%,#fff0 66.4%,#ffffff1c 66.5%,#ffffff1c 66.8%,#fff0 66.9%)}
 .mg-vf i{position:absolute;width:18px;height:18px;border:2px solid #ffffffd0}
@@ -44,12 +44,12 @@ export const IN_CSS = `
 .mg-hud b{color:#ff3b5c}
 .mg-drag{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);z-index:3;color:#fff;font-size:12px;font-weight:800;background:#0008;padding:4px 10px;border-radius:99px;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap}
 .mg-drag.on{opacity:1}
-.mg-trip .mg-pimg{background-size:cover;background-position:center;image-rendering:pixelated;aspect-ratio:4/3}
+.mg-trip .mg-pimg{background-size:cover;background-position:center;aspect-ratio:4/3}
 .mg-trip .mg-pola{width:min(66%,240px)}
 .mg-trip .mg-pcap{font-size:15px}
 .mg-ptag{font-size:11px;color:#888;text-align:center;font-weight:700}
 .mg-viral{position:absolute;left:50%;top:14%;z-index:8;transform:translateX(-50%);font-size:24px;font-weight:900;color:#ffd166;text-shadow:0 0 3px #000,0 0 16px #ff5e7e;pointer-events:none;animation:mgwow 1.6s ease-out forwards;white-space:nowrap}
-.mg-shots span{background-size:cover;background-position:center;image-rendering:pixelated;position:relative;overflow:hidden}
+.mg-shots span{background-size:cover;background-position:center;position:relative;overflow:hidden}
 .mg-shots span b{position:absolute;right:2px;bottom:1px;font-size:11px;color:#fff;text-shadow:0 1px 2px #000}
 @media (prefers-reduced-motion:reduce){.mg-wow.on,.mg-viral{animation-duration:.01s}.mg-arrow{animation:none}}
 `;
@@ -65,7 +65,7 @@ export function gIN2(host, ez, finish) {
   const $ = (s) => F.stage.querySelector(s);
   const cv = $(".mg-tcv"), g = cv.getContext("2d"), fbox = $(".mg-fbox"), meter = $(".mg-meter"), meterE = $(".mg-meter em"), story = $(".mg-story"), placeEl = $(".mg-place"), thinkEl = $(".mg-think"),
     wowEl = $(".mg-wow"), arrow = $(".mg-arrow"), dragHint = $(".mg-drag"), flash = $(".mg-flash"), click = $(".mg-click"), shots = F.foot.querySelectorAll(".mg-shots span");
-  let VH = 200, HZ = 124, k = 0, raf = 0, over = false, sum = 0, likesAll = 0, cam = 0, st = null, busy = false, dragged = false;
+  let SS = 1, VH = 200, HZ = 124, k = 0, raf = 0, over = false, sum = 0, likesAll = 0, cam = 0, st = null, busy = false, dragged = false;
   const shotV = [];
   F.bar.style.transform = "scaleX(1)";
 
@@ -80,7 +80,7 @@ export function gIN2(host, ez, finish) {
     if (k >= N) return end();
     const T = trips[k], W = cv.clientWidth || 320, H = cv.clientHeight || 400;
     VH = clamp(Math.round(VW * H / W), 120, 320); HZ = Math.round(VH * 0.62);
-    cv.width = VW; cv.height = VH;
+    SS = clamp(W * Math.min(2, window.devicePixelRatio || 1) / VW, 1, 6); cv.width = Math.round(VW * SS); cv.height = Math.round(VH * SS);
     const dir = rnd() < 0.5 ? 1 : -1, ex = 110 + rnd() * (WW - 220);
     st = {
       T, dir, ex, t0: performance.now(), phase: "calm", calm: 2.4, D: (4.4 + rnd() * 0.7) * ez, p: 0, shot: false, fired: {},
@@ -125,7 +125,7 @@ export function gIN2(host, ez, finish) {
   const meteorHead = (p) => { const q = Math.pow(clamp(p / PEAK, 0, 1), 1.3); return [lerp(st.ex - st.dir * 80, st.ex + st.dir * 6, q), lerp(VH * 0.04, VH * 0.3, q)]; };
 
   // ── 그리기 ──
-  const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+  const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
   const ell = (x, y, rx, ry, c, a = 1) => { g.globalAlpha = a; g.fillStyle = c; g.beginPath(); g.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), 0, 0, 6.283); g.fill(); g.globalAlpha = 1; };
   const glow = (x, y, r, c, a = 1) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, c); gr.addColorStop(1, c + "00"); g.globalAlpha = a; g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); g.globalAlpha = 1; };
   const ridgeY = (u) => HZ - VH * (0.05 + 0.035 * Math.sin(u * 0.03 + st.seed) + 0.02 * Math.sin(u * 0.081 + st.seed * 2) + 0.008 * Math.sin(u * 0.23));
@@ -276,6 +276,7 @@ export function gIN2(host, ez, finish) {
 
   const render = (t) => {
     const T = st.T, p = st.phase === "ev" ? st.p : st.phase === "after" ? 1 : -1;
+    g.setTransform(SS, 0, 0, SS, 0, 0);
     drawSky(t);
     if (p >= 0 && SKYEV[T.id]) DRAW[T.id](p, t);
     drawRidge();
@@ -323,7 +324,7 @@ export function gIN2(host, ez, finish) {
     raf = requestAnimationFrame(loop);
   };
 
-  const snap = () => { try { return cv.toDataURL("image/png"); } catch (e) { return ""; } };
+  const snap = () => { try { return cv.toDataURL("image/jpeg", 0.88); } catch (e) { return ""; } };
   const polaroid = (img, v, f, tm) => {
     const T = st.T, good = v >= 0.6, likes = Math.round((80 + v * v * v * 150000) * (0.85 + rnd() * 0.3)); likesAll += likes;
     const cap = v > 0.85 ? `인생샷! ${T.ev}` : good ? "잘 찍혔다!" : v > 0.3 ? "아깝다… 살짝 빗나감" : "흔들렸다…";

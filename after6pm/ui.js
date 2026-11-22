@@ -4,6 +4,7 @@ import * as PR from "./engine/pr.js";
 import * as CS from "./engine/cs.js";
 import * as SJ from "./engine/sj.js";
 import * as INS from "./engine/insta.js";
+import * as IGA from "./insta_app.js"; // 인별 앱 창(v4.27)
 import * as SYN from "./engine/syn.js";
 import * as AB from "./engine/abnb.js";
 import * as BIG from "./engine/big.js";
@@ -14,16 +15,23 @@ import * as APP from "./app.js";
 import * as FX from "./fx.js";
 import { ART } from "./gen/art.js";
 import { BODY, BG } from "./gen/body.js";
-import { CG } from "./gen/cg.js";
+import { CG, CG_NOPPL } from "./gen/cg.js";
+const NOPPL = new Set(CG_NOPPL || []); // v4.27 사람이 안 나오는 화보 → 내 캐릭터를 얹는다
 import { MG, mgRun, mgKeys, mgPrefetch, mg2Init } from "./mg.js";
 import * as REG from "./engine/reg.js";
 import { UI_PLUGINS } from "./jobs/index.js";
 import * as DK from "./deco_ui.js"; // 방 꾸미기(deco/deco.js 는 열 때 받기)
 import { rivalBox, RIVAL_CINE_TAG } from "./rival_ui.js"; // 라이벌 칸(v4.25)
-import { marketBox } from "./market_ui.js"; // 배우는 기간·시장 칸(v4.25b)
+import * as PD from "./people_dex.js"; // 인물 도감 기록(v4.27). 도감·관계도 화면은 people_ui.js(열 때 받기)
+import { rivalDemo as RV_DEMO } from "./engine/rival.js";
+import { marketBox, skillLine } from "./market_ui.js"; // 배우는 기간·시장 칸(v4.25b)
 import * as CU from "./cards_ui.js"; // 성장 카드·카드팩·가방(v4.25)
 import * as GC from "./engine/cards.js";
 import * as IT_ from "./engine/items.js";
+import * as JP from "./engine/jackpot.js"; // 한방 전략(v4.27) 시험용
+import { tycoonScene } from "./tycoon_ui.js"; // 내 매장 장면(타이쿤, v4.27)
+import * as SP from "./space_ui.js"; // 파티룸·에어 가격표·후기·명의 패널(v4.28)
+const spc = () => ({ S, E, esc, won, meter, actRow }); // v4.28
 const D = E.D;
 // 새 투잡 화면 플러그인(jobs/<key>_ui.js). 엔진 플러그인이 등록된 것만 쓴다. 채우기는 아래 regUiPlugins()
 const UJ = {}, PLUG_PAGES = {};
@@ -33,6 +41,8 @@ const ui = { page: "home", region: null, filter: "all", prFlow: null, wiz: null,
 const esc = (x) => String(x ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const won = E.won, jo = E.jo;
 const r1 = (x) => Math.round(x * 10) / 10;
+// 화면 정리(v4.27): 한 줄 요약 + 자세히 ▾ 접기. body 가 비면 빈 글.
+const more = (sum, body, cls = "") => body ? `<details class="more ${cls}"><summary>${sum} ▾</summary><div class="more-b">${body}</div></details>` : "";
 
 window.addEventListener("error", (e) => showErr(e.message + "\n" + (e.error?.stack || "")));
 window.addEventListener("unhandledrejection", (e) => showErr(String(e.reason?.stack || e.reason)));
@@ -128,6 +138,7 @@ function artOr(key, expr, fallback) {
 new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) (n.matches?.("img") ? [n] : n.querySelectorAll("img.face,img.body")).forEach((el) => { const src = el.getAttribute("src"); if (src && (BODY_WAIT.has(src) || ART_FALL.has(src))) el.classList.add("ld"); }); }).observe(document.body, { childList: true, subtree: true });
 function artPreload(ids) { let k = 0; for (const id of ids) setTimeout(() => (BODY[id] ? bodyLoad(id) : artLoad(id)), 40 * k++); }
 const BODY_IMG = {}, BODY_LD = {}, BODY_CUT = {}, BODY_WAIT = new Map(), BODY_TH = {};
+for (const c of Object.values(E.CHAR)) if (c.img && BODY[c.img] && !BODY[c.id]) BODY[c.id] = BODY[c.img]; // 그림을 빌려 쓰는 인물(인별 유명인: img 칸)
 const modeOf = (el) => el.classList.contains("body") ? (el.closest(".sstage.half,.mestage") ? "half" : "full") : "face";
 function bodyThumb(key) {
   if (BODY_TH[key] || BODY_IMG[key]) return;
@@ -135,7 +146,7 @@ function bodyThumb(key) {
   const im = new Image();
   im.onload = () => { if (BODY_IMG[key]) return; BODY_TH[key] = im;
     document.querySelectorAll("img.face,img.body").forEach((el) => { const h = BODY_WAIT.get(el.getAttribute("src")); if (h && h[0] === key) { try { const t = bodyCut(key, h[1], modeOf(el), im); BODY_WAIT.set(t, h); swapSrc(el, t, false); } catch (e) {} } }); };
-  im.src = "img/bs/" + key + ".webp";
+  im.src = "img/bs/" + (E.CHAR[key]?.img || key) + ".webp";
 }
 function bodyLoad(key) {
   if (BODY_IMG[key] || BODY_LD[key] || !BODY[key]) return;
@@ -146,7 +157,7 @@ function bodyLoad(key) {
     document.querySelectorAll("img.face,img.body").forEach((el) => { const h = BODY_WAIT.get(el.getAttribute("src")); if (h && h[0] === key) { try { swapSrc(el, bodyCut(key, h[1], modeOf(el)), true); } catch (e) {} } });
     if (ui.wiz && !S && ui.wiz.step === 1) renderWiz();
   };
-  im.src = "img/body/" + key + ".webp";
+  im.src = "img/body/" + (E.CHAR[key]?.img || key) + ".webp";
 }
 function bodyCut(key, i, mode, th) {
   const ck = key + i + mode + (th ? "s" : ""); if (BODY_CUT[ck]) return BODY_CUT[ck];
@@ -195,7 +206,9 @@ function myExpr() { if (S.hp < 30 || S.mental < 25) return "sad"; if (S.mental >
 // ───────── 저장 ─────────
 // 저장은 store.js가 맡는다(로그인하면 서버 3칸, 아니면 브라우저 3칸)
 function summary() { return { name: S.me.name, gender: S.me.gender, age: Math.floor(S.age), ym: E.ymLabel(S), nw: Math.round(E.netWorth(S)), job: S.co.quit || S.co.fired ? "전업" : `${S.co.name} ${D.RANKS[S.co.rank].n}`, side: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·"), end: S.over || S.ended || null }; }
-function save(now) { if (S) ST.save(SLOT, E.save(S), summary(), now); }
+function save(now) { if (S) { try { const m = meta(); if (PD.dexSync(S, m, E.CHAR)) setMeta(m); } catch (e) {} ST.save(SLOT, E.save(S), summary(), now); } }
+// 인물 도감·관계도(v4.27): people_ui.js 를 열 때 받는다. kind "dex" | "map" | "dex:<id>"
+function pplOpen(kind) { import("./people_ui.js").then((M) => M.open(kind, { S, E, D, esc, openWin, closeWin, charWin, meta, setMeta, toast, stage: (id) => stageWho(id, "smile", "half", bgUrl(PAGE_BG[{ pr: "pr", cs: "cs", co: "co" }[PD.groupOf(E.CHAR[id])]] || "cafe") || bgUrl("street")), face: (id) => faceSrc(id, "smile"), pix: (id) => pixFace(id, "neutral")(), meFace: () => meSrc("smile") })).catch((e) => toast([], "도감을 불러오지 못했어요")); }
 function meta() { return META_C; }
 function setMeta(m) { META_C = m; ST.setMeta(m); }
 function gcx() { return { ...dctx(), E, FX }; } // 성장 카드·가방(cards_ui.js)에 넘기는 것
@@ -263,7 +276,7 @@ function mgOffer(id, arg) {
         if (err || !r || !Number.isFinite(+r.score)) return finish(normalB, [`미니게임을 끝까지 못 했어요: 보통 결과(효과 ×${normalB})`]); // 오류가 나도 보통 결과로 닫는다
         mgRecord(gk, r); try { const m3 = meta(); m3.mgAv = { avatar: S.me.avatar || null, gender: S.me.gender || "F" }; setMeta(m3); } catch (e) {} // 시작 화면 '미니게임 다시 하기'용
         const sc = Math.max(0, Math.min(1, +r.score)), b = +(0.7 + sc * 0.8).toFixed(2);
-        finish(b, [`미니게임 ${r.grade || "보통"} · 효과 ×${b}`, ...(r.grade === "대성공" ? GC.mgReward(S, E.R(S), job) : []), ...(plays + 1 === MG_SKIP_AT ? ["이제 건너뛰기를 쓸 수 있어요"] : [])]);
+        finish(b, [`미니게임 ${r.grade || "보통"} · 효과 ×${b}`, ...(r.grade === "대성공" ? GC.mgReward(S, E.R(S), job) : []), ...E.mgStat(S, job, r.grade || (sc >= 0.85 ? "대성공" : sc >= 0.6 ? "성공" : "")), ...(plays + 1 === MG_SKIP_AT ? ["이제 건너뛰기를 쓸 수 있어요"] : [])]);
       }, true, true);
     };
   }, true, true);
@@ -285,7 +298,7 @@ function hobbyPick() {
 function pickFor(id) {
   const a = D.ACTIONS[id];
   if (a.pick === "stat") {
-    openWin(`<h2>${esc(a.n)} <button class="x" data-close>✕</button></h2><p class="muted small">어떤 능력치를 올릴까요? 높을수록 덜 올라요. 체력은 운동·취미로 올려요.</p><div class="pick">${D.STAT_KEYS.filter((k) => k !== "body").map((k) => `<button data-pick="${k}"><b>${D.STATS[k]}</b><span class="muted">지금 ${Math.round(S.st[k])}</span><span class="tiny muted">${STAT_USE[k]}</span></button>`).join("")}</div>`, (el) => el.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => { closeWin(); doAct(id, b.dataset.pick); }));
+    openWin(`<h2>${esc(a.n)} <button class="x" data-close>✕</button></h2><p class="muted small">공부형은 100%, 경험형은 30%만 올라요. 매력·체력은 몸과 생활로.</p><div class="pick">${D.STAT_KEYS.filter((k) => D.STAT_KIND_N[D.STAT_KIND[k]].study > 0).map((k) => `<button data-pick="${k}"><b>${D.STATS[k]} <span class="kindtag ${D.STAT_KIND[k]}">${D.STAT_KIND_N[D.STAT_KIND[k]].n}${D.STAT_KIND[k] === "exp" ? " 30%" : ""}</span></b><span class="muted">지금 ${Math.round(S.st[k])} · ${E.statZone(S.st[k]).n}${E.brkOn(S, k) ? " · 돌파 중" : ""}</span><span class="tiny muted">${STAT_USE[k]}</span></button>`).join("")}</div>`, (el) => el.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => { closeWin(); doAct(id, b.dataset.pick); }));
   } else if (a.pick === "beauty") {
     openWin(`<h2>꾸미기 · 매력 관리 <button class="x" data-close>✕</button></h2><div class="acts" style="padding:0">${D.BEAUTY.map((b) => `<button class="actrow" data-pick="${b.k}"><div class="ic">${ic("spark")}</div><div class="grow"><div class="t">${b.n} <span class="gold small">${won(-b.cash)}</span></div><div class="d">${b.desc}</div><div class="chips"><span class="p">매력 +${b.charm}</span>${b.talk ? `<span class="p">말빨 +${b.talk}</span>` : ""}</div></div><span class="ap">⚡1</span></button>`).join("")}</div><p class="muted small">지금 매력 ${Math.round(S.st.charm)} · 행동력 ${S.ap}/${S.apMax} · 현금 ${won(S.cash)}</p>`, (el) => el.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => { closeWin(); doAct(id, b.dataset.pick); }));
   } else if (a.pick === "district") { ui.page = "pr"; ui.prFlow = { step: "district" }; render(); }
@@ -319,11 +332,13 @@ function render() {
   if (!S) return renderTitle();
   if (S.over || S.ended) return renderEnding();
   if (!unlocked(ui.page)) ui.page = "home";
+  const dk = (pg, d) => pg + "|" + (d.querySelector("summary")?.textContent || "").replace(/[\d,.]+/g, "#"), oldPg = document.body.dataset.page, openK = new Set([...$app.querySelectorAll("details[open]")].map((d) => dk(oldPg, d))); // 정리(v4.27)
   document.body.dataset.page = ui.page; // 투잡 화면마다 색·분위기가 바뀐다(style.css v4.15)
   S.tileSeen = S.tileSeen || {}; S.tileSeen[ui.page] = 1;
   const pages = { home: pgHome, map: pgMap, people: pgPeople, me: pgMe, sj: pgSJ, co: pgCo, hobby: pgHobby, family: pgFamily, pr: pgPR, cs: pgCS, insta: pgInsta, grad: pgGrad, airbnb: pgAirbnb, ucafe: pgUcafe, ...PLUG_PAGES };
   $app.innerHTML = top() + pager() + `<div class="page ${ui.dir > 0 ? "inR" : ui.dir < 0 ? "inL" : ""}">${pages[ui.page]()}</div>` + nav();
   ui.dir = 0;
+  if (openK.size) $app.querySelectorAll("details").forEach((d) => { if (openK.has(dk(ui.page, d))) d.open = true; });
   bind();
   mgWarm(ui.page);
   if (S.pending && !$modal.innerHTML) setTimeout(() => { if (S && S.pending && !S.over && !S.ended && !$modal.innerHTML && !document.querySelector(".cine")) showScene(); }, 0);
@@ -483,7 +498,7 @@ function pgHome() {
   return `<div class="stage" style="background-image:url(${bg})">
     ${heroB ? img(heroB, "body hero2", "나") : img(meSrc(myExpr()), "face hero", "나")}
     <div class="when"><b>${S.year}년 ${S.cal}월</b><span>${Math.floor(S.age)}세 · ${esc(job)}</span></div>
-    <div class="side">${!S.sj.active.length ? `<span>투잡 없음 · 회사원${S.sj.open ? "" : ""}</span>` : ""}${SJ.isActive(S, "pr") ? `<span>파티룸 ${S.pr.rooms.length}곳 · Lv${S.pr.lv}</span>` : ""}${SJ.isActive(S, "cs") ? `<span>컨설팅 Lv${S.cs.lv}${S.cs.open ? "" : " 준비 중"}</span>` : ""}${REG.JOBS.filter((P) => UJ[P.key]?.side && SJ.isActive(S, P.key)).map((P) => { try { return `<span>${esc(UJ[P.key].side(S))}</span>`; } catch (e) { return ""; } }).join("")}${S.hb.joined.map((h) => `<span>${esc(D.HOBBIES[h].n)}</span>`).join("")}<span>${D.HOUSING[S.house.type]?.n || ""}</span>${S.fam.kids.length ? `<span>아이 ${S.fam.kids.length}명</span>` : ""}</div>
+    <div class="side">${[!S.sj.active.length ? `<span>투잡 없음 · 회사원</span>` : "", SJ.isActive(S, "pr") ? `<span>파티룸 ${S.pr.rooms.length}곳 · Lv${S.pr.lv}</span>` : "", SJ.isActive(S, "cs") ? `<span>컨설팅 Lv${S.cs.lv}${S.cs.open ? "" : " 준비 중"}</span>` : "", ...REG.JOBS.filter((P) => UJ[P.key]?.side && SJ.isActive(S, P.key)).map((P) => { try { return `<span>${esc(UJ[P.key].side(S))}</span>`; } catch (e) { return ""; } }), S.fam.kids.length ? `<span>아이 ${S.fam.kids.length}명</span>` : "", ...S.hb.joined.map((h) => `<span>${esc(D.HOBBIES[h].n)}</span>`)].filter(Boolean).slice(0, 2).join("")}</div>
     <div class="lovers">${ring.map((id) => `<button data-char="${id}">${img(faceSrc(id, "blush"))}</button>`).join("")}</div>
     <div class="news"><div class="src">투잡일보 · ${S.year}.${String(S.cal).padStart(2, "0")}</div><div class="h">${esc(S.news)}</div></div>
   </div>
@@ -495,9 +510,9 @@ function pgHome() {
     <div><div class="v" style="color:var(--purple)">${S.fam.spouse ? Math.round(S.fam.happy) : Object.keys(S.rel).length}</div><div class="k">${S.fam.spouse ? "가족" : "인맥"}</div>${meter(S.fam.spouse ? S.fam.happy : Object.keys(S.rel).length, S.fam.spouse ? 100 : 40, "var(--purple)")}</div>
   </div><div class="strip st10">${D.STAT_KEYS.map((k) => `<div><div class="v">${Math.round(S.st[k] || 0)}</div><div class="k">${D.STATS[k]}</div>${meter(S.st[k] || 0, 100, "var(--gold)")}</div>`).join("")}</div></div>
   <button class="swhint" data-sw2go><i class="on"></i><i></i><span>옆으로 밀면 능력치</span></button>
-  ${S.t < 4 && !S.coachOff ? `<div class="coach"><b>${ic("info")}이렇게 하면 돼요</b><ol><li><b>바로 하기</b>나 <b>지도</b>에서 행동을 골라요. 행동마다 ${ic("bolt")}행동력이 줄어요.</li><li>그림 속 <b>사람을 누르면</b> 말을 걸어 인연이 돼요.</li><li>행동력을 다 쓰면 맨 아래 <b class="gold">다음 달</b>을 눌러요.</li></ol><button class="x" data-coach>알겠어요</button></div>` : ""}
+  ${S.t < 3 && !S.coachOff ? `<div class="coach"><b>${ic("info")}이렇게 하면 돼요</b><ol><li><b>바로 하기</b>나 <b>지도</b>에서 행동을 골라요. 행동마다 ${ic("bolt")}행동력이 줄어요.</li><li>그림 속 <b>사람을 누르면</b> 말을 걸어 인연이 돼요.</li><li>행동력을 다 쓰면 맨 아래 <b class="gold">다음 달</b>을 눌러요.</li></ol><button class="x" data-coach>알겠어요</button></div>` : ""}
   ${guideCard()}
-  ${td.length ? `<div class="sec">${ic("list")}이번 달 할 일 <span class="muted small">· 누르면 그곳으로 가요</span></div><div class="todo">${td.map((t) => `<button class="l${t.lv}" data-todo="${esc(t.go || "")}"><span class="dot"></span><span class="grow">${esc(t.text)}</span>${t.go ? '<span class="arr">›</span>' : ""}</button>`).join("")}</div>` : ""}
+  ${td.length ? `<div class="sec">${ic("list")}이번 달 할 일 <span class="muted small">· 누르면 그곳으로 가요</span></div>${(() => { const tb = (t) => `<button class="l${t.lv}" data-todo="${esc(t.go || "")}"><span class="dot"></span><span class="grow">${esc(t.text)}</span>${t.go ? '<span class="arr">›</span>' : ""}</button>`; return `<div class="todo">${td.slice(0, 3).map(tb).join("")}</div>${more(`더 보기 ${td.length - 3}`, td.length > 3 ? `<div class="todo">${td.slice(3).map(tb).join("")}</div>` : "")}`; })()}` : ""}
   <div class="sec">${ic("pin")}내 장소 <span class="muted small">· 눌러서 들어가요</span></div>
   <div class="places hscroll">${places.map((k) => `<button data-go="${k}" style="background-image:linear-gradient(180deg,#0e102033,#0e1020ee),url(${TILE[k].bg})">${ic(TILE[k].ic)}<b>${esc(PAGE_N[k])}</b><span>${esc(tileInfo(k))}</span>${!S.tileSeen?.[k] ? '<em class="nbadge">NEW</em>' : ""}</button>`).join("")}<button data-hub class="more">${ic("grid")}<b>전체 메뉴</b><span>잠긴 곳 ${D.HUB.flat().filter(({ k }) => !unlocked(k)).length}</span></button></div>
   <div class="sec">${ic("bolt")}바로 하기 <span class="muted small">· ⚡숫자만큼 행동력을 써요</span></div>
@@ -528,7 +543,7 @@ function quickActs() {
     ["drink", () => S.t >= 2, "3달째부터"],
   ].filter(([id]) => id);
   const quick = [], locked = [];
-  for (const [id, ok, why] of L) { if (ok()) { if (quick.length < 8) quick.push(id); } else if (locked.length < 2 && quick.length + locked.length < 10) locked.push([id, why]); }
+  for (const [id, ok, why] of L) { if (ok()) { if (quick.length < 8) quick.push(id); } else if (locked.length < 1 && quick.length + locked.length < 10) locked.push([id, why]); /* 정리(v4.27): 다음에 열리는 것 1개만 */ }
   return { quick, locked };
 }
 function defaultArg(id) {
@@ -559,7 +574,7 @@ function actChips(id) {
   const hp = E.hpCost(S, id); if (hp > 0) c.push(`<span class="m">스태미너 −${hp}</span>`); else if (hp < 0) c.push(`<span class="p">스태미너 +${-hp + (id === "rest" ? 10 : 0)}</span>`);
   if (a.mental) c.push(`<span class="${a.mental > 0 ? "p" : "m"}">멘탈 ${a.mental > 0 ? "+" : ""}${a.mental}</span>`);
   if (a.cash) c.push(`<span class="m">돈 ${won(a.cash)}</span>`);
-  if (a.stat) for (const [k, v] of Object.entries(a.stat)) c.push(`<span class="p">${D.STATS[k]} +${v}</span>`);
+  if (a.stat) for (const [k, v] of Object.entries(a.stat)) c.push(v > 0 ? `<span class="p">${D.STATS[k]} +</span>` : `<span class="m">${D.STATS[k]} −</span>`);
   if (a.gain) c.push(`<span class="p">능력치 +${a.gain}</span>`);
   return c.join("");
 }
@@ -567,6 +582,9 @@ function actRow(id, arg, label) {
   const a = D.ACTIONS[id]; const why = a.pick && arg === undefined ? (a.need && !a.need(S) ? "지금은 할 수 없음" : null) : E.canAct(S, id, arg);
   return `<button class="actrow" data-act="${id}" ${arg !== undefined ? `data-arg="${esc(arg)}"` : ""} ${why ? `data-why="${esc(why)}" style="opacity:.5"` : ""}><div class="ic">${ic(ACT_IC[id])}</div><div class="grow"><div class="t">${esc(label || a.n)}</div><div class="d">${esc(why || a.desc)}</div><div class="chips">${actChips(id)}</div></div><span class="ap">⚡${a.ap}</span></button>`;
 }
+// 행동력·스태미너·돈 부족 같은 '지금만' 이유는 빼고 본 잠금 이유
+function lockWhy(id, arg) { const a = D.ACTIONS[id]; if (!a) return "없음"; if (a.pick && arg === undefined) return a.need && !a.need(S) ? "잠김" : null; try { return E.canAct({ ...S, ap: 999, hp: 9999, cash: 1e15, pending: null }, id, arg); } catch (e) { return null; } }
+function actRows(L) { let shown = 0; return L.filter(Boolean).map((x) => { const [id, arg, label] = [].concat(x); if (!lockWhy(id, arg)) return actRow(id, arg, label); return shown++ ? "" : actRow(id, arg, label); }).join(""); }
 function visibleAct(id) { { const P = REG.byAct(id); if (P) return SJ.isActive(S, P.key); } if (/^pr_/.test(id)) return SJ.isActive(S, "pr"); if (/^cs_/.test(id)) return SJ.isActive(S, "cs"); if (/^in_/.test(id)) return SJ.isActive(S, "insta"); if (/^ab_/.test(id)) return SJ.isActive(S, "airbnb"); if (/^uc_/.test(id)) return SJ.isActive(S, "ucafe"); if (id === "grad_class") return !!(S.grad && !S.grad.done); if (/^co_|work_hard|overtime|office_chat|company_dinner/.test(id)) return !(S.co.quit || S.co.fired); return true; }
 // 장소 무대: 그 장소 그림 위에 오늘 와 있는 사람들이 서 있다. 누르면 인물 창(말 걸기).
 function personFig(id, i, n) {
@@ -600,7 +618,7 @@ function pgRegion(rg) {
 // 투잡
 const SJ_BG = { pr: "partyroom", cs: "consult", insta: "online", ucafe: "ucafe", airbnb: "airbnb", coffee: "cafe", popup: "popup", shortstay: "airbnb", tutoring: "online", tistory: "home", realtyblog: "realty", chicken: "pub", bouquet: "wedding", goods: "popup", aivideo: "cowork", vibe: "cowork", webnovel: "library", thesis: "library", press: "cowork", tarot: "gallery", saju: "gallery" };
 const bool = (b, y, n) => (b ? y : n);
-function attrs(L, full) {
+function attrs(L, full, compact) {
   const sh = (k) => L.seen?.[k] || full;
   const parts = [
     [`${L.size}평`], [L.floor === -1 ? "지하" : `${L.floor}층`], [L.floor >= 2 ? bool(L.elevator, "엘리베이터 O", "엘리베이터 X") : "엘리베이터 -", L.floor >= 3 && !L.elevator ? "bad" : ""],
@@ -611,7 +629,9 @@ function attrs(L, full) {
     sh("landlord") ? [`건물주 ${L.hid.landlord}`, L.hid.landlord === "싫어함" ? "bad" : L.hid.landlord === "환영" ? "good" : ""] : ["건물주 ?", "q"],
     sh("comp") ? [`경쟁 ${L.hid.comp}곳`, L.hid.comp >= 6 ? "bad" : L.hid.comp <= 2 ? "good" : ""] : ["경쟁 ?", "q"],
   ];
-  return `<div class="attrs">${parts.map(([t, c]) => `<span class="${c || ""}">${esc(t)}</span>`).join("")}</div>`;
+  const sp = ([t, c]) => `<span class="${c || ""}">${esc(t)}</span>`;
+  if (compact) { const hot = parts.filter(([, c]) => c === "bad" || c === "q"), rest = parts.filter(([, c]) => c !== "bad" && c !== "q"); return `${hot.length ? `<div class="attrs">${hot.map(sp).join("")}</div>` : ""}${more(`매물 정보 ${rest.length}개`, `<div class="attrs">${rest.map(sp).join("")}</div>`)}`; } // 정리(v4.27)
+  return `<div class="attrs">${parts.map(sp).join("")}</div>`;
 }
 function pgPR() {
   const pr = S.pr, f = ui.prFlow;
@@ -624,21 +644,23 @@ function pgPR() {
   const avgR = open.length ? open.reduce((a, r) => a + r.rating, 0) / open.length : 0;
   const need = PR.totalNeed(S), have = pr.rooms.reduce((a, r) => a + (r.status === "open" ? Math.min(r.ap, PR.needAp(S, r)) : 0), 0);
   const lv = D.PR_LEVELS[pr.lv - 1];
-  return `${boardHead("pr")}<div class="card"><h3>파티룸 <small>Lv${pr.lv} 「${lv.n}」</small></h3><div class="kv">
+  return `${tycoonScene(S, "pr")}${boardHead("pr")}<div class="card"><h3>파티룸 <small>Lv${pr.lv} 「${lv.n}」</small></h3>${pr.rooms.length ? `<div class="kv">
     <div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${last >= 0 ? "+" : ""}${won(last)}</div></div>
     <div><div class="k">평균 별점</div><div class="v gold">${avgR ? "★ " + avgR.toFixed(2) : "-"}</div></div>
-    <div><div class="k">지점</div><div class="v">${pr.rooms.length}곳</div></div>
+    <div><div class="k">지점</div><div class="v">${pr.rooms.length}곳</div></div></div>
+    ${more(`관리 행동력 ${r1(have)}/${r1(need)} · 노하우 ${Math.round(pr.know || 0)} · 지표 더 보기`, `<div class="kv">
     <div><div class="k">관리 행동력</div><div class="v ${have < need ? "bad" : ""}">${r1(have)}/${r1(need)}</div></div>
     <div><div class="k">운영 노하우</div><div class="v">${Math.round(pr.know || 0)}</div></div>
     <div><div class="k">규모의 경제</div><div class="v">×${D.scaleF(pr.rooms.length || 1)}</div></div>
     <div><div class="k">묶음 효과</div><div class="v ${PR.bundle(S).n >= 2 ? "good" : "muted"}">${PR.bundle(S).n >= 2 ? `예약 +${Math.round(PR.bundle(S).occ * 100)}% · 관리비 −${Math.round(PR.bundle(S).cost * 100)}%` : "2곳부터"}</div></div>
     <div><div class="k">물가</div><div class="v">×${(S.pi || 1).toFixed(2)}</div></div>
-    ${pr.sold ? `<div><div class="k">매각 ${pr.sold}곳</div><div class="v good">${won(pr.soldSum)}</div></div>` : ""}</div>
+    ${pr.sold ? `<div><div class="k">매각 ${pr.sold}곳</div><div class="v good">${won(pr.soldSum)}</div></div>` : ""}</div>`)}` : ""}
     ${pr.listings.length ? `<div style="margin-top:8px"><button class="btn sm" data-prflow="list:${pr.listings[0].dk}">보던 매물 ${pr.listings.length}개 보기</button></div>` : ""}</div>
-  ${peakCard()}
+  ${pr.rooms.length && !open.length ? peakCard() : ""}
+  ${SP.prPanels(spc())}
   ${pr.rooms.map(roomCard).join("")}
   <button class="card" style="border-style:dashed;text-align:center;padding:18px" data-prflow="district"><b class="gold" style="font-size:18px">+ ${pr.rooms.length ? "새 지점 열기" : "첫 파티룸 열기"}</b><div class="muted small">상권 고르기 → 매물 보기(행동 1) → 숨은 정보 확인 → 계약</div></button>
-  ${pr.rooms.length ? scalePanel() : prGuide()}
+  ${pr.rooms.length ? scalePanel() : more("컨셉·입지 안내 자세히", prGuide(), "card")}
   ${knowPanel()}`;
 }
 function peakCard() {
@@ -646,7 +668,7 @@ function peakCard() {
   return `<div class="card"><h3>성수기 가격 <small>12월 극성수기 · 1·2·7·8월 성수기</small></h3>
     <div class="season">${D.PR_SEASON.map((x, i) => `<i class="${i + 1 === S.cal ? "now" : ""} ${PR.isPeak(i + 1) ? "pk" : ""}" style="height:${Math.round((x.we * 24 + x.wk * 22) / mx * 100)}%"></i>`).join("")}</div><div class="season-l">${D.PR_SEASON.map((_, i) => `<span>${i + 1}</span>`).join("")}</div>
     <div class="seg" style="margin-top:8px">${D.PR_PEAK.map((v) => `<button class="${p === v ? "on" : ""}" data-peak="${v}">${v === 1 ? "그대로" : `+${Math.round((v - 1) * 100)}%`}</button>`).join("")}</div>
-    <div class="tiny muted" style="margin-top:6px">12월엔 주말이 다 차고 평일도 차요. 비싸도 손님이 오니 이때 가격을 올리는 게 핵심이에요. 너무 올리면 공실이 생겨요. 1·2·7·8월에는 고른 인상폭의 절반이 붙고, 나머지 달은 지점별 기본 가격 그대로예요.${pr.rooms[0] ? ` 예) ${esc(pr.rooms[0].name)} 12월 1건 ${Math.round(pr.rooms[0].price * p)}만` : ""}</div></div>`;
+    ${more("성수기 가격 자세히", `<div class="tiny muted">12월엔 주말이 다 차고 평일도 차요. 비싸도 손님이 오니 이때 가격을 올리는 게 핵심이에요. 너무 올리면 공실이 생겨요. 1·2·7·8월에는 고른 인상폭의 절반이 붙고, 나머지 달은 지점별 기본 가격 그대로예요.${pr.rooms[0] ? ` 예) ${esc(pr.rooms[0].name)} 12월 1건 ${Math.round(pr.rooms[0].price * p)}만` : ""}</div>`)}</div>`;
 }
 function prDecor(f) {
   const rm = S.pr.rooms.find((x) => x.id === f.id); if (!rm) { ui.prFlow = null; return pgPR(); }
@@ -665,9 +687,8 @@ function prDecor(f) {
 function knowPanel() {
   const pr = S.pr;
   return `<div class="card"><h3>노하우·교육·엑시트 <small>노하우 ${Math.round(pr.know || 0)}/100</small></h3>${meter(pr.know || 0, 100, "var(--gold)")}
-    <div class="tiny muted" style="margin:6px 0">노하우가 쌓이면 별점이 오르고(최대 +0.25), 운영비가 줄고(최대 −20%), 관리 행동력도 줄어요. 운영하면서 40까지 저절로 오르고, 그 위는 사장 모임과 교육으로 올려요.</div>
-    <div class="acts" style="padding:0">${actRow("pr_meetup")}${actRow("pr_course")}${actRow("pr_review")}${actRow("bg_prcon")}${actRow("bg_brand")}${S.big.fran ? `<div class="tiny good">가맹점 ${S.big.fran.n}곳 · 로열티 월 ${won(S.big.fran.n * 90 * (S.pi || 1))}</div>` : ""}${SYN.on(S, "club") ? actRow("pr_club", undefined, `모임 대관 행사 · ${D.CLUB_HOBBY[S.hb.joined.find((h) => D.CLUB_HOBBY[h])]}`) : ""}${actRow("pr_teach")}</div>
-    <div class="tiny muted" style="margin-top:6px">장사가 잘되는 지점(별점 4.4·8개월 이상)에는 <b class="gold">권리금 제안</b>이 와요. 지점 4곳 이상에 매니저를 두면 공간 운영사가 <b class="gold">전부 인수</b>하겠다고 찾아오기도 해요. 그게 파티룸 엑시트예요.</div></div>`;
+    ${more("노하우·엑시트 자세히", `<div class="tiny muted">노하우가 쌓이면 별점이 오르고(최대 +0.25), 운영비가 줄고(최대 −20%), 관리 행동력도 줄어요. 운영하면서 40까지 저절로 오르고, 그 위는 사장 모임과 교육으로 올려요.</div><div class="tiny muted" style="margin-top:6px">장사가 잘되는 지점(별점 4.4·8개월 이상)에는 <b class="gold">권리금 제안</b>이 와요. 지점 4곳 이상에 매니저를 두면 공간 운영사가 <b class="gold">전부 인수</b>하겠다고 찾아오기도 해요. 그게 파티룸 엑시트예요.</div>`)}
+    <div class="acts" style="padding:6px 0 0">${actRows(["pr_meetup", "pr_course", "pr_review", "bg_prcon", "bg_brand", SYN.on(S, "club") ? ["pr_club", undefined, `모임 대관 행사 · ${D.CLUB_HOBBY[S.hb.joined.find((h) => D.CLUB_HOBBY[h])]}`] : null, "pr_teach"])}${S.big.fran ? `<div class="tiny good">가맹점 ${S.big.fran.n}곳 · 로열티 월 ${won(S.big.fran.n * 90 * (S.pi || 1))}</div>` : ""}</div></div>`;
 }
 function prGuide() { return `<div class="card"><h3>컨셉은 매물 크기·층에 따라</h3><div class="small muted">${Object.values(D.CONCEPTS).map((c) => `<span class="tag">${esc(c.n)}</span>`).join(" ")}<br>홈파티는 30평 이하, 강의·세미나룸은 20평 이상, B2B 교육장은 28평 이상에 주차, 초대형은 40평 이상이에요. 2층 이상에서 엘리베이터가 없으면 키즈·교육장은 못 해요.</div></div><div class="card"><h3>입지가 전부예요</h3><div class="small muted">파티룸이 망하는 이유 1위는 무리한 입지와 비용 구조예요. 매물마다 <b class="gold">방음·24시간 출입·건물주·경쟁·온돌</b>이 숨어 있어요. 임장, 건물주 미팅, 앱 조사로 확인해 보세요. 확인하지 않고 계약하면 운영하다가 민원이나 계약 해지로 드러나요.</div></div>`; }
 function roomCard(rm) {
@@ -680,7 +701,8 @@ function roomCard(rm) {
     <div class="tiny muted">주 고객: ${(c.seg || []).map(esc).join(", ")}</div>
     <div class="row small"><span>주변 경쟁 <b>${PR.mkt(S, rm.dk).comp}곳</b> · 시세 1건 ${Math.round(PR.refPrice(S, rm))}만 <span class="muted">(내 가격 ${rm.price}만)</span></span><span class="grow"></span><span>컨셉 궁합 <b class="${PR.decorFit(rm.concept, rm.decor) >= 0.8 ? "good" : PR.decorFit(rm.concept, rm.decor) < 0.5 ? "bad" : "gold"}">${Math.round(PR.decorFit(rm.concept, rm.decor) * 100)}%</b></span><button class="btn sm" data-decor="${rm.id}">컨셉 소품</button></div>
     ${DK.decoRow(dctx(), "pr", rm)}
-    ${attrs(rm, false)}
+    ${attrs(rm, false, true)}
+    ${rm.status === "open" ? (() => { const RK = D.PR_REVIEW, top = (rm.reviews || 0) >= RK.top.n && rm.rating >= RK.top.star, un = Math.round(rm.unrep || 0); return `<div class="row small"><span>후기 <b>${rm.reviews}</b>/${RK.top.n}${top ? ' <span class="tag gold">상위 노출</span>' : ""} · <span class="${un > RK.unrep.max ? "bad" : "muted"}">답글 ${un}${un > RK.unrep.max ? " · 별점 깎이는 중" : ""}</span></span><span class="grow"></span><button class="btn sm" data-act="pr_reply" data-arg="${rm.id}" ${un >= 1 ? "" : "disabled"}>답글 ⚡1</button></div>`; })() : ""}
     <div class="row wrap"><span class="small">월세 ${won(rm.rent)}</span><span class="grow"></span><span class="small muted">예약 1건</span><div class="stepper"><button data-price="${rm.id}:-1">−</button><b>${rm.price}만</b><button data-price="${rm.id}:1">+</button></div></div>
     ${rm.status === "open" ? `<div class="row"><span class="small">이번 달 관리 <b class="${rm.ap < need ? "bad" : "good"}">${r1(rm.ap)}/${r1(need)}</b></span><span class="grow"></span><button class="btn sm" data-act="pr_manage" data-arg="${rm.id}">관리 ⚡1</button><button class="btn sm" data-act="pr_promo" data-arg="${rm.id}">홍보 사진 ⚡1</button></div>` : rm.self ? `<button class="btn sm" data-act="pr_setup" data-arg="${rm.id}">셀프 공사 ⚡1</button>` : ""}
     <div class="row"><select data-concept="${rm.id}" class="btn sm">${Object.entries(D.CONCEPTS).map(([k, v]) => `<option value="${k}" ${k === rm.concept ? "selected" : ""}>${v.n}${k === rm.concept ? "" : " (변경 공사)"}</option>`).join("")}</select><span class="grow"></span><button class="btn sm danger" data-close-room="${rm.id}">양도(${won(PR.resale(S, rm))})</button></div></div></div>`;
@@ -695,9 +717,8 @@ function scalePanel() {
   }).join("");
   return `<div class="card"><h3>규모의 경제 <small>지점이 늘수록 단가가 내려간다</small></h3>
     <div class="kv" style="margin-bottom:8px"><div><div class="k">청소 회당(계약 시)</div><div class="v">${r1(cl * (S.pi || 1))}만 → ${r1(cln * (S.pi || 1))}만</div></div><div><div class="k">비품 회당</div><div class="v">${r1(D.SCALE.supply(n) * (S.pi || 1))}만</div></div><div><div class="k">같은 상권 지점</div><div class="v">예약 넘침 +6%/곳</div></div></div>
-    <div class="tiny muted" style="margin-bottom:6px">단가 배율: 1호점 ×1 → 2호점 ×0.9 → 3호점 ×0.8 → 4호점부터 ×0.72(최대). 대신 물가가 해마다 2.5%씩 올라서 나중에 여는 지점은 월세·공사비가 더 비싸요.</div>
-    <div style="display:flex;flex-direction:column;gap:6px">${rows}</div>
-    <div class="tiny muted" style="margin-top:6px">청소 조력자(인연)를 두면 계약보다 30% 싸고 관리 행동력도 준다. 매니저를 두면 파티룸 수익이 '일 안 해도 들어오는 돈'으로 잡혀 파이어 계산에 들어간다.</div></div>`;
+    ${more("규모의 경제 자세히", `<div class="tiny muted">단가 배율: 1호점 ×1 → 2호점 ×0.9 → 3호점 ×0.8 → 4호점부터 ×0.72(최대). 대신 물가가 해마다 2.5%씩 올라서 나중에 여는 지점은 월세·공사비가 더 비싸요.</div><div class="tiny muted" style="margin-top:6px">청소 조력자(인연)를 두면 계약보다 30% 싸고 관리 행동력도 준다. 매니저를 두면 파티룸 수익이 '일 안 해도 들어오는 돈'으로 잡혀 파이어 계산에 들어간다.</div>`)}
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${rows}</div></div>`;
 }
 function prDistrict() {
   const sel = ui.prFlow.dk;
@@ -754,11 +775,11 @@ function pgCS() {
   const niche = D.NICHES[cs.niche];
   const maxS = Math.max(...niche.season);
   return `${boardHead("cs")}<div class="card"><h3>취업컨설팅 <small>Lv${cs.lv} 「${D.CS_LEVELS[cs.lv - 1].n}」</small></h3><div class="tiny muted">다음 레벨: ${esc(lvc)}</div>
-    <div class="funnel" style="margin-top:8px"><div><div class="v">${r1(cs.leads)}</div><div class="k">이번 달 문의</div></div><div><div class="v">${Math.round(cs.conv * 100)}%</div><div class="k">결제 전환</div></div><div><div class="v">${cs.newThisMonth}</div><div class="k">새 고객</div></div><div><div class="v ${cs.queue.length ? "gold" : ""}">${cs.queue.length}</div><div class="k">대기</div></div><div><div class="v good">${cs.passes}</div><div class="k">합격 누적</div></div></div>
-    <div class="row wrap small" style="margin-top:6px">${Object.entries(cs.src).filter(([, v]) => v > 0.05).map(([k, v]) => `<span class="tag">${k} ${r1(v)}</span>`).join("") || `<span class="muted">유입 채널을 키우자</span>`}</div>
-    <div class="kv" style="margin-top:8px"><div><div class="k">후기</div><div class="v">${Math.floor(cs.reviews)}개</div></div><div><div class="k">신뢰</div><div class="v">${Math.round((cs.trust || 0) * 100)}</div></div><div><div class="k">이번 달 매출</div><div class="v good">${won(cs.monthRev)}</div></div><div><div class="k">처리 용량</div><div class="v">${cap}명/행동</div></div></div></div>
+    <div class="funnel" style="margin-top:8px"><div><div class="v">${r1(cs.leads)}</div><div class="k">이번 달 문의</div></div><div><div class="v">${cs.newThisMonth}</div><div class="k">새 고객</div></div><div><div class="v ${cs.queue.length ? "gold" : ""}">${cs.queue.length}</div><div class="k">대기</div></div><div><div class="v good">${won(cs.monthRev)}</div><div class="k">이번 달 매출</div></div></div>
+    ${more(`전환 ${Math.round(cs.conv * 100)}% · 합격 ${cs.passes} · 지표 더 보기`, `<div class="row wrap small">${Object.entries(cs.src).filter(([, v]) => v > 0.05).map(([k, v]) => `<span class="tag">${k} ${r1(v)}</span>`).join("") || `<span class="muted">유입 채널을 키우자</span>`}</div>
+    <div class="kv" style="margin-top:8px"><div><div class="k">결제 전환</div><div class="v">${Math.round(cs.conv * 100)}%</div></div><div><div class="k">합격 누적</div><div class="v good">${cs.passes}</div></div><div><div class="k">후기</div><div class="v">${Math.floor(cs.reviews)}개</div></div><div><div class="k">신뢰</div><div class="v">${Math.round((cs.trust || 0) * 100)}</div></div><div><div class="k">처리 용량</div><div class="v">${cap}명/행동</div></div></div>`)}</div>
   ${cs.queue.length ? `<div class="card"><h3>대기 고객 ${cs.queue.length}명 <small>행동 ${Math.ceil(units / cap)}번 필요</small></h3><div style="display:flex;flex-direction:column;gap:4px">${cs.queue.slice(0, 8).map((q) => `<div class="row small" style="background:var(--panel2);border-radius:8px;padding:5px 8px">${q.who ? img(faceSrc(q.who, "smile"), "face mini", "") : ""}<span class="grow">${q.who ? esc(E.CHAR[q.who].name) : "고객 #" + q.id} · ${D.CS_PRODUCTS[q.prod].n} · ${D.NICHES[q.niche].n}</span><span>${q.price}만</span>${q.wait ? `<span class="tag red">취소 임박</span>` : ""}</div>`).join("")}</div><div style="margin-top:8px">${actRow("cs_focus")}${actRow("cs_work")}</div></div>` : ""}
-  <div class="card"><h3>시즌 <small>${niche.n} · 지금 ${S.cal}월</small></h3><div class="season">${niche.season.map((v, i) => `<i class="${i + 1 === S.cal ? "now" : ""}" style="height:${Math.round(v / maxS * 100)}%"></i>`).join("")}</div><div class="season-l">${niche.season.map((_, i) => `<span>${i + 1}</span>`).join("")}</div></div>
+  <div class="card" style="padding:8px 12px">${more(`<b>시즌</b> · 지금 ${S.cal}월 · 성수기 ${niche.season.indexOf(maxS) + 1}월 · ${esc(niche.n)}`, `<div class="season">${niche.season.map((v, i) => `<i class="${i + 1 === S.cal ? "now" : ""}" style="height:${Math.round(v / maxS * 100)}%"></i>`).join("")}</div><div class="season-l">${niche.season.map((_, i) => `<span>${i + 1}</span>`).join("")}</div>`)}</div>
   <div class="sec">마케팅 채널</div>
   <div class="chs">
     <div class="ch"><b>크멍</b><span class="v">${cs.ch.kmong.on ? `상세페이지 ${Math.round(cs.ch.kmong.q)} · 수수료 20%` : "입점 전"}</span><button class="btn sm" data-act="cs_kmong">${cs.ch.kmong.on ? "상세페이지 개선" : "입점"} ⚡1</button></div>
@@ -768,16 +789,16 @@ function pgCS() {
     <div class="ch"><b>카카우 오픈채팅</b><span class="v">${cs.ch.kakao.m.toLocaleString()}명</span><button class="btn sm" data-act="cs_kakao">방 운영 ⚡1</button></div>
     <div class="ch"><b>숨꼬</b><span class="v">견적 보내면 바로 고객</span><button class="btn sm" data-act="cs_soomgo">견적 ⚡1</button></div>
   </div>
-  <div class="card"><h3>판 키우기 <small>명성 ${Math.round(S.fame || 0)}${BIG.isFull(S) ? " · 전업" : ""}</small></h3><div class="tiny muted" style="margin-bottom:6px">아주 잘되면 고액 상품과 AI 플랫폼까지 갈 수 있어요. 플랫폼은 전업(온잡)이어야 하고, 성공하면 크게 벌지만 실패하면 개발비를 날려요.</div>
-    <div class="acts" style="padding:0">${actRow("bg_vip")}${actRow("bg_ai", undefined, S.big.plat && S.big.plat.prog < 100 ? `AI 플랫폼 ${S.big.plat.renew ? "리뉴얼" : "개발"} 계속 (${S.big.plat.prog}%)` : S.big.plat?.live && S.big.plat.tier === "small" ? "AI 플랫폼 리뉴얼(1,000만, 대박 재도전)" : undefined)}</div>
+  <div class="card"><h3>판 키우기 <small>명성 ${Math.round(S.fame || 0)}${BIG.isFull(S) ? " · 전업" : ""}</small></h3>${more("판 키우기 자세히", `<div class="tiny muted">아주 잘되면 고액 상품과 AI 플랫폼까지 갈 수 있어요. 플랫폼은 전업(온잡)이어야 하고, 성공하면 크게 벌지만 실패하면 개발비를 날려요.</div>`)}
+    <div class="acts" style="padding:0">${actRows(["bg_vip", ["bg_ai", undefined, S.big.plat && S.big.plat.prog < 100 ? `AI 플랫폼 ${S.big.plat.renew ? "리뉴얼" : "개발"} 계속 (${S.big.plat.prog}%)` : S.big.plat?.live && S.big.plat.tier === "small" ? "AI 플랫폼 리뉴얼(1,000만, 대박 재도전)" : undefined]])}</div>
     ${S.big.vip ? '<div class="tiny good">VIP 이직 패키지 판매 중</div>' : ""}${S.big.plat?.live && S.big.plat.last ? `<div class="tiny good">AI 플랫폼(${S.big.plat.tier === "big" ? "대박" : "소소하게 운영 중"}): 사용자 ${S.big.plat.last.users.toLocaleString()} · 유료 ${S.big.plat.last.paid.toLocaleString()} · 월 순익 ${won(S.big.plat.last.rev - S.big.plat.last.cost)}</div>` : ""}</div>
-  <div class="card"><h3>실력과 가격 <small>${D.CS_PRICE[cs.price].n}</small></h3><div class="kv"><div><div class="k">내 실력</div><div class="v">${CS.skill(S)}</div></div><div><div class="k">이 가격이 요구하는 실력</div><div class="v ${CS.gap(S) > 0 ? "bad" : "good"}">${CS.priceNeed(S)}</div></div><div><div class="k">이번 달 환불</div><div class="v ${cs.refunds ? "bad" : ""}">${cs.refunds || 0}건</div></div></div>
-    <div class="tiny muted" style="margin-top:6px">실력 = 핵심 능력과 커리어의 평균. 가격(레벨이 오르면 저절로 오르는 단가 포함)보다 실력이 낮으면 환불과 혹평이 나와요. 집중 첨삭(미니게임)으로 고치면 환불 위험이 줄어요.</div></div>
+  ${CS.f30Box ? CS.f30Box(S, esc, won) : ""}<div class="card"><h3>실력과 가격 <small>${D.CS_PRICE[cs.price].n}</small></h3><div class="kv"><div><div class="k">내 실력</div><div class="v">${CS.skill(S)}</div></div><div><div class="k">이 가격이 요구하는 실력</div><div class="v ${CS.gap(S) > 0 ? "bad" : "good"}">${CS.priceNeed(S)}</div></div><div><div class="k">이번 달 환불</div><div class="v ${cs.refunds ? "bad" : ""}">${cs.refunds || 0}건</div></div></div>
+    ${more("실력과 가격 자세히", `<div class="tiny muted">실력 = 핵심 능력과 커리어의 평균. 가격(레벨이 오르면 저절로 오르는 단가 포함)보다 실력이 낮으면 환불과 혹평이 나와요. 집중 첨삭(미니게임)으로 고치면 환불 위험이 줄어요.</div>`)}</div>
   <div class="card"><h3>광고비 <small>월 ${won(cs.ads)}</small></h3><input type="range" min="0" max="300" step="10" value="${cs.ads}" data-ads style="width:100%"><div class="tiny muted">돈으로 문의를 산다. 효율은 점점 떨어진다.</div></div>
   <div class="sec">상품·규모의 경제</div>
   <div class="card"><div class="row wrap">${Object.entries(D.CS_PRICE).map(([k, p]) => `<button class="btn sm ${cs.price === k ? "gold" : ""}" data-cprice="${k}">${p.n}${p.req ? ` (후기 ${p.req})` : ""}</button>`).join("")}</div>
     <div class="tiny muted" style="margin-top:6px">자소서 첨삭 ${D.CS_PRODUCTS.edit.price}만 · 면접 코칭 ${D.CS_PRODUCTS.coach.price}만 · 패키지 ${D.CS_PRODUCTS.pkg.price}만(후기 15개부터) × 포지션·가격·레벨 배수</div>
-    <div class="acts" style="padding:8px 0 0">${actRow("cs_template", undefined, `첨삭 템플릿 만들기 (${cs.template.toFixed(1)}/3)`)}${actRow("cs_group")}${actRow("cs_vod", undefined, `VOD·전자책 제작 (${Math.round(cs.vod.prog)}%)`)}${actRow("cs_seminar")}${cs.offers ? actRow("cs_lecture", undefined, `대학 강의 (섭외 ${cs.offers}건)`) : ""}</div>
+    <div class="acts" style="padding:8px 0 0">${actRows([["cs_template", undefined, `첨삭 템플릿 만들기 (${cs.template.toFixed(1)}/3)`], "cs_group", ["cs_vod", undefined, `VOD·전자책 제작 (${Math.round(cs.vod.prog)}%)`], "cs_seminar", cs.offers ? ["cs_lecture", undefined, `대학 강의 (섭외 ${cs.offers}건)`] : null])}</div>
     ${cs.vod.income ? `<div class="small good">VOD·전자책 자동 판매 월 ${won(cs.vod.income)}</div>` : ""}</div>
   <div class="sec">포지션 추가 (Lv3부터)</div>${nicheCards}`;
 }
@@ -786,8 +807,8 @@ function coEval() {
   const yrs = ct.fast ? rk.fast : rk.years, top = co.rank >= ct.top;
   const g = (co.grades || []).slice(-6);
   return `<div class="evalbox"><div class="row"><b class="small">연말 평가</b><span class="grow"></span>${g.length ? g.map((x) => `<span class="gr g${x}">${x}</span>`).join("") : '<span class="tiny muted">첫 평가는 12월</span>'}</div>
-    <div class="tiny muted">S·A·B·C·D 중 대부분 B가 나와요. B면 연봉 +2%, S면 +5%. 성과·팀장 호감·직급에 맞는 커리어가 높을수록 위로 나와요.${co.capC ? " <b class='bad'>올해는 C 이하</b>" : ""}${co.pip ? ` <b class="bad">개선 기간 ${co.pip}개월 · 성과 45 넘기기</b>` : ""}${co.remote ? ` <b class="gold">지방 근무 ${co.remote}개월 남음(행동력 −1)</b>` : ""}</div>
-    ${top ? `<div class="tiny">이 회사에서 오를 수 있는 끝(${rk.n})이에요.${rk.exec ? " 임원은 해마다 계약을 다시 해요. 평가가 나쁘면 퇴임합니다." : ""}</div>` : `<div class="tiny">다음 직급 <b>${nx.n}</b>: ${rk.n} ${yrs}년(지금 ${co.yrsRank}년) · 평가 점수 ${co.pts}/${yrs + 1} · 커리어 ${Math.round(S.st.career)}/${Math.round(nx.career * 0.85)}${nx.exec ? " · 임원은 1년 계약" : ""}</div>`}</div>`;
+    ${co.capC || co.pip || co.remote ? `<div class="tiny">${co.capC ? " <b class='bad'>올해는 C 이하</b>" : ""}${co.pip ? ` <b class="bad">개선 기간 ${co.pip}개월 · 성과 45 넘기기</b>` : ""}${co.remote ? ` <b class="gold">지방 근무 ${co.remote}개월 남음(행동력 −1)</b>` : ""}</div>` : ""}
+    ${top ? `<div class="tiny">이 회사에서 오를 수 있는 끝(${rk.n})이에요.${rk.exec ? " 임원은 해마다 계약을 다시 해요. 평가가 나쁘면 퇴임합니다." : ""}</div>` : `<div class="tiny">다음 직급 <b>${nx.n}</b>: ${rk.n} ${yrs}년(지금 ${co.yrsRank}년) · 평가 점수 ${co.pts}/${yrs + 1} · 커리어 ${Math.round(S.st.career)}/${Math.round(nx.career * 0.85)}${nx.exec ? " · 임원은 1년 계약" : ""}</div>`}${more("평가 규칙 자세히", `<div class="tiny muted">S·A·B·C·D 중 대부분 B가 나와요. B면 연봉 +2%, S면 +5%. 성과·팀장 호감·직급에 맞는 커리어가 높을수록 위로 나와요.</div>`)}</div>`;
 }
 function pgCo() {
   const co = S.co, q = E.quitReady(S);
@@ -795,20 +816,19 @@ function pgCo() {
   if (co.quit || co.fired) return `<div class="card"><h3>${co.retired ? "퇴임·퇴직" : co.fired ? "해고됨" : "퇴사함"}</h3><div class="small muted">낮 시간이 생겨 행동력이 5 늘었어요. 월급은 없어요. 나이가 많을수록 재취업은 어려워져요.</div><div class="acts" style="padding:8px 0 0">${actRow("rejob")}</div></div>`;
   const t = D.COMPANY_TYPES[co.type];
   return `<div class="card"><h3>${esc(co.name)} <small>${t.n} · ${D.RANKS[co.rank].n} · ${Math.floor(co.years)}년 차</small></h3>
-    <div class="kv"><div><div class="k">월급(실수령)</div><div class="v">${won(E.salary(S))}</div></div><div><div class="k">성과</div><div class="v">${Math.round(co.perf)}</div></div><div><div class="k">팀장 호감</div><div class="v">${Math.round(co.boss)}</div></div><div><div class="k">겸업 경고</div><div class="v ${co.warns ? "bad" : ""}">${co.warns}회</div></div></div>
+    <div class="kv"><div><div class="k">월급(실수령)</div><div class="v">${won(E.salary(S))}</div></div><div><div class="k">성과</div><div class="v">${Math.round(co.perf)}</div></div><div><div class="k">팀장 호감</div><div class="v">${Math.round(co.boss)}</div></div>${co.warns ? `<div><div class="k">겸업 경고</div><div class="v bad">${co.warns}회</div></div>` : ""}</div>
     <div style="margin-top:8px" class="small">회사 눈치 ${Math.round(co.eye)} ${meter(co.eye, 100, "var(--orange)")}</div>
     ${coEval()}
-    <div class="tiny muted" style="margin-top:4px">눈치가 50을 넘으면 겸업이 들킬 수 있어요(경고 → 감봉 → 해고). ${t.n}은 ×${t.eye}.</div></div>
-  <div class="tiny muted" style="margin:2px 2px 6px">투잡 없이 회사만 다녀도 돼요. 다만 연봉은 천천히 오르고 지방 발령, 구조조정 같은 일도 생겨서 회사만으로 30억은 쉽지 않아요.</div>
+    ${more("눈치 50 넘으면 겸업이 들킬 수 있어요 · 자세히", `<div class="tiny muted">눈치가 50을 넘으면 겸업이 들킬 수 있어요(경고 → 감봉 → 해고). ${t.n}은 ×${t.eye}.</div><div class="tiny muted" style="margin-top:4px">투잡 없이 회사만 다녀도 돼요. 다만 연봉은 천천히 오르고 지방 발령, 구조조정 같은 일도 생겨서 회사만으로 30억은 쉽지 않아요.</div>`)}</div>
   ${spots.map(spotBlock).join("")}
-  <div class="card"><h3>온잡(전업)으로 가면 <small>명성 ${Math.round(S.fame || 0)}</small></h3><div class="small muted">회사를 나오면 행동력 +5, 컨설팅 처리량 ×1.6·문의 ×1.3, 인별 성장 ×1.3, 파티룸 평일 영업 +15%. 명성이 높으면 파티룸 창업 컨설팅·가맹 사업·VIP 상품·AI 플랫폼이 열려요. 대신 월급이 끊기고 지역 건강보험이 나가요. 잘될 때 가면 크게, 빨리 벌어요.</div></div>
-  <div class="card"><h3>환승 퇴사 <small>선퇴사 금지</small></h3>
+  ${(q.x || 0) >= 0.5 || (S.fame || 0) >= 30 ? `<div class="card"><h3>온잡(전업)으로 가면 <small>명성 ${Math.round(S.fame || 0)}</small></h3><div class="small muted">회사를 나오면 행동력 +5, 컨설팅 처리량 ×1.6·문의 ×1.3, 인별 성장 ×1.3, 파티룸 평일 영업 +15%. 명성이 높으면 파티룸 창업 컨설팅·가맹 사업·VIP 상품·AI 플랫폼이 열려요. 대신 월급이 끊기고 지역 건강보험이 나가요. 잘될 때 가면 크게, 빨리 벌어요.</div></div>` : ""}
+  <div class="card"><details class="more qmore" ${q.ok ? "open" : ""}><summary><b>환승 퇴사</b> · 조건 ${(q.yearOk ? 1 : 0) + (q.emer ? 1 : 0)}/2 · 선퇴사 금지 ▾</summary>
     <div class="steps"><div class="${q.yearOk ? "done" : ""}"><span class="ck">${q.yearOk ? "✓" : ""}</span><span class="grow">연말 결산 투잡 이익 ≥ 연봉 (지난 결산 ${(q.x || 0).toFixed(1)}배 · 1.5배면 강력 추천, 2배면 나와라!)</span></div><div class="${q.emer ? "done" : ""}"><span class="ck">${q.emer ? "✓" : ""}</span><span class="grow">비상금 6개월 치(${won(E.monthlySpend(S) * 6)})</span></div></div>
-    <button class="btn ${q.ok ? "gold" : "danger"}" style="width:100%;margin-top:8px" data-quit>${q.ok ? "환승 퇴사하기" : "그냥 사직서 내기(위험)"}</button></div>`;
+    <button class="btn ${q.ok ? "gold" : "danger"}" style="width:100%;margin-top:8px" data-quit>${q.ok ? "환승 퇴사하기" : "그냥 사직서 내기(위험)"}</button></details></div>`;
 }
 
 // 투잡 보드 머리
-function boardHead(k) { const j = D.SIDEJOBS[k] || { type: "", inc: "" }; const ri = SJ.rampInfo(S, k), tip = ri && !ri.done && !S.sj.coachOff ? (S.sj.rp[k].tip || "첫 달은 손님이 적어요. 홍보·후기 행동을 해야 올라가요.") : ""; return `<div class="row" style="margin-bottom:6px"><button class="btn sm" data-go="sj">‹ 투잡 탐색</button><span class="tag">${esc(j.type)}</span><span class="grow"></span><span class="tiny muted">${esc(j.inc)}</span></div>${ri && !ri.done ? `<div class="card" style="padding:8px 10px;margin-bottom:8px"><div class="tiny"><b class="gold">초반 고생 중</b> · 손님 기대치의 ${ri.pct}%</div>${meter(ri.pct, 100, "var(--gold)")}${tip ? `<div class="tiny muted" style="margin-top:4px">코치: ${esc(tip)}</div>` : ""}</div>` : ""}${marketBox(S, k)}${rivalBox(S, k)}`; }
+function boardHead(k) { const j = D.SIDEJOBS[k] || { type: "", inc: "" }; const ri = SJ.rampInfo(S, k), tip = ri && !ri.done && !S.sj.coachOff ? (S.sj.rp[k].tip || "첫 달은 손님이 적어요. 홍보·후기 행동을 해야 올라가요.") : ""; return `<div class="row" style="margin-bottom:6px"><button class="btn sm" data-go="sj">‹ 투잡 탐색</button><span class="tag">${esc(j.type)}</span><span class="grow"></span><span class="tiny muted">${esc(j.inc)}</span></div>${ri && !ri.done ? `<div class="card" style="padding:8px 10px;margin-bottom:8px"><div class="tiny"><b class="gold">초반 고생 중</b> · 손님 기대치의 ${ri.pct}%</div>${meter(ri.pct, 100, "var(--gold)")}${skillLine(S, k, true)}${tip ? `<div class="tiny muted" style="margin-top:4px">코치: ${esc(tip)}</div>` : ""}</div>${marketBox(S, k, true)}` : marketBox(S, k)}${rivalBox(S, k)}`; }
 
 // 투잡 탐색
 function pgSJ() {
@@ -820,18 +840,17 @@ function pgSJ() {
       : f ? (j.play ? `${SJ.startLock(S) ? `<span class="tiny muted">${S.t < SJ.PROBATION ? `${SJ.PROBATION + 1}개월 차부터` : `후보 ${SJ.foundCount(S)}/${SJ.NEED_CANDS}개 모이면`} 시작</span>` : `<button class="btn sm gold" data-sjstart="${k}" ${act.length >= SJ.slots(S) ? "disabled" : ""}>시작하기</button>`}` : `<span class="tiny muted">다음 업데이트에서 열림</span>`)
       : `<button class="btn sm" data-act="sj_report" data-arg="${k}">리포트 ⚡1</button>`;
     const ask = !sj.know[k] && (it >= 30 || f) ? `<button class="btn sm" data-act="sj_interview" data-arg="${k}">해 본 사람에게 묻기 ⚡1</button>` : "";
+    if (!f && !on) return `<details class="sjc sjline ${j.play ? "" : "soon"}"><summary class="row"><span class="ic">${ic(j.ic)}</span><div class="grow ellip"><b>${esc(j.n)}</b> <span class="tiny muted">이해도 ${it}%${j.play ? "" : " · 준비 중"} ▾</span>${meter(it, 100, "var(--gold)")}</div>${btns}</summary><div class="tiny muted" style="margin-top:4px">단서: ${esc(j.hint)}${it >= 50 ? " · 100%가 되면 궁합·특성 연계가 보여요" : ""}</div>${(() => { const e = sjEntry(k, f, on, it); return e.html + (ask || e.btns ? `<div class="row wrap" style="margin-top:6px">${ask}${e.btns}</div>` : ""); })()}</details>`; // 정리(v4.27): 못 찾은 투잡은 사진 없는 한 줄
     const ent = sjEntry(k, f, on, it);
     const ban = SJ_BG[k] && bgUrl(SJ_BG[k]);
     return `<div class="sjc ${f ? "found" : ""} ${on ? "on" : ""} ${j.play ? "" : "soon"}">${ban ? `<div class="sjban" style="background-image:url(${ban})"></div>` : ""}<div class="row"><span class="ic">${ic(j.ic)}</span><div class="grow"><b>${esc(j.n)}</b> <span class="tag">${esc(j.type)}</span>${j.play ? "" : ' <span class="tag">준비 중</span>'}</div>${fg ? `<span class="fit g${fg.g}">궁합 ${fg.g}</span>` : ""}</div>
-      ${f ? `<div class="tiny">${esc(j.inc)} · ${esc(j.hours)} · 자본 ${esc(j.cap)}</div><div class="tiny muted">"${esc(j.line)}"</div>${fg ? `<div class="sjins"><span>궁합 ${fg.g} · ${fg.stats.map(esc).join(" · ")}</span>${fg.links.length ? fg.links.map((x) => `<span class="lk">★ ${esc(x)}</span>`).join("") : `<span class="muted">내 특성카드와 연계 없음</span>`}</div>` : ""}` : `<div class="tiny muted">이해도 ${it}% · 단서: ${esc(j.hint)}${it >= 50 ? " · 100%가 되면 궁합·특성 연계가 보여요" : ""}</div>${meter(it, 100, "var(--gold)")}`}${ent.html}
-      <div class="row wrap" style="margin-top:6px">${btns}${ask}${ent.btns}</div></div>`;
+      ${f ? `<div class="tiny">${esc(j.inc)} · ${esc(j.hours)} · 자본 ${esc(j.cap)}</div><div class="tiny muted">"${esc(j.line)}"</div>${(() => { const ins = fg ? `<div class="sjins"><span>궁합 ${fg.g} · ${fg.stats.map(esc).join(" · ")}</span>${fg.links.length ? fg.links.map((x) => `<span class="lk">★ ${esc(x)}</span>`).join("") : `<span class="muted">내 특성카드와 연계 없음</span>`}</div>` : ""; return on ? ins : more("궁합·필요 역량 자세히", ins + ent.html + pairHtml(k, act)); })()}` : `<div class="tiny muted">이해도 ${it}% · 단서: ${esc(j.hint)}${it >= 50 ? " · 100%가 되면 궁합·특성 연계가 보여요" : ""}</div>${meter(it, 100, "var(--gold)")}`}${on || !f ? ent.html : ""}<div class="row wrap" style="margin-top:6px">${btns}${ask}${ent.btns}</div></div>`;
   };
   const keys = Object.keys(D.SIDEJOBS).sort((a, b) => (SJ.isActive(S, b) - SJ.isActive(S, a)) || ((SJ.isFound(S, b) ? 1 : 0) - (SJ.isFound(S, a) ? 1 : 0)) || ((D.SIDEJOBS[b].play ? 1 : 0) - (D.SIDEJOBS[a].play ? 1 : 0)) || (S.sj.int[b] || 0) - (S.sj.int[a] || 0));
   const F = { all: () => true, found: (k) => SJ.isFound(S, k), play: (k) => D.SIDEJOBS[k].play };
   return `<div class="card"><h3>투잡 탐색 <small>발견 ${Object.keys(sj.found).length}/21 · 하는 중 ${act.length}/${SJ.slots(S)}</small></h3>
-    <div class="small muted">투잡은 정해져 있지 않아요. 너튜브·리포트·세미나, 회사 소문, 그리고 <b class="gold">취미</b>에서 발견해요. 이해도가 100%가 되면 후보가 되고, 그때 내 능력치 궁합과 특성카드 연계가 보여요. 정보는 리서치뿐 아니라 회사·사람·취미·이벤트에서도 조금씩 모여요. 두 개까지 할 수 있고, 하나도 안 해도 괜찮아요. 투잡을 시작하면 성향 카드의 숨은 특성이 공개돼요.</div>
+    ${more("이해도 100%면 후보가 돼요 · 자세히", `<div class="small muted">투잡은 정해져 있지 않아요. 너튜브·리포트·세미나, 회사 소문, 그리고 <b class="gold">취미</b>에서 발견해요. 이해도가 100%가 되면 후보가 되고, 그때 내 능력치 궁합과 특성카드 연계가 보여요. 정보는 리서치뿐 아니라 회사·사람·취미·이벤트에서도 조금씩 모여요. 두 개까지 할 수 있고, 하나도 안 해도 괜찮아요. 투잡을 시작하면 성향 카드의 숨은 특성이 공개돼요.</div>`)}
     ${act.length ? `<div class="row wrap" style="margin-top:8px">${act.map((k) => `<button class="btn sm gold" data-go="${k}">${ic(D.SIDEJOBS[k].ic)} ${esc(D.SIDEJOBS[k].n)} 보드</button>`).join("")}</div>` : `<div class="tag" style="margin-top:8px">지금은 회사원 · 투잡 없음</div>`}</div>
-  ${synCard()}
   <div class="acts" style="padding:0">${actRow("sj_youtube")}${actRow("sj_seminar")}</div>
   <div class="filters">${[["all", "전체 21"], ["found", "발견"], ["play", "지금 플레이 가능"]].map(([k, n]) => `<button class="${ui.sjf === k ? "on" : ""}" data-sjf="${k}">${n}</button>`).join("")}</div>
   <div class="sjgrid">${keys.filter(F[ui.sjf] || F.all).map(card).join("")}</div>`;
@@ -851,13 +870,26 @@ function sjMemoWin(k) {
   const M = S.sj.memo?.[k] || [], j = D.SIDEJOBS[k], P = S.sj.rp?.[k], ri = SJ.rampInfo(S, k);
   openWin(`<h2>선배 메모 · ${esc(j.n)} <button class="x" data-close>✕</button></h2><div class="small muted">선배를 만나고 준비하며 받아 적은 것. 숫자는 투잡연구소 조사 기준이에요.</div><div class="intro" style="margin-top:8px">${M.map((x) => `<p>${x.tip ? "★ 꿀팁" : x.prep ? "· 준비" : `· 선배 ${x.st + 1}/3`} ${esc(x.txt)}</p>`).join("") || "<p>아직 없어요</p>"}</div>${ri ? `<div class="tiny muted" style="margin-top:8px">${ri.done ? "초반 고생 끝" : `초반 고생 중 · 손님 기대치의 ${ri.pct}%`}${P?.tip && !ri.done ? ` · 코치: ${esc(P.tip)}` : ""}</div>` : ""}<button class="btn gold" style="width:100%;margin-top:10px" data-close>확인</button>`);
 }
+// v4.27 투잡 상성: 첫 투잡을 고를 땐 숨기고, 하나를 하고 있을 때 다른 투잡 카드에 '지금 투잡과의 상성'만 한 줄씩
+const JOB_PAIR = { cs_room: ["cs", "pr"], insta_pr: ["insta", "pr"], insta_cs: ["insta", "cs"], pr_ab: ["pr", "airbnb"], insta_ab: ["insta", "airbnb"], season: ["pr", "cs"] };
+const HOBBY_SYN = ["club", "insta_hobby", "travel_ab", "cook_uc"]; // 취미 × 투잡: 내 취미와 맞으면 첫 투잡 고를 때도 보여 준다
+function pairHtml(k, act) {
+  const S2 = { ...S, sj: { ...S.sj, active: [...act, k] } }; // 이 투잡을 시작했다고 치고 취미 상성이 켜지는지
+  const hob = D.SYNERGY.filter((x) => HOBBY_SYN.includes(x.id) && (() => { try { return !!x.test(S2); } catch (e) { return false; } })());
+  const L = [...hob, ...D.SYNERGY.filter((x) => JOB_PAIR[x.id] && JOB_PAIR[x.id].includes(k) && act.some((a) => a !== k && JOB_PAIR[x.id].includes(a)))];
+  if (!L.length && !act.length) return "";
+  const rows = L.map((x) => `<div class="tiny ${x.kind === "good" ? "good" : "bad"}">${x.kind === "good" ? "＋" : "－"} ${esc(x.n)}: ${esc(x.desc)}</div>`);
+  if (act.length === 1 && !act.includes(k)) rows.push(`<div class="tiny muted">－ 투잡 두 개 + 회사: 회사 눈치가 덜 빠져요</div>`);
+  return `<div class="pairs" style="margin-top:4px">${rows.join("")}</div>`;
+}
 function synCard() {
   const L = SYN.list(S);
   return `<div class="card"><h3>투잡 궁합 <small>켜진 것 ${L.filter((x) => x.on).length}개</small></h3><div class="small muted" style="margin-bottom:6px">투잡끼리, 취미와 투잡이 서로 돕기도 하고 발목을 잡기도 해요.</div>
     <div class="syn">${L.map((x) => `<div class="${x.kind} ${x.on ? "on" : ""}"><b>${x.kind === "good" ? "＋" : "－"} ${esc(x.n)}</b>${x.on ? '<span class="tag gold">켜짐</span>' : ""}<div class="tiny muted">${esc(x.need)}</div><div class="tiny">${esc(x.desc)}</div></div>`).join("")}</div></div>`;
 }
 // 인별그램
-function pgInsta() {
+function pgInsta() { return IGA.board(igctx()); } // 인별 v4.27: 보드는 insta_app.js, 예전 보드는 아래(안 씀)
+function pgInstaOld() {
   const I = S.ins, lv = INS.lvOf(I.f), nx = D.INSTA_LV[lv];
   const h = I.hist.slice(-24); const mx = Math.max(10, ...h);
   return `${boardHead("insta")}<div class="card"><h3>인별그램 <small>${D.INSTA_LV[lv - 1].n} 계정</small></h3>
@@ -874,20 +906,21 @@ function pgInsta() {
 // 에어씨앤씨
 function pgAirbnb() {
   const A = S.ab, last = A.hist.at(-1) || 0;
-  const unit = (u) => { const R = D.AB_REGIONS[u.rk], L = u.last, n = AB.needAp(S, u); return `<div class="room"><div class="body"><div class="row"><div class="grow"><div class="nm">${esc(u.name)}</div><div class="tiny"><span class="tag ${u.reg === "legal" ? "green" : "red"}">${u.reg === "legal" ? (R.city ? "도시민박업(외국인 위주)" : "농어촌민박 등록") : "미등록(단속 위험)"}</span>${u.banned ? ` <span class="tag red">영업정지 ${u.banned}개월</span>` : ""}</div></div><div style="text-align:right"><div class="gold" style="font-weight:900">★ ${u.rating.toFixed(2)}</div><div class="tiny muted">숙박 ${u.stays}건</div></div></div>
+  const unit = (u) => { const R = D.AB_REGIONS[u.rk], L = u.last, n = AB.needAp(S, u); return `<div class="room"><div class="body"><div class="row"><div class="grow"><div class="nm">${esc(u.name)}</div><div class="tiny"><span class="tag ${u.reg === "legal" ? "green" : "red"}">${u.reg === "legal" ? (R.city ? "도시민박업(외국인 위주)" : "농어촌민박 등록") : "미등록(단속 위험)"}</span>${u.banned ? ` <span class="tag red">영업정지 ${u.banned}개월</span>` : ""}</div></div><div style="text-align:right"><div class="gold" style="font-weight:900">★ ${u.rating.toFixed(2)}</div><div class="tiny muted">숙박 ${u.stays}건 · 후기 ${u.reviews || 0}</div></div></div>
     ${L ? `<div class="kv"><div><div class="k">예약률</div><div class="v">${Math.round(L.occ * 100)}%</div></div><div><div class="k">숙박</div><div class="v">${L.nights}박</div></div><div><div class="k">외국인</div><div class="v">${L.foreign}%</div></div><div><div class="k">지난달 순익</div><div class="v ${L.rev - L.cost >= 0 ? "good" : "bad"}">${won(L.rev - L.cost)}</div></div></div>` : '<div class="tiny muted">다음 달부터 손님이 와요</div>'}
     <div class="row wrap small"><span>월세 ${won(u.rent)} · 사진 ${Math.round(u.photo)}</span><span class="grow"></span><span class="muted">1박</span><div class="stepper"><button data-adr="${u.id}:-1">−</button><b>${u.adr}만</b><button data-adr="${u.id}:1">+</button></div></div>
     ${DK.decoRow(dctx(), "ab", u)}
     <div class="row"><span class="small">관리 <b class="${A.cohost || u.ap >= n ? "good" : "bad"}">${A.cohost ? "코호스트" : `${Math.round(u.ap * 10) / 10}/${n}`}</b></span><span class="grow"></span>${A.cohost ? "" : `<button class="btn sm" data-act="ab_clean" data-arg="${u.id}">청소 ⚡1</button>`}<button class="btn sm" data-act="ab_host" data-arg="${u.id}">응대 ⚡1</button><button class="btn sm" data-act="ab_photo" data-arg="${u.id}">사진 ⚡1</button></div>
-    <div class="row"><span class="grow"></span><button class="btn sm danger" data-abclose="${u.id}">정리(보증금 ${won(u.dep)})</button></div></div></div>`; };
+    <div class="row"><span class="tiny ${(u.unrep || 0) > D.PR_REVIEW.unrep.max ? "bad" : "muted"}">밀린 답글 ${Math.round(u.unrep || 0)}${u.last?.newRev != null ? ` · 지난달 후기 +${u.last.newRev}` : ""}</span><span class="grow"></span><button class="btn sm" data-act="ab_reply" data-arg="${u.id}" ${(u.unrep || 0) >= 1 ? "" : "disabled"}>답글 ⚡1</button><button class="btn sm danger" data-abclose="${u.id}">정리(보증금 ${won(u.dep)})</button></div></div></div>`; };
   const ls = A.listings.filter((l) => s0(l));
-  return `${boardHead("airbnb")}<div class="card"><h3>에어씨앤씨 <small>${A.super ? "★ 슈퍼호스트" : `숙소 ${A.units.length}채`}</small></h3>
+  return `${tycoonScene(S, "airbnb")}${boardHead("airbnb")}<div class="card"><h3>에어씨앤씨 <small>${A.super ? "★ 슈퍼호스트" : `숙소 ${A.units.length}채`}</small></h3>
     <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div><div><div class="k">외국어</div><div class="v">${Math.round(S.st.lang)}</div></div><div><div class="k">코호스트</div><div class="v">${A.cohost ? "고용 중" : "없음"}</div></div>${A.fx ? `<div><div class="k">환율 급등</div><div class="v good">${A.fx}개월</div></div>` : ""}</div>
-    <div class="tiny muted" style="margin-top:6px">파티룸이 '몇 시간'이라면 에어씨앤씨는 '1박'이에요. 서울에서 합법(외국인관광 도시민박업)으로 하면 외국인 위주라 <b class="gold">외국어</b>가 곧 매출이에요(내국인은 공유숙박 특례로 일부만). 합법 숙소는 등록번호가 있어 <b class="gold">노출 +8%</b>, 슈퍼호스트가 되면 5% 더. 미등록은 누구나 받지만 노출이 줄고, 이웃 신고·등록번호 점검으로 단속되면 과태료 400~1,200만과 영업정지. 별점 4.8 이상·숙박 10건이면 슈퍼호스트(노출 +12%, 요금 +8%).</div></div>
-  <div class="acts" style="padding:0">${actRow("ab_search")}${actRow("ab_cohost", undefined, A.cohost ? "코호스트 해지" : "코호스트 고용(매출 20%, 투잡 칸 +1)")}${actRow("study", "lang", "외국어 공부 (스터디카페)")}</div>
+    ${more("합법·미등록·슈퍼호스트 자세히", `<div class="tiny muted">파티룸이 '몇 시간'이라면 에어씨앤씨는 '1박'이에요. 서울에서 합법(외국인관광 도시민박업)으로 하면 외국인 위주라 <b class="gold">외국어</b>가 곧 매출이에요(내국인은 공유숙박 특례로 일부만). 합법 숙소는 등록번호가 있어 <b class="gold">노출 +8%</b>, 슈퍼호스트가 되면 5% 더. 미등록은 누구나 받지만 노출이 줄고, 이웃 신고·등록번호 점검으로 단속되면 과태료 400~1,200만과 영업정지. 별점 4.8 이상·숙박 10건이면 슈퍼호스트(노출 +12%, 요금 +8%).</div>`)}</div>
+  <div class="acts" style="padding:0">${actRows(["ab_search", ["ab_cohost", undefined, A.cohost ? "코호스트 해지" : "코호스트 고용(매출 20%, 투잡 칸 +1)"], ["study", "lang", "외국어 공부 (스터디카페)"]])}</div>
+  ${SP.abPanels(spc())}
   ${A.units.map(unit).join("")}
-  ${ls.length ? `<div class="sec">보던 매물</div>${ls.map((l) => { const R = D.AB_REGIONS[l.rk], T = D.AB_TYPES[l.ty]; return `<div class="room"><div class="body"><div class="nm">${esc(R.n)} ${esc(T.n)}</div><div class="small">보증금 ${won(l.dep)} · 월세 <b>${won(l.rent)}</b> · 세팅비 ${won(l.setup)}</div><div class="tiny muted">${l.house ? "주택(등록 가능)" : "오피스텔(등록 불가)"} · 집주인 숙박업 동의 ${l.owner ? "O" : "X"}</div>
-      <div class="row wrap" style="margin-top:6px"><button class="btn sm gold" data-abcon="${l.id}:legal" ${l.house && l.owner ? "" : "disabled"}>합법 등록으로 계약</button><button class="btn sm danger" data-abcon="${l.id}:illegal">미등록으로 계약</button></div></div></div>`; }).join("")}` : ""}`;
+  ${ls.length ? `<div class="sec">보던 매물 <span class="muted small">${ls.length}개</span></div>${((f) => ls.slice(0, 3).map(f).join("") + more(`보던 매물 더 보기 ${ls.length - 3}`, ls.length > 3 ? ls.slice(3).map(f).join("") : ""))((l) => { const R = D.AB_REGIONS[l.rk], T = D.AB_TYPES[l.ty]; return `<div class="room"><div class="body"><div class="nm">${esc(R.n)} ${esc(T.n)}</div><div class="small">보증금 ${won(l.dep)} · 월세 <b>${won(l.rent)}</b> · 세팅비 ${won(l.setup)}</div><div class="tiny muted">${l.house ? "주택(등록 가능)" : "오피스텔(등록 불가)"} · 집주인 숙박업 동의 ${l.owner ? "O" : "X"}</div>
+      <div class="row wrap" style="margin-top:6px"><button class="btn sm gold" data-abcon="${l.id}:legal" ${l.house && l.owner ? "" : "disabled"}>합법 등록으로 계약</button><button class="btn sm danger" data-abcon="${l.id}:illegal">미등록으로 계약</button></div></div></div>`; })}` : ""}`;
 }
 const s0 = () => true;
 // 무인카페
@@ -898,13 +931,14 @@ function pgUcafe() {
     <div class="row wrap small"><span>월세 ${won(st.rent)}</span><span class="grow"></span><span class="muted">아메리카노</span><div class="stepper"><button data-ucprice="${st.id}:-0.01">−</button><b>${Math.round(st.price * 10000).toLocaleString()}원</b><button data-ucprice="${st.id}:0.01">+</button></div></div>
     <div class="row wrap"><span class="small">점검 <b class="${U.agent || st.ap >= n ? "good" : "bad"}">${U.agent ? "대행" : `${st.ap}/${n}`}</b></span><span class="grow"></span>${U.agent ? "" : `<button class="btn sm" data-act="uc_check" data-arg="${st.id}">점검 ⚡1</button>`}<button class="btn sm" data-act="uc_promo" data-arg="${st.id}">홍보 ⚡1</button><button class="btn sm" data-ucbean="${st.id}">${st.bean ? "가성비로" : "스페셜티로"}</button>${st.cctv ? "" : `<button class="btn sm" data-uccctv="${st.id}">CCTV 80만</button>`}</div>
     <div class="row"><span class="grow"></span><button class="btn sm danger" data-ucclose="${st.id}">양도</button></div></div></div>`; };
-  return `${boardHead("ucafe")}<div class="card"><h3>무인카페 <small>${U.stores.length}곳</small></h3>
+  return `${tycoonScene(S, "ucafe")}${boardHead("ucafe")}<div class="card"><h3>무인카페 <small>${U.stores.length}곳</small></h3>
     <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div><div><div class="k">관리 대행</div><div class="v">${U.agent ? "계약 중" : "없음"}</div></div>${U.beanUp ? `<div><div class="k">원두값 급등</div><div class="v bad">${U.beanUp}개월</div></div>` : ""}</div>
-    <div class="tiny muted" style="margin-top:6px">기계가 일하고 나는 새벽에 청소·재고를 채워요. 머신을 사면 처음에 비싸지만 매달 렌탈비가 없고 맛이 조금 더 좋아요. 렌탈은 고장 나도 수리가 공짜예요. 여름 아이스가 성수기, 겨울은 비수기. CCTV가 없으면 먹튀가 3배예요. 한 잔 가격을 올리면 잔 수가 줄어요.</div></div>
-  <div class="acts" style="padding:0">${actRow("uc_search")}${actRow("uc_agent", undefined, U.agent ? "관리 대행 해지" : "관리 대행 계약(매장당 월 40만, 투잡 칸 +1)")}</div>
+    ${more("머신·원두·먹튀 자세히", `<div class="tiny muted">기계가 일하고 나는 새벽에 청소·재고를 채워요. 머신을 사면 처음에 비싸지만 매달 렌탈비가 없고 맛이 조금 더 좋아요. 렌탈은 고장 나도 수리가 공짜예요. 여름 아이스가 성수기, 겨울은 비수기. CCTV가 없으면 먹튀가 3배예요. 한 잔 가격을 올리면 잔 수가 줄어요.</div>`)}</div>
+  <div class="acts" style="padding:0">${actRows(["uc_search", ["uc_agent", undefined, U.agent ? "관리 대행 해지" : "관리 대행 계약(매장당 월 40만, 투잡 칸 +1)"]])}</div>
+  ${SP.ucPanels(spc())}
   ${U.stores.map(store).join("")}
-  ${U.listings.length ? `<div class="sec">보던 자리</div>${U.listings.map((l) => { const A = D.UC_AREAS[l.ak], qr = UC.quote(S, l, { machine: "rent" }), qb = UC.quote(S, l, { machine: "buy" }); return `<div class="room"><div class="body"><div class="nm">${esc(A.n)} ${l.size}평</div>${A.risk ? `<div class="tiny bad">⚠ ${esc(A.risk)}</div>` : ""}<div class="small">보증금 ${won(l.dep)} · 월세 <b>${won(l.rent)}</b> · 권리금 ${won(l.key)} · 유동인구 ${"●".repeat(Math.round(l.traffic * 3))} · 경쟁 ${l.comp}곳</div>
-      <div class="row wrap" style="margin-top:6px"><button class="btn sm" data-uccon="${l.id}:rent">머신 렌탈로 열기 (${won(qr.total)})</button><button class="btn sm gold" data-uccon="${l.id}:buy">머신 사서 열기 (${won(qb.total)})</button></div></div></div>`; }).join("")}` : ""}`;
+  ${U.listings.length ? `<div class="sec">보던 자리 <span class="muted small">${U.listings.length}개</span></div>${((f) => U.listings.slice(0, 2).map(f).join("") + more(`보던 자리 더 보기 ${U.listings.length - 2}`, U.listings.length > 2 ? U.listings.slice(2).map(f).join("") : ""))((l) => { const A = D.UC_AREAS[l.ak], qr = UC.quote(S, l, { machine: "rent" }), qb = UC.quote(S, l, { machine: "buy" }); return `<div class="room"><div class="body"><div class="nm">${esc(A.n)} ${l.size}평</div>${A.risk ? `<div class="tiny bad">⚠ ${esc(A.risk)}</div>` : ""}<div class="small">보증금 ${won(l.dep)} · 월세 <b>${won(l.rent)}</b> · 권리금 ${won(l.key)} · 유동인구 ${"●".repeat(Math.round(l.traffic * 3))} · 경쟁 ${l.comp}곳</div>
+      <div class="row wrap" style="margin-top:6px"><button class="btn sm" data-uccon="${l.id}:rent">머신 렌탈로 열기 (${won(qr.total)})</button><button class="btn sm gold" data-uccon="${l.id}:buy">머신 사서 열기 (${won(qb.total)})</button></div></div></div>`; })}` : ""}`;
 }
 // 대학원
 function pgGrad() {
@@ -951,11 +985,11 @@ function pgPeople() {
   const F = { all: () => true, love: (id) => S.rel[id].lover || S.rel[id].spouse || (E.isRomanceable(S, E.CHAR[id]) && S.rel[id].aff >= 45), friend: (id) => S.rel[id].aff >= 45, helper: (id) => E.CHAR[id].helper && E.CHAR[id].helper.effect !== "none", client: (id) => S.rel[id].client || E.CHAR[id].customer };
   const list = known.filter(F[ui.filter] || F.all).sort((a, b) => (S.rel[b].spouse - S.rel[a].spouse) || (S.rel[b].lover - S.rel[a].lover) || S.rel[b].aff - S.rel[a].aff);
   const fam = S.fam;
-  return `<div class="card"><h3>관계도 <small>인물도감 ${known.length} / ${CHARS_N} · 이번 판 등장 ${S.cast.length}명</small></h3>
-    <div class="small muted">지도에서 사람을 만나 말을 걸면 인연이 돼요. 호감 20·45·70에서 이야기가 열리고, 45 이상이면 투잡을 도와 달라고 부탁할 수 있어요(60 이상이면 확실). 연인은 두 달 넘게 데이트를 안 하면 멀어져요.</div>
+  return `<div class="row" style="gap:6px;margin-bottom:8px"><button class="btn grow" data-ppl="map">🕸 관계도</button><button class="btn grow" data-ppl="dex">📖 인물 도감 ${PD.dexCount(meta(), E.CHAR)}/${CHARS_N}</button></div><div class="card"><h3>사람들 <small>아는 사람 ${known.length}명 · 이번 판 등장 ${S.cast.length}명</small></h3>
+    ${more("호감 20·45·70에서 이야기가 열려요 · 자세히", `<div class="small muted">지도에서 사람을 만나 말을 걸면 인연이 돼요. 호감 20·45·70에서 이야기가 열리고, 45 이상이면 투잡을 도와 달라고 부탁할 수 있어요(60 이상이면 확실). 연인은 두 달 넘게 데이트를 안 하면 멀어져요.</div>`)}
     ${fam.spouse || fam.kids.length ? `<div class="row wrap" style="margin-top:8px">${fam.spouse ? `<span class="tag pink">배우자 ${esc(E.CHAR[fam.spouse].name)} · ${esc(fam.spouseType)}</span>` : ""}${fam.kids.map((k) => `<span class="tag green">${esc(k.name)} ${Math.floor((S.t - k.born) / 12)}살</span>`).join("")}<span class="tag">가족 행복 ${Math.round(fam.happy)}</span><span class="tag">부모님 건강 ${Math.round(fam.parents)}</span></div>` : ""}</div>
   <div class="filters">${[["all", "전체"], ["love", "연애"], ["friend", "친한 사이"], ["helper", "조력 가능"], ["client", "손님"]].map(([k, n]) => `<button class="${ui.filter === k ? "on" : ""}" data-filter="${k}">${n}</button>`).join("")}</div>
-  ${list.length ? `<div class="pgrid">${list.map(personCard).join("")}</div>` : `<div class="card muted">아직 아는 사람이 없어요. 지도에서 '???'에게 말을 걸어 보세요.</div>`}`;
+  ${list.length ? (() => { const h0 = (id) => Math.round(S.rel[id].aff / 20) <= 0 && !S.rel[id].lover && !S.rel[id].spouse, L1 = list.filter((id) => !h0(id)), L0 = list.filter(h0); return `${L1.length ? `<div class="pgrid">${L1.map(personCard).join("")}</div>` : ""}${L0.length ? `<details class="more card hi0"><summary>아직 인사만 한 ${L0.length}명 ▾</summary><div class="pgrid" style="margin-top:6px">${L0.map(personCard).join("")}</div></details>` : ""}`; })() : `<div class="card muted">아직 아는 사람이 없어요. 지도에서 '???'에게 말을 걸어 보세요.</div>`}`;
 }
 
 // 나
@@ -966,21 +1000,21 @@ function pgMe() {
   const meB = bodySrc("me", myExpr(), "half");
   return `${meB ? `<div class="mestage" style="background-image:url(${bgUrl("home") || ""})">${img(meB, "body", "나")}<div class="cap"><b>${esc(S.me.name)}</b><span>${Math.floor(S.age)}세 · ${esc(S.co.quit || S.co.fired ? "전업 사장님" : `${S.co.name} ${D.RANKS[S.co.rank].n}`)}</span></div></div>` : ""}<div class="card"><h3>파이어 계산 <small>${Math.round(f.ratio * 100)}%</small></h3>${meter(f.ratio, 1, "linear-gradient(90deg,#f5a524,#5fe0a0)")}
     <div class="kv" style="margin-top:8px"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div><div><div class="k">목표 순자산${S.fam.spouse ? "(결혼)" : ""}</div><div class="v">${won(f.target)}</div></div><div><div class="k">월 생활비 전체</div><div class="v">${won(f.spend)}</div></div><div><div class="k">기한</div><div class="v">${D.endAge(S.me.gender)}세 · ${Math.max(0, Math.ceil(D.endAge(S.me.gender) - S.age))}년</div></div></div>
-    <div class="tiny muted" style="margin-top:6px">순자산이 목표(혼자 30억, 결혼하면 40억)에 닿으면 파이어를 선언할 수 있어요. 매니저가 굴리는 파티룸이나 VOD처럼 저절로 들어오는 사업 수입이 생활비를 넘으면 목표의 60%만 모아도 돼요.</div>
+    ${more("파이어 조건 자세히", `<div class="tiny muted">순자산이 목표(혼자 30억, 결혼하면 40억)에 닿으면 파이어를 선언할 수 있어요. 매니저가 굴리는 파티룸이나 VOD처럼 저절로 들어오는 사업 수입이 생활비를 넘으면 목표의 60%만 모아도 돼요.</div>`)}
     ${f.ready ? `<button class="btn gold" style="width:100%;margin-top:8px;padding:12px" data-fire>파이어 선언하기 (${Math.floor(S.age)}세)</button>` : ""}${S.fireAt ? `<div class="tag gold" style="margin-top:8px">${S.fireAt}세 파이어 달성 · ${D.endAge(S.me.gender)}세까지 더 달리는 중</div>` : ""}</div>
-  <div class="card"><h3>명성·온잡 <small>명성 ${Math.round(S.fame || 0)}/100</small></h3>${meter(S.fame || 0, 100, "var(--purple)")}<div class="tiny muted" style="margin-top:6px">별점 높은 파티룸, 컨설팅 Lv4~5, 인별·너튜브 팔로워가 명성을 올려요. 명성이 높을수록 문의·협찬·강의료가 오르고, 큰 판(가맹·VIP·AI 플랫폼)이 열려요. ${BIG.isFull(S) ? "지금 전업(온잡)이라 명성이 30% 빨리 올라요." : "회사를 나와 전업하면 판이 더 커져요."}</div></div>
-  <div class="card"><h3>투자·대출</h3><div class="kv"><div><div class="k">투자(ETF)</div><div class="v">${won(S.invest)}</div></div><div><div class="k">대출 합계</div><div class="v bad">${won(E.debt(S))}</div></div><div><div class="k">월 이자·상환</div><div class="v">${won(Math.round(E.loanPay(S)))}</div></div></div>
-    <div class="row wrap" style="margin-top:8px">${[100, 500, 1000].map((v) => `<button class="btn sm" data-inv="${v}">+${won(v)}</button>`).join("")}${[500, 1000].map((v) => `<button class="btn sm" data-inv="-${v}">−${won(v)}</button>`).join("")}<button class="btn sm" data-inv="all">전부 빼기</button></div>
-    <div class="tiny muted" style="margin-top:4px">월 평균 +0.55%, 흔들림 큼. 대출: ${S.loans.map((l) => `${l.n} ${won(l.amt)}(${(l.rate * 100).toFixed(1)}%)`).join(", ") || "없음"}</div></div>
-  <div class="card"><h3>능력치 <small>최대 200 · ${esc(D.MAJORS[S.me.major]?.n || "")} · ${esc(D.JOBS[S.me.job]?.n || "")}</small></h3><div class="radarbox">${radar([{ v: S.st, c: "#f5c04e" }])}</div>${D.STAT_KEYS.map((k) => `<div class="statrow"><span>${D.STATS[k]}</span>${meter(S.st[k], D.STAT_MAX, k === "body" ? "var(--green)" : "var(--blue)")}<b>${Math.round(S.st[k])}</b></div>`).join("")}
-    <div class="tiny muted" style="margin-top:6px">스태미너는 매달 쓰는 기력이에요. 최대 스태미너 = 60 + 체력×0.6(지금 ${S.hpMax}). 행동력 = 4 + 스태미너÷13 + 체력÷50${D.RANKS[S.co.rank].ap ? ` ${D.RANKS[S.co.rank].ap}(직급)` : ""}${E.kidsAp(S) ? ` −${E.kidsAp(S)}(육아)` : ""}${E.spouseAp(S) ? ` ${E.spouseAp(S) > 0 ? "+" : "−"}${Math.abs(E.spouseAp(S))}(${E.spouseAp(S) > 0 ? "배우자 도움" : "배우자 반대"})` : ""}${E.kidMotiveAp(S) ? ` +${E.kidMotiveAp(S)}(아이 보며 힘내기)` : ""}${S.co.remote ? " −1(지방 근무)" : ""}. 체력과 감각은 30대 중반부터 조금씩 떨어지니 운동과 구경으로 챙겨 주세요.</div></div>
+  ${(() => { const fd = `<div class="tiny muted">별점 높은 파티룸, 컨설팅 Lv4~5, 인별·너튜브 팔로워가 명성을 올려요. 명성이 높을수록 문의·협찬·강의료가 오르고, 큰 판(가맹·VIP·AI 플랫폼)이 열려요. ${BIG.isFull(S) ? "지금 전업(온잡)이라 명성이 30% 빨리 올라요." : "회사를 나와 전업하면 판이 더 커져요."}</div>`; return (S.fame || 0) < 10 ? `<div class="card" style="padding:6px 12px">${more(`<b>명성 ${Math.round(S.fame || 0)}</b> · 올리는 법`, fd)}</div>` : `<div class="card"><h3>명성·온잡 <small>명성 ${Math.round(S.fame || 0)}/100</small></h3>${meter(S.fame || 0, 100, "var(--purple)")}${more("올리는 법 자세히", fd)}</div>`; })()}
+  <div class="card"><h3>투자·대출</h3><div class="kv"><div><div class="k">투자(ETF)</div><div class="v">${won(S.invest)}</div></div>${E.debt(S) > 0 ? `<div><div class="k">대출 합계</div><div class="v bad">${won(E.debt(S))}</div></div><div><div class="k">월 이자·상환</div><div class="v">${won(Math.round(E.loanPay(S)))}</div></div>` : ""}</div>
+    ${more("투자 조절", `<div class="row wrap">${[100, 500, 1000].map((v) => `<button class="btn sm" data-inv="${v}">+${won(v)}</button>`).join("")}${[500, 1000].map((v) => `<button class="btn sm" data-inv="-${v}">−${won(v)}</button>`).join("")}<button class="btn sm" data-inv="all">전부 빼기</button></div>`)}
+    <div class="tiny muted" style="margin-top:4px">월 평균 +0.55%, 흔들림 큼.${S.loans.length ? ` 대출: ${S.loans.map((l) => `${l.n} ${won(l.amt)}(${(l.rate * 100).toFixed(1)}%)`).join(", ")}` : ""}</div></div>
+  <div class="card"><h3>능력치 <small>최대 200 · ${esc(D.MAJORS[S.me.major]?.n || "")} · ${esc(D.JOBS[S.me.job]?.n || "")}</small></h3><div class="radarbox">${radar([{ v: S.st, c: "#f5c04e" }])}</div>${more("능력치 막대·구간 자세히", D.STAT_KEYS.map((k) => { const zi = D.STAT_CURVE.indexOf(E.statZone(S.st[k])), bk = E.brkOn(S, k); return `<div class="statrow stz"><span>${D.STATS[k]}</span>${meter(S.st[k], D.STAT_MAX, k === "body" ? "var(--green)" : "var(--blue)")}<b>${Math.round(S.st[k])}</b><i class="zb z${zi}${bk ? " bk" : ""}">${D.STAT_CURVE[zi].n}${bk ? "·돌파" : ""}</i></div>`; }).join(""))}<details class="stwhere"><summary>오르는 곳 자세히 ▾</summary>${D.STAT_KEYS.map((k) => `<div><b>${D.STATS[k]}</b> <span class="kindtag ${D.STAT_KIND[k]}">${D.STAT_KIND_N[D.STAT_KIND[k]].n}</span> ${D.STAT_WHERE[k]}${E.brkOn(S, k) ? ` <span class="gold">돌파 중(~${S.brk[k] - S.t + 1}달)</span>` : ""}</div>`).join("")}<div class="muted">100부터 더디고 150부터는 스승·큰 성공·아이템 같은 돌파 계기가 있어야 잘 올라요. 같은 방법만 석 달 하면 덜 올라요.</div></details>
+    ${more("스태미너·행동력 계산 자세히", `<div class="tiny muted">스태미너는 매달 쓰는 기력이에요. 최대 스태미너 = 60 + 체력×0.6(지금 ${S.hpMax}). 행동력 = 4 + 스태미너÷13 + 체력÷50${D.RANKS[S.co.rank].ap ? ` ${D.RANKS[S.co.rank].ap}(직급)` : ""}${E.kidsAp(S) ? ` −${E.kidsAp(S)}(육아)` : ""}${E.spouseAp(S) ? ` ${E.spouseAp(S) > 0 ? "+" : "−"}${Math.abs(E.spouseAp(S))}(${E.spouseAp(S) > 0 ? "배우자 도움" : "배우자 반대"})` : ""}${E.kidMotiveAp(S) ? ` +${E.kidMotiveAp(S)}(아이 보며 힘내기)` : ""}${S.co.remote ? " −1(지방 근무)" : ""}. 체력과 감각은 30대 중반부터 조금씩 떨어지니 운동과 구경으로 챙겨 주세요.</div>`)}</div>
   ${CU.bagCard(S, esc)}
   <div class="card"><h3>성향 카드 <small>숨은 특성은 그 일을 시작하면 공개</small></h3><div style="display:flex;flex-direction:column;gap:6px">${S.me.traits.map((id) => traitCard(D.TRAITS.find((t) => t.id === id), true)).join("")}</div></div>
-  <div class="card"><h3>특전 카드 <small>큰 일을 해내면 받아요 · 다음 인생에 1장 가져가기</small></h3>${(S.me.perks || []).length ? `<div style="display:flex;flex-direction:column;gap:6px">${S.me.perks.map((id) => traitCard(D.CARD(id), true)).join("")}</div>` : ""}<div class="chips" style="margin-top:6px">${D.PERKS.filter((p) => p.test && !(S.me.perks || []).includes(p.id)).map((p) => `<span class="chip">🔒 ${esc(p.got)}</span>`).join("")}</div></div>
+  <div class="card"><h3>특전 카드 <small>큰 일을 해내면 받아요 · 다음 인생에 1장 가져가기</small></h3>${(S.me.perks || []).length ? `<div style="display:flex;flex-direction:column;gap:6px">${S.me.perks.map((id) => traitCard(D.CARD(id), true)).join("")}</div>` : ""}${(() => { const L = D.PERKS.filter((p) => p.test && !(S.me.perks || []).includes(p.id)).map((p) => `<span class="chip">🔒 ${esc(p.got)}</span>`); return `<div class="chips" style="margin-top:6px">${L.slice(0, 3).join("")}</div>${more(`전체 보기 ${L.length - 3}`, L.length > 3 ? `<div class="chips">${L.slice(3).join("")}</div>` : "")}`; })()}</div>
   <div class="card"><h3>삶 <small>${esc(D.HOUSING[S.house.type]?.n || "")}${S.house.value ? " · " + won(S.house.value) : ""}</small></h3>
     <div class="acts" style="padding:0">${actRow("house_search")}${actRow("visit_parents")}</div></div>
   <div class="card"><h3>기록 <small>순자산(금색)·투잡 수익(초록)</small></h3><svg class="spark" viewBox="0 0 300 80" preserveAspectRatio="none">${spark("nw", "#f5c04e")}${spark("side", "#5fe0a0")}</svg>
-    <div class="logl">${S.log.slice(0, 40).map((l) => `<div><span>${l.age}세 ${l.cal}월</span><span style="color:var(--fg)">${esc(l.text)}</span></div>`).join("")}</div></div>
+    ${(() => { const lr = (l) => `<div><span>${l.age}세 ${l.cal}월</span><span class="lt" style="color:var(--fg)" title="${esc(l.text)}">${esc(l.text)}</span></div>`, L = S.log.slice(0, 40); return `<div class="logl">${L.slice(0, 6).map(lr).join("")}</div>${more(`더 보기 ${L.length - 6}`, L.length > 6 ? `<div class="logl">${L.slice(6).map(lr).join("")}</div>` : "")}`; })()}</div>
   <div class="row"><button class="btn sm" data-album>인생 앨범 ${(meta().album || []).length}장</button><button class="btn sm" data-newlife>이 칸에서 새 인생</button><button class="btn sm" data-toslots>저장 칸으로</button><span class="grow"></span><span class="tiny muted">${SLOT}번 칸 · 자동 저장${ST.isServer() ? "(계정)" : "(이 브라우저)"}</span></div>`;
 }
 
@@ -1026,6 +1060,7 @@ const HELP_DESC = { pr_clean: "파티룸 청소·관리(청소비 −30%, 관리
 const CINE_BG = { lover: "rooftop", propose: "rooftop", wedding: "wedding", baby: "apt", breakup: "street", promo: "desk", fired: "desk", quit: "desk", burnout: "home", pr_open: "partyroom", pr_multi: "partyroom", cs_first: "consult", cs_pen: "consult", cs_name: "consult", ab_first: "airbnb", ab_super: "airbnb", uc_open: "ucafe", uc_multi: "ucafe", in_10k: "home", in_deal: "home", house: "apt", seed: "home", fire: "rooftop", grad: "library", parents_bye: "parents" };
 Object.assign(CINE_BG, { full_pr: "partyroom", full_cs: "consult", full_airbnb: "airbnb", full_ucafe: "ucafe", full_insta: "home" });
 const CINE_TAG = { full_pr: "본잡 전환", full_cs: "본잡 전환", full_airbnb: "본잡 전환", full_ucafe: "본잡 전환", full_insta: "본잡 전환", lover: "연애", propose: "연애", wedding: "결혼", baby: "가족", breakup: "연애", parents_bye: "가족", promo: "회사", fired: "회사", quit: "회사", burnout: "나", pr_open: "파티룸", pr_multi: "파티룸", cs_first: "컨설팅", cs_pen: "컨설팅", cs_name: "컨설팅", ab_first: "숙소", ab_super: "숙소", uc_open: "무인카페", uc_multi: "무인카페", in_10k: "인별그램", in_deal: "인별그램", house: "인생", seed: "인생", fire: "인생", grad: "인생", arc3: "인연", ...RIVAL_CINE_TAG };
+Object.assign(CINE_BG, IGA.CINE_BG); Object.assign(CINE_TAG, IGA.CINE_TAG); // 인별 화보(핫플·콜라보·시대의 컨셉·브랜드)
 const COUPLE = new Set(["lover", "propose", "wedding", "baby"]);
 function cineKey(sc) { return sc.cine || (sc.kind === "wedding" ? "propose" : sc.kind === "arc" && sc.stage === 3 ? "arc3" : D.TITLE_CINE[sc.title]) || null; }
 function cineHtml(p) {
@@ -1043,10 +1078,11 @@ function cinePlay(sc, key, done) {
   const bgk = key === "arc3" && who ? charSpot(who) : CINE_BG[key];
   const imgU = cgf ? `img/cg/${cgf}` : bgUrl(bgk) || sceneBg(sc) || bgUrl("street");
   const expr = ["breakup", "fired", "burnout", "parents_bye"].includes(key) ? "sad" : COUPLE.has(key) ? "blush" : "smile";
-  const people = cgf ? [] : [who ? bodySrc(who, expr, "full") : null, (COUPLE.has(key) || !who) && key !== "breakup" ? bodySrc("me", expr === "blush" ? "smile" : expr, "full") : null];
+  const meP = bodySrc("me", expr === "blush" ? "smile" : expr, "full");
+  const people = cgf ? (NOPPL.has(cgf.replace(/\.webp$/, "")) ? [COUPLE.has(key) && who ? bodySrc(who, expr, "full") : null, meP] : []) : [who ? bodySrc(who, expr, "full") : null, (COUPLE.has(key) || !who || IGA.DUO.has(key)) && key !== "breakup" ? meP : null]; // v4.27 사람 없는 화보에도 내 캐릭터
   const p = { k: key, img: imgU, cg: !!cgf, people, title: sc.title.replace(/^특전 카드 · /, ""), line: sc.kind === "story" ? String(sc.text || "").split("\n")[0] : String(sc.text || "").split(/(?<=[.!?])\s/).slice(0, 2).join(" "), when: `${E.ymLabel(S)} · ${Math.floor(S.age)}세`, tag: CINE_TAG[key] };
   // 인생 앨범에 남기기(다음 인생에도 남는다)
-  try { const m = meta(); m.album = [{ k: key, img: imgU, cg: !!cgf, who, title: p.title, line: p.line, when: p.when, tag: p.tag, run: S.ng?.n || 1, name: S.me.name }, ...(m.album || [])].slice(0, 300); setMeta(m); } catch (e) {}
+  try { const m = meta(); m.album = [{ k: key, img: imgU, cg: !!cgf, who, ppl: people.filter(Boolean), title: p.title, line: p.line, when: p.when, tag: p.tag, run: S.ng?.n || 1, name: S.me.name }, ...(m.album || [])].slice(0, 300); setMeta(m); } catch (e) {}
   showCine(p, done);
 }
 function showCine(p, done) {
@@ -1111,7 +1147,7 @@ function tjxCss() {
 function titleCards(m) {
   const A = m.album || [], done = mgDoneMap(), all = mgAll(), n = all.filter((k) => done[k]).length;
   const th = A.slice(0, 3).map((a) => `<i style="background-image:url('${esc(a.img || "")}')"></i>`).join("") || `<i class="e">📷</i>`;
-  return `<div class="tjx"><button data-album><div class="tjx-th">${th}</div><b>인생 앨범</b><span>${A.length}장</span></button><button data-mgre><div class="tjx-ic">🎮</div><b>미니게임 다시 하기</b><span>${n}/${all.length}</span></button></div>`;
+  return `<div class="tjx n3"><button data-album><div class="tjx-th">${th}</div><b>인생 앨범</b><span>${A.length}장</span></button><button data-mgre><div class="tjx-ic">🎮</div><b>미니게임 다시 하기</b><span>${n}/${all.length}</span></button>${PD.dexCard(m, E.CHAR, esc)}</div>`;
 }
 function mgReplayWin() {
   tjxCss();
@@ -1142,11 +1178,13 @@ function mgPractice(key) {
   }, true, true);
 }
 // 인생 앨범: 지금까지 본 화보. 첫 화면과 나 화면에서 본다
+// v4.27 앨범 사람: 남겨 둔 사람 그림(ppl). 예전 기록은 화보가 아니면 같이 나온 사람만 다시 붙인다
+function albPpl(a) { if (a.ppl?.length) return a.ppl; if (!a.cg && a.who && E.CHAR[a.who]) { try { return [bodyOr(a.who, "smile", "full", pixFace(a.who, "smile"))]; } catch (e) {} } return []; }
 function albumWin() {
   const A = meta().album || [];
   const keys = new Set(A.map((a) => a.k));
   openWin(`<h2>인생 앨범 <span class="tag gold">${A.length}장</span> <button class="x" data-close>✕</button></h2><div class="small muted">큰 순간을 맞을 때마다 한 장씩 쌓여요. 같은 순간도 그림이 여러 장이라 인생마다 달라요. 모은 순간 ${keys.size}/${Object.keys(CINE_TAG).length}가지.</div>
-    ${A.length ? `<div class="album">${A.map((a, i) => `<button data-alb="${i}" style="background-image:linear-gradient(180deg,#0000 40%,#000c),url(${a.img})"><b>${esc(a.title)}</b><span>${a.run}회차 · ${esc(a.when)}</span></button>`).join("")}</div>` : `<div class="card small muted" style="margin-top:10px">아직 비어 있어요. 연애·결혼·투잡 첫 오픈 같은 큰 순간에 채워져요.</div>`}`, (w) => w.querySelectorAll("[data-alb]").forEach((b) => b.onclick = () => { const a = A[+b.dataset.alb]; showCine({ ...a, people: [], tapText: "눌러서 닫기" }); }));
+    ${A.length ? `<div class="album">${A.map((a, i) => `<button data-alb="${i}" style="background-image:linear-gradient(180deg,#0000 40%,#000c),url(${a.img})">${albPpl(a).map((src, j) => `<img class="albp p${j}" src="${src}" alt="" loading="lazy">`).join("")}<b>${esc(a.title)}</b><span>${a.run}회차 · ${esc(a.when)}</span></button>`).join("")}</div>` : `<div class="card small muted" style="margin-top:10px">아직 비어 있어요. 연애·결혼·투잡 첫 오픈 같은 큰 순간에 채워져요.</div>`}`, (w) => w.querySelectorAll("[data-alb]").forEach((b) => b.onclick = () => { const a = A[+b.dataset.alb]; showCine({ ...a, people: albPpl(a), tapText: "눌러서 닫기" }); }));
 }
 // ───────── 연말 결산 화면(v4.24) ─────────
 // 매년 12월 마감에 엔진이 kind "year" 장면을 넣는다(engine/yearend.js). 막 내림 → 타이틀 → 숫자 → 광고 자리 → 올해의 장면 → 한 줄 정리 → 본잡 신호/다음 해로
@@ -1217,7 +1255,7 @@ function yearShow(sc) {
       <div class="yr-row"><span>순자산</span><div><b>${won(d.nw)}</b><small>${won(d.nw0)}에서 ${sg(d.nw - d.nw0)}</small></div></div>
       <div class="yr-row"><span>파이어 목표(${won(d.target)})까지</span><div><b>${pct(d.fire)}</b><small>작년보다 ${d.fire - d.fire0 >= 0 ? "+" : "−"}${Math.abs(Math.round((d.fire - d.fire0) * 100))}%p</small></div></div>
       ${ev ? `<div class="yr-row"><span>연말 평가</span><div><b>${esc(ev.g)}${ev.promo ? ` · ${esc(ev.promo)} 승진!` : ""}</b><small>연봉 ${ev.raise ? `+${(ev.raise * 100).toFixed(1)}%` : "동결"}${ev.bonus ? ` · 성과급 ${won(ev.bonus)}` : ""}</small></div></div>` : ""}
-      ${(d.past || []).length ? `<div class="yr-past"><span class="yr-k">지난 결산</span>${d.past.map((p) => `<div><b>${p.y}</b><span>「${esc(p.line)}」</span><em style="font-style:normal">${p.x ? `연봉의 ${(+p.x).toFixed(1)}배` : p.q ? "전업" : "투잡 없음"}</em></div>`).join("")}</div>` : ""}</div>`,
+      ${(d.past || []).length >= 2 || (d.past || []).some((p) => p.q || (+p.x) >= 0.05) ? `<div class="yr-past"><span class="yr-k">지난 결산</span>${d.past.map((p) => `<div><b>${p.y}</b><span>「${esc(p.line)}」</span><em style="font-style:normal">${p.x ? `연봉의 ${(+p.x).toFixed(1)}배` : p.q ? "전업" : "투잡 없음"}</em></div>`).join("")}</div>` : ""}</div>`,
     `<div class="yr-pg"><div class="yr-h">잠깐 쉬어 가기<b>다음 장 넘기기 전에</b></div><div class="yr-ad" data-yrad></div></div>`,
     `<div class="yr-pg"><div class="yr-h">② 올해의 장면<b>${d.year}년을 기억하며</b></div>
       ${pics.length ? `<div class="yr-pics">${pics.map((a) => `<i style="background-image:url('${esc(a.img || "")}')"></i>`).join("")}</div>` : ""}
@@ -1302,7 +1340,7 @@ function endMonthFlow(force) {
     ${exp.map(([k, v]) => `<div class="dl"><span>${esc(k)}</span><span class="out">−${won(v)}</span></div>`).join("")}
     <div class="tot"><span>이번 달</span><span class="${ti - te >= 0 ? "in" : "out"}">${ti - te >= 0 ? "+" : "−"}${won(Math.abs(ti - te))}</span></div>
     <div class="dl"><span>투잡 순수익</span><span>${won(rc.side)}</span></div><div class="dl"><span>잔고</span><span>${won(rc.cash)}</span></div></div>
-    ${rc.notes.length ? `<div class="notes">${rc.notes.map((n) => `<div>${esc(n)}</div>`).join("")}</div>` : ""}
+    ${(() => { const N = rc.notes.filter((n) => !/회비만 냈다$/.test(n)); return N.length ? `<div class="notes">${N.map((n) => `<div>${esc(n)}</div>`).join("")}</div>` : ""; })()}
     ${!S.over && S.debtLate > 0 ? `<div class="danger-box"><b>⚠ 카드값 연체 ${S.debtLate}개월째</b><div>신용 한도까지 다 써서 잔고가 마이너스예요. <b>3개월 연속</b>이면 개인회생(이번 인생 끝)이에요. 남은 기회 <b>${3 - S.debtLate}번</b>.</div><div class="tiny">살릴 방법: 적자 지점 양도·매각 · 비싼 지출 줄이기 · 야근·성과로 월급 지키기 · 투잡 수입 올리기</div></div>` : (() => { const rw = E.runway(S); return !S.over && rw.months <= 3 ? `<div class="danger-box warn"><b>⚠ ${rw.months ? `이대로면 ${rw.months}달 뒤` : "다음 달이면"} 돈이 바닥나요</b><div>월 ${won(-rw.net)} 적자 · 남은 신용 한도 ${won(rw.credit)}. 한도를 다 쓰고 3달 연속 마이너스면 개인회생이에요.</div></div>` : ""; })()}
     <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-ok>${S.sceneQ.length ? `다음 (사건 ${S.sceneQ.length})` : "다음 달 시작"}</button>`, (el) => el.querySelector("[data-ok]").onclick = () => { closeWin(); continueChain(); toast([`행동력 ${S.apMax}`, `스태미너 ${Math.round(S.hp)}`], `${S.year}년 ${S.cal}월`); }, true);
 }
@@ -1315,6 +1353,7 @@ function settingsWin(slots) {
   const empty = slots?.find((x) => x.empty);
   openWin(`<h2>설정 <button class="x" data-close>✕</button></h2>
     ${sw("sound", "효과음", "누를 때·돈 들어올 때 짧은 소리")}${sw("vib", "진동", "안드로이드 폰에서만 울려요")}${sw("big", "큰 글씨", "화면 전체를 조금 크게")}${S ? `<button class="setrow" data-coach><span class="grow"><b>투잡 코치</b><span class="tiny muted">초반 고생 구간의 코치 한마디·할 일 안내</span></span><span class="tgl ${S.sj.coachOff ? "" : "on"}"><i></i></span></button>` : ""}
+    ${!S ? `<div class="tiny muted" style="margin-top:8px">한 아이디에 인생 3개까지 저장돼요. 세 칸이 다 차면 한 칸을 지우고 시작합니다.</div>` : ""}
     <div class="card" style="margin-top:10px"><h3>저장 백업</h3><div class="tiny muted" style="margin-bottom:6px">로그인하지 않으면 이 기기에만 저장돼요. 앱을 지우기 전에 코드를 복사해 두면 다시 불러올 수 있어요.</div>
       ${S ? `<button class="btn sm" data-bkcopy>지금 인생 코드 복사</button>` : ""}
       ${!S && slots ? (empty ? `<textarea data-bkin rows="3" placeholder="백업 코드를 붙여 넣으세요" style="width:100%;margin-top:6px;font-size:11px;background:#0b0d1a;color:#dfe3ff;border:1px solid #2a2e55;border-radius:8px;padding:6px"></textarea><button class="btn sm gold" data-bkload style="margin-top:6px">${empty.slot}번 칸으로 불러오기</button>` : `<div class="tiny muted">불러오려면 빈 칸이 하나 있어야 해요.</div>`) : ""}
@@ -1368,6 +1407,7 @@ function bind() {
   q("[data-end]", () => endMonthFlow(false));
   q("[data-region]", (el) => { ui.region = el.dataset.region || null; render(); window.scrollTo(0, 0); });
   q("[data-char]", (el) => charWin(el.dataset.char));
+  q("[data-ppl]", (el) => pplOpen(el.dataset.ppl));
   q("[data-todo]", (el) => { const g = el.dataset.todo; if (g.startsWith("people:")) return charWin(g.slice(7)); if (["pr", "cs", "sj", "hobby", "family", "co", "insta", "grad", "airbnb", "ucafe"].includes(g) || REG.get(g)) { ui.prFlow = null; return go(g); } if (D.SPOTS[g]) { if (D.SPOTS[g].region === "company") return go("co"); ui.page = "map"; ui.region = D.SPOTS[g].region; } else if (g === "parents") { ui.page = "map"; ui.region = "parents"; } render(); window.scrollTo(0, 0); });
   q("[data-prflow]", (el) => { const v = el.dataset.prflow; if (!v) ui.prFlow = null; else if (v === "district") ui.prFlow = { step: "district", dk: ui.prFlow?.dk }; else if (v.startsWith("list:")) ui.prFlow = { step: "list", dk: v.slice(5) }; else if (v.startsWith("contract:")) ui.prFlow = { step: "contract", id: v.slice(9) }; ui.page = "pr"; render(); });
   q("[data-dk]", (el) => { ui.prFlow.dk = el.dataset.dk; render(); });
@@ -1383,10 +1423,12 @@ function bind() {
   q("[data-niche]", (el) => { const r = CS.setNiche(S, el.dataset.niche); toast([], r.msg || ""); save(); render(); });
   q("[data-nick]", (el) => { const r = CS.setNick(S, el.dataset.nick); toast([], r.msg); save(); render(); });
   q("[data-cprice]", (el) => { const r = CS.setPrice(S, el.dataset.cprice); toast([], r.msg); save(); render(); });
+  q("[data-cspol]", (el) => { const r = CS.setPolicy(S, el.dataset.cspol); if (r.msg) toast([], r.msg); save(); render(); }); // f30 운영 원칙
   $app.querySelectorAll("[data-ads]").forEach((el) => el.addEventListener("change", () => { CS.setAds(S, +el.value); save(); render(); }));
   q("[data-quit]", () => openWin(`<h2>정말 퇴사할까? <button class="x" data-close>✕</button></h2><div class="small">${E.quitReady(S).ok ? "환승 조건을 채웠다. 행동력 +5, 월급은 끊긴다." : "조건을 못 채웠다. 대표님 철학: 선퇴사 금지. 그래도?"}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn gold grow" data-yes>사직서 제출</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = E.quitCompany(S); closeWin(); toast([], r.msg); save(); render(); }));
   q("[data-filter]", (el) => { ui.filter = el.dataset.filter; render(); });
   q("[data-inv]", (el) => { const v = el.dataset.inv; if (v === "all") { S.cash += S.invest; S.invest = 0; } else { const n = +v; if (n > 0 && S.cash >= n) { S.cash -= n; S.invest += n; } else if (n < 0) { const m = Math.min(S.invest, -n); S.invest -= m; S.cash += m; } else return toast([], "현금이 부족합니다"); } save(); render(); });
+  q("[data-igopen]", (el) => IGA.openInsta(igctx(), el.dataset.igopen));
   q("[data-inniche]", (el) => { const r = INS.setNiche(S, el.dataset.inniche); toast([], r.msg || ""); save(); render(); });
   q("[data-inface]", (el) => { const r = INS.setFace(S, el.dataset.inface === "1"); toast([], r.msg); save(); render(); });
   q("[data-uccon]", (el) => { const [id, m] = el.dataset.uccon.split(":"); const r = UC.contract(S, id, { machine: m, bean: 0 }); toast([], r.msg); save(); render(); });
@@ -1399,6 +1441,11 @@ function bind() {
   q("[data-abclose]", (el) => openWin(`<h2>숙소를 정리할까요? <button class="x" data-close>✕</button></h2><div class="small">보증금만 돌려받아요. 세팅비는 못 돌려받아요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>정리</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = AB.close(S, el.dataset.abclose); closeWin(); toast([], r.msg); save(); render(); }));
   q("[data-adr]", (el) => { const [id, d] = el.dataset.adr.split(":"); const u = S.ab.units.find((x) => x.id === id); AB.setAdr(S, id, u.adr + +d); save(); render(); });
   q("[data-peak]", (el) => { const r = PR.setPeak(S, +el.dataset.peak); toast([], r.msg); save(); render(); });
+  q("[data-revev]", (el) => { const [j, k] = el.dataset.revev.split(":"); const r = (j === "pr" ? PR : AB).setRevEv(S, k); toast([], r.msg); save(); render(); }); // v4.28 후기 이벤트
+  q("[data-abpeak]", (el) => { const r = AB.setPeak(S, +el.dataset.abpeak); toast([], r.msg); save(); render(); });
+  q("[data-abfee]", (el) => { const r = AB.setFeeAuto(S, el.dataset.abfee === "1"); toast([], r.msg); save(); render(); });
+  q("[data-abpay]", (el) => { const r = AB.payFees(S); toast([], r.msg); save(); render(); });
+  q("[data-sp]", (el) => { const r = SP.spAct(S, el.dataset.sp); if (r?.msg) toast([], r.msg); save(); render(); }); // v4.29 공간형 특이 요소(운영 규칙·청소·한 달 살기·영업 방식)
   q("[data-decor]", (el) => { const rm = S.pr.rooms.find((x) => x.id === el.dataset.decor); ui.prFlow = { step: "decor", id: rm.id, picks: { ...rm.decor } }; render(); window.scrollTo(0, 0); });
   q("[data-dpick]", (el) => { const [k, i] = el.dataset.dpick.split(":"); ui.prFlow.picks[k] = +i; render(); });
   q("[data-decorgo]", () => { const f = ui.prFlow, rm = S.pr.rooms.find((x) => x.id === f.id); const ch = Object.fromEntries(Object.entries(f.picks).filter(([k, i]) => rm.decor?.[k] !== i)); if (!Object.keys(ch).length) return toast([], "바뀐 게 없어요"); const res = E.act(S, "pr_decor", JSON.stringify({ id: f.id, picks: ch })); if (!res.ok) return toast([], res.msg); ui.prFlow = null; afterRes(res); });
@@ -1435,15 +1482,12 @@ async function renderTitle() {
   const empty = slots.find((x) => x.empty);
   tjxCss();
   $app.innerHTML = `<div class="title"><div class="px small gold">TJLAB GAME · v4</div><h1>After <span>6</span>PM</h1><div class="sub">파이어족을 꿈꾸는 퇴근 후 사장님</div>
-    <div class="desc">우리는 막 취업했거나 어느 정도 자리를 잡은 1~3년 차 직장인의 삶을 살게 됩니다. 회사를 열심히 다닐 수도, 투잡을 할 수도, 취미를 즐길 수도, 연애와 결혼을 할 수도 있습니다. 목표는 순자산 30억으로 파이어(내 집 12억 + 4%씩 꺼내 써도 안 줄어드는 돈 18억). 남자는 27세에 시작해 50세까지, 여자는 25세에 시작해 48세까지 똑같이 23년이에요. 한번 재미지게 살아 보십시다!</div>
+    ${more("퇴근 후 2시간으로 순자산 30억 파이어 · 자세히", `<div class="desc">우리는 막 취업했거나 어느 정도 자리를 잡은 1~3년 차 직장인의 삶을 살게 됩니다. 회사를 열심히 다닐 수도, 투잡을 할 수도, 취미를 즐길 수도, 연애와 결혼을 할 수도 있습니다. 목표는 순자산 30억으로 파이어(내 집 12억 + 4%씩 꺼내 써도 안 줄어드는 돈 18억). 남자는 27세에 시작해 50세까지, 여자는 25세에 시작해 48세까지 똑같이 23년이에요. 한번 재미지게 살아 보십시다!</div>`, "desc-more")}
     <div class="small ${u ? "gold" : "muted"}" style="margin-bottom:6px">${u ? `${esc(u.nick || u.id)}님의 저장 칸` : "로그인하지 않으면 이 브라우저에 저장돼요"}</div>
-    <div class="slots">${slots.map((sl) => sl.empty
-      ? `<button class="slot empty" data-snew="${sl.slot}"><b>${sl.slot}번 칸</b><span>비어 있어요 · 여기서 새 인생 시작</span></button>`
-      : `<div class="slot"><button class="grow" data-sload="${sl.slot}"><b>${sl.slot}번 칸 · ${esc(sl.summary?.name || "")}</b><span>${sl.summary?.end ? "끝난 인생 · " : ""}${sl.summary?.age ?? "?"}세 · ${esc(sl.summary?.ym || "")} · 순자산 ${won(sl.summary?.nw || 0)}</span><span class="tiny muted">${esc(sl.summary?.job || "")}${sl.summary?.side ? " · 투잡 " + esc(sl.summary.side) : ""}</span></button><button class="btn sm danger" data-sdel="${sl.slot}">지우기</button></div>`).join("")}</div>
+    <div class="slots">${slots.filter((sl) => !sl.empty).map((sl) => `<div class="slot"><button class="grow" data-sload="${sl.slot}"><b>${sl.slot}번 칸 · ${esc(sl.summary?.name || "")}</b><span>${sl.summary?.end ? "끝난 인생 · " : ""}${sl.summary?.age ?? "?"}세 · ${esc(sl.summary?.ym || "")} · 순자산 ${won(sl.summary?.nw || 0)}</span><span class="tiny muted">${esc(sl.summary?.job || "")}${sl.summary?.side ? " · 투잡 " + esc(sl.summary.side) : ""}</span></button><button class="btn sm danger" data-sdel="${sl.slot}">지우기</button></div>`).join("")}${empty ? `<button class="slot empty" data-snew="${empty.slot}"><b>빈 칸 ${slots.filter((x) => x.empty).length}개</b><span>여기서 새 인생 시작</span></button>` : ""}</div>
     ${titleCards(m)}
     <div class="btns" style="margin-top:8px"><button class="btn gold" data-new>새 인생 시작</button><button class="btn" data-install ${APP.canInstall() ? "" : "hidden"}>앱으로 설치</button><button class="btn" data-set>설정</button></div>
     ${APP.isIOS() ? `<div class="tiny muted" style="margin-top:4px">아이폰: 공유 버튼 → '홈 화면에 추가'로 앱처럼 쓸 수 있어요.</div>` : ""}
-    <div class="tiny muted" style="margin-top:6px">한 아이디에 인생 3개까지 저장돼요. 세 칸이 다 차면 한 칸을 지우고 시작합니다.</div>
     ${m.runs?.length ? `<div class="card" style="margin-top:10px;text-align:center"><div class="small">다음 인생은 <b class="gold">${ngNext(m)}회차</b> · 기억 포인트 <b class="gold">${ngPoints(m)}</b> · 최고 파이어 ${m.best ? m.best + "세" : "아직"}</div>${ngCollection(m)}</div>` : ""}
     ${hallBox(hall, m)}</div>`;
   hallTabs($app);
@@ -1451,6 +1495,8 @@ async function renderTitle() {
   $app.querySelector("[data-set]").onclick = () => settingsWin(slots);
   $app.querySelector("[data-album]").onclick = () => albumWin();
   $app.querySelector("[data-mgre]").onclick = () => mgReplayWin();
+  $app.querySelector("[data-dex]").onclick = () => pplOpen("dex");
+  if (!m.dexInit) (async () => { const st = []; for (const sl of slots) if (!sl.empty) try { const t = await ST.load(sl.slot); if (t) st.push(E.load(t)); } catch (e) {} const m2 = meta(); PD.dexFill(m2, st, E.CHAR); setMeta(m2); const b = $app.querySelector("[data-dex]"); if (b && !S) b.outerHTML = PD.dexCard(m2, E.CHAR, esc), $app.querySelector("[data-dex]").onclick = () => pplOpen("dex"); })(); // 옛 저장 칸으로 도감 처음 채우기(한 번)
   const ib = $app.querySelector("[data-install]"); if (ib) ib.onclick = async () => { if (await APP.install()) toast([], "설치했어요! 홈 화면에서 열어 보세요"); ib.hidden = true; };
   $app.querySelector("[data-new]").onclick = () => empty ? pick(empty.slot) : openWin(`<h2>칸이 다 찼어요 <button class="x" data-close>✕</button></h2><div class="small muted">지울 인생을 하나 골라 주세요. 지운 인생은 되돌릴 수 없어요.</div><div class="pick" style="margin-top:10px">${slots.map((sl) => `<button data-swipeout="${sl.slot}"><b>${sl.slot}번 · ${esc(sl.summary?.name || "")}</b><span class="tiny muted">${sl.summary?.age ?? "?"}세 · 순자산 ${won(sl.summary?.nw || 0)}</span></button>`).join("")}</div>`, (w) => w.querySelectorAll("[data-swipeout]").forEach((b) => b.onclick = async () => { const n = +b.dataset.swipeout; closeWin(); await ST.remove(n); pick(n); }));
   $app.querySelectorAll("[data-snew]").forEach((b) => b.onclick = () => pick(+b.dataset.snew));
@@ -1600,6 +1646,7 @@ function traitCard(t, inGame) {
   const hid = inGame
     ? t.hid.map((h) => S.me.revealed?.[h.d] !== undefined ? `<div class="hon">★ ${esc(domN(h.d))} · ${esc(h.t)}</div>` : `<div class="hoff">🔒 ${esc(domN(h.d))}${h.d === "co" ? "에서 첫 평가를 받으면" : D.SIDEJOBS[h.d]?.play ? "을(를) 시작하면" : " (다음 업데이트)"} 공개</div>`).join("")
     : `<div class="hoff">숨은 특성 4개 · 단서: ${t.hint.map(esc).join(" · ")}</div>`;
+  if (inGame) return `<details class="trait tmore"><summary><div class="tn">${esc(t.n)} <span class="tag">${esc(t.g)}</span> <span class="tiny muted">효과 ▾</span></div><div class="muted">“${esc(t.line)}”</div></summary><div class="pro">＋ ${esc(t.pro)}</div><div class="con">－ ${esc(t.con)}</div>${hid}</details>`; // 정리(v4.27)
   return `<div class="trait"><div class="tn">${esc(t.n)} <span class="tag">${esc(t.g)}</span></div><div class="muted">“${esc(t.line)}”</div><div class="pro">＋ ${esc(t.pro)}</div><div class="con">－ ${esc(t.con)}</div>${hid}</div>`;
 }
 const wizYr = (w) => Math.max(1, Math.min(3, w.age - (w.gender === "F" ? 24 : 26)));
@@ -1790,6 +1837,8 @@ function autoTest(n) {
   if (location.hash.includes("scene")) { const id = S.cast[0]; E.openScene(S, E.meetScene(S, id)); showScene(); }
   if (location.hash.includes("char")) { const id = Object.keys(S.rel)[0]; if (id) charWin(id); }
   if (location.hash.includes("hbpick")) { doAct("hb_go"); }
+  if (location.hash.includes("stdemo")) { Object.assign(S.st, { write: 162, num: 118, career: 84, talk: 47, lang: 185, mkt: 102, sense: 70, hands: 33, charm: 55, body: 61 }); E.giveBrk(S, "write"); E.giveBrk(S, "lang"); render(); } // v4.28 시험: 구간 배지
+  if (location.hash.includes("stpick")) { S.ap = Math.max(S.ap, 3); doAct("course"); } // v4.28 시험: 공부 능력치 고르기
   if (location.hash.includes("cine")) { const id = E.CHARS ? "c002" : "c002"; E.openScene(S, { kind: "story", title: "연인이 됐다", text: "돌아오는 길, 손이 먼저 닿았다. 둘 다 아무 말도 안 했다.", cine: "lover", who: id, choices: [{ t: "계속", eff: {}, text: "" }] }); showScene(); }
   if (location.hash.includes("mgoff")) mgOffer("in_post");
   if (location.hash.includes("broke")) { const lim = E.creditRoom(S); E.addLoan(S, "신용대출", lim, 0.065); S.cash = -300; S.debtLate = 1; S.hist.push({ side: -900 }, { side: -900 }, { side: -900 }); render(); } // 파산 직전 경고 시험(#auto6-broke)
@@ -1805,6 +1854,39 @@ function autoTest(n) {
   }, 700); }
   if (location.hash.includes("hire")) { S.co.hired = S.co.hired || []; S.co.hired.push("c107"); const sc = E.meetScene(S, "c107"); sc.title = "새 사람이 왔다 · 봉다온"; E.openScene(S, sc); showScene(); }
   if (location.hash.includes("sw2")) { const sw = $app.querySelector("[data-sw2]"); if (sw) sw.scrollLeft = 9999; }
+  if (h.includes("instatest")) setTimeout(() => IGA.selfTest(igctx()), 300); // 인별 시험(#auto6-instatest)
+  { const ig = h.match(/igtab_([a-z]+)/); if (ig) setTimeout(() => { S.ap = Math.max(S.ap, 6); if (ig[1] === "inboxplay" || ig[1] === "inboxdone") INS.testInbox(S, E.R(S)); if (h.includes("igdm")) { S.ins.dm = []; for (const k of ["celeb", "fan", "scam", "deal"]) INS.testDm(S, E.R(S), k); } if (h.includes("igedit")) { IGA.openInsta(igctx(), "feed"); document.querySelector("[data-igedit]")?.click(); return; } IGA.openInsta(igctx(), ig[1] === "inboxdone" ? "inboxplay" : ig[1]); if (ig[1] === "inboxdone") { document.querySelectorAll("[data-igpick]").forEach((b, i) => { if (i % 3 === 0) b.click(); }); document.querySelector("[data-igdone]")?.click(); } }, 500); } // 인별 앱 화면 보기(#auto6-ins-igtab_feed|inbox|inboxplay|inboxdone|dm|ins|deal, -igdm, -igedit)
+  if (h.includes("jptest")) setTimeout(jpTest, 300); // 한방 전략 시험(#auto-jptest)
+  { const fm = h.match(/-f30([a-z]+)/), jk = ["tutoring", "tarot"].find((k) => h.includes("-" + k)); if (fm && (jk || h.includes("-cs-"))) setTimeout(async () => { const r = E.R(S), sc = jk ? (await import(`./engine/jobs/${jk}.js`)).f30Test?.(S, r, fm[1]) : CS.f30Scene(S, r, fm[1]); if (sc) { E.openScene(S, sc); showScene(); } }, 400); } // 컨설팅·과외·타로 특이 요소 장면 시험(#auto6-cs-f30bid · #auto6-tutoring-f30boost · #auto6-tarot-f30heavy)
+  { const pm = h.match(/-ppl(many|few|dex|map)/); if (pm) import("./people_ui.js").then((M) => { if (pm[1] !== "few") M.demo(S, E, pm[1] !== "few", RV_DEMO); save(); render(); pplOpen(pm[1] === "dex" ? "dex" : "map"); }); } // 인물 도감·관계도 시험: -pplfew(관계도 적을 때) -pplmany(많을 때) -ppldex(도감)
+}
+
+// ───────── 한방 전략 시험(#auto-jptest): 세 투잡 전략 장면을 강제로 띄워 실제 버튼으로 끝까지 고른다 ─────────
+function jpTest() {
+  const say = (ok, lines) => { const er = document.getElementById("err"); if (er) { ok = false; lines = [er.textContent, ...lines]; } const d = document.createElement("pre"); d.id = "jptest"; d.style.cssText = "position:fixed;left:0;right:0;bottom:80px;z-index:70;background:#000c;color:#9f9;font-size:10px;max-height:40vh;overflow:auto;margin:0;padding:6px"; d.textContent = [ok ? "JP TEST OK" : "JP TEST FAIL", ...lines].join(String.fromCharCode(10)); document.body.appendChild(d); };
+  try {
+    // 세 투잡을 켠다(칸이 모자라면 다른 투잡을 뺀다)
+    S.sj.active = S.sj.active.filter((k) => ["cs", "tarot", "webnovel"].includes(k));
+    for (const k of ["cs", "tarot", "webnovel"]) { SJ.found(S, k); if (!S.sj.active.includes(k)) { const res = SJ.start(S, k); if (!res.ok) S.sj.active.push(k); } }
+    S.cash += 60000; S.flags.noProbation = true;
+    const tiers = ["big", "meh", "mid", "small", "bust"];
+    let opened = 0, picked = 0, results = 0, asks = 0;
+    const clickAll = () => { let g = 0; while (g++ < 30) { const b = document.querySelector(".scene [data-ch]"); if (b) { const sc = S.pending; if (sc?.kind !== "event" || sc?.onChoose !== "jp_offer") { if (/^한방 결과/.test(sc?.title || "")) results++; if (sc?.onChoose === "jp_ask") asks++; } b.click(); picked++; continue; } const ok = document.querySelector("[data-ok]"); if (ok) { ok.click(); continue; } break; } };
+    const flush = () => { let g = 0; while ((S.pending || S.sceneQ?.length) && g++ < 40) { if (!S.pending) E.nextQueuedScene(S); if (!S.pending) break; if (S.pending.kind === "year") { E.choose(S, 0); continue; } showScene(); clickAll(); if (S.pending && document.querySelector(".cine")) { E.choose(S, 0); closeWin(); } } closeWin(); };
+    // 1) 전략 8개 × 결과 5갈래 = 40판(0번 = 도전)
+    JP.JP_DEF.forEach((d, di) => tiers.forEach((tr) => { const sc = JP.jpScene(S, d.id, tr); E.openScene(S, sc); opened++; showScene(); clickAll(); if (S.pending) throw new Error(`제안 장면이 안 닫힘: ${d.id}`); }));
+    // 2) 다른 선택지: 1번(작게·직접·판권만), 마지막(거절)
+    for (const d of JP.JP_DEF) { E.openScene(S, JP.jpScene(S, d.id, "mid")); E.choose(S, 1); E.openScene(S, JP.jpScene(S, d.id)); E.choose(S, d.ch.length); }
+    // 3) 웹소설 좋은 일 6개
+    for (const g of JP.JP_GOOD) { E.openScene(S, JP.jpGoodScene(S, E.R(S), g.id)); opened++; showScene(); clickAll(); }
+    const runs = S.jp.runs.length;
+    // 4) 결과·후속까지 달을 넘기며 실제 버튼으로 고른다
+    for (let m = 0; m < 16 && !S.over && !S.ended; m++) { JP.jpRush(S); E.endMonth(S); flush(); }
+    const V = S.jp, left = V.runs.length + V.folQ.length;
+    const ok = !left && results >= 40 && asks >= 1;
+    say(ok, [`제안·좋은 일 장면 ${opened}개 · 도전 ${runs}판 · 결과 장면 ${results}개 · 물음 장면 ${asks}개 · 남은 진행 ${left}`, `갈래 ${JSON.stringify(V.stat.tier)}`, `한방 수입 ${E.won(V.stat.inc)} · 지출 ${E.won(V.stat.exp)} · 흐름 ${V.flows.length}개`, `기록: ${S.log.filter((x) => /^\[(한방|좋은 일)\]/.test(x.text)).length}줄 · 클릭 ${picked}번`]);
+    render();
+  } catch (e) { console.error(e); say(false, [String(e && e.stack || e)]); }
 }
 
 
@@ -1898,6 +1980,8 @@ function jobFlowTest(key, months) {
 
 // ───────── 새 투잡 화면 플러그인(jobs/<key>_ui.js) 등록 ─────────
 // 플러그인에 넘기는 공용 도구. S 는 새 인생마다 바뀌니 부를 때마다 새로 만든다. q 는 bind 때만 있다.
+// 인별 앱 창에 넘기는 것(jctx + 얼굴 그림·앨범)
+function igctx() { return { ...jctx(), faceSrc, meSrc, bodySrc, meta }; }
 function jctx(q) {
   return { S, D, E, SJ, SYN, REG, ui, esc, won, jo, r1, toast, save, render, go, openWin, closeWin, actRow, boardHead, meter, ic, img, bgUrl, doAct, afterRes, defaultArg, FX,
     q: q || ((sel, fn) => $app.querySelectorAll(sel).forEach((el) => el.addEventListener("click", (e) => { e.stopPropagation(); fn(el, e); }))) };
@@ -1943,6 +2027,7 @@ ST.init().then(async () => {
   else if (location.hash.startsWith("#auto")) autoTest(+(location.hash.match(/\d+/) || [18])[0]);
   else if (location.hash.startsWith("#wiz")) { startWizard(1); const w = ui.wiz; const n = +(location.hash.match(/\d/) || [1])[0]; if (n >= 2) { w.step = 2; w.rolls.push(E.rollStats(Math.random)); w.pick = 0; } if (n >= 3) { w.step = 3; w.major = "elec"; } if (n >= 4) { w.step = 4; w.company = "fin"; w.companyName = "신안은행"; w.job = "dfin"; } if (n >= 5) { w.step = 5; w.traits = w.pool.slice(0, 2); } renderWiz(); }
   else if (location.hash.startsWith("#intro")) { autoTest(1); showIntro(); }
+  else if (location.hash.startsWith("#dexsample")) { const ids = Object.keys(E.CHAR); META_C = Object.assign({}, META_C, { dexInit: 1, album: [], dex: Object.fromEntries(ids.filter((k, i) => i % 3 === 0).map((k, i) => [k, [1 + (i % 3), (i * 23) % 100, i % 4, [0, 1, 3, 5, 17, 33, 65][i % 7]]])) }); renderTitle(); if (location.hash.includes("open")) setTimeout(() => pplOpen(location.hash.includes("det") ? "dex:" + ids[0] : location.hash.includes("lock") ? "dex:" + ids[1] : "dex"), 300); } // 시작 화면·도감 시험
   else if (location.hash.startsWith("#gift")) { META_C = Object.assign({}, META_C, { runs: [{}, {}], ngPts: 9, knownJobs: ["pr", "cs", "airbnb"], pastFriends: ["c001", "c005", "c064"], endings: ["fire", "agefail"], metAll: ["c001", "c002", "c005"] }); startWizard(1); ui.wiz.gifts = { cash: 1, know: ["pr"], friend: ["c001"] }; renderWiz(); }
   else renderTitle();
 });

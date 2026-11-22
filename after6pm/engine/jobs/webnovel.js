@@ -36,6 +36,25 @@ export const CONTEST_M = [5, 6, 10, 11]; // 노블리 공모전 시즌
 // 11-21 밸런스(엔딩 희소성). 원래: 웹툰화 제안은 최고 독자 800명부터 달마다 3~25% → '원작자' 엔딩 100%, '성실한 완결 작가'는 28개월에 100%.
 // 지금: 최고 독자 ipPeak 명부터·확률 최고독자/ipDiv(2~15%). 성실한 완결 작가는 완결 3질 + 연재 steadyM 달 + 판권 없이(대박은 없었지만).
 export const WN_BAL = { ipPeak: 6000, ipDiv: 60000, steadyM: 60 };
+// 11-22 특이 요소 3개(독점·비독점, 표절 시비, 편집자 피드백). 효과 크기는 여기만 고친다.
+export const WN_F30 = {
+  deal: { ep: 40, adv: [0.35, 150, 1500], waitAdv: 1.2, exM: 6, exExpo: 1.25, exAfter: 1.08, // 독점: 선인세 = clamp(독자×0.35, 150, 1500)만 × 물가(연재 수익에서 먼저 깎임), 메인 배너 6달 노출 ×1.25 → 그 뒤 ×1.08
+    waitFans: 1.3, waitCap: 1.12, waitPay: 0.72, // 기다리면 무료: 독자 유입 ×1.3·크기 ×1.12, 한 명당 결제 ×0.72
+    multiPay: 1.18, multiExpo: 0.9, multiTired: 4 }, // 비독점: 여러 곳 결제 ×1.18, 노출 ×0.9, 업로드 관리 피로 +4/달
+  plag: { fans: 120, gap: 30, spread: 0.45 }, // 표절 시비: 독자 120명부터, 30달에 한 번까지. 무시하면 45% 확률로 번진다
+  edit: { gap: 10, ret: 4, hit: 5, pen: 100, indieShare: 0.55, indieExpo: 0.88, indieTired: 3 }, // 편집자: 10달에 한 번까지. 혼자 가면 작가 몫 42→55%, 노출 ×0.88, 피로 +3/달, 위약금 100만+남은 선인세
+};
+// 계약 방식에 따른 배율
+export function dealFx(w) {
+  const D3 = WN_F30.deal, E3 = WN_F30.edit, o = { expo: 1, fans: 1, pay: 1, tired: 0 };
+  if (!w) return o;
+  if (w.deal === "ex" || w.deal === "wait") o.expo = w.exT > 0 ? D3.exExpo : D3.exAfter;
+  if (w.deal === "wait") { o.fans = D3.waitFans; o.pay = D3.waitPay; }
+  if (w.deal === "multi") { o.expo = D3.multiExpo; o.pay = D3.multiPay; o.tired = D3.multiTired; }
+  if (w.indie) { o.expo *= E3.indieExpo; o.tired += E3.indieTired; }
+  return o;
+}
+export const DEAL_N = { ex: "독점", wait: "독점·기다리면 무료", multi: "비독점" };
 const PER_FAN_EP = 0.0036; // 독자 1명이 1화 결제(100원) → 플랫폼 40% 떼고, 매니지먼트 3 : 작가 7 → 작가 약 42원 × 구매율 85%
 
 export function lvNeed(s) {
@@ -70,7 +89,7 @@ export function writeEps(s, boost = 1) {
 }
 export function capOf(s, w) {
   const W = s.webnovel, G = GENRES[w.g] || GENRES.hyun, q = quality(s);
-  return 520 * Math.pow(q, 1.6) * G.cap * w.hit * (1 + 0.2 * Math.min(3, W.done)) * mod(s, "wnCap", 1) * clamp(w.retain, 0.5, 1) * (W.redeem && !w.mgmt ? 1.1 : 1);
+  return 520 * Math.pow(q, 1.6) * G.cap * w.hit * (1 + 0.2 * Math.min(3, W.done)) * mod(s, "wnCap", 1) * clamp(w.retain, 0.5, 1) * (W.redeem && !w.mgmt ? 1.1 : 1) * (w.deal === "wait" ? WN_F30.deal.waitCap : 1);
 }
 export function newWork(s, r, g) {
   const W = s.webnovel, G = GENRES[g] || GENRES.hyun;
@@ -100,6 +119,51 @@ function finish(s, r, notes, scenes) {
   if (w.retain < 0.8 || W.tired >= 75) W.burnAsk = s.t + 1; // 용두사미·번아웃 → 필명 고민
 }
 
+// ───────── 11-22 특이 요소 장면 ─────────
+function dealScene(s) {
+  const w = s.webnovel.work, D3 = WN_F30.deal, pi = SYN.pi(s);
+  const adv = Math.round(clamp(w.fans * D3.adv[0], D3.adv[1], D3.adv[2]) * pi / 10) * 10, advW = Math.round(adv * D3.waitAdv / 10) * 10;
+  s._wnDeal = { adv, advW };
+  return { kind: "event", tag: "웹소설", title: "독점이냐, 여러 곳이냐", onChoose: "wn_deal",
+    text: `매니지먼트 담당자가 두 안을 내밀었다. 큰 플랫폼 한 곳에 독점이면 메인 배너와 선인세 ${won(adv)}. 대신 다른 곳엔 못 올리고, 선인세는 내 몫에서 먼저 깎인다. 비독점이면 여러 곳에 동시에 올린다.`,
+    choices: [
+      { t: `독점 · 선인세 ${won(adv)} + 메인 배너`, eff: {}, text: "메인 배너에 표지가 걸렸다. 이제 선인세만큼 팔려야 내 몫이 생긴다." },
+      { t: `독점 + '기다리면 무료' · 선인세 ${won(advW)}`, eff: {}, text: "하루 한 편 무료. 독자가 몰려온다. 한 명이 내는 돈은 줄었다." },
+      { t: "비독점 · 여러 플랫폼에 동시 연재", eff: {}, text: "업로드 창 세 개에 같은 화를 올린다. 정산서도 세 장이다." },
+    ] };
+}
+// 표절 시비: 내 작품이 의심받는다. ev=true 면 pickEvent 형식으로
+function plagScene(s, ev) {
+  const sc = { title: "표절 시비", onChoose: "wn_plag",
+    text: "\"이거 그 작품이랑 설정 똑같은데?\" 댓글 하나가 커뮤니티로 퍼졌다. 회귀, 계약, 복수. 이 장르에서 안 겹치는 설정이 있나 싶지만 캡처가 돌기 시작했다.",
+    choices: [
+      { t: "작업 노트·날짜를 공개하고 차분히 해명", check: { stat: "write", dc: 48 }, ok: { text: "몇 년 전 날짜가 찍힌 설정 노트가 오히려 화제가 됐다.", eff: { wn_fans: 4, mental: -1 } }, ng: { text: "해명글이 변명처럼 읽혔다. 댓글이 더 붙었다.", eff: { wn_fans: -6, mental: -5 } } },
+      { t: "무시하고 연재를 이어 간다", eff: {}, text: "대꾸하지 않았다." },
+      { t: "겹친다는 장면을 고쳐 다시 올린다", eff: { wn_bank: -3, wn_hit: -5, mental: -1 }, text: "주말 내내 세 화를 고쳐 썼다. 시비는 조용히 가라앉았다." },
+    ] };
+  return ev ? { t: sc.title, x: sc.text, onChoose: sc.onChoose, c: sc.choices } : { kind: "event", tag: "웹소설", ...sc };
+}
+// 편집자 피드백: 매니지먼트 수수료 30%의 값어치
+function editScene(s, ev) {
+  const w = s.webnovel.work, E3 = WN_F30.edit, pen = Math.round((w.adv || 0) + E3.pen * SYN.pi(s));
+  s._wnEd = { pen };
+  const c = [
+    { t: "피드백대로 고친다", eff: { wn_bank: -2, hp: -3, wn_ret: E3.ret, wn_hit: E3.hit }, text: "사이다를 두 화 앞당겼다. 편집자가 '좋아요' 한마디를 남겼다." },
+    { t: "내 고집대로 빌드업을 간다", check: { stat: "sense", dc: 45 }, ok: { text: "참은 만큼 터졌다. 반전 화 댓글창이 난리가 났다.", eff: { wn_hit: 15, mental: 3 } }, ng: { text: "고구마가 세 화째. 하차 댓글이 늘었다.", eff: { wn_ret: -6, wn_fans: -5, mental: -3 } } },
+  ];
+  if (w.paid) c.push({ t: `매니지먼트를 나와 혼자 간다 (위약금 ${won(pen)})`, eff: {}, text: "표지도, 홍보도, 정산도 이제 내 몫이다." });
+  const sc = { title: "편집자의 빨간 줄", onChoose: "wn_edit", text: "담당 편집자 메일. \"이번 화 고구마예요. 주인공이 너무 오래 당해요. 사이다를 앞당겨 주세요.\" 수익의 30%를 가져가는 사람의 의견이다.", choices: c };
+  return ev ? { t: sc.title, x: sc.text, onChoose: sc.onChoose, c: sc.choices } : { kind: "event", tag: "웹소설", ...sc };
+}
+// 시험용: #auto…-webnovel-f30deal|f30plag|f30edit 에서 장면을 강제로 띄운다
+export function f30Scene(s, r, what) {
+  const W = s.webnovel; if (!W.work) newWork(s, r, "hyun");
+  const w = W.work; w.ep = Math.max(w.ep, 42); w.fans = Math.max(w.fans, 400); w.mgmt = true; W.lv = Math.max(W.lv, 3);
+  if (what === "deal") { w.deal = null; return dealScene(s); }
+  if (what === "edit") { w.paid = true; W.paidEver = true; return editScene(s); }
+  return plagScene(s);
+}
+
 // ───────── 이벤트(16개 + 필명 생활) ─────────
 function pickEvent(s, r) {
   const W = s.webnovel, w = W.work, seen = W.seen, once = (id) => seen[id] === undefined;
@@ -118,7 +182,11 @@ function pickEvent(s, r) {
     add("e06", W.lv >= 2 && CONTEST_M.includes(s.cal) && W.contestSeason !== seasonId(s) && w.ep >= 10, () => ({ t: "공모전 시즌", x: "노블리 공모전이 열렸다. 공모전 전용 순위판에 오르면 돈 한 푼 안 들이고 노출된다. 마감까지 25화가 필요하다.", onChoose: "wn_contest_ev",
       c: [{ t: "주말을 갈아 넣어 참가", eff: { hp: -12, wn_bank: 3, wn_tired: 10 }, text: "토요일과 일요일이 원고로 사라졌다. 공모전 순위판에 이름이 올라갔다." }, { t: "평소 페이스 유지", eff: {}, text: "공모전은 다음에. 몸이 먼저다." }] }));
     add("e09", once("e09") && W.lv >= 2 && w.fans >= 60, () => ({ t: "베낀 작품", x: "내 설정을 거의 그대로 가져온 작품이 랭킹 3위에 올랐다. 하루 두 화씩 올린다. AI로 쓰는 것 같다는 소문이 돈다.",
-      c: [{ t: "신경 끄고 내 플롯대로 간다", eff: { mental: -3 }, text: "그 작품은 석 달 뒤 조용히 연재 중단됐다." }, { t: "속도전으로 맞불", eff: { hp: -12, wn_bank: 4, wn_ret: -5, wn_tired: 12 }, text: "하루 두 화. 손목이 시큰거리고 문장이 거칠어졌다." }] }));
+      c: [{ t: "신경 끄고 내 플롯대로 간다", eff: { mental: -3 }, text: "그 작품은 석 달 뒤 조용히 연재 중단됐다." }, { t: "속도전으로 맞불", eff: { hp: -12, wn_bank: 4, wn_ret: -5, wn_tired: 12 }, text: "하루 두 화. 손목이 시큰거리고 문장이 거칠어졌다." },
+        { t: "날짜 찍힌 원고를 모아 플랫폼에 신고한다", check: { stat: "num", dc: 50 }, ok: { text: "플랫폼이 그 작품을 내렸다. 독자들이 '원조'를 찾아왔다.", eff: { wn_fans: 8, mental: 2, hp: -4 } }, ng: { text: "\"유사성을 판단하기 어렵습니다.\" 답장 한 줄에 석 달이 갔다.", eff: { mental: -6, hp: -4 } } }] }));
+    // 11-22 표절 시비(내가 의심받는 쪽) · 편집자 피드백
+    add("p1", W.lv >= 2 && w.fans >= WN_F30.plag.fans && (s.t - (seen.p1 ?? -99)) >= WN_F30.plag.gap, () => plagScene(s, true));
+    add("ed", w.mgmt && !w.indie && w.ep >= 10 && (s.t - (seen.ed ?? -99)) >= WN_F30.edit.gap, () => editScene(s, true));
     // 위기(crisis)
     add("e13", !w.ev.e13 && w.ep >= 55 && w.ep <= 85 && w.retain < 0.88, () => ({ t: "중반의 늪", x: `첫 번째 큰 악당을 쓰러뜨렸다. 그런데 다음에 뭘 써야 할지 모르겠다. ${w.ep + 1}화를 세 번 지웠다. 연독률이 매화 2%씩 떨어진다.`,
       c: [{ t: "일주일 휴재하고 2부 플롯을 다시 짠다", eff: { wn_fans: -4, wn_ret: 8, wn_tired: -15 }, text: "2부 첫 화 댓글: \"작가님 각성하셨네.\"" }, { t: "비슷한 사건을 한 번 더 반복", eff: { wn_fans: -8, wn_ret: -4, wn_hit: -10 }, text: "\"이거 30화랑 똑같은데?\" 하차 댓글이 늘었다." }] }));
@@ -155,7 +223,7 @@ function contestEnter(s) { const W = s.webnovel; W.contestSeason = seasonId(s); 
 
 export default {
   key: K, prefix: "wn_", hubName: "웹소설",
-  init: () => ({ v: 1, lv: 1, work: null, works: [], bank: 0, sched: 12, ai: false, tired: 0, buzz: 0, plot: 0, expo: { x: 1, left: 0 }, done: 0, paidDone: 0, paidEver: false, ip: 0, ipPay: { left: 0, amt: 0 }, ipOffer: 0, audio: 0, pen: 0, bestPeak: 0, bestFans: 0, maxEp: 0, ups: 0, written: 0, seen: {}, hist: [], last: null, t0: null, contestSeason: "", contestT: -99, lunchT: -1, lecT: -1, nextBoost: 1, redeem: false, burnAsk: 0, newPen: 0, punk: 0, wrote: 0 }),
+  init: () => ({ v: 2, lv: 1, work: null, works: [], bank: 0, sched: 12, ai: false, tired: 0, buzz: 0, plot: 0, expo: { x: 1, left: 0 }, done: 0, paidDone: 0, paidEver: false, ip: 0, ipPay: { left: 0, amt: 0 }, ipOffer: 0, audio: 0, pen: 0, bestPeak: 0, bestFans: 0, maxEp: 0, ups: 0, written: 0, seen: {}, hist: [], last: null, t0: null, contestSeason: "", contestT: -99, lunchT: -1, lecT: -1, nextBoost: 1, redeem: false, burnAsk: 0, newPen: 0, punk: 0, wrote: 0 }),
   actions: {
     wn_new: { n: "새 작품 기획", ap: 1, hp: 2, desc: "장르를 골라 1화를 준비한다", stat: { sense: 0.3 } },
     wn_write: { n: "원고 쓰기", ap: 1, hp: 4, desc: "퇴근 후 책상 앞. 비축분 +3~6화, 글쓰기 +" },
@@ -226,7 +294,7 @@ export default {
       return { lines: [`원고 +${eps}화`, `비축분 ${W.bank}화`], msg: "김밥 한 줄과 메모장. 점심시간 40분이 한 화가 됐다." };
     }
     if (id === "wn_lecture") {
-      W.lecT = s.t; const fee = Math.round(Math.min(60, 30 + W.done * 5) * boost * SYN.pi(s)); s.cash += fee; addMoney(s, "inc", "웹소설 강의료", fee); gainStat(s, "talk", 0.4);
+      W.lecT = s.t; const fee = Math.round(Math.min(60, 30 + W.done * 5) * boost * SYN.pi(s)); s.cash += fee; addMoney(s, "inc", "웹소설 강의료", fee); gainStat(s, "talk", 0.4); gainStat(s, "charm", 0.3);
       return { lines: [`강의료 +${won(fee)}`, "말빨 +"], msg: "\"초반 5화에서 독자를 잡는 법.\" 수강생 눈이 반짝였다. 10년 전 내가 앉아 있던 자리다." };
     }
     return null;
@@ -248,18 +316,20 @@ export default {
       w.retain = clamp(w.retain - up * 0.0016 * (SYN.on(s, "wn_club") ? 0.65 : 1) + (W.plot ? 0.01 : 0), 0.5, 0.98);
       // 노출
       if (W.expo.left > 0) W.expo.left--; else W.expo.x = 1;
-      const expo = (SCHED[W.sched]?.f || 0) * seas * (1 + W.buzz / 100) * W.expo.x * (hasTr(s, "writer") ? 1.25 : 1) * (w.title2 ? 1.12 : 1) * (w.cover ? 1.08 : 1) * (W.lv >= 3 && w.mgmt ? 1.1 : 1) * SJ.ramp(s, "webnovel") * SJ.skillRamp(s, "webnovel"); // v4.25b 배우는 기간 · 초반 고생: 독자 소통·플롯이 쌓일수록 1로
+      const dl = dealFx(w); if (w.exT > 0) w.exT--;
+      const expo = dl.expo * (SCHED[W.sched]?.f || 0) * seas * (1 + W.buzz / 100) * W.expo.x * (hasTr(s, "writer") ? 1.25 : 1) * (w.title2 ? 1.12 : 1) * (w.cover ? 1.08 : 1) * (W.lv >= 3 && w.mgmt && !w.indie ? 1.1 : 1) * SJ.ramp(s, "webnovel") * SJ.skillRamp(s, "webnovel"); // v4.25b 배우는 기간 · 초반 고생: 독자 소통·플롯이 쌓일수록 1로
       const G = GENRES[w.g] || GENRES.hyun, cap = capOf(s, w), f0 = w.fans;
-      if (up > 0 && cap > w.fans) w.fans += (cap - w.fans) * clamp(G.rate * expo * cons, 0, 0.6);
+      if (up > 0 && cap > w.fans) w.fans += (cap - w.fans) * clamp(G.rate * expo * cons * dl.fans, 0, 0.6);
       w.fans *= 1 - 0.02 - (need && miss ? 0.12 * (1 - cons) : 0) - (need === 0 ? 0.07 : 0) - (W.tired >= 80 ? 0.02 : 0);
       w.fans = Math.max(0, w.fans * (1 + 0.04 * r.normal()));
       // 유료 전환: 매니지먼트 계약 + 50화
       if (w.mgmt && !w.paid && w.ep >= 50) { w.paid = true; W.paidEver = true; const lost = Math.round(w.fans * 0.25); w.fans -= lost; notes.push(`웹소설 '${w.n}' 51화부터 유료 전환! 무료 독자 ${lost}명이 떠났다`); W.firstPaid = W.firstPaid || s.t + 1; log(s, `웹소설 '${w.n}' 유료 전환`, "work"); }
       newF = Math.round(w.fans - f0);
       w.peak = Math.max(w.peak, w.fans); W.bestFans = Math.max(W.bestFans, w.fans);
-      if (w.paid) { rev = Math.round(up * w.fans * PER_FAN_EP * pi * (w.share / 0.42) * mod(s, "wnPay", 1)); w.rev3.push(rev); if (w.rev3.length > 3) w.rev3.shift(); }
+      if (w.paid) { rev = Math.round(up * w.fans * PER_FAN_EP * pi * (w.share / 0.42) * mod(s, "wnPay", 1) * dl.pay); w.rev3.push(rev); if (w.rev3.length > 3) w.rev3.shift(); }
+      if (rev > 0 && w.adv > 0) { const cut = Math.min(w.adv, rev); w.adv -= cut; rev -= cut; w.advCut = (w.advCut || 0) + cut; if (w.adv <= 0) notes.push(`웹소설 '${w.n}' 선인세를 다 갚았다. 다음 달부터 연재 수익이 그대로 들어온다`); }
       // 피로·멘탈: 연재는 체력이다
-      W.tired = clamp(W.tired + up * 0.62 * mod(s, "wnTired", 1) - (need === 0 ? 28 : 9) - (s.fullJob === K ? 6 : 0), 0, 100);
+      W.tired = clamp(W.tired + dl.tired + up * 0.62 * mod(s, "wnTired", 1) - (need === 0 ? 28 : 9) - (s.fullJob === K ? 6 : 0), 0, 100);
       const mc = need === 20 ? 3 : need === 12 ? 2 : need === 8 ? 1 : -2;
       s.mental = clamp(s.mental - mc - (W.tired >= 70 ? 3 : 0) + (newF > 30 ? 1 : 0), 0, 100);
       if (SYN.on(s, "wn_night")) { s.hp = clamp(s.hp - 3, 0, s.hpMax); }
@@ -292,6 +362,7 @@ export default {
       choices: [{ t: "그래도 매일 밤 10시에 올린다", eff: { hp: -4, wn_ret: 3 }, text: "알림 설정 독자가 하나 생겼다. 내일도 10시." }, { t: "1화를 뜯어고친다", eff: { stat: { write: 1 }, wn_bank: -1, wn_hit: 8 }, text: "첫 문단을 사건으로 바꿨다. 이탈이 줄었다." }, { t: "조용히 접는다", eff: { mental: 4 }, text: "폴더 속에 1화 하나가 남았다." }] }; }
     else if (wk && !wk.mgmt && wk.ep >= 40 && wk.fans >= 80 && (s.t - (wk.mgmtNo || -99)) >= 4 && (wk.mgmtNo ? r.chance(0.5) : true)) { ev = { kind: "event", tag: "웹소설", title: "매니지먼트의 쪽지", onChoose: "wn_mgmt", text: `연재 ${wk.ep}화째, 쪽지가 왔다. "작가님, 유료화 같이 해 보시죠." 분배는 작가 7, 회사 3. 선인세는 없다.`,
       choices: [{ t: "계약한다", eff: {}, text: "표지와 홍보를 회사가 맡는다. 50화부터 유료 연재." }, { t: "더 큰 곳의 연락을 기다린다", eff: {}, text: "답장을 미뤘다. 쪽지함이 조용하다." }] }; wk.mgmtNo = s.t; }
+    else if (wk && wk.mgmt && !wk.deal && !wk.indie && wk.ep >= WN_F30.deal.ep) { wk.deal = "ask"; ev = dealScene(s); }
     else if (W.firstPaid && W.firstPaid <= s.t + 1 && seen.e08 === undefined && wk?.paid && rev > 0) { seen.e08 = s.t; ev = { kind: "event", tag: "웹소설", title: "첫 정산서", onChoose: "wn_e08", text: `유료화 첫 달 정산서가 왔다. 독자 ${Math.round(wk.fans).toLocaleString()}명, 한 화 100원. 플랫폼 수수료와 매니지먼트 몫을 떼고 나니 ${won(rev)}. 치킨 ${Math.max(1, Math.round(rev / 2))}마리다.`,
       choices: [{ t: "AI 집필 도구를 결제한다 (월 5만)", eff: {}, text: "초안 속도가 확 빨라졌다. 대신 AI 티 나는 문장은 다 갈아엎어야 한다." }, { t: "표지 일러스트를 새로 맡긴다 (15만)", eff: { wn_cost: 15 }, text: "새 표지가 걸리자 신규 독자가 눈에 띄게 늘었다." }] }; }
     else if (wk && need > 0 && up < need && working(s) && (s.t - (seen.e05 ?? -99)) >= 8) { seen.e05 = s.t; ev = { kind: "event", tag: "웹소설", title: "야근 사흘째, 연재 펑크", onChoose: "wn_e05", text: `분기 마감으로 사흘 연속 야근했다. 연재가 멈췄다. 댓글창에 "작가 잠수?"가 올라오고 선호작이 ${Math.round(wk.fans * 1.15)}에서 ${Math.round(wk.fans)}이 됐다.`,
@@ -342,12 +413,30 @@ export default {
       if (r.chance(0.5)) return ["버틴 보람이 있었다", ...deal(Math.round(o.lump * 1.3), Math.round(o.mon * 1.2))];
       W.ipOffer = 0; return ["제작사가 다른 원작을 골랐다. 메일함이 조용하다."];
     },
+    wn_deal(s, r, i) {
+      const W = s.webnovel, w = W.work, o = s._wnDeal, D3 = WN_F30.deal; s._wnDeal = null; if (!w || !o) return [];
+      if (i <= 1) { const adv = i === 0 ? o.adv : o.advW; w.deal = i === 0 ? "ex" : "wait"; w.adv = adv; w.adv0 = adv; w.exT = D3.exM; s.cash += adv; addMoney(s, "inc", "웹소설 상금·선인세", adv); log(s, `웹소설 '${w.n}' ${DEAL_N[w.deal]} 계약, 선인세 ${won(adv)}`, "work");
+        return [`${DEAL_N[w.deal]} 계약 · 선인세 +${won(adv)}`, "선인세만큼은 연재 수익에서 먼저 깎여요", `메인 배너 노출 ×${D3.exExpo} (${D3.exM}개월)`, ...(i ? [`독자 유입 ×${D3.waitFans} · 한 명당 결제 ×${D3.waitPay}`] : [])]; }
+      w.deal = "multi"; return [`비독점: 결제 ×${D3.multiPay}`, `노출 ×${D3.multiExpo} · 업로드 관리 피로 +${D3.multiTired}/달`];
+    },
+    wn_plag(s, r, i) {
+      const W = s.webnovel; W.plagN = (W.plagN || 0) + 1; if (i !== 1) return [];
+      if (r.chance(WN_F30.plag.spread)) { s._sceneText = "\"작가 해명 없음\" 글까지 붙었다. 캡처가 캡처를 낳았다."; return applyEff(s, { wn_fans: -12, wn_ret: -3, mental: -4 }); }
+      s._sceneText = "사흘 뒤, 다들 다른 이야기로 넘어갔다."; return [];
+    },
+    wn_edit(s, r, i) {
+      const W = s.webnovel, w = W.work, o = s._wnEd; s._wnEd = null; if (!w) return [];
+      if (i === 0) { W.edN = (W.edN || 0) + 1; return []; }
+      if (i === 2 && o) { s.cash -= o.pen; addMoney(s, "exp", "웹소설 비용", o.pen); w.indie = true; w.adv = 0; w.share = WN_F30.edit.indieShare; log(s, `웹소설 '${w.n}' 매니지먼트 계약 해지(혼자 연재)`, "work");
+        return [`위약금 −${won(o.pen)}`, `작가 몫 ${Math.round(WN_F30.edit.indieShare * 100)}%`, `노출 ×${WN_F30.edit.indieExpo} · 피로 +${WN_F30.edit.indieTired}/달`]; }
+      return [];
+    },
     wn_audio(s, r, i) { const W = s.webnovel, o = s._wnAu; if (!o) return []; const lump = i === 0 ? o.lump : Math.round(o.lump * 0.45); s.cash += lump; addMoney(s, "inc", "웹소설 상금·선인세", lump); const x = W.works.find((y) => y.n === o.n); if (x) x.tail = Math.round(x.tail * (i === 0 ? 1.25 : 1.12) * 10) / 10; return [`${i === 0 ? "오디오북·해외" : "해외 번역"} 계약금 +${won(lump)}`, `'${o.n}' 인세 +${i === 0 ? 25 : 12}%`]; },
   },
   monthStart(s) { const W = s.webnovel; if (W.resume && W.sched === 0 && s.t > (W.restT ?? -1) && W.bank >= 10) { W.sched = W.resume; W.resume = 0; } },
   stopWhy: (s) => null,
   onStart(s) { const W = s.webnovel; if (W.t0 === null || W.t0 === undefined) W.t0 = s.t; },
-  migrate(s, W) { if (!W.v) W.v = 1; W.seen = W.seen || {}; W.works = W.works || []; W.ipPay = W.ipPay || { left: 0, amt: 0 }; W.expo = W.expo || { x: 1, left: 0 }; },
+  migrate(s, W) { if (!W.v) W.v = 1; if (W.v < 2) { W.v = 2; if (W.work) { W.work.deal = W.work.deal || null; W.work.adv = W.work.adv || 0; } } W.seen = W.seen || {}; W.works = W.works || []; W.ipPay = W.ipPay || { left: 0, amt: 0 }; W.expo = W.expo || { x: 1, left: 0 }; },
   milestones: [
     { key: "wn_first", title: "1화 업로드", test: (s) => (s.webnovel?.maxEp || 0) >= 1, lines: ["필명을 정하는 데 사흘, 1화를 올리는 데 3초.", "업로드 버튼을 누르고 휴대폰을 엎어 놓았다. 회사 사람들은 아무도 모른다."] },
     { key: "wn_wall", title: "20화의 벽을 넘었다", test: (s) => (s.webnovel?.lv || 0) >= 2, lines: ["연재를 시작한 사람 열에 일곱은 10화도 못 채운다.", "21화를 올리는 밤, 선호작 알림이 50개를 넘었다."] },

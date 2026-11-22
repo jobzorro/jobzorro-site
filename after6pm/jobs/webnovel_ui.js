@@ -21,7 +21,8 @@ export default {
     wn_first: ["home", "웹소설"], wn_wall: ["library", "웹소설"], wn_paid: ["desk", "웹소설"], wn_done: ["library", "웹소설"],
     wn_ip: ["gallery", "원작자"], wn_steady: ["desk", "성실한 완결 작가"], wn_ghost: ["home", "20화의 유령"],
   },
-  auto(c) { const S = c.S; WN.newWork(S, c.E.R(S), "hyun"); S.webnovel.bank = 30; S.st.write = Math.max(S.st.write, 70); S.hb.joined.includes("write") || S.hb.joined.length >= 2 || c.SJ.hbJoin(S, "write"); },
+  auto(c) { const S = c.S; WN.newWork(S, c.E.R(S), "hyun"); S.webnovel.bank = 30; S.st.write = Math.max(S.st.write, 70); S.hb.joined.includes("write") || S.hb.joined.length >= 2 || c.SJ.hbJoin(S, "write");
+    const m = location.hash.match(/f30([a-z]+)/); if (m) setTimeout(() => { const sc = WN.f30Scene(c.S, c.E.R(c.S), m[1]); if (sc) { c.E.openScene(c.S, sc); const pk = location.hash.match(/pick([0-9])/); if (pk) { c.E.choose(c.S, +pk[1]); c.save(); c.render(); } else c.afterRes({}); } }, 900); }, // 11-22 특이 요소 장면 시험(#auto3-webnovel-f30deal|f30plag|f30edit)
   page(c) {
     const { S, esc, won, boardHead, actRow, meter } = c, W = S.webnovel, w = W.work, L = W.last || {};
     const nx = WN.lvNeed(S), lvN = WN.LEVELS[W.lv].n, last = W.hist.at(-1) || 0, working = !(S.co.quit || S.co.fired);
@@ -32,23 +33,25 @@ export default {
       <div class="row small" style="margin-top:8px"><span>연재 피로</span><span class="grow"></span><b class="${W.tired >= 70 ? "bad" : ""}">${Math.round(W.tired)}/100</b>${W.tired >= 70 ? '<span class="tag red" style="margin-left:4px">품질 −</span>' : ""}</div>
       ${meter(W.tired, 100, W.tired >= 70 ? "var(--red)" : "var(--blue)")}
       ${nx ? `<div class="small" style="margin-top:8px">다음 <b class="gold">Lv${nx.lv} ${esc(nx.n)}</b> · ${esc(nx.need)}</div>${meter(nx.prog, 1, "var(--gold)")}` : `<div class="small good" style="margin-top:8px">최고 단계 IP 작가. 작법 강의가 열렸어요.</div>`}
-      <div class="tiny muted" style="margin-top:6px">필명으로 쓰는 직장인 작가. 매달 연재 주기만큼 비축분이 빠져나가요. 모자라면 펑크, 독자가 빠져요. 50화 + 매니지먼트 계약이면 유료(한 화 100원, 플랫폼·회사 떼고 작가 몫 약 42원). 100화면 완결, 완결작은 인세가 조금씩 계속 들어와요.</div></div>`;
+      <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">연재·유료 전환 규칙 자세히 ▾</summary><div class="tiny muted">필명으로 쓰는 직장인 작가. 매달 연재 주기만큼 비축분이 빠져나가요. 모자라면 펑크, 독자가 빠져요. 50화 + 매니지먼트 계약이면 유료(한 화 100원, 플랫폼·회사 떼고 작가 몫 약 42원). 100화면 완결, 완결작은 인세가 조금씩 계속 들어와요.</div></details></div>`;
     let body;
     if (w) {
       const G = WN.GENRES[w.g] || WN.GENRES.hyun, need = W.sched, lack = Math.max(0, need - W.bank);
       const sched = Object.entries(WN.SCHED).sort((a, b) => (+a[0] || 99) - (+b[0] || 99)).map(([k, v]) => `<button class="btn sm ${+k === W.sched ? "gold" : ""}" data-wnsched="${k}">${v.n}${+k ? ` ${k}화` : ""}</button>`).join("");
       body = `<div class="room"><div class="body">
         <div class="row"><div class="grow" style="min-width:0"><div class="nm">'${esc(w.n)}'</div>
-          <div class="tiny"><span class="tag">${esc(G.n)}</span>${w.paid ? '<span class="tag gold">유료 연재</span>' : '<span class="tag">무료 연재</span>'}${w.mgmt ? '<span class="tag green">매니지먼트</span>' : ""}${w.cover ? '<span class="tag">표지</span>' : ""}${W.ai ? '<span class="tag blue">AI 도구</span>' : ""}</div></div>
+          <div class="tiny"><span class="tag">${esc(G.n)}</span>${w.paid ? '<span class="tag gold">유료 연재</span>' : '<span class="tag">무료 연재</span>'}${w.mgmt && !w.indie ? '<span class="tag green">매니지먼트</span>' : ""}${WN.DEAL_N[w.deal] ? `<span class="tag gold">${WN.DEAL_N[w.deal]}</span>` : ""}${w.indie ? '<span class="tag">혼자 연재</span>' : ""}${w.cover ? '<span class="tag">표지</span>' : ""}${W.ai ? '<span class="tag blue">AI 도구</span>' : ""}</div></div>
           <div style="text-align:right"><div class="gold" style="font-weight:900">${w.ep}/${w.goal}화</div><div class="tiny muted">${w.paid ? "51화부터 유료" : w.mgmt ? "50화에 유료 전환" : "계약 전"}</div></div></div>
         ${meter(w.ep, w.goal, "var(--gold)")}
         <div class="kv" style="margin-top:6px"><div><div class="k">연독률</div><div class="v ${w.retain < 0.82 ? "bad" : "good"}">${pct(w.retain)}</div></div>
           <div><div class="k">지난달 새 독자</div><div class="v ${(L.newF || 0) < 0 ? "bad" : ""}">${(L.newF || 0) >= 0 ? "+" : ""}${n0(L.newF)}명</div></div>
           <div><div class="k">지난달 연재 수익</div><div class="v">${won(L.rev || 0)}</div></div></div>
+        ${w.adv > 0 ? `<div class="small" style="margin-top:6px">선인세 회수 중 <b class="bad">${won(Math.round(w.adv))}</b> 남음 <span class="tiny muted">· 다 갚아야 연재 수익이 들어와요</span></div>` : ""}${w.exT > 0 ? `<div class="tiny gold">메인 배너 노출 ${w.exT}달 남음</div>` : ""}
+        ${WN.DEAL_N[w.deal] || w.indie ? `<details style="margin-top:4px"><summary class="tiny muted" style="cursor:pointer">계약 방식 자세히 ▾</summary><div class="tiny muted">독점: 선인세와 메인 배너(6달 노출 ×1.25, 그 뒤 ×1.08). 선인세만큼은 연재 수익에서 먼저 깎여요. 기다리면 무료: 독자 유입 ×1.3, 한 명당 결제 ×0.72. 비독점: 결제 ×1.18, 노출 ×0.9, 업로드 관리 피로 +4/달. 혼자 연재: 작가 몫 55%, 노출 ×0.88, 피로 +3/달, 편집자 없음.</div></details>` : ""}
         <div class="sec" style="margin-top:8px">연재 주기</div>
         <div class="row wrap" style="gap:4px">${sched}</div>
         <div class="small" style="margin-top:6px">${need ? `이번 달 <b>${need}화</b> 올려요 · 비축 <b class="${lack ? "bad" : "good"}">${W.bank}화</b>${lack ? ` → <b class="bad">${lack}화 모자람(펑크 위험)</b>` : " · 넉넉해요"}` : `휴재 중: 독자가 매달 7%쯤 빠지고, 피로가 크게 풀려요${W.resume ? ` · 비축 10화가 모이면 다시 연재(지금 ${W.bank}화)` : ""}`}</div>
-        <div class="tiny muted">주 5회는 노출 +22%지만 피로·멘탈이 크게 깎여요. 회사 다니면서 주 5회면 매달 스태미너 −3.</div>
+        <details><summary class="tiny muted" style="cursor:pointer">주기별 차이 자세히 ▾</summary><div class="tiny muted">주 5회는 노출 +22%지만 피로·멘탈이 크게 깎여요. 회사 다니면서 주 5회면 매달 스태미너 −3.</div></details>
         <div class="row wrap" style="margin-top:8px;gap:4px">${actBtn(c, "wn_write", undefined, `원고 쓰기 +${WN.writeEps(S)}화`, "gold")}${actBtn(c, "wn_plot", undefined, "플롯 다듬기")}${actBtn(c, "wn_reader", undefined, "독자 소통")}</div>
         <div class="row wrap" style="margin-top:6px;gap:4px"><button class="btn sm" data-wnai="1">${W.ai ? "AI 도구 해지" : "AI 도구 월 5만"}</button>${w.cover ? "" : `<button class="btn sm" data-wncover="1">표지 15만</button>`}${w.ep >= 80 && w.goal > w.ep ? `<button class="btn sm" data-wnfin="1">조기 완결</button>` : ""}<span class="grow"></span><button class="btn sm danger" data-wndrop="1">연재 중단</button></div>
       </div></div>`;
@@ -58,10 +61,12 @@ export default {
     }
     // 공모전·투고·점심·강의
     const mx = Math.max(...WN.SEASON);
-    const contest = `<div class="card"><h3>노블리 공모전 <small>지금 ${S.cal}월</small></h3>
+    const onC = WN.CONTEST_M.includes(S.cal), nextC = WN.CONTEST_M.find((m) => m > S.cal) || WN.CONTEST_M[0];
+    const contest = `<div class="card"><h3>노블리 공모전 <small>지금 ${S.cal}월 · ${onC ? '<b class="gold">시즌 중</b>' : `다음 ${nextC}월`}</small></h3>
+      <details><summary class="tiny muted" style="cursor:pointer">공모전 5·6·10·11월 · 읽는 양 차트 ▾</summary>
       <div class="season" style="height:36px">${WN.SEASON.map((v, i) => `<i class="${i + 1 === S.cal ? "now" : ""} ${WN.CONTEST_M.includes(i + 1) ? "pk" : ""}" style="height:${Math.round(v / mx * 100)}%"></i>`).join("")}</div>
       <div class="season-l" style="font-size:11px">${WN.SEASON.map((_, i) => `<span>${i + 1}</span>`).join("")}</div>
-      <div class="tiny muted" style="margin-top:4px">막대 = 독자가 읽는 양(방학·연휴에 많이 읽어요). 진한 달 = 공모전 시즌(5·6·10·11월). 참가하면 두 달 노출 ×1.5, 수상하면 상금 100~500만 + 매니지먼트 계약. 시즌이 아니면 매니지먼트에 투고(30화부터).</div></div>
+      <div class="tiny muted" style="margin-top:4px">막대 = 독자가 읽는 양(방학·연휴에 많이 읽어요). 진한 달 = 공모전 시즌(5·6·10·11월). 참가하면 두 달 노출 ×1.5, 수상하면 상금 100~500만 + 매니지먼트 계약. 시즌이 아니면 매니지먼트에 투고(30화부터).</div></details></div>
       <div class="acts" style="padding:0">${actRow("wn_contest")}${working ? actRow("wn_lunch") : ""}${W.lv >= 5 ? actRow("wn_lecture") : ""}</div>`;
     // 내 서재
     const tails = W.works.reduce((a, x) => a + (x.tail || 0), 0);
@@ -70,11 +75,11 @@ export default {
       <div class="tiny muted" style="margin-top:6px">완결작 인세 합계 월 ${won(Math.round(tails))}(매달 4%씩 줄어요)${W.ip ? ` · 2차 판권 ${W.ip}건${W.ipPay.left ? `, 원작료 월 ${won(W.ipPay.amt)} × ${W.ipPay.left}개월 남음` : ""}` : ""}</div></div>` : "";
     // 엔딩 길 3개
     const ghostLeft = W.t0 === null || W.t0 === undefined ? 36 : Math.max(0, 36 - (S.t - W.t0));
-    const ends = `<div class="card"><h3>작가의 길 <small>엔딩 3개</small></h3>
+    const ends = `<div class="card"><details><summary style="cursor:pointer;list-style:none"><h3 style="display:inline">작가의 길 <small>엔딩 3개 · 자세히 ▾</small></h3></summary><div style="margin-top:6px">
       <div class="small"><b class="${W.ip ? "good" : "gold"}">원작자</b> · 2차 판권(웹툰화) 계약 1건 <span class="tiny muted">${W.ip ? "달성" : W.lv >= 4 ? "완결작이 커지면 제안이 와요" : "Lv4 완결 작가부터 제안"}</span></div>
       <div class="small" style="margin-top:4px"><b class="${W.done >= 3 && working ? "good" : "gold"}">성실한 완결 작가</b> · 완결 3질 + 회사 유지 <span class="tiny muted">${Math.min(3, W.done)}/3질${working ? "" : " · 회사를 나왔어요"}</span></div>
       <div class="small" style="margin-top:4px"><b class="${W.maxEp >= 20 ? "muted" : "bad"}">20화의 유령</b> · 3년 동안 20화를 못 넘김 <span class="tiny muted">${W.maxEp >= 20 ? "벗어났어요" : `${ghostLeft}개월 남음 · 지금 최대 ${W.maxEp}화`}</span></div>
-      <div class="tiny muted" style="margin-top:6px">연재를 시작한 작가 열에 예닐곱은 10화도 못 채워요. 연 3천만 원 넘게 버는 작가는 5%가 안 돼요.</div></div>`;
+      <div class="tiny muted" style="margin-top:6px">연재를 시작한 작가 열에 예닐곱은 10화도 못 채워요. 연 3천만 원 넘게 버는 작가는 5%가 안 돼요.</div></div></details></div>`;
     return head + body + contest + shelf + ends;
   },
   bind(c) {

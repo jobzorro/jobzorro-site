@@ -582,3 +582,146 @@ body[data-page="insta"] .card{border-radius:20px}
 .halljobs::-webkit-scrollbar{display:none}
 .halljobs button{flex:0 0 auto;padding:4px 10px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:11px;font-weight:700;white-space:nowrap}
 .halljobs button.on{border-color:var(--pink);color:var(--pink);background:rgba(255,126,182,.1)}
+/* v4.27 앨범 칸에 사람 */
+.album button{position:relative;overflow:hidden}
+.album button b,.album button span{position:relative;z-index:1;text-shadow:0 1px 3px #000}
+.album .albp{position:absolute;bottom:0;height:92%;width:auto;object-fit:contain;object-position:bottom;pointer-events:none;filter:drop-shadow(0 2px 6px #0008)}
+.album .albp.p0{right:4%}.album .albp.p1{right:34%}
+
+/* 내 매장 장면(타이쿤, v4.27) — tycoon_ui.js */
+.tyc{position:relative;width:100%;height:212px;border-radius:14px;overflow:hidden;margin:0 0 8px;border:1px solid var(--line);background:#14122a;box-shadow:0 6px 18px #0006}
+.tyc canvas{display:block;width:100%;height:212px}
+.tyc-hit{position:absolute;inset:0}
+.tyc-b{position:absolute;background:transparent;border:0;padding:0;margin:0;border-radius:10px;cursor:pointer}
+.tyc-b:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.tyc-b:active{background:#ffffff14}
+.tyc-flash{animation:tycFlash 1.6s ease-out}
+@keyframes tycFlash{0%,30%{box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold)}100%{box-shadow:0 0 0 0 transparent}}
+
+/* ───────── 인별 앱 창(v4.27): 게임과 다른 흰 바탕 SNS 앱 ───────── */
+.igboard .igquick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.igboard .igquick button{flex:1 1 40%;min-width:0;font:inherit;font-size:12px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:7px 6px}
+.igboard .igquick b{background:#e1306c;color:#fff;border-radius:99px;padding:0 6px;font-size:11px}
+.igapp{position:fixed;inset:0;z-index:45;background:rgba(5,6,15,.72);display:flex;align-items:center;justify-content:center;padding:8px;animation:up .2s ease}
+.igph{width:min(380px,100%);height:min(800px,calc(100dvh - 16px));background:#0b0b0f;border-radius:30px;padding:8px;box-shadow:0 10px 30px #0008;display:flex}
+.igscr{flex:1;min-width:0;border-radius:22px;background:#fff;color:#111;overflow:hidden;display:flex;flex-direction:column;font-family:-apple-system,system-ui,"Noto Sans KR",sans-serif;font-size:13px;line-height:1.45}
+.igscr button{font-family:inherit;cursor:pointer}
+.igbar{display:flex;align-items:center;gap:8px;padding:12px 14px 8px;border-bottom:1px solid #f0f0f0}
+.ighd{flex:1;min-width:0;font-weight:800;font-size:16px;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.igap{font-size:12px;font-weight:700;color:#8e8e8e}
+.igx{border:0;background:#f2f2f2;color:#111;border-radius:99px;width:30px;height:30px;font-size:14px}
+.igbody{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.igtabs{display:flex;border-top:1px solid #eee;background:#fff}
+.igtabs button{flex:1;min-width:0;border:0;background:none;color:#8e8e8e;padding:7px 0 8px;display:flex;flex-direction:column;align-items:center;position:relative;font-size:11px}
+.igtabs .ii{font-size:17px;line-height:1.2}
+.igtabs button.on{color:#111;font-weight:800}
+.igtabs i{position:absolute;top:2px;left:calc(50% + 6px);background:#ff3040;color:#fff;font-style:normal;font-size:11px;border-radius:99px;padding:0 5px;min-width:16px;line-height:16px}
+.igpad{padding:12px 14px 16px}
+.igtt{font-weight:800;font-size:16px;margin-bottom:4px}.igtt small{font-weight:600;color:#8e8e8e;font-size:12px}
+.igsub{font-size:12px;color:#737373;margin-bottom:8px}
+.igprof{display:flex;gap:14px;align-items:center;padding:12px 14px 6px}
+.igav{width:66px;height:66px;flex:none;border-radius:50%;background:conic-gradient(#f9ce34,#ee2a7b,#6228d7,#f9ce34);padding:3px}
+.igav>div{width:100%;height:100%;border-radius:50%;background:#f3d9c8;border:3px solid #fff;overflow:hidden}
+.igav img{width:100%;height:100%;object-fit:cover}
+.igst{flex:1;display:flex;justify-content:space-around;text-align:center;font-size:12px;color:#333}.igst b{display:block;font-size:16px;color:#111}
+.ignm{padding:0 14px;font-size:13px}.ignm span{color:#737373;font-size:12px}
+.igcb{margin:6px 14px;display:flex;align-items:center;gap:6px;font-size:12px;background:#fff4e5;color:#a35a00;border-radius:8px;padding:6px 8px;font-weight:700}
+.igcb span{flex:1;min-width:0}
+.igcb button{border:1px solid #f0c68a;background:#fff;color:#a35a00;border-radius:99px;font-size:11px;padding:2px 9px;flex:none}
+.igmeter{margin:4px 14px 6px;font-size:11px;color:#555}
+.igmeter .row{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.igmb{height:6px;border-radius:9px;background:#eee;overflow:hidden;margin-top:3px}.igmb i{display:block;height:100%;background:linear-gradient(90deg,#ee2a7b,#6228d7)}
+.igbad{color:#e0245e;font-style:normal;font-size:11px}
+.igchips{display:flex;flex-wrap:wrap;gap:5px;padding:0 14px 8px}
+.igchips span{font-size:11px;border:1px solid #e6e6e6;border-radius:99px;padding:1px 8px;color:#444}
+.igchips .igfan{color:#6228d7;border-color:#d9ccf5}.igchips .igctv{color:#e0245e;border-color:#f6c6d4}
+.igacts{display:flex;gap:6px;padding:0 14px 10px}
+.igpad .igacts{padding:8px 0 0}
+.igbtn{flex:1;min-width:0;border:1px solid #dbdbdb;background:#fff;color:#111;border-radius:9px;padding:8px 6px;font-size:13px;font-weight:700}
+.igbtn.pri{background:#0095f6;border-color:#0095f6;color:#fff}
+.igbtn.wide{width:100%;flex:none;margin-top:8px}
+.igbtn:disabled,.igbtn[data-why]{opacity:.45}
+.igsheet{margin:0 14px 10px;border:1px solid #eee;border-radius:12px;overflow:hidden}
+.igsh{font-size:12px;font-weight:800;padding:8px 10px;background:#fafafa}
+.igsheet button{display:flex;flex-direction:column;align-items:flex-start;width:100%;border:0;border-top:1px solid #f2f2f2;background:#fff;color:#111;padding:8px 10px;text-align:left;font-size:13px}
+.igsheet button span{font-size:11px;color:#737373}.igsheet button.on{background:#eef6ff}
+.iggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.iggrid>div{aspect-ratio:1;position:relative;display:flex;align-items:center;justify-content:center;font-size:22px}
+.iggrid>div.empty{background:#f4f4f4}
+.iggrid>div.off{outline:3px solid #4a90e2;outline-offset:-3px}
+.iggrid>div.ad span{font-size:13px;font-weight:900;color:#7a5800}
+.iggrid em{position:absolute;top:3px;right:4px;font-size:13px;font-style:normal}
+.iggrid u{position:absolute;bottom:3px;right:5px;font-size:11px;color:#fff;text-decoration:none;text-shadow:0 1px 2px #0008}
+.igtip{font-size:11px;color:#8e8e8e;padding:8px 14px 14px}
+.igax{margin-bottom:8px}.igaxh{font-weight:800;font-size:13px;margin-bottom:4px}.igaxh span{font-weight:500;font-size:11px;color:#8e8e8e;margin-left:6px}
+.igaxc{display:flex;flex-wrap:wrap;gap:5px}
+.igaxc button{border:1px solid #dbdbdb;background:#fff;color:#111;border-radius:99px;padding:4px 10px;font-size:12px}
+.igaxc button.on{background:#111;color:#fff;border-color:#111}.igaxc small{font-size:11px;opacity:.7}
+.igcard{border:1px solid #efefef;border-radius:12px;padding:8px 10px;margin-top:8px;font-size:12px;background:#fcfcfc}
+.igcard>div{margin-top:2px}
+.igcm{padding:8px 0;border-bottom:1px solid #f0f0f0}
+.igcm b{font-size:12px}.igcm small{font-size:11px;color:#8e8e8e}.igcm p{margin:2px 0 6px;font-size:13px}
+.igcm.warn{background:#fff7f8;margin:0 -14px;padding:8px 14px}
+.igcm.igok .igres{color:#1a7f37}.igcm.igng .igres{color:#e0245e}
+.igres{font-size:11px;color:#737373}
+.igopt{display:flex;gap:5px;flex-wrap:wrap}
+.igopt button{border:1px solid #dbdbdb;background:#fff;color:#333;border-radius:99px;padding:3px 10px;font-size:12px}
+.igopt button.on{border-color:#6228d7;color:#fff;background:#6228d7}
+.iggauge{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:8px 10px;background:#fafafa;border-radius:10px;font-size:12px;color:#555;margin-top:8px;flex-wrap:wrap}
+.iggauge.sticky{position:sticky;bottom:0;margin:0;border-radius:0;border-top:1px solid #eee}
+.iggauge button{border:0;background:#0095f6;color:#fff;border-radius:8px;padding:5px 10px;font-weight:700;font-size:12px}
+.igtime{font-weight:800;color:#e0245e}
+.igdm{border:1px solid #efefef;border-radius:12px;padding:8px 10px;margin-top:8px}
+.igdm.done{opacity:.6}.igdm.celeb{border-color:#d9ccf5;background:#faf7ff}
+.igdmh{display:flex;align-items:center;gap:6px}.igdmh b{flex:1;min-width:0;font-size:13px}.igdmh small{font-size:11px;color:#8e8e8e}
+.igdav{width:30px;height:30px;border-radius:50%;background:#eee;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;overflow:hidden;flex:none}
+.igdav img{width:100%;height:100%;object-fit:cover}
+.igdm p{margin:6px 0;font-size:13px}
+.igdmc{display:flex;flex-direction:column;gap:4px}
+.igdmc button{border:1px solid #dbdbdb;background:#fff;color:#111;border-radius:9px;padding:6px 8px;font-size:12px;text-align:left}
+.igline{width:100%;height:80px;background:#fafafa;border-radius:10px}
+.igbars{display:flex;align-items:flex-end;gap:3px;height:60px;margin-top:8px}
+.igbars>div{flex:1;height:100%;position:relative;display:flex;align-items:flex-end;gap:1px}
+.igbars i{flex:1;background:#c7b5f5;border-radius:3px 3px 0 0;min-height:2px}.igbars b{flex:1;background:#f7a8c4;border-radius:3px 3px 0 0;min-height:2px}
+.iglg{display:flex;gap:10px;font-size:11px;color:#737373;margin-top:4px}.iglg i,.iglg b{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:3px;vertical-align:-1px}.iglg i{background:#c7b5f5}.iglg b{background:#f7a8c4}
+.igdeal{border:1px solid #efefef;border-radius:12px;padding:8px 10px;margin-top:8px}
+.igdeal.fit{border-color:#bfe3c8;background:#f6fcf7}
+.igdeal .igtag{font-size:11px;margin-left:6px;color:#1a7f37}.igdeal.nofit .igtag{color:#e0245e}
+.igdeal .igbtn{width:100%}
+.igcard small{font-size:11px;color:#8e8e8e}
+
+/* v4.28 능력치 구간 배지·갈래 표시 */
+.statrow.stz{grid-template-columns:50px 1fr 30px 60px;gap:6px}
+.zb{font-style:normal;font-size:11px;text-align:center;border-radius:999px;padding:1px 4px;background:var(--panel3);color:var(--muted);white-space:nowrap}
+.zb.z1{color:var(--blue)} .zb.z2{color:var(--green)} .zb.z3{color:var(--purple)} .zb.z4{color:var(--gold);background:rgba(245,192,78,.15)}
+.zb.bk{color:#1b1500;background:var(--gold)}
+.kindtag{display:inline-block;font-size:11px;font-weight:500;border-radius:999px;padding:0 6px;margin-left:4px;background:var(--panel3);color:var(--muted);vertical-align:1px}
+.kindtag.study{color:var(--blue)} .kindtag.exp{color:var(--green)} .kindtag.life{color:var(--pink)}
+.stwhere{margin-top:8px;font-size:12px;line-height:1.55}
+.stwhere summary{cursor:pointer;color:var(--muted);font-size:12px;padding:4px 0}
+.stwhere>div{padding:2px 0;border-top:1px solid var(--line)}
+.region .rd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 화면 정리(v4.27): 한 줄 요약 + 자세히 ▾ */
+details.more>summary{cursor:pointer;list-style:none;color:var(--muted);font-size:12px;padding:3px 0;line-height:1.45}
+details.more>summary::-webkit-details-marker{display:none}
+details.more[open]>summary{color:#cfd2ea}
+details.more .more-b{margin-top:4px}
+.title details.desc-more{margin-bottom:12px}
+.title details.desc-more>summary{color:#cfd2ea;font-size:13.5px}
+.title details.desc-more .desc{margin-bottom:6px}
+.ellip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sjc.sjline{padding:8px 10px}
+.sjc.sjline .row{align-items:center;gap:8px}
+details.qmore>summary{font-size:14px;color:var(--text,#e8eaff)}
+.logl div{min-width:0}
+.logl span.lt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;font-size:12.5px}
+details.trait.tmore>summary{list-style:none;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+details.trait.tmore>summary::-webkit-details-marker{display:none}
+details.hi0{padding:8px 12px}
+details.pp-miss{margin:2px 0 8px;border:1px dashed var(--line);border-radius:10px;padding:4px 10px}
+details.pp-miss>summary{font-size:12px}
+details.pp-miss .pp-grid{margin-top:6px}
+details.sjline>summary{list-style:none;cursor:pointer}
+details.sjline>summary::-webkit-details-marker{display:none}
+.sjgrid details.sjline{padding:6px 10px}

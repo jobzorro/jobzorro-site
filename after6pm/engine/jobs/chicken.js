@@ -24,6 +24,34 @@ export function quote(s, type, disc = 0) {
 // 11-21 밸런스(10개 투잡 공통 비교). 원래: 인건비 = 기본 × 최저임금 지수(해마다 +3~7%) × 물가 지수 → 물가를 두 번 곱해 10년 뒤 1호점이 적자로 돌아섰다.
 // 지금: 최저임금 지수에서 물가 몫(wageInfl %p)을 빼고 실질 인상분만 쌓는다. 화면 안내(최저임금 +X%)는 그대로.
 export const CH_BAL = { wageInfl: 3.5 };
+// 11-22 특이 요소 3개(배달앱 깃발 광고, 5년 리뉴얼, 리뷰 이벤트). 효과 크기는 여기만 고친다.
+export const CH_F30 = {
+  // 깃발: 1개 월 9만(물가). 기본 2개(예전 '기타' 고정비 45만 안에 18만이 들어 있던 셈). 내 깃발 1개 = 주문 +3%(5개째부터 반), 옆 가게 깃발 1개 = −3%
+  // 내가 더 많으면 옆 가게가 달마다 30% 확률로 맞불, 가끔(2.5%) 먼저 늘린다. 기본보다 많고 내가 적거나 같으면 15% 확률로 하나 줄인다
+  flag: { def: 2, max: 6, cost: 9, per: 0.03, rival: 0.03, rvUp: 0.3, rvRand: 0.025, rvDown: 0.15, gap: 6 },
+  // 리뉴얼: 가맹 60달마다 본사 요구. 배달형 2,500만·홀 4,000만(물가). 하면 24달 주문 +8%(대략 본전), 거부하면 낡은 매장 −3%·12달 뒤 45% 확률로 재계약 거절 통보
+  renew: { every: 60, cost: { deliv: 2500, hall: 4000 }, boost: 0.08, boostM: 24, old: 0.03, wait: 12, refuseP: 0.45, late: 1.1 },
+  // 리뷰 이벤트: 별점 목표 +0.12, 원가 매출의 2%. 3달 넘게 하다 끊으면 4달 동안 별점 목표 −0.12
+  rev: { star: 0.12, cost: 0.02, off: 0.12, offM: 4, minM: 3 },
+};
+export function flagMul(st) {
+  const F3 = CH_F30.flag, f = st.flags ?? F3.def, rv = st.rv ?? F3.def;
+  const mine = f <= 4 ? f - F3.def : 2 + (f - 4) * 0.5;
+  return clamp(1 + F3.per * mine - F3.rival * (rv - F3.def), 0.8, 1.2);
+}
+export function setFlags(s, id, d) { const st = s.chicken.stores.find((x) => x.id === id); if (st) st.flags = clamp((st.flags ?? CH_F30.flag.def) + d, 0, CH_F30.flag.max); }
+export function toggleRev(s, id) {
+  const st = s.chicken.stores.find((x) => x.id === id); if (!st) return "";
+  if (st.revEv) { st.revEv = false; if ((st.revM || 0) >= CH_F30.rev.minM) { st.revOff = CH_F30.rev.offM; st.revM = 0; return `${st.name} 리뷰 이벤트 끝: ${CH_F30.rev.offM}달 동안 "이제 서비스 안 줘요?" 별점이 내려가요`; } st.revM = 0; return `${st.name} 리뷰 이벤트 끝`; }
+  st.revEv = true; return `${st.name} 리뷰 이벤트 시작: 별점 +, 원가 매출의 ${Math.round(CH_F30.rev.cost * 100)}%`;
+}
+export const renewCost = (s, st) => Math.round(CH_F30.renew.cost[st.type] * SYN.pi(s) / 10) * 10;
+// 큰돈 쓰기: 모자라면 신용대출
+function payBig(s, st, v, out) {
+  v = Math.round(v); const lack = v - Math.max(0, s.cash);
+  if (lack > 0) { const a = Math.min(lack, Math.max(0, Math.round(creditRoom(s)))); if (a > 0) { addLoan(s, "신용대출", a, 0.065); s.cash += a; out.push(`신용대출 ${won(a)}`); } }
+  s.cash -= v; addMoney(s, "exp", "치킨 리뉴얼비", v); if (st) st.invested += v; out.push(`리뉴얼비 −${won(v)}`);
+}
 export const LOAN_MAX = 8000; // 창업대출(정책자금+은행) 한도
 export function capacity(s) { return Math.max(0, s.cash) + LOAN_MAX - (s.chicken?.loan || 0) + creditRoom(s) * 0.8; }
 // 단계 5개(levels)
@@ -45,7 +73,7 @@ function newStore(s, type, disc, opts = {}) {
   const areaN = ["역세권 원룸촌", "새 아파트 단지", "구도심 먹자골목", "대학가", "신도시 상가"][(C.seq + (opts.area || 0)) % 5];
   return { id: "K" + (++C.seq), name: `${BRAND} ${n}호점`, area: areaN, type, rent: Math.round(T.rent * pi(s)), invested: q.total, dep: T.dep, equip: Math.round(T.fit * 0.45 * pi(s)),
     loc: opts.loc || 1, months: 0, rating: 4.6, buzz: 25, rank: 18, fry: 0.45, ap: 0, shifts: 0, mk: 0, crew: T.crew, crewNeed: T.crew, morale: 60,
-    mgr: false, mgrIdle: 0, price: 1, app: false, fam: false, inc: false, cum: 0, loss: 0, last: null, hist: [], revOk: 0, risk: opts.risk || 0 };
+    mgr: false, mgrIdle: 0, price: 1, app: false, flags: CH_F30.flag.def, rv: CH_F30.flag.def, revEv: false, revM: 0, revOff: 0, fam: false, inc: false, cum: 0, loss: 0, last: null, hist: [], revOk: 0, risk: opts.risk || 0 };
 }
 
 // ───────── 이벤트 16개(+통장 경보) ─────────
@@ -113,6 +141,76 @@ function scene(s, id, st, extra = {}) {
   const e = L[id];
   const kind = "event";
   return { kind, tag: "치킨", title: e.t, text: e.x, choices: e.c, onChoose: "ch_ev" };
+}
+
+// ───────── 11-22 특이 요소 장면 ─────────
+function flagScene(s, st) {
+  const F3 = CH_F30.flag, c = Math.round(F3.cost * pi(s)); s._chFl = { id: st.id };
+  return { kind: "event", tag: "치킨", title: "깃발 전쟁", onChoose: "ch_flag",
+    text: `${st.name} 근처 치킨집이 배달앱 광고 깃발을 ${st.rv}개로 늘렸다. 우리 동네 주문 화면 첫 줄을 그 집이 차지했다. 깃발은 하나에 월 ${won(c)}. 우리는 지금 ${st.flags}개.`,
+    choices: [
+      { t: "리뷰 답글·포장 할인으로 버틴다", eff: {}, text: "깃발 대신 단골을 챙겼다. 첫 줄은 내줬다." },
+      { t: `깃발을 하나 더 꽂는다 (월 +${won(c)})`, eff: {}, text: "다시 첫 줄. 광고비 명세서도 한 줄 늘었다." },
+      { t: "옆 가게 사장님께 같이 줄이자고 한다", check: { stat: "talk", dc: 50 }, ok: { text: "\"우리끼리 싸워 봐야 앱만 좋은 일이죠.\" 둘 다 하나씩 뺐다.", eff: {} }, ng: { text: "\"장사는 각자 하는 거죠.\" 다음 날 깃발이 하나 더 늘었다.", eff: { mental: -3 } } },
+    ] };
+}
+function renewScene(s, st, mode) {
+  const R3 = CH_F30.renew, cost = renewCost(s, st); s._chRn = { id: st.id, cost, mode };
+  if (mode === "deny") return { kind: "event", tag: "치킨", title: "재계약 거절 통보", onChoose: "ch_renew",
+    text: `${st.name}: 본사가 재계약 거절을 통보했다. 리뉴얼을 안 한 매장은 브랜드 기준 미달이라고. 계약 만료까지 석 달.`,
+    choices: [{ t: `지금이라도 리뉴얼한다 (${won(Math.round(cost * R3.late))})`, eff: {}, text: "공사 가림막을 쳤다. 처음부터 할 걸 그랬다." }, { t: "간판을 내리고 폐점한다", eff: {}, text: "마지막 주문을 튀겼다." }] };
+  return { kind: "event", tag: "치킨", title: "5년 차 리뉴얼 공문", onChoose: "ch_renew",
+    text: `${st.name} 가맹 ${Math.round(st.months / 12)}년 차. 본사 공문: "브랜드 이미지 통일을 위해 매장 리뉴얼(인테리어·간판·주방 일부)을 진행해 주십시오." 견적 ${won(cost)}. 거부하면 재계약 심사에 반영된다고 한다.`,
+    choices: [
+      { t: `리뉴얼한다 (${won(cost)})`, eff: {}, text: "새 간판에 불이 들어왔다. 손님들이 \"새로 생긴 집이에요?\" 묻는다." },
+      { t: "점주 협의회와 같이 비용 분담을 요구한다", check: { stat: "num", dc: 55 }, ok: { text: "본사가 절반을 대기로 했다. 점주 단톡방이 처음으로 박수 이모티콘으로 찼다.", eff: {} }, ng: { text: "\"분담 규정은 없습니다.\" 결국 전액이다.", eff: { mental: -4 } } },
+      { t: "거부한다", eff: {}, text: "아직 멀쩡한 매장이다. 본사 담당자가 메모를 했다." },
+    ] };
+}
+function revScene(s, mode) {
+  s._chRv = { mode };
+  if (mode === "trap") return { kind: "event", tag: "치킨", title: "콜라만 받고 별점 셋", onChoose: "ch_revev",
+    text: "\"리뷰 이벤트 참여합니다\" 요청사항에 콜라를 받고, 별점은 3점. 이번 달만 열두 번째다. 이벤트 원가는 매달 그대로 나간다. 끊으면 별점이 한동안 떨어질 거다.",
+    choices: [{ t: "그래도 계속한다", eff: {}, text: "콜라 박스를 또 주문했다." }, { t: "이벤트를 끊는다", eff: {}, text: "가게 공지에서 '리뷰 이벤트' 줄을 지웠다." }] };
+  return { kind: "event", tag: "치킨", title: "리뷰 쓰면 콜라 무료", onChoose: "ch_revev",
+    text: `동네 치킨집 리뷰 다섯 개 중 넷이 '리뷰 이벤트 참여'다. 콜라·치즈볼을 주면 별점은 오른다. 원가는 매출의 ${Math.round(CH_F30.rev.cost * 100)}%쯤. 한번 시작하면 끊기 어렵다.`,
+    choices: [{ t: "맛으로 승부한다(안 한다)", eff: {}, text: "서비스 대신 튀김 온도를 1도 더 봤다." }, { t: "전 매장에서 시작한다", eff: {}, text: "포스기 옆에 콜라 박스가 쌓였다." }] };
+}
+// 시험용: #auto…-chicken-f30flag|f30renew|f30deny|f30rev|f30trap
+export function f30Scene(s, r, what) {
+  const st = s.chicken.stores[0]; if (!st) return null;
+  if (what === "flag") { st.rv = Math.max(st.rv ?? 2, 3); return flagScene(s, st); }
+  if (what === "renew" || what === "deny") { st.months = Math.max(st.months, 60); return renewScene(s, st, what === "deny" ? "deny" : "ask"); }
+  if (what === "trap") { st.revEv = true; st.revM = 9; return revScene(s, "trap"); }
+  return revScene(s, "ask");
+}
+function f30Choose(s, r, i, ok, name) {
+  const C = s.chicken, out = [];
+  if (name === "ch_flag") {
+    const st = C.stores.find((x) => x.id === s._chFl?.id); s._chFl = null; if (!st) return out; C.flagN = (C.flagN || 0) + 1;
+    if (i === 0) { st.buzz = Math.min(100, st.buzz + 8); out.push(`${st.name} 입소문 +8`); }
+    else if (i === 1) { setFlags(s, st.id, 1); out.push(`${st.name} 깃발 ${st.flags}개`); }
+    else if (ok) { st.rv = Math.max(0, st.rv - 1); st.flags = Math.max(0, st.flags - 1); out.push(`휴전: 깃발 우리 ${st.flags} · 옆 가게 ${st.rv}`); }
+    else { st.rv = Math.min(CH_F30.flag.max, st.rv + 1); out.push(`옆 가게 깃발 ${st.rv}개`); }
+    out.push(`주문 배율 ×${flagMul(st).toFixed(2)}`); return out;
+  }
+  if (name === "ch_renew") {
+    const o = s._chRn || {}, st = C.stores.find((x) => x.id === o.id), R3 = CH_F30.renew; s._chRn = null; if (!st) return out;
+    const fresh = (m) => { st.freshM = m; st.old = false; st.refuseT = undefined; st.rating = clamp(st.rating + 0.05, 3.4, 5); out.push(`새 단장: ${m}달 동안 주문 +${Math.round(R3.boost * 100)}%`); };
+    if (o.mode === "deny") { if (i === 0) { payBig(s, st, o.cost * R3.late, out); fresh(R3.boostM); } else out.push(...closeStore(s, st.id)); return out; }
+    C.renewN = (C.renewN || 0) + 1;
+    if (i === 0) { payBig(s, st, o.cost, out); fresh(R3.boostM); }
+    else if (i === 1) { payBig(s, st, ok ? o.cost * 0.5 : o.cost, out); fresh(R3.boostM); }
+    else { st.old = true; st.refuseT = st.months; out.push(`낡은 매장: 주문 −${Math.round(R3.old * 100)}%`, `${R3.wait}달 뒤 재계약 심사`); }
+    return out;
+  }
+  if (name === "ch_revev") {
+    const mode = s._chRv?.mode; s._chRv = null; C.seen[mode === "trap" ? "rv2" : "rv1"] = s.t;
+    if (mode === "trap") { if (i === 1) for (const st of C.stores) if (st.revEv) out.push(toggleRev(s, st.id)); return out; }
+    if (i === 1) for (const st of C.stores) if (!st.revEv) out.push(toggleRev(s, st.id));
+    return out;
+  }
+  return out;
 }
 
 // 장면 선택 결과
@@ -232,7 +330,7 @@ function pickEvent(s, r) {
 // ───────── 플러그인 ─────────
 export default {
   key: "chicken", prefix: "ch_", hubName: "치킨집",
-  init: () => ({ v: 1, lv: 0, step: 0, disc: 0, risk: 0, trained: false, stores: [], seq: 0, loan: 0, invested: 0, recovered: 0, profitCum: 0, opened: 0,
+  init: () => ({ v: 2, lv: 0, step: 0, disc: 0, risk: 0, trained: false, stores: [], seq: 0, loan: 0, invested: 0, recovered: 0, profitCum: 0, opened: 0,
     fee: 0.15, wage: 1, cost: 0, costUp: 0, pop: 1, scandal: 0, barter: false, selfFill: 0, corp: false, seen: {}, hist: [], lossRun: 0, revRun: 0, hiRun: 0, riskT: -99, nextT: 0, shifts: 0, crewActs: 0, fams: 0 }),
   actions: {
     ch_prep: { n: "창업·출점 준비", ap: 1, hp: 3, desc: "가맹 상담 → 점주 교육 → 계약·오픈. BEP 뒤엔 2·3호점" },
@@ -275,7 +373,7 @@ export default {
       st.fry = clamp(st.fry * 0.5 + clamp((boost - 0.7) / 0.8, 0, 1) * 0.5 + (C.trained ? 0.04 : 0) + mod(s, "chFry", 0), 0, 1);
       if (st.crew < st.crewNeed && r.chance(0.5)) st.morale = clamp(st.morale + 3, 0, 100);
       st.morale = clamp(st.morale + 2 * boost, 0, 100);
-      gainStat(s, "hands", 0.3); gainStat(s, "body", 0.1);
+      gainStat(s, "hands", 0.3); gainStat(s, "body", 0.3);
       return { lines: [`${st.name} 근무 ${Math.round(st.ap * 10) / 10}/${needAp(s, st)}`, `튀김 품질 ${Math.round(st.fry * 100)}`, `인건비 −${won(Math.round(45 * P))}`], msg: r.pick(["180도 기름, 7분 30초. 바구니를 올리면 탁탁 소리가 난다.", "금요일 밤 9시, 주문 알림이 멈추질 않는다. 앞치마가 기름으로 반짝였다.", "알바가 그만둔 자리, 오늘은 내가 튀긴다.", "치킨무를 세 박스째 채웠다. 손목이 시큰하다."]) };
     }
     if (id === "ch_market") {
@@ -301,7 +399,7 @@ export default {
     return null;
   },
   month(s, r, notes, scenes) {
-    const C = s.chicken, P = pi(s); let total = 0, rev0 = 0;
+    const C = s.chicken, P = pi(s); let total = 0, rev0 = 0, fsc = null;
     if (!C.stores.length) { C.hist.push(0); if (C.hist.length > 24) C.hist.shift(); return 0; }
     if (C.costUp > 0) C.costUp--;
     if (C.scandal > 0) C.scandal--;
@@ -314,7 +412,7 @@ export default {
       st.morale = clamp(st.morale + (58 - st.morale) * 0.25 - (C.wage > 1.08 ? 2 : 0) + (st.inc ? 4 : 0) - unc * 4 + (q - 0.5) * 6, 0, 100);
       // 별점·순위
       const fry = st.mgr && !st.shifts ? Math.min(st.fry, 0.45) : st.fry;
-      let target = 4.32 + 0.28 * q + 0.22 * fry + (C.trained ? 0.04 : 0) + (SYN.on(s, "ch_cook") ? 0.05 : 0) + mod(s, "chStar", 0) - 0.07 * unc - 1.4 * Math.max(0, st.price - 1) - (st.morale < 35 ? 0.1 : 0);
+      let target = 4.32 + 0.28 * q + 0.22 * fry + (C.trained ? 0.04 : 0) + (SYN.on(s, "ch_cook") ? 0.05 : 0) + mod(s, "chStar", 0) - 0.07 * unc - 1.4 * Math.max(0, st.price - 1) - (st.morale < 35 ? 0.1 : 0) + (st.revEv ? CH_F30.rev.star : 0) - (st.revOff > 0 ? CH_F30.rev.off : 0);
       st.rating = clamp(st.rating + (target - st.rating) * 0.4 + 0.03 * r.normal(), 3.4, 5);
       st.rank = clamp(Math.round(29 - st.buzz * 0.17 - (st.rating - 4.4) * 22 + r.int(-1, 1)), 1, 30);
       const mk = (30 - st.rank) / 29;
@@ -329,13 +427,14 @@ export default {
       if (st.lost) { dem *= 1 - st.lost; st.lost = 0; }
       if (s.era?.winter) dem *= 0.95;
       if (st.app) dem *= 0.985;
+      dem *= flagMul(st) * (st.freshM > 0 ? 1 + CH_F30.renew.boost : 1) * (st.old ? 1 - CH_F30.renew.old : 1); // 11-22 깃발·리뉴얼
       dem = Math.max(0.2, dem * (1 + 0.05 * r.normal()));
       const orders = Math.round(T.base * dem / 2.4), rev = Math.round(orders * 2.4 * P * st.price);
-      const mat = rev / st.price * 0.46 * (C.costUp ? 1.1 : 1) * (1 + C.cost);
+      const mat = rev / st.price * 0.46 * (C.costUp ? 1.1 : 1) * (1 + C.cost) + (st.revEv ? rev * CH_F30.rev.cost : 0);
       const fee = rev * T.dshare * C.fee * (st.app ? 0.8 : 1);
       let lab = (T.lab + 0.1 * T.base * dem) * C.wage * P * (1 - 0.12 * short) - own * 45 * P - (st.fam ? 120 * P : 0) - (C.selfFill && !st.mgr ? 40 * P : 0);
       lab = Math.max(T.lab * 0.4 * P, lab) + (st.mgr ? (310 * C.wage - 140) * P : 0); // 점장 월급 − 점장이 대신하는 알바 시간
-      const other = rev * (C.corp ? 0.015 : 0.03) + 45 * P + (st.inc ? rev * 0.015 : 0);
+      const other = rev * (C.corp ? 0.015 : 0.03) + (45 - CH_F30.flag.def * CH_F30.flag.cost + (st.flags ?? CH_F30.flag.def) * CH_F30.flag.cost) * P + (st.inc ? rev * 0.015 : 0);
       const cost = Math.round(mat + fee + lab + st.rent + other);
       const profit = rev - cost;
       s.cash += rev - cost; addMoney(s, "inc", "치킨 매출", rev); addMoney(s, "exp", "치킨 비용", cost);
@@ -352,6 +451,13 @@ export default {
       st.buzz = Math.max(0, st.buzz * 0.78 - (st.months > 18 ? 1 : 0)); st.fry = st.fry * 0.85 + 0.45 * 0.15;
       if (st.months > 0 && st.months % 24 === 0) { st.rent = Math.round(st.rent * 1.05); notes.push(`${st.name}: 건물주가 월세를 5% 올렸다(${won(st.rent)})`); }
       st.months++; st.ap = 0; st.shifts = 0; st.mk = 0;
+      // 11-22 깃발 경쟁·리뉴얼·리뷰 이벤트
+      { const F3 = CH_F30.flag, R3 = CH_F30.renew; st.flags ??= F3.def; st.rv ??= F3.def;
+        if (st.months >= 2) { if (st.rv < F3.max && ((st.flags > st.rv && r.chance(F3.rvUp)) || r.chance(F3.rvRand))) { st.rv++; if (s.t - (C.flagT ?? -99) >= F3.gap) { C.flagT = s.t; fsc = fsc || flagScene(s, st); } else notes.push(`${st.name}: 옆 치킨집 깃발이 ${st.rv}개로 늘었다`); } else if (st.rv > F3.def && st.flags <= st.rv && r.chance(F3.rvDown)) st.rv--; }
+        if (st.freshM > 0) st.freshM--;
+        if (st.revEv) st.revM = (st.revM || 0) + 1; else if (st.revOff > 0) st.revOff--;
+        if (st.months % R3.every === 0 && st.renewAt !== st.months) { st.renewAt = st.months; fsc = renewScene(s, st, "ask"); }
+        else if (st.old && st.refuseT !== undefined && st.months - st.refuseT === R3.wait) { if (r.chance(R3.refuseP)) fsc = renewScene(s, st, "deny"); else { st.refuseT = undefined; notes.push(`${st.name}: 본사가 이번 재계약은 넘어갔다. 낡은 매장은 그대로`); } } }
       // 창업대출 원금: 5년 분할(이자는 대출 이자로 따로 나간다)
       if (st.loan > 0) { const p = Math.min(st.loan, Math.round((st.loan0 || st.loan) / 60)); st.loan -= p; C.loan = Math.max(0, C.loan - p); s.cash -= p; addMoney(s, "exp", "창업대출 원금", p); const l = s.loans.find((x) => x.n === "창업대출"); if (l) { l.amt -= p; if (l.amt <= 1) s.loans = s.loans.filter((x) => x !== l); } }
       if (st.months === 1) scenes.push(scene(s, "e04", st));
@@ -373,6 +479,10 @@ export default {
     if (s.cal === 1) { C.wage *= 1 + Math.max(0.5, (C.wageNext || 4) - CH_BAL.wageInfl) / 100; C.pop *= 0.995; notes.push("출생아 감소·1인 가구: 동네 치킨 주 고객이 조금 줄었다(수요 −0.5%)"); }
     if (!C.costUp && r.chance(0.02)) { C.costUp = 5; notes.push("닭값·식용유 급등! 5개월 동안 재료비 +10%. 본사 필수구매가도 같이 올랐다"); }
     if (r.chance(0.04)) notes.push(r.pick(["근처에 다른 치킨 브랜드가 생겼다. 전단지가 우리 문에도 꽂혔다", "배달 라이더가 모자라 주문이 20분씩 밀렸다", "본사에서 새 시즌 메뉴 교육 공문이 왔다(필수 구매 소스 추가)"]));
+    // 11-22 리뷰 이벤트 장면(처음 권유 / 오래 하면 함정)
+    if (!fsc && !C.seen.rv1 && C.stores.some((x) => x.months >= 2) && !C.stores.some((x) => x.revEv) && r.chance(0.25)) fsc = revScene(s, "ask");
+    else if (!fsc && C.stores.some((x) => x.revEv && x.revM >= 8) && s.t - (C.seen.rv2 ?? -99) >= 18 && r.chance(0.06)) fsc = revScene(s, "trap");
+    if (fsc) scenes.push(fsc);
     // 본업 1.5배
     if (C.hiRun >= 6 && !C.seen.e12 && !(s.co.quit || s.co.fired)) scenes.push(scene(s, "e12", st1));
     // 위험 신호
@@ -396,8 +506,8 @@ export default {
     return t;
   },
   stopWhy: (s) => (s.chicken.stores.length ? "매장을 모두 양도하거나 폐점해야 접을 수 있어요" : null),
-  choose: { ch_ev: evChoose },
-  migrate(s, T) { if (!T.v) T.v = 1; T.seen = T.seen || {}; T.stores = T.stores || []; },
+  choose: { ch_ev: evChoose, ch_flag: (s, r, i, ok) => f30Choose(s, r, i, ok, "ch_flag"), ch_renew: (s, r, i, ok) => f30Choose(s, r, i, ok, "ch_renew"), ch_revev: (s, r, i, ok) => f30Choose(s, r, i, ok, "ch_revev") },
+  migrate(s, T) { if (!T.v) T.v = 1; T.seen = T.seen || {}; T.stores = T.stores || []; if (T.v < 2) { T.v = 2; for (const st of T.stores) { st.flags ??= CH_F30.flag.def; st.rv ??= CH_F30.flag.def; st.revEv = !!st.revEv; st.revM = st.revM || 0; st.revOff = st.revOff || 0; st.renewAt ??= Math.floor(st.months / CH_F30.renew.every) * CH_F30.renew.every; } } },
   milestones: [
     { key: "ch_sign", title: "가맹 계약서에 서명", test: (s) => (s.chicken?.lv || 0) >= 1, lines: ["두꺼운 계약서 마지막 장에 이름을 썼다. 손에 땀이 났다.", "\"축하드립니다, 점주님.\" 점주님. 처음 듣는 호칭이다."] },
     { key: "ch_lv2", title: "별점 관리 사장님", test: (s) => (s.chicken?.lv || 0) >= 2, lines: ["배달통 별점 4.8. 리뷰 알림이 울릴 때마다 심장이 먼저 뛴다.", "\"사장님 답글 보고 시켰어요.\" 답글도 장사다."] },

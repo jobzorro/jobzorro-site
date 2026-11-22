@@ -18,7 +18,8 @@ import { menteeMonth, MT_CHOOSE } from "./mentee.js"; // 컨설팅 제자(v4.25)
 import { guestMonth, GS_CHOOSE } from "./guest.js"; // 손님 이벤트(v4.25)
 import { flirtMonth } from "./flirt.js"; // 연애·결혼 19금(v4.25)
 import { rivalMonth, RV_CHOOSE } from "./rival.js"; // 라이벌 제도(v4.25)
-import { marketMonth, MK_CHOOSE } from "./market.js"; // 시장 충격(v4.25b)
+import { marketMonth, MK_CHOOSE } from "./market.js"; import { spaceMonth } from "./space.js"; // 시장 충격(v4.25b)
+import { jackpotMonth, JP_CHOOSE } from "./jackpot.js"; // 한방 전략(v4.27): 컨설팅·타로·웹소설 큰 판 제안과 결과
 import * as GC from "./cards.js"; // 성장 카드·아이템 60개(v4.25)
 import * as IT from "./items.js";
 
@@ -117,7 +118,7 @@ export function newGame(o) {
   // 연구 기록 보너스(메타)
   if (o.meta?.bonusCash) s.cash += o.meta.bonusCash;
   // 이번 판에 등장하는 인연: 100명 중 70명 (로그라이크)
-  const pool = CHARS.map((c) => c.id);
+  const pool = CHARS.filter((c) => !c.celeb).map((c) => c.id); // 유명인(인별)은 인별에서 만난다
   s.cast = r.shuffle(pool.filter((id) => !CHAR[id]?.co)).slice(0, Math.min(pool.length, Math.max(12, Math.round(pool.length * 0.7))));
   s.cast.push(...CHARS.filter((c) => c.co).map((c) => c.id)); // 회사 동료(신입은 입사 사건 뒤에 나온다)
   if (s.me.perks.includes("yr3")) for (const id of r.shuffle(CHARS.filter((c) => c.co && !c.hire).map((c) => c.id)).slice(0, 2)) { const x = ensureRel(s, id); x.aff = Math.max(x.aff, 25); } // 3년 차: 사내 인맥
@@ -224,6 +225,7 @@ export function canAct(s, id, arg) {
   if (id === "grad_apply" && s.grad && !s.grad.done) return "이미 대학원에 다니고 있어요";
   if (id === "grad_apply" && s.grad?.done) return "이미 졸업했어요";
   if (id === "grad_class" && !(s.grad && !s.grad.done)) return "대학원에 다니지 않아요";
+  if (D.STUDY_ACTS.includes(id) && arg !== undefined && (!D.STATS[arg] || !studyK(arg))) return `${D.STATS[arg] || "그 능력치"}은(는) 공부로 안 올라요(운동·꾸미기·사람)`; // v4.28 생활형
   if (/^(sj_|hb_)/.test(id)) { const why = SJ.can(s, id, arg); if (why) return why; }
   if (["co_lunch", "co_project", "co_resume"].includes(id) && (s.co.quit || s.co.fired)) return "회사를 그만뒀습니다";
   { const P = REG.byAct(id); if (P) { const why = P.can ? P.can(s, id, arg) : null; if (why) return why; } }
@@ -233,11 +235,11 @@ export function canAct(s, id, arg) {
   if (id === "rejob" && !(s.co.quit || s.co.fired)) return "이미 회사에 다닙니다";
   return null;
 }
-export function apCost(s, id) { const a = D.ACTIONS[id]; let ap = a.ap; if (id === "cs_seminar" || id === "cs_lecture") ap = a.ap; return ap; }
+export function apCost(s, id) { const a = D.ACTIONS[id]; let ap = a.ap; if (id === "cs_seminar" || id === "cs_lecture") ap = a.ap; if (id === "in_post") ap = INS.postAp(s); return ap; }
 // 팀장 호감이 오를 때: 성향 숨은 특성 bossMult(인싸 1.4·새벽형 1.2·명강사 1.2·가정적 0.8)
 const bossUp = (s, v) => Math.max(1, Math.round(v * mod(s, "bossMult", 1)));
 export function hpCost(s, id) {
-  const a = D.ACTIONS[id]; let h = a.hp || 0; if (h <= 0) return h;
+  const a = D.ACTIONS[id]; let h = id === "in_post" ? INS.postHp(s) : a.hp || 0; if (h <= 0) return h;
   h *= mod(s, "hpCostMult", 1);
   if (SIDE_ACTS.test(id)) h += mod(s, "sideHp", 0);
   if (["cs_blog", "cs_insta", "cs_youtube"].includes(id)) h += mod(s, "contentHp", 0);
@@ -258,7 +260,9 @@ export function applyEff(s, eff, who) {
   if (eff.mental) { s.mental = clamp(s.mental + eff.mental, 0, 100); out.push(`멘탈 ${sgn(eff.mental)}`); }
   if (eff.eye) { const e = eff.eye > 0 ? eff.eye * eyeMult(s) : eff.eye; s.co.eye = clamp(s.co.eye + e, 0, 100); out.push(`회사 눈치 ${sgn(Math.round(e))}`); }
   if (eff.family) { s.fam.happy = clamp(s.fam.happy + eff.family, 0, 100); out.push(`가족 ${sgn(eff.family)}`); }
-  if (eff.stat) for (const [k, v] of Object.entries(eff.stat)) { if (!s.st[k] && s.st[k] !== 0) continue; const g = v > 0 ? v * growMult(s, k) : v; s.st[k] = clamp(s.st[k] + g, 0, D.STAT_MAX); out.push(`${D.STATS[k]} ${sgn(+g.toFixed(1))}`); }
+  if (eff.stat) for (const [k, v] of Object.entries(eff.stat)) { if (!s.st[k] && s.st[k] !== 0) continue; const g = v > 0 ? gainStat(s, k, v, curSrc || "ev") : (s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX), v); if (k === "body") syncSta(s); out.push(`${D.STATS[k]} ${sgn(+g.toFixed(1))}`); } // v4.28: 장면 능력치도 곡선을 거친다
+  if (eff.statRaw) for (const [k, v] of Object.entries(eff.statRaw)) { if (s.st[k] === undefined) continue; s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX); if (k === "body") syncSta(s); out.push(`${D.STATS[k]} ${sgn(v)}`); } // 바로 +N(곡선 없음)
+  if (eff.brk) for (const k of [].concat(eff.brk)) { const l = giveBrk(s, k); if (l) out.push(l); } // 돌파 계기
   if (eff.ap) { s.apNext += eff.ap; out.push(`다음 달 행동력 ${sgn(eff.ap)}`); }
   if (eff.sj_int) for (const [j, v] of Object.entries(eff.sj_int)) { const l = SJ.addInt(s, j, v); if (l) out.push(l); }
   if (eff.pr_rating) { for (const rm of s.pr.rooms) rm.rating = clamp(rm.rating + eff.pr_rating, 2.5, 5); if (s.pr.rooms.length) out.push(`파티룸 별점 ${sgn(eff.pr_rating)}`); }
@@ -288,14 +292,14 @@ export function addMoney(s, side, k, v) { const m = s.month[side]; m[k] = (m[k] 
 
 export function act(s, id, arg) {
   const why = canAct(s, id, arg); if (why) return { ok: false, msg: why };
-  const a = D.ACTIONS[id], r = R(s);
+  const a = D.ACTIONS[id], r = R(s); curSrc = id;
   if (["work_hard", "overtime", "office_chat", "company_dinner", "co_lunch", "co_project"].includes(id)) s.flags.coActs = (s.flags.coActs || 0) + 1; // 탐색 가이드용
   s.ap -= apCost(s, id);
   const hc = hpCost(s, id);
   s.hp = clamp(s.hp - hc, 0, s.hpMax);
   if (a.mental) s.mental = clamp(s.mental + a.mental, 0, 100);
   if (a.cash) { s.cash += a.cash; addMoney(s, "exp", a.track === "일" ? "투잡 활동비" : "생활 활동비", -a.cash); }
-  if (a.stat) for (const [k, v] of Object.entries(a.stat)) gainStat(s, k, v);
+  const aSt = a.stat ? Object.entries(a.stat).map(([k, v]) => v > 0 ? stL(s, k, v, id) : (gainStat(s, k, v, id), `${D.STATS[k]} ${v}`)) : []; // v4.28: 장소·회사 행동마다 오르는 능력치
   s.stat.actions++;
   if (id === "work_hard" || id === "overtime") s.co.workDone = (s.co.workDone || 0) + (id === "overtime" ? 2 : 1);
   let res = { ok: true, msg: "", lines: [] };
@@ -315,23 +319,57 @@ export function act(s, id, arg) {
   // 행동이 돌려준 장면(만남 등)은 여기서 연다
   if (res.scene && !s.pending) { if (res.scene.kind === "meet" && res.scene.who) ensureRel(s, res.scene.who); res.scene = openScene(s, res.scene); }
   { const src = ["work_hard", "overtime", "office_chat", "company_dinner", "co_lunch", "co_project"].includes(id) ? "co" : a.track === "사람" ? "people" : null; if (src) { const l = SJ.hearInfo(s, r, src); if (l) res.lines.push(l); } } // 곳곳에서 듣는 투잡 정보
+  if (aSt.length) { res.lines = (res.lines || []).filter((l) => !/^[가-힣·]+ \+$/.test(l)); res.lines.push(...aSt); }
+  curSrc = null;
   if (hc > 0) res.lines.unshift(`스태미너 −${hc}`);
   return res;
 }
 
-export function gainStat(s, k, base) {
-  const cur = s.st[k];
-  const g = base * growMult(s, k) * (1.2 - cur / 230);
-  s.st[k] = clamp(cur + Math.max(0.15, g), 0, D.STAT_MAX);
+// v4.28 능력치 성장: 구간 곡선(defs STAT_CURVE) × 돌파 계기(s.brk) × 같은 길 반복(STAT_REP). src = 행동 id·출처 태그(없으면 지금 행동/장면)
+let curSrc = null;
+export const statZone = (v) => D.STAT_CURVE.find((z) => v < z.to) || D.STAT_CURVE[D.STAT_CURVE.length - 1];
+export const brkOn = (s, k) => (s.brk?.[k] ?? -1) >= s.t;
+export function giveBrk(s, k, why = "") { if (!D.STATS[k]) return ""; s.brk = s.brk || {}; s.brk[k] = Math.max(s.brk[k] ?? -1, s.t + D.STAT_BRK.months); return `${D.STATS[k]} 돌파 중 ${D.STAT_BRK.months}달${why ? ` (${why})` : ""}`; }
+function repMult(s, k, src) {
+  const H = (s.stH = s.stH || {}), h = (H[k] = H[k] || []);
+  let cur = h[h.length - 1]; if (!cur || cur[0] !== s.t) { cur = [s.t, []]; h.push(cur); while (h.length > D.STAT_REP.months) h.shift(); }
+  if (!cur[1].includes(src)) cur[1].push(src);
+  const only = (t) => { const x = h.find((y) => y[0] === t); return x && x[1].length === 1 && x[1][0] === src; };
+  for (let i = 1; i < D.STAT_REP.months; i++) if (!only(s.t - i)) return 1;
+  return cur[1].length === 1 ? D.STAT_REP.mult : 1;
+}
+export function gainStat(s, k, base, src) {
+  const cur = s.st[k]; if (cur === undefined || !base) return 0;
+  if (base < 0) { s.st[k] = clamp(cur + base, 1, D.STAT_MAX); if (k === "body") syncSta(s); return s.st[k] - cur; }
+  const z = statZone(cur), sr = src || curSrc || "etc", g = base * growMult(s, k) * (brkOn(s, k) ? z.b : z.m) * (D.STUDY_ACTS.includes(sr) ? (z.study ?? 1) : 1) * repMult(s, k, sr);
+  s.st[k] = clamp(cur + Math.max(cur < 100 ? 0.15 : 0.01, g), 0, D.STAT_MAX);
   if (k === "body") syncSta(s);
   return s.st[k] - cur;
 }
+const stL = (s, k, v, src) => `${D.STATS[k]} +${gainStat(s, k, v, src).toFixed(1)}`;
+const isForeign = (c) => /외국|교환학생|유학|원어민|해외/.test(c?.job || "");
+// 미니게임 성적: 대성공 +1 · 성공 +0.5(그 투잡의 경험형 능력치)
+export function mgStat(s, job, grade) {
+  const k = D.MG_STAT.of[job], v = grade === "대성공" ? D.MG_STAT.great : grade === "성공" ? D.MG_STAT.good : 0;
+  return k && v ? [stL(s, k, v, "mg")] : [];
+}
+// 장면 고른 뒤: 장소 장면이면 그 장소 능력치, 선택지 글에 운동·연애·외국어 말이 있으면 그 능력치(장면 하나에 하나만 더)
+function sceneStat(s, sc, ch, okv) {
+  if (okv === false) return [];
+  const out = [], t = (ch.t || "") + " " + (ch.text || ""), had = ch.eff?.stat || {};
+  const w = D.STAT_WORDS.find(([k, re]) => !(had[k] < 0) && re.test(t));
+  if (w) out.push(stL(s, w[0], D.STAT_WORD_GAIN, "sc"));
+  else if (sc.where && D.LOC_STAT[sc.where] && /^loc_|^of_|^hb_/.test(sc.id || "")) out.push(stL(s, D.LOC_STAT[sc.where], D.STAT_WORD_GAIN * 0.75, "loc"));
+  if (sc.who && isForeign(CHAR[sc.who])) out.push(stL(s, "lang", 0.5, "fr"));
+  return out;
+}
 
+const studyK = (k) => D.STAT_KIND_N[D.STAT_KIND[k]]?.study ?? 1; // v4.28 갈래별 공부 효과
 const ACT_FN = {
   rest(s) { const g = 10 * mod(s, "restMult", 1); s.hp = clamp(s.hp + g, 0, s.hpMax); return { lines: [`스태미너 +${Math.round(g + 10)} (다음 달 행동력 회복)`, "멘탈 +6"], msg: "이불 밖은 위험하다. 오늘은 충전." }; },
-  study_home(s, r, k) { const g = gainStat(s, k, D.ACTIONS.study_home.gain * mod(s, "homeStudy", 1)); s.mental += mod(s, "soloMental", 0); return { lines: [`${D.STATS[k]} +${g.toFixed(1)}`], msg: "책상 앞 두 시간." }; },
-  study(s, r, k) { const g = gainStat(s, k, D.ACTIONS.study.gain); s.mental += mod(s, "soloMental", 0); return { lines: [`${D.STATS[k]} +${g.toFixed(1)}`], msg: "스터디카페 3시간권을 끊었다." }; },
-  course(s, r, k) { const g = gainStat(s, k, D.ACTIONS.course.gain); return { lines: [`${D.STATS[k]} +${g.toFixed(1)}`, "돈 −15만"], msg: "강의 들으며 필기했다." }; },
+  study_home(s, r, k) { const g = gainStat(s, k, D.ACTIONS.study_home.gain * mod(s, "homeStudy", 1) * studyK(k)); s.mental += mod(s, "soloMental", 0); return { lines: [`${D.STATS[k]} +${g.toFixed(1)}`], msg: "책상 앞 두 시간." }; },
+  study(s, r, k) { const g = gainStat(s, k, D.ACTIONS.study.gain * studyK(k)); s.mental += mod(s, "soloMental", 0); return { lines: [`${D.STATS[k]} +${g.toFixed(1)}`], msg: "스터디카페 3시간권을 끊었다." }; },
+  course(s, r, k) { const g = gainStat(s, k, D.ACTIONS.course.gain * studyK(k)); return { lines: [`${D.STATS[k]} +${g.toFixed(1)}`, "돈 −15만"], msg: "강의 들으며 필기했다." }; },
   workout(s) { const g = gainStat(s, "body", s.age < 35 ? 2.2 : 2.8); return { lines: [`체력 +${g.toFixed(1)} (최대 스태미너 ${s.hpMax})`, "멘탈 +3"], msg: "땀 흘리니 머리가 맑아진다." }; },
   pt(s) { const g = gainStat(s, "body", 4); return { lines: [`체력 +${g.toFixed(1)} (최대 스태미너 ${s.hpMax})`], msg: "트레이너가 웃으며 한 세트 더를 외쳤다." }; },
   run_crew(s) { const g = gainStat(s, "body", 1.2); socialMental(s); return { lines: [`체력 +${g.toFixed(1)}`], msg: "한강 바람. 5km 완주." }; },
@@ -357,7 +395,7 @@ const ACT_FN = {
   univ_walk(s, r) { s.pr.known.univ = (s.pr.known.univ || 0) + 1; return { lines: ["대학가 상권 정보 +"], msg: r.pick(["개강 첫 주, 술집마다 줄이 섰다.", "엠티 버스가 줄지어 서 있다.", "취업 스터디 모집 전단이 벽을 덮었다."]) }; },
   house_tour(s, r) { s.flags.houseInfo = s.t; return { lines: ["집 시세 정보 +"], msg: `요즘 34평 시세 ${won(housePrice(s, "apt"))}. 숨이 막힌다.` }; },
   house_search(s, r) { return { scene: houseScene(s, r), lines: [] }; },
-  work_hard(s) { const g = 9 * mod(s, "perfMult", 1); s.co.perf = clamp(s.co.perf + g, 0, 100); s.co.eye = clamp(s.co.eye - 3, 0, 100); return { lines: [`회사 성과 +${Math.round(g)}`, "회사 눈치 −3"], msg: "보고서 한 장을 끝냈다. 팀장이 고개를 끄덕였다." }; },
+  work_hard(s, r) { const g = 9 * mod(s, "perfMult", 1); s.co.perf = clamp(s.co.perf + g, 0, 100); s.co.eye = clamp(s.co.eye - 3, 0, 100); if (r.chance(0.2)) return { lines: [`회사 성과 +${Math.round(g)}`, "회사 눈치 −3", stL(s, "lang", 0.8, "mail")], msg: "해외 법인 메일에 영어로 답장했다. 번역기는 반만 썼다." }; return { lines: [`회사 성과 +${Math.round(g)}`, "회사 눈치 −3"], msg: "보고서 한 장을 끝냈다. 팀장이 고개를 끄덕였다." }; },
   overtime(s) { const g = 20 * mod(s, "perfMult", 1); s.co.perf = clamp(s.co.perf + g, 0, 100); s.co.eye = clamp(s.co.eye - 6, 0, 100); s.co.boss = clamp(s.co.boss + bossUp(s, 4), 0, 100); return { lines: [`회사 성과 +${Math.round(g)}`, "회사 눈치 −6"], msg: "밤 10시의 사무실. 형광등 소리만 들린다." }; },
   office_chat(s, r) { s.co.eye = clamp(s.co.eye - 2, 0, 100); const out = ["회사 눈치 −2"]; if (r.chance(0.3)) { const j = r.pick(["pr", "cs", "insta", "tistory", "chicken", "coffee", "realtyblog"]); const l = SJ.addInt(s, j, r.int(8, 15)); if (l) { out.push(l); return { lines: out, msg: `"옆 팀 누구는 퇴근 후에 ${D.SIDEJOBS[j].n} 한대요. 월급보다 더 번다던데?"` }; } } return { lines: out, msg: r.pick(["\"그 팀 팀장 바뀐대요.\"", "\"요즘 다들 부업 하나씩 한다던데요?\"", "\"성과급 얘기 들었어요?\""]) }; },
   co_lunch(s, r) {
@@ -480,7 +518,7 @@ export function personAct(s, id, kind, arg) {
     const arc = nextArc(s, id); if (arc) return { ok: true, scene: openScene(s, arc), lines: [] };
     const hit = likeHit(); const g = addAff(s, id, 5 + (hit ? 4 : 0) + s.st.talk / 30);
     s.mental = clamp(s.mental + 2, 0, 100);
-    return { ok: true, lines: [`호감 +${g}`, hit ? `좋아하는 ${r.pick(c.likes)} 이야기로 신났다` : ""].filter(Boolean), msg: `${c.name}: "${c.lines?.date || "오늘 재밌었어요."}"` };
+    return { ok: true, lines: [`호감 +${g}`, stL(s, isForeign(c) ? "lang" : "talk", isForeign(c) ? 0.8 : 0.3, "meetup"), hit ? `좋아하는 ${r.pick(c.likes)} 이야기로 신났다` : ""].filter(Boolean), msg: `${c.name}: "${c.lines?.date || "오늘 재밌었어요."}"` };
   }
   if (kind === "gift") {
     if (rel.gift === s.t) return { ok: false, msg: "이번 달엔 이미 선물했다" };
@@ -497,13 +535,13 @@ export function personAct(s, id, kind, arg) {
     if (rel.spouse) s.fam.happy = clamp(s.fam.happy + (kind === "trip" ? 16 : 6), 0, 100);
     const line = c.romance?.dates?.length ? r.pick(c.romance.dates) : (c.lines?.date || "");
     const sus = rel.affair ? affDate(s, id, kind) : "";
-    return { ok: true, lines: [`호감 +${g}`, rel.spouse ? "가족 행복 +" : "", sus].filter(Boolean), msg: kind === "trip" ? `둘이 2박 3일 여행을 다녀왔다. ${line}` : line };
+    return { ok: true, lines: [`호감 +${g}`, rel.spouse ? "가족 행복 +" : "", ...(kind === "trip" ? [stL(s, "lang", 1, "trip"), stL(s, "sense", 0.6, "trip")] : [stL(s, "charm", 0.4, "date")]), sus].filter(Boolean), msg: kind === "trip" ? `둘이 2박 3일 여행을 다녀왔다. ${line}` : line };
   }
   if (kind === "confess") {
     if (!isRomanceable(s, c) || rel.lover || rel.aff < 70) return { ok: false, msg: "호감 70 이상 연애 가능 인연에게만" };
     if (s.fam.spouse) return { ok: false, msg: "배우자가 있습니다" };
     s.ap -= 1; const p = clamp(0.3 + (rel.aff - 70) / 40 + (s.st.charm - 40) / 150, 0.1, 0.95);
-    if (r.chance(p)) { const out = []; becomeLover(s, id, out); return { ok: true, lines: out, msg: c.romance?.confess || "\"저도 같은 마음이었어요.\"" }; }
+    if (r.chance(p)) { const out = []; becomeLover(s, id, out); out.push(stL(s, "charm", 1.5, "love")); return { ok: true, lines: out, msg: c.romance?.confess || "\"저도 같은 마음이었어요.\"" }; }
     addAff(s, id, -6); s.mental = clamp(s.mental - 8, 0, 100); return { ok: true, lines: ["호감 −6", "멘탈 −8"], msg: "\"조금만 더 시간을 주세요.\"" };
   }
   if (kind === "propose") {
@@ -575,10 +613,13 @@ export function choose(s, i) {
   let res, okv = null;
   if (ch.check) { okv = r.chance(chk(s, ch.check)); res = okv ? ch.ok : ch.ng; } else res = { text: ch.text, eff: ch.eff };
   res = res || { text: "", eff: {} };
+  curSrc = "sc:" + (sc.id || sc.onChoose || sc.kind || "ev"); // v4.28 장면 능력치 출처
   const lines = applyEff(s, res.eff, sc.who);
+  try { lines.push(...sceneStat(s, sc, ch, okv)); } catch (e) { console.warn(e); }
   if (sc.kind === "arc" && sc.who) { s.rel[sc.who].stage = Math.max(s.rel[sc.who].stage, sc.stage); }
   if (sc.kind === "wedding" && ch.wed) { marry(s, sc.who); lines.push("파이어 목표 30억 → 40억"); s.sceneQ.unshift(story("목표가 바뀌었다", `둘이 살 집, 언젠가 태어날 아이, 양가 부모님. 가계부를 다시 짜 보니 혼자일 때 30억이던 파이어 목표가 40억이 됐어요. 집은 12억에서 15억짜리로, 매달 꺼내 쓸 돈은 600만에서 830만으로. 대신 이제 같이 버는 사람, 저녁에 손을 보태 줄 사람이 있습니다(행동력 +2).`)); }
   if (sc.onChoose) { const extra = SCENE_FN[sc.onChoose]?.(s, r, i, okv, sc); if (extra) lines.push(...extra); }
+  curSrc = null;
   if (s._sceneText) { res = { ...res, text: s._sceneText }; s._sceneText = null; } // 결과가 확률로 갈리는 장면(투자 이벤트)
   if (sc.once) s.seen[sc.id] = s.t;
   s.pending = null;
@@ -623,6 +664,21 @@ export function sceneOk(s, x) {
   for (const q of w.req || []) { const neg = q.startsWith("!"); const k = neg ? q.slice(1) : q; const has = reqHas(s, k); if (neg ? has : !has) return false; }
   return true;
 }
+// v4.27 한 달 장면 몰림 막기: 선택 장면은 한 달 PACE_MAX 개까지. 연말 결산·화보·결혼·특전 같은 큰 장면은 세지 않는다.
+// 넘치는 것 중 '선택지 안에 효과가 다 들어 있는'(onChoose 없는) 가벼운 장면만 다음 달로 미룬다(최대 4개 보관, 오래된 것부터 버림).
+// onChoose 장면은 그달 상태(s._prCrisis 등)에 기대니 미루지 않는다.
+const PACE_MAX = 2;
+function paceScenes(s, list, yearSc) {
+  const big = (x) => x === yearSc || x.kind === "year" || x.kind === "wedding" || x.cine || x.kind === "perk" || x.once === "big";
+  const light = (x) => !big(x) && !x.onChoose && (x.kind === "event" || x.kind === "story") && x.choices?.length > 1;
+  const later = s.sceneLater || [];
+  let n = list.filter((x) => !big(x)).length;
+  const keep = [], defer = [];
+  for (const x of list) { if (n > PACE_MAX && light(x)) { defer.push(x); n--; } else keep.push(x); }
+  while (n < PACE_MAX && later.length) { keep.unshift(later.shift()); n++; }
+  s.sceneLater = [...later, ...defer].slice(-4);
+  return keep;
+}
 function reqHas(s, k) {
   if (k === "married") return !!s.fam.spouse;
   if (k === "lover") return Object.values(s.rel).some((x) => x.lover);
@@ -630,6 +686,7 @@ function reqHas(s, k) {
   if (k === "house") return s.house.type === "own";
   if (k === "quit") return s.co.quit || s.co.fired;
   if (k === "partyroom") return s.pr.rooms.length > 0;
+  if (k === "side") return (s.sj?.active || []).length > 0; // v4.27 투잡 하나라도
   if (k === "consult") return s.cs.open;
   return s.flags[k] !== undefined;
 }
@@ -650,6 +707,7 @@ const SCENE_FN = {
   co_ev(s, r, i) { return coEvChoose(s, r, s.pending.ev, i); },
   cs_ev(s, r, i, ok) { return CS.csEvChoose(s, i, ok); },
   pr_crisis(s, r, i, ok) { return PR.crisisChoose(s, i, ok); },
+  pr_furn(s, r, i) { return PR.furnChoose(s, i); },
   full_ev(s, r, i) { if (i !== 0) return []; const job = s._fullJob; const res = quitCompany(s); if (!res.ok) return [res.msg]; s.fullJob = job; s.moments = s.moments || {}; s.moments.quit = s.t; log(s, `${D.SIDEJOBS[job]?.n || "투잡"}을(를) 본잡으로. 회사를 나왔다.`, "work"); return ["본잡 전환", "행동력 +5", "월급 끊김"]; },
   ab_raid(s, r, i, ok) { return AB.raidChoose(s, i, ok); },
   inv_ev(s, r, i) { const e = D.INV_EV.find((x) => x.id === s.pending.ev); const c = e?.choices[i]; return c ? invChoose(s, r, c) : []; },
@@ -662,7 +720,10 @@ for (const X of REG.STORY) for (const [k, fn] of Object.entries(X.choose || {}))
 for (const [k, fn] of Object.entries(AFF_CHOOSE)) SCENE_FN[k] = fn;
 for (const [k, fn] of Object.entries({ ...MT_CHOOSE, ...GS_CHOOSE })) SCENE_FN[k] = fn;
 for (const [k, fn] of Object.entries(RV_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("rv_")) console.warn(`[라이벌] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
+for (const [k, fn] of Object.entries({ ...PR.PR_CHOOSE, ...AB.AB_CHOOSE, ...UC.UC_CHOOSE })) { if (SCENE_FN[k]) console.warn(`[공간 타이쿤] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; } // v4.28 후기·가격 전쟁·명의
 for (const [k, fn] of Object.entries(MK_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("mk_")) console.warn(`[시장] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
+for (const [k, fn] of Object.entries(INS.CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("ig_")) console.warn(`[인별] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; } // 인별 v2 장면
+for (const [k, fn] of Object.entries(JP_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("jp_")) console.warn(`[한방 전략] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 for (const [k, fn] of Object.entries(FAM_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("fam_")) console.warn(`[가족 이벤트] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 for (const P of REG.JOBS) for (const [k, fn] of Object.entries(P.choose || {})) { if (SCENE_FN[k] || !k.startsWith(P.prefix)) console.warn(`[투잡 등록표] ${P.key}: onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 
@@ -761,14 +822,16 @@ export function endMonth(s) {
   const prProfit = PR.month(s, r, notes, scenes);
   const csProfit = CS.month(s, r, notes, scenes);
   SJ.month(s, r, notes);
-  if (SJ.isActive(s, "insta")) INS.month(s, r, notes);
+  if (SJ.isActive(s, "insta")) INS.month(s, r, notes, scenes);
   const abProfit = SJ.isActive(s, "airbnb") ? AB.month(s, r, notes, scenes) : 0; void abProfit;
   if (SJ.isActive(s, "ucafe")) UC.month(s, r, notes, scenes);
   const plugRet = {}; for (const P of REG.JOBS) { if (SJ.isActive(s, P.key)) plugRet[P.key] = P.month(s, r, notes, scenes) || 0; else if (P.idle) P.idle(s, r, notes); }
   for (const X of REG.STORY) { if (SJ.isActive(s, X.key) && s.sx?.[X.key]) { try { X.month(s, r, notes, scenes); } catch (e) { console.warn("[이야기 보강]", X.key, e); } } } // 기존 투잡 이야기 이벤트
   BIG.month(s, r, notes, scenes);
   rivalMonth(s, r, notes, scenes); // 라이벌(v4.25): 투잡 이익 압박·반사이익, 등장·이벤트
+  spaceMonth(s, r, notes); // 공간형 유지비(v4.27): 재계약 5%·가구 교체·규모 문제
   marketMonth(s, r, notes, scenes); // 시장 충격(v4.25b): 라이벌 압박 뒤 남은 이익에 시장 배수, 새 충격 장면
+  jackpotMonth(s, r, notes, scenes); // 한방 전략(v4.27): 고정 수입·이익 배율·결과·새 제안(다른 event 장면 있으면 제안 쉼)
   if ([3, 4, 9, 10].includes(s.cal) && SYN.on(s, "season")) { s.mental = clamp(s.mental - 2, 0, 100); notes.push("성수기 충돌: 컨설팅 문의와 파티룸 주말 관리가 겹쳤다(멘탈 −2)"); }
   if (s.grad && !s.grad.done) {
     const G = s.grad, g = D.GRADS[G.k]; s.cash -= g.fee; addMoney(s, "exp", "대학원 등록금", g.fee);
@@ -805,7 +868,7 @@ export function endMonth(s) {
   if (s.cal === 5 && s.lastYearSide > 0) { const tax = Math.round(s.lastYearSide * 0.11 * mod(s, "taxMult", 1) * (helpers(s, "tax").length ? 0.8 : 1) * (s.era.tax ? 1.2 : 1) * (s.taxPro ? 0.85 : 1) * (1 + (s.taxPen || 0))); s.taxPen = 0;
     if (s.taxDodge === s.year) { if (s.co.quit || s.co.fired) s.auditAt = s.t + r.int(12, 24); /* 회사원은 원천징수라 잘 안 걸린다. 전업이면 1~2년 뒤 조사 */ s.auditAmt = Math.round(tax * 1.45); notes.push("종합소득세: 신고 안 함…"); } else if (tax > 0) { s.cash -= tax; addMoney(s, "exp", "종합소득세", tax); notes.push(`5월 종합소득세 ${won(tax)}`); } }
   // 투자
-  if (s.invest > 0) { const mu = D.INV.mu - ((s.sj?.active || []).length ? 0 : (D.INV.churn || 0) * (s.invHabit ?? 1)) + (s.era.slump ? -0.01 : 0) + (s.era.winter ? -0.008 : 0) + (s.era.recovery ? 0.006 : 0) + helperPower(s, "invest") * 0.001; const ret = Math.round(s.invest * (mu + D.INV.sd * r.normal())); s.invest = Math.max(0, s.invest + ret); addMoney(s, ret >= 0 ? "inc" : "exp", "투자 손익", Math.abs(ret)); }
+  invPhase(s, r, notes); if (s.invest > 0) { const PH = D.INV_PH, ph = s.invPh; const mu = D.INV.mu - ((s.sj?.active || []).length ? PH.sideChurn : 1) * (D.INV.churn || 0) * (s.invHabit ?? 1) + (ph.p === "b" ? PH.bearMu : ph.p === "r" ? PH.recMu : 0) + (s.era.slump ? -0.01 : 0) + (s.era.winter ? -0.008 : 0) + (s.era.recovery ? 0.006 : 0) + helperPower(s, "invest") * 0.001; const ret = Math.round(s.invest * (mu + D.INV.sd * r.normal())); s.invest = Math.max(0, s.invest + ret); addMoney(s, ret >= 0 ? "inc" : "exp", "투자 손익", Math.abs(ret)); }
   if (s.house.type === "own") s.house.value = Math.round(s.house.value * (1 + 0.0028 + (s.era.house ? 0.006 : 0) + 0.008 * r.normal()));
   invMonth(s, r, notes, scenes);
   // 4) 사람
@@ -827,7 +890,8 @@ export function endMonth(s) {
   let side = (M.inc["파티룸 매출"] || 0) - (M.exp["파티룸 비용"] || 0) + (M.inc["컨설팅"] || 0) + (M.inc["VOD·전자책"] || 0) + (M.inc["강의료"] || 0) + (M.inc["파티룸 강의료"] || 0) + (M.inc["인별 수익"] || 0) - (M.exp["컨설팅 광고·수수료"] || 0) + (M.inc["에어씨앤씨 매출"] || 0) - (M.exp["에어씨앤씨 비용"] || 0) + (M.inc["무인카페 매출"] || 0) - (M.exp["무인카페 비용"] || 0) + (M.inc["파티룸 창업 컨설팅"] || 0) + (M.inc["가맹비"] || 0) + (M.inc["가맹 로열티"] || 0) + (M.inc["AI 플랫폼 구독"] || 0) - (M.exp["플랫폼 서버·인건비"] || 0);
   const px = {}; for (const P of REG.JOBS) if (plugRet[P.key] !== undefined) { px[P.key] = Math.round(REG.sideOf(P, M, plugRet[P.key])); side += px[P.key]; }
   side += (M.inc["라이벌 반사이익"] || 0) - (M.exp["라이벌 경쟁"] || 0); // 라이벌(v4.25)
-  side += (M.inc["시장 영향"] || 0) - (M.exp["시장 영향"] || 0) - (M.exp["투잡 부대비용"] || 0); // 시장 충격·부대비용(v4.25b)
+  side += (M.inc["시장 영향"] || 0) - (M.exp["시장 영향"] || 0) - (M.exp["투잡 부대비용"] || 0) + (M.inc["단골·입소문"] || 0); // 시장 충격·부대비용(v4.25b)
+  side += (M.inc["한방 전략"] || 0) - (M.exp["한방 전략"] || 0); // 한방 전략(v4.27)
   s.taxBase += Math.max(0, side);
   if (s.cal === 12) { s.lastYearSide = s.taxBase; s.taxBase = 0; }
   s.lastSide = Math.round(side);
@@ -842,7 +906,7 @@ export function endMonth(s) {
   if (s.age >= D.endAge(s.me.gender) && !s.over) { s.ended = "age"; log(s, `${D.endAge(s.me.gender)}세. 인생 중간 결산.`, "end"); }
   checkPerks(s, scenes);
   if (yearSc && !s.over) scenes.push(yearSc);
-  s.sceneQ = scenes.filter(Boolean);
+  s.sceneQ = paceScenes(s, scenes.filter(Boolean), yearSc);
   if (!s.over && !s.ended) monthStart(s);
   return receipt;
 }
@@ -1069,6 +1133,14 @@ function lifeMonth(s, r, notes, scenes) {
 // ───────── 투자 이벤트(데이터는 defs.js INV_EV·INV) ─────────
 // 차분한 선택은 시장 평균, 무리한 선택은 크게 잃을 수 있다. 결과 돈은 장부 '투자 판단 손익'
 const INV_L = "투자 판단 손익";
+// v4.27 시장 국면(데이터 defs INV_PH). 하락장은 몇 달씩 이어지고, 끝나면 회복장이 온다
+function invPhase(s, r, notes) {
+  const PH = D.INV_PH, ph = s.invPh || (s.invPh = { p: "n", u: 0 });
+  if (s.t < ph.u) return;
+  if (ph.p === "b") { ph.p = "r"; ph.u = s.t + r.int(PH.rec[0], PH.rec[1]); if (s.invest > 0) notes.push("시장: 하락장이 끝났다. 천천히 회복장이 온다"); }
+  else if (ph.p === "r") { ph.p = "n"; ph.u = s.t; }
+  else if (r.chance(PH.p)) { ph.p = "b"; ph.u = s.t + r.int(PH.bear[0], PH.bear[1]); ph.t = s.t; if (s.invest > 0) notes.push("시장: 하락장이 시작됐다. 몇 달은 계좌가 파랄 것 같다"); }
+}
 function invMonth(s, r, notes, scenes) {
   if (s.invReb?.length) s.invReb = s.invReb.filter((b) => {
     if (s.t < b.t) return true;
@@ -1263,7 +1335,7 @@ export function load(str) {
   s.me.perks = s.me.perks || [];
   if (!s.moments) { s.moments = {}; for (const m of D.MOMENTS) { try { if (m.test(s)) s.moments[m.key] = s.t; } catch (e) {} } }
   if (s.st.body === undefined) s.st.body = 30;
-  if (!s.ins) s.ins = INS.init(); if (!s.big) s.big = BIG.init(); if (!s.ab) s.ab = AB.init(); if (!s.uc) s.uc = UC.init(); s.fame = s.fame || 0; if (s.st.lang === undefined) s.st.lang = 15; s.pi = s.pi || Math.pow(1.025, s.t / 12); s.piX = s.piX || 1; if (s.grad === undefined) s.grad = null; PR.fill(s);
+  if (!s.ins) s.ins = INS.init(); INS.ens(s); /* 인별 v2: 예전 주제 → 컨셉 */ if (!s.big) s.big = BIG.init(); if (!s.ab) s.ab = AB.init(); if (!s.uc) s.uc = UC.init(); s.fame = s.fame || 0; if (s.st.lang === undefined) s.st.lang = 15; s.pi = s.pi || Math.pow(1.025, s.t / 12); s.piX = s.piX || 1; if (s.grad === undefined) s.grad = null; PR.fill(s);
   s.ng = s.ng || { n: 1, hard: false, gifts: [] }; s.items = s.items || {}; GC.ensure(s); s.me.revealed = s.me.revealed || {}; s.me.job = s.me.job || "plan"; if (!D.MAJORS[s.me.major]) s.me.major = "biz";
   const co = s.co; co.payIdx = co.payIdx || Math.pow(1.02, Math.max(0, co.years - 1)); co.pts = co.pts || 0; co.grades = co.grades || []; co.remote = co.remote || 0; co.evT = co.evT ?? -99; co.hired = co.hired || [];
   for (const c of CHARS) if (c.co && !s.cast.includes(c.id)) s.cast.push(c.id);

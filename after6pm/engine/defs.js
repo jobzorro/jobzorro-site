@@ -4,6 +4,43 @@
 export const STATS = { talk: "말빨", write: "글쓰기", sense: "감각", mkt: "마케팅", hands: "손재주", num: "숫자", career: "커리어", charm: "매력", body: "체력", lang: "외국어" };
 export const STAT_KEYS = Object.keys(STATS);
 export const STAT_MAX = 200;
+// ───────── 능력치 성장(v4.28 개편) ─────────
+// 세 갈래: 공부형은 공부 효과 100%, 경험형 30%, 생활형 0%(공부 목록에서 빠짐)
+export const STAT_KIND = { write: "study", num: "study", lang: "study", mkt: "study", talk: "exp", career: "exp", hands: "exp", sense: "exp", charm: "life", body: "life" };
+export const STAT_KIND_N = { study: { n: "공부형", study: 1 }, exp: { n: "경험형", study: 0.3 }, life: { n: "생활형", study: 0 } };
+export const STUDY_ACTS = ["study_home", "study", "course"];
+// 성장 곡선: 지금 값이 to 미만이면 m 배(돌파 중이면 b 배). 아이템·카드 '바로 +N'은 곡선을 거치지 않는다.
+export const STAT_CURVE = [
+  { to: 60, n: "입문", m: 1.0, b: 1.0, study: 1 },
+  { to: 100, n: "숙련", m: 0.55, b: 0.55, study: 0.4 },
+  { to: 150, n: "고수", m: 0.25, b: 0.3, study: 0.2 },
+  { to: 180, n: "달인", m: 0.08, b: 0.3, study: 0.1 },
+  { to: 201, n: "전설", m: 0.03, b: 0.15, study: 0.05 },
+]; // v4.28b: 목표(집중해서 3년 100 · 8~10년 150 · 200 전설)에 맞춰 낮춤. study: 공부 행동(STUDY_ACTS)만 따로 곱함 — 높은 구간은 실전·돌파 계기가 열쇠
+export const STAT_BRK = { months: 6, jp: { cs: "talk", tarot: "talk", webnovel: "write" } }; // 돌파 계기: 6달 동안 벽이 낮아진다 · jp: 한방 대박 때 돌파하는 능력치
+export const STAT_REP = { months: 3, mult: 0.7 }; // 같은 길로 같은 능력치를 석 달 연속 올리면 ×0.7(다른 길 섞으면 회복)
+export const MG_STAT = { great: 1, good: 0.5, of: { pr: "hands", cs: "talk", airbnb: "talk", ucafe: "hands", insta: "sense", tarot: "talk", tutoring: "talk", chicken: "hands", vibe: "sense", webnovel: "sense" } }; // 미니게임 대성공·성공 → 그 투잡의 경험형 능력치
+// 장소 장면에서 고른 뒤 오르는 능력치(장소마다 다르게) · 선택지 글에 이런 말이 있으면 그 능력치도 조금
+export const LOC_STAT = { home: "write", gym: "body", cafe: "sense", library: "num", pub: "charm", realty: "num", office: "career", univ: "talk", officest: "career", hotplace: "sense", newtown: "talk", club: "charm", online: "mkt", parents: "hands" };
+export const STAT_WORDS = [
+  ["body", /운동|달린|달리|뛴다|뛰어|산책|등산|스트레칭|일찍 잔|푹 잔|잠을|잔다|잤다|샐러드|식단|헬스|계단/],
+  ["charm", /고백|데이트|소개팅|꾸미|옷을|웃으며|미소|분위기를 띄|건배사|무대|자신감|칭찬을/],
+  ["lang", /영어|일본어|중국어|외국|해외|번역|통역|원어민|여행객/],
+];
+export const STAT_WORD_GAIN = 0.4;
+// '이 능력치가 오르는 곳'(나 화면 접기 힌트)
+export const STAT_WHERE = {
+  write: "공부·보고서·블로그·첨삭·웹소설·독서 모임",
+  num: "공부·예산 업무·정산·원가표·부동산·보드게임",
+  lang: "공부·에어씨앤씨 응대·여행·외국인 친구·해외 메일",
+  mkt: "공부·트렌드 구경·홍보·인별·공유오피스·크멍",
+  talk: "발표·회의·포차·상담·강의·과외·밴드",
+  career: "회사 일·TF·점심 네트워킹·멘토링·선배 조언",
+  hands: "셀프 공사·청소·튀김·본가 일 돕기·공방",
+  sense: "전시·사진·방 꾸미기·카페 구경·여행",
+  charm: "헬스·러닝·꾸미기·한잔·연애·무대(강의·라이브)·큰 성공",
+  body: "운동·PT·러닝·푹 쉬기·몸 쓰는 투잡(야근·회식은 −)",
+};
 export const ROLL = { min: 8, max: 32, body: [18, 40], lang: [3, 25] }; // 시작 능력치 룰렛 범위
 export const staMax = (body) => Math.round(60 + body * 0.6); // 체력 → 최대 스태미너
 
@@ -56,42 +93,42 @@ export const SPOTS = Object.fromEntries(REGIONS.flatMap((r) => r.spots.map((sp) 
 // gain: 능력치 증가량(기본), eff: 즉시 효과. 실제 처리는 core.js의 ACT_FN에서.
 export const ACTIONS = {
   // 능력치
-  rest: { n: "푹 쉬기", track: "능력치", ap: 1, hp: -10, mental: 6, desc: "스태미너 회복. 다음 달 행동력이 늘어요" },
+  rest: { n: "푹 쉬기", track: "능력치", ap: 1, hp: -10, mental: 6, stat: { body: 0.4 }, desc: "스태미너 회복. 다음 달 행동력이 늘어요" },
   study_home: { n: "집에서 공부", track: "능력치", ap: 1, hp: 3, mental: -1, pick: "stat", gain: 2.2, desc: "능력치 하나를 조금 올린다" },
   study: { n: "스터디카페 공부", track: "능력치", ap: 1, hp: 4, mental: -2, pick: "stat", gain: 3.2, cash: -1, desc: "집보다 집중이 잘 된다" },
   course: { n: "유료 강의 듣기", track: "능력치", ap: 1, hp: 3, mental: -1, pick: "stat", gain: 5.5, cash: -15, desc: "돈 주고 빨리 배운다" },
-  workout: { n: "운동", track: "능력치", ap: 1, hp: 4, mental: 3, desc: "체력이 오르고 최대 스태미너가 늘어요(나이 들수록 중요)" },
-  pt: { n: "PT 받기", track: "능력치", ap: 1, hp: 5, mental: 2, cash: -8, desc: "체력이 많이 올라요" },
+  workout: { n: "운동", track: "능력치", ap: 1, hp: 4, mental: 3, stat: { charm: 0.4 }, desc: "체력이 오르고 최대 스태미너가 늘어요(나이 들수록 중요)" },
+  pt: { n: "PT 받기", track: "능력치", ap: 1, hp: 5, mental: 2, cash: -8, stat: { charm: 0.6 }, desc: "체력이 많이 올라요" },
   beauty: { n: "꾸미기", track: "능력치", ap: 1, hp: 1, pick: "beauty", desc: "매력을 올린다" },
   // 사람
   family_time: { n: "가족과 시간", track: "사람", ap: 1, hp: 2, mental: 4, desc: "가족 행복이 오른다", need: (s) => s.fam.spouse || s.fam.kids.length },
-  visit_parents: { n: "부모님 뵙기", track: "사람", ap: 1, hp: 3, mental: 2, cash: -5, desc: "부모님 마음이 편해진다" },
-  drink: { n: "한잔하기", track: "사람", ap: 1, hp: 5, mental: 5, cash: -4, desc: "멘탈 회복, 단골 인연" },
-  drink_fancy: { n: "루프탑에서 한잔", track: "사람", ap: 1, hp: 5, mental: 6, cash: -9, desc: "분위기 좋은 인연이 많다" },
+  visit_parents: { n: "부모님 뵙기", track: "사람", ap: 1, hp: 3, mental: 2, cash: -5, stat: { hands: 0.6 }, desc: "부모님 마음이 편해진다" },
+  drink: { n: "한잔하기", track: "사람", ap: 1, hp: 5, mental: 5, cash: -4, stat: { talk: 0.6, charm: 0.4 }, desc: "멘탈 회복, 단골 인연" },
+  drink_fancy: { n: "루프탑에서 한잔", track: "사람", ap: 1, hp: 5, mental: 6, cash: -9, stat: { charm: 0.8, talk: 0.4 }, desc: "분위기 좋은 인연이 많다" },
   exhibit: { n: "전시 보기", track: "능력치", ap: 1, hp: 3, mental: 4, cash: -2, stat: { sense: 1.5 }, desc: "감각이 오른다" },
   trend_walk: { n: "트렌드 구경", track: "능력치", ap: 1, hp: 3, mental: 2, stat: { mkt: 1.2, sense: 0.8 }, desc: "요즘 뭐가 뜨는지 본다" },
-  run_crew: { n: "러닝크루 뛰기", track: "사람", ap: 1, hp: 5, mental: 4, desc: "체력 +, 인연" },
+  run_crew: { n: "러닝크루 뛰기", track: "사람", ap: 1, hp: 5, mental: 4, stat: { charm: 0.3 }, desc: "체력 +, 인연" },
   book_club: { n: "독서모임", track: "사람", ap: 1, hp: 3, mental: 3, cash: -2, stat: { write: 1.2 }, desc: "글쓰기 +, 인연" },
-  dating_app: { n: "소개팅 앱 켜기", track: "사람", ap: 1, hp: 2, mental: -1, desc: "새 인연을 바로 만난다(매력이 중요)" },
-  network_lunch: { n: "점심 네트워킹", track: "사람", ap: 1, hp: 3, cash: -2, stat: { career: 0.8 }, desc: "다른 회사 사람 이야기" },
-  cowork: { n: "공유오피스 작업", track: "일", ap: 1, hp: 4, cash: -2, desc: "투잡 일을 몰아서(행동 1번이 1.5번 효과)" },
-  cafe_work: { n: "카페에서 작업", track: "일", ap: 1, hp: 3, cash: -1, desc: "다음 투잡 작업 1번 효과 +30%" },
-  univ_walk: { n: "대학가 둘러보기", track: "일", ap: 1, hp: 3, desc: "대학가 상권 감 잡기, 취준생 인연" },
-  kids_play: { n: "아이와 키즈카페", track: "사람", ap: 1, hp: 6, mental: 2, cash: -3, desc: "아이 행복 +", need: (s) => s.fam.kids.length },
-  house_tour: { n: "아파트 구경", track: "사람", ap: 1, hp: 3, desc: "내 집 마련 정보" },
-  house_search: { n: "내 집 알아보기", track: "사람", ap: 1, hp: 3, desc: "전세·매매 매물을 본다" },
+  dating_app: { n: "소개팅 앱 켜기", track: "사람", ap: 1, hp: 2, mental: -1, stat: { charm: 0.5 }, desc: "새 인연을 바로 만난다(매력이 중요)" },
+  network_lunch: { n: "점심 네트워킹", track: "사람", ap: 1, hp: 3, cash: -2, stat: { career: 0.8, sense: 0.5 }, desc: "다른 회사 사람 이야기" },
+  cowork: { n: "공유오피스 작업", track: "일", ap: 1, hp: 4, cash: -2, stat: { mkt: 0.4, career: 0.4 }, desc: "투잡 일을 몰아서(행동 1번이 1.5번 효과)" },
+  cafe_work: { n: "카페에서 작업", track: "일", ap: 1, hp: 3, cash: -1, stat: { sense: 0.3, talk: 0.3 }, desc: "다음 투잡 작업 1번 효과 +30%" },
+  univ_walk: { n: "대학가 둘러보기", track: "일", ap: 1, hp: 3, stat: { talk: 0.4, mkt: 0.2 }, desc: "대학가 상권 감 잡기, 취준생 인연" },
+  kids_play: { n: "아이와 키즈카페", track: "사람", ap: 1, hp: 6, mental: 2, cash: -3, stat: { sense: 0.5, body: -0.2 }, desc: "아이 행복 +", need: (s) => s.fam.kids.length },
+  house_tour: { n: "아파트 구경", track: "사람", ap: 1, hp: 3, stat: { talk: 0.4, num: 0.3 }, desc: "내 집 마련 정보" },
+  house_search: { n: "내 집 알아보기", track: "사람", ap: 1, hp: 3, stat: { num: 0.4, sense: 0.3 }, desc: "전세·매매 매물을 본다" },
   // 회사
-  work_hard: { n: "성과 내기", track: "일", ap: 1, hp: 5, mental: -2, desc: "회사 성과 +, 눈치 −" },
-  overtime: { n: "자진 야근", track: "일", ap: 2, hp: 10, mental: -4, desc: "성과 ++, 승진 심사에 유리" },
-  office_chat: { n: "탕비실 수다", track: "사람", ap: 1, hp: 1, mental: 2, desc: "사내 소문, 동료 인연, 눈치 −" },
-  company_dinner: { n: "회식 참석", track: "일", ap: 1, hp: 6, mental: -2, desc: "팀장 호감 + 눈치 −" },
+  work_hard: { n: "성과 내기", track: "일", ap: 1, hp: 5, mental: -2, stat: { write: 0.4, num: 0.4, career: 0.5 }, desc: "회사 성과 +, 눈치 −" },
+  overtime: { n: "자진 야근", track: "일", ap: 2, hp: 10, mental: -4, stat: { write: 0.5, num: 0.5, career: 0.8, body: -0.3 }, desc: "성과 ++, 승진 심사에 유리" },
+  office_chat: { n: "탕비실 수다", track: "사람", ap: 1, hp: 1, mental: 2, stat: { career: 0.3 }, desc: "사내 소문, 동료 인연, 눈치 −" },
+  company_dinner: { n: "회식 참석", track: "일", ap: 1, hp: 6, mental: -2, stat: { charm: 0.6, talk: 0.5, body: -0.3 }, desc: "팀장 호감 + 눈치 −" },
   // 파티룸
-  pr_search: { n: "파티룸 매물 보기", track: "일", ap: 1, hp: 4, pick: "district", desc: "상권을 골라 매물 3개를 본다" },
+  pr_search: { n: "파티룸 매물 보기", track: "일", ap: 1, hp: 4, pick: "district", stat: { num: 0.4, sense: 0.3 }, desc: "상권을 골라 매물 3개를 본다" },
   pr_visit: { n: "임장", track: "일", ap: 1, hp: 5, desc: "방음·24시간 출입·온돌 시공 가능 여부 확인" },
   pr_landlord: { n: "건물주 미팅", track: "일", ap: 1, hp: 3, desc: "건물주 성향 확인. 말빨로 설득 가능" },
   pr_appcheck: { n: "앱으로 상권 조사", track: "일", ap: 1, hp: 2, desc: "주변 경쟁 파티룸 수와 컨셉 수요 확인" },
   pr_setup: { n: "셀프 인테리어 작업", track: "일", ap: 1, hp: 8, desc: "셀프 공사 진행(3번 필요)" },
-  pr_manage: { n: "파티룸 관리", track: "일", ap: 1, hp: 5, desc: "청소·응대·비품. 필요량을 못 채우면 별점 하락" },
+  pr_manage: { n: "파티룸 관리", track: "일", ap: 1, hp: 5, stat: { body: 0.2, charm: 0.1 }, desc: "청소·응대·비품. 필요량을 못 채우면 별점 하락" },
   pr_promo: { n: "홍보 사진 찍기", track: "일", ap: 1, hp: 3, desc: "이번 달 예약 +12%" },
   // 컨설팅
   cs_friend: { n: "지인 무료 첨삭", track: "일", ap: 1, hp: 4, desc: "첫 후기 만들기(진입 단계)" },
@@ -99,12 +136,12 @@ export const ACTIONS = {
   cs_blog: { n: "네이바 블로그 글", track: "일", ap: 1, hp: 3, desc: "검색 유입이 천천히 쌓인다" },
   cs_insta: { n: "인별 카드뉴스", track: "일", ap: 1, hp: 3, desc: "팔로워와 문의" },
   cs_youtube: { n: "너튜브 영상", track: "일", ap: 2, hp: 7, desc: "대박 가능, 대신 얼굴 노출(눈치 +)" },
-  cs_kakao: { n: "오픈채팅방 운영", track: "일", ap: 1, hp: 2, mental: -1, desc: "방 인원이 늘면 문의가 는다" },
-  cs_kmong: { n: "크멍 상세페이지", track: "일", ap: 1, hp: 3, desc: "크멍 입점·상세페이지 개선(수수료 20%)" },
-  cs_soomgo: { n: "숨꼬 견적 보내기", track: "일", ap: 1, hp: 2, cash: -2, desc: "바로 고객 1~3명. 견적 비용" },
-  cs_flyer: { n: "스터디 골목 홍보", track: "일", ap: 1, hp: 4, desc: "취준생 인연, 문의 +" },
-  cs_seminar: { n: "무료 특강 열기", track: "일", ap: 2, hp: 8, mental: -2, desc: "문의 폭발. 후기 5개 이상 필요" },
-  cs_lecture: { n: "대학 강의", track: "일", ap: 2, hp: 8, desc: "강의료 + 신뢰. 섭외가 와야 함" },
+  cs_kakao: { n: "오픈채팅방 운영", track: "일", ap: 1, hp: 2, mental: -1, stat: { career: 0.3, write: 0.2 }, desc: "방 인원이 늘면 문의가 는다" },
+  cs_kmong: { n: "크멍 상세페이지", track: "일", ap: 1, hp: 3, stat: { mkt: 0.4, write: 0.2 }, desc: "크멍 입점·상세페이지 개선(수수료 20%)" },
+  cs_soomgo: { n: "숨꼬 견적 보내기", track: "일", ap: 1, hp: 2, cash: -2, stat: { mkt: 0.3, talk: 0.2 }, desc: "바로 고객 1~3명. 견적 비용" },
+  cs_flyer: { n: "스터디 골목 홍보", track: "일", ap: 1, hp: 4, stat: { talk: 0.4, mkt: 0.3 }, desc: "취준생 인연, 문의 +" },
+  cs_seminar: { n: "무료 특강 열기", track: "일", ap: 2, hp: 8, mental: -2, stat: { talk: 0.8, career: 0.4, charm: 0.4 }, desc: "문의 폭발. 후기 5개 이상 필요" },
+  cs_lecture: { n: "대학 강의", track: "일", ap: 2, hp: 8, stat: { talk: 1, career: 0.5, charm: 0.5 }, desc: "강의료 + 신뢰. 섭외가 와야 함" },
   cs_template: { n: "첨삭 템플릿 만들기", track: "일", ap: 2, hp: 6, desc: "고객 1명당 걸리는 시간이 준다(규모의 경제)" },
   cs_group: { n: "그룹 스터디 운영", track: "일", ap: 1, hp: 5, desc: "한 번에 여러 명. 오픈채팅 150명 또는 후기 25개" },
   cs_focus: { n: "집중 첨삭(미니게임)", track: "일", ap: 1, hp: 5, mental: -1, pick: "quiz", desc: "자소서 문장 3개를 직접 고친다. 잘 고칠수록 합격률 +, 환불 −" },
@@ -123,31 +160,34 @@ export const ACTIONS = {
   sj_interview: { n: "해 본 사람에게 묻기", track: "일", ap: 1, hp: 3, cash: -2, pick: "sj", desc: "커피 한 잔에 현실을 듣는다(관심 +50, 궁합 공개)" },
   hb_go: { n: "취미 모임 가기", track: "사람", ap: 1, hp: 4, desc: "능력치·멘탈 +, 인연, 투잡 발견" },
   // 회사 (투잡 없이 회사만 다녀도 된다)
-  co_lunch: { n: "동료와 점심", track: "사람", ap: 1, hp: 1, cash: -1, mental: 1, desc: "사내 인연, 소문(가끔 투잡 이야기)" },
-  co_project: { n: "TF 프로젝트 지원", track: "일", ap: 2, hp: 8, mental: -3, desc: "성과·커리어 크게 +, 팀장 호감 +" },
-  co_resume: { n: "경력기술서 업데이트", track: "일", ap: 1, hp: 2, desc: "원티즈·리멤바에 열어 둔다. 헤드헌터 제안 +" },
+  co_lunch: { n: "동료와 점심", track: "사람", ap: 1, hp: 1, cash: -1, mental: 1, stat: { talk: 0.3, career: 0.2 }, desc: "사내 인연, 소문(가끔 투잡 이야기)" },
+  co_project: { n: "TF 프로젝트 지원", track: "일", ap: 2, hp: 8, mental: -3, stat: { talk: 0.8 }, desc: "성과·커리어 크게 +, 팀장 호감 +" },
+  co_resume: { n: "경력기술서 업데이트", track: "일", ap: 1, hp: 2, stat: { career: 0.5, write: 0.3 }, desc: "원티즈·리멤바에 열어 둔다. 헤드헌터 제안 +" },
   rejob: { n: "재취업 면접", track: "일", ap: 2, hp: 6, mental: -3, desc: "다시 회사로" },
   // 파티룸 노하우·엑시트
-  pr_meetup: { n: "파티룸 사장 모임", track: "일", ap: 1, hp: 3, cash: -3, desc: "노하우를 나눠요. 운영 노하우 +, 좋은 매물·권리금 정보" },
+  pr_meetup: { n: "파티룸 사장 모임", track: "일", ap: 1, hp: 3, cash: -3, stat: { career: 0.3, talk: 0.3 }, desc: "노하우를 나눠요. 운영 노하우 +, 좋은 매물·권리금 정보" },
   pr_course: { n: "파티룸 운영 교육 수강", track: "일", ap: 2, hp: 5, cash: -60, desc: "운영 노하우가 크게 올라요(6개월에 한 번)" },
   pr_teach: { n: "파티룸 창업 강의하기", track: "일", ap: 2, hp: 7, desc: "강의료와 입소문. 지점 3곳·노하우 50부터" },
   pr_club: { n: "모임 대관 행사 열기", track: "일", ap: 1, hp: 5, desc: "내 취미 모임 행사를 내 파티룸에서. 매출·입소문·인연" },
+  pr_reply: { n: "후기 답글 달기", track: "일", ap: 1, hp: 1, desc: "밀린 후기에 답글. 별점 +, 악성 후기 대응" },
   pr_review: { n: "리뷰 이벤트", track: "일", ap: 1, hp: 2, cash: -10, desc: "음료 쿠폰을 걸고 인별·블로그 후기를 모아요(입소문 +)" },
   // 인별그램
-  in_post: { n: "피드 올리기", track: "일", ap: 1, hp: 2, desc: "팔로워 +. 꾸준함이 전부예요" },
-  in_reel: { n: "릴스 찍기", track: "일", ap: 2, hp: 6, desc: "터지면 팔로워가 폭발해요. 얼굴 공개면 회사 눈치 +" },
-  in_engage: { n: "댓글·DM 소통", track: "일", ap: 1, hp: 1, desc: "참여율 +, 팔로워가 덜 빠져요" },
-  in_deal: { n: "협찬 콘텐츠 만들기", track: "일", ap: 1, hp: 3, desc: "들어온 협찬 하나를 처리하고 돈을 받아요" },
+  in_post: { n: "올리기", track: "일", ap: 1, hp: 2, desc: "컨셉대로 올리면 일관성·노출 +. 포맷마다 품이 달라요(릴스·브이로그 ⚡2)" },
+  in_reel: { n: "실험 릴스", track: "일", ap: 2, hp: 6, desc: "컨셉 밖 포맷으로 한 번 시험. 터지면 크게, 일관성은 −" },
+  in_engage: { n: "댓글함 30초 판", track: "일", ap: 1, hp: 1, desc: "한 달에 한 번. 답글·고정·숨김·차단으로 팬심과 논란을 다스려요" },
+  in_deal: { n: "협찬 콘텐츠 만들기", track: "일", ap: 1, hp: 3, desc: "협찬함의 제안 하나. 컨셉과 맞으면 단가↑, 안 맞으면 일관성↓" },
   in_gong: { n: "공동구매 열기", track: "일", ap: 2, hp: 5, mental: -3, desc: "팔로워 1만부터. 한 번에 큰돈, 대신 문의 폭탄" },
   // 에어씨앤씨
   ab_search: { n: "에어씨앤씨 매물 보기", track: "일", ap: 1, hp: 3, pick: "abregion", desc: "지역을 골라 숙소 매물 3개를 봐요" },
-  ab_clean: { n: "청소·턴오버", track: "일", ap: 1, hp: 5, desc: "체크아웃 뒤 청소·침구. 못 채우면 별점 하락" },
+  ab_clean: { n: "청소·턴오버", track: "일", ap: 1, hp: 5, stat: { body: 0.2 }, desc: "체크아웃 뒤 청소·침구. 못 채우면 별점 하락" },
   ab_photo: { n: "사진·소개 다듬기", track: "일", ap: 1, hp: 2, desc: "사진·설명 품질 +(감각)" },
-  ab_host: { n: "게스트 응대", track: "일", ap: 1, hp: 2, desc: "외국어로 응대. 성공하면 별점 +, 외국어 +" },
+  ab_host: { n: "게스트 응대", track: "일", ap: 1, hp: 2, stat: { charm: 0.2 }, desc: "외국어로 응대. 성공하면 별점 +, 외국어 +" },
+  ab_reply: { n: "후기 답글 달기", track: "일", ap: 1, hp: 1, desc: "밀린 후기에 답글. 별점 +(슈퍼호스트 조건)" },
+  ab_ask: { n: "명의 부탁하기", track: "사람", ap: 1, hp: 2, mental: -2, desc: "동료·친구에게 숙소 명의를 빌려 달라고 설득해요(호감·말빨)" },
   ab_cohost: { n: "코호스트 고용/해지", track: "일", ap: 0, hp: 0, desc: "매출 20%를 주고 청소·응대를 맡겨요(투잡 칸 +1)" },
   // 무인카페
   uc_search: { n: "무인카페 자리 보기", track: "일", ap: 1, hp: 3, pick: "ucarea", desc: "상권을 골라 매물 3개를 봐요" },
-  uc_check: { n: "점검·재고·청소", track: "일", ap: 1, hp: 3, desc: "원두·컵 채우고 청소. 고장 난 머신도 손봐요" },
+  uc_check: { n: "점검·재고·청소", track: "일", ap: 1, hp: 3, stat: { body: 0.1 }, desc: "원두·컵 채우고 청소. 고장 난 머신도 손봐요" },
   uc_promo: { n: "동네 홍보", track: "일", ap: 1, hp: 2, desc: "아파트 단톡방·맘카페 쿠폰. 입소문 +" },
   uc_agent: { n: "관리 대행 계약/해지", track: "일", ap: 0, hp: 0, desc: "매장당 월 40만에 청소·재고를 맡겨요(투잡 칸 +1)" },
   // 온잡(전업)으로 판 키우기
@@ -319,7 +359,7 @@ MOMENTS.push(
   ME("cs", "cs_end_night", "퇴근 후 첨삭 20년", "good", (s) => !(s.co.quit || s.co.fired) && s.hist.filter((h) => h.cs > 0).length >= 240,
     ["퇴근 후 첨삭만 240달. 회사 사람들은 아직도 내 닉네임을 모른다.", "월급날과 첨삭 정산일이 같은 주에 온다. 둘 다 끊긴 적이 없다."],
     "회사도 첨삭도 20년을 버텼다. 두 개의 명함은 끝까지 따로 들고 다녔다."),
-  ME("cs", "cs_end_refund", "환불 문자의 밤", "bad", (s) => (s.cs.refundAll || 0) >= 25,
+  ME("cs", "cs_end_refund", "환불 문자의 밤", "bad", (s) => (s.cs.refundAll || 0) >= 25 && (s.cs.refundAll || 0) >= (s.cs.clients || 0) * 0.15, /* v4.28 비율 조건 */
     ["환불 25건. \"기대했는데 아쉬워요\" 한 줄이 스물다섯 번 잠을 깨웠다.", "가격만 올리고 실력은 그대로였다. 크멍 별점이 4점 밑으로 내려갔다."],
     "환불 문자에 잠을 깬 밤이 많았다. 가격보다 실력을 먼저 올렸어야 했다."),
   ME("insta", "in_end_100k", "팔로워 30만", "good", (s) => (s.ins.peak || s.ins.f || 0) >= 300000,
@@ -426,11 +466,11 @@ export const DOMAIN_N = { co: "회사" }; // 투잡은 SIDEJOBS 이름을 쓴다
 // rate: 2층 기준 평당 월세(만원). 한국부동산원 서울 집합상가 평균 1층 약 16만·2층 7.6만·지하 5.1만/평, 역세권·핫플은 1.5~2배
 export const PR_FLOOR_RENT = (L) => (L.floor === -1 ? 0.65 : L.floor === 1 ? 2.0 : L.floor === 2 ? 1 : L.floor === 3 ? 0.85 : L.elevator ? 0.8 : 0.65);
 export const DISTRICTS = {
-  univ: { n: "대학가", wk: 0.55, we: 1.0, rate: [9, 12], rent: [120, 180], key: [300, 1500], dep: [1000, 2000], comp: [3, 7], noise: 0.8, price: 16, park: 0.2, base: 0.25, size: [15, 25], fit: { bridal: 1.0, party: 1.35, study: 1.2, work: 0.6, kids: 0.4, home: 0.9, game: 1.3, lecture: 1.1, mega: 1.3, edu: 0.5 }, tip: "주말·밤 수요 최고, 소음 내성 높음, 경쟁 많음" },
-  office: { n: "오피스가", wk: 1.0, we: 0.45, rate: [8, 11], rent: [150, 230], key: [500, 2000], dep: [1500, 3000], comp: [2, 5], noise: 0.6, price: 18, park: 0.6, base: 0.2, size: [18, 30], fit: { bridal: 0.8, party: 0.6, study: 1.0, work: 1.45, kids: 0.4, home: 0.6, game: 0.8, lecture: 1.3, mega: 0.8, edu: 1.5 }, tip: "평일 저녁 워크숍·회식, 주말은 텅 빔" },
-  home: { n: "주택가·신도시", wk: 0.3, we: 0.85, rate: [5, 7], rent: [70, 110], key: [0, 500], dep: [500, 1500], comp: [1, 3], noise: 0.3, price: 14, park: 1.0, base: 0.1, size: [20, 35], fit: { bridal: 1.0, party: 0.5, study: 0.8, work: 0.5, kids: 1.45, home: 1.3, game: 0.7, lecture: 0.7, mega: 0.6, edu: 0.5 }, tip: "키즈·돌잔치, 주차 필수, 소음 민원 위험" },
-  hot: { n: "성숲길 핫플", wk: 0.6, we: 1.0, rate: [12, 17], rent: [180, 260], key: [1000, 3000], dep: [2000, 3000], comp: [4, 8], noise: 0.7, price: 21, park: 0.3, base: 0.15, size: [15, 25], fit: { bridal: 1.45, party: 1.0, study: 0.6, work: 0.9, kids: 0.5, home: 1.2, game: 0.8, lecture: 0.8, mega: 0.9, edu: 0.6 }, tip: "사진발·브라이덜 성지, 월세·권리금 최고" },
-  under: { n: "역세권 지하", wk: 0.7, we: 0.9, rate: [8, 11], rent: [90, 140], key: [200, 1000], dep: [1000, 2000], comp: [3, 6], noise: 0.95, price: 13, park: 0.3, base: 1.0, size: [40, 60], fit: { bridal: 0.7, party: 1.3, study: 0.9, work: 1.1, kids: 0.5, home: 0.6, game: 1.35, lecture: 0.9, mega: 1.2, edu: 0.9 }, tip: "넓고 싸고 시끄러워도 됨. 대신 사진이 어둡다" },
+  univ: { n: "대학가", wk: 0.55, we: 1.0, rate: [10, 13], rent: [120, 180], key: [300, 1500], dep: [1000, 2000], comp: [3, 7], noise: 0.8, price: 16, park: 0.2, base: 0.25, size: [15, 25], fit: { bridal: 1.0, party: 1.35, study: 1.2, work: 0.6, kids: 0.4, home: 0.9, game: 1.3, lecture: 1.1, mega: 1.3, edu: 0.5 }, tip: "주말·밤 수요 최고, 소음 내성 높음, 경쟁 많음" },
+  office: { n: "오피스가", wk: 1.0, we: 0.45, rate: [9, 12], rent: [150, 230], key: [500, 2000], dep: [1500, 3000], comp: [2, 5], noise: 0.6, price: 18, park: 0.6, base: 0.2, size: [18, 30], fit: { bridal: 0.8, party: 0.6, study: 1.0, work: 1.45, kids: 0.4, home: 0.6, game: 0.8, lecture: 1.3, mega: 0.8, edu: 1.5 }, tip: "평일 저녁 워크숍·회식, 주말은 텅 빔" },
+  home: { n: "주택가·신도시", wk: 0.3, we: 0.85, rate: [6, 8], rent: [70, 110], key: [0, 500], dep: [500, 1500], comp: [1, 3], noise: 0.3, price: 14, park: 1.0, base: 0.1, size: [20, 35], fit: { bridal: 1.0, party: 0.5, study: 0.8, work: 0.5, kids: 1.45, home: 1.3, game: 0.7, lecture: 0.7, mega: 0.6, edu: 0.5 }, tip: "키즈·돌잔치, 주차 필수, 소음 민원 위험" },
+  hot: { n: "성숲길 핫플", wk: 0.6, we: 1.0, rate: [13.5, 19], rent: [180, 260], key: [1000, 3000], dep: [2000, 3000], comp: [4, 8], noise: 0.7, price: 21, park: 0.3, base: 0.15, size: [15, 25], fit: { bridal: 1.45, party: 1.0, study: 0.6, work: 0.9, kids: 0.5, home: 1.2, game: 0.8, lecture: 0.8, mega: 0.9, edu: 0.6 }, tip: "사진발·브라이덜 성지, 월세·권리금 최고" },
+  under: { n: "역세권 지하", wk: 0.7, we: 0.9, rate: [8.5, 11.5], rent: [90, 140], key: [200, 1000], dep: [1000, 2000], comp: [3, 6], noise: 0.95, price: 13, park: 0.3, base: 1.0, size: [40, 60], fit: { bridal: 0.7, party: 1.3, study: 0.9, work: 1.1, kids: 0.5, home: 0.6, game: 1.35, lecture: 0.9, mega: 1.2, edu: 0.9 }, tip: "넓고 싸고 시끄러워도 됨. 대신 사진이 어둡다" },
   local: { n: "지방 중소도시", wk: 0.35, we: 0.7, rate: [2.5, 4], rent: [45, 75], key: [0, 300], dep: [300, 1000], comp: [0, 2], noise: 0.6, price: 13, park: 1.0, base: 0.1, size: [25, 40], fit: { bridal: 1.0, party: 1.0, study: 0.6, work: 0.8, kids: 1.2, home: 1.0, game: 0.9, lecture: 0.8, mega: 1.1, edu: 0.9 }, tip: "싸고 경쟁 없음, 수요도 작음. 집에서 멀면 관리가 힘듦" },
 };
 // we/wk: 주말·평일 수요 배율, sns: 손님이 인별·블로그에 올리는 정도, kit: 장비비(만원), seg: 주 고객, req: 매물 조건(안 맞으면 이유)
@@ -459,6 +499,13 @@ export const PR_SEASON = [
   { we: 1.2, wk: 0.8, el: 0.8 }, { we: 1.25, wk: 0.85, el: 0.8 }, { we: 0.8, wk: 0.46, el: 1.3 }, { we: 0.88, wk: 0.48, el: 1.3 }, { we: 0.9, wk: 0.54, el: 1.3 }, { we: 1.7, wk: 1.5, el: 0.5 },
 ];
 export const PR_K = 0.82;
+// v4.27 파티룸 업계 현실(과포화·가격 상한·계속 나가는 투자비). 계산은 engine/pr.js
+// priceInfl: 시세가 해마다 오르는 비율(물가 2.5%보다 훨씬 낮음 = 가격은 못 올리는데 비용만 오른다)
+// compIn: 새 파티룸이 생길 확률 추가(달마다) · compMax: 동네 경쟁 상한(기본 최대 + 이만큼)
+// offCap: 비수기(3~6·9~11월) 예약률 상한(아무리 잘해도) · rentUp: 재계약(2년)마다 월세 인상(건물주 환영이면 rentUpGood)
+// furn: 가구·소품 교체 주기(달) · furnCost: 처음 인테리어비 대비 교체비 · furnStar: 미루면 별점 목표 −
+// scaleDmg: 지점 하나 늘 때마다 파손 확률 +비율 · nightCall: 2호점부터 지점 하나당 새벽 전화 확률(매니저 없으면)
+export const PR_HARD = { priceInfl: 0.022, compIn: 0.004, compMax: 8, offCap: 0.68, rentUp: 0.05, rentUpGood: 0.03, furn: [36, 48], furnCost: 0.45, furnStar: 0.35, scaleDmg: 0.3, nightCall: 0.1, effort: [0.5, 0.65] }; // effort: 예약 배율 = a + b × 관리 충족도(0~1). 예전 0.82 + 0.18
 export const PR_RENT_CAP = 1.05; // 재계약 때 월세 인상 상한(상가임대차보호법 5%)
 export const PR_PEAK = [1, 1.3, 1.6, 2.0]; // 성수기 가격 버튼
 export const PR_SLOTS = 46; // 한 달 예약 가능 블록(주말 24 + 평일 22)
@@ -486,7 +533,7 @@ export const SCALE = {
 export const NICHES = {
   newgrad: { n: "신입 자소서", stat: "write", demand: 1.0, priceF: 1.0, req: { career: 20 }, season: [0.7, 0.9, 1.6, 1.5, 0.9, 0.6, 0.7, 1.0, 1.8, 1.5, 1.0, 0.6] },
   interview: { n: "면접 코칭", stat: "talk", demand: 0.8, priceF: 1.3, req: { career: 25 }, season: [0.6, 0.8, 1.0, 1.6, 1.4, 0.8, 0.6, 0.8, 1.0, 1.7, 1.5, 0.7] },
-  career: { n: "경력 이직", stat: "career", demand: 0.6, priceF: 1.7, req: { career: 45, years: 4 }, season: [1.3, 1.2, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 1.0, 1.0, 1.0, 1.1] },
+  career: { n: "경력 이직", stat: "career", demand: 0.6, priceF: 1.7, req: { career: 80, years: 4 } /* v4.27 커리어 80부터 */, season: [1.3, 1.2, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 1.0, 1.0, 1.0, 1.1] },
   public: { n: "공기업·NCS", stat: "write", demand: 0.7, priceF: 1.1, req: { career: 30 }, season: [0.8, 0.9, 1.4, 1.1, 0.8, 0.8, 1.1, 1.5, 1.6, 1.0, 0.8, 0.7] },
 };
 export const CS_PRODUCTS = {
@@ -547,8 +594,8 @@ export const SJ_SLOTS = 2; // 매니저(파티룸 매니저·에어씨앤씨 코
 // ───────── 취미 (여기서 인연과 투잡을 발견한다) ─────────
 // like: 이 취미에 오는 인연의 취향, jobs: 발견할 수 있는 투잡, stat: 한 번 갈 때 오르는 능력치
 export const HOBBIES = {
-  run: { n: "한강 러닝크루", like: ["운동"], fee: 2, hp: 5, mental: 4, stat: {}, hpMax: 0.6, jobs: ["pr", "insta"], desc: "토요일 아침 5km. 뒤풀이가 본게임" },
-  climb: { n: "클라이밍", like: ["운동"], fee: 12, hp: 6, mental: 4, stat: { hands: 0.6 }, hpMax: 0.5, jobs: ["insta", "goods"], desc: "벽에 매달리면 회사 생각이 안 난다" },
+  run: { n: "한강 러닝크루", like: ["운동"], fee: 2, hp: 5, mental: 4, stat: { charm: 0.3 }, hpMax: 0.6, jobs: ["pr", "insta"], desc: "토요일 아침 5km. 뒤풀이가 본게임" },
+  climb: { n: "클라이밍", like: ["운동"], fee: 12, hp: 6, mental: 4, stat: { hands: 0.6, charm: 0.2 }, hpMax: 0.5, jobs: ["insta", "goods"], desc: "벽에 매달리면 회사 생각이 안 난다" },
   book: { n: "독서모임", like: ["책"], fee: 3, hp: 3, mental: 3, stat: { write: 1.2 }, jobs: ["cs", "webnovel", "thesis"], desc: "한 달에 한 권, 이야기는 열 권" },
   mentor: { n: "취준생 멘토링 봉사", like: ["책", "카페"], fee: 0, hp: 4, mental: 3, stat: { career: 1.0, talk: 0.6 }, jobs: ["cs", "tutoring"], desc: "후배 자소서를 봐 준다. 고맙다는 말이 남는다" },
   photo: { n: "사진 동호회", like: ["전시"], fee: 5, hp: 4, mental: 4, stat: { sense: 1.2 }, jobs: ["insta", "pr", "aivideo"], desc: "출사 나가서 남의 공간을 찍는다" },
@@ -557,11 +604,12 @@ export const HOBBIES = {
   cook: { n: "홈카페·쿠킹 클래스", like: ["카페", "맛집"], fee: 10, hp: 3, mental: 4, stat: { hands: 1.0, sense: 0.4 }, jobs: ["ucafe", "coffee", "popup"], desc: "라테 아트 하트가 아직 감자" },
   camp: { n: "캠핑 동호회", like: ["캠핑"], fee: 8, hp: 6, mental: 6, stat: { hands: 0.8 }, jobs: ["airbnb", "shortstay"], desc: "장비는 늘고 통장은 준다" },
   band: { n: "직장인 밴드", like: ["음악"], fee: 6, hp: 5, mental: 6, stat: { sense: 0.8, charm: 0.5 }, jobs: ["pr", "aivideo"], desc: "합주실 대관비가 제일 무섭다" },
-  travel: { n: "여행 모임", like: ["여행"], fee: 10, hp: 5, mental: 6, stat: { sense: 0.5, mkt: 0.5 }, jobs: ["airbnb", "shortstay", "realtyblog"], desc: "숙소 고르는 눈이 생긴다" },
+  travel: { n: "여행 모임", like: ["여행"], fee: 10, hp: 5, mental: 6, stat: { sense: 0.5, mkt: 0.5, lang: 0.6 }, jobs: ["airbnb", "shortstay", "realtyblog"], desc: "숙소 고르는 눈이 생긴다" },
   tarot: { n: "타로 원데이 클래스", like: ["영화", "쇼핑"], fee: 8, hp: 3, mental: 3, stat: { talk: 1.0 }, jobs: ["tarot", "saju"], desc: "카드 78장, 사람 고민은 무한" },
   flower: { n: "플라워 클래스", like: ["쇼핑", "전시"], fee: 12, hp: 3, mental: 4, stat: { sense: 1.0 }, jobs: ["bouquet", "popup"], desc: "꽃값이 생각보다 비싸다" },
   code: { n: "코딩 스터디", like: ["게임"], fee: 3, hp: 4, mental: 1, stat: { num: 1.0, mkt: 0.3 }, jobs: ["vibe", "aivideo", "tistory"], desc: "AI한테 시키는 법을 배운다" },
   write: { n: "글쓰기 모임", like: ["책", "영화"], fee: 3, hp: 3, mental: 2, stat: { write: 1.3 }, jobs: ["webnovel", "press", "tistory", "cs"], desc: "합평은 아프고 글은 는다" },
+  lingo: { n: "언어 교환 모임", like: ["여행", "카페"], fee: 4, hp: 3, mental: 4, stat: { lang: 1.3, talk: 0.3 }, jobs: ["airbnb", "tutoring", "shortstay"], desc: "영어 반, 손짓 반. 외국인 친구가 생긴다" }, // v4.28 외국어 길
 };
 export const HOBBY_LV = [
   { n: "새내기", need: 0 }, { n: "단골", need: 3 }, { n: "고인물", need: 8 }, { n: "운영진", need: 15 }, { n: "모임장", need: 25 },
@@ -633,7 +681,7 @@ export const MACRO = [
 // churn: 투잡 없이 회사만 다니면 남는 시간·불안이 계좌로 간다(잦은 매매·수수료·세금, 월 −0.45%p = 연 −5.4%p).
 //   투자 습관(s.invHabit 0.3~1.5, 처음 1)을 곱한다: 이벤트에서 차분한 선택 −0.06, 조금 무리 +0.08, 무리 +0.25
 // busy: 투잡을 하면 바빠서 투자 앱을 덜 연다(유혹 이벤트만 ×busy, mkt 시장 사건은 누구에게나). chance·cool: 이벤트 확률·쉬는 달
-export const INV = { mu: 0.0053, sd: 0.044, churn: 0.0045, cool: 6, chance: 0.15, busy: 0.3, minT: 6, habit: { calm: -0.06, mid: 0.08, rash: 0.25 } };
+export const INV = { mu: 0.0053, sd: 0.044, churn: 0.0045, cool: 6, chance: 0.15, busy: 0.7, minT: 6, habit: { calm: -0.06, mid: 0.08, rash: 0.25 } };
 // 투자 이벤트. pre: 이벤트가 뜨는 순간 시장이 먼저 움직인다(inv: 투자 계좌, house: 집값).
 // 선택지 style: calm(차분, 시장 평균) · mid(조금 무리) · rash(무리). 봇·시험용 표시이고 화면엔 안 나온다.
 // stake: 위험에 거는 돈 { inv: 투자금 비율, cash: 여유 현금 비율(생활비 6달 치 남김), amt: 정액(현금), loan: 대출 비율(신용 한도·집값) }
@@ -737,6 +785,148 @@ export const INV_EV = [
       { t: "비상금 절반만 더 넣는다", style: "mid", stake: { cash: 0.3 }, outs: [[0.5, 0.08, "조금 더 올랐다. 기분이 좋다."], [0.5, -0.25, "넣자마자 빠졌다. 그래도 절반은 남겨 뒀다."]] },
       { t: "비상금까지 다 넣는다", style: "rash", stake: { cash: 0.95 }, outs: [[0.5, 0.08, "조금 더 올랐다. 비상금이 없어서 불안하긴 하다."], [0.5, -0.25, "꼭지였다. 넣자마자 빠졌다. 비상금도 같이."]] },
     ] },
+  // ── v4.27 주식 이벤트 10개 (좋은 일: esop·beat·ipo / 나머지는 나쁜 일). pre 는 한 종목 일이라 계좌 전체로는 작게 잡았다
+  { id: "esop", title: "우리사주 20% 할인 청약", w: 0.7, need: (s) => !(s.co.quit || s.co.fired) && s.cash >= 1000,
+    text: "회사가 우리사주 청약을 받는다. 시세보다 20% 싸다. 대신 1년은 못 판다. 회사가 흔들리면 월급과 주식이 같이 흔들린다.",
+    choices: [
+      { t: "여윳돈 500만만 넣는다", style: "calm", stake: { amt: 500 }, outs: [[0.6, 0.2, "1년 뒤 팔았다. 할인받은 만큼 딱 벌었다."], [0.25, 0.45, "주가까지 올랐다. 할인에 상승까지, 오랜만에 회사가 고맙다."], [0.15, -0.3, "실적이 꺾였다. 할인분을 다 토해 내고 더 빠졌다."]] },
+      { t: "배정 한도를 꽉 채운다", style: "mid", stake: { cash: 0.5 }, outs: [[0.45, 0.15, "할인만큼 벌었다. 1년 동안 비상금이 묶여 조마조마했다."], [0.2, 0.35, "주가도 올랐다. 이번엔 회사를 믿은 보람이 있었다."], [0.35, -0.4, "회사가 구조조정 뉴스에 올랐다. 월급도 주식도 같이 떨렸다."]] },
+      { t: "신용대출까지 끌어 몰빵한다", style: "rash", stake: { loan: 3000 }, outs: [[0.1, 0.6, "대박. 회사 주가가 날았다. 사내 메신저가 축제 분위기다."], [0.4, 0.1, "조금 벌었다. 대출 이자를 빼니 남는 게 없다."], [0.5, -0.5, "회사가 흔들렸다. 주식은 반토막, 대출은 그대로. 출근길이 무겁다."]], eff: { mental: -2 } },
+    ] },
+  { id: "nightus", title: "새벽 3시, 해외 주식 알림", w: 0.8, need: (s) => s.invest >= 1000,
+    text: "새벽 3시, 해외 주식 급등락 알림이 울렸다. 잠이 확 깼다. 아침 9시엔 팀장님 보고가 있다.",
+    choices: [
+      { t: "알림을 끄고 다시 잔다", style: "calm", out: "아침에 보니 어제랑 비슷했다. 잠이 남는 장사다. 알림은 영영 껐다.", eff: { hp: 2, mental: 1 } },
+      { t: "일어나서 차트 보다 조금 산다", style: "mid", stake: { inv: 0.1 }, outs: [[0.45, 0.08, "조금 벌었다. 대신 회의 시간에 하품을 세 번 했다."], [0.55, -0.12, "산 뒤에 더 빠졌다. 잠도 돈도 잃었다."]], eff: { hp: -3, eye: 2 } },
+      { t: "급락이다, 지금 풀매수", style: "rash", stake: { inv: 0.3 }, outs: [[0.1, 0.6, "아침에 보니 급반등. 오늘은 내가 천재다. 회의에선 졸았지만."], [0.35, 0, "본전. 대신 밤을 통째로 날렸다."], [0.55, -0.35, "떨어지는 칼날을 맨손으로 잡았다. 보고 중에 멍때리다 지적까지 받았다."]], eff: { hp: -6, eye: 4, mental: -2 } },
+    ] },
+  { id: "rights", title: "유상증자 공시, 하루 −15%", w: 0.7, need: (s) => s.invest >= 1500, pre: { inv: -0.06 },
+    text: "갖고 있던 종목이 유상증자를 공시했다. 하루 만에 15% 빠졌다. 내 계좌도 {pre} 줄었다. 새 주식은 지금보다 싸게 준단다.",
+    choices: [
+      { t: "증자 이유부터 읽고 그대로 둔다", style: "calm", reb: { pct: 0.05, at: [6, 14] }, out: "빚 갚는 돈이 아니라 공장 짓는 돈이었다. 지켜보기로 했다.", eff: { mental: -1, stat: { num: 0.3 } } },
+      { t: "실망이다, 그 종목은 판다", style: "mid", sell: 0.15, out: "손실을 확정하고 현금으로 뺐다. 몇 달 뒤 주가는 슬금슬금 돌아왔다.", eff: { mental: 1 } },
+      { t: "신용까지 써서 새 주식을 왕창 받는다", style: "rash", stake: { loan: 2000 }, outs: [[0.15, 0.6, "증자로 지은 공장이 대박. 싸게 받은 주식이 날았다."], [0.35, 0.05, "본전 언저리. 이자만 꼬박꼬박 나간다."], [0.5, -0.4, "주식 수만 늘고 주가는 계속 미끄러졌다. 빚만 남았다."]], eff: { mental: -2 } },
+    ] },
+  { id: "halt", title: "거래 정지, 회계 의혹", w: 0.6, need: (s) => s.invest >= 1500, pre: { inv: -0.04 },
+    text: "갖고 있던 종목에 회계 의혹 기사가 떴다. 주가가 급락하더니 내일부터 거래 정지 가능성이 있단다. 계좌는 벌써 {pre} 빠졌다.",
+    choices: [
+      { t: "감사보고서를 직접 뜯어본다", style: "calm", check: { stat: "num", dc: 50 }, ok: { text: "주석에서 수상한 거래를 찾았다. 정지 전에 미리 정리했다. 다음 날 뉴스를 보고 소름이 돋았다.", eff: { stat: { num: 1.5 }, mental: 3 } }, ng: { text: "봐도 모르겠다. 그래도 한 종목에 너무 많이 들었다는 건 알았다. 남은 돈은 지수 펀드로 넓게.", eff: { mental: -2 } } },
+      { t: "소문일 뿐, 그냥 들고 간다", style: "mid", stake: { inv: 0.1 }, outs: [[0.65, 0.05, "거래가 재개됐다. 제자리로 돌아왔다. 한 달 내내 심장이 덜컥거렸다."], [0.35, -0.4, "상장폐지 심사로 넘어갔다. 정리매매 때 헐값에 던졌다."]] },
+      { t: "많이 빠졌다, 싸게 더 줍는다", style: "rash", stake: { inv: 0.15, cash: 0.2 }, outs: [[0.12, 1.2, "의혹이 풀리고 거래 재개 첫날 상한가. 이걸 실력이라 믿으면 안 된다."], [0.88, -0.7, "상장폐지. 휴지가 된 주식 앞에서 할 말이 없었다."]] },
+    ] },
+  { id: "beat", title: "깜짝 실적, 하루 +25%", w: 0.8, need: (s) => s.invest >= 1000, pre: { inv: 0.06 },
+    text: "갖고 있던 종목이 깜짝 실적을 냈다. 하루 25% 급등. 내 계좌도 {pre} 늘었다. 단톡방은 '이제 시작이다, 열 배 간다'로 뜨겁다.",
+    choices: [
+      { t: "오른 만큼만 덜어 원래 비율로", style: "calm", sell: 0.06, bonus: 0.02, out: "오른 만큼만 팔아 예금에 넣었다. 계좌 비율이 원래대로 돌아왔다.", eff: { mental: 2 } },
+      { t: "더 간다, 그냥 둔다", style: "mid", stake: { inv: 0.1 }, outs: [[0.45, 0.15, "진짜 더 올랐다. 기분 좋은 한 주."], [0.55, -0.18, "재료가 끝나자 다음 날부터 흘러내렸다."]] },
+      { t: "현금까지 털어 추가 매수", style: "rash", stake: { inv: 0.1, cash: 0.5 }, outs: [[0.08, 0.8, "정말 두 배 갔다! 이 기억이 다음 판단을 망칠지도."], [0.27, 0.05, "조금 더 오르다 멈췄다."], [0.65, -0.4, "꼭대기에서 산 사람이 바로 나였다."]] },
+    ] },
+  { id: "ipo", title: "공모주 청약, 치킨값 벌기", w: 0.8, need: (s) => s.cash >= 800,
+    text: "공모주 청약 일정이 떴다. 경쟁률 1,000 대 1. 증거금 넣고 몇 주만 받아도 치킨값은 번다는데.",
+    choices: [
+      { t: "증거금 조금만 넣어 용돈 벌이", style: "calm", stake: { amt: 300 }, outs: [[0.7, 0.15, "두 주 받았다. 상장 첫날 팔아 치킨을 시켰다."], [0.3, -0.05, "공모가 아래로 시작했다. 그래도 커피값 손해."]] },
+      { t: "여유 현금 절반을 증거금으로", style: "mid", stake: { cash: 0.5 }, outs: [[0.55, 0.04, "몇 주 더 받았다. 큰돈 넣은 것치곤 소소하다."], [0.45, -0.08, "상장 첫날 하락. 묶인 돈 이자만 날렸다."]] },
+      { t: "신용대출로 증거금을 키운다", style: "rash", stake: { loan: 3000 }, outs: [[0.1, 0.3, "따따블! 첫날 팔고 대출까지 갚았다."], [0.4, 0.02, "이자 내고 나니 남는 게 없다."], [0.5, -0.15, "공모가가 깨졌다. 대출 이자는 꼬박꼬박 나간다."]] },
+    ] },
+  { id: "divcut", title: "배당이 반으로 줄었다", w: 0.6, need: (s) => s.invest >= 2000, pre: { inv: -0.04 },
+    text: "몇 년째 꼬박 받던 배당을 회사가 반으로 줄였다. 주가도 하루 새 빠져 계좌가 {pre} 줄었다.",
+    choices: [
+      { t: "한 종목 대신 지수 펀드로 넓힌다", style: "calm", reb: { pct: 0.04, at: [6, 14] }, out: "한 회사 배당에 기대지 않기로 했다. 지수 펀드로 넓게.", eff: { stat: { num: 0.5 } } },
+      { t: "다시 늘려 줄 거라 믿고 둔다", style: "mid", stake: { inv: 0.1 }, outs: [[0.5, 0.1, "이듬해 배당이 돌아왔다. 버틴 보람."], [0.5, -0.2, "배당은 그대로, 주가는 더 빠졌다."]] },
+      { t: "배당률 제일 높은 종목으로 몰빵", style: "rash", stake: { inv: 0.35 }, outs: [[0.1, 0.5, "갈아탄 종목이 배당도 주가도 올랐다."], [0.4, -0.05, "배당은 받았는데 주가가 그만큼 빠졌다."], [0.5, -0.35, "배당 함정이었다. 배당률이 높은 데는 이유가 있었다."]] },
+    ] },
+  { id: "bearsell", title: "하락장, 그냥 다 팔까?", w: 1, mkt: true, need: (s) => s.invPh?.p === "b" && s.invest >= 1000, pre: { inv: -0.05 },
+    text: "하락장 석 달째. 계좌가 또 {pre} 빠졌다. 퇴근 지하철에서 매일 묻는다. '그냥 다 팔까?'",
+    choices: [
+      { t: "적립은 그대로, 앱은 지운다", style: "calm", reb: { pct: 0.1, at: [6, 14] }, out: "버티는 게 제일 어렵다. 그래도 하락장은 늘 끝났다.", eff: { mental: -4 } },
+      { t: "절반만 판다", style: "mid", sell: 0.5, reb: { pct: 0.1, at: [6, 14] }, out: "절반은 손실 확정, 절반은 버티기. 반등도 절반만 왔다.", eff: { mental: -1 } },
+      { t: "다 팔고 바닥에서 다시 산다", style: "rash", stake: { inv: 0.8 }, outs: [[0.12, 0.2, "진짜 바닥에서 다시 샀다. 평생 한 번 올 운이다."], [0.88, -0.2, "팔고 나니 반등. 다시 사려니 이미 올라 있었다. 손실만 확정."]], eff: { mental: 2 } },
+    ] },
+  { id: "spouseacct", title: "배우자가 계좌를 봤다", w: 0.7, need: (s) => !!s.fam?.spouse && s.invest >= 1000,
+    text: "배우자가 내 폰에 뜬 증권 앱 알림을 봤다. '이거 얼마야? 우리 돈이야?' 하필 계좌가 파란 날이다.",
+    choices: [
+      { t: "솔직하게 다 보여 주고 규칙을 정한다", style: "calm", out: "잔소리를 한참 들었다. 대신 이제 둘이 같이 본다. 한 달에 얼마, 몰빵 금지.", eff: { family: 4, mental: -2 } },
+      { t: "수익 난 종목만 보여 준다", style: "mid", out: "반만 보여 줬다. 반은 들킨 것 같다. 저녁 식탁이 조용하다.", eff: { family: -3, mental: -2 } },
+      { t: "숨기고 몰래 더 넣어 메운다", style: "rash", stake: { cash: 0.4 }, outs: [[0.15, 0.5, "운 좋게 메웠다. 그래도 거짓말 하나가 남았다."], [0.85, -0.3, "구멍이 더 커졌다. 결국 들켰다. 이번엔 돈보다 신뢰가 문제다."]], eff: { family: -8, mental: -4 } },
+    ] },
+  { id: "pump", title: "'우리끼리 같이 사요'", w: 0.6, need: (s) => s.invest >= 1000,
+    text: "모르는 방장이 개인 메시지를 보냈다. '작은 종목 하나, 우리끼리 시간 맞춰 같이 사요. 올려놓고 빠지면 됩니다.'",
+    choices: [
+      { t: "시세 조종이다, 차단하고 신고", style: "calm", out: "차단했다. 몇 달 뒤 그 방장이 뉴스에 나왔다. 수갑 찬 모습으로.", eff: { mental: 1 } },
+      { t: "따라가진 않고 그 종목만 슬쩍 산다", style: "mid", stake: { inv: 0.1 }, outs: [[0.35, 0.3, "초입에 타서 조금 먹고 나왔다. 찝찝함은 덤."], [0.65, -0.25, "작전 세력이 먼저 던졌다. 개미는 나였다."]] },
+      { t: "시키는 대로 큰돈 넣는다", style: "rash", stake: { inv: 0.3 }, outs: [[0.15, 1.5, "진짜 올랐다. 큰돈을 벌었다. …밤마다 초인종 소리에 깬다."], [0.45, -0.6, "방장이 먼저 털고 나갔다. 나만 꼭대기에 남았다."], [0.4, -0.7, "금융당국 조사. 계좌가 묶이고 회사 인사팀에도 연락이 갔다."]], eff: { eye: 6, mental: -4 } },
+    ] },
+  // ── v4.27 코인 이벤트 10개 (좋은 일: bigcoin·kimchi·parentcoin / 나머지는 나쁜 일). 실제 코인·거래소 이름은 쓰지 않는다
+  { id: "bigcoin", title: "대장 코인이 신고가", w: 0.8, need: (s) => s.invest >= 1000,
+    text: "대장 코인이 신고가를 찍었다. 뉴스마다 '지금이라도?'. 탕비실 화제도 온통 코인이다.",
+    choices: [
+      { t: "계좌의 3%만 넣고 잊는다", style: "calm", stake: { inv: 0.03 }, outs: [[0.5, 0.6, "1년 뒤 열어 보니 올라 있었다. 조금 넣어서 웃었다."], [0.3, 0, "제자리. 넣은 걸 잊고 살았다."], [0.2, -0.45, "반토막 가까이. 그래도 3%라 웃어넘겼다."]] },
+      { t: "계좌의 20%를 옮긴다", style: "mid", stake: { inv: 0.2 }, outs: [[0.35, 0.5, "올랐다. 매일 시세 확인하느라 바빴지만."], [0.25, 0, "1년을 오르락내리락. 결국 제자리."], [0.4, -0.5, "고점에 샀다. 1년 내내 물려 있었다."]] },
+      { t: "계좌 절반을 몰빵한다", style: "rash", stake: { inv: 0.5 }, outs: [[0.1, 1.5, "진짜 두 배 반이 됐다. 사표 쓸 생각부터 났다. 그게 제일 위험하다."], [0.25, 0.3, "조금 벌고 나왔다. 운이 좋았다."], [0.65, -0.6, "1년 뒤 고점 대비 −70%. 몰빵은 1년 뒤에 운다."]] },
+    ] },
+  { id: "exhalt", title: "코인 거래소 출금 정지", w: 0.6, need: (s) => s.invest >= 1000,
+    text: "쓰던 코인 거래소가 '점검 중'이라며 출금을 막았다. 커뮤니티엔 '뱅크런'이라는 말이 돈다.",
+    choices: [
+      { t: "거래소엔 원래 소액만, 잊는다", style: "calm", out: "넣어 둔 건 커피값 정도. 코인을 거래소에 오래 두는 게 아니라는 걸 확인했다.", eff: { mental: -1 } },
+      { t: "출금 재개를 기다린다", style: "mid", stake: { inv: 0.05 }, outs: [[0.6, 0, "보름 만에 출금이 풀렸다. 바로 뺐다."], [0.4, -0.4, "회생 절차. 돌려받는 데 몇 년, 그것도 일부만."]] },
+      { t: "폭락한 거래소 코인을 더 산다", style: "rash", stake: { inv: 0.2 }, outs: [[0.1, 1, "출금 재개 소식에 폭등. 이번만은 운이 좋았다."], [0.9, -0.85, "거래소가 파산했다. 화면 속 숫자는 끝내 돌아오지 않았다."]] },
+    ] },
+  { id: "stable", title: "'항상 1달러' 코인이 무너졌다", w: 0.6, need: (s) => s.invest >= 1000,
+    text: "'항상 1달러'라던 가격 고정 코인이 0.6달러가 됐다. 연 20% 이자를 준다던 예치 상품도 같이 흔들린다.",
+    choices: [
+      { t: "애초에 연 20%는 안 믿었다", style: "calm", out: "높은 이자엔 높은 위험. 그 말이 이렇게 실감 날 줄이야.", eff: { mental: 1, stat: { num: 0.5 } } },
+      { t: "예치해 둔 돈을 서둘러 뺀다", style: "mid", stake: { inv: 0.05 }, outs: [[0.6, -0.05, "빨리 뺐다. 수수료만 조금 냈다."], [0.4, -0.3, "출금 대기열이 길었다. 빼고 보니 3할이 녹았다."]] },
+      { t: "0.6달러면 반값, 줍는다", style: "rash", stake: { inv: 0.2 }, outs: [[0.1, 0.6, "1달러로 돌아왔다! 진짜로."], [0.9, -0.9, "0.01달러. 고정은 한 번 깨지면 끝이었다."]] },
+    ] },
+  { id: "dogcoin", title: "강아지 그림 코인 +300%", w: 0.7, need: (s) => s.invest >= 1000,
+    text: "강아지 그림 하나 그려진 코인이 하루 300% 올랐다. 해외 유명 사업가가 글 하나 올렸단다. 근거는 그게 전부다.",
+    choices: [
+      { t: "웃고 넘긴다", style: "calm", out: "밈은 밈으로. 웃긴 짤만 저장했다.", eff: { mental: -1 } },
+      { t: "치킨값 20만만 넣는다", style: "mid", stake: { amt: 20 }, outs: [[0.25, 0.8, "오를 때 뺐다. 치킨 세 마리."], [0.75, -0.4, "내리막. 치킨이 닭다리 하나가 됐다."]] },
+      { t: "계좌 30%를 태운다", style: "rash", stake: { inv: 0.3 }, outs: [[0.004, 99, "100배. 진짜 100배. 이건 투자가 아니라 복권이었다."], [0.146, 0.5, "조금 먹고 나왔다. 심장이 아직도 뛴다."], [0.85, -0.9, "−90%. 강아지가 나를 보고 웃는다."]] },
+    ] },
+  { id: "airdrop", title: "무료 코인 지급, 지갑만 연결하세요", w: 0.6, need: (s) => s.invest >= 500 || s.cash >= 500,
+    text: "'무료 코인 지급! 지갑만 연결하세요.' 링크가 단톡방에 돈다. 공식 계정 같기도 하다.",
+    choices: [
+      { t: "주소부터 한 글자씩 확인한다", style: "calm", check: { stat: "num", dc: 45 }, ok: { text: "주소 철자 하나가 달랐다. 가짜 사이트였다. 단톡방에 경고를 남겼다.", eff: { stat: { num: 1 }, mental: 2 } }, ng: { text: "뭔지 몰라도 찜찜해서 안 눌렀다. 이유는 몰라도 잘한 일.", eff: { mental: -1 } } },
+      { t: "작은 지갑으로만 연결해 본다", style: "mid", stake: { amt: 100 }, outs: [[0.35, 0.3, "진짜 공짜 코인이 들어왔다. 커피값."], [0.65, -0.45, "작은 지갑이 비었다. 작게 해서 다행이다."]] },
+      { t: "메인 지갑을 연결한다", style: "rash", stake: { inv: 0.15 }, outs: [[0.1, 0.5, "진짜였다. 공짜 코인이 꽤 들어왔다."], [0.9, -0.95, "승인 버튼 하나에 지갑이 털렸다."]] },
+    ] },
+  { id: "futures", title: "100배 선물 거래 광고", w: 0.6, need: (s) => s.invest >= 1000,
+    text: "'원금 100만이면 1억처럼 굴려요.' 100배 선물 거래 광고. 수익 인증엔 외제차 열쇠가 나온다.",
+    choices: [
+      { t: "선물은 안 한다", style: "calm", out: "1%만 반대로 가도 끝나는 게임. 광고를 차단했다.", eff: { mental: 1 } },
+      { t: "100만만 10배로 해 본다", style: "mid", stake: { amt: 100 }, outs: [[0.3, 1.2, "두 배 넘게 벌었다. 한 번은 그렇다."], [0.7, -0.8, "청산 직전에 겨우 손절했다. 새벽 알림이 무서워졌다."]] },
+      { t: "계좌 20%를 100배로", style: "rash", stake: { inv: 0.2 }, outs: [[0.05, 5, "진짜 터졌다. 여섯 배. 손이 떨려 앱을 지웠다."], [0.95, -1, "1% 움직였을 뿐인데 강제 청산. 몇 초 만이었다."]], eff: { hp: -2 } },
+    ] },
+  { id: "kimchi", title: "김치 프리미엄 10%", w: 0.7, need: (s) => s.invest >= 1000, pre: { inv: 0.03 },
+    text: "국내 코인 값이 해외보다 10% 비싸다. 이른바 김치 프리미엄. 조금 갖고 있던 코인 덕에 계좌가 {pre} 늘었다.",
+    choices: [
+      { t: "프리미엄 붙은 값에 덜어 판다", style: "calm", sell: 0.05, bonus: 0.05, out: "비쌀 때 팔았다. 원래 비율로 깔끔하게 정리.", eff: { mental: 2 } },
+      { t: "더 붙을 때까지 기다린다", style: "mid", stake: { inv: 0.05 }, outs: [[0.45, 0.1, "프리미엄이 15%까지 붙었다. 그때 팔았다."], [0.55, -0.12, "프리미엄이 하루 만에 꺼졌다."]] },
+      { t: "해외에서 사서 국내에 판다며 몰빵", style: "rash", stake: { inv: 0.3 }, outs: [[0.1, 0.25, "차익 거래 성공. 한 번은 된다."], [0.9, -0.2, "송금은 막히고 프리미엄은 꺼지고 수수료만 남았다."]] },
+    ] },
+  { id: "cointax", title: "'내년부터 코인에 세금'", w: 0.6, mkt: true, need: (s) => s.invest >= 1000, pre: { inv: -0.03 },
+    text: "'내년부터 코인 수익에 세금' 뉴스. 시장이 출렁여 계좌가 {pre} 빠졌다. 커뮤니티는 '올해 다 팔고 뜨자'로 들끓는다.",
+    choices: [
+      { t: "세금은 번 다음 문제, 원래대로", style: "calm", out: "세금은 벌어야 낸다. 덕분에 공제 한도를 공부했다.", eff: { mental: -1, stat: { num: 0.3 } } },
+      { t: "연말 전에 조금 정리한다", style: "mid", sell: 0.1, out: "조금 팔았다. 세금은 결국 또 미뤄졌다는 뉴스가 나왔다.", eff: { mental: 1 } },
+      { t: "세금 피하러 해외 거래소로 옮긴다", style: "rash", stake: { inv: 0.2 }, outs: [[0.1, 0.3, "수수료를 아끼고 조금 벌었다."], [0.5, -0.1, "송금 수수료와 환율에 조금씩 깎였다."], [0.4, -0.6, "해외 거래소가 국내 서비스를 접었다. 출금이 막혔다."]] },
+    ] },
+  { id: "p2e", title: "게임만 해도 하루 3만 원", w: 0.6, need: (s) => s.invest >= 500 || s.cash >= 500,
+    text: "'게임만 해도 하루 3만 원' 광고. 시작하려면 게임 캐릭터를 코인으로 사야 한단다. 한 마리 200만 원.",
+    choices: [
+      { t: "게임은 게임으로", style: "calm", out: "퇴근 후 게임은 그냥 재밌게. 돈은 회사에서 번다.", eff: { mental: 1 } },
+      { t: "캐릭터 하나만 사서 해 본다", style: "mid", stake: { amt: 200 }, outs: [[0.3, 0.4, "석 달 꼬박 해서 본전 조금 넘겼다. 시급으로 치면 눈물이 난다."], [0.7, -0.3, "게임 코인 값이 미끄러졌다. 캐릭터 값도 같이."]], eff: { hp: -3, mental: -1 } },
+      { t: "캐릭터 열 마리로 길드를 꾸린다", style: "rash", stake: { inv: 0.15 }, outs: [[0.1, 1.2, "초반에 들어가 진짜 벌었다. 그리고 바로 뺐다."], [0.9, -0.85, "게임 코인 −95%. 캐릭터 열 마리가 픽셀 쓰레기가 됐다."]], eff: { hp: -6 } },
+    ] },
+  { id: "parentcoin", title: "엄마가 코인을 물어본다", w: 0.6, need: (s) => (s.fam?.parents || 0) > 0 && s.invest >= 500,
+    text: "엄마한테 전화가 왔다. '동네 친구가 코인으로 돈 벌었다던데, 너 그거 할 줄 아니? 우리도 좀 넣어 볼까?'",
+    choices: [
+      { t: "같이 앉아 차근차근 설명한다", style: "calm", check: { stat: "num", dc: 40 }, ok: { text: "수익 인증의 함정, 수수료, 사기 수법까지 쉽게 풀어 드렸다. '우리 애가 다 컸네.'", eff: { family: 5, mental: 2 } }, ng: { text: "설명하다 목소리가 높아졌다. '알았어, 안 해'로 끝났지만 서운한 눈치다.", eff: { family: 1, mental: -1 } } },
+      { t: "소액만 내 계좌로 대신 사 드린다", style: "mid", stake: { amt: 100 }, outs: [[0.4, 0.3, "조금 올라 용돈처럼 돌려드렸다. 엄마가 동네에 자랑하셨다."], [0.6, -0.35, "떨어졌다. 엄마 몰래 내 돈으로 메웠다."]], eff: { family: 2 } },
+      { t: "노후 자금 일부를 코인에 넣어 드린다", style: "rash", stake: { cash: 0.3 }, outs: [[0.1, 1, "두 배가 됐다. 엄마가 동네 '코인 박사'가 됐다."], [0.9, -0.5, "반토막. 노후 자금이 녹았다. 내 돈으로 메우느라 허리가 휜다."]], eff: { family: -3, mental: -3 } },
+    ] },
 ];
 
 // ───────── 파티룸 꾸미기 미니게임 ─────────
@@ -777,19 +967,26 @@ export const CS_QUIZ = [
 ];
 
 // 컨설팅 가격 단계마다 필요한 실력(핵심 능력·커리어 평균). 모자라면 환불·혹평
-export const CS_PRICE_NEED = { low: 0, mid: 80, high: 150 }; // v4.25: 글쓰기 40대는 저가, 80이 표준, 150이 프리미엄
+export const CS_PRICE_NEED = { low: 50, mid: 100, high: 180 }; // v4.27: 저가도 글쓰기(면접은 말빨) 50, 표준 100, 프리미엄 180
+// v4.27 강의로 방어: 섭외 문턱(후기 수)·확률·강의료(기본 + 실력·명성 비례)
+export const CS_LECT = { rev: 10, p: 0.2, fee: 50, perSkill: 0.6, perFame: 0.8, maxOffers: 3 };
 // v4.25b 파이어율 조정 마지막 수단: 모든 투잡의 이번 달 이익(라이벌·시장 반영 뒤)에서 이 비율만큼 '투잡 부대비용'(교통·소모품·장비·잡비)으로 뺀다. 계산은 engine/market.js
 export const SIDE_CUT = 0.15;
+// v4.27 투잡별 부대비용(음수면 보너스). 없으면 SIDE_CUT. CRUISE: 같은 투잡 7년 차부터 줄어 10년 차에 v만큼 덜 뗀다(단골·입소문으로 순항)
+export const SIDE_ADJ = { pr: -0.17, cs: 0.44, airbnb: -0.5, ucafe: -0.4, tutoring: 0.15, chicken: 0.2, insta: 0.12, vibe: 0.06, tarot: -0.15, webnovel: -0.15 };
+export const CRUISE = { from: 7, full: 10, v: 0.25 };
+// v4.27 투자 국면: 보통 → 하락장(b) → 회복장(r). 하락장은 평균 66달에 한 번, 9~16달 동안 월 −3%, 회복장 18~30달 동안 월 +1.2%
+export const INV_PH = { p: 1 / 66, bear: [9, 16], bearMu: -0.03, rec: [18, 30], recMu: 0.012, sideChurn: 0.5 };
 
 // ───────── 에어씨앤씨 ─────────
 // city: 서울(합법 등록=외국인관광 도시민박업, 외국인만), 지방은 농어촌민박으로 누구나. far: 집에서 거리(관리 행동력)
 export const AB_REGIONS = {
-  hongdae: { n: "홍대·연남", city: true, house: true, rent: [60, 110], adr: 10, foreign: 0.75, peak: [4, 10, 12], far: 0, types: ["oneroom", "tworoom", "officetel"], tip: "외국인 배낭여행객 1번지. 오피스텔은 등록이 안 돼요" },
-  seongsu: { n: "성수", city: true, house: true, rent: [80, 140], adr: 12, foreign: 0.6, peak: [5, 10, 12], far: 0, types: ["tworoom", "officetel"], tip: "팝업 구경 온 외국인. 투룸이 잘 나가요" },
-  jongno: { n: "종로 한옥", city: true, house: true, rent: [150, 240], adr: 18, foreign: 0.85, peak: [4, 5, 10], far: 0, types: ["hanok"], tip: "외국인이 제일 좋아하는 한옥. 월세·관리비가 비싸요" },
-  busan: { n: "부산 해운대", city: false, house: true, rent: [70, 120], adr: 11, foreign: 0.4, peak: [7, 8], off: 0.55, far: 3, types: ["tworoom", "officetel"], tip: "여름 한철. 멀어서 관리가 힘들어요" },
-  jeju: { n: "제주 독채", city: false, house: true, rent: [60, 110], adr: 13, foreign: 0.2, peak: [7, 8, 10], off: 0.6, far: 4, types: ["detached"], tip: "가족 여행객. 1박 단가 높고, 엄청 멀어요" },
-  gyeongju: { n: "경주 한옥", city: false, house: true, rent: [50, 90], adr: 11, foreign: 0.3, peak: [4, 10], off: 0.6, far: 3, types: ["hanok"], tip: "벚꽃·단풍 시즌에 몰려요" },
+  hongdae: { n: "홍대·연남", city: true, house: true, rent: [90, 150], adr: 10, foreign: 0.75, peak: [4, 10, 12], far: 0, types: ["oneroom", "tworoom", "officetel"], tip: "외국인 배낭여행객 1번지. 오피스텔은 등록이 안 돼요" },
+  seongsu: { n: "성수", city: true, house: true, rent: [120, 190], adr: 12, foreign: 0.6, peak: [5, 10, 12], far: 0, types: ["tworoom", "officetel"], tip: "팝업 구경 온 외국인. 투룸이 잘 나가요" },
+  jongno: { n: "종로 한옥", city: true, house: true, rent: [210, 320], adr: 18, foreign: 0.85, peak: [4, 5, 10], far: 0, types: ["hanok"], tip: "외국인이 제일 좋아하는 한옥. 월세·관리비가 비싸요" },
+  busan: { n: "부산 해운대", city: false, house: true, rent: [100, 160], adr: 11, foreign: 0.4, peak: [7, 8], off: 0.55, far: 3, types: ["tworoom", "officetel"], tip: "여름 한철. 멀어서 관리가 힘들어요" },
+  jeju: { n: "제주 독채", city: false, house: true, rent: [90, 150], adr: 13, foreign: 0.2, peak: [7, 8, 10], off: 0.6, far: 4, types: ["detached"], tip: "가족 여행객. 1박 단가 높고, 엄청 멀어요" },
+  gyeongju: { n: "경주 한옥", city: false, house: true, rent: [70, 120], adr: 11, foreign: 0.3, peak: [4, 10], off: 0.6, far: 3, types: ["hanok"], tip: "벚꽃·단풍 시즌에 몰려요" },
 };
 export const AB_TYPES = {
   oneroom: { n: "원룸", rentF: 1, adrF: 0.85, setup: 500, len: 2.5 },
@@ -802,10 +999,59 @@ export const AB_SEASON = [0.85, 0.85, 0.95, 1.1, 1.05, 0.95, 1.15, 1.2, 1.0, 1.1
 
 // ───────── 무인카페 ─────────
 export const UC_AREAS = {
-  apt: { n: "아파트 단지 상가", traffic: 1.0, rent: [70, 110], comp: 2, tip: "엄마들 아침 테이크아웃·학원 픽업 대기. 안정적이에요" },
-  univ: { n: "대학가", traffic: 1.3, rent: [90, 150], comp: 4, tip: "밤샘 공부족. 많이 팔리지만 경쟁이 세요" },
-  office: { n: "오피스가", traffic: 1.5, weekend: 0.2, rent: [100, 160], comp: 4, tip: "평일 점심 줄, 주말은 텅 비어요(주말 손님 평일의 20%)", risk: "주말 손님 거의 없음: 한 달 매출이 평일 22일에 달려 있어요. 연휴·명절이 낀 달은 크게 빠져요" }, // 11-21: 원래 traffic 1.15, comp 5, 주말 구분 없음
-  academy: { n: "학원가", traffic: 1.2, rent: [80, 120], comp: 3, tip: "학생 손님 많음. 먹튀·10대 아지트 주의" },
-  newtown: { n: "신도시 1층", traffic: 0.8, rent: [55, 90], comp: 1, tip: "싸고 경쟁 없음. 대신 손님도 적어요" },
+  apt: { n: "아파트 단지 상가", traffic: 1.0, rent: [120, 180], comp: 2, tip: "엄마들 아침 테이크아웃·학원 픽업 대기. 안정적이에요" },
+  univ: { n: "대학가", traffic: 1.3, rent: [150, 240], comp: 4, tip: "밤샘 공부족. 많이 팔리지만 경쟁이 세요" },
+  office: { n: "오피스가", traffic: 1.5, weekend: 0.2, rent: [170, 270], comp: 4, tip: "평일 점심 줄, 주말은 텅 비어요(주말 손님 평일의 20%)", risk: "주말 손님 거의 없음: 한 달 매출이 평일 22일에 달려 있어요. 연휴·명절이 낀 달은 크게 빠져요" }, // 11-21: 원래 traffic 1.15, comp 5, 주말 구분 없음
+  academy: { n: "학원가", traffic: 1.2, rent: [140, 210], comp: 3, tip: "학생 손님 많음. 먹튀·10대 아지트 주의" },
+  newtown: { n: "신도시 1층", traffic: 0.8, rent: [100, 160], comp: 1, tip: "싸고 경쟁 없음. 대신 손님도 적어요" },
 };
 export const UC_SEASON = [0.85, 0.85, 0.95, 1.05, 1.15, 1.25, 1.35, 1.35, 1.1, 1.0, 0.9, 0.9];
+
+// ───────── v4.28 파티룸·에어씨앤씨 타이쿤 규칙: 가격·후기·관리비·명의 (밸런스는 여기 숫자만 바꾸면 된다) ─────────
+// 가격: 경쟁사도 성수기엔 올리고 비수기엔 내린다(시세 배율). 에어씨앤씨 가격 탄력성(성수기 낮고 비수기 높다). 가격 전쟁.
+export const PRICE_K = {
+  compPeak: { dec: 1.05, peak: 1.03, off: 0.98 },
+  abEl: { peak: 0.8, mid: 1.2, off: 1.5 },
+  abPeak: [1, 1.2, 1.4, 1.7], // 에어씨앤씨 성수기 1박 가격 버튼
+  war: { p: 0.012, cut: [0.12, 0.2], len: [2, 4], gap: 10, follow: 0.12, premium: 0.08 }, // 가격 전쟁: 월 확률·경쟁사 인하폭·기간·간격·따라 내리는 폭·프리미엄 인상폭
+};
+// 후기: 예약(숙박)마다 후기를 쓰는 비율, 후기 이벤트(페이백·할인), 후기 수 효과, 플랫폼 상위 노출, 답글 밀림
+export const PR_REVIEW = {
+  base: 0.22, abBase: 0.45, // 이벤트 없을 때 후기 쓰는 비율(파티룸 예약당·에어 숙박당)
+  ev: {
+    none: { n: "안 함", rate: 0, pay: 0, buzz: 0, desc: "후기를 따로 부탁하지 않아요" },
+    pay5: { n: "페이백 5천", rate: 0.14, pay: 0.5, buzz: 0, desc: "후기 쓰면 5천 원 돌려줘요. 후기 수가 빨리 늘어요" },
+    photo: { n: "사진 후기 1만", rate: 0.1, pay: 1, buzz: 0.6, desc: "사진 후기에 1만 원. 후기는 덜 늘지만 입소문이 크게 올라요" },
+    disc: { n: "재방문 10% 할인", rate: 0.1, pay: 0, disc: 0.035, rebook: 0.04, desc: "후기 남기면 다음 예약 10% 할인. 매출 3~4%를 깎아 주고 단골 예약이 늘어요" },
+  },
+  cntLo: 0.88, cntN: 60, abCntN: 40, // 후기 0개면 예약 ×0.88, cntN개 이상이면 ×1
+  top: { n: 50, star: 4.8, occ: 0.05 }, // 플랫폼 상위 노출: 후기 50개 + 별점 4.8 → 예약 +5%
+  abSuperN: 10, // 에어 슈퍼호스트: 별점 4.8 + 후기 10개
+  unrep: { max: 30, star: 0.05 }, // 답글 안 단 후기가 30개를 넘으면 별점 목표 −0.05
+  reply: { star: 0.04, manageCut: 0.4 }, // 답글 달기: 그 달 별점 목표 +0.04 / 관리(청소)할 때도 밀린 답글 40%를 처리
+  evP: 0.08, evGap: 4, // 후기 사건 확률(달마다)·최소 간격
+  fake: 0.25, // 페이백 후기를 숨기면 플랫폼 적발 확률(정책 경고 장면)
+};
+// 쓰는 만큼 늘어나는 관리비(만 원, 파티룸은 22평 기준·예약 1건당 / 에어는 1박당). 장부 '전기·난방비'
+export const UTIL_K = {
+  pr: { base: 8, per: 0.32, ondol: 0.55, boiler: 0.35, air: 0.45, ac: 0.3 }, // 기본 + 예약당 전기·수도 + 겨울 온돌/보일러/냉난방기 + 여름 에어컨
+  ab: { base: 6, per: 0.45, heat: 0.35, ac: 0.3 },
+};
+// 에어씨앤씨 명의: 시작 후 약 2년에 '법이 바뀐다'(합법 등록만, 1명 1채) → 유예 기간 안에 명의를 모으거나 줄이거나 버틴다
+// kinds: 명의를 빌린 사람 종류별 용돈(월, 만 원)·해마다 인상·밀릴 때 호감 하락·회수 위험·실거주 점검 확률
+export const AB_NAME = {
+  at: [21, 27], grace: 6, // 첫 숙소 연 지 21~27달 뒤 경고, 유예 6달
+  holdRaid: 2, // (v4.28 밸런스 3→2) 법 시행 뒤 미등록 숙소 단속 배율
+  parentsMax: 3, // 부모님 주소는 숙소 3채 이하일 때(부모님 두 분 = 명의 2개)
+  ask: { base: 0.22, aff: 1 / 120, talk: 1 / 250, plus: 0.22, plusFee: 1.5, cool: 3, failAff: -3, mateParent: 0.4 }, // 설득 확률·사례비 얹기·재부탁 간격
+  kinds: {
+    parents: { n: "부모님", fee: 8, raise: 0, lateAff: -1, recallLate: 8, recallP: 0.001, haggle: 0, inspect: 0.003, fam: -4 },
+    spouse: { n: "배우자", fee: 5, raise: 0, lateAff: -2, recallLate: 6, recallP: 0.002, haggle: 0, inspect: 0.002, fam: -6 },
+    mate: { n: "동료", fee: 25, raise: 0.12, lateAff: -8, recallLate: 2, recallP: 0.012, haggle: 0.025, inspect: 0.004, fam: 0 },
+    mateParent: { n: "동료의 부모님", fee: 30, raise: 0.12, lateAff: -8, recallLate: 2, recallP: 0.015, haggle: 0.025, inspect: 0.005, fam: 0 },
+    friend: { n: "친구", fee: 22, raise: 0.1, lateAff: -7, recallLate: 2, recallP: 0.01, haggle: 0.02, inspect: 0.004, fam: 0 },
+    broker: { n: "명의 브로커", fee: 30, raise: 0.1, lateAff: 0, recallLate: 1, recallP: 0.02, haggle: 0.02, inspect: 0.01, fam: 0 },
+  },
+  haggleUp: [0.2, 0.4], // '더 달라' 협상 요구 폭
+  insp: { fine: [300, 800], ban: 2, aff: -25, fam: -10 }, // 실거주 점검 적발: 과태료·영업정지·명의자 호감·가족
+};

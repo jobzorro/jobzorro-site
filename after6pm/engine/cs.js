@@ -2,7 +2,7 @@
 import * as D from "./defs.js";
 import * as SYN from "./syn.js";
 import * as BIG from "./big.js";
-import { CHAR, addMoney, applyEff, helperPower, helpers, mod, won, log, eyeMult, ensureRel, isRomanceable, addAff, gainStat } from "./core.js";
+import { CHAR, addMoney, applyEff, helperPower, helpers, mod, won, log, eyeMult, ensureRel, isRomanceable, addAff, gainStat, giveBrk } from "./core.js";
 import { jobEvent } from "./pr.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 
@@ -12,10 +12,32 @@ const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 // 지금: 한 달 문의는 시장 크기(leadCap, 전업이면 ×fullCapX)에 가까워질수록 덜 는다. 소개는 refMax 까지만 쌓인다.
 // 무료 특강 신청자는 후기 semRev 개까지만 늘어난다(원래 후기 수에 비례해 끝없이: 후기 1,600개면 특강 한 번에 100명+).
 export const CS_BAL = { leadCap: 7, fullCapX: 2, refMax: 6, semRev: 60 };
+// v4.28 특이 요소(f30): 합격 보장·환불 정책 / 후기의 개인정보 / 기관 강의 입찰. 효과 크기는 여기 숫자만 바꾸면 된다
+export const CS_F30 = {
+  // 합격 보장: conv 결제 전환 +, lead 문의 배수, back 불합격 때 돌려주는 비율(판매 당시 정책 기준)
+  guar: {
+    0: { n: "보장 없음", conv: 0, lead: 1, back: 0, d: "불합격해도 환불 없음" },
+    50: { n: "불합격 50% 환불", conv: 0.07, lead: 1.12, back: 0.5, d: "결제 ↑ · 불합격이면 절반 돌려줌" },
+    100: { n: "불합격 전액 환불", conv: 0.13, lead: 1.25, back: 1, d: "결제 크게 ↑ · 시즌이 나쁘면 환불 폭탄" },
+  },
+  guarRev: 10, // 후기 10개부터 '경쟁자가 보장을 걸었다' 장면
+  // 후기 가림: ap 합격 후기를 올린 달의 다음 달 행동력 −, risk 후기 1개당 논란 확률, rev 후기 효과 배수
+  mask: {
+    full: { n: "꼼꼼히 가림", ap: 1, risk: 0, rev: 1, d: "회사·학교·질문까지 · 합격 달마다 행동력 −1" },
+    name: { n: "이름만 가림", ap: 0, risk: 0.03, rev: 1, d: "보통 · 가끔 회사가 비친다" },
+    raw: { n: "그대로 올림", ap: 0, risk: 0.08, rev: 1.25, d: "후기 효과 +25% · 논란 위험 큼" },
+  },
+  leak: { gap: 6, cash: 100, rev: [2, 4, 6], kmong: 15 }, // 논란 최소 간격(달)·위로금·후기 감소(사과/해명 실패/버팀)·크멍 상세 감소
+  // 기관 강의 입찰: 대학 강의(cs_lecture)를 한 번이라도 한 뒤, 예산 시즌(cal)에 공고. n회 × 회당(CS_LECT 강의료 × mult)
+  bid: { p: 0.3, gap: 6, cal: [2, 3, 8, 9], n: 4, mult: 1.3, dc: 45, eveDc: 55, eveMult: 0.6, days: 4, leaveMax: 15, overEye: 6 },
+};
+const ORGS = ["지방 국립대 커리어센터", "구청 청년 일자리센터", "공공기관 신입 교육", "고용센터 청년 프로그램", "도서관 취업 아카데미"];
+const employedCs = (s) => !(s.co?.quit || s.co?.fired);
 export function init() {
   return { open: false, niche: null, niches: [], nick: null, price: "low", reviews: 0, passes: 0, fails: 0, clients: 0, friends: 0,
     queue: [], outcomes: [], ch: { kmong: { on: false, q: 0 }, blog: { posts: 0, idx: 0, lastT: -99 }, insta: { f: 0 }, youtube: { subs: 0, videos: 0 }, kakao: { m: 0 } },
-    ads: 0, template: 0, vod: { prog: 0, n: 0, income: 0 }, lv: 1, offers: 0, refer: 0, revHist: [], monthRev: 0, leads: 0, conv: 0, src: {}, evT: -99, groupT: -1, seminarT: -1, seq: 0, newThisMonth: 0 };
+    ads: 0, template: 0, vod: { prog: 0, n: 0, income: 0 }, lv: 1, offers: 0, refer: 0, revHist: [], monthRev: 0, leads: 0, conv: 0, src: {}, evT: -99, groupT: -1, seminarT: -1, seq: 0, newThisMonth: 0,
+    guar: 0, mask: "name", maskSeen: false, guarSeen: false, leakT: -99, leakN: 0, lectN: 0, bidT: -99, leave: 0, gRef: 0, gRefN: 0, gRefAll: 0 };
 }
 export const entrySteps = (s) => {
   const cs = s.cs;
@@ -45,7 +67,7 @@ export function can(s, id) {
   if (id === "cs_work") { if (!cs.queue.length) return "대기 고객이 없습니다"; return null; }
   if (id === "cs_soomgo") return cs.open ? null : "개업 후 가능";
   if (id === "cs_seminar") { if (cs.reviews < 5) return "후기 5개부터"; if (cs.seminarT === s.t) return "이번 달엔 이미 했습니다"; return null; }
-  if (id === "cs_lecture") return cs.offers > 0 ? null : "강의 섭외가 와야 합니다(후기 20개 또는 커리어센터 인연)";
+  if (id === "cs_lecture") return cs.offers > 0 ? null : `강의 섭외가 와야 합니다(후기 ${D.CS_LECT.rev}개 또는 커리어센터 인연)`;
   if (id === "cs_focus") return !cs.queue.length ? "대기 고객이 없어요" : null;
   if (id === "cs_template") return !cs.open ? "개업 후 가능" : cs.template >= 3 ? "템플릿 완성" : null;
   if (id === "cs_group") { if (!(cs.ch.kakao.m >= 150 || cs.reviews >= 25)) return "오픈채팅 150명 또는 후기 25개"; if (cs.groupT === s.t) return "이번 달 진행함"; return null; }
@@ -67,7 +89,7 @@ export function act(s, r, id, arg, boost = 1) {
   if (id === "cs_friend") {
     cs.friends++;
     const ok = r.chance(clamp(0.5 + (s.st.write - 30) / 40, 0.15, 0.95));
-    cs.reviews += ok ? 1 : 0.4; s.st.write = clamp(s.st.write + 0.3, 0, 200);
+    cs.reviews += ok ? 1 : 0.4; gainStat(s, "write", 0.3);
     const opened = checkOpen(s, lines);
     return { lines: [ok ? "후기 +1 (\"선배 덕분에 서류 붙었어요\")" : "후기 +0.4 (\"음... 고마워요\")", ...lines], msg: "후배 자소서 4문항. 두괄식부터 다시 잡았다." + (opened ? " 이제 진짜 시작이다." : "") };
   }
@@ -91,27 +113,27 @@ export function act(s, r, id, arg, boost = 1) {
     ch.blog.posts++; ch.blog.lastT = s.t;
     let g = (2 + s.st.write / 25) * mod(s, "blogMult", 1) * boost * (1 + helperPower(s, "cs_writer") * 0.3);
     if (viral(0.03)) { g += 15; lines.push("검색 상위 노출! 방문자 폭증"); }
-    ch.blog.idx += g; s.st.write = clamp(s.st.write + 0.2, 0, 200); s.mental += mod(s, "soloMental", 0);
+    ch.blog.idx += g; gainStat(s, "write", 0.2); s.mental += mod(s, "soloMental", 0);
     checkOpen(s, lines);
     return { lines: [`블로그 글 ${ch.blog.posts}개 · 검색 지수 ${Math.round(ch.blog.idx)}`, ...lines], msg: r.pick(["「자소서 두괄식, 첫 문장이 전부다」", "「면접관이 지원동기를 묻는 진짜 이유」", "「중고신입, 경력은 이렇게 쓴다」", "「공기업 NCS 자소서 3가지 함정」"]) };
   }
   if (id === "cs_insta") {
     let g = (15 + (s.st.sense + s.st.mkt) / 4) * mod(s, "snsMult", 1) * boost * (1 + helperPower(s, "cs_design") * 0.3);
     if (viral(0.04)) { g += 500; lines.push("릴스 터짐! 팔로워 +500"); }
-    ch.insta.f += Math.round(g); s.st.mkt = clamp(s.st.mkt + 0.4, 0, 200); s.st.sense = clamp(s.st.sense + 0.2, 0, 200);
+    ch.insta.f += Math.round(g); gainStat(s, "mkt", 0.4); gainStat(s, "sense", 0.2);
     return { lines: [`팔로워 ${ch.insta.f.toLocaleString()}`, ...lines], msg: "카드뉴스 8장. 첫 장 제목만 30분 고민했다." };
   }
   if (id === "cs_youtube") {
     ch.youtube.videos++;
     let g = (20 + s.st.talk * 2) * Math.exp(0.6 * r.normal()) * mod(s, "snsMult", 1) * boost * (1 + helperPower(s, "cs_video") * 0.5);
     if (viral(0.05)) { g += 3000; lines.push("알고리즘 탔다! 구독자 +3,000"); }
-    ch.youtube.subs += Math.round(g); s.st.talk = clamp(s.st.talk + 0.5, 0, 200);
+    ch.youtube.subs += Math.round(g); gainStat(s, "talk", 0.5); gainStat(s, "charm", 0.3);
     const e = applyEff(s, { eye: 6 }); lines.push(...e);
     return { lines: [`구독자 ${ch.youtube.subs.toLocaleString()}`, ...lines], msg: "\"면접관 출신이 알려주는...\" 썸네일에 얼굴이 크게 나왔다." };
   }
   if (id === "cs_kakao") {
     const g = Math.round((12 + s.st.talk / 5) * mod(s, "kakaoMult", 1) * boost);
-    ch.kakao.m += g; s.st.talk = clamp(s.st.talk + 0.3, 0, 200);
+    ch.kakao.m += g; gainStat(s, "talk", 0.3);
     return { lines: [`오픈채팅 ${ch.kakao.m.toLocaleString()}명 (+${g})`], msg: "\"오늘 공고 정리\" 공지를 올렸다. 알림이 300개." };
   }
   if (id === "cs_kmong") {
@@ -131,9 +153,9 @@ export function act(s, r, id, arg, boost = 1) {
     return { lines: [`특강 참석자 중 ${n}명 상담 신청`, "후기 +1", room > 1 ? `내 파티룸에서 진행 ×${room}` : ""].filter(Boolean), msg: room > 1 ? "내 파티룸에 의자 30개를 깔았다. 대관료 0원." : "질문이 끝나지 않았다. 마이크를 내려놓으니 9시 반." };
   }
   if (id === "cs_lecture") {
-    cs.offers--; const fee = Math.round(50 * mod(s, "lectureMult", 1)); s.cash += fee; addMoney(s, "inc", "강의료", fee); cs.monthRev += fee;
-    cs.refer += 1; applyEff(s, { eye: 3 });
-    return { lines: [`강의료 +${won(fee)}`, "신뢰 +, 소개 +"], msg: "대학 커리어센터 2시간 특강. 학생 80명." };
+    cs.offers--; const L = D.CS_LECT, fee = Math.round((L.fee + skill(s) * L.perSkill + (s.fame || 0) * L.perFame) * SYN.pi(s) * mod(s, "lectureMult", 1)); /* v4.27 실력·명성만큼 강의료 */ s.cash += fee; addMoney(s, "inc", "강의료", fee); cs.monthRev += fee;
+    cs.refer += 1; cs.lectN = (cs.lectN || 0) + 1; applyEff(s, { eye: 3 });
+    return { lines: [`강의료 +${won(fee)}`, "신뢰 +, 소개 +", giveBrk(s, "talk", "강의 섭외")], msg: "대학 커리어센터 2시간 특강. 학생 80명." };
   }
   if (id === "cs_template") { cs.template = Math.min(3, cs.template + 0.5); return { lines: [`템플릿 ${cs.template.toFixed(1)}/3 · 고객 처리 용량 +${Math.floor(cs.template)}`], msg: "자주 쓰는 첨삭 코멘트 40개를 정리했다." }; }
   if (id === "cs_group") {
@@ -177,13 +199,15 @@ function finishClient(s, r, q) {
   if (q.kmong) { const fee = Math.round(pay * (s.era.fee ? 0.25 : 0.2) * 10) / 10; addMoney(s, "exp", "컨설팅 광고·수수료", fee); s.cash -= fee; }
   s.cash += pay; addMoney(s, "inc", "컨설팅", pay); cs.monthRev += pay; cs.clients++;
   const g = gap(s); if (g > 0 && r.chance(Math.min(0.45, g / 70) * (cs.focus > 0 ? 0.4 : 1))) { const back = Math.round(pay * r.range(0.5, 1)); s.cash -= back; addMoney(s, "exp", "환불", back); cs.monthRev -= back; cs.reviews = Math.max(0, cs.reviews - 0.6); s.mental = Math.max(0, s.mental - 3); cs.refunds = (cs.refunds || 0) + 1; cs.refundAll = (cs.refundAll || 0) + 1; }
-  cs.outcomes.push({ t: s.t + r.int(1, 3), p: passProb(s, q.prod), who: q.who, price: q.price, prod: q.prod });
+  cs.outcomes.push({ t: s.t + r.int(1, 3), p: passProb(s, q.prod), who: q.who, price: q.price, prod: q.prod, g: q.prod === "vip" ? 0 : cs.guar || 0 }); // f30: 판매 당시 합격 보장
   if (q.who) s.rel[q.who].aff = clamp(s.rel[q.who].aff + 6, 0, 100);
   return pay;
 }
 
 export function monthStart(s, r) {
-  const cs = s.cs; cs.monthRev = 0; cs.newThisMonth = 0; cs.refunds = 0; cs.focus = 0;
+  const cs = s.cs; cs.monthRev = 0; cs.newThisMonth = 0; cs.refunds = 0; cs.focus = 0; cs.gRef = 0; cs.gRefN = 0;
+  if (s.cal === 1) cs.leave = 0; // 연차는 해마다 새로
+  const G = CS_F30.guar[cs.guar || 0] || CS_F30.guar[0];
   if (!cs.open) { cs.leads = 0; return; }
   const ch = cs.ch;
   const src = {
@@ -197,7 +221,7 @@ export function monthStart(s, r) {
     헤드헌터: cs.niches.includes("career") ? helperPower(s, "cs_headhunter") * 2.5 : 0,
   };
   const seas = cs.niches.reduce((a, k) => a + (s.era.rolling ? 1 : D.NICHES[k].season[s.cal - 1]) * D.NICHES[k].demand, 0) / Math.max(1, cs.niches.length) * (1 + 0.35 * (cs.niches.length - 1));
-  let mult = 0.58 * BIG.fullLead(s) * seas * (s.era.winter ? 0.9 : 1) * mod(s, "leadMult", 1) * (s.era.ai && cs.niche === "newgrad" ? 0.85 : 1) * (s.era.freeze ? 1.2 : 1) * SJ.ramp(s, "cs") * SJ.skillRamp(s, "cs"); // v4.25b 배우는 기간
+  let mult = 0.58 * BIG.fullLead(s) * seas * (s.era.winter ? 0.9 : 1) * mod(s, "leadMult", 1) * (s.era.ai && cs.niche === "newgrad" ? 0.85 : 1) * (s.era.freeze ? 1.2 : 1) * SJ.ramp(s, "cs") * SJ.skillRamp(s, "cs") * G.lead; // v4.25b 배우는 기간 · f30 합격 보장
   let leads = 0; cs.src = {};
   for (const [k, v] of Object.entries(src)) leads += v * mult;
   // 시장 포화: 문의가 상한(cap)에 가까워질수록 덜 는다
@@ -208,7 +232,7 @@ export function monthStart(s, r) {
   cs.leads = leads;
   const trust = D.COMPANY_TYPES[s.co.type].trust * (s.co.quit || s.co.fired ? 0.6 : 1) + Math.min(0.35, cs.reviews / 80) + Math.min(0.2, cs.passes / 150) + (cs.nick === "real" ? 0.06 : 0) + cs.lv * 0.02;
   cs.trust = trust;
-  cs.conv = clamp(0.17 + trust * 0.35 + (s.st.talk - 40) / 250 + clamp(((s.st.charm || 0) - 40) / 800, -0.03, 0.06) + D.CS_PRICE[cs.price].conv + mod(s, "convBonus", 0) + (SYN.on(s, "grad_cs") ? 0.04 : 0), 0.05, 0.75);
+  cs.conv = clamp(0.17 + trust * 0.35 + (s.st.talk - 40) / 250 + clamp(((s.st.charm || 0) - 40) / 800, -0.03, 0.06) + D.CS_PRICE[cs.price].conv + mod(s, "convBonus", 0) + (SYN.on(s, "grad_cs") ? 0.04 : 0) + G.conv, 0.05, 0.8);
   const n = r.poisson(leads * cs.conv);
   const kmShare = leads ? src.크멍 * mult / leads : 0;
   for (let i = 0; i < n; i++) addClient(s, r, r.chance(kmShare) ? "크멍" : "문의");
@@ -232,12 +256,16 @@ export function month(s, r, notes, scenes) {
   if (cancel) notes.push(`컨설팅: 기다리다 지친 고객 ${cancel}명 취소(나쁜 후기 위험)`);
   // 결과(합격 발표)
   const due = cs.outcomes.filter((o) => o.t <= s.t); cs.outcomes = cs.outcomes.filter((o) => o.t > s.t);
-  let pass = 0, fail = 0;
+  let pass = 0, fail = 0, posted = 0, leak = false;
+  const MK = CS_F30.mask[cs.mask || "name"] || CS_F30.mask.name;
   for (const o of due) {
-    if (r.chance(o.p)) { pass++; cs.passes++; if (r.chance(0.7)) cs.reviews++; cs.refer = Math.min(CS_BAL.refMax, cs.refer + 0.25 * mod(s, "referMult", 1)); if (o.who) { s.rel[o.who].aff = clamp(s.rel[o.who].aff + 12, 0, 100); notes.push(`${CHAR[o.who].name}: "최종 합격했어요!!"`); } }
+    if (r.chance(o.p)) { pass++; cs.passes++; if (pass <= 3) gainStat(s, "career", 0.15, "cs_pass"); if (r.chance(0.7)) { cs.reviews += MK.rev; posted++; if (r.chance(MK.risk)) leak = true; } cs.refer = Math.min(CS_BAL.refMax, cs.refer + 0.25 * mod(s, "referMult", 1)); if (o.who) { s.rel[o.who].aff = clamp(s.rel[o.who].aff + 12, 0, 100); notes.push(`${CHAR[o.who].name}: "최종 합격했어요!!"`); } }
+    else if (o.g) { fail++; cs.fails++; cs.reviews += 0.15; const back = Math.round(o.price * (CS_F30.guar[o.g]?.back || 0) * 10) / 10; if (back > 0) { s.cash -= back; addMoney(s, "exp", "환불", back); cs.monthRev -= back; cs.gRef += back; cs.gRefN++; cs.gRefAll = (cs.gRefAll || 0) + back; } } // f30 합격 보장 환불
     else { fail++; cs.fails++; cs.reviews += 0.15; if (o.prod === "pkg" && r.chance(0.2)) { s.cash -= Math.round(o.price * 0.5); addMoney(s, "exp", "환불", Math.round(o.price * 0.5)); notes.push("불합격 패키지 고객 50% 환불"); } }
   }
   if (pass + fail) notes.push(`합격 발표: 합격 ${pass} · 불합격 ${fail}`);
+  if (cs.gRefN) notes.push(`합격 보장 환불 ${cs.gRefN}건 −${won(cs.gRef)}`);
+  if (posted && MK.ap) { s.apNext -= MK.ap; notes.push(`합격 후기 ${posted}개 꼼꼼히 가리기: 다음 달 행동력 −${MK.ap}`); }
   cs.refer *= 0.85;
   // 채널 감소
   if (ch.blog.lastT < s.t) ch.blog.idx = Math.max(0, ch.blog.idx - 1.5);
@@ -249,7 +277,7 @@ export function month(s, r, notes, scenes) {
   // 실명 활동 노출
   if (cs.open && cs.nick === "real") s.co.eye = clamp(s.co.eye + 1 * eyeMult(s) / 1.4, 0, 100);
   // 강의 섭외
-  if (cs.open && (cs.reviews >= 20 || helpers(s, "cs_lecture").length) && cs.offers < 2 && r.chance(0.12 + helperPower(s, "cs_lecture") * 0.15)) { cs.offers++; notes.push("대학 커리어센터에서 강의 섭외가 왔다"); }
+  if (cs.open && (cs.reviews >= D.CS_LECT.rev || helpers(s, "cs_lecture").length) && cs.offers < D.CS_LECT.maxOffers && r.chance(D.CS_LECT.p + helperPower(s, "cs_lecture") * 0.15)) { cs.offers++; notes.push("대학 커리어센터에서 강의 섭외가 왔다"); }
   // 레벨
   cs.revHist.push(Math.round(cs.monthRev)); if (cs.revHist.length > 24) cs.revHist.shift();
   const last3 = cs.revHist.slice(-3);
@@ -260,7 +288,9 @@ export function month(s, r, notes, scenes) {
   if (lv === 4 && cs.passes >= 100 && (ch.youtube.subs >= 10000 || cs.vod.n >= 2)) lv = 5;
   if (lv > cs.lv) { cs.lv = lv; notes.push(`컨설팅 Lv${lv} 「${D.CS_LEVELS[lv - 1].n}」`); log(s, `컨설팅 Lv${lv} 「${D.CS_LEVELS[lv - 1].n}」`, "work"); }
   if (cs.refunds) notes.push(`컨설팅 환불 ${cs.refunds}건(가격 대비 실력 ${skill(s)}/${priceNeed(s)})`);
+  let f30Id = null;
   if (cs.stalk && s.t >= cs.stalk && r.chance(0.6)) { cs.stalk = 0; scenes.push(csEv(s, r, "stalker2")); }
+  else if (cs.open && (f30Id = f30Pick(s, r, leak, pass))) { const sc = csEv(s, r, f30Id); if (sc) { cs.ev2T = s.t; scenes.push(sc); } } // f30 특이 요소 장면
   else if (cs.open && s.t - (cs.ev2T ?? -99) >= 2 && r.chance(0.4)) { const sc = csEvent(s, r, pass, fail); if (sc) { cs.ev2T = s.t; scenes.push(sc); } }
   // 사건 카드
   if (cs.open && s.t - cs.evT >= 3 && r.chance(0.3)) { const ev = jobEvent(s, r, "jobconsult"); if (ev) { cs.evT = s.t; scenes.push(ev); } }
@@ -296,6 +326,18 @@ function csEv(s, r, id) {
   if (id === "parent") return E("어머니가 대신 상담을", "고객 어머니가 매일 전화한다. \"우리 애는 대기업 가야 해요. 공기업은 안 돼요.\" 정작 본인은 공기업을 원한다.", [c(`어머니 뜻대로 진행한다 (+${won(P)}, 멘탈 −6)`), c("본인과만 이야기한다", { stat: "talk", dc: 45 })]);
   if (id === "great") return E("대박 합격 후기", "고객이 대기업 최종 합격! 인별에 \"이분 아니었으면 못 붙었어요\" 후기를 올렸다. 팔로워 2만 명 계정이다.", [c("감사 인사를 남긴다 (후기 +3, 소개 +1)")]);
   if (id === "heavy") return E("감정이 넘어온다", "불합격한 고객이 밤 11시에 울면서 전화했다. \"저 이제 뭐 해야 해요?\" 내 마음도 같이 가라앉는다.", [c("끝까지 들어 준다 (멘탈 −6, 소개 +0.5)"), c("상담 시간은 지킨다고 말한다 (멘탈 −1)")]);
+  // ───── f30 특이 요소 장면 ─────
+  if (id === "f30_guar") { cs.guarSeen = true; const pp = Math.round(passProb(s, "edit") * 100), G = CS_F30.guar; return E("합격 보장 전쟁", `같은 카테고리 판매자가 '불합격 시 전액 환불'을 걸었다. 내 문의가 눈에 띄게 줄었다. 지금 내 고객 합격률은 약 ${pp}%. 보장을 걸면 결제는 늘지만, 떨어진 만큼 돌려줘야 한다.`, [c("보장 없이 실력으로 간다(지금대로)"), c(`불합격 50% 환불을 건다 (결제 +${Math.round(G[50].conv * 100)}%p)`), c(`전액 환불로 맞불 (결제 +${Math.round(G[100].conv * 100)}%p)`)]); }
+  if (id === "f30_mask") { cs.maskSeen = true; return E("첫 합격 후기 캡처", "고객이 최종 합격 문자 캡처를 보내왔다. \"후기로 써 주셔도 돼요!\" 그런데 회사 이름, 고객 이름, 면접 질문까지 다 보인다.", [c("이름만 가리고 올린다"), c("회사·학교·질문까지 꼼꼼히 가린다 (합격 달마다 행동력 −1)"), c("고객이 괜찮대서 그대로 올린다 (후기 효과 +25%, 논란 위험)")]); }
+  if (id === "f30_leak") { const K = CS_F30.leak, m = Math.round(K.cash * SYN.pi(s)); cs.leakT = s.t; cs.leakN = (cs.leakN || 0) + 1; s._csF30 = { cash: m }; return E("후기 속 개인정보", "취준 커뮤니티에 글이 올라왔다. \"이 컨설턴트 후기 캡처에 합격자 회사랑 이름 다 보임.\" 고객에게 전화가 왔다. \"회사 사람들이 다 알아요…\"", [c(`즉시 내리고 사과, 앞으로 꼼꼼히 가린다 (위로금 −${won(m)}, 후기 −${K.rev[0]})`), c("모자이크해서 다시 올리고 해명글을 쓴다", { stat: "write", dc: 50 }), c(`동의받은 거라며 버틴다 (후기 −${K.rev[2]}, 크멍 상세 −${K.kmong})`)]); }
+  if (id === "f30_bid") {
+    const B = CS_F30.bid, L = D.CS_LECT, emp = employedCs(s), left = Math.max(0, B.leaveMax - (cs.leave || 0));
+    const per = Math.round((L.fee + skill(s) * L.perSkill + (s.fame || 0) * L.perFame) * SYN.pi(s) * mod(s, "lectureMult", 1) * B.mult), tot = per * B.n, org = ORGS[(s.t + (cs.lectN || 0)) % ORGS.length];
+    cs.bidT = s.t; s._csBid = { tot, org };
+    const ch = [c("이번엔 넘긴다"), c(emp ? `연차 ${B.days}일 쓰고 제안 PT를 한다` : "제안 PT를 준비한다", { stat: "talk", dc: B.dc })];
+    if (emp) ch.push(c(`저녁·주말 강의로 바꿔 제안 (강의료 ×${B.eveMult}, 연차 0)`, { stat: "charm", dc: B.eveDc }));
+    return E("기관 강의 입찰", `${org} 취업 특강 ${B.n}회 입찰 공고가 떴다. 회당 ${won(per)}, 모두 ${won(tot)}. ${emp ? `강의는 평일 오후 2시. 올해 남은 연차 ${left}일.` : "회사를 안 다니니 시간은 문제없다."} 대학 강의 ${cs.lectN || 0}번 해 본 이력이 무기다.`, ch);
+  }
   if (id === "noshow") return E("노쇼", "면접 코칭 예약 시간, 고객이 30분째 안 온다. 까톡도 안 읽는다. 다음 날 \"죄송해요, 환불 되나요?\"", [c("노쇼 규정대로 환불 안 한다 (후기 −1 위험)"), c(`그냥 환불해 준다 (−${won(P)})`)]);
   return null;
 }
@@ -317,6 +359,27 @@ export function csEvChoose(s, i, ok) {
   if (id === "parent") { if (i === 0) { cash(P, "컨설팅"); ment(-6); } else { if (ok) { rev(1); out.push("본인이 원하는 공기업으로. 고객이 고맙다고 했다"); } else { out.push("어머니가 화를 내며 환불을 요구했다"); cash(-P, "환불"); } } }
   if (id === "great") { rev(3); cs.refer += 1; out.push("소개 +1"); }
   if (id === "heavy") { if (i === 0) { ment(-6); cs.refer += 0.5; out.push("소개 +0.5"); } else ment(-1); }
+  if (id === "f30_guar") { cs.guar = [0, 50, 100][i] ?? 0; out.push(`합격 보장: ${CS_F30.guar[cs.guar].n}`); if (cs.guar) out.push("불합격 고객에게 판매 때 약속한 만큼 돌려줘요"); }
+  if (id === "f30_mask") { cs.mask = ["name", "full", "raw"][i] || "name"; out.push(`후기 가림: ${CS_F30.mask[cs.mask].n}`); }
+  if (id === "f30_leak") {
+    const K = CS_F30.leak, kq = () => { cs.ch.kmong.q = Math.max(0, cs.ch.kmong.q - K.kmong); out.push(`크멍 상세 −${K.kmong}`); };
+    if (i === 0) { cash(-(s._csF30?.cash || K.cash), "위로금"); rev(-K.rev[0]); cs.mask = "full"; out.push("후기 가림: 꼼꼼히 가림"); }
+    else if (i === 1) { if (ok) { rev(-1); out.push("해명이 받아들여졌다"); } else { rev(-K.rev[1]); kq(); } }
+    else { rev(-K.rev[2]); ment(-4); kq(); }
+    s._csF30 = null;
+  }
+  if (id === "f30_bid") {
+    const B = CS_F30.bid, b = s._csBid || { tot: 0 }; s._csBid = null;
+    if (i === 0) out.push("다음 공고를 기다린다");
+    else if (!ok) { ment(-3); out.push("탈락. 제안서는 다음에 다시 쓸 수 있다"); }
+    else {
+      const eve = i === 2, tot = Math.round(b.tot * (eve ? B.eveMult : 1));
+      cash(tot, "강의료"); cs.refer += 1; cs.lectN = (cs.lectN || 0) + B.n; cs.offers = Math.min(D.CS_LECT.maxOffers, (cs.offers || 0) + 1);
+      out.push(`낙찰! 특강 ${B.n}회`, "소개 +1 · 다른 기관 섭외 +1", giveBrk(s, "talk", "기관 강의"));
+      if (eve) { s.hp = clamp(s.hp - 6, 0, s.hpMax); out.push("스태미너 −6(주말 강의)"); }
+      else if (employedCs(s)) { cs.leave = (cs.leave || 0) + B.days; out.push(`연차 ${B.days}일 사용(올해 ${cs.leave}/${B.leaveMax}일)`); if (cs.leave > B.leaveMax) out.push("연차가 모자라 반차·조퇴로 메웠다", ...applyEff(s, { eye: B.overEye })); }
+    }
+  }
   if (id === "noshow") { if (i === 0) { if (Math.random() < 0.5) rev(-1); else out.push("고객이 수긍했다"); } else cash(-P, "환불"); }
   return out;
 }
@@ -329,4 +392,44 @@ export function todos(s) {
   if (cs.open && [2, 8].includes(s.cal)) t.push({ lv: 1, text: `다음 달 ${s.cal === 2 ? "상반기" : "하반기"} 공채: 문의 폭증 대비(템플릿·코치)`, go: "cs" });
   if (cs.offers) t.push({ lv: 1, text: `강의 섭외 ${cs.offers}건 대기`, go: "cs" });
   return t;
+}
+
+// ───────── f30 특이 요소: 장면 고르기 · 보드 조작 · 보드 칸 · 시험 ─────────
+function f30Pick(s, r, leak, pass) {
+  const cs = s.cs, B = CS_F30.bid;
+  if (leak && s.t - (cs.leakT ?? -99) >= CS_F30.leak.gap) return "f30_leak";
+  if (!cs.guarSeen && cs.reviews >= CS_F30.guarRev && r.chance(0.5)) return "f30_guar";
+  if (!cs.maskSeen && pass > 0) return "f30_mask";
+  if ((cs.lectN || 0) >= 1 && cs.reviews >= D.CS_LECT.rev && B.cal.includes(s.cal) && s.t - (cs.bidT ?? -99) >= B.gap && r.chance(B.p)) return "f30_bid";
+  return null;
+}
+export const passRate = (s) => passProb(s, "edit");
+// 보드 버튼: "g:50"(합격 보장) · "m:full"(후기 가림)
+export function setPolicy(s, key) {
+  const cs = s.cs, [k, v] = String(key).split(":");
+  if (k === "g" && CS_F30.guar[+v]) { cs.guar = +v; cs.guarSeen = true; return { ok: true, msg: `합격 보장: ${CS_F30.guar[+v].n}${+v ? " (이번 달부터 파는 상품에 적용)" : ""}` }; }
+  if (k === "m" && CS_F30.mask[v]) { cs.mask = v; cs.maskSeen = true; return { ok: true, msg: `후기 가림: ${CS_F30.mask[v].n}` }; }
+  return { ok: false, msg: "" };
+}
+// 컨설팅 보드 '운영 원칙' 칸(ui.js pgCS 가 부른다). 조건을 가질 때만 보인다
+export function f30Box(S, esc, won) {
+  const cs = S.cs; if (!cs.open) return "";
+  const showG = cs.guarSeen || cs.reviews >= CS_F30.guarRev, showM = cs.maskSeen || cs.passes > 0, showL = (cs.lectN || 0) > 0;
+  if (!showG && !showM && !showL) return "";
+  const pp = Math.round(passProb(S, "edit") * 100), G = CS_F30.guar[cs.guar || 0];
+  const btn = (attr, on, n, d) => `<button class="${on ? "on" : ""}" data-cspol="${attr}"><b>${esc(n)}</b><span class="tiny muted">${esc(d)}</span></button>`;
+  const g = showG ? `<div class="sec" style="margin-top:0">합격 보장 <span class="tiny muted">· 내 고객 합격률 약 ${pp}%</span></div>
+    <div class="pick">${Object.entries(CS_F30.guar).map(([k, x]) => btn(`g:${k}`, (cs.guar || 0) === +k, x.n, x.d)).join("")}</div>
+    ${G.back ? `<div class="tiny ${cs.gRefN ? "bad" : "muted"}" style="margin-top:4px">불합격하면 약 ${100 - pp}% 고객에게 ${Math.round(G.back * 100)}% 환불${cs.gRefAll ? ` · 지금까지 −${won(Math.round(cs.gRefAll))}` : ""}</div>` : ""}` : "";
+  const m = showM ? `<div class="sec" style="margin-top:8px">합격 후기 가림 <span class="tiny muted">${cs.leakN ? `· 논란 ${cs.leakN}번` : ""}</span></div>
+    <div class="pick">${Object.entries(CS_F30.mask).map(([k, x]) => btn(`m:${k}`, (cs.mask || "name") === k, x.n, x.d)).join("")}</div>` : "";
+  const l = showL ? `<div class="tiny muted" style="margin-top:8px">강의 ${cs.lectN}회${employedCs(S) ? ` · 올해 연차 ${cs.leave || 0}/${CS_F30.bid.leaveMax}일` : ""} · 기관 입찰은 2·3·8·9월 예산 시즌에 와요</div>` : "";
+  return `<div class="card"><h3>운영 원칙 <small>${esc(G.n)}</small></h3>${g}${m}${l}
+    <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer;display:inline-block">자세히 ▾</summary><div class="tiny muted" style="margin-top:4px">합격 보장은 결제를 늘리지만, 고용 한파처럼 시즌이 나쁘면 불합격이 몰려 환불도 몰려요. 실력(합격률)이 높을수록 남는 장사예요. 후기를 대충 가리면 회사·이름이 비쳐 논란이 터질 수 있어요. 대학 강의를 한 번 하면 기관 특강 입찰 공고가 오고, 평일 강의는 연차를 써야 해요.</div></details></div>`;
+}
+// 시험(#autoN-cs-f30guar|f30mask|f30leak|f30bid): 장면을 바로 만든다
+export function f30Scene(s, r, what) {
+  const cs = s.cs; if (!cs.niche) setNiche(s, "newgrad"); cs.open = true; cs.lectN = Math.max(1, cs.lectN || 0); cs.reviews = Math.max(cs.reviews, 12);
+  const id = { guar: "f30_guar", mask: "f30_mask", leak: "f30_leak", bid: "f30_bid" }[what];
+  return id ? csEv(s, r, id) : null;
 }

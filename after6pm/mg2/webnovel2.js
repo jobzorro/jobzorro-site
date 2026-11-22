@@ -3,6 +3,7 @@
 // 가위선에 왔을 때 톡 → 가위가 지나가고 "다음 화에 계속" 도장이 쾅. 너무 일찍(분량 표시 전)이면 "분량 실화?",
 // 늦으면 긴장이 풀려 독자 이탈이 오른다. 점선 아래 작은 봉우리(가짜 꼭대기)에 속으면 손해. 회차 4개를 이어서.
 // 마지막엔 '다음 화 결제' 숫자가 쭉 오르고 유료 전환율이 나온다.
+// 그림(11-22 2차): 방은 실제 배경 그림(img/bg/online.webp)+흐림, 나는 캐릭터 그림 표정 시트, 책상·노트북·가위·긴장도 파형·이탈 막대는 기기 해상도 벡터.
 // mg.js 와 서로 불러 쓰므로, 맨 위에서는 불러온 것을 바로 쓰지 않는다(함수 안에서만).
 import { frame, SFX, tone, noise, vib, rnd, rint, pick, shuffle, clamp, RM } from "../mg.js";
 
@@ -43,72 +44,52 @@ const CM = {
   end: ["결말까지 다 알려 주심ㅋㅋ", "다음 화 안 봐도 되겠다", "흠… 할 말이 없다"],
 };
 const RES = { perfect: ["절단신공!", "gd"], soon: ["살짝 일찍", ""], fake: ["가짜 꼭대기!", "rd"], early: ["분량 실화?", "rd"], late: ["늦었다…", "rd"], end: ["다 풀어 버림", "rd"] };
-// 작은 그림(X 테두리, a 주색, b 밝은색, c 포인트)
-const ICON = {
-  reg: [".XXXXX.", "XbbbbbX", ".XaaaX.", "..XaX..", "..XbX..", ".XbabX.", "XaaaaaX", ".XXXXX."],
-  rof: ["..XXX..", ".XabaX.", "XabaaaX", "XaaabaX", ".XaaaX.", "..XcX..", ".ccX...", "...c..."],
-  mur: [".....XX", "....XbX", "...XbX.", "..XbX..", "X.XbX..", ".XcX...", "XcXX...", "X......"],
+// ── 벡터 그림 도구(도트 대신 기기 해상도 그림) ──
+const svgU = (s) => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
+const svgW = (vb, inner) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${inner}</svg>`;
+// 둥근 네모 길
+function rr(c, x, y, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+const lin = (c, x0, y0, x1, y1, st) => { const g = c.createLinearGradient(x0, y0, x1, y1); st.forEach(([o, col]) => g.addColorStop(o, col)); return g; };
+const rad = (c, x, y, r0, r1, st) => { const g = c.createRadialGradient(x, y, r0, x, y, r1); st.forEach(([o, col]) => g.addColorStop(o, col)); return g; };
+function star5(c, x, y, r, fill, stroke) { c.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr2 = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(a) * rr2, y + Math.sin(a) * rr2); } c.closePath(); c.fillStyle = fill; c.fill(); if (stroke) { c.strokeStyle = stroke; c.lineWidth = r * 0.18; c.stroke(); } }
+// 7세그먼트 숫자(디지털 시계)
+const SEG7 = ["abcdef", "bc", "abged", "abgcd", "fgbc", "afgcd", "afgedc", "abc", "abcdefg", "abcdfg"];
+function seg7(c, d, x, y, w, h, col, dim) {
+  const t = w * 0.26, m = y + h / 2, S = { a: [x + t, y, x + w - t, y], b: [x + w, y + t, x + w, m - t * 0.6], c: [x + w, m + t * 0.6, x + w, y + h - t], d: [x + t, y + h, x + w - t, y + h], e: [x, m + t * 0.6, x, y + h - t], f: [x, y + t, x, m - t * 0.6], g: [x + t, m, x + w - t, m] };
+  c.lineCap = "round"; c.lineWidth = t;
+  for (const k of "abcdefg") { const on = SEG7[d].includes(k); if (!on && !dim) continue; c.strokeStyle = on ? col : dim; c.beginPath(); c.moveTo(S[k][0], S[k][1]); c.lineTo(S[k][2], S[k][3]); c.stroke(); }
+}
+// 아래를 가리키는 손(리허설 안내)
+const HAND_URL = svgU(svgW("0 0 40 40", `<rect x="10" y="0.8" width="24" height="5.4" rx="2" fill="#5fb8ff" stroke="#2a1e2e" stroke-width="1.6"/><g stroke="#2a1e2e" stroke-width="2" stroke-linejoin="round"><rect x="8.5" y="4" width="27" height="19" rx="7" fill="#ffe6d6"/><rect x="10" y="12" width="9.6" height="26" rx="4.8" fill="#fff4ec"/></g><path d="M23 12.5v7.5M28 12.5v7.5M32.4 13.5v5.5" stroke="#d8a898" stroke-width="1.5" stroke-linecap="round"/><path d="M12.6 33.4a2.3 2.3 0 0 0 4.4 0" fill="none" stroke="#e8b8a8" stroke-width="1.3"/><path d="M12 15v8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>`));
+// 장르·조각 아이콘(32칸 기준 벡터)
+const ICON_SVG = {
+  reg: `<rect x="7" y="2.5" width="18" height="3.8" rx="1.6" fill="#ffd166" stroke="#5a3a10" stroke-width="1.2"/><rect x="7" y="25.7" width="18" height="3.8" rx="1.6" fill="#ffd166" stroke="#5a3a10" stroke-width="1.2"/><path d="M9.6 6.3h12.8c0 6-6.2 7-6.2 9.7s6.2 3.7 6.2 9.7H9.6c0-6 6.2-7 6.2-9.7S9.6 12.3 9.6 6.3z" fill="#d6f0ff" stroke="#2a3a5a" stroke-width="1.2"/><path d="M12.2 9h7.6c-.6 2.6-3.8 3.4-3.8 5.6-.1-2.2-3.2-3-3.8-5.6z" fill="#ffb03b"/><path d="M11.6 25.4c.6-3 4.4-3.8 4.4-6.4 0 2.6 3.8 3.4 4.4 6.4z" fill="#ffb03b"/><path d="M16 15.5v3.3" stroke="#ffb03b" stroke-width="1"/><path d="M11 7.5c.4 2 1 3.2 2.2 4.2" stroke="#fff" stroke-width="1" fill="none" opacity=".8"/>`,
+  rof: `<path d="M16 17c-1.2 5-1.2 9 0 13" stroke="#3f9a4c" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M16 24.5c3-3.2 7.4-3.2 8.6-1-2.2 2.4-5.6 3.2-8.6 1z" fill="#5fc06c" stroke="#2f6a3a" stroke-width=".8"/><path d="M15.6 22c-2.6-2.6-6.4-2.4-7.4-.4 2 2 5 2.4 7.4.4z" fill="#5fc06c" stroke="#2f6a3a" stroke-width=".8"/><circle cx="16" cy="11" r="8.2" fill="#ff6fa8" stroke="#8a1f4a" stroke-width="1.2"/><path d="M10.5 11.5c.8-4.6 10.2-4.6 11 0-2.4-2.4-8.4-2.4-11 0z" fill="#ffb0d0"/><path d="M12.6 13.2c2 2.4 5.4 2.2 6.8-1" stroke="#b8205a" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M13.4 9.4c1.6-1.8 4.4-1.8 5.6.2" stroke="#b8205a" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="12.8" cy="7.8" r="1.3" fill="#fff" opacity=".7"/>`,
+  mur: `<g transform="rotate(45 16 16)"><path d="M16 .8l2.2 3.4v15.4h-4.4V4.2z" fill="#e8ecf4" stroke="#3a3e50" stroke-width="1.1"/><path d="M16 2.6v16.6" stroke="#fff" stroke-width=".9"/><rect x="9.6" y="19.4" width="12.8" height="2.8" rx="1.3" fill="#ffb03b" stroke="#5a3a10" stroke-width="1"/><rect x="14.6" y="22.2" width="2.8" height="6" rx="1" fill="#7a4a2a" stroke="#3a2010" stroke-width=".8"/><circle cx="16" cy="29.6" r="1.9" fill="#ffd166" stroke="#5a3a10" stroke-width=".8"/></g>`,
+  dist: `<rect x="8.5" y="3" width="15" height="26" rx="3.2" fill="#4a3f66" stroke="#d8ccf0" stroke-width="1.2"/><rect x="10.4" y="6.2" width="11.2" height="18.4" rx="1.2" fill="#7fc8ff"/><path d="M14 11.8v7l5.6-3.5z" fill="#fff"/><rect x="13.5" y="26" width="5" height="1.2" rx=".6" fill="#d8ccf0"/><circle cx="22.6" cy="5.6" r="4.2" fill="#ff3b5c" stroke="#fff" stroke-width="1.2"/><path d="M22.6 3.6v2.6" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/><circle cx="22.6" cy="7.8" r=".8" fill="#fff"/>`,
+  cof: `<path d="M6.5 12.5h15.5v9.5a5.2 5.2 0 0 1-5.2 5.2h-5.1a5.2 5.2 0 0 1-5.2-5.2z" fill="#f2e6d8" stroke="#2a1a10" stroke-width="1.3"/><path d="M22 14.6h2a3.6 3.6 0 0 1 0 7.2h-2" fill="none" stroke="#2a1a10" stroke-width="1.6"/><ellipse cx="14.25" cy="12.7" rx="7.4" ry="1.9" fill="#8a5a3a" stroke="#2a1a10" stroke-width="1"/><rect x="6.6" y="17" width="15.3" height="3" fill="#ffd166"/><path d="M10.5 9.4c-1.6-2 1.6-3 0-5.4M14.5 9.4c-1.6-2 1.6-3 0-5.4M18.5 9.4c-1.6-2 1.6-3 0-5.4" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".9"/>`,
 };
-const ICOL = { reg: { a: "#ffd166", b: "#d6f0ff" }, rof: { a: "#ff6fa8", b: "#ffd0e6", c: "#4fae5a" }, mur: { a: "#c8ccd8", b: "#ffffff", c: "#ffb03b" } };
-// 가위(오른쪽을 보고 벌린 모양)
-const SCI = [
-  ".XXX..........",
-  "XoooX.........",
-  "XoXoX.....XXXX",
-  "XoooXX..XXbbbX",
-  ".XXX.XXXbbbXX.",
-  "......XcX.....",
-  ".XXX.XXXbbbXX.",
-  "XoooXX..XXbbbX",
-  "XoXoX.....XXXX",
-  "XoooX.........",
-  ".XXX..........",
-];
-const SCOL = { X: "#2a1e2e", o: "#ff4b5c", b: "#e8ecf4", c: "#ffd166" };
-const FINGER = ["....XX.......", "...XooX......", "...XooX......", "...XooXXX....", "...XooXooXXX.", ".XXXooXooXooX", "XooXooooooooX", "XoooooooooooX", ".XooooooooooX", "..XoooooooooX", "..XooooooooX.", "...XoooooooX.", "...XXXXXXXXX."];
-const DIG = ["111101101101111", "010110010010111", "111001111100111", "111001111001111", "101101111001001", "111100111001111", "111100111101111", "111001001001001", "111101111101111", "111101111001111"];
-
+const icCache = {};
+const iconURL = (k) => icCache[k] || (icCache[k] = svgU(svgW("0 0 32 32", ICON_SVG[k])));
+const icG = (k, x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})">${ICON_SVG[k]}</g>`;
+const handG = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})"><rect x="10" y="0.8" width="24" height="5.4" rx="2" fill="#5fb8ff" stroke="#2a1e2e" stroke-width="1.6"/><g stroke="#2a1e2e" stroke-width="2" stroke-linejoin="round"><rect x="8.5" y="4" width="27" height="19" rx="7" fill="#ffe6d6"/><rect x="10" y="12" width="9.6" height="26" rx="4.8" fill="#fff4ec"/></g><path d="M23 12.5v7.5M28 12.5v7.5" stroke="#d8a898" stroke-width="1.5" stroke-linecap="round"/></g>`;
+const sparkG = (x, y, r, c) => `<path d="M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}z" fill="${c}"/>`;
 const tint = (c, f) => { const n = parseInt(c.slice(1, 7), 16); return "#" + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.min(255, Math.round(v * f)).toString(16).padStart(2, "0")).join(""); };
 const fmt = (n) => Math.round(n).toLocaleString("ko-KR");
 const tcol = (t) => (t >= TH ? "#ff3b5c" : t >= 0.58 ? "#ff8fc8" : t >= 0.33 ? "#5fb8ff" : "#3a6ea8");
-const cache = {};
-function pix(key, rows, pal, flip) {
-  if (cache[key]) return cache[key];
-  const c = document.createElement("canvas"); c.width = rows[0].length; c.height = rows.length; const g = c.getContext("2d");
-  rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === ".") return; g.fillStyle = typeof pal === "function" ? pal(ch, x, y) : pal[ch] || "#fff"; g.fillRect(x, flip ? rows.length - 1 - y : y, 1, 1); }));
-  return (cache[key] = c.toDataURL());
-}
-const iconURL = (k) => pix("i" + k, ICON[k], (ch) => (ch === "X" ? "#2a1e2e" : ICOL[k][ch] || "#fff"));
-const sciURL = () => pix("sci", SCI, SCOL);
-const fingerURL = () => pix("fin", FINGER, (ch, x, y) => (ch === "X" ? "#2a1e2e" : x <= 4 && y < 6 ? "#fff" : "#ffe6d6"), true);
+// 가위(오른쪽을 보고 벌린 모양, 벡터)
+const SCI_IN = `<g stroke-linecap="round"><path d="M10 11L25 22M10 33L25 22" stroke="#2a1e2e" stroke-width="6.6"/><path d="M10 11L25 22M10 33L25 22" stroke="#ff4b5c" stroke-width="4"/></g><circle cx="9" cy="10" r="6.4" fill="none" stroke="#2a1e2e" stroke-width="6"/><circle cx="9" cy="10" r="6.4" fill="none" stroke="#ff4b5c" stroke-width="3.6"/><circle cx="9" cy="34" r="6.4" fill="none" stroke="#2a1e2e" stroke-width="6"/><circle cx="9" cy="34" r="6.4" fill="none" stroke="#ff4b5c" stroke-width="3.6"/><path d="M7 6.5a4 4 0 0 1 4-.5" stroke="#ffb0b8" stroke-width="1.2" fill="none"/><path d="M23 20.5L54 8l1 3.6-28 12.4z" fill="#eef1f7" stroke="#2a1e2e" stroke-width="1.4" stroke-linejoin="round"/><path d="M23 23.5L54 36l1-3.6-28-12.4z" fill="#cfd5e2" stroke="#2a1e2e" stroke-width="1.4" stroke-linejoin="round"/><path d="M28.5 20.6L52 10.6" stroke="#fff" stroke-width="1.1"/><circle cx="25" cy="22" r="2.7" fill="#ffd166" stroke="#2a1e2e" stroke-width="1.2"/>`;
+const SCI_URL = svgU(svgW("0 0 56 44", SCI_IN));
+const sciG = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})">${SCI_IN}</g>`;
 
-// 방법 화면 그림(40x40 도트 3장)
+// 방법 화면 그림(벡터 3장)
 function stepPics() {
-  const mk = (fn) => { const c = document.createElement("canvas"); c.width = 40; c.height = 40; const g = c.getContext("2d"); fn((x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); }); return c.toDataURL(); };
-  const graph = (P, prof, cutY) => {
-    P(4, 2, 34, 36, "#141a32"); P(4, 2, 34, 1, "#2a3458");
-    for (let y = 3; y < 38; y++) { const t = prof(y); const w = Math.round(t * 30); P(5, y, w, 1, tcol(t)); P(5 + w, y, 1, 1, "#fff"); }
-    for (let y = 3; y < 38; y += 3) P(5 + Math.round(TH * 30), y, 1, 2, "#ff3b5c");
-    if (cutY) { for (let x = 0; x < 40; x += 3) P(x, cutY, 2, 1, "#ff3b5c"); }
-  };
-  const sci = (P, x, y) => SCI.forEach((r, j) => [...r].forEach((ch, i) => { if (ch !== ".") P(x + i, y + j, 1, 1, SCOL[ch]); }));
-  const bump = (y, c, h, w) => h * Math.exp(-((y - c) * (y - c)) / w);
-  const a = mk((P) => {
-    graph(P, (y) => 0.18 + bump(y, 15, 0.45, 8) + 0.004 * y);
-    P(29, 10, 7, 9, "#fffaf0"); P(30, 11, 5, 1, "#c0303a"); P(32, 12, 1, 4, "#c0303a"); P(32, 17, 1, 1, "#c0303a"); // 느낌표 카드: 참기
-  });
-  const b = mk((P) => {
-    graph(P, (y) => 0.2 + bump(y, 20, 0.78, 10), 20);
-    sci(P, 0, 15);
-    for (const [x, y] of [[34, 12], [37, 26]]) { P(x, y, 1, 3, "#ffd166"); P(x - 1, y + 1, 3, 1, "#ffd166"); }
-  });
-  const c = mk((P) => {
-    P(5, 4, 30, 32, "#fbf6ea"); P(5, 4, 30, 1, "#fff"); for (let y = 8; y < 20; y += 3) P(8, y, 22 - (y % 5), 1, "#b8a890");
-    P(9, 21, 22, 11, "#d8263a"); P(10, 22, 20, 9, "#fbf6ea"); P(11, 23, 18, 7, "#d8263a"); P(12, 24, 16, 5, "#fbf6ea");
-    for (let i = 0; i < 4; i++) P(13 + i * 4, 26, 2, 1, "#d8263a");
-    P(30, 28, 8, 8, "#c9961c"); P(31, 29, 6, 6, "#ffd166"); P(33, 30, 2, 4, "#fff3b0");
-  });
-  return [[`<img src="${a}" alt="">`, "작은 봉우리는 참기"], [`<img src="${b}" alt="">`, "꼭대기에서 톡"], [`<img src="${c}" alt="">`, "다음 화 결제!"]];
+  const bg = `<rect width="80" height="80" rx="12" fill="#17142c"/>`;
+  const panel = (curve) => `<rect x="6" y="5" width="68" height="70" rx="6" fill="#141a32" stroke="#2a3458" stroke-width="1.2"/><rect x="56" y="5" width="18" height="70" fill="#ff3b5c" opacity=".1"/><defs><linearGradient id="tg" x1="8" x2="70" gradientUnits="userSpaceOnUse"><stop offset=".3" stop-color="#3a6ea8"/><stop offset=".45" stop-color="#5fb8ff"/><stop offset=".68" stop-color="#ff8fc8"/><stop offset=".8" stop-color="#ff3b5c"/></linearGradient></defs><path d="${curve}" fill="url(#tg)" stroke="#fff" stroke-width="1.2"/><path d="M56 7v66" stroke="#ff3b5c" stroke-width="1.6" stroke-dasharray="3 2"/>`;
+  const a = svgW("0 0 80 80", bg + panel("M7 6H16C20 14 22 18 22 24 26 26 44 28 44 33 44 38 28 40 24 44 22 52 26 60 24 74H7z") + `<rect x="44" y="20" width="26" height="16" rx="4" fill="#fffaf0"/><text x="57" y="31.5" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="9" fill="#c0303a">참기</text>`);
+  const b = svgW("0 0 80 80", bg + panel("M7 6H14C18 16 20 22 26 28 40 32 66 34 66 40 66 46 40 48 26 52 20 60 18 66 16 74H7z") + `<path d="M2 40H78" stroke="#ff3b5c" stroke-width="1.8" stroke-dasharray="4 2.5"/>` + sciG(-2, 31, 0.42) + sparkG(70, 22, 5, "#ffd166") + sparkG(72, 58, 4, "#fff3b0"));
+  const c = svgW("0 0 80 80", bg + `<rect x="10" y="6" width="56" height="64" rx="4" fill="#fbf6ea"/><g fill="#c8b8a0"><rect x="16" y="13" width="40" height="2.4" rx="1.2"/><rect x="16" y="19" width="34" height="2.4" rx="1.2"/><rect x="16" y="25" width="38" height="2.4" rx="1.2"/></g><g transform="rotate(-10 38 46)"><rect x="15" y="34" width="46" height="22" rx="4" fill="none" stroke="#d8263a" stroke-width="2.6"/><rect x="18.5" y="37.5" width="39" height="15" rx="2" fill="none" stroke="#d8263a" stroke-width="1.2"/><text x="38" y="48.6" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="8.4" fill="#d8263a">다음 화에</text></g><circle cx="64" cy="64" r="10" fill="#c9961c"/><circle cx="64" cy="64" r="8" fill="#ffd166"/><text x="64" y="68" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="10" fill="#a86a00">₩</text>`);
+  return [[`<img src="${svgU(a)}" alt="">`, "작은 봉우리는 참기"], [`<img src="${svgU(b)}" alt="">`, "꼭대기에서 톡"], [`<img src="${svgU(c)}" alt="">`, "다음 화 결제!"]];
 }
 
 export const GAME = {
@@ -121,9 +102,12 @@ export const GAME = {
   steps: () => { try { return stepPics(); } catch (e) { return [["", "작은 봉우리는 참기"], ["", "꼭대기에서 톡"], ["", "다음 화 결제!"]]; } },
   css: `
 .mg-webnovel2 .wz-st{background:#0d0a18!important;touch-action:none;user-select:none;-webkit-user-select:none}
-.mg-webnovel2 .wz-cv{position:absolute;left:0;top:0;z-index:0;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;pointer-events:none}
+.mg-webnovel2 .wz-cv{position:absolute;left:0;top:0;z-index:0;touch-action:none;pointer-events:none}
+.mg-webnovel2 .wz-bgi{position:absolute;left:0;top:0;right:0;z-index:0;overflow:hidden;pointer-events:none;background:#1a1530}
+.mg-webnovel2 .wz-bgi::before{content:"";position:absolute;inset:-6px;background:url("img/bg/online.webp") 70% 6%/170% auto no-repeat;filter:brightness(.6) saturate(1.1) blur(1.2px)}
+.mg-webnovel2 .wz-bgi::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 40%,transparent 45%,#05031088),linear-gradient(#0a081c55,transparent 40%)}
 .mg-webnovel2 .wz-cv.wz-fr{z-index:2}
-.mg-webnovel2 .mg-steps img{width:76px;height:76px;image-rendering:pixelated}
+.mg-webnovel2 .mg-steps img{width:76px;height:76px}
 .mg-webnovel2 .mg-msg{z-index:24}
 .mg-webnovel2 .wz-rc{position:absolute;left:0;top:0;right:0;z-index:1;overflow:hidden;pointer-events:none}
 .mg-webnovel2 .wz-me{position:absolute;background-repeat:no-repeat;background-size:300% 346.15%;opacity:0;transition:opacity .5s,filter .4s;transform-origin:50% 90%}
@@ -142,7 +126,7 @@ export const GAME = {
 .mg-webnovel2 .wz-pp{position:absolute;left:8px;right:8px;z-index:4;background:#fbf6ea;border-radius:9px;box-shadow:0 3px 0 #0007,inset 0 0 0 1px #e6dcc6;overflow:hidden}
 .mg-webnovel2 .wz-pp.shk{animation:wzshk .3s}
 .mg-webnovel2 .wz-ph{position:absolute;left:0;right:0;top:0;height:22px;display:flex;align-items:center;gap:5px;padding:0 7px;background:#ece3cf;color:#5a4a3a;font-size:10.5px;z-index:3}
-.mg-webnovel2 .wz-ph i{width:14px;height:14px;background-size:100% 100%;image-rendering:pixelated;flex:none}
+.mg-webnovel2 .wz-ph i{width:15px;height:15px;background-size:100% 100%;flex:none}
 .mg-webnovel2 .wz-ph b{font-weight:900;color:#3a2a1e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .mg-webnovel2 .wz-ph span{white-space:nowrap;font-weight:800;color:var(--gc)}
 .mg-webnovel2 .wz-ph em{margin-left:auto;font-style:normal;font-weight:900;font-size:10px;color:#fff;background:#8a7a6a;border-radius:5px;padding:1px 6px;white-space:nowrap;transition:background .2s}
@@ -165,14 +149,14 @@ export const GAME = {
 .mg-webnovel2 .wz-ok{position:absolute;left:4px;right:2px;height:0;border-top:2px dashed #1f9a4a;pointer-events:none}
 .mg-webnovel2 .wz-ok b{position:absolute;right:0;top:-8px;font-size:9px;font-weight:900;color:#fff;background:#1f9a4a;border-radius:4px;padding:0 4px;font-family:sans-serif}
 .mg-webnovel2 .wz-ok.drop{transition:transform .7s,opacity .7s;opacity:0}
-.mg-webnovel2 .wz-gr{position:absolute;right:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
+.mg-webnovel2 .wz-gr{position:absolute;right:0;top:0}
 .mg-webnovel2 .wz-fog{position:absolute;right:0;bottom:0;background:repeating-linear-gradient(135deg,#1a2040 0 6px,#141a32 6px 12px);display:flex;align-items:center;justify-content:center;color:#5a6a9a;font-weight:900;font-size:20px;letter-spacing:4px;transition:opacity .4s;border-top:1px dashed #5a6a9a}
 .mg-webnovel2 .wz-fog small{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;letter-spacing:0;color:#5a6a9a}
 .mg-webnovel2 .wz-fog.off{opacity:0}
 .mg-webnovel2 .wz-thl{position:absolute;top:2px;transform:translateX(-50%);font-size:9px;font-weight:900;color:#fff;background:#c0303a;border-radius:4px;padding:0 3px;white-space:nowrap;pointer-events:none;z-index:2}
 .mg-webnovel2 .wz-gl{position:absolute;top:2px;font-size:9px;font-weight:900;color:#9fb0e0;white-space:nowrap;pointer-events:none;z-index:2}
 .mg-webnovel2 .wz-cut{position:absolute;left:0;right:0;height:0;border-top:2px dashed #ff3b5c;z-index:2;pointer-events:none}
-.mg-webnovel2 .wz-cut i{position:absolute;left:0;top:-12px;width:28px;height:22px;background-size:100% 100%;image-rendering:pixelated;filter:drop-shadow(0 1px 0 #0006)}
+.mg-webnovel2 .wz-cut i{position:absolute;left:0;top:-12px;width:28px;height:22px;background-size:100% 100%;filter:drop-shadow(0 1px 1px #0006)}
 .mg-webnovel2 .wz-cut.snip{border-top-style:solid}
 .mg-webnovel2 .wz-cut.snip i{animation:wzsnip .38s ease-in forwards}
 .mg-webnovel2 .wz-vig{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 26px 6px #ff2040;opacity:0;z-index:2}
@@ -190,11 +174,11 @@ export const GAME = {
 .mg-webnovel2 .wz-dr{position:absolute;left:8px;right:8px;z-index:4;background:#141a2a;border-radius:8px;box-shadow:0 2px 0 #0007;display:flex;align-items:center;gap:6px;padding:0 8px;box-sizing:border-box}
 .mg-webnovel2 .wz-dr span{font-size:10.5px;font-weight:800;color:#ff8fa0;white-space:nowrap;line-height:1.1}
 .mg-webnovel2 .wz-dr span small{display:block;font-size:9px;color:#8a90b0;font-weight:700}
-.mg-webnovel2 .wz-dr canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#0c1020;border-radius:3px}
+.mg-webnovel2 .wz-dr canvas{background:#0c1020;border-radius:4px}
 .mg-webnovel2 .wz-dr b{margin-left:auto;font-size:14px;font-weight:900;color:#ff8fa0;white-space:nowrap}
 .mg-webnovel2 .wz-dr b.up{animation:wzbump .3s}
 .mg-webnovel2 .wz-btn{position:absolute;left:8px;right:8px;z-index:8;border:0!important;border-radius:14px!important;padding:0!important;background:linear-gradient(#ff6a7a,#d8263a)!important;box-shadow:0 4px 0 #7a1020!important;color:#fff!important;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:900;font-size:17px;letter-spacing:1px;cursor:pointer;touch-action:none}
-.mg-webnovel2 .wz-btn i{width:34px;height:27px;background-size:100% 100%;image-rendering:pixelated;filter:drop-shadow(0 2px 0 #0005)}
+.mg-webnovel2 .wz-btn i{width:36px;height:28px;background-size:100% 100%;filter:drop-shadow(0 2px 0 #0005)}
 .mg-webnovel2 .wz-btn small{font-size:10.5px;font-weight:700;opacity:.9;letter-spacing:0}
 .mg-webnovel2 .wz-btn:active,.mg-webnovel2 .wz-btn.prs{transform:translateY(3px);box-shadow:0 1px 0 #7a1020!important}
 .mg-webnovel2 .wz-btn.hot{animation:wzhot .3s infinite alternate}
@@ -213,7 +197,7 @@ export const GAME = {
 .mg-webnovel2 .wz-tb{margin-top:5px;display:flex;justify-content:center}
 .mg-webnovel2 .wz-skip{background:none!important;border:0!important;box-shadow:none!important;color:#8a7a90!important;font-size:11.5px;text-decoration:underline;padding:2px 6px!important;min-height:0!important}
 .mg-webnovel2 .wz-go{background:linear-gradient(#5fb8ff,#1f6fd0)!important;color:#fff!important;border:0!important;border-radius:10px!important;padding:8px 24px!important;font-weight:900;font-size:14px;box-shadow:0 3px 0 #0d3a80!important;animation:wzpulse .5s infinite alternate}
-.mg-webnovel2 .wz-hand{position:absolute;z-index:21;width:39px;height:39px;margin:-37px 0 0 -14px;background-size:100% 100%;image-rendering:pixelated;pointer-events:none;display:none;filter:drop-shadow(0 2px 0 #0009)}
+.mg-webnovel2 .wz-hand{position:absolute;z-index:21;width:39px;height:39px;margin:-37px 0 0 -14px;background-size:100% 100%;pointer-events:none;display:none;filter:drop-shadow(0 2px 2px #0009)}
 .mg-webnovel2 .wz-hand.on{display:block;animation:wztap .8s infinite}
 .mg-webnovel2 .wz-end{position:absolute;left:0;right:0;bottom:0;z-index:25;background:linear-gradient(#0f1830,#0a0f20);display:flex;flex-direction:column;gap:8px;padding:10px 12px 10px;animation:wzup .45s cubic-bezier(.2,.9,.3,1);border-top:2px solid #5fb8ff;box-sizing:border-box}
 .mg-webnovel2 .wz-eh{display:flex;align-items:center;gap:6px;color:#fff;font-size:12.5px;font-weight:800;white-space:nowrap}
@@ -224,7 +208,7 @@ export const GAME = {
 .mg-webnovel2 .wz-bar u{text-decoration:none;font-size:11px;font-weight:900;color:#fff}
 .mg-webnovel2 .wz-bar s{text-decoration:none;display:block;flex:none;width:70%;height:var(--h,4px);border-radius:5px 5px 0 0;background:linear-gradient(var(--bc),#ffffff22);box-shadow:inset 0 2px 0 #ffffff66;animation:wzgrow 1s .15s cubic-bezier(.2,.9,.3,1) backwards}
 @keyframes wzgrow{from{height:0}}
-.mg-webnovel2 .wz-bar i{width:14px;height:14px;background-size:100% 100%;image-rendering:pixelated}
+.mg-webnovel2 .wz-bar i{width:16px;height:16px;background-size:100% 100%}
 .mg-webnovel2 .wz-bar small{font-size:9.5px;font-weight:800;color:var(--bc);white-space:nowrap}
 .mg-webnovel2 .wz-big{text-align:center;color:#c8d8f0;font-size:12px;font-weight:700}
 .mg-webnovel2 .wz-big b{display:block;font-size:34px;font-weight:900;color:#ffd166;line-height:1.15;text-shadow:0 3px 0 #a86a00}
@@ -254,7 +238,7 @@ export const GAME = {
     const st = F.stage;
     const ORDER = shuffle(Object.keys(GEN)); ORDER.push(pick(ORDER.slice(0, 2)));
     const EPNO = {}; for (const k of Object.keys(GEN)) EPNO[k] = 20 + rint(120);
-    st.insertAdjacentHTML("beforeend", `<canvas class="wz-cv"></canvas><div class="wz-rc"><div class="wz-me"></div></div><canvas class="wz-cv wz-fr"></canvas>
+    st.insertAdjacentHTML("beforeend", `<div class="wz-bgi"></div><canvas class="wz-cv"></canvas><div class="wz-rc"><div class="wz-me"></div></div><canvas class="wz-cv wz-fr"></canvas>
       <div class="wz-say"></div><div class="wz-eps">${Array.from({ length: EPS }, (_, i) => `<i>${i + 1}</i>`).join("")}</div>
       <div class="wz-pp"><div class="wz-ph"><i></i><b></b><span></span><em>분량 0자</em></div>
         <div class="wz-bd"><div class="wz-tx"><div class="wz-in"></div></div><canvas class="wz-gr"></canvas><div class="wz-fog">??<small>아직 안 쓴 긴장</small></div>
@@ -265,21 +249,23 @@ export const GAME = {
       <div class="wz-ban"></div>
       <div class="wz-tut off"><div class="wz-tc"><em>리허설</em><p></p><div class="wz-tb"></div></div></div><div class="wz-hand"></div>`);
     const $ = (s) => st.querySelector(s);
-    const cv = $(".wz-cv"), gB = cv.getContext("2d"), cvF = $(".wz-fr"), gF = cvF.getContext("2d");
+    const bgiEl = $(".wz-bgi"), cv = $(".wz-cv"), gB = cv.getContext("2d"), cvF = $(".wz-fr"), gF = cvF.getContext("2d");
     const meEl = $(".wz-me"), rcEl = $(".wz-rc"), sayEl = $(".wz-say"), epsEl = [...st.querySelectorAll(".wz-eps i")];
     const pp = $(".wz-pp"), phI = $(".wz-ph i"), phB = $(".wz-ph b"), phS = $(".wz-ph span"), lenEl = $(".wz-ph em");
     const bd = $(".wz-bd"), txEl = $(".wz-tx"), inEl = $(".wz-in"), grC = $(".wz-gr"), gG = grC.getContext("2d"), fogEl = $(".wz-fog"), thlEl = $(".wz-thl"), glEl = $(".wz-gl");
     const cutEl = $(".wz-cut"), vigEl = $(".wz-vig"), stampEl = $(".wz-stamp"), cmsEl = $(".wz-cms");
     const drEl = $(".wz-dr"), drC = $(".wz-dr canvas"), gD = drC.getContext("2d"), drB = $(".wz-dr b"), btn = $(".wz-btn"), ban = $(".wz-ban");
     const tutEl = $(".wz-tut"), tutP = $(".wz-tc p"), tutB = $(".wz-tb"), hand = $(".wz-hand");
-    cutEl.querySelector("i").style.backgroundImage = `url(${sciURL()})`; btn.querySelector("i").style.backgroundImage = `url(${sciURL()})`;
-    hand.style.backgroundImage = `url(${fingerURL()})`;
+    cutEl.querySelector("i").style.backgroundImage = `url("${SCI_URL}")`; btn.querySelector("i").style.backgroundImage = `url("${SCI_URL}")`;
+    hand.style.backgroundImage = `url("${HAND_URL}")`;
 
     // ── 크기: 논리 폭 112칸 안팎을 정수배로 ──
     const sw = st.clientWidth || 336, sh = st.clientHeight || 560;
     const K = Math.max(2, Math.round(sw / 112)), LW = Math.ceil(sw / K), LH = Math.ceil(sh / K);
     const RH = Math.max(40, Math.round(LH * 0.25)), roomH = RH * K, deskY = RH - 11, cx = LW >> 1;
-    for (const c of [cv, cvF]) { c.width = LW; c.height = RH; c.style.width = LW * K + "px"; c.style.height = RH * K + "px"; }
+    const DPR = Math.min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1), KS = K * DPR;
+    for (const c of [cv, cvF]) { c.width = Math.round(LW * KS); c.height = Math.round(RH * KS); c.style.width = LW * K + "px"; c.style.height = RH * K + "px"; }
+    gB.setTransform(KS, 0, 0, KS, 0, 0); gF.setTransform(KS, 0, 0, KS, 0, 0);
     const btnH = Math.round(Math.min(54, sh * 0.09)), btnTop = sh - btnH - 8, drH = 40, drTop = btnTop - 6 - drH;
     const ppTop = roomH + 4, ppH = drTop - 6 - ppTop, phH = 22, bodyH = ppH - phH;
     const ROW = 28, cutY = Math.round(bodyH * 0.42), gwL = 32, gW = gwL * K, ghL = Math.ceil(bodyH / K), tw = sw - 16 - gW;
@@ -287,17 +273,17 @@ export const GAME = {
     Object.assign(pp.style, { top: ppTop + "px", height: ppH + "px" });
     Object.assign(bd.style, { top: phH + "px", height: bodyH + "px" });
     txEl.style.width = tw + "px";
-    grC.width = gwL; grC.height = ghL; Object.assign(grC.style, { width: gW + "px", height: ghL * K + "px" });
+    grC.width = Math.round(gwL * KS); grC.height = Math.round(ghL * KS); gG.setTransform(KS, 0, 0, KS, 0, 0); Object.assign(grC.style, { width: gW + "px", height: ghL * K + "px" });
     Object.assign(fogEl.style, { width: gW + "px", top: fogY + "px" });
     const gx = (t) => 1 + Math.round(clamp(t, 0, 1.05) * (gwL - 4));
     thlEl.style.left = tw + gx(TH) * K + "px"; glEl.style.left = tw + 3 + "px";
     cutEl.style.top = cutY + "px"; stampEl.style.top = Math.min(bodyH - 30, cutY + 46) + "px";
     Object.assign(drEl.style, { top: drTop + "px", height: drH + "px" });
     const drW = Math.floor((sw - 16 - 16 - 62 - 44 - 12) / K), drHL = 10;
-    drC.width = drW; drC.height = drHL; Object.assign(drC.style, { width: drW * K + "px", height: drHL * K + "px" });
+    drC.width = Math.round(drW * KS); drC.height = Math.round(drHL * KS); gD.setTransform(KS, 0, 0, KS, 0, 0); Object.assign(drC.style, { width: drW * K + "px", height: drHL * K + "px" });
     Object.assign(btn.style, { top: btnTop + "px", height: btnH + "px" });
     cmsEl.style.top = ppTop + phH + Math.min(bodyH - 64, cutY + 74) + "px";
-    rcEl.style.height = roomH + "px";
+    rcEl.style.height = roomH + "px"; bgiEl.style.height = roomH + "px";
     ban.style.top = ppTop + phH + cutY - 40 + "px";
     tutEl.style.top = Math.max(30, roomH - 112) + "px";
     F.root.querySelector(".mg-msg").style.top = ppTop + phH + cutY - 34 + "px";
@@ -319,52 +305,55 @@ export const GAME = {
     const EXI = { neutral: 0, smile: 1, sad: 2, angry: 3, blush: 4, surprised: 5 };
     let meX = "", meT = "";
 
-    // ── 방 배경(한 번만): 밤 벽·창문·책장 / 앞쪽 책상·노트북 뒷면·스탠드 ──
-    const BG = document.createElement("canvas"); BG.width = LW; BG.height = RH;
-    const wins = [], stars = [];
-    const winX = 5, winY = 5, winW = 18, winH = deskY - 13;
+    // ── 방 배경(한 번만): 실제 그림(.wz-bgi) 위에 어둠·메모 / 앞쪽 책상·노트북·스탠드는 벡터 ──
+    const hiC = () => { const c = document.createElement("canvas"); c.width = Math.round(LW * KS); c.height = Math.round(RH * KS); const x = c.getContext("2d"); x.setTransform(KS, 0, 0, KS, 0, 0); return [c, x]; };
+    const [BG, b0] = hiC();
     {
-      const b = BG.getContext("2d"), P = (x, y, w, h, c) => { b.fillStyle = c; b.fillRect(x, y, w, h); };
-      for (let y = 0; y < RH; y++) { const t = y / RH; P(0, y, LW, 1, `rgb(${Math.round(26 + t * 18)},${Math.round(24 + t * 14)},${Math.round(48 + t * 18)})`); }
-      for (let y = 3; y < deskY; y += 6) for (let x = (y / 6) % 2 ? 4 : 1; x < LW; x += 6) P(x, y, 1, 1, "#ffffff0c");
-      P(winX - 2, winY - 2, winW + 4, winH + 4, "#5a4a3e"); P(winX - 1, winY - 1, winW + 2, winH + 2, "#3a2e26");
-      for (let y = 0; y < winH; y++) { const t = y / winH; P(winX, winY + y, winW, 1, `rgb(${Math.round(10 + t * 30)},${Math.round(14 + t * 20)},${Math.round(40 + t * 34)})`); }
-      P(winX + 12, winY + 2, 5, 5, "#fff3c0"); P(winX + 14, winY + 1, 4, 4, "rgb(12,16,44)");
-      for (let i = 0; i < 6; i++) stars.push([winX + 1 + rint(winW - 2), winY + 1 + rint(Math.max(2, winH / 2))]);
-      let bx = winX; while (bx < winX + winW) { const bw = 3 + rint(4), bh = 4 + rint(Math.max(3, winH - 9)); const w2 = Math.min(bw, winX + winW - bx); P(bx, winY + winH - bh, w2, bh, "#141a32"); for (let yy = winY + winH - bh + 2; yy < winY + winH - 1; yy += 3) for (let xx = bx + 1; xx < bx + w2 - 1; xx += 2) if (rnd() < 0.45) wins.push([xx, yy]); bx += bw + (rnd() < 0.3 ? 1 : 0); }
-      P(winX + (winW >> 1), winY, 1, winH, "#3a2e26"); P(winX, winY + (winH >> 1), winW, 1, "#3a2e2688");
-      P(winX - 4, winY - 3, 4, winH + 7, "#4a5a8a"); P(winX + winW, winY - 3, 4, winH + 7, "#4a5a8a"); P(winX - 4, winY - 4, winW + 8, 2, "#6a6a7a");
-      // 포스트잇: "끊기!" 메모, 결제율 그래프 메모
-      const ps = (x, y, col, f) => { P(x + 1, y + 1, 14, 9, "#0004"); P(x, y, 14, 9, col); P(x, y, 14, 2, tint(col, 0.88)); f(x, y); };
-      ps(winX + winW + 5, 5, "#ffe27a", (x, y) => { SCI.forEach((r, j) => j % 2 === 0 && [...r].forEach((ch, i) => { if (ch !== "." && i % 2 === 0) P(x + 2 + (i >> 1), y + 2 + (j >> 1), 1, 1, ch === "o" ? "#d0303a" : "#5a4a3a"); })); P(x + 10, y + 3, 1, 3, "#d0303a"); P(x + 10, y + 7, 1, 1, "#d0303a"); });
-      ps(winX + winW + 4, 18, "#ff9ec8", (x, y) => { P(x + 2, y + 6, 2, 2, "#7a3a5a"); P(x + 5, y + 4, 2, 4, "#7a3a5a"); P(x + 8, y + 3, 2, 5, "#7a3a5a"); P(x + 11, y + 2, 1, 1, "#d0303a"); });
-      // 책장(오른쪽)
-      const shX = LW - 26, shW = 23;
-      for (const [k, sy] of [[0, 12], [1, Math.min(deskY - 5, 25)]]) {
-        P(shX, sy, shW, 2, "#8a5a3a"); P(shX, sy + 2, shW, 1, "#4a2e1e");
-        let x = shX + 1; const cols = ["#5fb8ff", "#ff8fc8", "#ffb03b", "#b89cff", "#7fe0a8", "#e05a5a", "#e6e6e6", "#4a6aa0"];
-        while (x < shX + shW - 2) { const h = 5 + rint(4), w2 = 2 + rint(2), c = pick(cols); if (k === 1 && x > shX + shW - 9) break; P(x, sy - h, w2, h, c); P(x, sy - h, w2, 1, tint(c, 1.25)); P(x, sy - h + 2, w2, 1, tint(c, 0.7)); x += w2; }
-        if (k === 1) { const tx = shX + shW - 7; P(tx, sy - 5, 6, 5, "#ffd166"); P(tx + 1, sy - 7, 4, 2, "#ffd166"); P(tx + 2, sy - 9, 2, 2, "#fff3b0"); P(tx, sy - 1, 6, 1, "#c9961c"); }
-      }
+      const b = b0;
+      b.fillStyle = lin(b, 0, 0, 0, RH, [[0, "rgba(8,6,24,.28)"], [0.45, "rgba(8,6,24,0)"], [1, "rgba(8,6,24,.35)"]]); b.fillRect(0, 0, LW, RH);
+      // 포스트잇: "끊기!" 메모
+      b.save(); b.translate(LW - 24, 4); b.rotate(0.07);
+      b.fillStyle = "rgba(0,0,0,.35)"; b.fillRect(0.8, 1, 19, 12);
+      b.fillStyle = lin(b, 0, 0, 0, 12, [[0, "#fff2a0"], [1, "#ffd95a"]]); b.fillRect(0, 0, 19, 12);
+      b.fillStyle = "rgba(255,255,255,.55)"; b.fillRect(5.5, -1.2, 8, 2.4);
+      b.fillStyle = "#d0303a"; b.font = "900 4.4px sans-serif"; b.textAlign = "center"; b.fillText("끊기!", 9.5, 6.4);
+      b.fillStyle = "#7a5a2a"; b.font = "800 3.1px sans-serif"; b.fillText("결제각 ✂", 9.5, 10.4);
+      b.restore();
     }
-    const FG = document.createElement("canvas"); FG.width = LW; FG.height = RH;
+    const [FG, f0] = hiC();
     const mugX = lidX - 12, clkX = lidX + lidW + 4, clkY = deskY - 9, lampX = 1;
     {
-      const b = FG.getContext("2d"), P = (x, y, w, h, c) => { b.fillStyle = c; b.fillRect(x, y, w, h); };
-      P(0, deskY, LW, RH - deskY, "#7a4e32"); P(0, deskY, LW, 1, "#a8744c"); P(0, deskY + 1, LW, 1, "#8e5c3c");
-      for (let y = deskY + 3; y < RH; y += 3) for (let x = (y * 7) % 13; x < LW; x += 19) P(x, y, 7, 1, "#6e442c");
-      P(0, RH - 1, LW, 1, "#3a2216");
-      P(lidX - 1, lidY - 1, lidW + 2, lidH + 2, "#9fd8ff55");
-      P(lidX, lidY, lidW, lidH, "#b8bcc8"); P(lidX, lidY, lidW, 1, "#e0e4ee"); P(lidX + lidW - 1, lidY, 1, lidH, "#8a8e9c"); P(lidX, lidY + lidH - 1, lidW, 1, "#8a8e9c");
-      P(lidX - 3, lidY + lidH, lidW + 6, 2, "#7a7e8c"); P(lidX - 3, lidY + lidH + 2, lidW + 6, 1, "#0004");
-      const lx = cx - 3, ly = lidY + 5; P(lx, ly, 7, 8, "#f4f6fa"); P(lx + 1, ly + 1, 5, 6, "#1f6fd0"); P(lx + 3, ly + 2, 1, 4, "#fff"); P(lx + 2, ly + 6, 3, 1, "#9fd8ff");
-      P(lidX + 4, lidY + 4, 5, 5, "#ffd166"); P(lidX + 5, lidY + 5, 3, 3, "#fff3b0");
-      SCI.forEach((r, j) => j % 2 === 0 && [...r].forEach((ch, i) => { if (ch !== "." && i % 2 === 0) P(lidX + lidW - 11 + (i >> 1), lidY + 9 + (j >> 1), 1, 1, SCOL[ch]); }));
-      P(lampX, deskY + 1, 10, 3, "#2f3a4a"); P(lampX, deskY + 1, 10, 1, "#4a5a6e");
-      for (let i = 0; i < 12; i++) P(lampX + 4 + Math.round(i * 0.25), deskY - i, 2, 1, "#5a6a80");
-      for (let i = 0; i < 6; i++) P(lampX + 7 + i, deskY - 12 + Math.round(i * 0.5), 1, 1, "#5a6a80");
-      const sx = lampX + 11, sy = deskY - 12; P(sx + 1, sy - 1, 4, 1, "#3f8a5a"); P(sx, sy, 6, 1, "#2f7a4a"); P(sx - 1, sy + 1, 8, 1, "#2f6a4a"); P(sx - 2, sy + 2, 10, 2, "#25583c"); P(sx - 1, sy + 4, 8, 1, "#fff3c0");
-      const bx = LW - 14; [["#5fb8ff", 0], ["#ffb03b", 3], ["#e05a5a", 6]].forEach(([c, d]) => { P(bx - (d % 2), deskY + 2 - d, 12, 3, c); P(bx - (d % 2), deskY + 2 - d, 12, 1, tint(c, 1.25)); P(bx + 10 - (d % 2), deskY + 2 - d, 2, 3, "#f2ead8"); });
+      const b = f0;
+      b.fillStyle = lin(b, 0, deskY, 0, RH, [[0, "#a06c44"], [0.15, "#83552f"], [1, "#4a2e1a"]]); b.fillRect(0, deskY, LW, RH - deskY);
+      b.fillStyle = "#d7a273"; b.fillRect(0, deskY, LW, 0.5);
+      b.strokeStyle = "rgba(50,24,8,.28)"; b.lineWidth = 0.3;
+      for (let i = 0; i < 6; i++) { const y = deskY + 2.5 + i * ((RH - deskY - 3) / 6); b.beginPath(); b.moveTo(0, y); b.bezierCurveTo(LW * 0.3, y + 0.8, LW * 0.6, y - 0.8, LW, y + 0.4); b.stroke(); }
+      b.fillStyle = "rgba(0,0,0,.45)"; b.fillRect(0, RH - 0.8, LW, 0.8);
+      b.fillStyle = rad(b, cx, lidY + lidH + 2, 1, lidW * 0.6, [[0, "rgba(0,0,0,.45)"], [1, "rgba(0,0,0,0)"]]); b.fillRect(lidX - 10, lidY + lidH - 2, lidW + 20, 8);
+      b.save(); b.shadowColor = "rgba(140,200,255,.55)"; b.shadowBlur = 5 * KS;
+      rr(b, lidX, lidY, lidW, lidH + 1, 2.2); b.fillStyle = lin(b, lidX, lidY, lidX + lidW, lidY + lidH, [[0, "#eef1f6"], [0.45, "#c9ced8"], [1, "#9aa0ae"]]); b.fill(); b.restore();
+      b.save(); rr(b, lidX, lidY, lidW, lidH + 1, 2.2); b.clip();
+      b.fillStyle = "rgba(255,255,255,.22)"; b.beginPath(); b.moveTo(lidX + lidW * 0.18, lidY); b.lineTo(lidX + lidW * 0.42, lidY); b.lineTo(lidX + lidW * 0.2, lidY + lidH + 1); b.lineTo(lidX - 2, lidY + lidH + 1); b.closePath(); b.fill();
+      b.restore();
+      rr(b, lidX + 0.2, lidY + 0.2, lidW - 0.4, lidH + 0.6, 2.1); b.strokeStyle = "rgba(255,255,255,.75)"; b.lineWidth = 0.35; b.stroke();
+      rr(b, lidX - 3, lidY + lidH, lidW + 6, 2.4, 1.1); b.fillStyle = lin(b, 0, lidY + lidH, 0, lidY + lidH + 2.4, [[0, "#a3a8b6"], [1, "#5d6270"]]); b.fill();
+      const ly = lidY + lidH * 0.5;
+      b.fillStyle = rad(b, cx, ly, 0.5, 4.6, [[0, "rgba(255,255,255,.95)"], [0.6, "rgba(190,228,255,.8)"], [1, "rgba(190,228,255,0)"]]); b.beginPath(); b.arc(cx, ly, 4.6, 0, 7); b.fill();
+      b.fillStyle = "#1f6fd0"; b.beginPath(); b.moveTo(cx, ly + 2.8); b.lineTo(cx - 1.9, ly - 0.5); b.lineTo(cx - 1.1, ly - 2.8); b.lineTo(cx + 1.1, ly - 2.8); b.lineTo(cx + 1.9, ly - 0.5); b.closePath(); b.fill();
+      b.strokeStyle = "#fff"; b.lineWidth = 0.4; b.beginPath(); b.moveTo(cx, ly + 2.2); b.lineTo(cx, ly - 0.4); b.stroke();
+      star5(b, lidX + 6, lidY + 5.5, 2.8, "#ffd166", "#b07800");
+      // 가위 스티커(벡터 그림을 붙임)
+      const sti = new Image(); sti.onload = () => { f0.save(); f0.translate(lidX + lidW - 13, lidY + lidH - 9.5); f0.rotate(-0.12); f0.fillStyle = "#fff"; rr(f0, -1, -1, 13, 10.5, 1.5); f0.fill(); f0.drawImage(sti, 0, 0, 11, 8.6); f0.restore(); }; sti.src = SCI_URL;
+      b.fillStyle = "rgba(0,0,0,.4)"; b.beginPath(); b.ellipse(lampX + 5.5, deskY + 2.6, 6, 1.4, 0, 0, 7); b.fill();
+      b.fillStyle = lin(b, 0, deskY, 0, deskY + 3, [[0, "#5a6a80"], [1, "#253040"]]); b.beginPath(); b.ellipse(lampX + 5.5, deskY + 1.6, 5.2, 1.6, 0, 0, 7); b.fill();
+      b.strokeStyle = "#7a8aa0"; b.lineCap = "round"; b.lineWidth = 1.1;
+      b.beginPath(); b.moveTo(lampX + 5, deskY + 1); b.lineTo(lampX + 8, deskY - 12); b.lineTo(lampX + 13, deskY - 13); b.stroke();
+      b.fillStyle = "#9aaac0"; b.beginPath(); b.arc(lampX + 8, deskY - 12, 0.9, 0, 7); b.fill();
+      b.save(); b.translate(lampX + 14, deskY - 12); b.rotate(0.35);
+      b.beginPath(); b.moveTo(-2.5, -2); b.lineTo(2.5, -2); b.lineTo(5.5, 3); b.lineTo(-5.5, 3); b.closePath(); b.fillStyle = lin(b, 0, -2, 0, 3, [[0, "#4fae76"], [1, "#1e5a3a"]]); b.fill();
+      b.fillStyle = "rgba(255,255,255,.3)"; b.fillRect(-1.8, -1.6, 1, 4); b.fillStyle = "#fff6cc"; b.beginPath(); b.ellipse(0, 3, 5.2, 0.9, 0, 0, 7); b.fill(); b.restore();
+      const bx = LW - 14;
+      [["#5fb8ff", 0], ["#ffb03b", 3], ["#e05a5a", 6]].forEach(([c, d]) => { const x = bx - (d % 2), y = deskY + 2 - d; rr(b, x, y, 12.5, 3, 0.7); b.fillStyle = lin(b, 0, y, 0, y + 3, [[0, tint(c, 1.2)], [1, tint(c, 0.78)]]); b.fill(); b.fillStyle = "#f2ead8"; b.fillRect(x + 10.2, y + 0.5, 2, 2); b.fillStyle = "rgba(255,255,255,.5)"; b.fillRect(x + 1.5, y + 1.2, 6, 0.4); });
     }
 
     // ── 상태 ── tut: 0 대기 / 1 작은 봉우리 참기 / 2 진짜 꼭대기 자르기 / 3 시작 카드 / -1 본게임
@@ -422,7 +411,7 @@ export const GAME = {
       inEl.innerHTML = E.L.map((l, i) => `<div class="wz-l k-${l.kind}" style="top:${lineTop(i)}px"><span>${l.txt}</span></div>`).join("") + `<div class="wz-ok" style="top:${lineTop(E.m) - 1}px"><b>분량 OK ▼</b></div>`;
       lineEls = [...inEl.querySelectorAll(".wz-l")]; okEl = inEl.querySelector(".wz-ok");
       inEl.style.transform = "translateY(0px)";
-      pp.style.setProperty("--gc", E.g.c); phI.style.backgroundImage = `url(${iconURL(gk)})`; phB.textContent = E.g.t; phS.textContent = `${E.no}화`;
+      pp.style.setProperty("--gc", E.g.c); phI.style.backgroundImage = `url("${iconURL(gk)}")`; phB.textContent = E.g.t; phS.textContent = `${E.no}화`;
       lenEl.textContent = "분량 0자"; lenEl.classList.remove("ok");
       fogEl.classList.remove("off"); cutEl.classList.remove("snip"); stampEl.className = "wz-stamp";
       cmsEl.innerHTML = ""; drB.textContent = "0%"; btn.classList.remove("dim", "hot");
@@ -516,72 +505,90 @@ export const GAME = {
     };
 
     // ── 그리기 ──
-    let g = gB; const P = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
-    const digit = (n, x, y, c) => [...DIG[n]].forEach((v, i) => v === "1" && P(x + (i % 3), y + Math.floor(i / 3), 1, 1, c));
+    let g = gB;
     const curT = () => (E && cur >= 0 && cur < E.n ? E.v[cur] : 0);
     const renderRoom = () => {
-      g = gB; g.drawImage(BG, 0, 0);
-      wins.forEach(([x, y], i) => { if (Math.sin(tm * 0.6 + i * 2.1) > -0.5) P(x, y, 1, 1, i % 3 ? "#ffd56a" : "#ffeebb"); });
-      stars.forEach(([x, y], i) => { if (Math.sin(tm * 2 + i * 1.7) > 0) P(x, y, 1, 1, "#fff8"); });
+      g = gB; g.clearRect(0, 0, LW, RH); g.drawImage(BG, 0, 0, LW, RH);
       g.globalCompositeOperation = "lighter";
       const lg = g.createRadialGradient(lampX + 13, deskY - 6, 2, lampX + 13, deskY - 2, 22); lg.addColorStop(0, "rgba(255,220,150,.28)"); lg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = lg; g.fillRect(0, 0, 46, RH);
       g.globalCompositeOperation = "source-over";
       g = gF; g.clearRect(0, 0, LW, RH);
       const t = curT();
       const sg = g.createRadialGradient(cx, lidY - 6, 2, cx, lidY - 6, 24); sg.addColorStop(0, `rgba(${140 + Math.round(t * 110)},${200 - Math.round(t * 120)},${255 - Math.round(t * 150)},${0.12 + t * 0.1})`); sg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = sg; g.fillRect(cx - 28, 0, 56, deskY);
-      g.drawImage(FG, 0, 0);
-      g.globalAlpha = 0.5 + 0.2 * Math.sin(tm * 3); P(lidX + 2, lidY - 1, lidW - 4, 1, t >= TH ? "#ff8fa0" : "#9fd8ff"); g.globalAlpha = 1;
-      // 머그컵 + 김
-      const my = deskY - 8; P(mugX, my, 8, 9, "#f2f2f6"); P(mugX, my, 8, 1, "#fff"); P(mugX + 8, my + 2, 2, 1, "#f2f2f6"); P(mugX + 9, my + 2, 1, 4, "#f2f2f6"); P(mugX + 8, my + 5, 2, 1, "#f2f2f6");
-      P(mugX + 1, my + 1, 6, 1, "#3a2216"); P(mugX + 2, my + 4, 4, 3, "#5fb8ff"); P(mugX, my + 9, 10, 1, "#0004");
-      for (let i = 0; i < 2; i++) { const ph = (tm * 0.7 + i / 2) % 1; g.globalAlpha = 0.55 * (1 - ph); P(mugX + 3 + Math.round(Math.sin((tm + i) * 3) * 1.5), my - 2 - Math.round(ph * 7), 1, 2, "#fff"); } g.globalAlpha = 1;
-      // 탁상시계 23:5x
-      P(clkX - 1, clkY - 1, 21, 11, "#14101c"); P(clkX, clkY, 19, 9, "#06040a"); P(clkX - 1, clkY + 10, 21, 1, "#0006");
+      g.drawImage(FG, 0, 0, LW, RH);
+      g.globalAlpha = 0.45 + 0.2 * Math.sin(tm * 3); rr(g, lidX + 2, lidY - 0.7, lidW - 4, 0.8, 0.4); g.fillStyle = t >= TH ? "#ff8fa0" : "#bfe6ff"; g.fill(); g.globalAlpha = 1;
+      // 머그컵 + 김(벡터)
+      const my = deskY - 8;
+      g.fillStyle = "rgba(0,0,0,.4)"; g.beginPath(); g.ellipse(mugX + 4.5, my + 9.2, 5.6, 1.2, 0, 0, 7); g.fill();
+      g.strokeStyle = "#e4e4ec"; g.lineWidth = 1.2; g.beginPath(); g.arc(mugX + 8, my + 4.2, 2.2, -1.3, 1.3); g.stroke();
+      g.beginPath(); g.moveTo(mugX, my + 0.6); g.lineTo(mugX + 8.2, my + 0.6); g.lineTo(mugX + 7.7, my + 8); g.quadraticCurveTo(mugX + 7.5, my + 9.2, mugX + 6.3, my + 9.2); g.lineTo(mugX + 1.9, my + 9.2); g.quadraticCurveTo(mugX + 0.7, my + 9.2, mugX + 0.5, my + 8); g.closePath();
+      g.fillStyle = lin(g, mugX, 0, mugX + 8.2, 0, [[0, "#c9cad6"], [0.35, "#ffffff"], [1, "#d2d3de"]]); g.fill();
+      g.fillStyle = "#5fb8ff"; g.fillRect(mugX + 0.3, my + 4, 7.6, 2.2); g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(mugX + 2, my + 4, 1.2, 2.2);
+      g.fillStyle = "#3a2216"; g.beginPath(); g.ellipse(mugX + 4.1, my + 0.8, 3.9, 0.8, 0, 0, 7); g.fill();
+      g.lineCap = "round"; g.lineWidth = 0.7;
+      for (let i = 0; i < 2; i++) { const ph = (tm * 0.7 + i / 2) % 1, x0 = mugX + 3 + i * 2, y0 = my - 0.5 - ph * 7; g.strokeStyle = `rgba(255,255,255,${(0.55 * (1 - ph)).toFixed(2)})`; g.beginPath(); g.moveTo(x0 + Math.sin((tm + i) * 3) * 1.2, y0); g.bezierCurveTo(x0 - 1.4, y0 - 1.5, x0 + 1.4, y0 - 2.5, x0 + Math.sin((tm + i) * 3 + 1) * 1.2, y0 - 4); g.stroke(); }
+      // 탁상시계 23:5x(빨간 7세그먼트)
+      rr(g, clkX - 1.2, clkY - 1.2, 21.4, 11.6, 1.8); g.fillStyle = lin(g, 0, clkY - 1, 0, clkY + 10, [[0, "#2a2434"], [1, "#0e0a14"]]); g.fill();
+      rr(g, clkX, clkY, 19, 9, 1); g.fillStyle = "#050308"; g.fill();
       const mm = 50 + Math.min(9, Math.max(0, epI) * 2 + (phase === "cut" ? 1 : 0)), dc = "#ff6a6a";
-      digit(2, clkX + 1, clkY + 2, dc); digit(3, clkX + 5, clkY + 2, dc); digit(Math.floor(mm / 10), clkX + 11, clkY + 2, dc); digit(mm % 10, clkX + 15, clkY + 2, dc);
-      if (Math.floor(tm * 2) % 2 === 0) { P(clkX + 9, clkY + 3, 1, 1, dc); P(clkX + 9, clkY + 5, 1, 1, dc); }
-      const vg = g.createLinearGradient(0, 0, 0, RH); vg.addColorStop(0, "rgba(5,3,14,.35)"); vg.addColorStop(0.3, "rgba(0,0,0,0)"); g.fillStyle = vg; g.fillRect(0, 0, LW, RH);
+      g.save(); g.shadowColor = dc; g.shadowBlur = 2.5 * KS;
+      [[2, 1.3], [3, 5.3], [Math.floor(mm / 10), 11.3], [mm % 10, 15.3]].forEach(([d, x]) => seg7(g, d, clkX + x, clkY + 2, 2.6, 5, dc, "rgba(255,80,90,.1)"));
+      g.restore();
+      if (Math.floor(tm * 2) % 2 === 0) { g.fillStyle = dc; g.beginPath(); g.arc(clkX + 9.6, clkY + 3.3, 0.45, 0, 7); g.arc(clkX + 9.6, clkY + 5.7, 0.45, 0, 7); g.fill(); }
+      g.fillStyle = "rgba(255,255,255,.08)"; rr(g, clkX, clkY, 19, 3.5, 1); g.fill();
+      const vg = g.createLinearGradient(0, 0, 0, RH); vg.addColorStop(0, "rgba(5,3,14,.3)"); vg.addColorStop(0.3, "rgba(0,0,0,0)"); g.fillStyle = vg; g.fillRect(0, 0, LW, RH);
     };
-    // 긴장도 파형(세로로 흐름): 줄마다 오른쪽으로 뻗는 길이 = 긴장
+    // 긴장도 파형(세로로 흐름, 매끈한 벡터): 줄마다 오른쪽으로 뻗는 길이 = 긴장
+    const gxf = (t) => 1 + clamp(t, 0, 1.05) * (gwL - 4);
     const renderGraph = () => {
-      g = gG; g.fillStyle = "#141a32"; g.fillRect(0, 0, gwL, ghL);
-      for (const f of [0.25, 0.5]) for (let y = (Math.floor(off / K) % 4 + 4) % 4; y < ghL; y += 4) P(gx(f), ghL - 1 - y, 1, 1, "#2a3458");
-      P(gx(TH) + 1, 0, gwL - gx(TH) - 1, ghL, "#ff3b5c12");
-      if (!E) return;
-      const n = E.n, cyL = (i) => (lineTop(i) + ROW / 2 - off) / K;
-      const knownTo = reveal ? Infinity : fogY / K;
-      const cutL = cutY / K;
-      for (let y = 0; y < ghL; y++) {
-        if (y > knownTo) break;
-        // 이 높이의 긴장(줄 가운데 사이를 이어서)
-        const fi = (y * K + off - Y0 - ROW / 2) / ROW; if (fi < -0.5 || fi > n - 0.5) continue;
-        const i0 = clamp(Math.floor(fi), 0, n - 1), i1 = clamp(i0 + 1, 0, n - 1), fr = clamp(fi - i0, 0, 1);
-        const s = fr * fr * (3 - 2 * fr); let t = E.v[i0] * (1 - s) + E.v[i1] * s;
-        if (fi < 0) t = E.v[0] * (fi + 0.5) * 2;
-        const wob = phase === "scroll" ? Math.sin(y * 0.9 + tm * 9) * 0.7 * t : 0;
-        const w = Math.max(1, Math.round(gx(t) + wob));
-        const after = reveal && E.cutIdx != null && fi > E.cutIdx + 0.5;
-        g.globalAlpha = after ? 0.35 : y > cutL + 0.5 && !reveal ? 0.55 : 1;
-        P(0, y, w, 1, after ? "#8a90b0" : tcol(t)); P(w, y, 1, 1, after ? "#c8cce0" : "#fff");
-        g.globalAlpha = 1;
+      g = gG; g.clearRect(0, 0, gwL, ghL);
+      g.fillStyle = lin(g, 0, 0, gwL, 0, [[0, "#121830"], [1, "#182040"]]); g.fillRect(0, 0, gwL, ghL);
+      g.strokeStyle = "#2a3458"; g.lineWidth = 0.35; g.setLineDash([1, 2.5]); g.lineDashOffset = -((off / K) % 3.5);
+      for (const f of [0.25, 0.5]) { g.beginPath(); g.moveTo(gxf(f), 0); g.lineTo(gxf(f), ghL); g.stroke(); }
+      g.setLineDash([]);
+      g.fillStyle = "rgba(255,59,92,.08)"; g.fillRect(gxf(TH), 0, gwL - gxf(TH), ghL);
+      if (E) {
+        const n = E.n, cyL = (i) => (lineTop(i) + ROW / 2 - off) / K;
+        const knownTo = reveal ? ghL : Math.min(ghL, fogY / K), cutL = cutY / K;
+        const segs = []; let sg2 = null;
+        for (let y = 0; y <= knownTo + 0.001; y += 0.5) {
+          const fi = (y * K + off - Y0 - ROW / 2) / ROW;
+          if (fi < -0.5 || fi > n - 0.5) { sg2 = null; continue; }
+          const i0 = clamp(Math.floor(fi), 0, n - 1), i1 = clamp(i0 + 1, 0, n - 1), fr = clamp(fi - i0, 0, 1);
+          const sm = fr * fr * (3 - 2 * fr); let t = E.v[i0] * (1 - sm) + E.v[i1] * sm;
+          if (fi < 0) t = E.v[0] * (fi + 0.5) * 2;
+          const wob = phase === "scroll" ? Math.sin(y * 0.9 + tm * 9) * 0.7 * t : 0;
+          if (!sg2) segs.push((sg2 = []));
+          sg2.push([Math.max(0.6, gxf(t) + wob), y]);
+        }
+        const grad = lin(g, 1, 0, gxf(1.05), 0, [[0, "#2a5a98"], [0.3 / 1.05, "#3a6ea8"], [0.36 / 1.05, "#5fb8ff"], [0.55 / 1.05, "#5fb8ff"], [0.62 / 1.05, "#ff8fc8"], [0.76 / 1.05, "#ff8fc8"], [0.82 / 1.05, "#ff3b5c"], [1, "#ff3b5c"]]);
+        const shape = (pts) => { g.beginPath(); g.moveTo(0, pts[0][1]); pts.forEach(([x, y]) => g.lineTo(x, y)); g.lineTo(0, pts[pts.length - 1][1]); g.closePath(); };
+        const edge = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); };
+        const cutB = reveal && E.cutIdx != null ? ((E.cutIdx + 0.5) * ROW + Y0 + ROW / 2 - off) / K : Infinity;
+        // 구역: [y0, y1, 색, 투명도]
+        const zones = reveal ? [[-1, cutB, grad, 1, "#fff"], [cutB, ghL + 1, "#8a90b0", 0.35, "#c8cce0"]] : [[-1, cutL, grad, 1, "#fff"], [cutL, ghL + 1, grad, 0.55, "#fff"]];
+        for (const [y0, y1, fill, al, ec] of zones) {
+          if (y1 <= y0) continue;
+          g.save(); g.beginPath(); g.rect(0, y0, gwL, y1 - y0); g.clip(); g.globalAlpha = al;
+          for (const pts of segs) if (pts.length > 1) { shape(pts); g.fillStyle = fill; g.fill(); edge(pts); g.strokeStyle = ec; g.lineWidth = 0.55; g.lineJoin = "round"; g.stroke(); }
+          g.restore();
+        }
+        // 자른 뒤: 진짜 꼭대기 별
+        if (reveal) { const py = cyL(E.p), px = gxf(E.v[E.p]) - 1.5; if (py > -3 && py < ghL + 3) { g.save(); g.shadowColor = "#ffd166"; g.shadowBlur = 3 * KS; star5(g, px, py, 2.4 + 0.3 * Math.sin(tm * 10), "#ffd166", "#fff3b0"); g.restore(); } }
       }
       // 절단각 점선
-      for (let y = Math.floor(tm * 10) % 3; y < ghL; y += 3) P(gx(TH), y, 1, 2, "#ff3b5c");
-      // 자른 뒤: 진짜 꼭대기 별
-      if (reveal) {
-        const py = Math.round(cyL(E.p)), px = gx(E.v[E.p]) - 2;
-        if (py > -3 && py < ghL + 3) { const c = Math.floor(tm * 6) % 2 ? "#ffd166" : "#fff3b0"; P(px + 1, py - 2, 1, 5, c); P(px - 1, py, 5, 1, c); P(px, py - 1, 3, 3, c); }
-      }
+      g.strokeStyle = "#ff3b5c"; g.lineWidth = 0.55; g.setLineDash([2, 1.2]); g.lineDashOffset = -tm * 10; g.beginPath(); g.moveTo(gxf(TH), 0); g.lineTo(gxf(TH), ghL); g.stroke(); g.setLineDash([]);
     };
     const renderDrop = () => {
-      g = gD; g.fillStyle = "#0c1020"; g.fillRect(0, 0, drW, drHL);
-      for (let x = 0; x < drW; x += 6) P(x, drHL - 1, 3, 1, "#2a3458");
+      g = gD; g.clearRect(0, 0, drW, drHL); g.fillStyle = "#0c1020"; g.fillRect(0, 0, drW, drHL);
+      g.strokeStyle = "#2a3458"; g.lineWidth = 0.3; g.setLineDash([1.5, 1.5]); g.beginPath(); g.moveTo(0, drHL - 0.4); g.lineTo(drW, drHL - 0.4); g.stroke(); g.setLineDash([]);
       if (!E) return;
       const h = E.dh, n = E.n;
       for (let i = 0; i < h.length; i++) {
-        const x0 = Math.floor((i * drW) / n), x1 = Math.floor(((i + 1) * drW) / n), hh = Math.max(1, Math.round((h[i] / 50) * (drHL - 1)));
+        const x0 = (i * drW) / n, x1 = ((i + 1) * drW) / n, hh = Math.max(0.8, (h[i] / 50) * (drHL - 1));
         const late = i > E.p;
-        P(x0, drHL - hh, x1 - x0, hh, late ? "#ff3b5c" : "#ff8fa066"); P(x0, drHL - hh, x1 - x0, 1, late ? "#ffd0d8" : "#ff8fa0");
+        rr(g, x0 + 0.25, drHL - hh, x1 - x0 - 0.5, hh + 1, 0.6); g.fillStyle = late ? lin(g, 0, drHL - hh, 0, drHL, [[0, "#ff5a7a"], [1, "#c0203a"]]) : "rgba(255,143,160,.4)"; g.fill();
+        g.fillStyle = late ? "#ffd0d8" : "#ff8fa0"; g.fillRect(x0 + 0.5, drHL - hh, x1 - x0 - 1, 0.35);
       }
     };
 
@@ -674,7 +681,7 @@ export const GAME = {
       const LAB = { perfect: "절단신공", soon: "살짝 일찍", fake: "가짜 꼭대기", early: "분량 실화?", late: "늦음", end: "다 풀어 버림" };
       const COL = { perfect: "#ffd166", soon: "#5fb8ff", fake: "#ff8fa0", early: "#ff8fa0", late: "#ff8fa0", end: "#ff8fa0" };
       ov.innerHTML = `<div class="wz-eh"><i>노블리</i><b>오늘 연재 결산</b><em>4회차 업로드 완료</em></div>
-        <div class="wz-bars">${results.map((r) => `<div class="wz-bar" style="--bc:${COL[r.res]}"><u>${r.conv.toFixed(0)}%</u><s style="--h:${Math.round((r.conv / 45) * 66) + 4}px"></s><i style="background-image:url(${iconURL(r.gk)})"></i><small>${LAB[r.res]}</small></div>`).join("")}</div>
+        <div class="wz-bars">${results.map((r) => `<div class="wz-bar" style="--bc:${COL[r.res]}"><u>${r.conv.toFixed(0)}%</u><s style="--h:${Math.round((r.conv / 45) * 66) + 4}px"></s><i style="background-image:url('${iconURL(r.gk)}')"></i><small>${LAB[r.res]}</small></div>`).join("")}</div>
         <div class="wz-big">다음 화 결제<b>0명</b></div>
         <div class="wz-rate">유료 전환율<b>${rate.toFixed(1)}%</b></div>
         <div class="wz-best"><b>베댓</b>${s.score >= 0.75 ? "작가님 절단 장인… 매화 결제 중" : s.score >= 0.45 ? "재밌는데 끊는 데가 좀 애매ㅋㅋ" : "흠… 다음 화는 무료로 볼게요"}</div>`;

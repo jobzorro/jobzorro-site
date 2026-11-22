@@ -87,6 +87,8 @@ const FINAL = [
   F("f_fran", "chicken", "프랜차이즈 본사 지분", 80000, { chStar: 0.1, chFry: 0.08, ucRepeat: 1.15 }, "치킨 별점 +0.1, 무인카페 단골 +15%"),
   F("f_cards", "cs", "업계 명함첩", 40000, { referMult: 1.25, kakaoMult: 1.15, tuRefer: 1.25, trLead: 1.2, vbPrice: 1.12, instaMult: 1.1 }, "소개·문의 +12~25%(컨설팅·과외·타로·바이브·인별)"),
 ];
+export const F_BRK = { f_key: "num", f_manu: "write", f_super: "lang", f_fran: "hands", f_cards: "career" }; // 최종 아이템을 얻으면 이 능력치 돌파 중
+FINAL.forEach((x) => { if (F_BRK[x.id]) x.d += ` · ${D.STATS[F_BRK[x.id]]} 돌파 6달`; });
 const LIFE = Object.entries(D.ITEMS).map(([id, it]) => ({ id, cat: "life", n: it.n, cash: it.cash, pi: false, stat: it.stat, d: Object.entries(it.stat).map(([k, v]) => `${D.STATS[k]} +${v}`).join(", "), how: ["shop"] }));
 
 export const ALL = [...LIFE, ...GEAR, ...MEMO, ...CONS, ...FINAL];
@@ -119,6 +121,7 @@ export function grant(s, id, src = "ev") {
   let line = `🎁 ${x.cat === "memo" ? "기념품" : x.cat === "final" ? "최종 아이템" : "아이템"} · ${x.n}`;
   if (x.mental) { s.mental = clamp((s.mental || 0) + x.mental, 0, 100); line += ` (멘탈 +${x.mental})`; }
   if (x.stat) for (const [k, v] of Object.entries(x.stat)) if (s.st?.[k] !== undefined) s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX);
+  if (x.cat === "final" && F_BRK[id]) { s.brk = s.brk || {}; s.brk[F_BRK[id]] = Math.max(s.brk[F_BRK[id]] ?? -1, s.t + D.STAT_BRK.months); line += ` · ${D.STATS[F_BRK[id]]} 돌파 중 ${D.STAT_BRK.months}달`; } // v4.28 최종 아이템 = 돌파 계기
   if (x.cat === "gear" && setsOn(s).includes(x.job)) line += ` · 세트 완성 ${SETS[x.job].n}: ${SETS[x.job].d}`;
   return { line, dup: false };
 }

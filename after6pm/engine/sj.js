@@ -168,8 +168,8 @@ function hbGo(s, r, id) {
   const h = D.HOBBIES[id], lv0 = hbLv(s, id), lines = [];
   s.hb.cnt[id] = (s.hb.cnt[id] || 0) + 1; s.hb.lastT[id] = s.t;
   s.mental = clamp(s.mental + h.mental, 0, 100); lines.push(`멘탈 +${h.mental}`);
-  for (const [k, v] of Object.entries(h.stat)) lines.push(`${D.STATS[k]} +${gainStat(s, k, v * (1 + lv0 * 0.1)).toFixed(1)}`);
-  if (h.hpMax) lines.push(`체력 +${gainStat(s, "body", h.hpMax * 3).toFixed(1)}`);
+  for (const [k, v] of Object.entries(h.stat)) lines.push(`${D.STATS[k]} +${gainStat(s, k, v * (1 + lv0 * 0.1), "hb_" + id).toFixed(1)}`);
+  if (h.hpMax) lines.push(`체력 +${gainStat(s, "body", h.hpMax * 3, "hb_" + id).toFixed(1)}`);
   const lv = hbLv(s, id); if (lv > lv0) { lines.push(`${h.n} ${D.HOBBY_LV[lv].n}!`); log(s, `${h.n} ${D.HOBBY_LV[lv].n}이 됐다.`, "life"); }
   // 투잡 발견: 취미에 딸린 투잡 관심이 오른다. 80을 넘으면 발견 장면
   let scene = null;

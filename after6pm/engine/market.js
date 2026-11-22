@@ -19,7 +19,14 @@ const M = (s, x) => Math.max(1, Math.round(x * SYN.pi(s) / 5) * 5); // 만원, �
 const pct = (x) => `${Math.round(Math.abs(x) * 100)}%`;
 const sgn = (x) => (x > 0 ? "+" : "−");
 export const MK_BAL = { chance: 0.12, gap: 4, again: 24, lo: -0.4, hi: 0.3, rebound: [0.04, 3] };
-export const MK_LABEL = "시장 영향", CUT_LABEL = "투잡 부대비용";
+export const MK_LABEL = "시장 영향", CUT_LABEL = "투잡 부대비용", CRUISE_LABEL = "단골·입소문";
+// v4.27 투잡별 부대비용(defs SIDE_ADJ) − 순항(defs CRUISE: 같은 투잡을 오래 할수록 덜 뗀다, 넘치면 보너스). 시작 달은 s.mk.t0 에 적는다
+export function sideCut(s, job) {
+  const V = st(s), t0 = ((V.t0 = V.t0 || {})[job] ??= s.t), y = (s.t - t0) / 12, C = D.CRUISE;
+  const base = D.SIDE_ADJ?.[job] ?? D.SIDE_CUT ?? 0;
+  const k = !C ? 0 : y >= C.full ? 1 : y > C.from ? (y - C.from) / (C.full - C.from) : 0;
+  return +(base - k * (C?.v || 0)).toFixed(3);
+}
 const isOn = (s, job) => !!s.sj?.active?.includes(job);
 const ERA_HIT = { pr: ["winter", "pandemic", "slump", "bigcomp"], insta: ["winter", "algo"], airbnb: ["winter", "pandemic", "intl"], ucafe: ["winter"] }; // 엔진이 이미 깎는 시대
 const hitByEra = (s, job) => (ERA_HIT[job] || []).some((k) => s.era?.[k]);
@@ -230,14 +237,14 @@ export function marketMonth(s, r, notes, scenes) {
   const V = st(s);
   // 1) 지금 걸린 충격을 돈으로
   for (const job of s.sj?.active || []) {
-    const mk = netOf(s, job), cut = D.SIDE_CUT || 0; if (!mk && !cut) continue;
+    const mk = netOf(s, job), cut = sideCut(s, job); if (!mk && !cut) continue;
     const prof = profitOf(s, job); if (!(prof > 0)) continue;
     const h = s.rv?.hit?.[job], rv = h && h.t === s.t ? h.net || 0 : 0;
     const amt = Math.round(prof * (1 + rv) * Math.abs(mk));
     if (amt > 0) { if (mk < 0) { s.cash -= amt; addMoney(s, "exp", MK_LABEL, amt); } else { s.cash += amt; addMoney(s, "inc", MK_LABEL, amt); } }
     // 투잡 부대비용(defs SIDE_CUT): 라이벌·시장까지 반영한 남은 이익에 곱한다(곱셈으로 이어져 겹치지 않음)
     const c2 = Math.round(prof * (1 + rv) * (1 + mk) * cut);
-    if (c2 > 0) { s.cash -= c2; addMoney(s, "exp", CUT_LABEL, c2); }
+    if (c2 > 0) { s.cash -= c2; addMoney(s, "exp", CUT_LABEL, c2); } else if (c2 < 0) { s.cash -= c2; addMoney(s, "inc", CRUISE_LABEL, -c2); }
   }
   // 2) 끝난 충격 정리 · 버틴 사람은 반등
   const done = V.list.filter((x) => x.until <= s.t && !x.over);

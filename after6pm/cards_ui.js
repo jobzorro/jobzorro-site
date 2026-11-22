@@ -143,6 +143,6 @@ export function bagWin(ctx, tab0) {
 export function bagCard(S, esc) {
   GC.ensure(S); const B = IT.bagInfo(S), g = S.gc, sets = B.sets.filter((x) => x.on);
   return `<div class="card"><h3>가방 <small>물건 ${B.total}/${B.totalAll} · 카드 ${Object.keys(g.own).length} · 조각 ${g.shards}/${GC.SHARD_N}</small></h3>
-    <div class="tiny muted">${Object.values(B.cats).map((c) => `${c.n} ${c.have}/${c.all}`).join(" · ")}${sets.length ? `<br>세트 효과: ${sets.map((x) => esc(x.n)).join(", ")}` : ""}</div>
+    ${sets.length ? `<div class="tiny muted">세트 효과: ${sets.map((x) => esc(x.n)).join(", ")}</div>` : ""}
     <div class="row" style="margin-top:8px"><button class="btn gold grow" data-bag>가방 열기${g.offers.length ? ` · 고를 카드 ${g.offers.length}` : ""}</button><button class="btn grow" data-bagpack>카드팩</button></div></div>`;
 }

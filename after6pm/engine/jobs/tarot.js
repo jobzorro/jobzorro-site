@@ -37,6 +37,22 @@ export const SEASON = [1.7, 0.65, 0.9, 0.95, 0.95, 0.9, 0.85, 0.9, 1.0, 1.05, 1.
 // 원래: 문의 상한 [6, 12, 34, 52, 80], 텍스트 평균 단가 0.8·통화 섞이면 1.4 → 3년 차 중앙 월 69만, 10년 차 201만.
 export const TR_BAL = { leadCap: [6, 12, 30, 44, 66], unitText: 0.7, unitCall: 1.25 };
 const LEAD_CAP = TR_BAL.leadCap;
+// v4.28 특이 요소(f30). 효과 크기는 여기 숫자만 바꾸면 된다
+export const TR_F30 = {
+  // 매일 찾아오는 단골: 단골 reg명 이상·gap달 간격으로 등장. 계속 받으면 매달 pay건 × 단가, 멘탈 −(drain + drainUp×달수, 상한 drainMax), 가족 항의 확률 famP + famUp×달수
+  heavy: { reg: 3, gap: 10, p: 0.35, pay: 16, drain: 2, drainUp: 0.4, drainMax: 8, cutRep: 3, refRep: 4, refMent: 3, famP: 0.04, famUp: 0.01, famRep: 8 },
+  // 적중 기록부: 이번 달 읽은 건의 share 만큼 결과가 돌아온다. 맞히면 입소문(buzz, 문의 +%), 빗나가면 평판 −. 말투(style)마다 배수
+  style: {
+    0: { n: "애매하게", d: "빗나가도 안전 · 재방문 ↓", buzz: 0.4, miss: 0.3, lead: 0.93, churn: 1.4 },
+    1: { n: "균형 있게", d: "가능성과 조건으로", buzz: 1, miss: 1, lead: 1, churn: 1 },
+    2: { n: "단정적으로", d: "맞히면 입소문 ↑↑ · 빗나가면 악평", buzz: 1.7, miss: 1.8, lead: 1, churn: 0.85 },
+  },
+  hit: { share: 0.15, base: 0.45, perSense: 1 / 400, perRep: 1 / 500, lo: 0.3, hi: 0.78, buzzPer: 1.2, buzzMax: 25, decay: 0.8, missRep: 0.8, follow: 15 },
+  // 수능·신년 운세 대목: 10월에 패키지 준비 결정 → 11·12·1월 문의 ×lead(수능 응원까지 하면 11월 ×suneung), 한 번에 읽는 양 ×cap, 단가 ×unit
+  peak: { cost: 15, ap: [1, 2], cap: 1.5, unit: 1.2, lead: 1.15, suneung: 1.3 },
+};
+const pkOn = (s) => { const T = s.tarot; return !!T?.pk && [11, 12, 1].includes(s.cal) && s.t - T.pk.t <= 4; };
+export const peakOn = pkOn;
 const STREAMS = { inc: ["타로 상담료", "타로 부스", "타로 구독", "타로 키트·굿즈"], exp: ["타로 수수료", "타로 비용", "타로 상담실"] };
 
 const DEF = () => ({
@@ -46,6 +62,7 @@ const DEF = () => ({
   queue: 0, wait: 0, leads: 0, repeatLeads: 0, rebuy: 0, served: 0, gross: 0, cardN: 0, practN: 0, boothT: -99,
   waitM: 0, goodM: 0, peak: 0, witch: 0, bSeen: 0, seen: [], evT: -99, started: -1, months: 0,
   hist: [], kh: [], rh: [], last: null,
+  hv: null, hvT: -99, style: 1, styleSeen: false, hitN: 0, missN: 0, buzzH: 0, pk: null, pkAsk: -99,
 });
 
 // ───────── 계산 도우미(화면에서도 씀) ─────────
@@ -53,11 +70,11 @@ export const callsOn = (T) => T.lv >= 4;
 export function unitPrice(s) {
   const T = s.tarot; if (T.lv < 3) return 0;
   const base = callsOn(T) ? TR_BAL.unitCall : TR_BAL.unitText; // 텍스트 1장 0.5·3장 1.0 → 통화 30분 3만이 섞이면 평균(TR_BAL)
-  return r1(base * PRICES[T.price].m * (T.niche ? NICHES[T.niche].unit : 1) * (T.room === "lease" ? 1.3 : T.room === "hourly" ? 1.1 : 1) * (T.brand ? 1.25 : 1) * SYN.pi(s));
+  return r1(base * PRICES[T.price].m * (T.niche ? NICHES[T.niche].unit : 1) * (T.room === "lease" ? 1.3 : T.room === "hourly" ? 1.1 : 1) * (T.brand ? 1.25 : 1) * (pkOn(s) ? TR_F30.peak.unit : 1) * SYN.pi(s));
 }
 export function capPerRead(s, boost = 1) {
   const T = s.tarot;
-  return Math.max(1, Math.round((5 + (s.st.talk || 0) / 25) * boost * (callsOn(T) ? 0.75 : 1) * (s.fullJob === "tarot" ? 1.15 : 1)));
+  return Math.max(1, Math.round((5 + (s.st.talk || 0) / 25) * boost * (callsOn(T) ? 0.75 : 1) * (s.fullJob === "tarot" ? 1.15 : 1) * (pkOn(s) ? TR_F30.peak.cap : 1)));
 }
 export function drainPer(s) {
   const T = s.tarot;
@@ -174,7 +191,7 @@ function makeLeads(s, r) {
   const base = [0, 0, 7, 11, 16][T.lv - 1] + T.follow / 300 + Math.min(14, T.reviews * 0.12);
   const rep = T.regulars * 0.7;
   const mult = seas * priceDemand(T) * (0.7 + T.rep / 100 * 0.6) * (T.niche ? NICHES[T.niche].lead : 1) * (SYN.on(s, "tr_insta") ? 1.12 : 1)
-    * mod(s, "trLead", 1) * (T.seen.includes("e12") ? (T.empathy ? 1.03 : T.bot ? 0.95 : 0.92) : 1) * (T.room === "lease" ? 1.15 : 1) * (T.boundary ? 0.92 : 1) * (s.era?.winter ? 0.95 : 1) * SJ.ramp(s, "tarot") * SJ.skillRamp(s, "tarot"); // 유료 첫 달부터 초반 고생 · v4.25b 배우는 기간
+    * mod(s, "trLead", 1) * (T.seen.includes("e12") ? (T.empathy ? 1.03 : T.bot ? 0.95 : 0.92) : 1) * (T.room === "lease" ? 1.15 : 1) * (T.boundary ? 0.92 : 1) * (s.era?.winter ? 0.95 : 1) * SJ.ramp(s, "tarot") * SJ.skillRamp(s, "tarot") * (1 + (T.buzzH || 0) / 100) * (TR_F30.style[T.style ?? 1]?.lead || 1) * (pkOn(s) ? TR_F30.peak.lead * (s.cal === 11 && T.pk.k === 2 ? TR_F30.peak.suneung : 1) : 1); // 유료 첫 달부터 초반 고생 · v4.25b 배우는 기간
   const cap = LEAD_CAP[T.lv - 1] * (T.brand ? 1.4 : 1) * (s.fullJob === "tarot" ? 1.25 : 1);
   const raw = (base + rep) * mult;
   const lead = cap * (1 - Math.exp(-raw / cap)) * (1 + 0.1 * r.normal());
@@ -213,6 +230,78 @@ function doRead(s, r, boost) {
     : callsOn(T) ? r.pick(["통화 30분. 카드는 세 장, 질문은 열 개.", "\"그 사람 마음이요?\" 카드보다 손님 목소리를 먼저 들었다.", "밤 11시 통화. 끝나고 물 한 잔 마시고 멍하니 앉아 있었다."])
     : r.pick(["퇴근 지하철에서 텍스트 리딩 세 건. 카드 사진 찍고 답장.", "같은 '연인' 카드도 사람마다 다르게 읽힌다.", "\"이직할까요?\" 내가 매일 하는 질문이었다."]);
   return { lines, msg, n };
+}
+
+// ───────── f30 특이 요소 장면: 매일 찾아오는 단골 · 적중 기록부(말투) · 수능·신년 운세 대목 ─────────
+function heavyScene(s) {
+  const T = s.tarot, H = TR_F30.heavy, rv = Math.round(H.pay * Math.max(0.5, unitPrice(s))); T.hvT = s.t; s._trF30 = { k: "ask" };
+  return { kind: "event", tag: "타로", title: "매일 찾아오는 손님", onChoose: "tr_heavy",
+    text: `석 달째 하루에도 세 번씩 묻는 손님이 있다. 아침엔 "오늘 연락 올까요?", 점심엔 "지금은요?", 밤엔 "내일은요?" 이 손님만으로 한 달 ${won(rv)}. 그런데 답할수록 손님은 더 불안해진다.`,
+    choices: [{ t: "하루 한 번, 주 3번까지로 선을 긋는다", eff: {}, text: "\"자주 보면 카드도 흐려져요.\" 손님은 잠시 서운해했다." },
+      { t: "원하는 만큼 계속 받는다 (매달 돈 +, 멘탈이 점점 닳는다)", eff: {}, text: "알림이 울릴 때마다 카드를 섞었다." },
+      { t: "상담센터를 권하고 리딩을 끊는다", eff: {}, text: "\"카드보다 이야기 들어 줄 사람이 필요해 보여요.\" 긴 침묵 뒤에 고맙다는 답이 왔다." }] };
+}
+function heavyFamScene(s) {
+  const T = s.tarot, back = Math.round((T.hv?.sum || 0) / Math.max(1, T.hv?.m || 1)); s._trF30 = { k: "fam", back };
+  return { kind: "event", tag: "타로", title: "손님 언니의 DM", onChoose: "tr_heavy",
+    text: `모르는 계정에서 DM이 왔다. "동생이 월급 절반을 타로에 써요. 밤마다 선생님 답만 기다려요. 이게 상담이에요?" ${T.hv?.m || 0}달째 매일 오던 그 손님이다.`,
+    choices: [{ t: `이번 달 리딩비를 돌려주고 끊는다 (−${won(back)})`, eff: {}, text: "환불하고 상담센터 번호를 보냈다. 마음 한쪽이 가벼워졌다." },
+      { t: "성인이 선택한 일이라며 계속 받는다", eff: {}, text: "답장은 없었다. 대신 며칠 뒤 '의존 장사'라는 글이 돌았다." }] };
+}
+function styleScene(s) {
+  const T = s.tarot; T.styleSeen = true;
+  return { kind: "event", tag: "타로", title: "그래서 붙어요, 안 붙어요?", onChoose: "tr_style",
+    text: `최종 면접을 본 손님이 카드를 보다 말고 묻는다. "흐름 말고요, 붙어요 안 붙어요?" 맞힌 리딩과 빗나간 리딩이 적중 기록부에 쌓인다. 지금까지 맞힘 ${T.hitN} · 빗나감 ${T.missN}.`,
+    choices: [{ t: "가능성과 조건으로 말한다 (균형)", eff: {}, text: "\"면접에서 이 부분이 걸렸다면 확률은 반반이에요.\"" },
+      { t: "\"붙습니다.\" 단정적으로 (맞히면 입소문, 빗나가면 악평)", eff: {}, text: "손님 눈이 반짝였다. 이제 결과만 남았다." },
+      { t: "\"카드는 흐름만 보여 줘요.\" 애매하게 (안전, 재방문 ↓)", eff: {}, text: "손님은 고개를 끄덕였지만 뭔가 아쉬운 얼굴이었다." }] };
+}
+function peakScene(s) {
+  const T = s.tarot, P = TR_F30.peak, c = Math.round(P.cost * SYN.pi(s)); T.pkAsk = s.t; s._trF30 = { cost: c };
+  return { kind: "event", tag: "타로", title: "대목 준비", onChoose: "tr_peak",
+    text: `달력을 넘겼다. 11월 수능, 12월·1월 신년운세. 작년엔 문의가 두 배로 몰려 절반을 놓쳤다. 지금 '신년 운세 패키지'(정해진 스프레드·리포트 양식)를 만들어 두면 한 번에 더 많이, 더 비싸게 읽을 수 있다.`,
+    choices: [{ t: "평소대로 그때그때 받는다", eff: {}, text: "준비는 없다. 몸으로 버티기로." },
+      { t: `신년 운세 패키지를 만든다 (−${won(c)}, 다음 달 행동력 −${P.ap[0]})`, eff: {}, text: "'2년 치 흐름 12장 리포트' 양식이 완성됐다." },
+      { t: `수능 응원 리딩까지 같이 (−${won(c * 2)}, 다음 달 행동력 −${P.ap[1]})`, eff: {}, text: "수험생 부모용 '시험 운 3장 리딩'도 만들었다. 11월이 기다려진다." }] };
+}
+function f30Event(s, r) {
+  const T = s.tarot, H = TR_F30.heavy;
+  if (T.hv && r.chance(H.famP + H.famUp * T.hv.m)) return heavyFamScene(s);
+  if (T.lv >= 3 && s.cal === 10 && s.t - (T.pkAsk ?? -99) > 6) return peakScene(s);
+  if (T.lv >= 3 && !T.styleSeen && T.paid >= 20) return styleScene(s);
+  if (T.lv >= 3 && !T.hv && T.regulars >= H.reg && s.t - (T.hvT ?? -99) >= H.gap && r.chance(H.p)) return heavyScene(s);
+  return null;
+}
+const F30_CHOOSE = {
+  tr_heavy(s, r, i) {
+    const T = s.tarot, H = TR_F30.heavy, o = s._trF30 || {}; s._trF30 = null;
+    const rep = (v) => { T.rep = clamp(T.rep + v, 0, 100); return `타로 평판 ${v > 0 ? "+" : ""}${v}`; };
+    if (o.k === "fam") {
+      if (i === 0) { const b = o.back || 0; s.cash -= b; addMoney(s, "exp", "타로 비용", b); T.hv = null; return [`환불 −${won(b)}`, rep(2), "매일 오던 손님과 끝"]; }
+      return [rep(-H.famRep), "계속 받는 중"];
+    }
+    if (i === 1) { T.hv = { m: 0, sum: 0 }; return ["매일 오는 손님: 매달 수입 +, 멘탈 −(점점 커져요)"]; }
+    if (i === 2) { T.regulars = Math.max(0, T.regulars - 1); s.mental = clamp(s.mental + H.refMent, 0, 100); return [rep(H.refRep), `멘탈 +${H.refMent}`, "단골 −1"]; }
+    return [rep(H.cutRep)];
+  },
+  tr_style(s, r, i) { const T = s.tarot; T.style = [1, 2, 0][i] ?? 1; return [`리딩 말투: ${TR_F30.style[T.style].n}`]; },
+  tr_peak(s, r, i) {
+    const T = s.tarot, P = TR_F30.peak, o = s._trF30 || {}; s._trF30 = null;
+    if (!i) { T.pk = null; return []; }
+    const c = (o.cost || P.cost) * i; s.cash -= c; addMoney(s, "exp", "타로 비용", c); s.apNext -= P.ap[i - 1]; T.pk = { k: i, t: s.t };
+    return [`패키지 제작비 −${won(c)}`, `다음 달 행동력 −${P.ap[i - 1]}`, `11~1월: 한 번에 ×${P.cap} · 단가 ×${P.unit}${i === 2 ? " · 11월 수능 문의 ↑" : ""}`];
+  },
+};
+export function setStyle(s, k) { const T = s.tarot; if (!TR_F30.style[k]) return { ok: false }; T.style = +k; T.styleSeen = true; return { ok: true, msg: `리딩 말투: ${TR_F30.style[k].n}` }; }
+export function cutHeavy(s) { const T = s.tarot; if (!T.hv) return { ok: false }; T.hv = null; T.rep = clamp(T.rep + 1, 0, 100); return { ok: true, msg: "매일 오던 손님에게 선을 그었다(평판 +1)" }; }
+// 시험(#autoN-tarot-f30heavy|f30fam|f30style|f30peak)
+export function f30Test(s, r, what) {
+  const T = s.tarot; Object.assign(T, { lv: Math.max(T.lv, 3), regulars: Math.max(T.regulars, 4), paid: Math.max(T.paid, 25), rep: Math.max(T.rep, 45) });
+  if (what === "heavy") return heavyScene(s);
+  if (what === "fam") { T.hv = { m: 5, sum: 5 * 12 }; return heavyFamScene(s); }
+  if (what === "style") return styleScene(s);
+  if (what === "peak") return peakScene(s);
+  return null;
 }
 
 export default {
@@ -307,7 +396,7 @@ export default {
       T.waitM = T.wait >= 5 && T.rep >= 50 ? T.waitM + 1 : 0;
     } else { T.queue = 0; T.wait = 0; }
     // 단골 이탈
-    T.regulars = Math.max(0, T.regulars - (T.regulars > 0 && r.chance(Math.min(1, T.regulars * 0.08)) ? Math.max(1, Math.round(T.regulars * 0.08)) : 0));
+    T.regulars = Math.max(0, T.regulars - (T.regulars > 0 && r.chance(Math.min(1, T.regulars * 0.08 * (TR_F30.style[T.style ?? 1]?.churn || 1))) ? Math.max(1, Math.round(T.regulars * 0.08)) : 0));
     // 구독
     if (T.subOn && T.lv >= 3) {
       const capS = 1 + T.lv + (T.brand ? 10 : 0);
@@ -315,6 +404,22 @@ export default {
       T.subs = Math.min(capS, T.subs); if (T.subs > 0 && r.chance(0.25)) T.subs--;
       if (T.subs > 0) { const rv = Math.round(T.subs * 3.5 * pi); s.cash += rv; addMoney(s, "inc", "타로 구독", rv); s.mental = clamp(s.mental - Math.min(4, T.subs * 0.25), 0, 100); T.gross += rv; }
     }
+    // f30 매일 찾아오는 단골
+    if (T.hv) {
+      const H = TR_F30.heavy, rv = Math.round(H.pay * Math.max(0.5, unitPrice(s))), dm = Math.min(H.drainMax, Math.round((H.drain + H.drainUp * T.hv.m) * 10) / 10);
+      s.cash += rv; addMoney(s, "inc", "타로 상담료", rv); T.gross += rv; s.mental = clamp(s.mental - dm, 0, 100); T.hv.m++; T.hv.sum = (T.hv.sum || 0) + rv;
+      notes.push(`타로: 매일 오는 손님 ${T.hv.m}달째 +${won(rv)} · 멘탈 −${dm}`);
+    }
+    // f30 적중 기록부
+    if (T.lv >= 3 && T.served > 0) {
+      const Hc = TR_F30.hit, St = TR_F30.style[T.style ?? 1], n = Math.round(T.served * Hc.share);
+      const p = clamp(Hc.base + (s.st.sense || 0) * Hc.perSense + (T.rep - 50) * Hc.perRep, Hc.lo, Hc.hi);
+      let h = 0, m = 0; for (let i = 0; i < n; i++) if (r.chance(p)) h++; else m++;
+      T.hitN += h; T.missN += m;
+      T.buzzH = clamp((T.buzzH || 0) * Hc.decay + h * Hc.buzzPer * St.buzz, 0, Hc.buzzMax); T.follow += Math.round(h * Hc.follow * St.buzz);
+      if (m) T.rep = clamp(T.rep - m * Hc.missRep * St.miss, 0, 100);
+      if (h + m) notes.push(`타로 적중 기록: 맞힘 ${h} · 빗나감 ${m}${T.style === 2 && h >= 2 ? " · '그날 연락 온다' 캡처가 돌았다" : T.style === 2 && m >= 2 ? " · 빗나간 리딩 악평" : ""}`);
+    } else T.buzzH = (T.buzzH || 0) * TR_F30.hit.decay;
     // 키트·굿즈(자동 판매)
     let kitRev = 0;
     if (T.kits) {
@@ -343,7 +448,7 @@ export default {
     checkLv(s, notes);
     // 시즌 안내
     if (s.cal === 11 && T.lv >= 3) notes.push("타로: 다음 달부터 신년운세 시즌. 문의가 두 배 가까이 몰려요");
-    const ev = T.lv >= 1 ? pickEvent(s, r) : null; if (ev) scenes.push(ev);
+    const ev = f30Event(s, r) || (T.lv >= 1 ? pickEvent(s, r) : null); if (ev) scenes.push(ev);
     return profit;
   },
   value: (s) => (s.tarot?.room === "lease" ? Math.round(500 * SYN.pi(s)) : 0) + 3,
@@ -358,6 +463,8 @@ export default {
     const T = s.tarot, t = [];
     if (T.lv === 1 && T.notes < 20) t.push({ lv: 0, text: `타로 연습 노트 ${T.notes}/20` });
     if (!T.agent && T.lv >= 2 && T.queue > 0) t.push({ lv: T.queue >= 10 ? 2 : 1, text: `타로 문의 대기 ${T.queue}건(이번 달 안 읽으면 떠나요)` });
+    if (T.hv && s.mental < 45) t.push({ lv: 1, text: `매일 오는 손님 ${T.hv.m}달째: 선을 그을 때?` });
+    if (pkOn(s)) t.push({ lv: 0, text: "신년 운세 패키지 판매 중(한 번에 더 많이 읽어요)" });
     if (s.mental < 30 && T.lv >= 3) t.push({ lv: 2, text: `멘탈 ${Math.round(s.mental)}: 리딩을 줄이고 쉬어요(감정 소진)` });
     if (T.kitProg > 0) t.push({ lv: 0, text: `리딩 키트 작업 ${T.kitProg}%` });
     return t;
@@ -378,6 +485,7 @@ export default {
     if (e.tr_q) { if (T.lv >= 3) T.wait += e.tr_q; else T.queue += e.tr_q; out.push(`대기 문의 +${e.tr_q}`); }
   },
   choose: {
+    ...F30_CHOOSE,
     tr_ev(s, r, i, ok) {
       const T = s.tarot, ev = s._trEv?.id, pi = SYN.pi(s); s._trEv = null;
       if (ev === "e03" && i === 0) T.series = true;

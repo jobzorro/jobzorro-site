@@ -43,7 +43,7 @@ function prepCard(c) {
 function storeCard(c, st) {
   const { S, esc, won, meter } = c, C = S.chicken, L = st.last, T = CH.TYPES[st.type], n = CH.needAp(S, st) + (C.selfFill && !st.mgr ? 1 : 0);
   const sp = CH.sellPrice(S, st), cc = CH.closeCost(S, st), pr = Math.round(2.4 * (S.pi || 1) * st.price * 10000 / 100) * 100;
-  const tags = [`<span class="tag">${esc(T.n)}</span>`, st.mgr ? '<span class="tag blue">점장</span>' : "", st.fam ? '<span class="tag pink">가족</span>' : "", st.app ? '<span class="tag green">자사 앱</span>' : "", st.inc ? '<span class="tag gold">인센티브</span>' : "", st.months === 0 ? '<span class="tag gold">공사 중</span>' : ""].join("");
+  const tags = [`<span class="tag">${esc(T.n)}</span>`, st.mgr ? '<span class="tag blue">점장</span>' : "", st.fam ? '<span class="tag pink">가족</span>' : "", st.app ? '<span class="tag green">자사 앱</span>' : "", st.inc ? '<span class="tag gold">인센티브</span>' : "", st.months === 0 ? '<span class="tag gold">공사 중</span>' : "", st.revEv ? '<span class="tag pink">리뷰 이벤트</span>' : "", st.revOff > 0 ? `<span class="tag red">이벤트 끊은 여파 ${st.revOff}달</span>` : "", st.freshM > 0 ? `<span class="tag green">새 단장 ${st.freshM}달</span>` : "", st.old ? '<span class="tag red">리뉴얼 거부</span>' : ""].join("");
   return `<div class="room"><div class="body">
     <div class="row"><div class="grow"><div class="nm">${esc(st.name)}</div><div class="tiny muted">${esc(st.area)} · ${st.months}개월째</div><div class="tiny">${tags}</div></div>
       <div style="text-align:right"><div class="gold" style="font-weight:900">배달통 ★ ${st.rating.toFixed(2)}</div><div class="tiny">플레이스 <b class="${st.rank <= 5 ? "good" : st.rank >= 20 ? "bad" : ""}">${st.rank}위</b>/30</div></div></div>
@@ -56,6 +56,8 @@ function storeCard(c, st) {
       <button class="btn sm gold" data-act="ch_shift" data-arg="${st.id}">근무 ⚡1</button><button class="btn sm" data-act="ch_crew" data-arg="${st.id}">알바 ⚡1</button><button class="btn sm" data-act="ch_market" data-arg="${st.id}">배달통 ⚡1</button></div>
     <div class="row wrap small" style="margin-top:6px"><span class="muted">한 마리</span><div class="stepper"><button data-chprice="${st.id}:-0.02">−</button><b>${pr.toLocaleString()}원</b><button data-chprice="${st.id}:0.02">+</button></div><span class="grow"></span>
       <button class="btn sm" data-act="ch_mgr" data-arg="${st.id}">${st.mgr ? "점장 해지" : "점장 고용"}</button></div>
+    <div class="row wrap small" style="margin-top:6px"><span class="muted">배달앱 깃발</span><div class="stepper"><button data-chflag="${st.id}:-1">−</button><b>${st.flags ?? 2}개</b><button data-chflag="${st.id}:1">+</button></div><span class="tiny ${(st.rv ?? 2) > (st.flags ?? 2) ? "bad" : "muted"}">옆 가게 ${st.rv ?? 2}개 · 주문 ×${CH.flagMul(st).toFixed(2)}</span><span class="grow"></span>
+      <button class="btn sm" data-chrev="${st.id}">${st.revEv ? "리뷰 이벤트 끄기" : "리뷰 이벤트 켜기"}</button></div>
     <div class="row wrap" style="margin-top:6px">
       ${C.lv >= 2 ? `<button class="btn sm" data-chtg="${st.id}:app">${st.app ? "자사 앱 끄기" : "자사 앱 할인 켜기"}</button>` : ""}
       ${C.lv >= 3 ? `<button class="btn sm" data-chtg="${st.id}:fam">${st.fam ? "가족 빼기" : "가족 투입"}</button><button class="btn sm" data-chtg="${st.id}:inc">${st.inc ? "인센티브 끄기" : "인센티브 켜기"}</button>` : ""}</div>
@@ -74,7 +76,8 @@ export default {
   defaultArg(S, id) { const ss = S.chicken.stores; if (!ss.length) return undefined; return [...ss].sort((a, b) => a.ap / CH.needAp(S, a) - b.ap / CH.needAp(S, b))[0].id; },
   fullBg: "pub",
   cine: { ch_sign: ["meeting", "가맹 계약"], ch_lv2: ["pub", "배달통 별점"], ch_lv3: ["dinner", "가족 경영"], ch_lv4: ["pub", "BEP 돌파"], ch_lv5: ["alley", "치킨 3형제"], ch_end_ceo: ["pub", "엔딩"], ch_end_hq: ["alley", "엔딩"], ch_end_exit: ["pub", "엔딩"] },
-  auto(c) { const S = c.S, C = S.chicken; S.cash += 6000; C.step = 2; C.trained = true; S.ap = Math.max(S.ap, 3); c.E.act(S, "ch_prep"); if (S.pending) c.E.choose(S, 1); const st = C.stores[0]; if (st) st.mgr = true; },
+  auto(c) { const S = c.S, C = S.chicken; S.cash += 6000; C.step = 2; C.trained = true; S.ap = Math.max(S.ap, 3); c.E.act(S, "ch_prep"); if (S.pending) c.E.choose(S, 1); const st = C.stores[0]; if (st) st.mgr = true;
+    const m = location.hash.match(/f30([a-z]+)/); if (m) setTimeout(() => { const sc = CH.f30Scene(c.S, c.E.R(c.S), m[1]); if (sc) { c.E.openScene(c.S, sc); const pk = location.hash.match(/pick([0-9])/); if (pk) { c.E.choose(c.S, +pk[1]); c.save(); c.render(); } else c.afterRes({}); } }, 900); }, // 11-22 특이 요소 장면 시험(#auto3-chicken-f30flag|f30renew|f30deny|f30rev|f30trap)
   page(c) {
     const { S, esc, won, boardHead, actRow, meter } = c, C = S.chicken, LV = CH.LV, lv = C.lv, last = C.hist.at(-1) || 0;
     const inv = C.stores.reduce((a, st) => a + st.invested, 0), cum = C.stores.reduce((a, st) => a + st.cum, 0);
@@ -92,17 +95,20 @@ export default {
       <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div><div><div class="k">매장</div><div class="v">${C.stores.length}/3곳</div></div>
       <div><div class="k">회수</div><div class="v gold">${inv ? `${pct(Math.max(0, cum), inv)}%` : "-"}</div></div>${C.scandal ? `<div><div class="k">불매</div><div class="v bad">${C.scandal}달</div></div>` : ""}${C.costUp ? `<div><div class="k">닭값 급등</div><div class="v bad">${C.costUp}달</div></div>` : ""}</div>
       ${lv < 5 ? `<div class="small" style="margin-top:6px">다음 <b class="gold">Lv${lv + 1} ${esc(LV[lv + 1].n)}</b>: ${esc(nx.need)}</div>${meter(prog * 100, 100, "var(--gold)")}<div class="tiny muted">열리는 것: ${esc(LV[lv + 1].open)}</div>` : `<div class="small good" style="margin-top:6px">치킨 3형제 완성. 법인 전환·본업 전환을 고를 수 있어요.</div>`}
-      <div class="tiny muted" style="margin-top:6px">월매출에서 재료 47%·배달수수료 15%·인건비 17%·임차료 10%를 빼면 11% 남아요. 직접 튀기면 인건비가 줄고 별점이 올라요. 알바가 그만두면 그 빈자리는 내가 튀겨야 해요. 연말·여름이 성수기, 2월이 비수기. 매년 1월 최저임금이 올라요.</div></div>
-      ${C.stores.length || C.loan > 0 ? dangerCard(c) : ""}
+      <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">매출 100원이 어디로 가나 · 자세히 ▾</summary><div class="tiny muted">월매출에서 재료 47%·배달수수료 15%·인건비 17%·임차료 10%를 빼면 11% 남아요. 직접 튀기면 인건비가 줄고 별점이 올라요. 알바가 그만두면 그 빈자리는 내가 튀겨야 해요. 연말·여름이 성수기, 2월이 비수기. 매년 1월 최저임금이 올라요.</div></details></div>
+      ${(C.stores.length || C.loan > 0) && (() => { const d = CH.danger(S); return d.late > 0 || d.loss > 0 || d.flow < 0 || d.runway <= 6 || d.lv >= 2; })() ? dangerCard(c) : ""}
       ${C.step < 3 ? prepCard(c) : ""}
       ${C.stores.map((st) => storeCard(c, st)).join("")}
-      ${C.step >= 3 ? `<div class="acts" style="padding:0">${actRow("ch_prep", undefined, C.stores.length ? `${C.stores.length + 1}호점 출점 상담` : "다시 창업하기(견적·계약)")}</div>` : ""}
+      ${C.stores.length ? `<details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">깃발·리뷰 이벤트·리뉴얼 자세히 ▾</summary><div class="tiny muted">깃발 하나에 월 ${won(Math.round(CH.CH_F30.flag.cost * (S.pi || 1)))}. 내 깃발 하나 = 주문 +3%(5개째부터 반), 옆 가게 깃발 하나 = −3%. 내가 더 꽂으면 옆 가게도 따라 꽂아요. 리뷰 이벤트는 별점 +0.12, 원가는 매출의 2%. 3달 넘게 하다 끊으면 4달 동안 별점이 내려가요. 가맹 5년마다 본사가 리뉴얼(배달형 2,500만·홀 4,000만)을 요구해요. 거부하면 1년 뒤 재계약이 거절될 수 있어요.</div></details>` : ""}
+      ${C.step >= 3 && !(C.stores.length && (lv < 4 || C.stores.length >= 3)) ? `<div class="acts" style="padding:0">${actRow("ch_prep", undefined, C.stores.length ? `${C.stores.length + 1}호점 출점 상담` : "다시 창업하기(견적·계약)")}</div>` : ""}
       ${lv >= 5 && !C.corp ? `<div class="row" style="margin-top:6px"><span class="grow tiny muted">법인 전환: 세무 관리로 기타 비용이 줄어요</span><button class="btn sm gold" data-chcorp="1">법인 전환</button></div>` : ""}
       ${C.step >= 3 && !C.stores.length ? `<div class="card tiny muted">매장이 없어요. 투잡 탐색에서 치킨을 접거나, 자금이 되면 다시 창업할 수 있어요.</div>` : ""}`;
   },
   bind(c) {
     const { q, save, render, toast, openWin, closeWin, won } = c;
     q("[data-chprice]", (el) => { const [id, d] = el.dataset.chprice.split(":"); CH.setPrice(c.S, id, +d); save(); render(); });
+    q("[data-chflag]", (el) => { const [id, d] = el.dataset.chflag.split(":"); CH.setFlags(c.S, id, +d); save(); render(); });
+    q("[data-chrev]", (el) => { const m = CH.toggleRev(c.S, el.dataset.chrev); save(); render(); if (m) toast([], m); });
     q("[data-chtg]", (el) => { const [id, k] = el.dataset.chtg.split(":"); CH.toggle(c.S, id, k); save(); render(); });
     q("[data-chcorp]", () => { const m = CH.corp(c.S); save(); render(); toast([], m); });
     const confirm = (title, body, fn) => openWin(`<h2>${c.esc(title)}</h2><div class="small">${body}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn gold grow" data-chyes>확인</button></div>`, (w) => { w.querySelector("[data-chyes]").onclick = () => { const lines = fn(); closeWin(); save(); render(); toast(lines, ""); }; });
