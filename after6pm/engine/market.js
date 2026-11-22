@@ -23,7 +23,7 @@ export const MK_LABEL = "시장 영향", CUT_LABEL = "투잡 부대비용", CRUI
 // v4.27 투잡별 부대비용(defs SIDE_ADJ) − 순항(defs CRUISE: 같은 투잡을 오래 할수록 덜 뗀다, 넘치면 보너스). 시작 달은 s.mk.t0 에 적는다
 export function sideCut(s, job) {
   const V = st(s), t0 = ((V.t0 = V.t0 || {})[job] ??= s.t), y = (s.t - t0) / 12, C = D.CRUISE;
-  const base = D.SIDE_ADJ?.[job] ?? D.SIDE_CUT ?? 0;
+  const base = job === "cs" && s.cs?.niches?.includes("career") && D.SIDE_ADJ?.cs_career !== undefined ? D.SIDE_ADJ.cs_career : (D.SIDE_ADJ?.[job] ?? D.SIDE_CUT ?? 0); // v4.28 컨설팅: 경력 이직 분야를 열면 따로
   const k = !C ? 0 : y >= C.full ? 1 : y > C.from ? (y - C.from) / (C.full - C.from) : 0;
   return +(base - k * (C?.v || 0)).toFixed(3);
 }

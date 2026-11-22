@@ -4,6 +4,7 @@
 export const STATS = { talk: "말빨", write: "글쓰기", sense: "감각", mkt: "마케팅", hands: "손재주", num: "숫자", career: "커리어", charm: "매력", body: "체력", lang: "외국어" };
 export const STAT_KEYS = Object.keys(STATS);
 export const STAT_MAX = 200;
+export const STAT_CAP0 = 190, STAT_CAP_NG = 10, NG_GROW_T = [1, 1.2, 2.6]; // v4.28d 회차 천장: 1회차 190 → 2회차부터 200. 회차마다 성장·월 상한 +15%(3회차 +30%까지)
 // ───────── 능력치 성장(v4.28 개편) ─────────
 // 세 갈래: 공부형은 공부 효과 100%, 경험형 30%, 생활형 0%(공부 목록에서 빠짐)
 export const STAT_KIND = { write: "study", num: "study", lang: "study", mkt: "study", talk: "exp", career: "exp", hands: "exp", sense: "exp", charm: "life", body: "life" };
@@ -12,12 +13,14 @@ export const STUDY_ACTS = ["study_home", "study", "course"];
 // 성장 곡선: 지금 값이 to 미만이면 m 배(돌파 중이면 b 배). 아이템·카드 '바로 +N'은 곡선을 거치지 않는다.
 export const STAT_CURVE = [
   { to: 60, n: "입문", m: 1.0, b: 1.0, study: 1 },
-  { to: 100, n: "숙련", m: 0.55, b: 0.55, study: 0.4 },
-  { to: 150, n: "고수", m: 0.25, b: 0.3, study: 0.2 },
-  { to: 180, n: "달인", m: 0.08, b: 0.3, study: 0.1 },
-  { to: 201, n: "전설", m: 0.03, b: 0.15, study: 0.05 },
+  { to: 100, n: "숙련", m: 0.5, b: 0.5, study: 0.4 },
+  { to: 150, n: "고수", m: 0.13, b: 0.25, study: 0.3 },
+  { to: 180, n: "달인", m: 0.05, b: 0.18, study: 0.2 },
+  { to: 201, n: "전설", m: 0.06, b: 0.15, study: 0.1 }, // v4.28c: 봇 판 끝 평균이 매력·체력 200에 닿아 높은 구간을 더 가파르게
 ]; // v4.28b: 목표(집중해서 3년 100 · 8~10년 150 · 200 전설)에 맞춰 낮춤. study: 공부 행동(STUDY_ACTS)만 따로 곱함 — 높은 구간은 실전·돌파 계기가 열쇠
 export const STAT_BRK = { months: 6, jp: { cs: "talk", tarot: "talk", webnovel: "write" } }; // 돌파 계기: 6달 동안 벽이 낮아진다 · jp: 한방 대박 때 돌파하는 능력치
+export const STAT_MCAP = [6, 3, 1.5, 0.6, 0.5];
+export const JOB_XP = 1.2; // v4.28d 실전 경험: 투잡을 하는 달마다 그 투잡 주력 능력치(MG_STAT.of) // v4.28c 능력치마다 한 달에 오를 수 있는 양(구간별: 60·100·150·180·200 미만). 돌파 중이면 2배. 아이템·카드 +N 은 따로
 export const STAT_REP = { months: 3, mult: 0.7 }; // 같은 길로 같은 능력치를 석 달 연속 올리면 ×0.7(다른 길 섞으면 회복)
 export const MG_STAT = { great: 1, good: 0.5, of: { pr: "hands", cs: "talk", airbnb: "talk", ucafe: "hands", insta: "sense", tarot: "talk", tutoring: "talk", chicken: "hands", vibe: "sense", webnovel: "sense" } }; // 미니게임 대성공·성공 → 그 투잡의 경험형 능력치
 // 장소 장면에서 고른 뒤 오르는 능력치(장소마다 다르게) · 선택지 글에 이런 말이 있으면 그 능력치도 조금
@@ -93,21 +96,21 @@ export const SPOTS = Object.fromEntries(REGIONS.flatMap((r) => r.spots.map((sp) 
 // gain: 능력치 증가량(기본), eff: 즉시 효과. 실제 처리는 core.js의 ACT_FN에서.
 export const ACTIONS = {
   // 능력치
-  rest: { n: "푹 쉬기", track: "능력치", ap: 1, hp: -10, mental: 6, stat: { body: 0.4 }, desc: "스태미너 회복. 다음 달 행동력이 늘어요" },
+  rest: { n: "푹 쉬기", track: "능력치", ap: 1, hp: -10, mental: 6, stat: { body: 0.2 }, desc: "스태미너 회복. 다음 달 행동력이 늘어요" },
   study_home: { n: "집에서 공부", track: "능력치", ap: 1, hp: 3, mental: -1, pick: "stat", gain: 2.2, desc: "능력치 하나를 조금 올린다" },
   study: { n: "스터디카페 공부", track: "능력치", ap: 1, hp: 4, mental: -2, pick: "stat", gain: 3.2, cash: -1, desc: "집보다 집중이 잘 된다" },
   course: { n: "유료 강의 듣기", track: "능력치", ap: 1, hp: 3, mental: -1, pick: "stat", gain: 5.5, cash: -15, desc: "돈 주고 빨리 배운다" },
-  workout: { n: "운동", track: "능력치", ap: 1, hp: 4, mental: 3, stat: { charm: 0.4 }, desc: "체력이 오르고 최대 스태미너가 늘어요(나이 들수록 중요)" },
-  pt: { n: "PT 받기", track: "능력치", ap: 1, hp: 5, mental: 2, cash: -8, stat: { charm: 0.6 }, desc: "체력이 많이 올라요" },
+  workout: { n: "운동", track: "능력치", ap: 1, hp: 4, mental: 3, stat: { charm: 0.2 }, desc: "체력이 오르고 최대 스태미너가 늘어요(나이 들수록 중요)" },
+  pt: { n: "PT 받기", track: "능력치", ap: 1, hp: 5, mental: 2, cash: -8, stat: { charm: 0.35 }, desc: "체력이 많이 올라요" },
   beauty: { n: "꾸미기", track: "능력치", ap: 1, hp: 1, pick: "beauty", desc: "매력을 올린다" },
   // 사람
   family_time: { n: "가족과 시간", track: "사람", ap: 1, hp: 2, mental: 4, desc: "가족 행복이 오른다", need: (s) => s.fam.spouse || s.fam.kids.length },
   visit_parents: { n: "부모님 뵙기", track: "사람", ap: 1, hp: 3, mental: 2, cash: -5, stat: { hands: 0.6 }, desc: "부모님 마음이 편해진다" },
-  drink: { n: "한잔하기", track: "사람", ap: 1, hp: 5, mental: 5, cash: -4, stat: { talk: 0.6, charm: 0.4 }, desc: "멘탈 회복, 단골 인연" },
+  drink: { n: "한잔하기", track: "사람", ap: 1, hp: 5, mental: 5, cash: -4, stat: { talk: 0.6, charm: 0.2 }, desc: "멘탈 회복, 단골 인연" },
   drink_fancy: { n: "루프탑에서 한잔", track: "사람", ap: 1, hp: 5, mental: 6, cash: -9, stat: { charm: 0.8, talk: 0.4 }, desc: "분위기 좋은 인연이 많다" },
   exhibit: { n: "전시 보기", track: "능력치", ap: 1, hp: 3, mental: 4, cash: -2, stat: { sense: 1.5 }, desc: "감각이 오른다" },
   trend_walk: { n: "트렌드 구경", track: "능력치", ap: 1, hp: 3, mental: 2, stat: { mkt: 1.2, sense: 0.8 }, desc: "요즘 뭐가 뜨는지 본다" },
-  run_crew: { n: "러닝크루 뛰기", track: "사람", ap: 1, hp: 5, mental: 4, stat: { charm: 0.3 }, desc: "체력 +, 인연" },
+  run_crew: { n: "러닝크루 뛰기", track: "사람", ap: 1, hp: 5, mental: 4, stat: { charm: 0.15 }, desc: "체력 +, 인연" },
   book_club: { n: "독서모임", track: "사람", ap: 1, hp: 3, mental: 3, cash: -2, stat: { write: 1.2 }, desc: "글쓰기 +, 인연" },
   dating_app: { n: "소개팅 앱 켜기", track: "사람", ap: 1, hp: 2, mental: -1, stat: { charm: 0.5 }, desc: "새 인연을 바로 만난다(매력이 중요)" },
   network_lunch: { n: "점심 네트워킹", track: "사람", ap: 1, hp: 3, cash: -2, stat: { career: 0.8, sense: 0.5 }, desc: "다른 회사 사람 이야기" },
@@ -533,7 +536,7 @@ export const SCALE = {
 export const NICHES = {
   newgrad: { n: "신입 자소서", stat: "write", demand: 1.0, priceF: 1.0, req: { career: 20 }, season: [0.7, 0.9, 1.6, 1.5, 0.9, 0.6, 0.7, 1.0, 1.8, 1.5, 1.0, 0.6] },
   interview: { n: "면접 코칭", stat: "talk", demand: 0.8, priceF: 1.3, req: { career: 25 }, season: [0.6, 0.8, 1.0, 1.6, 1.4, 0.8, 0.6, 0.8, 1.0, 1.7, 1.5, 0.7] },
-  career: { n: "경력 이직", stat: "career", demand: 0.6, priceF: 1.7, req: { career: 80, years: 4 } /* v4.27 커리어 80부터 */, season: [1.3, 1.2, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 1.0, 1.0, 1.0, 1.1] },
+  career: { n: "경력 이직", stat: "career", demand: 0.6, priceF: 1.7, req: { career: 120, years: 5 } /* v4.28 히든 길: 커리어 120·회사 5년 */, season: [1.3, 1.2, 1.0, 1.0, 0.9, 0.9, 0.8, 0.8, 1.0, 1.0, 1.0, 1.1] },
   public: { n: "공기업·NCS", stat: "write", demand: 0.7, priceF: 1.1, req: { career: 30 }, season: [0.8, 0.9, 1.4, 1.1, 0.8, 0.8, 1.1, 1.5, 1.6, 1.0, 0.8, 0.7] },
 };
 export const CS_PRODUCTS = {
@@ -542,7 +545,7 @@ export const CS_PRODUCTS = {
   pkg: { n: "합격까지 패키지", unit: 4, price: 220, req: (cs) => cs.reviews >= 15 },
   vip: { n: "VIP 이직 패키지", unit: 6, price: 450, req: () => false },
 };
-export const CS_PRICE = { low: { n: "저가", mult: 0.7, conv: 0.12 }, mid: { n: "표준", mult: 1.0, conv: 0 }, high: { n: "프리미엄", mult: 1.5, conv: -0.12, req: 30 } };
+export const CS_PRICE = { low: { n: "저가", mult: 0.7, conv: 0.12 }, mid: { n: "표준", mult: 1.0, conv: 0 }, high: { n: "프리미엄", mult: 1.5, conv: -0.12, req: 30 }, ultra: { n: "초고액", mult: 3.0, conv: -0.24, req: 80 } }; // v4.28 초고액: 실력 180·후기 80, 단가가 프리미엄의 2배로 뛴다
 export const CS_LEVELS = [
   { lv: 1, n: "지인 자소서 봐주는 선배", c: "시작" },
   { lv: 2, n: "크멍 첨삭러", c: "후기 10개, 고객 20명" },
@@ -967,13 +970,14 @@ export const CS_QUIZ = [
 ];
 
 // 컨설팅 가격 단계마다 필요한 실력(핵심 능력·커리어 평균). 모자라면 환불·혹평
-export const CS_PRICE_NEED = { low: 50, mid: 100, high: 180 }; // v4.27: 저가도 글쓰기(면접은 말빨) 50, 표준 100, 프리미엄 180
+export const CS_PRICE_NEED = { low: 40, mid: 90, high: 140, ultra: 180 }; // v4.28 4단계: 저가 40·표준 90·프리미엄 140·초고액 180(글쓰기, 면접은 말빨)
 // v4.27 강의로 방어: 섭외 문턱(후기 수)·확률·강의료(기본 + 실력·명성 비례)
+export const CS_CAREER_PASS = 50; // v4.28 경력 이직(히든 길) 문: 커리어 120 · 회사 5년 · 합격자 50명
 export const CS_LECT = { rev: 10, p: 0.2, fee: 50, perSkill: 0.6, perFame: 0.8, maxOffers: 3 };
 // v4.25b 파이어율 조정 마지막 수단: 모든 투잡의 이번 달 이익(라이벌·시장 반영 뒤)에서 이 비율만큼 '투잡 부대비용'(교통·소모품·장비·잡비)으로 뺀다. 계산은 engine/market.js
 export const SIDE_CUT = 0.15;
 // v4.27 투잡별 부대비용(음수면 보너스). 없으면 SIDE_CUT. CRUISE: 같은 투잡 7년 차부터 줄어 10년 차에 v만큼 덜 뗀다(단골·입소문으로 순항)
-export const SIDE_ADJ = { pr: -0.17, cs: 0.44, airbnb: -0.5, ucafe: -0.4, tutoring: 0.15, chicken: 0.2, insta: 0.12, vibe: 0.06, tarot: -0.15, webnovel: -0.15 };
+export const SIDE_ADJ = { pr: -0.12, cs: 0.46, cs_career: 0.76, airbnb: -0.95, ucafe: -0.46, tutoring: 0.18, chicken: 0.25, insta: 0.32, vibe: 0.06, tarot: -0.15, webnovel: -0.3 };
 export const CRUISE = { from: 7, full: 10, v: 0.25 };
 // v4.27 투자 국면: 보통 → 하락장(b) → 회복장(r). 하락장은 평균 66달에 한 번, 9~16달 동안 월 −3%, 회복장 18~30달 동안 월 +1.2%
 export const INV_PH = { p: 1 / 66, bear: [9, 16], bearMu: -0.03, rec: [18, 30], recMu: 0.012, sideChurn: 0.5 };

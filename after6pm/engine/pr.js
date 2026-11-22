@@ -212,8 +212,8 @@ export function act(s, r, id, arg, boost = 1) {
     return { lines: [rm.self ? `남은 공사 ${rm.self}번` : "셀프 공사 끝! 다음 달 오픈"], msg: "페인트 냄새와 먼지. 손바닥에 물집이 잡혔다." };
   }
   const rm = pr.rooms.find((x) => x.id === arg) || pr.rooms.find((x) => x.status === "open");
-  if (id === "pr_manage") { rm.ap += 1 * boost; rm.unrep = Math.round((rm.unrep || 0) * (1 - D.PR_REVIEW.reply.manageCut)); /* v4.28 관리하면서 답글도 조금 */ s.st.hands = clamp(s.st.hands + 0.3, 0, 200); return { lines: [`${rm.name} 관리 ${fmt(rm.ap)}/${fmt(needAp(s, rm))}`], msg: "청소기 돌리고 비품 채우고 리뷰에 답글." }; }
-  if (id === "pr_promo") { rm.promo = Math.min(2, rm.promo + 1); rm.buzz = Math.min(100, (rm.buzz || 0) + 3); s.st.sense = clamp(s.st.sense + 0.4, 0, 200); s.st.mkt = clamp(s.st.mkt + 0.3, 0, 200); return { lines: [`${rm.name} 이번 달 예약 +${rm.promo * 12 > 20 ? 20 : rm.promo * 12}%`], msg: "자연광 오후 4시, 인생샷 각도를 찾았다." }; }
+  if (id === "pr_manage") { rm.ap += 1 * boost; rm.unrep = Math.round((rm.unrep || 0) * (1 - D.PR_REVIEW.reply.manageCut)); /* v4.28 관리하면서 답글도 조금 */ gainStat(s, "hands", 0.3, "pr_manage"); return { lines: [`${rm.name} 관리 ${fmt(rm.ap)}/${fmt(needAp(s, rm))}`], msg: "청소기 돌리고 비품 채우고 리뷰에 답글." }; }
+  if (id === "pr_promo") { rm.promo = Math.min(2, rm.promo + 1); rm.buzz = Math.min(100, (rm.buzz || 0) + 3); gainStat(s, "sense", 0.4, "pr_promo"); gainStat(s, "mkt", 0.3, "pr_promo"); return { lines: [`${rm.name} 이번 달 예약 +${rm.promo * 12 > 20 ? 20 : rm.promo * 12}%`], msg: "자연광 오후 4시, 인생샷 각도를 찾았다." }; }
   return null;
 }
 const fmt = (x) => Math.round(x * 10) / 10;

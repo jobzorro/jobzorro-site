@@ -260,8 +260,8 @@ export function applyEff(s, eff, who) {
   if (eff.mental) { s.mental = clamp(s.mental + eff.mental, 0, 100); out.push(`멘탈 ${sgn(eff.mental)}`); }
   if (eff.eye) { const e = eff.eye > 0 ? eff.eye * eyeMult(s) : eff.eye; s.co.eye = clamp(s.co.eye + e, 0, 100); out.push(`회사 눈치 ${sgn(Math.round(e))}`); }
   if (eff.family) { s.fam.happy = clamp(s.fam.happy + eff.family, 0, 100); out.push(`가족 ${sgn(eff.family)}`); }
-  if (eff.stat) for (const [k, v] of Object.entries(eff.stat)) { if (!s.st[k] && s.st[k] !== 0) continue; const g = v > 0 ? gainStat(s, k, v, curSrc || "ev") : (s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX), v); if (k === "body") syncSta(s); out.push(`${D.STATS[k]} ${sgn(+g.toFixed(1))}`); } // v4.28: 장면 능력치도 곡선을 거친다
-  if (eff.statRaw) for (const [k, v] of Object.entries(eff.statRaw)) { if (s.st[k] === undefined) continue; s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX); if (k === "body") syncSta(s); out.push(`${D.STATS[k]} ${sgn(v)}`); } // 바로 +N(곡선 없음)
+  if (eff.stat) for (const [k, v] of Object.entries(eff.stat)) { if (!s.st[k] && s.st[k] !== 0) continue; const g = v > 0 ? gainStat(s, k, v, curSrc || "ev") : (s.st[k] = clamp(s.st[k] + v, 0, statCap(s)), v); if (k === "body") syncSta(s); out.push(`${D.STATS[k]} ${sgn(+g.toFixed(1))}`); } // v4.28: 장면 능력치도 곡선을 거친다
+  if (eff.statRaw) for (const [k, v] of Object.entries(eff.statRaw)) { if (s.st[k] === undefined) continue; s.st[k] = clamp(s.st[k] + v, 0, statCap(s)); if (k === "body") syncSta(s); out.push(`${D.STATS[k]} ${sgn(v)}`); } // 바로 +N(곡선 없음)
   if (eff.brk) for (const k of [].concat(eff.brk)) { const l = giveBrk(s, k); if (l) out.push(l); } // 돌파 계기
   if (eff.ap) { s.apNext += eff.ap; out.push(`다음 달 행동력 ${sgn(eff.ap)}`); }
   if (eff.sj_int) for (const [j, v] of Object.entries(eff.sj_int)) { const l = SJ.addInt(s, j, v); if (l) out.push(l); }
@@ -338,11 +338,17 @@ function repMult(s, k, src) {
   for (let i = 1; i < D.STAT_REP.months; i++) if (!only(s.t - i)) return 1;
   return cur[1].length === 1 ? D.STAT_REP.mult : 1;
 }
+// v4.28d 회차 천장: 1회차 190 · 2회차 195 · 3회차부터 200(전설). 성장·아이템·카드·학위 모두 이 천장까지
+export const statCap = (s) => Math.min(D.STAT_MAX, D.STAT_CAP0 + D.STAT_CAP_NG * Math.max(0, (s?.ng?.n || 1) - 1));
 export function gainStat(s, k, base, src) {
   const cur = s.st[k]; if (cur === undefined || !base) return 0;
   if (base < 0) { s.st[k] = clamp(cur + base, 1, D.STAT_MAX); if (k === "body") syncSta(s); return s.st[k] - cur; }
   const z = statZone(cur), sr = src || curSrc || "etc", g = base * growMult(s, k) * (brkOn(s, k) ? z.b : z.m) * (D.STUDY_ACTS.includes(sr) ? (z.study ?? 1) : 1) * repMult(s, k, sr);
-  s.st[k] = clamp(cur + Math.max(cur < 100 ? 0.15 : 0.01, g), 0, D.STAT_MAX);
+  const ngF = D.NG_GROW_T[Math.min(D.NG_GROW_T.length, s.ng?.n || 1) - 1]; // 회차 보너스: 어디선가 해 본 일
+  const zi = D.STAT_CURVE.indexOf(z), cap = (D.STAT_MCAP?.[zi] ?? 99) * (brkOn(s, k) ? 2 : 1) * ngF, M = (s.stM && s.stM.t === s.t) ? s.stM : (s.stM = { t: s.t });
+  const room = Math.max(0, cap - (M[k] || 0)); if (room <= 0) return 0; // 이번 달 이 능력치는 더 안 오른다(실전·공부 모두)
+  const add = Math.min(room, Math.max(cur < 100 ? 0.15 : 0.01, g * ngF)); M[k] = (M[k] || 0) + add;
+  s.st[k] = clamp(cur + add, 0, statCap(s));
   if (k === "body") syncSta(s);
   return s.st[k] - cur;
 }
@@ -431,7 +437,7 @@ export function buyItem(s, id) {
   if (s.items[id] !== undefined) return { ok: false, msg: "이미 갖고 있어요" };
   if (s.cash - it.cash < -creditRoom(s)) return { ok: false, msg: "돈이 모자라요" };
   s.cash -= it.cash; addMoney(s, "exp", "아이템", it.cash); s.items[id] = s.t;
-  const lines = Object.entries(it.stat).map(([k, v]) => { s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX); return `${D.STATS[k]} +${v}`; });
+  const lines = Object.entries(it.stat).map(([k, v]) => { s.st[k] = clamp(s.st[k] + v, 0, statCap(s)); return `${D.STATS[k]} +${v}`; });
   syncSta(s); log(s, `${jo(it.n, "을", "를")} 샀다.`, "life");
   return { ok: true, lines, msg: `${it.n} 구매 · ${won(it.cash)}` };
 }
@@ -829,6 +835,7 @@ export function endMonth(s) {
   for (const X of REG.STORY) { if (SJ.isActive(s, X.key) && s.sx?.[X.key]) { try { X.month(s, r, notes, scenes); } catch (e) { console.warn("[이야기 보강]", X.key, e); } } } // 기존 투잡 이야기 이벤트
   BIG.month(s, r, notes, scenes);
   rivalMonth(s, r, notes, scenes); // 라이벌(v4.25): 투잡 이익 압박·반사이익, 등장·이벤트
+  for (const j of (s.sj?.active || [])) { const k = j === "cs" ? D.NICHES[s.cs?.niche || "newgrad"]?.stat : D.MG_STAT.of[j]; if (k) gainStat(s, k, D.JOB_XP, "jobxp_" + j); } // v4.28d 실전 경험
   spaceMonth(s, r, notes); // 공간형 유지비(v4.27): 재계약 5%·가구 교체·규모 문제
   marketMonth(s, r, notes, scenes); // 시장 충격(v4.25b): 라이벌 압박 뒤 남은 이익에 시장 배수, 새 충격 장면
   jackpotMonth(s, r, notes, scenes); // 한방 전략(v4.27): 고정 수입·이익 배율·결과·새 제안(다른 event 장면 있으면 제안 쉼)
@@ -836,7 +843,7 @@ export function endMonth(s) {
   if (s.grad && !s.grad.done) {
     const G = s.grad, g = D.GRADS[G.k]; s.cash -= g.fee; addMoney(s, "exp", "대학원 등록금", g.fee);
     if (s.t - G.t0 + 1 >= g.months) {
-      if (G.n >= g.need) { G.done = true; G.doneT = s.t; for (const [k, v] of Object.entries(g.done)) s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX); scenes.push(story("학위 수여식", `${g.n}을 졸업했다. 학사모를 던지는 대신 회사로 돌아가 보고서를 썼다. (${Object.entries(g.done).map(([k, v]) => `${D.STATS[k]} +${v}`).join(", ")})`)); log(s, `${g.n} 졸업`, "life"); }
+      if (G.n >= g.need) { G.done = true; G.doneT = s.t; for (const [k, v] of Object.entries(g.done)) s.st[k] = clamp(s.st[k] + v, 0, statCap(s)); scenes.push(story("학위 수여식", `${g.n}을 졸업했다. 학사모를 던지는 대신 회사로 돌아가 보고서를 썼다. (${Object.entries(g.done).map(([k, v]) => `${D.STATS[k]} +${v}`).join(", ")})`)); log(s, `${g.n} 졸업`, "life"); }
       else { G.t0 += 6; notes.push(`대학원 수업 일수 부족(${G.n}/${g.need}): 한 학기 연장`); }
     }
   }

@@ -7,6 +7,7 @@
 // - 효과: extraMods(s) 를 core.js mod()/growMult 가 성향·특전 카드 뒤에 이어서 읽는다.
 // - 난수는 엔진의 r(makeRng)만 받는다.
 import * as D from "./defs.js";
+const CORE_statCap = (s) => Math.min(D.STAT_MAX, D.STAT_CAP0 + D.STAT_CAP_NG * Math.max(0, (s?.ng?.n || 1) - 1)); // v4.28d 회차 천장(core.statCap 과 같은 식)
 import * as IT from "./items.js";
 import { makeRng } from "./rng.js";
 // 카드 전용 난수(엔진 makeRng, 저장 s.gc.rs): 카드를 뽑아도 본 판의 난수 흐름이 바뀌지 않게. 받은 r 은 쓰지 않는다
@@ -214,7 +215,7 @@ export function pick(s, oi, i) {
 function shardOnly(s, n) { const g = ensure(s); g.shards += n; return [`카드 조각 +${n}`]; }
 function applyNow(s, now, f) {
   const out = [];
-  if (now.stat) for (const [k, v] of Object.entries(now.stat)) { if (s.st?.[k] === undefined) continue; const a = Math.round(v * f * 10) / 10; s.st[k] = clamp(s.st[k] + a, 0, D.STAT_MAX); out.push(`${D.STATS[k]} +${a}`); }
+  if (now.stat) for (const [k, v] of Object.entries(now.stat)) { if (s.st?.[k] === undefined) continue; const hz = s.st[k] >= 180 ? 0.25 : s.st[k] >= 150 ? 0.5 : 1; /* v4.28c 카드 +N 은 높은 구간에서 줄어든다(전설 200은 귀하게) */ const a = Math.round(v * f * hz * 10) / 10; s.st[k] = clamp(s.st[k] + a, 0, CORE_statCap(s)); out.push(`${D.STATS[k]} +${a}`); }
   if (now.brk) { const k = now.brk === "top" ? Object.keys(D.STATS).sort((a, b) => (s.st?.[b] || 0) - (s.st?.[a] || 0))[0] : now.brk; s.brk = s.brk || {}; s.brk[k] = Math.max(s.brk[k] ?? -1, s.t + D.STAT_BRK.months); out.push(`${D.STATS[k]} 돌파 중 ${D.STAT_BRK.months}달`); } // v4.28
   if (now.hp) { s.hp = clamp((s.hp || 0) + now.hp, 0, s.hpMax || 100); out.push(now.hp >= 999 ? "스태미너 가득" : `스태미너 +${now.hp}`); }
   if (now.mental) { const a = Math.round(now.mental * f); s.mental = clamp((s.mental || 0) + a, 0, 100); out.push(`멘탈 +${a}`); }

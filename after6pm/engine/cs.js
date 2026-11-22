@@ -53,6 +53,7 @@ export function setNiche(s, k) { const n = D.NICHES[k]; if (!n) return { ok: fal
   if (!s.cs.niche) { s.cs.niche = k; s.cs.niches = [k]; return { ok: true, msg: `포지션: ${n.n}` }; }
   if (s.cs.niches.includes(k)) return { ok: false, msg: "이미 하고 있음" };
   if (s.cs.lv < 3) return { ok: false, msg: "포지션 추가는 Lv3부터" };
+  if (k === "career" && (s.cs.passes || 0) < D.CS_CAREER_PASS) return { ok: false, msg: `경력 이직은 합격자 ${D.CS_CAREER_PASS}명부터(지금 ${s.cs.passes || 0}명)` }; // v4.28 히든 길
   s.cs.niches.push(k); return { ok: true, msg: `포지션 추가: ${n.n}` };
 }
 export function setNick(s, k) { s.cs.nick = k; return { ok: true, msg: k === "real" ? "실명으로 활동: 신뢰 +, 회사 눈치 ×1.4" : "닉네임으로 활동" }; }
@@ -105,7 +106,7 @@ export function act(s, r, id, arg, boost = 1) {
       const q = cs.queue[0]; const use = Math.min(cap, q.left); q.left -= use; cap -= use;
       if (q.left <= 0) { cs.queue.shift(); done++; earned += finishClient(s, r, q); if (q.who) names.push(CHAR[q.who].name); }
     }
-    s.st[D.NICHES[cs.niche].stat] = clamp(s.st[D.NICHES[cs.niche].stat] + 0.5 + mod(s, "workGrow", 0), 0, 200);
+    gainStat(s, D.NICHES[cs.niche].stat, 0.5 + mod(s, "workGrow", 0), "cs_work"); /* v4.28c 곡선·월 상한을 거친다 */
     s.mental = clamp(s.mental + mod(s, "csWorkMental", 0), 0, 100);
     return { lines: [`고객 ${done}명 완료`, `+${won(earned)}`, cs.queue.length ? `남은 대기 ${cs.queue.length}명` : "대기 0명"], msg: names.length ? `${names.join(", ")}님 자료도 끝냈다.` : "밤 12시, 첨삭 파일 이름에 '_최종_진짜최종'." };
   }
@@ -349,7 +350,7 @@ export function csEvChoose(s, i, ok) {
   const rev = (v) => { cs.reviews = Math.max(0, cs.reviews + v); out.push(`후기 ${v > 0 ? "+" : ""}${v}`); };
   if (id === "jinsang") { if (i === 0) { if (ok) ment(-2); else { rev(-2); ment(-5); out.push("별점 테러"); } } else if (i === 1) { s.hp = clamp(s.hp - 15, 0, s.hpMax); ment(-8); rev(0.5); out.push("스태미너 −15"); } else { cash(-P, "환불"); ment(2); } }
   if (id === "refund") { if (i === 0) cash(-P * 2, "환불"); else if (i === 1) { if (!ok) { rev(-3); cs.ch.kmong.q = Math.max(0, cs.ch.kmong.q - 10); out.push("크멍 분쟁, 상세페이지 품질 −10"); } else out.push("규정을 차분히 설명했다. 고객이 수긍했다"); } else { s.apNext -= 2; rev(1); out.push("다음 달 행동력 −2"); } }
-  if (id === "overprice") { if (i === 0) { const ks = ["low", "mid", "high"]; const k = ks[Math.max(0, ks.indexOf(cs.price) - 1)]; cs.price = k; out.push(`가격 ${D.CS_PRICE[k].n}(으)로`); } else if (i === 1) { s.apNext -= 2; out.push(`${D.STATS[D.NICHES[cs.niche].stat]} +${gainStat(s, D.NICHES[cs.niche].stat, 5).toFixed(1)}`, "다음 달 행동력 −2"); } else rev(-2); }
+  if (id === "overprice") { if (i === 0) { const ks = ["low", "mid", "high", "ultra"]; const k = ks[Math.max(0, ks.indexOf(cs.price) - 1)]; cs.price = k; out.push(`가격 ${D.CS_PRICE[k].n}(으)로`); } else if (i === 1) { s.apNext -= 2; out.push(`${D.STATS[D.NICHES[cs.niche].stat]} +${gainStat(s, D.NICHES[cs.niche].stat, 5).toFixed(1)}`, "다음 달 행동력 −2"); } else rev(-2); }
   if (id === "stalker") { if (i === 0) { ment(-6); if (Math.random() < 0.4) cs.stalk = s.t + 3; } else if (i === 1) { ment(-3); out.push(...applyEff(s, { eye: 5 })); } else { if (ok) out.push("\"...죄송해요. 선을 넘었네요.\""); else { ment(-12); cs.stalk = s.t + 2; out.push("오히려 더 집착하기 시작했다"); } } }
   if (id === "stalker2") { if (i === 0) { cash(-50, "법률 비용"); ment(-5); } else { cash(-300, "이사 비용"); cs.ch.kakao.m = Math.round(cs.ch.kakao.m * 0.7); out.push("오픈채팅 −30%"); } }
   if (id === "romance") { const who = s._csWho; if (who) { ensureRel(s, who); if (i === 0) { out.push(`${CHAR[who].name} 호감 +${addAff(s, who, 25)}`); s.rel[who].last = s.t; } else { addAff(s, who, 5); cs.refer += 0.3; out.push("소개 +"); } } }

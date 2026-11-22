@@ -6,6 +6,7 @@
 // - 얻는 길(how): shop 현금 상점 · ev 이벤트 보상 · mg 미니게임 대성공 · gift 인연 선물 · rival 라이벌 승부 · card 연말·조각 카드 · pack 카드팩
 // 이 파일은 defs.js 만 읽는다(core.js 와 서로 부르지 않게).
 import * as D from "./defs.js";
+const CORE_statCap = (s) => Math.min(D.STAT_MAX, D.STAT_CAP0 + D.STAT_CAP_NG * Math.max(0, (s?.ng?.n || 1) - 1)); // v4.28d 회차 천장(core.statCap 과 같은 식)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 export const CAT = { life: "생활·자기계발", gear: "투잡 장비", memo: "기념품", cons: "소모품", final: "최종" };
@@ -120,7 +121,7 @@ export function grant(s, id, src = "ev") {
   s.items[id] = s.t;
   let line = `🎁 ${x.cat === "memo" ? "기념품" : x.cat === "final" ? "최종 아이템" : "아이템"} · ${x.n}`;
   if (x.mental) { s.mental = clamp((s.mental || 0) + x.mental, 0, 100); line += ` (멘탈 +${x.mental})`; }
-  if (x.stat) for (const [k, v] of Object.entries(x.stat)) if (s.st?.[k] !== undefined) s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX);
+  if (x.stat) for (const [k, v] of Object.entries(x.stat)) if (s.st?.[k] !== undefined) s.st[k] = clamp(s.st[k] + v, 0, CORE_statCap(s));
   if (x.cat === "final" && F_BRK[id]) { s.brk = s.brk || {}; s.brk[F_BRK[id]] = Math.max(s.brk[F_BRK[id]] ?? -1, s.t + D.STAT_BRK.months); line += ` · ${D.STATS[F_BRK[id]]} 돌파 중 ${D.STAT_BRK.months}달`; } // v4.28 최종 아이템 = 돌파 계기
   if (x.cat === "gear" && setsOn(s).includes(x.job)) line += ` · 세트 완성 ${SETS[x.job].n}: ${SETS[x.job].d}`;
   return { line, dup: false };
@@ -152,7 +153,7 @@ export function use(s, id) {
     if (s.fam) s.fam.happy = clamp((s.fam.happy || 0) + 4, 0, 100);
     lines.push(ids.length ? `호감 +${u.love}` : "가족 +4");
   }
-  if (u.stat) { const k = mainStat(s); s.st[k] = clamp(s.st[k] + u.stat, 0, D.STAT_MAX); lines.push(`${D.STATS[k]} +${u.stat}`); }
+  if (u.stat) { const k = mainStat(s); s.st[k] = clamp(s.st[k] + u.stat, 0, CORE_statCap(s)); lines.push(`${D.STATS[k]} +${u.stat}`); }
   if (u.shard) { s.gc = s.gc || {}; s.gc.shards = (s.gc.shards || 0) + u.shard; lines.push(`카드 조각 +${u.shard}`); }
   s.cons[id]--; if (s.cons[id] <= 0) delete s.cons[id];
   s.gc = s.gc || {}; s.gc.v = (s.gc.v || 0) + 1;
