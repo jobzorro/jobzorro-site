@@ -7,7 +7,10 @@
 import * as D from "./defs.js";
 import * as REG from "./reg.js";
 import * as SYN from "./syn.js";
-import { jo, won, addMoney, log } from "./core.js";
+import { jo, won, addMoney, log, CHAR, ensureRel } from "./core.js";
+// v4.29 선배 → 라이벌: 목록 항목의 who(인물 id). 그 선배를 만난 적 있으면 등장 글이 바뀌고 '선배에게 먼저 연락한다' 선택지가 생긴다(친구로 시작). 배우자·연인이면 후보에서 뺀다.
+export const RIVAL_WHO = { pr_new: "c047", cs_hr: "c030", in_cheap: "c076", ab_next: "c045", uc_roast: "c014", ch_craft: "c066", ta_saju: "c121", wn_rook: "c079", tu_elite: "c054", vb_cheap: "c064" };
+const whoOk = (s, w) => !!w && !!CHAR[w] && !s.rel?.[w]?.spouse && !s.rel?.[w]?.lover;
 import { CG } from "../gen/cg.js";
 import { rivalReward } from "./cards.js"; // 라이벌 승부 보상 장비(v4.25 아이템)
 
@@ -131,7 +134,7 @@ export function rivalMonth(s, r, notes, scenes) {
     // 등장
     const used = V.list.filter((x) => x.job === job).length;
     if (!busy && used < V.cap[job] && s.t - V.since[job] >= AFTER && (V.ema[job] || 0) >= 30 && s.t - V.lastT[job] >= GAP_APPEAR && r.chance(P_APPEAR)) {
-      const cands = RIVALS[job].list.filter((d) => !V.list.some((x) => x.id === d.id));
+      const cands = RIVALS[job].list.filter((d) => !V.list.some((x) => x.id === d.id) && !(RIVAL_WHO[d.id] && !whoOk(s, RIVAL_WHO[d.id])));
       if (cands.length) { const d = r.pick(cands); const x = spawn(s, r, job, d); V.lastT[job] = s.t; scenes.push(meetScene(s, x)); busy = true; }
     }
   }
@@ -150,6 +153,7 @@ export function rivalMonth(s, r, notes, scenes) {
 function spawn(s, r, job, d) {
   const yrs = Math.max(0, (s.t - (st(s).since[job] ?? s.t)) / 12);
   const x = { id: d.id, job, n: d.n, d: d.d, kind: d.kind, sk: Math.round(r.int(d.sk[0], d.sk[1]) + yrs * 2), pc: d.pc, p: +(d.p * P_MUL).toFixed(3), st: "on", t: s.t, rel: 0, fr: false, war: false };
+  const w = RIVAL_WHO[d.id]; if (whoOk(s, w)) { x.who = w; x.knew = !!s.rel[w]; if (!s.cast.includes(w)) s.cast.push(w); const q = ensureRel(s, w); q.rival = true; } // v4.29 선배가 라이벌로
   st(s).list.push(x); log(s, `라이벌 등장: ${x.n}(${x.d})`, "work");
   return x;
 }
@@ -168,16 +172,18 @@ const O = (text, eff, x) => ({ text, eff, ...(x ? { x } : {}) });
 function fixChecks(choices, x) { return choices.map((c) => c.check ? { ...c, check: { stat: c.check.stat, dc: Math.round(x.sk + (c.check.dd || 0)) } } : c); }
 function meetScene(s, x) {
   const d = RIVALS[x.job].list.find((q) => q.id === x.id), Wd = WORDS[x.job];
-  return { kind: "event", tag: "라이벌", title: `라이벌 등장 · ${x.n}`, text: `${d.intro}\n(${KIND_N[x.kind]} · 실력 ${x.sk} · 가격 내 ${x.pc}% · ${D.SIDEJOBS[x.job].n} 이익 −${pct(x.p)} 압박)`, onChoose: "rv_meet", rv: x.id, cine: cine("rival_appear"),
+  const wn = x.who && CHAR[x.who]?.name, sen = x.who && x.knew;
+  return { kind: "event", tag: "라이벌", title: `라이벌 등장 · ${x.n}`, ...(x.who ? { who: x.who, expr: "smile" } : {}), text: `${sen ? `커피를 사 주던 선배 ${I(wn)} '${x.n}'을(를) 열었다. "이제 경쟁이네요. 봐주진 않을게요."\n` : wn ? `'${x.n}' 사장은 ${wn}. 처음 보는 얼굴이다.\n` : ""}${d.intro}\n(${KIND_N[x.kind]} · 실력 ${x.sk} · 가격 내 ${x.pc}% · ${D.SIDEJOBS[x.job].n} 이익 −${pct(x.p)} 압박)`, onChoose: "rv_meet", rv: x.id, cine: cine("rival_appear"),
     choices: fixChecks([
       K(`손님인 척 정찰을 간다`, Wd.q, -5, O(`약점이 보였다. ${x.kind === "price" ? "싼 대신 디테일이 없다." : "좋긴 한데 손이 많이 가서 오래 못 버틸 것 같다."} 내 ${L(Wd.i)} 다시 손봤다.`, { stat: { [Wd.q]: 1 } }, { p: -0.02 }), O("구경만 하고 왔다. 솔직히 좋았다. 그게 더 무섭다.", { mental: -2 })),
       C("떡 한 상자 들고 인사를 간다", { cash: -M(s, 3), mental: 1 }, `${x.n} 사장님이 놀랐다. "경쟁자가 먼저 오는 건 처음이네요." 명함을 주고받았다.`, { rel: 20 }),
       C("신경 끈다. 내 할 일만 한다", { mental: 1 }, `${L(x.n)} 검색해 보는 걸 하루에 세 번까지만 하기로 했다.`),
+      ...(sen ? [C("선배에게 먼저 연락한다", { mental: 1, aff: 4 }, `${wn}: "역시 연락할 줄 알았어요. 경쟁은 경쟁이고, 밥은 밥이죠."`, { rel: 50 })] : []),
     ], x) };
 }
 function evScene(s, e, x) {
   const Wd = WORDS[x.job], sc = e.mk(s, x, Wd);
-  return { kind: "event", tag: "라이벌", title: sc.title, text: sc.text + `\n(라이벌 ${x.n} · ${KIND_N[x.kind]} · 실력 ${x.sk})`, onChoose: "rv_ev", rv: x.id, ev: e.id, cine: e.cine ? cine(e.cine) : undefined, choices: fixChecks(sc.choices, x) };
+  return { kind: "event", tag: "라이벌", title: sc.title, ...(x.who && CHAR[x.who] ? { who: x.who } : {}), text: sc.text + `\n(라이벌 ${x.n}${x.who && CHAR[x.who] ? ` · ${CHAR[x.who].name}` : ""} · ${KIND_N[x.kind]} · 실력 ${x.sk})`, onChoose: "rv_ev", rv: x.id, ev: e.id, cine: e.cine ? cine(e.cine) : undefined, choices: fixChecks(sc.choices, x) };
 }
 
 // ── 이벤트 목록 ── g: 좋은 일(true)/나쁜 일(false), need: "on"(경쟁 중)|"ally"(협업·친구)|없음(아무 때나), kind: 성향 제한
@@ -386,7 +392,7 @@ export const RV_CHOOSE = {
 // 화면용 요약: 그 투잡 라이벌 목록 + 이번 달 순 압박
 export function boardInfo(s, job) {
   const list = rivalsOf(s, job); if (!list.length) return null;
-  return { net: netOf(s, job), hit: s.rv?.hit?.[job] || null, list: list.map((x) => ({ n: x.n, d: x.d, kind: KIND_N[x.kind], sk: x.sk, pc: x.pc, st: x.st, stN: x.st === "on" && x.fr ? "친구" : ST_N[x.st], press: x.st === "on" ? -(x.fr ? x.p / 2 : x.p) : x.st === "ally" ? ALLY_BONUS : 0 })) };
+  return { net: netOf(s, job), hit: s.rv?.hit?.[job] || null, list: list.map((x) => ({ n: x.n, who: x.who, d: x.d, kind: KIND_N[x.kind], sk: x.sk, pc: x.pc, st: x.st, stN: x.st === "on" && x.fr ? "친구" : ST_N[x.st], press: x.st === "on" ? -(x.fr ? x.p / 2 : x.p) : x.st === "ally" ? ALLY_BONUS : 0 })) };
 }
 // 시험용(#...-rvtest): 그 투잡에 라이벌을 바로 세운다(경쟁 중 1 + 협업·친구 1, 압박 기록)
 export function rivalDemo(s, job) {

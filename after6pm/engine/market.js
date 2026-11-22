@@ -25,7 +25,7 @@ export function sideCut(s, job) {
   const V = st(s), t0 = ((V.t0 = V.t0 || {})[job] ??= s.t), y = (s.t - t0) / 12, C = D.CRUISE;
   const base = job === "cs" && s.cs?.niches?.includes("career") && D.SIDE_ADJ?.cs_career !== undefined ? D.SIDE_ADJ.cs_career : (D.SIDE_ADJ?.[job] ?? D.SIDE_CUT ?? 0); // v4.28 컨설팅: 경력 이직 분야를 열면 따로
   const k = !C ? 0 : y >= C.full ? 1 : y > C.from ? (y - C.from) / (C.full - C.from) : 0;
-  return +(base - k * (C?.v || 0)).toFixed(3);
+  return +(base - k * (C?.v || 0) - (s.hid?.cutNow?.[job] || 0) - (s.h2?.cut?.[job] || 0)).toFixed(3); // v4.30 다른 방식 히든 길(hidden2.js s.h2.cut, 음수면 비용↑) // v4.29 히든 길을 열면 부대비용을 줄인다(hidden.js HID_REW.cut)
 }
 const isOn = (s, job) => !!s.sj?.active?.includes(job);
 const ERA_HIT = { pr: ["winter", "pandemic", "slump", "bigcomp"], insta: ["winter", "algo"], airbnb: ["winter", "pandemic", "intl"], ucafe: ["winter"] }; // 엔진이 이미 깎는 시대

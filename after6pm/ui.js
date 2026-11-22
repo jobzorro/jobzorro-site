@@ -22,6 +22,8 @@ import * as REG from "./engine/reg.js";
 import { UI_PLUGINS } from "./jobs/index.js";
 import * as DK from "./deco_ui.js"; // 방 꾸미기(deco/deco.js 는 열 때 받기)
 import { rivalBox, RIVAL_CINE_TAG } from "./rival_ui.js"; // 라이벌 칸(v4.25)
+import * as HU from "./hidden_ui.js"; // 히든 길 한 줄·스승 장면 시험(v4.29)
+import * as H2U from "./hidden2_ui.js"; // 다른 방식의 히든 길(v4.30)
 import * as PD from "./people_dex.js"; // 인물 도감 기록(v4.27). 도감·관계도 화면은 people_ui.js(열 때 받기)
 import { rivalDemo as RV_DEMO } from "./engine/rival.js";
 import { marketBox, skillLine } from "./market_ui.js"; // 배우는 기간·시장 칸(v4.25b)
@@ -138,7 +140,7 @@ function artOr(key, expr, fallback) {
 new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) (n.matches?.("img") ? [n] : n.querySelectorAll("img.face,img.body")).forEach((el) => { const src = el.getAttribute("src"); if (src && (BODY_WAIT.has(src) || ART_FALL.has(src))) el.classList.add("ld"); }); }).observe(document.body, { childList: true, subtree: true });
 function artPreload(ids) { let k = 0; for (const id of ids) setTimeout(() => (BODY[id] ? bodyLoad(id) : artLoad(id)), 40 * k++); }
 const BODY_IMG = {}, BODY_LD = {}, BODY_CUT = {}, BODY_WAIT = new Map(), BODY_TH = {};
-for (const c of Object.values(E.CHAR)) if (c.img && BODY[c.img] && !BODY[c.id]) BODY[c.id] = BODY[c.img]; // 그림을 빌려 쓰는 인물(인별 유명인: img 칸)
+for (const c of Object.values(E.CHAR)) if (c.img && BODY[c.img] && !BODY[c.id]) { BODY[c.id] = BODY[c.img]; PD.IMG_OF[c.id] = c.img; } // 자기 그림이 생기면 별칭은 저절로 안 쓴다(v4.29) // 그림을 빌려 쓰는 인물(인별 유명인: img 칸)
 const modeOf = (el) => el.classList.contains("body") ? (el.closest(".sstage.half,.mestage") ? "half" : "full") : "face";
 function bodyThumb(key) {
   if (BODY_TH[key] || BODY_IMG[key]) return;
@@ -146,7 +148,7 @@ function bodyThumb(key) {
   const im = new Image();
   im.onload = () => { if (BODY_IMG[key]) return; BODY_TH[key] = im;
     document.querySelectorAll("img.face,img.body").forEach((el) => { const h = BODY_WAIT.get(el.getAttribute("src")); if (h && h[0] === key) { try { const t = bodyCut(key, h[1], modeOf(el), im); BODY_WAIT.set(t, h); swapSrc(el, t, false); } catch (e) {} } }); };
-  im.src = "img/bs/" + (E.CHAR[key]?.img || key) + ".webp";
+  im.src = "img/bs/" + (PD.IMG_OF[key] || key) + ".webp";
 }
 function bodyLoad(key) {
   if (BODY_IMG[key] || BODY_LD[key] || !BODY[key]) return;
@@ -157,7 +159,7 @@ function bodyLoad(key) {
     document.querySelectorAll("img.face,img.body").forEach((el) => { const h = BODY_WAIT.get(el.getAttribute("src")); if (h && h[0] === key) { try { swapSrc(el, bodyCut(key, h[1], modeOf(el)), true); } catch (e) {} } });
     if (ui.wiz && !S && ui.wiz.step === 1) renderWiz();
   };
-  im.src = "img/body/" + (E.CHAR[key]?.img || key) + ".webp";
+  im.src = "img/body/" + (PD.IMG_OF[key] || key) + ".webp";
 }
 function bodyCut(key, i, mode, th) {
   const ck = key + i + mode + (th ? "s" : ""); if (BODY_CUT[ck]) return BODY_CUT[ck];
@@ -828,7 +830,7 @@ function pgCo() {
 }
 
 // 투잡 보드 머리
-function boardHead(k) { const j = D.SIDEJOBS[k] || { type: "", inc: "" }; const ri = SJ.rampInfo(S, k), tip = ri && !ri.done && !S.sj.coachOff ? (S.sj.rp[k].tip || "첫 달은 손님이 적어요. 홍보·후기 행동을 해야 올라가요.") : ""; return `<div class="row" style="margin-bottom:6px"><button class="btn sm" data-go="sj">‹ 투잡 탐색</button><span class="tag">${esc(j.type)}</span><span class="grow"></span><span class="tiny muted">${esc(j.inc)}</span></div>${ri && !ri.done ? `<div class="card" style="padding:8px 10px;margin-bottom:8px"><div class="tiny"><b class="gold">초반 고생 중</b> · 손님 기대치의 ${ri.pct}%</div>${meter(ri.pct, 100, "var(--gold)")}${skillLine(S, k, true)}${tip ? `<div class="tiny muted" style="margin-top:4px">코치: ${esc(tip)}</div>` : ""}</div>${marketBox(S, k, true)}` : marketBox(S, k)}${rivalBox(S, k)}`; }
+function boardHead(k) { const j = D.SIDEJOBS[k] || { type: "", inc: "" }; const ri = SJ.rampInfo(S, k), tip = ri && !ri.done && !S.sj.coachOff ? (S.sj.rp[k].tip || "첫 달은 손님이 적어요. 홍보·후기 행동을 해야 올라가요.") : ""; return `<div class="row" style="margin-bottom:6px"><button class="btn sm" data-go="sj">‹ 투잡 탐색</button><span class="tag">${esc(j.type)}</span><span class="grow"></span><span class="tiny muted">${esc(j.inc)}</span></div>${ri && !ri.done ? `<div class="card" style="padding:8px 10px;margin-bottom:8px"><div class="tiny"><b class="gold">초반 고생 중</b> · 손님 기대치의 ${ri.pct}%</div>${meter(ri.pct, 100, "var(--gold)")}${skillLine(S, k, true)}${tip ? `<div class="tiny muted" style="margin-top:4px">코치: ${esc(tip)}</div>` : ""}</div>${marketBox(S, k, true)}` : marketBox(S, k)}${rivalBox(S, k)}${HU.hidBox(S, k)}${H2U.box(S, k)}`; }
 
 // 투잡 탐색
 function pgSJ() {
@@ -851,7 +853,7 @@ function pgSJ() {
   return `<div class="card"><h3>투잡 탐색 <small>발견 ${Object.keys(sj.found).length}/21 · 하는 중 ${act.length}/${SJ.slots(S)}</small></h3>
     ${more("이해도 100%면 후보가 돼요 · 자세히", `<div class="small muted">투잡은 정해져 있지 않아요. 너튜브·리포트·세미나, 회사 소문, 그리고 <b class="gold">취미</b>에서 발견해요. 이해도가 100%가 되면 후보가 되고, 그때 내 능력치 궁합과 특성카드 연계가 보여요. 정보는 리서치뿐 아니라 회사·사람·취미·이벤트에서도 조금씩 모여요. 두 개까지 할 수 있고, 하나도 안 해도 괜찮아요. 투잡을 시작하면 성향 카드의 숨은 특성이 공개돼요.</div>`)}
     ${act.length ? `<div class="row wrap" style="margin-top:8px">${act.map((k) => `<button class="btn sm gold" data-go="${k}">${ic(D.SIDEJOBS[k].ic)} ${esc(D.SIDEJOBS[k].n)} 보드</button>`).join("")}</div>` : `<div class="tag" style="margin-top:8px">지금은 회사원 · 투잡 없음</div>`}</div>
-  <div class="acts" style="padding:0">${actRow("sj_youtube")}${actRow("sj_seminar")}</div>
+  ${H2U.sjBox(S)}<div class="acts" style="padding:0">${actRow("sj_youtube")}${actRow("sj_seminar")}</div>
   <div class="filters">${[["all", "전체 21"], ["found", "발견"], ["play", "지금 플레이 가능"]].map(([k, n]) => `<button class="${ui.sjf === k ? "on" : ""}" data-sjf="${k}">${n}</button>`).join("")}</div>
   <div class="sjgrid">${keys.filter(F[ui.sjf] || F.all).map(card).join("")}</div>`;
 }
@@ -1060,7 +1062,7 @@ const HELP_DESC = { pr_clean: "파티룸 청소·관리(청소비 −30%, 관리
 const CINE_BG = { lover: "rooftop", propose: "rooftop", wedding: "wedding", baby: "apt", breakup: "street", promo: "desk", fired: "desk", quit: "desk", burnout: "home", pr_open: "partyroom", pr_multi: "partyroom", cs_first: "consult", cs_pen: "consult", cs_name: "consult", ab_first: "airbnb", ab_super: "airbnb", uc_open: "ucafe", uc_multi: "ucafe", in_10k: "home", in_deal: "home", house: "apt", seed: "home", fire: "rooftop", grad: "library", parents_bye: "parents" };
 Object.assign(CINE_BG, { full_pr: "partyroom", full_cs: "consult", full_airbnb: "airbnb", full_ucafe: "ucafe", full_insta: "home" });
 const CINE_TAG = { full_pr: "본잡 전환", full_cs: "본잡 전환", full_airbnb: "본잡 전환", full_ucafe: "본잡 전환", full_insta: "본잡 전환", lover: "연애", propose: "연애", wedding: "결혼", baby: "가족", breakup: "연애", parents_bye: "가족", promo: "회사", fired: "회사", quit: "회사", burnout: "나", pr_open: "파티룸", pr_multi: "파티룸", cs_first: "컨설팅", cs_pen: "컨설팅", cs_name: "컨설팅", ab_first: "숙소", ab_super: "숙소", uc_open: "무인카페", uc_multi: "무인카페", in_10k: "인별그램", in_deal: "인별그램", house: "인생", seed: "인생", fire: "인생", grad: "인생", arc3: "인연", ...RIVAL_CINE_TAG };
-Object.assign(CINE_BG, IGA.CINE_BG); Object.assign(CINE_TAG, IGA.CINE_TAG); // 인별 화보(핫플·콜라보·시대의 컨셉·브랜드)
+Object.assign(CINE_BG, IGA.CINE_BG); Object.assign(CINE_TAG, IGA.CINE_TAG); Object.assign(CINE_BG, HU.CINE_BG, H2U.CINE_BG); Object.assign(CINE_TAG, HU.CINE_TAG, H2U.CINE_TAG); // 인별 화보(핫플·콜라보·시대의 컨셉·브랜드)
 const COUPLE = new Set(["lover", "propose", "wedding", "baby"]);
 function cineKey(sc) { return sc.cine || (sc.kind === "wedding" ? "propose" : sc.kind === "arc" && sc.stage === 3 ? "arc3" : D.TITLE_CINE[sc.title]) || null; }
 function cineHtml(p) {
@@ -1308,7 +1310,7 @@ function showScene() {
   const pre = pf && (pf.msg || pf.lines.length) ? `<div class="prefx">${pf.msg ? `<span>${esc(pf.msg)}</span>` : ""}${pf.lines.filter(Boolean).map((l) => `<b>${esc(l)}</b>`).join("")}</div>` : "";
   const expr = sc.expr || (sc.kind === "meet" ? "neutral" : sc.kind === "wedding" ? "blush" : sc.kind === "arc" ? (sc.stage === 3 ? "blush" : "smile") : "neutral");
   openWin(`<div class="scene">${pre}<h2>${esc(sc.title)}${sc.tag ? ` <span class="tag gold">${esc(sc.tag)}</span>` : ""}</h2>
-    ${who ? stageWho(sc.who, expr, "full", sceneBg(sc), `<b>${esc(who.name)}</b><span>${esc(who.job)}</span>`) ?? `<div class="who"><div class="pic">${img(faceSrc(sc.who, expr))}</div><div><b>${esc(who.name)}</b><div class="tagline">${esc(who.job)} · ${esc(who.tagline || "")}</div></div></div>` : ""}
+    ${who ? stageWho(sc.who, expr, "full", sceneBg(sc), `<b>${esc(who.name)}</b><span>${esc(who.job)}</span>`) ?? `<div class="who${sc.mentor ? " big" : ""}"><div class="pic">${img(faceSrc(sc.who, expr))}</div><div><b>${esc(who.name)}</b><div class="tagline">${esc(who.job)} · ${esc(who.tagline || "")}</div></div></div>` : ""}
     <div class="txt">${esc(sc.text)}</div>
     <div class="choices">${sc.choices.map((c, i) => `<button data-ch="${i}"><span>${esc(c.t)}</span>${c.pct != null ? `<span class="pct">${D.STATS[c.check.stat]} ${c.pct}%</span>` : ""}</button>`).join("")}</div></div>`, (el) => el.querySelectorAll("[data-ch]").forEach((b) => b.onclick = () => {
     const res = E.choose(S, +b.dataset.ch); save(); FX.play(res.ok === false ? "bad" : "ok");
@@ -1543,7 +1545,7 @@ function hallTabs(root) {
     box.querySelectorAll("[data-hallj]").forEach((b) => b.onclick = () => { d.job = b.dataset.hallj; box.querySelectorAll("[data-hallj]").forEach((x) => x.classList.toggle("on", x === b)); draw(); });
   });
 }
-function hallList(h) { return `<div class="hall">${(h || []).map((x, i) => `<div><b>${i + 1}</b><span class="grow">${esc(x.name)} · ${esc(x.path)}${x.full ? " · 전업" : ""}</span><span>${x.fireAt ? `${fireTxt(x)} 파이어` : `${x.age}세`}</span><b class="gold">${won(x.nw)}</b></div>`).join("") || '<div class="muted small">아직 없어요</div>'}</div>`; }
+function hallList(h) { return `<div class="hall">${(h || []).map((x, i) => `<div><b>${i + 1}</b><span class="grow">${esc(x.name)} · ${esc(x.path)}${x.full ? " · 전업" : ""}${x.hid?.length ? " · 🗝 히든 길" : ""}</span><span>${x.fireAt ? `${fireTxt(x)} 파이어` : `${x.age}세`}</span><b class="gold">${won(x.nw)}</b></div>`).join("") || '<div class="muted small">아직 없어요</div>'}</div>`; }
 // ───────── 새 인생 만들기: 나 → 능력치 룰렛 → 전공 → 회사·직무 → 성향 카드 ─────────
 const WSTEPS = ["나", "능력치", "전공", "회사·직무", "성향"];
 // ───────── N회차(회귀) ─────────
@@ -1590,7 +1592,7 @@ function renderGift() {
 }
 function ngGiftsToStart(w) {
   const g = w.gifts || {};
-  return { n: ngNext(meta()), hard: !!w.hard, cash: (g.cash || 0) * 300, statUp: (g.stat || 0) * 3, know: g.know || [], friends: g.friend || [], gifts: Object.keys(g).filter((k) => (Array.isArray(g[k]) ? g[k].length : g[k])) };
+  return { n: ngNext(meta()), hard: !!w.hard, cash: (g.cash || 0) * 300, statUp: (g.stat || 0) * 3, know: g.know || [], friends: g.friend || [], past: (meta().hidPast || []).slice(-2), gifts: Object.keys(g).filter((k) => (Array.isArray(g[k]) ? g[k].length : g[k])) };
 }
 function ngEndRecord(m, f) {
   // 이번 인생에서 받은 기억 포인트와 도감
@@ -1767,7 +1769,8 @@ function renderEnding() {
     m.runs = m.runs || []; m.runs.push({ age, kind, nw: Math.round(f.nw), t: Date.now(), fireAt: S.fireAt || null });
     if (S.fireAt && (!m.best || S.fireAt < m.best)) m.best = S.fireAt;
     ngEndRecord(m, f);
-    const rec = { name: S.me.name, nw: Math.round(f.nw), fireAt: S.fireAt || null, fireM: S.fireAtM || (S.fireAt ? S.fireAt * 12 : null), age, path: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·") || "회사원", full: BIG.isFull(S), t: Date.now(), kind };
+    m.hidPast = [...(m.hidPast || []), H2U.runRec(S)].slice(-5); // v4.30 회차의 길: 지난 인생에서 연 히든 길·한 투잡
+    const rec = { name: S.me.name, nw: Math.round(f.nw), fireAt: S.fireAt || null, fireM: S.fireAtM || (S.fireAt ? S.fireAt * 12 : null), age, path: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·") || "회사원", full: BIG.isFull(S), t: Date.now(), kind, hid: [...HU.hidNames(S), ...H2U.names(S)] };
     // 개인회생으로 끝난 판은 명예의 전당에 올리지 않는다
     if (S.over !== "bankrupt") { m.hall = (m.hall || []).concat(rec).sort((a, b) => b.nw - a.nw).slice(0, 10); S.hallRank = m.hall.indexOf(rec) + 1; if (rec.fireAt) { m.hallFire = (m.hallFire || []).concat(rec).sort(fireSort).slice(0, 10); S.hallFireRank = m.hallFire.indexOf(rec) + 1; } ST.hallSubmit(rec); }
     else S.hallRank = 0;
@@ -1801,6 +1804,7 @@ function epilogue() {
   if (S.pr.rooms.length) L.push(`파티룸 ${S.pr.rooms.length}곳은 ${S.pr.sys.manager ? "매니저가 맡아 지금도 돌아간다" : "하나씩 양도하고 마지막 한 곳만 남겼다"}.`);
   if (S.cs.lv >= 3 && S.moments?.cs_end_mentor === undefined) L.push(`취업컨설팅으로 ${S.cs.passes}명이 합격했다. 가끔 "선생님 덕분에" 하는 연락이 온다.`);
   for (const e of REG.endsOf(S)) L.push(e.epi || `${D.SIDEJOBS[e.job].n}: ${e.title}`); // 투잡 엔딩
+  L.push(...H2U.epi(S)); // v4.30 히든 길 후일담(물려받기 엔딩 등)
   L.push(S.ended === "fire" ? "70세, 손주 돌잔치를 내가 만든 파티룸에서 했다." : "60세, 은퇴식에서 후배에게 말했다. \"퇴근 후 두 시간이 인생을 바꿔.\"");
   return L;
 }
@@ -1856,6 +1860,8 @@ function autoTest(n) {
   if (location.hash.includes("sw2")) { const sw = $app.querySelector("[data-sw2]"); if (sw) sw.scrollLeft = 9999; }
   if (h.includes("instatest")) setTimeout(() => IGA.selfTest(igctx()), 300); // 인별 시험(#auto6-instatest)
   { const ig = h.match(/igtab_([a-z]+)/); if (ig) setTimeout(() => { S.ap = Math.max(S.ap, 6); if (ig[1] === "inboxplay" || ig[1] === "inboxdone") INS.testInbox(S, E.R(S)); if (h.includes("igdm")) { S.ins.dm = []; for (const k of ["celeb", "fan", "scam", "deal"]) INS.testDm(S, E.R(S), k); } if (h.includes("igedit")) { IGA.openInsta(igctx(), "feed"); document.querySelector("[data-igedit]")?.click(); return; } IGA.openInsta(igctx(), ig[1] === "inboxdone" ? "inboxplay" : ig[1]); if (ig[1] === "inboxdone") { document.querySelectorAll("[data-igpick]").forEach((b, i) => { if (i % 3 === 0) b.click(); }); document.querySelector("[data-igdone]")?.click(); } }, 500); } // 인별 앱 화면 보기(#auto6-ins-igtab_feed|inbox|inboxplay|inboxdone|dm|ins|deal, -igdm, -igedit)
+  HU.demo({ S, E, showScene, render, save }, h); // 스승·선배·히든 길 시험(#auto6-mstest-cs-run 등)
+  H2U.demo({ S, E, showScene, render, save, go }, h); // 다른 방식 히든 길 시험(#auto6-h2test-fail-run · -h2line-era · -h2hint-hide)
   if (h.includes("jptest")) setTimeout(jpTest, 300); // 한방 전략 시험(#auto-jptest)
   { const fm = h.match(/-f30([a-z]+)/), jk = ["tutoring", "tarot"].find((k) => h.includes("-" + k)); if (fm && (jk || h.includes("-cs-"))) setTimeout(async () => { const r = E.R(S), sc = jk ? (await import(`./engine/jobs/${jk}.js`)).f30Test?.(S, r, fm[1]) : CS.f30Scene(S, r, fm[1]); if (sc) { E.openScene(S, sc); showScene(); } }, 400); } // 컨설팅·과외·타로 특이 요소 장면 시험(#auto6-cs-f30bid · #auto6-tutoring-f30boost · #auto6-tarot-f30heavy)
   { const pm = h.match(/-ppl(many|few|dex|map)/); if (pm) import("./people_ui.js").then((M) => { if (pm[1] !== "few") M.demo(S, E, pm[1] !== "few", RV_DEMO); save(); render(); pplOpen(pm[1] === "dex" ? "dex" : "map"); }); } // 인물 도감·관계도 시험: -pplfew(관계도 적을 때) -pplmany(많을 때) -ppldex(도감)

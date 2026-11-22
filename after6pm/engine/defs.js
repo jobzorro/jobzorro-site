@@ -977,7 +977,7 @@ export const CS_LECT = { rev: 10, p: 0.2, fee: 50, perSkill: 0.6, perFame: 0.8, 
 // v4.25b 파이어율 조정 마지막 수단: 모든 투잡의 이번 달 이익(라이벌·시장 반영 뒤)에서 이 비율만큼 '투잡 부대비용'(교통·소모품·장비·잡비)으로 뺀다. 계산은 engine/market.js
 export const SIDE_CUT = 0.15;
 // v4.27 투잡별 부대비용(음수면 보너스). 없으면 SIDE_CUT. CRUISE: 같은 투잡 7년 차부터 줄어 10년 차에 v만큼 덜 뗀다(단골·입소문으로 순항)
-export const SIDE_ADJ = { pr: -0.12, cs: 0.46, cs_career: 0.76, airbnb: -0.95, ucafe: -0.46, tutoring: 0.18, chicken: 0.25, insta: 0.32, vibe: 0.06, tarot: -0.15, webnovel: -0.3 };
+export const SIDE_ADJ = { pr: -0.12, cs: 0.48, cs_career: 0.76, airbnb: -0.95, ucafe: -0.46, tutoring: 0.18, chicken: 0.25, insta: 0.39, vibe: 0.06, tarot: -0.15, webnovel: -0.3 };
 export const CRUISE = { from: 7, full: 10, v: 0.25 };
 // v4.27 투자 국면: 보통 → 하락장(b) → 회복장(r). 하락장은 평균 66달에 한 번, 9~16달 동안 월 −3%, 회복장 18~30달 동안 월 +1.2%
 export const INV_PH = { p: 1 / 66, bear: [9, 16], bearMu: -0.03, rec: [18, 30], recMu: 0.012, sideChurn: 0.5 };

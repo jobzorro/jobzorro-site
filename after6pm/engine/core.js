@@ -19,7 +19,7 @@ import { guestMonth, GS_CHOOSE } from "./guest.js"; // 손님 이벤트(v4.25)
 import { flirtMonth } from "./flirt.js"; // 연애·결혼 19금(v4.25)
 import { rivalMonth, RV_CHOOSE } from "./rival.js"; // 라이벌 제도(v4.25)
 import { marketMonth, MK_CHOOSE } from "./market.js"; import { spaceMonth } from "./space.js"; // 시장 충격(v4.25b)
-import { jackpotMonth, JP_CHOOSE } from "./jackpot.js"; // 한방 전략(v4.27): 컨설팅·타로·웹소설 큰 판 제안과 결과
+import { jackpotMonth, JP_CHOOSE } from "./jackpot.js"; import { mentorMonth, MS_CHOOSE, afterAct as msAfterAct, msFix } from "./mentor.js"; import { hiddenMonth, HD_CHOOSE } from "./hidden.js"; import { hidden2Month, H2_CHOOSE } from "./hidden2.js"; // 다른 방식의 히든 길(v4.30) // 스승·선배·히든 길(v4.29) // 한방 전략(v4.27): 컨설팅·타로·웹소설 큰 판 제안과 결과
 import * as GC from "./cards.js"; // 성장 카드·아이템 60개(v4.25)
 import * as IT from "./items.js";
 
@@ -118,13 +118,13 @@ export function newGame(o) {
   // 연구 기록 보너스(메타)
   if (o.meta?.bonusCash) s.cash += o.meta.bonusCash;
   // 이번 판에 등장하는 인연: 100명 중 70명 (로그라이크)
-  const pool = CHARS.filter((c) => !c.celeb).map((c) => c.id); // 유명인(인별)은 인별에서 만난다
+  const pool = CHARS.filter((c) => !c.celeb && !c.mentor).map((c) => c.id); // 유명인(인별)은 인별에서 만난다
   s.cast = r.shuffle(pool.filter((id) => !CHAR[id]?.co)).slice(0, Math.min(pool.length, Math.max(12, Math.round(pool.length * 0.7))));
   s.cast.push(...CHARS.filter((c) => c.co).map((c) => c.id)); // 회사 동료(신입은 입사 사건 뒤에 나온다)
   if (s.me.perks.includes("yr3")) for (const id of r.shuffle(CHARS.filter((c) => c.co && !c.hire).map((c) => c.id)).slice(0, 2)) { const x = ensureRel(s, id); x.aff = Math.max(x.aff, 25); } // 3년 차: 사내 인맥
   // N회차(회귀): 지난 인생의 선물
   const ng = o.ng || {};
-  s.ng = { n: Math.max(1, ng.n || 1), hard: !!ng.hard, gifts: ng.gifts || [] };
+  s.ng = { n: Math.max(1, ng.n || 1), hard: !!ng.hard, gifts: ng.gifts || [], past: ng.past || [] }; // past: 지난 인생 히든 길 기록(v4.30 회차의 길)
   if (ng.cash) s.cash += ng.cash;
   for (const j of ng.know || []) if (D.SIDEJOBS[j]) { SJ.found(s, j, "지난 인생의 기억"); s.sj.know[j] = (s.sj.know[j] || 0) + 10; }
   for (const id of ng.friends || []) if (CHAR[id]) { if (!s.cast.includes(id)) s.cast.push(id); const x = ensureRel(s, id); x.aff = Math.max(x.aff, 30); x.deja = true; }
@@ -167,7 +167,7 @@ export function calcApMax(s) {
   if (s.grad && !s.grad.done) ap -= 1; // 대학원 수업
   if (s.fam.parents < 45 && s.fam.parents > 0) ap -= 1;
   if (s.mental < 25) ap -= 2;
-  ap += spouseAp(s) + kidMotiveAp(s);
+  ap += spouseAp(s) + kidMotiveAp(s) + (s.h2?.ap || 0); // v4.30 다른 방식 히든 길(부부 사업 +1·사내 TF −1)
   ap += s.apNext;
   if (s.burnLeft > 0) ap = Math.floor(ap * 0.5);
   return Math.max(3, ap);
@@ -309,7 +309,7 @@ export function act(s, id, arg) {
     const j = jobOf(id), P = REG.byAct(id); res = (P ? P.act(s, r, id, arg, boost) : j === "pr" ? PR.act(s, r, id, arg, boost) : j === "cs" ? CS.act(s, r, id, arg, boost) : j === "airbnb" ? AB.act(s, r, id, arg, boost) : j === "ucafe" ? UC.act(s, r, id, arg, boost) : INS.act(s, r, id, arg, boost)) || res;
     if (s.fam.spouse === null && Object.values(s.rel).some((x) => x.lover)) s.mental = clamp(s.mental + mod(s, "loverSideMental", 0), 0, 100);
     SJ.onAct(s, id); // 초반 고생: 마케팅·후기·품질 행동 점수(sj.js)
-  } else if (/^(sj_|hb_)/.test(id)) res = SJ.act(s, r, id, arg) || res;
+  } else if (/^(sj_|hb_)/.test(id)) { res = SJ.act(s, r, id, arg) || res; msAfterAct(s, r, id, arg, res); } // 스승 만남·선배 2턴(mentor.js)
   else if (/^bg_/.test(id)) res = BIG.act(s, r, id, arg) || res;
   else if (ACT_FN[id]) res = ACT_FN[id](s, r, arg) || res;
   res.ok = true;
@@ -631,7 +631,7 @@ export function choose(s, i) {
   s.pending = null;
   if (sc.who && sc.onChoose !== "talk_pick" && (okv === true || (res.eff?.aff || 0) >= 6) && r.chance(0.12)) { const k = ch.check?.stat && D.STATS[ch.check.stat] ? ch.check.stat : r.pick(["talk", "charm"]); lines.push(`잘 고른 한마디 · ${D.STATS[k]} +${gainStat(s, k, 1).toFixed(1)}`); } // v4.25: 잘 고르면 가끔 수치도
   if ((okv === true || (res.eff?.aff || 0) >= 8) && sc.kind !== "year") lines.push(...GC.luckyShard(s, 0.05)); // 좋은 선택: 가끔 카드 조각(v4.25)
-  if (sc.kind === "event" && !/^(sj_|af_|fam_|talk_)/.test(sc.onChoose || "")) { const l = SJ.hearInfo(s, r, "event", sc.who); if (l) lines.push(l); }
+  if (sc.kind === "event" && !/^(sj_|af_|fam_|talk_|ms_|sn_|hd_|h2_)/.test(sc.onChoose || "")) { const l = SJ.hearInfo(s, r, "event", sc.who); if (l) lines.push(l); }
   return { text: res.text || "", lines, ok: okv, check: ch.check ? `${D.STATS[ch.check.stat]} 판정 ${okv ? "성공" : "실패"}` : null };
 }
 // 장소 장면(v4.25): 최근 8달 안에 본 장면은 쉬고, 취업·자소서 장면은 컨설팅에 관심 없을 때 덜 나온다
@@ -729,6 +729,8 @@ for (const [k, fn] of Object.entries(RV_CHOOSE)) { if (SCENE_FN[k] || !k.startsW
 for (const [k, fn] of Object.entries({ ...PR.PR_CHOOSE, ...AB.AB_CHOOSE, ...UC.UC_CHOOSE })) { if (SCENE_FN[k]) console.warn(`[공간 타이쿤] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; } // v4.28 후기·가격 전쟁·명의
 for (const [k, fn] of Object.entries(MK_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("mk_")) console.warn(`[시장] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 for (const [k, fn] of Object.entries(INS.CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("ig_")) console.warn(`[인별] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; } // 인별 v2 장면
+for (const k of ["ms_q", "sn_q", "ms_side", "hd_hint", "hd_time"]) { if (SCENE_FN[k]) console.warn(`[스승·히든 길] onChoose ${k} 이름 확인`); else SCENE_FN[k] = (...a) => (MS_CHOOSE[k] || HD_CHOOSE[k])(...a); } // 늦게 찾기: mentor.js·hidden.js 를 먼저 불러도 순환 참조가 안 깨지게
+for (const k of ["h2_hint", "h2_resv", "h2_era", "h2_tf", "h2_deja"]) { if (SCENE_FN[k]) console.warn(`[히든 길2] onChoose ${k} 이름 확인`); else SCENE_FN[k] = (...x) => H2_CHOOSE[k](...x); } // v4.30 늦게 찾기
 for (const [k, fn] of Object.entries(JP_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("jp_")) console.warn(`[한방 전략] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 for (const [k, fn] of Object.entries(FAM_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("fam_")) console.warn(`[가족 이벤트] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 for (const P of REG.JOBS) for (const [k, fn] of Object.entries(P.choose || {})) { if (SCENE_FN[k] || !k.startsWith(P.prefix)) console.warn(`[투잡 등록표] ${P.key}: onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
@@ -836,8 +838,10 @@ export function endMonth(s) {
   BIG.month(s, r, notes, scenes);
   rivalMonth(s, r, notes, scenes); // 라이벌(v4.25): 투잡 이익 압박·반사이익, 등장·이벤트
   for (const j of (s.sj?.active || [])) { const k = j === "cs" ? D.NICHES[s.cs?.niche || "newgrad"]?.stat : D.MG_STAT.of[j]; if (k) gainStat(s, k, D.JOB_XP, "jobxp_" + j); } // v4.28d 실전 경험
+  hiddenMonth(s, r, notes, scenes); hidden2Month(s, r, notes, scenes); // 히든 길(v4.29) + 다른 방식의 히든 길(v4.30, s.h2.cut·ap): 조건·낌새·문 열림·보상(s.hid.cutNow → market.js sideCut)
   spaceMonth(s, r, notes); // 공간형 유지비(v4.27): 재계약 5%·가구 교체·규모 문제
   marketMonth(s, r, notes, scenes); // 시장 충격(v4.25b): 라이벌 압박 뒤 남은 이익에 시장 배수, 새 충격 장면
+  msFix(s); mentorMonth(s, r, notes, scenes); // 스승·선배(v4.29): 스승의 편지·보험 특강·인별 DM·투잡 인연
   jackpotMonth(s, r, notes, scenes); // 한방 전략(v4.27): 고정 수입·이익 배율·결과·새 제안(다른 event 장면 있으면 제안 쉼)
   if ([3, 4, 9, 10].includes(s.cal) && SYN.on(s, "season")) { s.mental = clamp(s.mental - 2, 0, 100); notes.push("성수기 충돌: 컨설팅 문의와 파티룸 주말 관리가 겹쳤다(멘탈 −2)"); }
   if (s.grad && !s.grad.done) {
@@ -899,6 +903,7 @@ export function endMonth(s) {
   side += (M.inc["라이벌 반사이익"] || 0) - (M.exp["라이벌 경쟁"] || 0); // 라이벌(v4.25)
   side += (M.inc["시장 영향"] || 0) - (M.exp["시장 영향"] || 0) - (M.exp["투잡 부대비용"] || 0) + (M.inc["단골·입소문"] || 0); // 시장 충격·부대비용(v4.25b)
   side += (M.inc["한방 전략"] || 0) - (M.exp["한방 전략"] || 0); // 한방 전략(v4.27)
+  side += (M.inc["히든 길"] || 0) - (M.exp["히든 길"] || 0); // 히든 길(v4.29)
   s.taxBase += Math.max(0, side);
   if (s.cal === 12) { s.lastYearSide = s.taxBase; s.taxBase = 0; }
   s.lastSide = Math.round(side);

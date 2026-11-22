@@ -16,6 +16,8 @@ function places(c) {
 }
 function roleHint(c) {
   const L = [], jb = { partyroom: "파티룸", consult: "컨설팅" };
+  if (c.mentor) L.push(`${{ cs: "컨설팅", pr: "파티룸", airbnb: "에어씨앤씨", ucafe: "무인카페", chicken: "치킨", insta: "인별", tarot: "타로", webnovel: "웹소설", tutoring: "화상과외", vibe: "바이브코딩" }[c.mentor] || ""} 스승 · 탐색하다 운 좋으면 만난다`);
+  for (const sd of c.side || []) if (L.length < 2) L.push(sd.role);
   if (c.helper?.board && jb[c.helper.board]) L.push(`${jb[c.helper.board]}을 하면 도와줄지도`);
   if (c.customer?.board && jb[c.customer.board]) L.push(`${jb[c.customer.board]} 손님으로 올지도`);
   if ((c.roles || []).includes("romance") && c.single !== false) L.push("인연이 깊어질 수도");
@@ -27,6 +29,8 @@ function relTop(o) {
   if (b & BIT.lover) return ["연인", "♥"];
   if (b & BIT.affair) return ["비밀 관계", "🤫"];
   if (b & BIT.mentee) return ["특별한 제자", "🎓"];
+  if (b & BIT.master) return ["스승", "🧭"];
+  if (b & BIT.rival) return ["라이벌", "⚔"];
   if (a >= 70) return ["평생 친구", "⭐"];
   if (b & BIT.helper) return ["투잡 조력자", "🤝"];
   if (a >= 45 || b & BIT.friend) return ["친한 사이", "😊"];

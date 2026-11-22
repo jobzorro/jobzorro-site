@@ -1,13 +1,15 @@
 // 인물 도감 기록(v4.27, 작은 파일 · 처음부터 받음). 큰 화면(도감·관계도)은 people_ui.js 를 열 때 받는다.
 // 기록: meta.dex = { 인물id: [처음 만난 회차(0=예전 기록), 최고 호감(5 단위), 최고 이야기 단계, 관계 비트] }
-// 관계 비트: 1 친한 사이(호감 45+) · 2 연인 · 4 배우자 · 8 비밀 관계 · 16 손님 · 32 제자 · 64 조력자
+// 관계 비트: 1 친한 사이(호감 45+) · 2 연인 · 4 배우자 · 8 비밀 관계 · 16 손님 · 32 제자 · 64 조력자 · 128 스승(내가 제자) · 256 라이벌(v4.29)
 import { BODY } from "./gen/body.js";
 import { ART } from "./gen/art.js";
 
-export const BIT = { friend: 1, lover: 2, spouse: 4, affair: 8, client: 16, mentee: 32, helper: 64 };
+export const BIT = { friend: 1, lover: 2, spouse: 4, affair: 8, client: 16, mentee: 32, helper: 64, master: 128, rival: 256 };
+// 그림을 빌려 쓰는 인물(img 칸): 자기 그림(BODY[id])이 생기면 자기 그림, 없을 때만 별칭. ui.js 가 켤 때 채운다
+export const IMG_OF = {};
 export function relBits(x) {
   if (!x) return 0;
-  return (x.aff >= 45 ? 1 : 0) | (x.lover ? 2 : 0) | (x.spouse ? 4 : 0) | (x.affair ? 8 : 0) | (x.client ? 16 : 0) | (x.mentee ? 32 : 0) | (x.helper ? 64 : 0);
+  return (x.aff >= 45 ? 1 : 0) | (x.lover ? 2 : 0) | (x.spouse ? 4 : 0) | (x.affair ? 8 : 0) | (x.client ? 16 : 0) | (x.mentee ? 32 : 0) | (x.helper ? 64 : 0) | (x.master ? 128 : 0) | (x.rival ? 256 : 0);
 }
 const a5 = (v) => Math.max(0, Math.min(100, Math.floor((+v || 0) / 5) * 5));
 
@@ -47,8 +49,10 @@ export const GROUPS = {
   cs: { n: "컨설팅 판", s: "컨설팅", c: "#5fe0a0", ic: "📝" },
   insta: { n: "인별 유명인", s: "인별", c: "#b48cff", ic: "📸" },
   town: { n: "동네·취미", s: "동네", c: "#f5c04e", ic: "🏠" },
+  airbnb: { n: "에어씨앤씨 판", s: "에어", c: "#4fd1d9", ic: "🏠" }, ucafe: { n: "무인카페 판", s: "무인카페", c: "#c8a27a", ic: "☕" }, chicken: { n: "치킨 판", s: "치킨", c: "#ff9f5a", ic: "🍗" },
+  tarot: { n: "타로 판", s: "타로", c: "#a98bff", ic: "🔮" }, webnovel: { n: "웹소설 판", s: "웹소설", c: "#7fb2ff", ic: "📚" }, tutoring: { n: "화상과외 판", s: "과외", c: "#a3e05f", ic: "🎧" }, vibe: { n: "바이브코딩 판", s: "바이브", c: "#6ee7b7", ic: "💻" },
 };
-const ALIAS = { 인별: "insta", 인별그램: "insta", insta: "insta", 회사: "co", co: "co", 파티룸: "pr", partyroom: "pr", pr: "pr", 컨설팅: "cs", consult: "cs", cs: "cs", 동네: "town", 취미: "town", town: "town" };
+const ALIAS = { 에어씨앤씨: "airbnb", 무인카페: "ucafe", 치킨: "chicken", 타로: "tarot", 웹소설: "webnovel", 화상과외: "tutoring", 바이브코딩: "vibe", 인별: "insta", 인별그램: "insta", insta: "insta", 회사: "co", co: "co", 파티룸: "pr", partyroom: "pr", pr: "pr", 컨설팅: "cs", consult: "cs", cs: "cs", 동네: "town", 취미: "town", town: "town" };
 const EXTRA_C = ["#ff9f5a", "#4fd1d9", "#ff6b7f", "#a3e05f", "#e0b35f"];
 export function groupOf(c) {
   const g = c?.group || c?.grp || c?.dex;
@@ -69,7 +73,7 @@ export function groupOf(c) {
 // 반환: style 문자열(background...). 그림이 없으면 null
 export function thumbStyle(id, px) {
   const b = BODY[id]?.[0];
-  if (b) { const s = px / b[2]; return `background-image:url(img/bs/${id}.webp);background-size:${(720 * s).toFixed(1)}px auto;background-position:${(-b[0] * s).toFixed(1)}px ${(-b[1] * s).toFixed(1)}px`; }
+  if (b) { const s = px / b[2]; return `background-image:url(img/bs/${IMG_OF[id] || id}.webp);background-size:${(720 * s).toFixed(1)}px auto;background-position:${(-b[0] * s).toFixed(1)}px ${(-b[1] * s).toFixed(1)}px`; }
   if (ART.has(id)) return `background-image:url(img/cs/${id}.webp);background-size:300% 200%;background-position:0 0`;
   return null;
 }
