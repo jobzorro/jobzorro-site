@@ -1,0 +1,419 @@
+{
+  "title": "CAREER BRIEFING",
+  "date": "2026-11-24",
+  "generated_at": "2026-11-24 07:55",
+  "stats": {
+    "collected": 1873,
+    "deduped": 1789,
+    "recent": 827,
+    "fresh": 759,
+    "relevant": 98,
+    "published": 20,
+    "feeds": 30,
+    "dead_feeds": []
+  },
+  "sections": [
+    {
+      "key": "hiring",
+      "name": "채용 시즌·공고",
+      "en": "HIRING NOW",
+      "desc": "대기업·계열사·중견·외국계·공기업이 지금 사람을 뽑는 공고와 일정",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "전석훈 경기도의원, 기획 '잡아드림'…전국 채용정보 제공 확대·웹 통합도 추진",
+          "lead": "경기도 일자리앱 '잡아드림'의 지도 기반 채용정보 서비스가 서울 등 지자체 7곳으로 확대됐다.",
+          "summary": "23일 전석훈 경기도의원(더불어민주당·성남3)이 경기도일자리재단에서 받은 '잡아드림 추진현황'에 따르면 해당 서비스는 서울시·강원도·전북특별자치도·영월군·이천시·용인시·하남시 등 지자체 7곳 홈페이지와 플랫폼에 연계·보급됐다. 잡아드림은 구직자가 현재 위치나 희망 근무지역 주변의 채용정보를 지도에서 확인할 수 있는 서비스다. 기존 경기도·수도권 중심이",
+          "url": "https://www.etnews.com/20261123000521",
+          "source": "전자신문",
+          "published": "2026-11-23 23:53",
+          "score": 24,
+          "keywords": [
+            "채용정보",
+            "채용"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "\"청년 채용정보 공개 확대·돌봄노동자 표준임금 도입\" 제안",
+          "lead": "(서울=연합뉴스) 한혜원 기자 = 경제사회노동위원회는 23일 김지형 위원장 주재로 청년위원회, 여성위원회, 비정규직위원회 등 계층별 위원회 1차...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261123130200530",
+          "source": "연합뉴스",
+          "published": "2026-11-23 15:53",
+          "score": 23,
+          "keywords": [
+            "채용정보",
+            "채용"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "\"채용공고에 임금 공개해야\"…경사노위, 정부에 정책 첫 제안",
+          "lead": "경제사회노동위원회(경사노위) 계층별위원회가 이재명 정부 출범 이후 처음으로 주요 정책 과제를 정부에 제안했다.",
+          "summary": "기업이 채용공고에 임금과 근로조건을 의무적으로 공개해 청년 구직자가 지원 전에 일자리 정보를 확인할 수 있도록 하자는 게 핵심이다. 정부가 연내 입법을 목...",
+          "url": "https://www.edaily.co.kr/News/Read?newsId=02863446645648672&mediaCodeNo=257",
+          "source": "이데일리",
+          "published": "2026-11-23 15:39",
+          "score": 20,
+          "keywords": [
+            "채용공고",
+            "채용"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "\"게임 넘어 AI·데이터 실증 무대로\"…한국e스포츠산업학회, 청년 일자리 6대 정책 제안 : 네이버 블로그",
+              "source": "Naver Blog",
+              "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxOUWVubkRnNUVTcWhsNkNTaHNUV0twMExVWXBhOEl4eDlBdnVIUy1UX3B1bG1DUThvY1Q0Q0l5RjNpakpSX25FZEZ2SGd0TUptUmlsRXZNS3RJYlgyaGJObGRhTWhrdkVsZWR1OFBNeE1rbEM0SUo2ZUlxcVVRTFl2QWdudExPMGphZzhveUFHUQ?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "title": "[전남광주소식] 앰코코리아, 24일 조선대서 채용설명회",
+          "lead": "(전남광주=연합뉴스) 조선대학교 대학일자리플러스센터는 오는 24일 광주고용센터, 앰코코리아와 오는 '앰코코리아 취업특강 및 1대1 컨설팅'을 주...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261123139600054",
+          "source": "연합뉴스",
+          "published": "2026-11-23 16:16",
+          "score": 16,
+          "keywords": [
+            "채용설명회",
+            "채용"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 5,
+          "title": "HBM 양산부터 설계까지…마이크론, 'K-반도체 인재 확보' 전방위 공세",
+          "lead": "미국 마이크론테크놀로지가 아시아 3대 핵심 생산·연구 거점인 대만·싱가포르·일본에서 근무할 한국 반도체 인재 확보에 나섰다.",
+          "summary": "서울에서 대규모 채용설명회를 열고 팹 공정·양산 인력부터 고대역폭메모리(HBM) 수석 설계 엔지니어까지 전방위로 한국 엔지니어 모집을 시작했다. 23일 서울 삼성동 코엑스에서 열린 마이크론 해외 채용 현장 면접장에는 이른 아침부터 정장 차림 취업준비생과 주니어 엔지니어 수십명이 대기석을 메운 채 면접 순서를 기다리는 등",
+          "url": "https://www.etnews.com/20261123000358",
+          "source": "전자신문",
+          "published": "2026-11-23 14:29",
+          "score": 14,
+          "keywords": [],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "moves",
+      "name": "이직·연봉·HR",
+      "en": "MOVES & PAY",
+      "desc": "경력직 수요, 연봉·성과급, 희망퇴직, 평가·승진, 면접과 채용 프로세스의 변화",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "카카오도 도입한 AI 면접관 앞에서 커닝해보니…결과는 '신뢰불가'",
+          "lead": "“댓글에서 어떤 반응이 나타나면 캠페인의 진정성이 전달되지 않았다고 판단하시겠습니까?” 최근 카카오가 채용에 도입하기로 한 무하유의 인공지능(AI) 면접 솔루션 '몬스터'를 체험하면서 받은 AI 면접관의 질문이다.",
+          "summary": "몬스터는 자기소개서와 면접 답변을 분석해 맞춤형 질문을 생성하고 역량을 검증한다. 기자는 화장품 기업의 콘텐츠 마케팅 직무에 지원하는 취업준비생으로 가정하고 면접에 응했다. 자기소개서에는 뷰티 관련 소셜미디어(SNS) 계정을 운영하며",
+          "url": "https://www.etnews.com/20261123000277",
+          "source": "전자신문",
+          "published": "2026-11-23 13:23",
+          "score": 26,
+          "keywords": [
+            "AI 면접",
+            "면접"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "내신 믿을수 있나… 대입 면접에 힘 실린다",
+          "lead": "AI(인공지능)를 이용한 부정행위 우려가 대학수학능력시험(이하 수능)을 넘어 중·고등학교 내신시험으로까지 확산하자 교육부가 대응책 마련에 나섰다.",
+          "summary": "객관식 시험에 대한 신뢰 자체가 흔들리고 있어 교육계 안팎에서는 대학 입시가 면접과 구술평가를 강화하는 방향으로 재편될 것이라는 전망도 나온다.",
+          "url": "https://www.mt.co.kr/policy/2026/11/24/2026112319380097995",
+          "source": "머니투데이",
+          "published": "2026-11-24 03:38",
+          "score": 18,
+          "keywords": [
+            "면접"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "삼성 김원준·최진원 부사장 … 글로벌리서치 사장으로 승진",
+          "lead": "그룹 계열사 사장단 인사삼성重 대표 '기술통' 이왕근물산 건설부문 수장엔 최영재",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/business/12216295",
+          "source": "매일경제",
+          "published": "2026-11-23 17:05",
+          "score": 17,
+          "keywords": [
+            "승진"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 4,
+          "title": "“6년치 연봉 날렸다” “이제야 은행 이자 위대함 깨달아”…폭락장에 개미들 패닉",
+          "lead": "국내 증시가 이틀 연속 급락하면서 개인투자자들의 손실 공포가 커지고 있다.",
+          "summary": "코스피는 23일 장중 4600선마저 무너지며 매도 사이드카가 재차 발동됐다. 온라인 주식 커뮤니티에서는 수년 치 연봉에 해당하는 투자금을 잃었다는 개인투자자들의 하소연이 잇따랐다. 23일 한국거래소에 따르면 코스피는 전 거래일보다 135.06포인트(2.77%) 내린 4734.90으로 출발했다. 이후 매도세가 거세지면서 오전 4700선이 무너졌고, 장중 한때 4586.80",
+          "url": "https://www.etnews.com/20261123000478",
+          "source": "전자신문",
+          "published": "2026-11-23 17:04",
+          "score": 17,
+          "keywords": [
+            "연봉"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 5,
+          "title": "산업부 석유화학 업계 구조조정 압박, 김정관 \"골든타임 놓치지 않도록 연내 마무리해야\"",
+          "lead": "",
+          "summary": "",
+          "url": "https://www.businesspost.co.kr/BP?command=article_view&num=452679",
+          "source": "비즈니스포스트",
+          "published": "2026-11-23 16:15",
+          "score": 17,
+          "keywords": [
+            "구조조정"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "company",
+      "name": "기업·산업 레이더",
+      "en": "COMPANY WATCH",
+      "desc": "실적·적자·사업재편·증설·폐점 — 지원해도 되는 회사인지 가르는 신호",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "[글로벌] 앤트로픽, 상장 직후 주가 8.5% 하락...오픈AI IPO에도 부담되나",
+          "lead": "인공지능(AI) 기업 앤트로픽이 역대 최대 규모의 기업공개(IPO)에 성공했지만 상장 직후 주가가 하락하면서 AI 기업의 높은 기업가치에 대한 우려가 커지고 있다.",
+          "summary": "막대한 인프라 투자에도 수익성 확보가 불확실하다는 지적이 나오는 가운데, 향후 오픈AI의 기업공개에도 관심이 쏠린다.23일 주요 외신에 따르면 미국 나스닥 시장에 상장한 이후 주가 변동성이 확대되고 있다. 앤트로픽은 공모가 83달러로 약 810억달러를 조달하며 역대 최대 규모의 IPO 기록을 세웠다. 상장 첫날 주가는 97.17달러에 마감하며 공모가 대비 약 17% 상승",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=157710",
+          "source": "테크M",
+          "published": "2026-11-24 00:16",
+          "score": 33,
+          "keywords": [
+            "상장",
+            "IPO"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "[특징주] SK텔레콤, '지분보유' 앤트로픽 상장 후 20% 급락(종합)",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261123040451008"
+            },
+            {
+              "title": "역대급 143조 모은 앤트로픽, 나도 살 수 있었을까…IPO 참여 방법 총정리 [주린이ABC]",
+              "source": "매일경제",
+              "url": "https://www.mk.co.kr/news/stock/12216447"
+            },
+            {
+              "title": "미래운용, 'TIGER 글로벌LLM액티브' 상장…앤트로픽 편입",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261123079500008"
+            }
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "구조조정·자산 매각으로 재무숨통…롯데그룹, 롯데월드타워 담보 해지",
+          "lead": "롯데가 4대 시중은행에 담보물로 맡겼던 서울 잠실 롯데월드타워의 담보 설정을 해제했다고 23일 밝혔다.",
+          "summary": "앞서 롯데는 2024년 12월 롯데케미칼 회사채의 신용도를 보강하기 위해 시중은행권에 그룹의 핵심 부동산인 롯데월드타워를 담보로 제공한 바 있다. 이번 담보 해제는…",
+          "url": "https://www.donga.com/news/Economy/article/all/20261123/135075918/1",
+          "source": "동아일보",
+          "published": "2026-11-23 17:55",
+          "score": 30,
+          "keywords": [
+            "매각",
+            "그룹",
+            "롯데"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "유안타증권 “유나이티드제약, 영업익 77% 급감에도 주주환원 기대”",
+          "lead": "유안타증권은 23일 유나이티드제약에 대해 올해 3분기 영업이익이 큰 폭으로 감소했지만 안정적인 현금 창출 능력을 바탕으로 주주환원 확대가 기대된다며 목표주가 2만7000원과 투자의견 ‘매수’를 유지했다.",
+          "summary": "유나이티드제약의 올해 3분기 별도 기준 매출액은 681억원, 영업이익은 28억원으로 전년 동기 대비 각각 8.5%, 77.4% 감소했다. 시장 전망치를 각",
+          "url": "https://www.mk.co.kr/news/stock/12215796",
+          "source": "매일경제",
+          "published": "2026-11-23 08:24",
+          "score": 30,
+          "keywords": [
+            "영업익",
+            "증권",
+            "제약"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 4,
+          "title": "매출 80억 건기식 기업 매물로",
+          "lead": "비타민 등 소비자직접판매밸브 제조업체도 매각 희망반도체 부품사는 인수 타진",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/stock/12216372",
+          "source": "매일경제",
+          "published": "2026-11-23 17:40",
+          "score": 25,
+          "keywords": [
+            "매출"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "macro",
+      "name": "고용지표·정책",
+      "en": "MACRO",
+      "desc": "통계청 고용동향, 청년고용, 최저임금·실업급여, 노동법 — 시장 전체의 온도",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "'쉬었음' 청년 지원한 재경부 청년일자리팀, '국민 체감 대상'",
+          "lead": "",
+          "summary": "",
+          "url": "https://www.news1.kr/economy/trend/6362968",
+          "source": "뉴스1",
+          "published": "2026-11-23 15:00",
+          "score": 35,
+          "keywords": [
+            "쉬었음",
+            "청년일자리",
+            "일자리",
+            "청년"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "재경부, 직원 53명에 5천700만원 포상…청년일자리팀 대상",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261123113400002"
+            },
+            {
+              "title": "재경부, 청년일자리팀 등 직원 53명에 5700만원 포상",
+              "source": "SBS Biz",
+              "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTFBhUjEyMFZTeG1iT2tYZ1loZXRWelB4dE1ja1QtVVpkMV9Qa0EwcXFubmU4REp6eTNXajRkUnAtTGhEM1FnaVBpSnhtUmFYazNGYkIw0gFYQVVfeXFMTUVmM1JBTlptR0RNV2lHYnMyRnl4Si0xTlpURTRLVFhTaTc5Y04zN2t2d3Nfc0FMZVI3N0Mwc1d4dTVrTHA2M0Zfd0RjNndzRU4zZFhOVW44Xw?oc=5"
+            },
+            {
+              "title": "재경부, 청년일자리 대책팀에 ‘국민 체감 대상’…직원 53명에 5,700만 원 포상",
+              "source": "뉴스코리아",
+              "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTE01NWhsNzZuMkk5MUZBcnBDeHhIZnplbkQ5dzNmYmN6LVBRTXpicFpMSVdIQWNHSmwwYThYbjdnU2FudWFQSThpNWYtQ29XY1RLczI0ZTBaVldvb0JoNWloMVFRWlBKbkgtTjdoM1lR?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "국힘, 경제6단체 만나 “노란봉투법 폐지…정년연장 청년고용 위축 우려”",
+          "lead": "정점식 “정년연장, 청년고용 고려해야…임금체계 개편과 함께 논의”경제계 “투자·일자리 위한 입법 속도 내야”…정기국회 내 규제 완화 촉구▲국민의힘",
+          "summary": "",
+          "url": "https://www.etoday.co.kr/news/view/2651824",
+          "source": "이투데이",
+          "published": "2026-11-23 16:26",
+          "score": 31,
+          "keywords": [
+            "청년고용",
+            "노란봉투법",
+            "정년연장",
+            "고용"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "정부 정년연장 속도전에…대학생 62% \"청년 채용 줄 것\"",
+          "lead": "",
+          "summary": "",
+          "url": "https://www.news1.kr/economy/employment-labor/6363308",
+          "source": "뉴스1",
+          "published": "2026-11-24 06:00",
+          "score": 29,
+          "keywords": [
+            "정년연장",
+            "정부",
+            "청년"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "future",
+      "name": "커리어의 변화",
+      "en": "CAREER SHIFT",
+      "desc": "AI가 바꾸는 직무, 40대 이후의 생존, 중장년 재이직, N잡과 멀티커리어",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "원주시, 중장년 재취업 지원…30일 인공지능 활용 교육",
+          "lead": "(원주=연합뉴스) 임보연 기자 = 강원 원주시는 오는 30일 오후 1시 시청 다목적홀에서 중장년 퇴직자와 구직자를 대상으로 '2026년 하반기 ...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261123102700062",
+          "source": "연합뉴스",
+          "published": "2026-11-23 14:01",
+          "score": 27,
+          "keywords": [
+            "재취업",
+            "중장년 재취업",
+            "인공지능",
+            "중장년"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "\"AI 확산에 여성 일자리 더 취약\"…성평등부, 직무전환 지원 확대",
+          "lead": "[서울=뉴시스] 고홍주 기자 = 인공지능(AI) 기술 확산으로 여성 비중이 높은 사무직 등에서 자동화에 따른 일자리 변화가 예상되면서 직무훈련과 이·전직 지원 등 체계적인 대응이 필요하다는 지적이 나온다.이에 정부는 신산업 분야의 여성 인재양성을 확대하고 직무전환 지원을 강화할 계획이다.성평등가족부와 한국여성정책연구원은 24일 오후 3시 서울 은평구 여성정..",
+          "summary": "",
+          "url": "https://www.newsis.com/view/NISX20261123_0003879176",
+          "source": "뉴시스",
+          "published": "2026-11-23 15:00",
+          "score": 26,
+          "keywords": [
+            "직무전환",
+            "AI",
+            "일자리",
+            "직무"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "네이버·카카오, AI 인재 발굴 나란히...'로봇'부터 'AI 전문가'까지",
+          "lead": "네이버와 카카오가 인공지능(AI) 경진대회를 통해 미래 AI 인재 발굴과 육성에 나섰다.",
+          "summary": "네이버는 고등학생들이 직접 로봇을 학습시키고 성능을 겨루는 로보틱스 대회를, 카카오는 참가자들이 AI 에이전트를 설계하고 이를 활용해 문제를 해결하는 대국민 경진대회를 진행했다. 양사는 단순한 AI 기술 활용을 넘어 참가자들이 직접 AI를 개발하고 운영하는 경험을 제공하는 데 집중하는 한편, 지속적인 AI 인재 육성 기반을 마련한다는 방침이다. 네이버, AI·로봇 인재 모여라!23일 네이버 커넥트재단은 고등학생 대상 로보틱스 대회 '네이버 커넥",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=157706",
+          "source": "테크M",
+          "published": "2026-11-23 22:06",
+          "score": 24,
+          "keywords": [
+            "AI 인재",
+            "AI",
+            "로봇"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    }
+  ]
+}
