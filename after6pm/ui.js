@@ -335,7 +335,7 @@ const STAT_USE = { talk: "상담·면접 코칭·설득", write: "자소서 첨�
 
 // ───────── 배경 음악 자리(11-23) ─────────
 // 게임 밖 title / 실패 엔딩 over / 엔딩 ending / 만남·인물 이야기·결혼·가족 장면 love / 연체 crisis / 투잡 탐색·투잡 보드 board / 나머지 home
-const bgmLove = (sc) => !!sc && (sc.kind === "meet" || sc.kind === "arc" || sc.kind === "wedding" || sc.tag === "가족" || sc.onChoose === "baby" || sc.onChoose === "fam_oppose" || sc.cine === "lover" || sc.title === "아이가 태어났다");
+const bgmLove = (sc) => !!sc && (((sc.kind === "meet" || sc.kind === "arc") && !!E.CHAR[sc.who] && E.isRomanceable(S, E.CHAR[sc.who])) || sc.kind === "wedding" || sc.tag === "가족" || sc.onChoose === "baby" || sc.onChoose === "fam_oppose" || sc.cine === "lover" || sc.title === "아이가 태어났다");
 function bgmSlot() {
   if (!S) return "title";
   if (S.over || S.ended) return S.over || (S.ended === "age" && !S.fireAt) ? "over" : "ending";
@@ -1826,7 +1826,7 @@ function renderEnding() {
   }
   const title = kind === "fire" ? `${age}세 파이어` : kind === "age" ? (S.fireAt ? `${S.fireAt}세 파이어 · ${D.endAge(S.me.gender)}세 결산` : `${D.endAge(S.me.gender)}세 결산 · 파이어 실패`) : kind === "over" && S.over === "bankrupt" ? "개인회생" : "번아웃";
   $app.innerHTML = `<div class="ending"><div class="px gold">THE END · ${esc(S.me.name)}의 인생</div><div class="big">${esc(title)}</div>
-    <div class="card"><div class="kv tjx-endkv"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div><div><div class="k">파티룸</div><div class="v">${S.pr.rooms.length}곳 · Lv${S.pr.lv}</div></div><div><div class="k">컨설팅</div><div class="v">Lv${S.cs.lv} · 합격 ${S.cs.passes}</div></div><div><div class="k">인연</div><div class="v">${Object.keys(S.rel).length}명</div></div></div></div>
+    <div class="card"><div class="kv tjx-endkv"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div>${endJobs().map((j) => `<div><div class="k">${esc(END_JOB[j].n)}</div><div class="v">${esc(END_JOB[j].kv())}</div></div>`).join("") || `<div><div class="k">투잡</div><div class="v">회사만 다님</div></div>`}<div><div class="k">인연</div><div class="v">${Object.keys(S.rel).length}명</div></div></div></div>
     ${jobEndCard()}
     <div class="card"><h3>그 뒤의 이야기</h3><div class="small" style="line-height:1.8">${epilogue().map(esc).join("<br>")}</div></div>
     ${S.hallRank ? hallBox(null, m, `명예의 전당 ${S.hallRank}위 등록!${S.hallFireRank ? ` · 파이어 나이 ${S.hallFireRank}위` : ""}`) : ""}
@@ -1841,19 +1841,63 @@ function jobEndCard() {
   const es = REG.endsOf(S); if (!es.length) return "";
   return `<div class="card"><h3>투잡 엔딩 <small>${es.length}개</small></h3><div class="chips">${es.map((e) => `<span class="chip ${e.kind === "bad" ? "" : "on"}">${esc(D.SIDEJOBS[e.job].n)} · ${esc(e.title)}${e.kind === "bad" ? " (쓴맛)" : ""}</span>`).join("")}</div></div>`;
 }
+// 이번 판에 한 투잡(11-23): 지금 하는 것 먼저, 그다음 하다가 접은 것. 결산 칸·후일담이 이 목록을 따른다
+function endJobs() {
+  const a = (S.sj.active || []).filter((k) => END_JOB[k]), rp = S.sj.rp || {};
+  for (const j of Object.keys(rp)) if (rp[j].t0 !== undefined && END_JOB[j] && !a.includes(j)) a.push(j);
+  if (!a.includes("pr") && (S.pr.rooms.length || S.pr.sold)) a.push("pr"); // 옛 저장(시작 기록이 없던 때)
+  if (!a.includes("cs") && S.cs.passes > 0) a.push("cs");
+  return a;
+}
+const endOn = (j) => (S.sj.active || []).includes(j);
+// n 짧은 이름 · kv 결산 칸 · epi 후일담 한 줄 · fin 파이어한 판의 마지막 줄
+const END_JOB = {
+  pr: { n: "파티룸", kv: () => `${S.pr.rooms.length}곳 · Lv${S.pr.lv}`,
+    epi: () => (S.pr.rooms.length ? `파티룸 ${S.pr.rooms.length}곳은 ${S.pr.sys.manager ? "매니저가 맡아 지금도 돌아간다" : "하나씩 양도하고 마지막 한 곳만 남겼다"}.` : "파티룸은 모두 정리했다. 지금도 빈 상가를 보면 평수부터 센다."),
+    fin: () => (S.pr.rooms.length ? "70세, 손주 돌잔치를 내가 만든 파티룸에서 했다." : "70세, 손주 돌잔치 장소를 고르다가 예약 화면 사진부터 꼼꼼히 봤다.") },
+  cs: { n: "컨설팅", kv: () => `Lv${S.cs.lv} · 합격 ${S.cs.passes}`,
+    epi: () => (S.moments?.cs_end_mentor !== undefined ? null : S.cs.lv >= 3 ? `취업컨설팅으로 ${S.cs.passes}명이 합격했다. 가끔 "선생님 덕분에" 하는 연락이 온다.` : S.cs.passes > 0 ? `취업컨설팅은 ${S.cs.passes}명을 합격시키고 접었다. 그 사람들 이름은 아직 기억한다.` : "취업컨설팅은 오래 못 갔다. 그래도 자소서 보는 눈은 남았다."),
+    fin: () => "70세, 예전 수강생이 임원이 됐다며 밥을 샀다." },
+  insta: { n: "인별그램", kv: () => `팔로워 ${Math.round(S.ins?.f || 0).toLocaleString()}`,
+    epi: () => (endOn("insta") ? `인별그램 계정은 팔로워 ${Math.round(S.ins?.f || 0).toLocaleString()}명으로 남았다. 요즘은 올리고 싶은 날에만 올린다.` : "인별그램 계정은 비공개로 돌렸다. 가끔 예전 게시물에 '저장' 알림이 뜬다."),
+    fin: () => "70세, 손주가 내 옛 계정을 찾아냈다. 한참 넘겨 보더니 팔로우를 눌렀다." },
+  airbnb: { n: "에어씨앤씨", kv: () => `숙소 ${(S.ab?.units || []).length}채`,
+    epi: () => ((S.ab?.units || []).length ? `숙소 ${S.ab.units.length}채에는 지금도 후기가 달린다. 답글은 여전히 내가 쓴다.` : "숙소는 모두 정리했다. 여행을 가면 아직도 침구 상태부터 본다."),
+    fin: () => "70세, 첫 숙소에 묵었던 손님이 가족을 데리고 다시 왔다." },
+  ucafe: { n: "무인카페", kv: () => `매장 ${(S.uc?.stores || []).length}곳`,
+    epi: () => ((S.uc?.stores || []).length ? `무인카페 ${S.uc.stores.length}곳은 지금도 새벽에 불이 켜져 있다. 원두는 여전히 내가 고른다.` : "무인카페는 넘겼다. 남의 카페에 가도 얼음통부터 들여다본다."),
+    fin: () => "70세, 아침마다 내 카페의 첫 손님은 나다." },
+  tarot: { n: "타로", kv: () => `Lv${S.tarot?.lv || 0} · 평판 ${Math.round(S.tarot?.rep || 0)}`,
+    epi: () => (endOn("tarot") ? "타로 상담은 지금도 한 달에 몇 번 받는다. 카드를 읽는 시간보다 들어 주는 시간이 길어졌다." : "타로 덱은 서랍에 넣었다. 친구들 연말 모임 때만 꺼낸다."),
+    fin: () => "70세, 손주가 카드를 뽑아 달라고 했다. 좋은 카드만 나왔다고 말해 줬다." },
+  webnovel: { n: "웹소설", kv: () => `완결 ${S.webnovel?.done || 0}편`,
+    epi: () => ((S.webnovel?.done || 0) > 0 ? `웹소설은 ${S.webnovel.done}편을 완결했다. 지금도 새벽에 댓글 알림이 온다.` : "웹소설은 완결을 내지 못했다. 그 원고 폴더는 아직 지우지 않았다."),
+    fin: () => "70세, 서점에서 내 필명이 적힌 책을 손주가 먼저 찾아냈다." },
+  tutoring: { n: "화상과외", kv: () => `Lv${S.tutoring?.lv || 0} · 학생 ${(S.tutoring?.studs || []).length}`,
+    epi: () => (endOn("tutoring") ? "화상과외는 한 반만 남겼다. 수능 날 아침이면 옛 학생들 연락이 온다." : "화상과외는 그만뒀다. 수능 날 아침이면 아직도 일찍 눈이 떠진다."),
+    fin: () => "70세, 첫 학생이 자기 아이 과외를 부탁해 왔다." },
+  chicken: { n: "치킨집", kv: () => `매장 ${(S.chicken?.stores || []).length}곳`,
+    epi: () => ((S.chicken?.stores || []).length ? `치킨집 ${S.chicken.stores.length}곳은 지금도 금요일 밤이 제일 바쁘다. 튀김기 앞에는 이제 점장이 선다.` : "치킨집은 넘겼다. 지금도 치킨을 시키면 기름 색부터 본다."),
+    fin: () => "70세, 손주 생일상에는 내 가게 치킨이 올라갔다." },
+  vibe: { n: "바이브코딩", kv: () => `Lv${S.vibe?.lv || 0} · 납품 ${S.vibe?.delivered || 0}`,
+    epi: () => (endOn("vibe") && (S.vibe?.delivered || 0) > 0 ? `바이브코딩으로 만든 앱 ${S.vibe.delivered}개는 지금도 어딘가에서 돌아간다. 가끔 고쳐 달라는 연락이 온다.` : "바이브코딩 외주는 접었다. 그래도 불편한 게 보이면 직접 만들어 쓴다."),
+    fin: () => "70세, 손주 숙제 앱을 하루 만에 만들어 줬다." },
+};
 function epilogue() {
-  const L = [], sp = S.fam.spouse && E.CHAR[S.fam.spouse];
+  const L = [], sp = S.fam.spouse && E.CHAR[S.fam.spouse], jobs = endJobs(), ended = new Set(REG.endsOf(S).map((e) => e.job));
   if (S.ended === "fire") L.push(`${Math.floor(S.age)}세 봄, 마지막 출근을 했다. 아니, 처음으로 출근하지 않는 아침이 왔다.`);
-  if (S.over === "bankrupt") L.push("법원 서류를 정리하며 생각했다. 입지가 아니라 욕심이 문제였다.");
+  if (S.over === "bankrupt") L.push(`법원 서류를 정리하며 생각했다. ${jobs.some((j) => ["pr", "airbnb", "ucafe", "chicken"].includes(j)) ? "입지가" : "운이"} 아니라 욕심이 문제였다.`);
   if (S.over === "burnout") L.push("몸이 먼저 멈췄다. 다음 인생에서는 쉬는 것도 일정에 넣기로 했다.");
   if (sp) L.push(`${jo(sp.name, "과", "와")}는 ${Math.floor((S.t - S.fam.marriedT) / 12)}년을 함께했다. ${S.fam.happy >= 60 ? "주말 아침 커피는 여전히 둘이 마신다." : "대화가 줄었지만, 아직 같은 집에 산다."}`);
   else L.push("결혼은 하지 않았다. 대신 오래 볼 친구들이 생겼다.");
   for (const k of S.fam.kids) L.push(`${jo(k.name, "은", "는")} ${Math.floor((S.t - k.born) / 12) + 20}살에 독립했다. ${S.cs.passes > 30 ? "자소서는 내가 봐 줬다." : "첫 월급으로 내복을 사 왔다."}`);
-  if (S.pr.rooms.length) L.push(`파티룸 ${S.pr.rooms.length}곳은 ${S.pr.sys.manager ? "매니저가 맡아 지금도 돌아간다" : "하나씩 양도하고 마지막 한 곳만 남겼다"}.`);
-  if (S.cs.lv >= 3 && S.moments?.cs_end_mentor === undefined) L.push(`취업컨설팅으로 ${S.cs.passes}명이 합격했다. 가끔 "선생님 덕분에" 하는 연락이 온다.`);
+  for (const j of jobs) { if (ended.has(j)) continue; const t = END_JOB[j].epi(); if (t) L.push(t); } // 한 투잡마다 한 줄(투잡 엔딩을 받은 것은 아래 엔딩 글로)
   for (const e of REG.endsOf(S)) L.push(e.epi || `${D.SIDEJOBS[e.job].n}: ${e.title}`); // 투잡 엔딩
   L.push(...H2U.epi(S)); // v4.30 히든 길 후일담(물려받기 엔딩 등)
-  L.push(S.ended === "fire" ? "70세, 손주 돌잔치를 내가 만든 파티룸에서 했다." : "60세, 은퇴식에서 후배에게 말했다. \"퇴근 후 두 시간이 인생을 바꿔.\"");
+  const held = { pr: () => S.pr.rooms.length, airbnb: () => (S.ab?.units || []).length, ucafe: () => (S.uc?.stores || []).length, chicken: () => (S.chicken?.stores || []).length }; // 가게형은 남은 가게가 있어야 '남았다'
+  const now = jobs.filter((j) => endOn(j) && (!held[j] || held[j]() > 0));
+  if (now.length >= 2) L.push(`퇴근 후에 시작한 ${jo(D.SIDEJOBS[now[0]].n, "과", "와")} ${D.SIDEJOBS[now[1]].n}. 둘 다 끝까지 내 이름으로 남았다.`);
+  L.push(S.ended === "fire" ? (jobs[0] ? END_JOB[jobs[0]].fin() : "70세, 처음으로 평일 낮에 영화를 봤다. 옛 회사 사람들에게는 자랑하지 않았다.") : "60세, 은퇴식에서 후배에게 말했다. \"퇴근 후 두 시간이 인생을 바꿔.\"");
   return L;
 }
 
@@ -1882,7 +1926,7 @@ function autoTest(n) {
   render();
   if (h.includes("hub")) openHub();
   if (h.includes("-talk")) { const id = S.cast[1]; E.ensureRel(S, id); S.rel[id].stage = 99; S.ap = 5; const res = E.talkTo(S, id); if (res.ok && S.pending) showScene(); }
-  if (h.includes("ending")) { S.fireAt = 41; S.cash += 280000; S.ended = "age"; if (h.includes("jobend")) { S.moments = S.moments || {}; for (const e of REG.ENDS.filter((x, i) => i % 7 === 0)) S.moments[e.key] = S.t; } render(); } // #auto18-ending-jobend: 투잡 엔딩 몇 개 받은 결산 화면
+  if (h.includes("ending")) { S.fireAt = 41; S.cash += 280000; S.ended = h.includes("endfire") ? "fire" : "age"; if (h.includes("solo")) { const keep = (k) => h.includes("-" + k + "-") || h.endsWith("-" + k); S.sj.active = S.sj.active.filter(keep); for (const j of Object.keys(S.sj.rp || {})) if (!keep(j)) delete S.sj.rp[j].t0; if (!keep("pr")) { S.pr.rooms = []; S.pr.sold = 0; } if (!keep("cs")) S.cs.passes = 0; } /* -solo: 주소에 적은 투잡만 한 판 */ if (h.includes("jobend")) { S.moments = S.moments || {}; for (const e of REG.ENDS.filter((x, i) => i % 7 === 0)) S.moments[e.key] = S.t; } render(); } // #auto18-ending-jobend: 투잡 엔딩 몇 개 받은 결산 화면
   if (h.includes("decor") && S.pr.rooms[0]) { const rm = S.pr.rooms[0]; ui.page = "pr"; ui.prFlow = { step: "decor", id: rm.id, picks: { ...rm.decor, light: 3, seat: 1, zone: 3 } }; render(); }
   if (/-dk(pr|ab)/.test(h)) DK.decoTest(dctx(), h); // 방 꾸미기 시험: -dkpr|-dkab [-dkauto|-dkask|-dkhand|-dkguide]
   if (h.includes("quiz")) { S.cs.queue.push({ id: 999, prod: "edit", niche: "newgrad", left: 1, units: 1, price: 7, wait: 0 }); S.ap = 5; quizWin("cs_focus"); }

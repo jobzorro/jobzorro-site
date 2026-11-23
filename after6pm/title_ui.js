@@ -16,7 +16,7 @@ html.big .title.a6t{min-height:calc(100vh / 1.12);min-height:calc(100dvh / 1.12)
 html.app .title.a6t{min-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
 .title.a6t::before{background:linear-gradient(180deg,rgba(8,6,25,.18),rgba(8,6,25,.05) 30%,rgba(8,6,25,.3));z-index:0}
 .title.a6t.a6t-is-first{--a6t-h:52vh;--a6t-h:52svh}
-.a6t .a6t-clock{position:absolute;z-index:4;top:calc(12px + env(safe-area-inset-top,0px));left:14px;font-family:var(--pixel);font-size:16px;line-height:1.5;background:rgba(24,22,56,.86);border:1px solid rgba(255,255,255,.16);border-radius:7px;padding:1px 10px;color:var(--gold)}
+.a6t .a6t-clock{position:absolute;z-index:4;top:calc(12px + env(safe-area-inset-top,0px));left:14px;font-family:var(--sans);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em;font-size:14px;line-height:1.8;background:rgba(24,22,56,.86);border:1px solid rgba(255,255,255,.16);border-radius:7px;padding:1px 10px;color:var(--gold)}
 .a6t .a6t-clock.a6t-tick{animation:a6tTick .5s ease-out}
 @keyframes a6tTick{0%{transform:scale(1.35);background:#ffc04d;color:#1b1a2e}100%{transform:none}}
 .a6t .a6t-gear{position:absolute;z-index:4;top:calc(6px + env(safe-area-inset-top,0px));right:8px;width:44px;height:44px;display:grid;place-items:center}
@@ -27,11 +27,11 @@ html.app .title.a6t{min-height:calc(100dvh - env(safe-area-inset-top,0px) - env(
 .a6t .a6t-fig.a6t-m{--a6t-g:${MALE_K}}
 .a6t .a6t-fig.a6t-on{opacity:1}.a6t .a6t-fig.a6t-s.a6t-on{opacity:.93}
 .a6t .a6t-pb{position:relative;z-index:3;display:flex;flex-direction:column;gap:8px;padding:76px max(16px,env(safe-area-inset-left,0px)) calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(14,12,40,0),rgba(14,12,40,.86) 84px,#0e0c28 150px)}
-.a6t h1.a6t-logo{font-family:var(--pixel);font-weight:400;font-size:clamp(44px,13.5vw,58px);line-height:1;margin:0;letter-spacing:.02em}
-.a6t h1.a6t-logo span{color:var(--gold)}
+.a6t h1.a6t-logo{font-family:var(--disp);font-style:italic;font-weight:900;font-size:clamp(50px,15.5vw,66px);line-height:1;margin:0;letter-spacing:-.01em;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.5)}
+.a6t h1.a6t-logo span{background:linear-gradient(180deg,#fff1b8,#f5b83d 55%,#c9861a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;padding:0 .04em}
 .a6t .a6t-sub{font-size:16.5px;font-weight:700;margin:0;line-height:1.35;word-break:keep-all}
 .a6t .a6t-tag2{color:#c9c6e6;font-size:12.5px;line-height:1.5;word-break:keep-all;margin-top:-4px}
-.a6t .a6t-marq{overflow:hidden;white-space:nowrap;border-block:1px solid rgba(255,255,255,.16);padding:3px 0;font-family:var(--pixel);font-size:13px;color:var(--gold);line-height:1.5}
+.a6t .a6t-marq{overflow:hidden;white-space:nowrap;border-block:1px solid rgba(255,255,255,.16);padding:3px 0;font-family:var(--sans);font-weight:500;letter-spacing:.02em;font-size:12px;color:var(--gold);line-height:1.5}
 .a6t .a6t-marq span{display:inline-block;animation:a6tMq 36s linear infinite}
 @keyframes a6tMq{to{transform:translateX(-50%)}}
 .a6t .a6t-ng{display:flex;justify-content:space-between;gap:8px;background:rgba(24,22,56,.86);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:6px 11px;font-size:12.5px;color:#c9c6e6;white-space:nowrap}

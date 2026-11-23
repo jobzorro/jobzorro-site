@@ -2,7 +2,7 @@
 :root{
   --bg:#0e1020; --panel:#171a2e; --panel2:#20243d; --panel3:#2a2f4e; --fg:#f2f1fb; --muted:#9ea3c0; --line:#2f3456;
   --gold:#f5c04e; --gold2:#ffdb7a; --pink:#ff7eb6; --blue:#6aa8ff; --green:#5fe0a0; --red:#ff6b7f; --purple:#b48cff; --orange:#ff9f5a;
-  --sans:"Noto Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif; --pixel:"DotGothic16","Noto Sans KR",monospace;
+  --sans:"Noto Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif; --pixel:var(--sans); --disp:"Playfair Display","Noto Serif KR",serif;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -12,7 +12,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 button:disabled{opacity:.4;cursor:not-allowed}
 #app{max-width:520px;margin:0 auto;min-height:100%;position:relative;padding-bottom:84px}
 .boot{padding:40vh 16px;text-align:center;color:var(--muted);font-family:var(--pixel)}
-.px{font-family:var(--pixel)}
+.px{font-family:var(--sans);font-weight:700;letter-spacing:.14em;font-size:12.5px}
 .muted{color:var(--muted)} .gold{color:var(--gold)} .good{color:var(--green)} .bad{color:var(--red)} .pink{color:var(--pink)}
 .small{font-size:12px} .tiny{font-size:11px}
 img.face{image-rendering:pixelated;display:block}
@@ -213,7 +213,7 @@ img.face{image-rendering:pixelated;display:block}
 .result .ok{color:var(--green);font-weight:900} .result .ng{color:var(--red);font-weight:900}
 .effs{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .effs span{font-size:12px;background:var(--panel3);border-radius:6px;padding:1px 7px}
-.receipt{font-family:var(--pixel);background:#f7f3e6;color:#2a2418;border-radius:6px;padding:14px 14px 10px;box-shadow:0 4px 0 #cfc6aa}
+.receipt{font-family:var(--sans);font-variant-numeric:tabular-nums;background:#f7f3e6;color:#2a2418;border-radius:6px;padding:14px 14px 10px;box-shadow:0 4px 0 #cfc6aa}
 .receipt h4{margin:0;text-align:center;font-size:16px;letter-spacing:.05em}
 .receipt .dl{display:flex;justify-content:space-between;font-size:13px;border-bottom:1px dashed #b9ad8c;padding:3px 0}
 .receipt .tot{display:flex;justify-content:space-between;font-weight:700;font-size:15px;padding:6px 0}
@@ -225,7 +225,7 @@ img.face{image-rendering:pixelated;display:block}
 .title{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:24px 16px 40px;background:#141233 url(img/keyvisual.webp) center/cover;position:relative}
 .title::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,6,25,.1),rgba(8,6,25,.92) 70%)}
 .title>*{position:relative}
-.title h1{font-family:var(--pixel);font-weight:400;font-size:58px;line-height:1;margin:0}
+.title h1{font-family:var(--disp);font-style:italic;font-weight:900;font-size:58px;line-height:1;margin:0}
 .title h1 span{color:var(--gold)}
 .title .sub{font-size:18px;font-weight:700;margin:6px 0 4px}
 .title .desc{color:#cfd2ea;font-size:13.5px;margin-bottom:18px}
@@ -244,7 +244,7 @@ img.face{image-rendering:pixelated;display:block}
 .tcards button{text-align:left}
 .tcards button.on .trait{border:2px solid var(--gold)}
 .ending{padding:16px;display:flex;flex-direction:column;gap:12px}
-.ending .big{font-family:var(--pixel);font-size:40px;color:var(--gold);line-height:1.1}
+.ending .big{font-family:var(--disp);font-style:italic;font-weight:900;font-size:38px;line-height:1.2;letter-spacing:-.01em;padding:0 .06em 2px 0;width:fit-content;max-width:100%;background:linear-gradient(180deg,#fff1b8,#f5b83d 55%,#c9861a);-webkit-background-clip:text;background-clip:text;color:transparent}
 #toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(92vw,480px)}
 #toast div{background:rgba(25,28,52,.96);border:1px solid var(--gold);border-radius:12px;padding:8px 14px;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.4);animation:up .18s ease-out;max-width:100%}
 #toast div b{color:var(--gold)}
@@ -531,7 +531,7 @@ body[data-page="airbnb"] #app{background:radial-gradient(circle at 85% 12%,#4fc3
 body[data-page="airbnb"] .card{border-style:dashed}
 body[data-page="ucafe"]{--gold:#d9b08c;--gold2:#f2d6bb;--panel:#1d1915;--panel2:#28221c;--line:#40362b;--bg:#14110e}
 body[data-page="ucafe"] .card{border:1px dashed #d9b08c55;background-image:linear-gradient(180deg,#ffffff06,transparent)}
-body[data-page="ucafe"] .pager b{font-family:var(--pixel)}
+body[data-page="ucafe"] .pager b{font-family:var(--sans);font-variant-numeric:tabular-nums}
 body[data-page="insta"]{--gold:#ff8fc8;--gold2:#ffc4e2;--panel:#1e1522;--panel2:#2a1c30;--line:#44294d;--bg:#140d18}
 body[data-page="insta"] #app{background:linear-gradient(180deg,#ff8fc814,transparent 220px)}
 body[data-page="insta"] .card{border-radius:20px}
