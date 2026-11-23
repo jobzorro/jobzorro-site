@@ -79,14 +79,16 @@ export function can(s, id) {
 function roomBoost(s) { if (!SYN.on(s, "cs_room")) return 1; return s.pr.rooms.some((x) => x.status === "open" && ["lecture", "edu", "study"].includes(x.concept)) ? 1.6 : 1.3; }
 // 실력 = 핵심 능력과 커리어의 평균. 가격 단계(레벨 보너스 포함)가 요구하는 실력보다 낮으면 환불·혹평
 // AI 대세(11-23): 신입 취업 쪽(자소서·공기업·면접) 문의는 해가 갈수록 줄어든다. 경력 이직은 줄지 않고, 강의를 다닌 만큼 덜 줄어든다
-export const CS_AI = { from: 4, perYear: 0.07, floor: 0.4, w: { newgrad: 1, public: 1, interview: 0.6, career: 0 }, lectPer: 0.02, lectMax: 0.1, priceW: 0.35, lectFeeW: 1, lectOfferW: 0.4 }; // lectOfferW: 취업 특강 섭외도 덜 들어오는 정도 // lectFeeW: 강의료도 같이 내려가는 정도(취업 특강 예산이 줄어서) // priceW: 단가도 같이 내려가는 정도(AI 첨삭이 싸져서)
+export const CS_AI = { from: 9, perYear: 0.07, floor: 0.4, w: { newgrad: 1, public: 1, interview: 0.6, career: 0 }, lectPer: 0.02, lectMax: 0.1, priceW: 0.35, lectFeeW: 1, lectOfferW: 0.4 }; // lectOfferW: 취업 특강 섭외도 덜 들어오는 정도 // lectFeeW: 강의료도 같이 내려가는 정도(취업 특강 예산이 줄어서) // priceW: 단가도 같이 내려가는 정도(AI 첨삭이 싸져서)
 export function aiCut(s, k) { // 그 분야 문의 배수(1 = 그대로)
   if (typeof process !== "undefined" && process.env?.CSAI) Object.assign(CS_AI, JSON.parse(process.env.CSAI)); // 봇 시험용
-  const yrs = Math.max(0, s.t / 12 - CS_AI.from), w = CS_AI.w[k] ?? 1;
+  const yrs = Math.max(0, s.t / 12 - aiFrom(s)), w = CS_AI.w[k] ?? 1;
   const cut = Math.min(1 - CS_AI.floor, yrs * CS_AI.perYear) * w * (1 - Math.min(CS_AI.lectMax, (s.cs.lectN || 0) * CS_AI.lectPer));
   return 1 - cut;
 }
 // 지금 내 분야 평균으로 본 감소 폭(%) · 0이면 영향 없음
+// AI 대세가 시작되는 해(11-23): 판마다 8~10년 차 사이(wave.js 가 s.wv._at.cs 에 달 수로 정한다). 아직 안 정해졌으면 기본값
+export function aiFrom(s) { const m = s.wv?._at?.cs; return typeof m === "number" ? m / 12 : CS_AI.from; }
 export function aiDrop(s) { const ks = s.cs.niches || []; if (!ks.length) return 0; return Math.round((1 - ks.reduce((a, k) => a + aiCut(s, k), 0) / ks.length) * 100); }
 export function skill(s) { const k = D.NICHES[s.cs.niche || "newgrad"].stat; return Math.round(s.st[k] * 0.7 + s.st.career * 0.3); } // v4.25: 분야 능력치(대개 글쓰기) 비중을 높임
 export function priceNeed(s) { return D.CS_PRICE_NEED[s.cs.price] + (s.cs.lv >= 4 ? 20 : 0) + (s.cs.lv >= 5 ? 15 : 0); }

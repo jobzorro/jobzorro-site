@@ -1261,7 +1261,7 @@ function startMacro(s, m, notes, scenes) {
   if (m.id === "crash") { const loss = Math.round(s.invest * 0.28 * k); s.invest -= loss; addMoney(s, "exp", "투자 손익", loss); lines.push(`투자 −${won(loss)}`); }
   if (m.id === "tax") { s.co.eye = clamp(s.co.eye + 5 * eyeMult(s), 0, 100); }
   log(s, `[경제] ${m.n}`, "era");
-  scenes.push({ ...story(`경제 뉴스 · ${m.n}`, (((s.co.quit || s.co.fired) && m.textQ) || m.text) + (lines.length ? ` (${lines.join(", ")})` : "")), warn: { head: m.n, sub: "경제 뉴스" } }); // 11-23 큰 사건은 WARNING 화면부터
+  scenes.push({ ...story(`경제 뉴스 · ${m.n}`, (((s.co.quit || s.co.fired) && m.textQ) || m.text) + (lines.length ? ` (${lines.join(", ")})` : "")), warn: scenes.some((q) => q.warn) || s.t - (s.warnT ?? -99) < 3 ? undefined : (s.warnT = s.t, { head: m.n, sub: "경제 뉴스" }) }); // 11-23 큰 사건은 WARNING 화면부터(한 달에 하나, 석 달 간격)
 }
 function startEra(s, sc) {
   const t = `${sc.id} ${sc.title}`; const m = mod(s, "eraMult", 1);
