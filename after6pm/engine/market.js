@@ -275,7 +275,7 @@ function evScene(s, r, e, job) {
     const eff = k === "spend" ? { cash: -M(s, cost || 40) } : k === "price" ? { mental: -1 } : k === "hold" ? { mental: -2 } : k === "ride" ? { hp: -5, mental: -1 } : k === "save" ? { mental: 2 } : {};
     return { t: k === "spend" ? `${t} (${M(s, cost || 40)}만 원)` : t, eff, text: res };
   });
-  return { kind: "event", tag: "시장", title: `시장 ${e.g ? "호재" : "충격"} · ${e.n}`, text: `${((s.co?.quit || s.co?.fired) && e.textQ) || e.text}\n(${nm} 이익 ${sgn(e.v)}${pct(e.v)} · 약 ${mo}개월. 고르는 대응에 따라 달라져요)`, onChoose: "mk_ev", mk: e.id, mkJob: job, mkMo: mo, choices };
+  return { kind: "event", tag: "시장", warn: !e.g && e.v <= -0.2 ? { head: e.n, sub: `${nm} · 시장 충격` } : undefined, title: `시장 ${e.g ? "호재" : "충격"} · ${e.n}`, text: `${((s.co?.quit || s.co?.fired) && e.textQ) || e.text}\n(${nm} 이익 ${sgn(e.v)}${pct(e.v)} · 약 ${mo}개월. 고르는 대응에 따라 달라져요)`, onChoose: "mk_ev", mk: e.id, mkJob: job, mkMo: mo, choices };
 }
 
 export const MK_CHOOSE = {

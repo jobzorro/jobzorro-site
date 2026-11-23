@@ -20,6 +20,7 @@ import { CG, CG_NOPPL } from "./gen/cg.js";
 const NOPPL = new Set(CG_NOPPL || []); // v4.27 사람이 안 나오는 화보 → 내 캐릭터를 얹는다
 import { MG, mgRun, mgKeys, mgPrefetch, mg2Init } from "./mg.js";
 import * as REG from "./engine/reg.js";
+import * as WV from "./engine/wave.js"; // 판이 바뀐다(11-23)
 import { UI_PLUGINS } from "./jobs/index.js";
 import * as DK from "./deco_ui.js"; // 방 꾸미기(deco/deco.js 는 열 때 받기)
 import { rivalBox, RIVAL_CINE_TAG } from "./rival_ui.js"; // 라이벌 칸(v4.25)
@@ -340,7 +341,7 @@ function bgmSlot() {
   if (!S) return "title";
   if (S.over || S.ended) return S.over || (S.ended === "age" && !S.fireAt) ? "over" : "ending";
   if (bgmLove(S.pending)) return "love";
-  if (S.debtLate > 0) return "crisis";
+  if (S.debtLate > 0 || S.pending?.warn) return "crisis"; // 11-23 WARNING 장면도 위기 곡
   if (ui.page === "sj" || D.SIDEJOBS[ui.page] || REG.get(ui.page)) return "board";
   return "home";
 }
@@ -1334,10 +1335,19 @@ function yearShow(sc) {
   const jp = (location.hash.match(/yrp(\d)/) || [])[1]; // 시험용: #auto14-yr2-yrp5 → 6번째 장부터
   go(jp ? +jp : 0);
 }
+// WARNING 화면(11-23): 판이 바뀌는 큰 사건(engine/wave.js)·경제 뉴스·큰 시장 충격 앞에 뜬다. 누르면 장면으로
+function warnPlay(sc, done) {
+  const w = sc.warn || {}, el = document.createElement("div"); el.className = "a6w";
+  el.innerHTML = `<div class="a6w-st t"></div><div class="a6w-mid"><div class="a6w-w">WARNING</div><div class="a6w-h">${esc(w.head || sc.title)}</div>${w.sub ? `<div class="a6w-s">${esc(w.sub)}</div>` : ""}<div class="a6w-go">눌러서 계속</div></div><div class="a6w-st b"></div>`;
+  document.body.appendChild(el); FX.play("bad"); setTimeout(() => { if (el.isConnected) FX.play("bad"); }, 450);
+  let ok = false; setTimeout(() => { ok = true; el.classList.add("rdy"); }, 900);
+  el.onclick = () => { if (!ok) return; el.remove(); done(); };
+}
 function showScene() {
   const sc = S.pending; if (!sc) return;
   bgmGo();
-  if (document.querySelector(".cine")) return;
+  if (document.querySelector(".cine, .a6w")) return;
+  if (sc.warn && !sc._warned) { sc._warned = 1; return warnPlay(sc, () => { if (S.pending === sc) showScene(); }); } // 11-23 큰 사건은 WARNING 화면부터
   if (sc.kind === "year") return yearShow(sc); // 연말 결산은 전용 화면(v4.24)
   { const ck = cineKey(sc); if (ck && !sc._cined) { sc._cined = 1; return cinePlay(sc, ck, () => { if (S.pending !== sc) return; if (sc.kind === "story") { E.choose(S, 0); save(); closeWin(); continueChain(); } else showScene(); }); } }
   FX.play(sc.kind === "wedding" ? "win" : "scene");
@@ -1954,6 +1964,7 @@ function autoTest(n) {
   { const ig = h.match(/igtab_([a-z]+)/); if (ig) setTimeout(() => { S.ap = Math.max(S.ap, 6); if (ig[1] === "inboxplay" || ig[1] === "inboxdone") INS.testInbox(S, E.R(S)); if (h.includes("igdm")) { S.ins.dm = []; for (const k of ["celeb", "fan", "scam", "deal"]) INS.testDm(S, E.R(S), k); } if (h.includes("igedit")) { IGA.openInsta(igctx(), "feed"); document.querySelector("[data-igedit]")?.click(); return; } IGA.openInsta(igctx(), ig[1] === "inboxdone" ? "inboxplay" : ig[1]); if (ig[1] === "inboxdone") { document.querySelectorAll("[data-igpick]").forEach((b, i) => { if (i % 3 === 0) b.click(); }); document.querySelector("[data-igdone]")?.click(); } }, 500); } // 인별 앱 화면 보기(#auto6-ins-igtab_feed|inbox|inboxplay|inboxdone|dm|ins|deal, -igdm, -igedit)
   HU.demo({ S, E, showScene, render, save }, h); // 스승·선배·히든 길 시험(#auto6-mstest-cs-run 등)
   H2U.demo({ S, E, showScene, render, save, go }, h); // 다른 방식 히든 길 시험(#auto6-h2test-fail-run · -h2line-era · -h2hint-hide)
+  if (h.includes("wvtest")) { const j = (h.match(/wvtest-([a-z]+)/) || [])[1] || S.sj.active[0] || "cs"; const sc = WV.waveScene(S, j, h.includes("wvlate")); if (sc) { E.openScene(S, sc); showScene(); } } /* 판이 바뀐다 시험(#auto18-<투잡>-wvtest-<투잡>) */
   if (h.includes("jptest")) setTimeout(jpTest, 300); // 한방 전략 시험(#auto-jptest)
   { const fm = h.match(/-f30([a-z]+)/), jk = ["tutoring", "tarot"].find((k) => h.includes("-" + k)); if (fm && (jk || h.includes("-cs-"))) setTimeout(async () => { const r = E.R(S), sc = jk ? (await import(`./engine/jobs/${jk}.js`)).f30Test?.(S, r, fm[1]) : CS.f30Scene(S, r, fm[1]); if (sc) { E.openScene(S, sc); showScene(); } }, 400); } // 컨설팅·과외·타로 특이 요소 장면 시험(#auto6-cs-f30bid · #auto6-tutoring-f30boost · #auto6-tarot-f30heavy)
   { const pm = h.match(/-ppl(many|few|dex|map)/); if (pm) import("./people_ui.js").then((M) => { if (pm[1] !== "few") M.demo(S, E, pm[1] !== "few", RV_DEMO); save(); render(); pplOpen(pm[1] === "dex" ? "dex" : "map"); }); } // 인물 도감·관계도 시험: -pplfew(관계도 적을 때) -pplmany(많을 때) -ppldex(도감)

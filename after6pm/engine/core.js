@@ -18,7 +18,7 @@ import { menteeMonth, MT_CHOOSE } from "./mentee.js"; // 컨설팅 제자(v4.25)
 import { guestMonth, GS_CHOOSE } from "./guest.js"; // 손님 이벤트(v4.25)
 import { flirtMonth } from "./flirt.js"; // 연애·결혼 19금(v4.25)
 import { rivalMonth, RV_CHOOSE } from "./rival.js"; // 라이벌 제도(v4.25)
-import { marketMonth, MK_CHOOSE } from "./market.js"; import { spaceMonth } from "./space.js"; // 시장 충격(v4.25b)
+import { marketMonth, MK_CHOOSE } from "./market.js"; import { waveMonth, WV_CHOOSE } from "./wave.js"; /* 판이 바뀐다(11-23) */ import { spaceMonth } from "./space.js"; // 시장 충격(v4.25b)
 import { jackpotMonth, JP_CHOOSE } from "./jackpot.js"; import { mentorMonth, MS_CHOOSE, afterAct as msAfterAct, msFix } from "./mentor.js"; import { hiddenMonth, HD_CHOOSE } from "./hidden.js"; import { hidden2Month, H2_CHOOSE } from "./hidden2.js"; // 다른 방식의 히든 길(v4.30) // 스승·선배·히든 길(v4.29) // 한방 전략(v4.27): 컨설팅·타로·웹소설 큰 판 제안과 결과
 import * as GC from "./cards.js"; // 성장 카드·아이템 60개(v4.25)
 import * as IT from "./items.js";
@@ -767,6 +767,7 @@ for (const [k, fn] of Object.entries(AFF_CHOOSE)) SCENE_FN[k] = fn;
 for (const [k, fn] of Object.entries({ ...MT_CHOOSE, ...GS_CHOOSE })) SCENE_FN[k] = fn;
 for (const [k, fn] of Object.entries(RV_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("rv_")) console.warn(`[라이벌] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 for (const [k, fn] of Object.entries({ ...PR.PR_CHOOSE, ...AB.AB_CHOOSE, ...UC.UC_CHOOSE })) { if (SCENE_FN[k]) console.warn(`[공간 타이쿤] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; } // v4.28 후기·가격 전쟁·명의
+for (const [k, fn] of Object.entries(WV_CHOOSE)) SCENE_FN[k] = fn; // 판이 바뀐다(11-23)
 for (const [k, fn] of Object.entries(MK_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("mk_")) console.warn(`[시장] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 for (const [k, fn] of Object.entries(INS.CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("ig_")) console.warn(`[인별] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; } // 인별 v2 장면
 for (const k of ["ms_q", "sn_q", "ms_side", "hd_hint", "hd_time"]) { if (SCENE_FN[k]) console.warn(`[스승·히든 길] onChoose ${k} 이름 확인`); else SCENE_FN[k] = (...a) => (MS_CHOOSE[k] || HD_CHOOSE[k])(...a); } // 늦게 찾기: mentor.js·hidden.js 를 먼저 불러도 순환 참조가 안 깨지게
@@ -880,7 +881,7 @@ export function endMonth(s) {
   for (const j of (s.sj?.active || [])) { const k = j === "cs" ? D.NICHES[s.cs?.niche || "newgrad"]?.stat : D.MG_STAT.of[j]; if (k) gainStat(s, k, D.JOB_XP, "jobxp_" + j); } // v4.28d 실전 경험
   hiddenMonth(s, r, notes, scenes); hidden2Month(s, r, notes, scenes); // 히든 길(v4.29) + 다른 방식의 히든 길(v4.30, s.h2.cut·ap): 조건·낌새·문 열림·보상(s.hid.cutNow → market.js sideCut)
   spaceMonth(s, r, notes); // 공간형 유지비(v4.27): 재계약 5%·가구 교체·규모 문제
-  marketMonth(s, r, notes, scenes); // 시장 충격(v4.25b): 라이벌 압박 뒤 남은 이익에 시장 배수, 새 충격 장면
+  marketMonth(s, r, notes, scenes); waveMonth(s, r, notes, scenes); // 시장 충격(v4.25b): 라이벌 압박 뒤 남은 이익에 시장 배수, 새 충격 장면
   msFix(s); mentorMonth(s, r, notes, scenes); // 스승·선배(v4.29): 스승의 편지·보험 특강·인별 DM·투잡 인연
   jackpotMonth(s, r, notes, scenes); // 한방 전략(v4.27): 고정 수입·이익 배율·결과·새 제안(다른 event 장면 있으면 제안 쉼)
   if ([3, 4, 9, 10].includes(s.cal) && SYN.on(s, "season")) { s.mental = clamp(s.mental - 2, 0, 100); notes.push("성수기 충돌: 컨설팅 문의와 파티룸 주말 관리가 겹쳤다(멘탈 −2)"); }
@@ -941,7 +942,7 @@ export function endMonth(s) {
   let side = (M.inc["파티룸 매출"] || 0) - (M.exp["파티룸 비용"] || 0) + (M.inc["컨설팅"] || 0) + (M.inc["VOD·전자책"] || 0) + (M.inc["강의료"] || 0) + (M.inc["파티룸 강의료"] || 0) + (M.inc["인별 수익"] || 0) - (M.exp["컨설팅 광고·수수료"] || 0) + (M.inc["에어씨앤씨 매출"] || 0) - (M.exp["에어씨앤씨 비용"] || 0) + (M.inc["무인카페 매출"] || 0) - (M.exp["무인카페 비용"] || 0) + (M.inc["파티룸 창업 컨설팅"] || 0) + (M.inc["가맹비"] || 0) + (M.inc["가맹 로열티"] || 0) + (M.inc["AI 플랫폼 구독"] || 0) - (M.exp["플랫폼 서버·인건비"] || 0);
   const px = {}; for (const P of REG.JOBS) if (plugRet[P.key] !== undefined) { px[P.key] = Math.round(REG.sideOf(P, M, plugRet[P.key])); side += px[P.key]; }
   side += (M.inc["라이벌 반사이익"] || 0) - (M.exp["라이벌 경쟁"] || 0); // 라이벌(v4.25)
-  side += (M.inc["시장 영향"] || 0) - (M.exp["시장 영향"] || 0) - (M.exp["투잡 부대비용"] || 0) + (M.inc["단골·입소문"] || 0); // 시장 충격·부대비용(v4.25b)
+  side += (M.inc["시장 영향"] || 0) - (M.exp["시장 영향"] || 0) - (M.exp["투잡 부대비용"] || 0) + (M.inc["단골·입소문"] || 0) - (M.exp["판 변화"] || 0); // 시장 충격·부대비용(v4.25b)
   side += (M.inc["한방 전략"] || 0) - (M.exp["한방 전략"] || 0); // 한방 전략(v4.27)
   side += (M.inc["히든 길"] || 0) - (M.exp["히든 길"] || 0); // 히든 길(v4.29)
   s.taxBase += Math.max(0, side);
@@ -1260,7 +1261,7 @@ function startMacro(s, m, notes, scenes) {
   if (m.id === "crash") { const loss = Math.round(s.invest * 0.28 * k); s.invest -= loss; addMoney(s, "exp", "투자 손익", loss); lines.push(`투자 −${won(loss)}`); }
   if (m.id === "tax") { s.co.eye = clamp(s.co.eye + 5 * eyeMult(s), 0, 100); }
   log(s, `[경제] ${m.n}`, "era");
-  scenes.push(story(`경제 뉴스 · ${m.n}`, (((s.co.quit || s.co.fired) && m.textQ) || m.text) + (lines.length ? ` (${lines.join(", ")})` : "")));
+  scenes.push({ ...story(`경제 뉴스 · ${m.n}`, (((s.co.quit || s.co.fired) && m.textQ) || m.text) + (lines.length ? ` (${lines.join(", ")})` : "")), warn: { head: m.n, sub: "경제 뉴스" } }); // 11-23 큰 사건은 WARNING 화면부터
 }
 function startEra(s, sc) {
   const t = `${sc.id} ${sc.title}`; const m = mod(s, "eraMult", 1);

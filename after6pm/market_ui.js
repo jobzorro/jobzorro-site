@@ -1,6 +1,7 @@
 // 투잡 보드 위쪽 작은 칸(v4.25b): 역량형 '배우는 기간' 한 줄 + 지금 걸린 시장 충격. 엔진은 engine/sj.js skillInfo, engine/market.js
 import { skillInfo } from "./engine/sj.js";
 import { boardInfo, marketDemo } from "./engine/market.js";
+import { waveInfo } from "./engine/wave.js"; // 판이 바뀐다(11-23)
 
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const pc = (x) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.round(Math.abs(x) * 100)}%`;
@@ -17,5 +18,6 @@ export function marketBox(S, k, noSkill) {
   try { if (/-mktest/.test(location.hash) && !S.mk?.list?.length) marketDemo(S, k); } catch (e) {} // 시험용 해시
   const b = boardInfo(S, k);
   const mk = b ? `<div class="card mkbox" style="padding:6px 10px;margin-bottom:8px"><div class="row" style="gap:6px"><b class="tiny">시장</b><span class="grow"></span><span class="tiny" style="color:${b.net < 0 ? "var(--red)" : "var(--green)"}">이익 영향 ${pc(b.net)}</span></div>${b.list.map((x) => `<div class="tiny muted" style="font-size:11px">${esc(x.n)} · ${pc(x.v)} · ${x.left}개월 남음</div>`).join("")}</div>` : "";
-  return (noSkill ? "" : skillLine(S, k)) + mk;
+  const w = waveInfo(S, k), wv = w && !w.own ? `<div class="card a6wbox" style="padding:6px 10px;margin-bottom:8px"><div class="row" style="gap:6px"><b class="tiny bad">판이 바뀌었다</b><span class="tiny">${esc(w.n)}</span><span class="grow"></span><span class="tiny" style="color:${w.cut > 0 ? "var(--red)" : "var(--green)"}">${w.cut > 0 ? `이익 −${Math.round(w.cut * 100)}%` : "적응 끝"}</span></div><div class="tiny muted" style="font-size:11px">${w.mode === "shift" ? (w.left > 0 ? `갈아타는 중 · ${w.left}개월 뒤 원래대로` : "새 방식이 자리를 잡았어요") : w.mode === "half" ? "반만 대응 중 · 해마다 조금씩 더 줄어요" : "하던 대로 가는 중 · 해마다 더 줄어요. 2년 뒤와 4년 뒤에 다시 고를 수 있어요"}</div></div>` : "";
+  return (noSkill ? "" : skillLine(S, k)) + mk + wv;
 }

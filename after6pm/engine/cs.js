@@ -78,6 +78,16 @@ export function can(s, id) {
 // 컨설팅 × 파티룸: 내 공간에서 하면 효과 +30%, 강의·세미나룸·교육장이면 +60%
 function roomBoost(s) { if (!SYN.on(s, "cs_room")) return 1; return s.pr.rooms.some((x) => x.status === "open" && ["lecture", "edu", "study"].includes(x.concept)) ? 1.6 : 1.3; }
 // 실력 = 핵심 능력과 커리어의 평균. 가격 단계(레벨 보너스 포함)가 요구하는 실력보다 낮으면 환불·혹평
+// AI 대세(11-23): 신입 취업 쪽(자소서·공기업·면접) 문의는 해가 갈수록 줄어든다. 경력 이직은 줄지 않고, 강의를 다닌 만큼 덜 줄어든다
+export const CS_AI = { from: 4, perYear: 0.07, floor: 0.4, w: { newgrad: 1, public: 1, interview: 0.6, career: 0 }, lectPer: 0.02, lectMax: 0.1, priceW: 0.35, lectFeeW: 1, lectOfferW: 0.4 }; // lectOfferW: 취업 특강 섭외도 덜 들어오는 정도 // lectFeeW: 강의료도 같이 내려가는 정도(취업 특강 예산이 줄어서) // priceW: 단가도 같이 내려가는 정도(AI 첨삭이 싸져서)
+export function aiCut(s, k) { // 그 분야 문의 배수(1 = 그대로)
+  if (typeof process !== "undefined" && process.env?.CSAI) Object.assign(CS_AI, JSON.parse(process.env.CSAI)); // 봇 시험용
+  const yrs = Math.max(0, s.t / 12 - CS_AI.from), w = CS_AI.w[k] ?? 1;
+  const cut = Math.min(1 - CS_AI.floor, yrs * CS_AI.perYear) * w * (1 - Math.min(CS_AI.lectMax, (s.cs.lectN || 0) * CS_AI.lectPer));
+  return 1 - cut;
+}
+// 지금 내 분야 평균으로 본 감소 폭(%) · 0이면 영향 없음
+export function aiDrop(s) { const ks = s.cs.niches || []; if (!ks.length) return 0; return Math.round((1 - ks.reduce((a, k) => a + aiCut(s, k), 0) / ks.length) * 100); }
 export function skill(s) { const k = D.NICHES[s.cs.niche || "newgrad"].stat; return Math.round(s.st[k] * 0.7 + s.st.career * 0.3); } // v4.25: 분야 능력치(대개 글쓰기) 비중을 높임
 export function priceNeed(s) { return D.CS_PRICE_NEED[s.cs.price] + (s.cs.lv >= 4 ? 20 : 0) + (s.cs.lv >= 5 ? 15 : 0); }
 export const gap = (s) => priceNeed(s) - skill(s);
@@ -154,7 +164,7 @@ export function act(s, r, id, arg, boost = 1) {
     return { lines: [`특강 참석자 중 ${n}명 상담 신청`, "후기 +1", room > 1 ? `내 파티룸에서 진행 ×${room}` : ""].filter(Boolean), msg: room > 1 ? "내 파티룸에 의자 30개를 깔았다. 대관료 0원." : "질문이 끝나지 않았다. 마이크를 내려놓으니 9시 반." };
   }
   if (id === "cs_lecture") {
-    cs.offers--; const L = D.CS_LECT, fee = Math.round((L.fee + skill(s) * L.perSkill + (s.fame || 0) * L.perFame) * SYN.pi(s) * mod(s, "lectureMult", 1)); /* v4.27 실력·명성만큼 강의료 */ s.cash += fee; addMoney(s, "inc", "강의료", fee); cs.monthRev += fee;
+    cs.offers--; const L = D.CS_LECT, fee = Math.round((L.fee + skill(s) * L.perSkill + (s.fame || 0) * L.perFame) * SYN.pi(s) * mod(s, "lectureMult", 1) * (1 - aiDrop(s) / 100 * CS_AI.lectFeeW)); /* 11-23 AI 대세: 특강 예산도 준다 */ /* v4.27 실력·명성만큼 강의료 */ s.cash += fee; addMoney(s, "inc", "강의료", fee); cs.monthRev += fee;
     cs.refer += 1; cs.lectN = (cs.lectN || 0) + 1; applyEff(s, { eye: 3 });
     return { lines: [`강의료 +${won(fee)}`, "신뢰 +, 소개 +", giveBrk(s, "talk", "강의 섭외")], msg: "대학 커리어센터 2시간 특강. 학생 80명." };
   }
@@ -179,7 +189,7 @@ function prodPick(s, r, niche) {
   const w = { newgrad: [["edit", 0.65], ["coach", 0.2], ["pkg", 0.15]], public: [["edit", 0.65], ["coach", 0.2], ["pkg", 0.15]], interview: [["coach", 0.75], ["edit", 0.1], ["pkg", 0.15]], career: [["edit", 0.4], ["coach", 0.2], ["pkg", 0.4]] }[niche];
   let p = r.weighted(w); if (p === "pkg" && !pk) p = niche === "interview" ? "coach" : "edit"; return p;
 }
-function priceOf(s, prod, niche) { const b = D.CS_PRODUCTS[prod].price * D.NICHES[niche].priceF * D.CS_PRICE[s.cs.price].mult * (s.cs.lv >= 4 ? 1.3 * mod(s, "csLv4Price", 1) : 1) * (s.cs.lv >= 5 ? 1.25 : 1); return Math.round(b * 10) / 10; }
+function priceOf(s, prod, niche) { const b = D.CS_PRODUCTS[prod].price * D.NICHES[niche].priceF * (1 - (1 - aiCut(s, niche)) * CS_AI.priceW) * D.CS_PRICE[s.cs.price].mult * (s.cs.lv >= 4 ? 1.3 * mod(s, "csLv4Price", 1) : 1) * (s.cs.lv >= 5 ? 1.25 : 1); return Math.round(b * 10) / 10; }
 function addClient(s, r, src) {
   const cs = s.cs; const niche = r.pick(cs.niches); const prod = prodPick(s, r, niche);
   let who = null;
@@ -221,7 +231,7 @@ export function monthStart(s, r) {
     소개: cs.refer,
     헤드헌터: cs.niches.includes("career") ? helperPower(s, "cs_headhunter") * 2.5 : 0,
   };
-  const seas = cs.niches.reduce((a, k) => a + (s.era.rolling ? 1 : D.NICHES[k].season[s.cal - 1]) * D.NICHES[k].demand, 0) / Math.max(1, cs.niches.length) * (1 + 0.35 * (cs.niches.length - 1));
+  const seas = cs.niches.reduce((a, k) => a + (s.era.rolling ? 1 : D.NICHES[k].season[s.cal - 1]) * D.NICHES[k].demand * aiCut(s, k), 0) / Math.max(1, cs.niches.length) * (1 + 0.35 * (cs.niches.length - 1));
   let mult = 0.58 * BIG.fullLead(s) * seas * (s.era.winter ? 0.9 : 1) * mod(s, "leadMult", 1) * (s.era.ai && cs.niche === "newgrad" ? 0.85 : 1) * (s.era.freeze ? 1.2 : 1) * SJ.ramp(s, "cs") * SJ.skillRamp(s, "cs") * G.lead; // v4.25b 배우는 기간 · f30 합격 보장
   let leads = 0; cs.src = {};
   for (const [k, v] of Object.entries(src)) leads += v * mult;
@@ -245,6 +255,7 @@ export function month(s, r, notes, scenes) {
   const cs = s.cs, ch = cs.ch;
   checkOpen(s, notes);
   if (!cs.niche) return 0;
+  if (cs.open && s.cal === 1) { const d = aiDrop(s); if (d >= 5) notes.push(`컨설팅: AI 자소서가 대세라 신입 취업 쪽이 줄면서 내 문의가 예전보다 ${d}% 줄었어요. ${cs.niches.includes("career") ? "경력 이직 쪽은 그대로예요." : "경력 이직으로 넓히는 게 가장 확실해요. 강의는 버팀목이지만 강의료와 섭외도 같이 줄어요."}`); }
   // 조력자 공동 코치: 자동 처리(수익 60%)
   let coach = helperPower(s, "cs_coach") * 3;
   let auto = 0;
@@ -278,7 +289,7 @@ export function month(s, r, notes, scenes) {
   // 실명 활동 노출
   if (cs.open && cs.nick === "real") s.co.eye = clamp(s.co.eye + 1 * eyeMult(s) / 1.4, 0, 100);
   // 강의 섭외
-  if (cs.open && (cs.reviews >= D.CS_LECT.rev || helpers(s, "cs_lecture").length) && cs.offers < D.CS_LECT.maxOffers && r.chance(D.CS_LECT.p + helperPower(s, "cs_lecture") * 0.15)) { cs.offers++; notes.push("대학 커리어센터에서 강의 섭외가 왔다"); }
+  if (cs.open && (cs.reviews >= D.CS_LECT.rev || helpers(s, "cs_lecture").length) && cs.offers < D.CS_LECT.maxOffers && r.chance((D.CS_LECT.p + helperPower(s, "cs_lecture") * 0.15) * (1 - aiDrop(s) / 100 * CS_AI.lectOfferW))) { cs.offers++; notes.push("대학 커리어센터에서 강의 섭외가 왔다"); }
   // 레벨
   cs.revHist.push(Math.round(cs.monthRev)); if (cs.revHist.length > 24) cs.revHist.shift();
   const last3 = cs.revHist.slice(-3);
@@ -334,7 +345,7 @@ function csEv(s, r, id) {
   if (id === "f30_leak") { const K = CS_F30.leak, m = Math.round(K.cash * SYN.pi(s)); cs.leakT = s.t; cs.leakN = (cs.leakN || 0) + 1; s._csF30 = { cash: m }; return E("후기 속 개인정보", "취준 커뮤니티에 글이 올라왔다. \"이 컨설턴트 후기 캡처에 합격자 회사랑 이름 다 보임.\" 고객에게 전화가 왔다. \"회사 사람들이 다 알아요…\"", [c(`즉시 내리고 사과, 앞으로 꼼꼼히 가린다 (위로금 −${won(m)}, 후기 −${K.rev[0]})`), c("모자이크해서 다시 올리고 해명글을 쓴다", { stat: "write", dc: 50 }), c(`동의받은 거라며 버틴다 (후기 −${K.rev[2]}, 크멍 상세 −${K.kmong})`)]); }
   if (id === "f30_bid") {
     const B = CS_F30.bid, L = D.CS_LECT, emp = employedCs(s), left = Math.max(0, B.leaveMax - (cs.leave || 0));
-    const per = Math.round((L.fee + skill(s) * L.perSkill + (s.fame || 0) * L.perFame) * SYN.pi(s) * mod(s, "lectureMult", 1) * B.mult), tot = per * B.n, org = ORGS[(s.t + (cs.lectN || 0)) % ORGS.length];
+    const per = Math.round((L.fee + skill(s) * L.perSkill + (s.fame || 0) * L.perFame) * SYN.pi(s) * mod(s, "lectureMult", 1) * B.mult * (1 - aiDrop(s) / 100 * CS_AI.lectFeeW)), tot = per * B.n, org = ORGS[(s.t + (cs.lectN || 0)) % ORGS.length];
     cs.bidT = s.t; s._csBid = { tot, org };
     const ch = [c("이번엔 넘긴다"), c(emp ? `연차 ${B.days}일 쓰고 제안 PT를 한다` : "제안 PT를 준비한다", { stat: "talk", dc: B.dc })];
     if (emp) ch.push(c(`저녁·주말 강의로 바꿔 제안 (강의료 ×${B.eveMult}, 연차 0)`, { stat: "charm", dc: B.eveDc }));
@@ -427,7 +438,8 @@ export function setPolicy(s, key) {
 export function f30Box(S, esc, won) {
   const cs = S.cs; if (!cs.open) return "";
   const showG = cs.guarSeen || cs.reviews >= CS_F30.guarRev, showM = cs.maskSeen || cs.passes > 0, showL = (cs.lectN || 0) > 0;
-  if (!showG && !showM && !showL) return "";
+  const drop = aiDrop(S), a = drop >= 5 ? `<div class="tiny bad" style="margin-top:8px">AI 대세: 내 문의 −${drop}%(신입 취업 쪽이 해마다 더 줄어요). 경력 이직은 줄지 않아요. 강의는 버팀목이지만 강의료와 섭외도 같이 줄어요.</div>` : "";
+  if (!showG && !showM && !showL && !a) return "";
   const pp = Math.round(passProb(S, "edit") * 100), G = CS_F30.guar[cs.guar || 0];
   const btn = (attr, on, n, d) => `<button class="${on ? "on" : ""}" data-cspol="${attr}"><b>${esc(n)}</b><span class="tiny muted">${esc(d)}</span></button>`;
   const g = showG ? `<div class="sec" style="margin-top:0">합격 보장 <span class="tiny muted">· 내 고객 합격률 약 ${pp}%</span></div>
@@ -436,7 +448,7 @@ export function f30Box(S, esc, won) {
   const m = showM ? `<div class="sec" style="margin-top:8px">합격 후기 가림 <span class="tiny muted">${cs.leakN ? `· 논란 ${cs.leakN}번` : ""}</span></div>
     <div class="pick">${Object.entries(CS_F30.mask).map(([k, x]) => btn(`m:${k}`, (cs.mask || "name") === k, x.n, x.d)).join("")}</div>` : "";
   const l = showL ? `<div class="tiny muted" style="margin-top:8px">강의 ${cs.lectN}회${employedCs(S) ? ` · 올해 연차 ${cs.leave || 0}/${CS_F30.bid.leaveMax}일` : ""} · 기관 입찰은 2·3·8·9월 예산 시즌에 와요</div>` : "";
-  return `<div class="card"><h3>운영 원칙 <small>${esc(G.n)}</small></h3>${g}${m}${l}
+  return `<div class="card"><h3>운영 원칙 <small>${esc(G.n)}</small></h3>${g}${m}${l}${a}
     <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer;display:inline-block">자세히 ▾</summary><div class="tiny muted" style="margin-top:4px">합격 보장은 결제를 늘리지만, 고용 한파처럼 시즌이 나쁘면 불합격이 몰려 환불도 몰려요. 실력(합격률)이 높을수록 남는 장사예요. 후기를 대충 가리면 회사·이름이 비쳐 논란이 터질 수 있어요. 대학 강의를 한 번 하면 기관 특강 입찰 공고가 오고, 평일 강의는 연차를 써야 해요.</div></details></div>`;
 }
 // 시험(#autoN-cs-f30guar|f30mask|f30leak|f30bid): 장면을 바로 만든다
