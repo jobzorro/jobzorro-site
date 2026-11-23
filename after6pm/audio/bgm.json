@@ -5,7 +5,7 @@
  "slots": {
   "title": {
    "name": "시작 화면",
-   "use": "starlight_city",
+   "use": "night_life",
    "mode": "loop",
    "list": [
     "starlight_city",
@@ -25,7 +25,7 @@
   },
   "board": {
    "name": "투잡 보드·바쁠 때",
-   "use": "new_shoes",
+   "use": "day_dreams",
    "mode": "loop",
    "list": [
     "new_shoes",
@@ -34,7 +34,7 @@
   },
   "crisis": {
    "name": "위기·연체",
-   "use": "fight_left",
+   "use": "cyber_anxiety",
    "mode": "loop",
    "list": [
     "fight_left",
