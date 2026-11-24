@@ -101,7 +101,7 @@ function dexDetail(id, dex) {
   return `<h2>${back}<span class="grow"></span><button class="x" data-close>✕</button></h2>
     ${stage}
     <div class="pp-dh" style="--gc:${G.c}"><b>${esc(c.name)}</b><span class="tag" style="color:${G.c}">${G.ic} ${esc(G.s)}</span><span class="tag pink">${ri !== "·" ? ri + " " : ""}${esc(rn)}</span></div>
-    <div class="small">${esc(c.job)} · ${c.age}세</div>
+    <div class="small">${esc(X.S && X.E?.HL ? X.E.HL.jobOf(X.S, id) : c.job)} · ${X.S && X.E?.charAge ? X.E.charAge(X.S, c) : c.age}세</div>
     <div class="small muted" style="margin:2px 0 8px">${o[1] >= 10 ? esc(c.tagline || "") : "아직 잘 모르는 사이"}</div>
     <div class="kv pp-kv"><div><div class="k">처음 만난 인생</div><div class="v">${o[0] ? `${o[0]}회차` : "예전 인생"}</div></div><div><div class="k">최고 호감</div><div class="v">${relMark(id, o[1], o)} ${o[1]}</div></div><div><div class="k">관계 최고</div><div class="v">${esc(rn)}</div></div><div><div class="k">자주 있는 곳</div><div class="v small">${esc(places(c).slice(0, 2).join(", "))}</div></div></div>
     <div class="card" style="margin-top:8px"><div class="small"><b>같이 겪은 일</b></div>${ev.length ? `<div class="pp-ev">${ev.map((t) => `<span style="--gc:${G.c}">${esc(t)}</span>`).join("")}</div>` : `<div class="tiny muted" style="margin-top:4px">아직 큰 일은 없었어요. 호감 20·45·70에서 이야기가 열려요.</div>`}</div>

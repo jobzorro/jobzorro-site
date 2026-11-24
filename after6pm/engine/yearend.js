@@ -4,6 +4,7 @@
 // - 본잡 전환 신호: 올해 투잡 이익(12달 합, 적자 달 포함) ÷ 지금 연봉. 1배 = 가능성, 1.5배 = 강하게 권유, 2배 = "나와라!", 3배 = 아직도 회사에?
 //   같은 단계는 다시 묻지 않고(s.fullAsk), 더 높은 단계에 오르면 다시 묻는다. 비상금 6개월치는 안내만 한다(막지 않음).
 import { D, won, jo, salary, netWorth, fireInfo, monthlySpend, jobYear } from "./core.js";
+import * as HL from "./heroine.js"; // 11-25 올해 그 사람 한 줄
 import { yearOffer } from "./cards.js"; // 연말 성장 카드(v4.25)
 
 export const FULL_STEPS = [1, 1.5, 2, 3];
@@ -79,6 +80,7 @@ export function yearData(s) {
     past, hasJob: (s.sj?.active || []).length > 0, firstBlack: side > 0 && prevSide <= 0 && s.hist.some((h) => h.t < y0.t && h.side < 0), hi, ev,
     married: yt(s.fam.marriedT), baby: s.fam.kids.some((k) => yt(k.born)), burnHit: (s.burnouts || 0) > (y0.burn || 0), minMental,
     quit: !!quitThisYear, fired: !!firedThisYear, age: Math.floor(s.age), first: s.t - y0.t < 12 && y0.t <= 0,
+    hl: (() => { try { return HL.yearLine(s, y0.t); } catch (e) { return ""; } })(), // 11-25 올해 인생 사건이 있었던 가까운 사람 한 줄
   };
 }
 

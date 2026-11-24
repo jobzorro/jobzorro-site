@@ -250,7 +250,7 @@ export function members(s, id) {
 function hashN(str) { let h = 7; for (const ch of str) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
 const CO_RE = /(대리|과장|사원|팀장|기획|마케터|개발자|인사|회계|영업|MD|PM|디자이너|연구원|재무|컨설턴트|애널리스트|회사원|직장인|행원)/;
 // 11-24 우리 회사 사람만: 예전에는 직업 글에 '사원·인사·팀장' 같은 낱말이 있거나 오피스 거리(officest)에 다니기만 해도 회사에 나와서, 호텔 매니저·대학 취업지원센터 팀장이 우리 사무실에 앉아 있었다. 다른 회사 사람은 자기 장소(오피스 거리 등)에만 나온다
-export function coworkers(s) { return s.cast.filter((id) => { const c = CHAR[id]; return c && (c.co || (c.hangouts || []).includes("office")); }); }
+export function coworkers(s) { return s.cast.filter((id) => { const c = CHAR[id]; return c && (c.co || (c.hangouts || []).includes("office")) && !(c.hire && !(s.co.hired || []).includes(id)); }); } // 11-25 입사 전 신입·경력직·인턴은 회사 장소에 서지 않는다
 export function refresh(s, r) { // 이번 달 회사·모임에 나오는 사람들
   for (const job of s.sj?.active || []) { const p = s.sj.rp?.[job]; if (ENTRY[job] && p && p.t0 !== undefined && p.t0 < s.t && p.shock === undefined && p.done === undefined) { p.shock = s.t; (s.sceneQ = s.sceneQ || []).push(shockScene(s, job)); } } // 첫 영업 달 정산 뒤 '생각보다 안 되네'
   if (!(s.co.quit || s.co.fired)) {

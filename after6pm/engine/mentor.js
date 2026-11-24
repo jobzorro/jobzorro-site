@@ -128,7 +128,8 @@ const EXPR = ["smile", "neutral", "angry"];
 function turnScene(s, r, job, turn, pre = "", expr = "smile") {
   const id = MENTOR_OF[job], c = CHAR[id], T = Q[job][turn];
   const choices = shuffle3(r).map((k) => { const o = T[1 + k]; const laugh = k === 2 && o[2]; return { t: o[0], q: k, eff: { aff: MS_GAIN.aff[k] + (laugh ? 3 : 0), ...(k === 0 ? { mental: 1 } : {}) }, text: o[1] + (laugh ? " (엉뚱하지만 웃음 · 호감 +1)" : "") }; });
-  return { kind: "event", tag: "스승", mentor: job, title: `스승 · ${c.name} ${turn + 1}/4 · ${TURN_N[turn]}`, who: id, expr, text: (pre ? pre + "\n\n" : "") + T[0], onChoose: "ms_q", ms: { job, turn }, choices };
+  const out = s.co.quit || s.co.fired, t0 = out ? String(T[0]).replace(/"회사 다니면서[^"]*"/, "\"이제 이게 본업이죠?\"") : T[0]; // 11-25 퇴사한 사람에게 "회사 다니면서 하죠?"라고 묻지 않는다
+  return { kind: "event", tag: "스승", mentor: job, title: `스승 · ${c.name} ${turn + 1}/4 · ${out && turn === 2 ? "혼자 버티는 법" : TURN_N[turn]}`, who: id, expr, text: (pre ? pre + "\n\n" : "") + t0, onChoose: "ms_q", ms: { job, turn }, choices };
 }
 function startMentor(s, r, job, pre) {
   const M = msState(s), id = MENTOR_OF[job];

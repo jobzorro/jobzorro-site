@@ -12,7 +12,8 @@ const P_MARRIED = 0.1, P_SINGLE = 0.03; // 간격이 찬 달에 이벤트가 뜰
 // ── 도우미 ──
 const kAge = (s, k) => (s.t - k.born) / 12;
 const kidIn = (s, lo, hi) => s.fam.kids.find((k) => { const a = kAge(s, k); return a >= lo && a < hi; }) || null;
-const married = (s) => !!s.fam.spouse;
+const spFar = (s) => { const H = s.hl?.[s.fam.spouse]; return !!H && H.away != null && (H.away === -1 || typeof H.away === "string" || H.away > s.t); }; // 11-25 주말부부(히로인 배우자가 멀리 있다): 집에서 같이 겪는 사건은 쉰다
+const married = (s) => !!s.fam.spouse && !spFar(s);
 const alive = (s) => s.fam.parents > 0;
 const well = (s) => s.fam.parents >= 45;
 const side = (s) => (s.sj?.active?.length || 0) > 0 || (s.lastSide ?? 0) > 0;

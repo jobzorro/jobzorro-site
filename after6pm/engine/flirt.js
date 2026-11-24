@@ -41,8 +41,9 @@ const EV = [
 
 export function flirtMonth(s, r, scenes) {
   if (scenes.some((x) => x.kind === "event") || s.t - (s.flags.flT ?? -99) < GAP) return;
-  const sp = s.fam.spouse;
-  const lovers = Object.entries(s.rel).filter(([id, x]) => x.lover && !x.spouse && CHAR[id]).map(([id]) => id);
+  const hlFar = (id) => { const H = s.hl?.[id]; return !!H && H.away != null && (H.away === -1 || typeof H.away === "string" || H.away > s.t); }; // 11-25 멀리 있는 연인·배우자와는 이 사건이 안 뜬다
+  const sp = s.fam.spouse && !hlFar(s.fam.spouse) ? s.fam.spouse : null;
+  const lovers = Object.entries(s.rel).filter(([id, x]) => x.lover && !x.spouse && CHAR[id] && !hlFar(id)).map(([id]) => id);
   if (!sp && !lovers.length) return;
   if (!r.chance(0.09)) return;
   const pool = EV.filter(([id, who, ok]) => !s.flags["fl_" + id] && (!ok || ok(s)) && (who === "both" || (who === "spouse" ? !!sp : lovers.length > 0)) && (who !== "both" || sp || lovers.length));

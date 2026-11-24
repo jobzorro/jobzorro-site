@@ -151,7 +151,7 @@ function evList(s) {
       c: [{ t: "리딩비를 돌려주고 설명이 모자랐다고 사과한다", eff: { tr_cost: Math.round(u * 2), tr_rep: -1 }, text: "\"카드는 가능성이지 확정이 아니었어요. 제 설명이 부족했습니다.\" 답장은 '네' 한 글자였다." },
           { t: "환불 대신 지금 마음을 다시 읽어 주겠다고 한다", check: { stat: "talk", dc: 45 }, ok: { text: "한 시간 통화. 카드는 세 장만 뽑았다. \"사실 답은 알고 있었어요.\" 손님이 다음 달 예약을 잡았다.", eff: { tr_rep: 2, tr_reg: 1, mental: -3 } }, ng: { text: "\"또 카드로 넘어가시네요.\" 통화가 끊겼다. 타로 카페에 긴 글이 올라왔다.", eff: { tr_rep: -4, mental: -4 } } },
           { t: "카드는 가능성일 뿐이라며 거절한다", eff: { tr_rep: -6, mental: -3 }, text: "맞는 말이다. 맞는 말이 위로가 되는 날은 아니었다." }] },
-    { id: "e15", ph: "crisis", ok: () => T.lv >= 3 && s.cal === 2, t: "2월의 정적", x: "신년 특수가 끝났다. 2월 둘째 주 문의는 하루 1건. 지난달 번 돈으로 산 조명이 방 한구석에서 빛난다.",
+    { id: "e15", ph: "crisis", ok: () => T.lv >= 3 && s.cal === 1 /* 11-25: 1월 달 마감에 만들어 2월이 시작될 때 뜬다. 전에는 2라서 3월에 떴다 */, t: "2월의 정적", x: "신년 특수가 끝났다. 2월 둘째 주 문의는 하루 1건. 지난달 번 돈으로 산 조명이 방 한구석에서 빛난다.",
       c: [{ t: "비수기용 니치 콘텐츠 시리즈를 올린다", eff: { hp: -4, tr_follow: 200, stat: { write: 0.5 } }, text: "'퇴근길 1장 리딩' 시리즈. 저장이 조금씩 쌓인다." },
           { t: "지인 추천 50% 할인권을 뿌린다", eff: { tr_cost: Math.round(5 * pi), tr_q: 6 }, text: "할인권 들고 친구의 친구가 왔다." }] },
     { id: "e16", ph: "crisis", ok: () => T.lv >= 4 && T.room === "none" && (T.wait >= 3 || T.lv >= 5), t: "상담실 임대 유혹", x: `예약 대기가 생기자 작은 상담실을 얻을까 싶다. 월세 ${won(Math.round(55 * pi))}, 인테리어 ${won(Math.round(300 * pi))}.${company(s) ? " 평일엔 회사에 있어야 한다." : ""}`, on: true,
@@ -183,7 +183,7 @@ function pickEvent(s, r) {
   if (!e) return null;
   if (!T.seen.includes(e.id)) T.seen.push(e.id);
   T.evT = s.t; s._trEv = { id: e.id };
-  return { kind: "event", tag: "타로", title: e.t, text: e.x, ...(e.on ? { onChoose: "tr_ev" } : {}), choices: e.c };
+  return { kind: "event", tag: "타로", title: e.t, text: e.x, ...(e.on ? { onChoose: "tr_ev" } : {}), ...(["e05", "e15"].includes(e.id) ? { now: true } : {}), choices: e.c }; // now: 글에 달이 박힌 장면(12월 31일 밤·2월의 정적)은 다음 달로 미루지 않는다(11-25. 미뤄져서 6월에 '2월의 정적'이 뜨던 것)
 }
 
 // ───────── 문의 만들기(달 시작) ─────────

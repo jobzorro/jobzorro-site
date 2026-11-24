@@ -6,6 +6,7 @@ import * as D from "./defs.js";
 import * as GEN from "../gen/data.js";
 import * as SJ from "./sj.js";
 import * as RD from "./round.js";
+import * as HL from "./heroine.js"; // 11-25 까톡의 인생 조건·인생 단계 인사말
 import { CHAR, addAff, addMoney, isRomanceable, heartOpen, creditRoom, gainStat, log, jo } from "./core.js";
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -19,6 +20,7 @@ export const LV = {
 };
 const CHATS = GEN.CHATS || {}, FCHATS = GEN.FCHATS || [], HEV = (GEN.HELPER_EV || []).map((e) => ({ ...e, aff: Math.max(50, e.aff) })); // 11-24 투잡에 도움이 되는 사람인지는 호감 50부터 드러난다
 const HEVP = GEN.HELPER_EV_P || {}; // 인물별로 다시 쓴 조력자 사건 글(11-24). 효과 숫자는 유형 사건(HEV)의 것을 쓴다
+const chatsOf = (id) => [...(CHATS[id]?.chats || []), ...(HL.DEF[id]?.chats || []).filter((q) => q && q.k && q.msg?.length && q.opts?.length)]; // 11-25 히로인 자료(data/heroine/<id>.json chats)에 든 까톡도 같이 돈다
 const box = (s) => (s.lv = s.lv || { chatT: -9, hevT: -9, fseen: {} });
 
 // 관계 단계
@@ -78,7 +80,7 @@ export function act(s, r, id, kind, arg) {
     if (x.pingT === s.t) return { ok: false, msg: "이번 달엔 이미 연락했다" };
     if (s.pending) return { ok: false, msg: "장면을 먼저 끝내세요" };
     x.pingT = s.t; if (x.lover || x.spouse) x.dateT = s.t; const g = addAff(s, id, LV.ping.aff);
-    return { ok: true, lines: [`호감 +${g}`, x.lover ? "이번 달은 얼굴을 못 봐도 서운해하지 않아요" : ""].filter(Boolean), msg: `${c.name}에게 짧게 안부를 보냈다. 답장은 금방 왔다. "${c.lines?.hello || "잘 지내요?"}"` };
+    return { ok: true, lines: [`호감 +${g}`, x.lover ? "이번 달은 얼굴을 못 봐도 서운해하지 않아요" : ""].filter(Boolean), msg: `${c.name}에게 짧게 안부를 보냈다. 답장은 금방 왔다. "${HL.cur(s, id, "hello") || c.lines?.hello || "잘 지내요?"}"` };
   }
   if (kind === "walk" || kind === "showwork" || kind === "anniv") {
     if (!RD.loveOpen(s)) return { ok: false, msg: "연애는 2회차부터 열려요" };
@@ -124,7 +126,7 @@ export function loveMonth(s, r, notes, scenes) {
 const isJon = (c) => /요[.?!~ ]|요$|니다/.test(`${c.lines?.hello || ""} ${c.lines?.gift || ""}`);
 function chatScene(s, id, ch, friend) {
   const c = CHAR[id], Q = LV.chat.q;
-  return { kind: "event", who: id, expr: "smile", tag: "까톡", chat: true, chatF: !!friend, title: `${c.name} · ${ch.time || "밤 10:30"}`, onChoose: "lv_chat", chatK: ch.k, text: (ch.msg || []).join("\n"),
+  return { kind: "event", who: id, expr: "smile", tag: "까톡", chat: true, chatF: !!friend, title: `${c.name} · ${HL.chatTime(s, id, ch.time || "밤 10:30")}`, onChoose: "lv_chat", chatK: ch.k, text: (ch.msg || []).join("\n"),
     choices: [...ch.opts.map((o) => ({ t: o.t, eff: { aff: Q[o.q] ?? 0, mental: o.q === 2 ? 1 : 0 }, text: o.re, chatQ: o.q })), { t: "답하지 않는다", eff: { aff: friend ? -1 : LV.chat.ignore }, text: ch.ignore || "읽고 답하지 않았다. 며칠 동안 연락이 없었다.", chatQ: -1 }] };
 }
 function chatMonth(s, r, scenes, B) {
@@ -134,7 +136,7 @@ function chatMonth(s, r, scenes, B) {
     if (n >= K.max) break; const c = CHAR[id], st = stageOf(s, id), love = st === "lover" || st === "spouse";
     const dashed = !love && st !== "crush" && (x.dash || 0) >= 1 && x.heart == null && isRomanceable(s, c); // 11-24 사수는 ◆에서 바로 연인이 돼 두근두근 구간이 없다. 대시를 한 번이라도 했고 호감 50 이상이면 두근두근 까톡이 온다
     if (love || st === "crush" || dashed) {
-      const L = (CHATS[id]?.chats || []).filter((ch) => (love ? ch.when !== "crush" : ch.when !== "lover") && s.t - (x.chatSeen?.[ch.k] ?? -99) >= K.again);
+      const L = chatsOf(id).filter((ch) => (love ? ch.when !== "crush" : ch.when !== "lover") && s.t - (x.chatSeen?.[ch.k] ?? -99) >= K.again && HL.chatOk(s, id, ch)); // 11-25 hl 칸: 인생 사건 앞뒤로만 나오는 까톡
       if (!love && nc >= 1) continue; if (!L.length || !r.chance(love ? K.loverP : K.crushP)) continue; if (!love) nc++;
       const ch = r.pick(L); (x.chatSeen = x.chatSeen || {})[ch.k] = s.t; scenes.push(chatScene(s, id, ch, false)); n++;
     } else if (n === 0 && FCHATS.length && r.chance(K.friendP)) {
@@ -147,11 +149,11 @@ function chatMonth(s, r, scenes, B) {
 // 조력자 사건: 그 사람의 분야 투잡을 하고 있을 때만
 const jobOk = (s, board) => { const A = s.sj?.active || []; return board === "partyroom" ? A.includes("pr") : board === "consult" ? A.includes("cs") : A.length > 0; };
 export const helperGate = (c) => (c?.helper?.board === "partyroom" ? "파티룸을 할 때" : c?.helper?.board === "consult" ? "취업 컨설팅을 할 때" : "투잡을 할 때");
-export function helperTiers(s, id) { const c = CHAR[id], x = s.rel?.[id]; if (!c?.helper?.effect || c.helper.effect === "none") return null; return ["small", "ap", "big"].map((t) => { const e = HEV.find((q) => q.effect === c.helper.effect && q.tier === t); return e ? { tier: t, aff: e.aff, done: x?.hev?.[t] != null, on: jobOk(s, c.helper.board) } : null; }).filter(Boolean); }
+export function helperTiers(s, id) { const c = CHAR[id], x = s.rel?.[id]; if (!c?.helper?.effect || c.helper.effect === "none") return null; return ["small", "ap", "big"].map((t) => { const e = HEV.find((q) => q.effect === c.helper.effect && q.tier === t); return e ? { tier: t, aff: e.aff - HL.hevCut(s, id), done: x?.hev?.[t] != null, on: jobOk(s, c.helper.board) } : null; }).filter(Boolean); }
 function helperMonth(s, r, scenes, B) {
   if (!HEV.length || s.t - B.hevT < LV.hev.gap || s.t < LV.hev.first || scenes.some((q) => q.hev)) return;
   const C = [];
-  for (const [id, x] of Object.entries(s.rel || {})) { const c = CHAR[id]; if (!c?.helper?.effect || !jobOk(s, c.helper.board)) continue; for (const e of HEV) if (e.effect === c.helper.effect && x.aff >= e.aff && x.hev?.[e.tier] == null) C.push([id, e]); }
+  for (const [id, x] of Object.entries(s.rel || {})) { const c = CHAR[id]; if (!c?.helper?.effect || !jobOk(s, c.helper.board) || HL.isHidden(s, id)) continue; for (const e of HEV) if (e.effect === c.helper.effect && x.aff >= e.aff - HL.hevCut(s, id) && x.hev?.[e.tier] == null) C.push([id, e]); } // 11-25 히로인: 떠난 사람은 건너뛰고, 문턱을 낮춘 사람(hev)은 일찍 온다
   if (!C.length) return; const [id, e] = r.pick(C); if (!r.chance(LV.hev.p[e.tier] || 0.15)) return;
   const c = CHAR[id], x = s.rel[id], P = HEVP[id]?.[e.tier], pOk = P && Array.isArray(P.choices) && P.choices.length === e.choices.length, fill = (t) => String(t || "").replace(/\{n\}/g, c.name), fx = (ef) => { if (!ef) return ef; const o = { ...ef }; if (o.boost && x.spouse) o.boost = { ...o.boost, pct: o.boost.pct * 1.2 }; return o; };
   (x.hev = x.hev || {})[e.tier] = s.t; B.hevT = s.t;
@@ -165,7 +167,7 @@ export function helperDemo(s, tier) { // 화면 시험용
 // 까톡 답 바꾸기: 지난 답의 호감 변화를 되돌리고 같은 까톡을 다시 연다
 export function chatRedo(s, id) {
   const x = s.rel?.[id], L = x?.lastChat; if (!x || !L || L.q >= 2) return null;
-  const ch = L.f ? FCHATS.find((q) => q.k === L.k) : (CHATS[id]?.chats || []).find((q) => q.k === L.k); if (!ch) return null;
+  const ch = L.f ? FCHATS.find((q) => q.k === L.k) : chatsOf(id).find((q) => q.k === L.k); if (!ch) return null;
   x.aff = clamp(x.aff - L.d, 0, 100); delete x.lastChat; return chatScene(s, id, ch, L.f);
 }
 export function chatDemo(s, when) { for (const [id, x] of Object.entries(s.rel || {})) { const ch = (CHATS[id]?.chats || []).find((q) => q.when === (when || "crush")); if (ch) { x.aff = Math.max(x.aff, 60); return chatScene(s, id, ch, false); } } const id = Object.keys(CHATS).find((k) => CHAR[k]); if (!id) return null; return chatScene(s, id, CHATS[id].chats[0], false); }

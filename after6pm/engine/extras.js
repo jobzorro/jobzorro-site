@@ -162,7 +162,7 @@ const PE_BY = {}; // 행동 id → 사건들
 for (const e of GEN.PERSON_EV || []) for (const a of e.acts || []) (PE_BY[a] = PE_BY[a] || []).push(e);
 export function personEvent(s, r, actId, arg) {
   const L = PE_BY[actId]; if (!L || !L.length) return null; const V = st(s); if (V.peT === s.t) return null;
-  const C = L.filter((e) => { const x = s.rel?.[e.who]; if (!x || !CHAR[e.who] || (x.aff || 0) < PE.aff) return false; if (x.pe !== undefined && s.t - x.pe < PE.gap) return false; if (actId === "hb_go" && !(e.hb || []).includes(arg)) return false; return true; });
+  const C = L.filter((e) => { const x = s.rel?.[e.who]; if (!x || !CHAR[e.who] || (x.aff || 0) < PE.aff) return false; { const H = s.hl?.[e.who]; if (H && (H.home || H.away === -1 || typeof H.away === "string" || H.away > s.t)) return false; } /* 11-25 멀리 떠난 히로인과는 같이 할 수 없다 */ if (x.pe !== undefined && s.t - x.pe < PE.gap) return false; if (actId === "hb_go" && !(e.hb || []).includes(arg)) return false; return true; });
   if (!C.length || !r.chance(PE.p)) return null;
   const e = r.pick(C), c = CHAR[e.who]; s.rel[e.who].pe = s.t; V.peT = s.t;
   return { kind: "event", who: e.who, expr: "smile", tag: "같이", title: `${jo(c.name, "과", "와")} 함께`, text: e.text, onChoose: "x_pe", choices: [{ t: "좋은 시간이었다", eff: e.eff || {}, text: "" }] };
@@ -183,7 +183,7 @@ export function nagScene(s, a) {
     warn: { head: a === NAG.ages[0] ? "마흔, 아직 혼자" : "마흔다섯, 아직 혼자", sub: `부모님의 걱정이 ${NAG.months}달 간다 · 달마다 멘탈 ${NAG.mental} · 행동력 ${NAG.ap}` }, choices: N.choices.map((ch) => fillCh(s, ch)) };
 }
 function nagMonth(s, notes, scenes) {
-  if (RD.isR1(s)) return false; const V = st(s), nt = s.t + 1; V.nag = V.nag || {};
+  if (RD.isR1(s)) return false; const V = st(s), nt = s.t + 1; V.nag = V.nag || {}; const nagging = V.nagLeft > 0;
   if (V.nagLeft > 0) { V.nagLeft--; s.mental = Math.max(0, s.mental + NAG.mental); s.apNext = (s.apNext || 0) + NAG.ap; notes.push(`부모님의 걱정 전화: 멘탈 ${NAG.mental} · 다음 달 행동력 ${NAG.ap}${V.nagLeft ? ` (${V.nagLeft}달 더)` : " (이번 달까지)"}`); }
   const age = (s.startAge || 27) + nt / 12, lover = Object.values(s.rel || {}).some((x) => x.lover);
   for (const a of NAG.ages) {
@@ -191,8 +191,19 @@ function nagMonth(s, notes, scenes) {
     const single = a === NAG.ages[0] ? !lover && !s.fam?.spouse : !s.fam?.spouse; if (!single) continue;
     const sc = nagScene(s, a); if (!sc) continue; V.nagLeft = NAG.months; scenes.push(sc); return true;
   }
+  // 공허함(대표 결정 11-25, 2회차부터): 마흔다섯부터 연인도 배우자도 없으면 달마다 스태미너 회복 −5(core.js bodyMonth 가 emptyHp 를 읽는다)·멘탈 −2.
+  // 연인이 생기면 그 달에 사라진다. 잔소리 벌점(석 달)이 도는 동안은 겹치지 않게 쉰다. 글은 차례대로 돌려 쓴다(엔진 난수를 안 쓴다)
+  if (age >= EMPTY.from && !nagging && !(typeof process !== "undefined" && process.env?.NOEMPTY)) { // NOEMPTY=1: 봇으로 공허함 유무를 견줄 때
+    if (!lover && !s.fam?.spouse) {
+      V.emp = (V.emp || 0) + 1; s.mental = Math.max(0, s.mental + EMPTY.mental);
+      const L = X.empty || [], eff = `공허함: 스태미너 회복 −${EMPTY.rec} · 멘탈 ${EMPTY.mental}`;
+      notes.push((V.emp - 1) % EMPTY.gap === 0 && L.length ? `${L[Math.floor((V.emp - 1) / EMPTY.gap) % L.length]} ${eff}(연인이 생기면 사라져요)` : eff);
+    } else if (V.emp) { V.emp = 0; notes.push("현관에 신발이 두 켤레다. 공허함이 가셨다."); }
+  }
   return false;
 }
+export const EMPTY = { from: 45, rec: 5, mental: -2, gap: 3 };
+export const emptyHp = (s) => (s?.xr?.emp > 0 ? EMPTY.rec : 0);
 // 시험용: 조연 id 또는 닉네임 이야기 종류로 장면을 바로 만든다
 export function demo(s, key) { if (/^nag/.test(key)) return nagScene(s, +key.slice(3)); if (key === "visit") return visitScene(s, { pick: (a) => a[0] }); if (/^burn/.test(key)) return burnScene(s, key.slice(4)); const c = (X.cross || []).find((x) => x.x === key); if (c) return crossScene(s, c); return nickScene(s, key); }
 export const roster = () => (X.chars || []).map((c) => ({ id: c.id, name: c.name, role: c.role, job: c.job, also: c.also }));

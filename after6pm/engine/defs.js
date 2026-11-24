@@ -130,7 +130,7 @@ export const REGIONS = [
     { id: "chat", n: "카카우 오픈채팅", loc: "online", acts: ["cs_kakao"] },
     { id: "market", n: "크멍·숨꼬", loc: "online", acts: ["cs_kmong", "cs_soomgo"] },
   ] },
-  { id: "newtown", n: "신도시", desc: "아파트 단지와 키즈카페. 결혼하면 자주 오게 된다", unlock: (s) => s.age >= 31 || s.fam.spouse, spots: [
+  { id: "newtown", n: "신도시", desc: "아파트 단지와 키즈카페. 결혼하면 자주 오게 된다", unlock: (s) => Math.floor((s.startAge ?? 27) + 1e-9) + Math.floor(((((s.cal - 1 - s.t) % 12) + 12) % 12 + s.t) / 12) >= 31 || s.fam.spouse /* 11-25 화면 나이(해가 바뀌면 한 살, core.js ageNow 와 같은 식)로 연다 */, spots: [
     { id: "apt", n: "아파트 단지", loc: "newtown", acts: ["house_tour"] },
     { id: "kids", n: "키즈카페", loc: "newtown", acts: ["kids_play"] },
   ] },

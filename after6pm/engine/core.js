@@ -5,7 +5,9 @@ import * as D from "./defs.js";
 import { CHARS, SCENES, JOBEV } from "../gen/data.js";
 import * as GEN from "../gen/data.js";
 import * as XR from "./extras.js"; // 11-24 주변 사람(조연)·겹치는 역할 사건·닉네임 이야기
+import * as HL from "./heroine.js"; // 11-25 히로인·히어로 이야기(인생 시계·장면·갈림길·재회)
 import * as LOVE from "./love.js"; // 11-24 두근두근·연애 행동·까톡·기념일·조력자 사건 // CONFESS(인물별 고백 장면 글, 11-24)는 없을 수도 있다
+import * as WED from "./wed.js"; // 11-25 결혼 성향·상대가 먼저 꺼내는 결혼 얘기·비혼 네 명
 import * as PR from "./pr.js";
 import * as CS from "./cs.js";
 import * as SJ from "./sj.js";
@@ -100,7 +102,7 @@ export const BOND_N = { army: "군대 동기", club: "동아리 친구", univ: "
 export const SASU_AFF = 20; // 11-24 사수는 첫날부터 아는 사이(시작 인맥보다 낮게)
 export const sasuOf = (s) => s?.flags?.sasu || "c102"; // 이번 판의 사수. 옛 저장에는 칸이 없다 → 윤가람
 export function newGame(o) {
-  const seed = o.seed || String(Date.now());
+  const seed = String(o.seed || Date.now()); // 11-25 숫자 씨앗도 글자로 바꾼다(hashStr 는 글자 수만큼 도는데 숫자에는 길이가 없어 판이 전부 같게 나왔다)
   const s = {
     v: 4, rd: 1, seed, rs: { v: hashStr(seed) }, t: 0, startAge: RD.RD.start, age: RD.RD.start, /* 11-23 남녀 모두 27세 시작 */ cal: 3, year: 2027,
     me: { name: o.name || "나", gender: o.gender || "M", look: o.look || null, major: o.major || "biz", job: o.job || "plan", fit: 0, traits: [...(o.traits || [])], perks: [], revealed: {} },
@@ -143,17 +145,19 @@ export function newGame(o) {
   const inPlay = (c) => !!c && (!c.only || c.only === s.me.gender);
   const pool = CHARS.filter((c) => !c.celeb && !c.mentor && inPlay(c)).map((c) => c.id); // 유명인(인별)은 인별에서 만난다
   s.cast = r.shuffle(pool.filter((id) => !CHAR[id]?.co)).slice(0, Math.min(pool.length, Math.max(12, Math.round(pool.length * 0.7))));
+  HL.castIn(s, inPlay); // 11-25 히로인·히어로 열 명은 매 판 꼭 나온다(무작위로 뽑힌 맨 뒤 사람과 자리를 바꾼다)
   s.cast.push(...CHARS.filter((c) => c.co && inPlay(c)).map((c) => c.id)); // 회사 동료(신입은 입사 사건 뒤에 나온다)
   if (CHAR[s.flags.sasu]) { const x = ensureRel(s, s.flags.sasu); x.aff = Math.max(x.aff, SASU_AFF); } // 사수는 첫날부터 아는 사이(호감 20). 일반 '첫 만남' 장면 대신 사수 첫 장면이 뜬다
   if (s.me.perks.includes("yr3") || s.me.gender === "F") for (const id of r.shuffle(CHARS.filter((c) => c.co && !c.hire && inPlay(c) && c.id !== s.flags.sasu).map((c) => c.id)).slice(0, 2)) { const x = ensureRel(s, id); x.aff = Math.max(x.aff, 25); } // 3년 차: 사내 인맥(사수는 따로 20을 받으니 뺀다)
   // 11-24 시작 인맥: 남자는 군대 동기 3·동아리 친구 2, 여자는 사내 인맥 2(위)·대학 친구 2·동아리 친구 1. 이번 판 등장 인물 중 또래에서 고른다
-  { const used = new Set(Object.keys(s.rel)), plain = (c) => c && !c.co && !c.hire && !c.senior && !c.group && c.age >= 25 && c.age <= 30 && !/우리 회사|우리 팀/.test(c.job || "");
+  { const used = new Set(Object.keys(s.rel)), plain = (c) => c && !c.co && !c.hire && !c.senior && !c.group && c.age >= 25 && c.age <= 30 && !/우리 회사|우리 팀/.test(c.job || "") && !HL.noBond(c.id);
+    const hb = typeof process !== "undefined" && process.env?.NOBOND ? {} : HL.bondIn(s, used), left = (n, k) => Math.max(0, n - (hb[k] || 0)); // 11-25 재회형(동아리 선후배)을 먼저 배정하고 그만큼 무작위 자리를 줄인다
     const take = (n, bond, aff, ok) => { for (const id of r.shuffle(s.cast.filter((id) => !used.has(id) && plain(CHAR[id]) && ok(CHAR[id]))).slice(0, n)) { used.add(id); const x = ensureRel(s, id); x.aff = Math.max(x.aff, aff); x.bond = bond; } };
-    if (typeof process !== "undefined" && process.env?.NOBOND) { /* 봇 시험용: 시작 인맥 끔 */ } else if (s.me.gender === "F") { take(2, "univ", START_BOND.univ, () => true); take(1, "club", START_BOND.club, () => true); }
-    else { take(3, "army", START_BOND.army, (c) => c.gender === "M" && !isForeign(c)); take(2, "club", START_BOND.club, () => true); } }
+    if (typeof process !== "undefined" && process.env?.NOBOND) { /* 봇 시험용: 시작 인맥 끔 */ } else if (s.me.gender === "F") { take(2, "univ", START_BOND.univ, () => true); take(left(1, "club"), "club", START_BOND.club, () => true); }
+    else { take(3, "army", START_BOND.army, (c) => c.gender === "M" && !isForeign(c)); take(left(2, "club"), "club", START_BOND.club, () => true); } }
   // N회차(회귀): 지난 인생의 선물
   const ng = o.ng || {};
-  s.ng = { n: Math.max(1, ng.n || 1), hard: !!ng.hard, gifts: ng.gifts || [], past: ng.past || [] }; // past: 지난 인생 히든 길 기록(v4.30 회차의 길)
+  s.ng = { n: Math.max(1, ng.n || 1), hard: !!ng.hard, gifts: ng.gifts || [], past: ng.past || [], hl: ng.hl || {} }; // hl: 지난 회차의 히로인 결말·본 사건(heroine.js ngIn) // past: 지난 인생 히든 길 기록(v4.30 회차의 길)
   if (ng.cash) s.cash += ng.cash;
   for (const j of ng.know || []) if (D.SIDEJOBS[j]) { SJ.found(s, j, "지난 인생의 기억"); s.sj.know[j] = (s.sj.know[j] || 0) + 10; }
   for (const id of ng.friends || []) if (inPlay(CHAR[id])) { if (!s.cast.includes(id)) s.cast.push(id); const x = ensureRel(s, id); x.aff = Math.max(x.aff, 30); x.deja = true; }
@@ -185,6 +189,7 @@ export function kidsAp(s) { return s.fam.kids.reduce((a, k) => { const y = (s.t 
 // 배우자 손 보태기(v4.25): 아이 없으면 +2(동업형 +3). 7살 미만 아이가 있으면 반, 돌 전이면 0. 반대하는 동안은 −1
 export function spouseAp(s) {
   if (!s.fam.spouse) return 0;
+  if (HL.isAway(s, s.fam.spouse)) return 0; // 11-25 주말부부: 멀리 있는 동안은 손을 못 보탠다
   if ((s.fam.opposeUntil ?? -1) > s.t) return -1;
   let a = s.fam.spouseType === "동업형" ? 3 : 2;
   if (s.fam.kids.some((k) => s.t - k.born < 12)) a = 0; else if (s.fam.kids.some((k) => s.t - k.born < 84)) a = Math.floor(a / 2);
@@ -228,6 +233,7 @@ function partyGather(s) { // 회식 달: 팀장·사수와 이번 달 회사에 
 }
 // 지금 회사에 없는 회사 장소(회식이 끝난 회사 앞, 이직 전 회사의 장소, 옛 저장의 pantry·dinner)에 선 사람과 느낌표를 있는 장소로 옮긴다(난수 안 씀)
 export function fixCoSpots(s) {
+  if (s.co.quit || s.co.fired) { for (const k of D.CO_SPOT_IDS) if (s.spot?.[k]) delete s.spot[k]; return; } // 11-25 회사를 나온 달: 회사 장소에 서 있던 사람을 치운다
   const L = coOpenSpots(s), ok = new Set(L.map((sp) => sp.id)), all = new Set(D.CO_SPOT_IDS); if (!L.length) return; if (partyOn(s)) ok.add("dinner");
   let i = 0; for (const k of Object.keys(s.spot || {})) { if (!all.has(k) || ok.has(k)) continue; for (const id of s.spot[k] || []) { const sp = L[i++ % L.length]; (s.spot[sp.id] = s.spot[sp.id] || []).push(id); } delete s.spot[k]; }
   if (!partyOn(s)) s.bangs = (s.bangs || []).filter((b) => !b.party);
@@ -257,6 +263,10 @@ function rollBangs(s) {
     const L = plain(sp), own = L.filter((x) => x.where === sp.loc), sc = own.length && rnd() < 0.7 ? pick(own) : L.length ? pick(L) : null; if (!sc) continue;
     add(rg, sp, sc);
   }
+  if (out.length < n) { // 11-25 모자란 달(퇴사 뒤·인생 후반에 0~5개만 뜨던 것): 그 장소의 장면은 쉬는 기간(BANG.fresh) 없이 다시 쓴다
+    const again = (sp) => SCENES.filter((x) => x.where === sp.loc && !x.bang && !x.mate && !/\{[가-힣]+\}/.test(x.text || "") && !used.has(x.id) && ok(x));
+    for (let k = 0; k < 120 && out.length < n; k++) { const { rg, sp } = pick(spots); if (out.filter((b) => b.rg === rg).length >= BANG.perRg) continue; const L = again(sp); if (L.length) add(rg, sp, pick(L)); }
+  }
   s.bangs = out;
 }
 export function doBang(s, bid) {
@@ -278,9 +288,12 @@ function refreshSpots(s) {
     const c = CHAR[id]; if (!c) continue;
     const rel = s.rel[id];
     if (rel?.spouse) continue; // 배우자는 집에 있다
+    if (HL.isHidden(s, id)) continue; // 11-25 멀리 떠난 사람은 지도에 안 나온다
     if (c.hire && !(s.co.hired || []).includes(id)) continue; // 아직 입사 전
     if (!r.chance(rel?.lover ? 0.85 : 0.62)) continue;
-    const loc = r.pick(c.hangouts.filter((h) => SPOT_LOCS.has(h)).length ? c.hangouts.filter((h) => SPOT_LOCS.has(h)) : c.hangouts); // 11-24 지도에 없는 장소(club)를 뽑아 그 달에 안 나오던 것 고침
+    const HG = HL.hangs(s, id) || c.hangouts;
+    const loc = r.pick(HG.filter((h) => SPOT_LOCS.has(h)).length ? HG.filter((h) => SPOT_LOCS.has(h)) : HG); // 11-24 지도에 없는 장소(club)를 뽑아 그 달에 안 나오던 것 고침
+    if (loc === "office" && (s.co.quit || s.co.fired)) continue; // 11-25 퇴사·해고 뒤에는 회사 장소에 사람을 세우지 않는다(그달에 다른 곳에서도 못 만나던 것은 다음 달 뽑기에서 풀린다)
     const cands = loc === "office" ? coOpenSpots(s) : Object.values(D.SPOTS).filter((sp) => sp.loc === loc || sp.alt === loc); // 11-25 회사는 지금 회사 종류의 장소에만
     if (!cands.length) continue;
     const sp = r.pick(cands);
@@ -368,12 +381,13 @@ export function applyEff(s, eff, who) {
   if (eff.brk) for (const k of [].concat(eff.brk)) { const l = giveBrk(s, k); if (l) out.push(l); } // 돌파 계기
   if (eff.ap) { s.apNext += eff.ap; out.push(`다음 달 행동력 ${sgn(eff.ap)}`); }
   if (eff.fame) { s.fame = Math.max(0, (s.fame || 0) + eff.fame); out.push(`명성 ${sgn(eff.fame)}`); }
-  if (eff.boost) { const bd = who && CHAR[who]?.helper?.board, js = (s.sj?.active || []).filter((j) => (bd === "partyroom" ? j === "pr" : bd === "consult" ? j === "cs" : true)), V = (s.mk = s.mk || { evT: -99, seen: {}, list: [] }); for (const j of js) V.list.push({ id: "hev_" + s.t + j, job: j, v: eff.boost.pct, until: s.t + eff.boost.months, n: "인연의 도움" }); if (js.length) out.push(`${js.map((j) => D.SIDEJOBS[j]?.n || j).join("·")} 수입 +${Math.round(eff.boost.pct * 100)}% · ${eff.boost.months}개월`); }
+  if (eff.boost) { const bd = eff.boost.mine ? null : who && CHAR[who]?.helper?.board, js = (s.sj?.active || []).filter((j) => (bd === "partyroom" ? j === "pr" : bd === "consult" ? j === "cs" : true)), V = (s.mk = s.mk || { evT: -99, seen: {}, list: [] }); for (const j of js) V.list.push({ id: "hev_" + s.t + j, job: j, v: eff.boost.pct, until: s.t + eff.boost.months, n: "인연의 도움" }); if (js.length) out.push(`${js.map((j) => D.SIDEJOBS[j]?.n || j).join("·")} 수입 +${Math.round(eff.boost.pct * 100)}% · ${eff.boost.months}개월`); }
   if (eff.sj_int) for (const [j, v] of Object.entries(eff.sj_int)) { const l = SJ.addInt(s, j, v); if (l) out.push(l); }
   if (eff.pr_rating) { for (const rm of s.pr.rooms) rm.rating = clamp(rm.rating + eff.pr_rating, 2.5, 5); if (s.pr.rooms.length) out.push(`파티룸 별점 ${sgn(eff.pr_rating)}`); }
   if (eff.cs_rep) { s.cs.reviews = Math.max(0, s.cs.reviews + eff.cs_rep); if (s.cs.open) out.push(`컨설팅 후기 ${sgn(eff.cs_rep)}`); } // 컨설팅을 안 하면 줄을 안 보여 준다(값은 그대로 쌓임)
   for (const P of REG.JOBS) if (P.eff && s[P.key]) { try { P.eff(s, eff, out, who); } catch (e) { console.warn(e); } } // 플러그인 전용 효과 키(예: tr_rep)
   for (const X of REG.STORY) if (X.eff && s.sx?.[X.key]) { try { X.eff(s, eff, out, who); } catch (e) { console.warn(e); } } // 기존 투잡 이야기 전용 효과 키(예: prs_rep)
+  if (eff.aff && !who) who = Object.keys(s.rel || {}).find((k) => s.rel[k].lover) || who; // 11-25 연인 장면(기념일·상견례·결혼 준비)은 who 가 없다. 그때는 연인에게 붙인다(전에는 호감 효과가 안 붙었다)
   if (eff.aff && who) { const g = addAff(s, who, eff.aff); out.push(`${CHAR[who]?.name || ""} 호감 ${sgn(g)}`); }
   if (eff.item) { const g = IT.grant(s, eff.item, "ev"); if (g.line) out.push(g.line); if (g.dup) out.push(...GC.addShard(s, r, 1)); } // 이벤트 보상 아이템(v4.25)
   if (eff.shard) out.push(...GC.addShard(s, r, eff.shard)); // 카드 조각
@@ -427,7 +441,10 @@ export function act(s, id, arg) {
   // 장소 행동이면 가끔 장소 장면
   const spot = Object.values(D.SPOTS).find((sp) => sp.acts.includes(id));
   if (!res.scene && id === "visit_parents") { let vs = null; try { vs = XR.visitScene(s, r); } catch (e) { console.warn(e); } if (vs) res.scene = openScene(s, vs); } // 11-24 본가에 가면 부모님이 나온다
-  if (!res.scene) { let pe = null; try { pe = XR.personEvent(s, r, id, arg); } catch (e) { console.warn(e); } if (pe) res.scene = openScene(s, pe); } // 11-24 인물별 개인 사건: 그 사람의 취향과 이어진 행동을 하면 같이 하게 된다(뜨면 이번 행동의 장소 장면은 쉰다)
+  if (!res.scene) { let pe = null; try { pe = XR.personEvent(s, r, id, arg); } catch (e) { console.warn(e); } if (pe) res.scene = openScene(s, pe); }
+  if (!res.scene) { let hb = null; try { hb = HL.actBeat(s, id); } catch (e) { console.warn(e); } if (hb) res.scene = openScene(s, hb); }
+  try { const gl = HL.goneLine(s, id); if (gl) (res.lines = res.lines || []).push(gl); } catch (e) { console.warn(e); } // 11-25 떠난 사람의 빈자리 한 줄 // 11-25 행동 뒤에 뜨는 히로인 장면(from: "act:<행동>")
+  // 11-24 인물별 개인 사건: 그 사람의 취향과 이어진 행동을 하면 같이 하게 된다(뜨면 이번 행동의 장소 장면은 쉰다)
   if (!res.scene && spot && r.chance(0.22)) { const sc = pickLocScene(s, r, spot.loc); if (sc) res.scene = openScene(s, sc); }
   // 행동이 돌려준 장면(만남 등)은 여기서 연다
   if (res.scene && !s.pending) { if (res.scene.kind === "meet" && res.scene.who) ensureRel(s, res.scene.who); res.scene = openScene(s, res.scene); }
@@ -472,7 +489,7 @@ export function gainStat(s, k, base, src) {
   return s.st[k] - cur;
 }
 const stL = (s, k, v, src) => `${D.STATS[k]} +${gainStat(s, k, v, src).toFixed(1)}`;
-const isForeign = (c) => /외국|교환학생|유학|원어민|해외/.test(c?.job || "");
+const isForeign = (c) => /외국|교환학생|유학|원어민|해외|출신/.test(c?.job || ""); // 11-25 "캐나다 출신"·"몽골 출신"도 잡는다(리암·바트·란)
 // 미니게임 성적: 대성공 +1 · 성공 +0.5(그 투잡의 경험형 능력치)
 // 11-24 미니게임을 잘하면 같이 일하는 사람(그 투잡의 조력자, 없으면 가장 가까운 인연)의 믿음이 오른다
 export function mgTrust(s, job) {
@@ -614,7 +631,7 @@ function chk(s, check) { if (!check) return null; const v = s.st[check.stat] ?? 
 
 export function meetScene(s, id, pre = "") {
   const c = CHAR[id];
-  return { kind: "meet", who: id, title: `첫 만남 · ${c.name}`, text: pre + (c.lines?.meet || `${c.job} ${jo(c.name, "을", "를")} 만났다.`), choices: [
+  return { kind: "meet", who: id, title: `첫 만남 · ${c.name}`, text: (pre || HL.meetPre(s, id)) + (c.lines?.meet || `${c.job} ${jo(c.name, "을", "를")} 만났다.`) + HL.deja(s, id), choices: [
     { t: "먼저 웃으며 인사를 건넨다", check: { stat: "charm", dc: 35 }, ok: { text: FIRST[id]?.say || c.lines?.hello || "분위기가 좋다.", eff: { aff: 10 } }, ng: { text: "어색한 웃음이 오갔다.", eff: { aff: 3 } } }, // 11-24 처음 말 걸 때의 반응은 인물마다 다르다(data/first_meet.json). 판정·호감은 그대로
     { t: "공통 관심사로 말을 이어 간다", check: { stat: "talk", dc: 40 }, ok: { text: FIRST[id]?.say ? `${FIRST[id].say} 그 뒤로 이야기가 술술 풀렸다. 연락처를 교환했다.` : "이야기가 술술 풀렸다. 연락처를 교환했다.", eff: { aff: 12 } }, ng: { text: "TMI였다. 그래도 이름은 기억해 줬다.", eff: { aff: 2 } } },
     { t: "가볍게 목례만 한다", eff: { aff: 4 }, text: "다음에 또 보면 인사할 정도는 됐다." },
@@ -625,10 +642,11 @@ export function talkTo(s, id) {
   if (s.ap < 1) return { ok: false, msg: "행동력이 부족해요" };
   if (s.pending) return { ok: false, msg: "장면을 먼저 끝내세요" };
   const rel = s.rel[id];
-  if (rel && (rel.talks[s.t] || 0) >= 2) { const b = busyOf(c, rel); return { ok: false, msg: b ? `${c.name}: "${b}" (이번 달엔 충분히 이야기했다)` : "이번 달엔 충분히 이야기했다" }; }
+  if (rel && (rel.talks[s.t] || 0) >= 2) { const b = busyOf(c, rel, s); return { ok: false, msg: b ? `${c.name}: "${b}" (이번 달엔 충분히 이야기했다)` : "이번 달엔 충분히 이야기했다" }; }
   s.ap -= 1; s.hp = clamp(s.hp - 2, 0, s.hpMax); socialMental(s);
   if (!rel) { ensureRel(s, id); s.rel[id].talks[s.t] = 1; return { ok: true, scene: openScene(s, meetScene(s, id)), lines: [] }; }
   rel.talks[s.t] = (rel.talks[s.t] || 0) + 1; rel.last = s.t;
+  { const hb = HL.beat(s, id, "talk"); if (hb) return { ok: true, scene: openScene(s, hb), lines: [] }; } // 11-25 히로인 장면(재회 포함)이 이야기 단계보다 먼저
   const arc = nextArc(s, id); if (arc) return { ok: true, scene: openScene(s, arc), lines: [] };
   return { ok: true, scene: openScene(s, talkScene(s, R(s), id)), lines: [] }; // v4.25: 할 말을 고른다
 }
@@ -642,8 +660,10 @@ const TALK_STYLE = [
   [/야망|전략|열정|깐깐|원칙|꼼꼼|박식|성실|시크|도도|눈치|의리/, "진지형", "\"요즘 준비하는 거 있어요? 배울 게 있을 것 같아서요.\""],
 ];
 // 인사말: 3단계(합격·이직 뒤)부터는 lines.hello3 가 있으면 그것을 먼저 쓴다. busy 도 같다(busy3)
-export function helloOf(c, rel) { return ((rel?.stage || 0) >= 3 && c?.lines?.hello3) || c?.lines?.hello || ""; }
-export function busyOf(c, rel) { return ((rel?.stage || 0) >= 3 && c?.lines?.busy3) || c?.lines?.busy || ""; }
+// 11-25 s 를 주면 히로인의 인생 단계 인사말(heroine.js cur)을 가장 먼저 쓴다
+const h3On = (c, rel, s) => { const h = s && c ? HL.h3ok(s, c.id) : null; return h == null ? (rel?.stage || 0) >= 3 : h; };
+export function helloOf(c, rel, s) { return (s && c && HL.cur(s, c.id, "hello")) || (h3On(c, rel, s) && c?.lines?.hello3) || c?.lines?.hello || ""; }
+export function busyOf(c, rel, s) { return (s && c && HL.cur(s, c.id, "busy")) || (h3On(c, rel, s) && c?.lines?.busy3) || c?.lines?.busy || ""; }
 // ── 11-24 회사 사람 말 걸기: 역할(팀장·사수·선배·동료·후배)마다 대사가 다르다(data/role_talk.json). 호감이 오르는 폭은 아래 plainTalk 와 같다(q 2·1·0).
 // 주인공을 부르는 말: ○○ 씨 → ○ 대리 → ○ 과장(직급이 오르면 바뀐다). 동기는 이름. 이름이 한글 세 글자일 때만 성과 이름을 나눈다.
 export function callName(s, c) {
@@ -706,7 +726,7 @@ function plainTalk(s, r, id) {
   ];
   // 순서 섞기(엔진 난수)
   const order = opts.map((o) => [o, r.range(0, 1)]).sort((a, b) => a[1] - b[1]).map((x) => x[0]);
-  const lines = { 2: [`"어, 그거 진짜 좋아하는데! 어떻게 알았어요?"`, "눈이 반짝였다. 이야기가 30분 넘게 이어졌다."], 1: [`${helloOf(c, rel) ? `"${helloOf(c, rel)}"` : "\"아, 네~\""}`, "무난하게 웃으며 이야기를 나눴다."], 0: ["\"…아, 네.\"", "대화가 어색하게 끊겼다. 다음엔 다른 얘기를 해 보자."] };
+  const lines = { 2: [`"어, 그거 진짜 좋아하는데! 어떻게 알았어요?"`, "눈이 반짝였다. 이야기가 30분 넘게 이어졌다."], 1: [`${helloOf(c, rel, s) ? `"${helloOf(c, rel, s)}"` : "\"아, 네~\""}`, "무난하게 웃으며 이야기를 나눴다."], 0: ["\"…아, 네.\"", "대화가 어색하게 끊겼다. 다음엔 다른 얘기를 해 보자."] };
   return { kind: "event", who: id, expr: rel?.aff >= 45 ? "smile" : "neutral", tag: "대화", title: `${c.name}에게 말 걸기`, text: `${rel?.aff >= 45 ? `${jo(c.name, "이", "가")} 먼저 손을 흔든다.` : `${jo(c.name, "과", "와")} 눈이 마주쳤다.`} 무슨 얘기를 할까? (좋아하는 것·성격을 떠올려 보세요)`, onChoose: "talk_pick", tq: order.map((o) => o.q),
     choices: order.map((o) => ({ t: o.t, eff: { aff: o.q === 2 ? Math.round(base + 4) : o.q === 1 ? Math.round(base) : -1, mental: o.q === 2 ? 2 : 0 }, text: lines[o.q].join(" ") })) };
 }
@@ -752,8 +772,8 @@ const CONFESS = GEN.CONFESS || {};
 const memLine = (L, i) => (Array.isArray(L) && L.length && i != null && L[Math.min(i, L.length - 1)] ? " " + L[Math.min(i, L.length - 1)] : "");
 function confessScene(s, id) {
   const c = CHAR[id], X = CONFESS[id], rel = s.rel[id];
-  return { kind: "event", who: id, expr: "blush", tag: "고백", cine: "arc3", title: `${c.name} · ${X.scene.title}`, text: X.scene.text + memLine(X.mem1, rel.mem?.[1]), onChoose: "lv_way",
-    choices: X.ways.map((w) => ({ t: w.t, eff: {}, text: "" })) };
+  return HL.confessFix(s, id, { kind: "event", who: id, expr: "blush", tag: "고백", cine: "arc3", title: `${c.name} · ${X.scene.title}`, text: X.scene.text + memLine(X.mem1, rel.mem?.[1]), onChoose: "lv_way",
+    choices: X.ways.map((w) => ({ t: w.t, eff: {}, text: "" })) }); // 11-25 히로인: 무대를 옮긴 한 벌·덧붙는 추억 줄
 }
 // 거절 뒤 돌아오는 장면: shy 는 같은 날, late 는 다음 달(먼저 고백)
 function confessBack2(s, id, late) {
@@ -771,6 +791,7 @@ function confessBackScene(s, id) {
 }
 function nextArc(s, id, confess) {
   const c = CHAR[id], rel = s.rel[id]; if (!c?.arc) return null;
+  if (c.co && (s.co.quit || s.co.fired)) return null; // 11-25 퇴사 뒤에는 회사 사람의 이야기 장면(회사에서 벌어지는 글)을 안 띄운다
   const st = c.arc.find((a) => a.stage === rel.stage + 1);
   if (!st || rel.aff < st.gate) return null;
   if (isLoverArc(st) && isRomanceable(s, c) && (!confess || !RD.loveOpen(s) || !heartOpen(s, id))) return null; // 11-24 고백 장면은 내가 고백할 때만(1회차는 잠김). ◆인 회사 사람은 잠긴다
@@ -780,7 +801,7 @@ function nextArc(s, id, confess) {
     const F = st.friend || FRIEND_ARC[(Number(String(id).replace(/\D/g, "")) || 0) % FRIEND_ARC.length](c.name);
     return { kind: "arc", who: id, stage: st.stage, title: `${c.name} · ${F.title}`, text: F.text, choices: st.choices.map((ch, i) => { const f = F.choices[Math.min(i, F.choices.length - 1)]; return ch.check ? { ...ch, t: f.t, ok: { ...ch.ok, text: f.ok || f.text }, ng: { ...ch.ng, text: f.ng || "말이 좀 꼬였다. 그래도 뜻은 전해졌다." } } : { ...ch, t: f.t, text: (ch.eff?.aff || 0) < 0 ? (f.bad || f.text) : f.text }; }) };
   }
-  return { kind: "arc", who: id, stage: st.stage, title: `${c.name} · ${isLoverArc(st) ? "고백 · " : ""}${st.title}`, text: st.text, choices: st.choices };
+  return { kind: "arc", who: id, stage: st.stage, title: `${c.name} · ${isLoverArc(st) ? "고백 · " : ""}${st.title}`, text: HL.arcText(s, id, st.stage) || st.text, choices: st.choices }; // 11-25 히로인: 인생 사건 뒤·재회 판의 한 벌
 }
 // 친구판 3단계 공통 글(인물 말투를 타지 않게 대사 없이 쓴다). 선택지 3개: 좋은 답 · 무난한 답 · 어긋난 답(bad)
 const FRIEND_ARC = [
@@ -800,6 +821,8 @@ const FRIEND_ARC = [
 export function personAct(s, id, kind, arg) {
   const c = CHAR[id], rel = s.rel[id]; if (!c || !rel) return { ok: false, msg: "모르는 사람" };
   const r = R(s);
+  { const w = HL.blockAct(s, id, kind); if (w) return { ok: false, msg: w }; } // 11-25 멀리 있는 사람
+  if (kind === "hlvisit") { const res = HL.visit(s, id); if (res.ok && res.scene) res.scene = openScene(s, res.scene); return res; } // 11-25 찾아가기(내려가기)
   { const L2 = LOVE.act(s, r, id, kind, arg); if (L2) { if (L2.ok && kind === "drink" && !L2.scene) { pvCount(s, id); const tr = turnScene(s, id, "drink"); if (tr) L2.scene = tr; } /* 11-24 술 한잔 뒤에 문턱을 넘었으면 전환 장면 */ if (L2.ok && L2.scene) L2.scene = openScene(s, L2.scene); return L2; } } // 11-24 연애 행동(love.js)
   if (kind === "dash") return dashAct(s, id); // 11-24 사수에게 따로 보자고 하기
   const cost = { meetup: 1, date: 1, trip: 3, propose: 2, confess: 1, gift: 0, helper: 0, breakup: 0, fire: 0 }[kind] ?? 1;
@@ -811,6 +834,7 @@ export function personAct(s, id, kind, arg) {
     if ((rel.talks[s.t] || 0) >= 2) return { ok: false, msg: "이번 달엔 충분히 만났다" };
     s.ap -= 1; s.hp = clamp(s.hp - 3, 0, s.hpMax); s.cash -= 4; addMoney(s, "exp", "약속·데이트", 4); rel.talks[s.t] = (rel.talks[s.t] || 0) + 1; rel.last = s.t; socialMental(s);
     rel.meetN = (rel.meetN || 0) + 1; rel.meetT = s.t; // 11-24 회사 밖 약속 횟수·달(회사 사람의 진입장벽이 본다)
+    { const hb = HL.beat(s, id, "meetup"); if (hb) return { ok: true, scene: openScene(s, hb), lines: [] }; } // 11-25 히로인 장면
     const arc = nextArc(s, id); if (arc) return { ok: true, scene: openScene(s, arc), lines: [] };
     const hit = likeHit(); const g = addAff(s, id, 5 + (hit ? 4 : 0) + s.st.talk / 30);
     s.mental = clamp(s.mental + 2, 0, 100);
@@ -828,11 +852,14 @@ export function personAct(s, id, kind, arg) {
   }
   if (kind === "date" || kind === "trip") {
     if (!rel.lover && !rel.spouse && !rel.affair) return { ok: false, msg: "연인이 아니에요" };
-    const money = kind === "trip" ? 80 : 10; if (s.cash - money < -creditRoom(s)) return { ok: false, msg: "돈이 모자라요" };
+    const HT = kind === "trip" && !rel.affair ? HL.tripInfo(s, id) : null; if (HT?.wait) return { ok: false, msg: `멀리 있는 사람과의 여행은 1년에 한 번이에요(${HT.wait}개월 뒤)` }; // 11-25 히로인: 멀리 있는 연인의 여행(1년에 한 번·200만)·여행 글
+    const money = kind === "trip" ? (HT?.cash ?? 80) : 10; if (s.cash - money < -creditRoom(s)) return { ok: false, msg: "돈이 모자라요" };
+    if (kind === "date" && !rel.affair) { const hb = HL.beat(s, id, "date"); if (hb) { s.ap -= cost; rel.last = s.t; rel.dateT = s.t; return { ok: true, scene: openScene(s, hb), lines: [] }; } } // 11-25 히로인: 데이트 날 뜨는 장면(행동력만 쓴다)
     s.ap -= cost; s.hp = clamp(s.hp - (kind === "trip" ? 4 : 4), 0, s.hpMax); s.cash -= money; addMoney(s, "exp", "약속·데이트", money); rel.last = s.t; rel.dateT = s.t;
     const g = addAff(s, id, kind === "trip" ? 14 : 6 + (likeHit() ? 3 : 0)); s.mental = clamp(s.mental + (kind === "trip" ? 10 : 4), 0, 100);
     if (rel.spouse) s.fam.happy = clamp(s.fam.happy + (kind === "trip" ? 16 : 6), 0, 100);
-    const line = c.romance?.dates?.length ? r.pick(c.romance.dates) : (c.lines?.date || "");
+    const line0 = c.romance?.dates?.length ? r.pick(c.romance.dates) : (c.lines?.date || ""); if (kind === "trip") { rel.tripT = s.t; rel.tripN = (rel.tripN || 0) + 1; }
+    const line = HT?.lines?.length ? HT.lines[(rel.tripN - 1) % HT.lines.length] : line0;
     const sus = rel.affair ? affDate(s, id, kind) : "";
     return { ok: true, lines: [`호감 +${g}`, rel.spouse ? "가족 행복 +" : "", ...(kind === "trip" ? [stL(s, "lang", 1, "trip"), stL(s, "sense", 0.6, "trip")] : [stL(s, "charm", 0.4, "date")]), sus].filter(Boolean), msg: kind === "trip" ? `둘이 2박 3일 여행을 다녀왔다. ${line}` : line };
   }
@@ -853,13 +880,15 @@ export function personAct(s, id, kind, arg) {
     if (!rel.lover) return { ok: false, msg: "연인에게만" };
     const months = s.t - (rel.loverSince ?? s.t);
     if (months < 8 || rel.aff < 85) return { ok: false, msg: `만난 지 8개월·호감 85 이상 (지금 ${months}개월, ${Math.round(rel.aff)})` };
+    { const hb = HL.beat(s, id, "propose"); if (hb) return { ok: true, scene: openScene(s, hb), lines: [] }; const lk = HL.lockMsg(s, id, "propose"); if (lk) return { ok: false, msg: lk }; } // 11-25 히로인: 프러포즈보다 먼저 뜨는 갈림길·기다리기로 한 동안
+    { const W = WED.act(s, r, id, kind, { weddingScene }); if (W) { if (W.ok && W.scene) W.scene = openScene(s, W.scene); return W; } } // 11-25 결혼 성향(wed.js): 신중한 사람은 한 번 미루고, 비혼은 세 번째에 받는다. 먼저 결혼 얘기를 꺼냈던 사람은 바로 받는다
     if (s.cash - 300 < -creditRoom(s)) return { ok: false, msg: "반지 살 돈이 모자라요(300만)" };
     s.ap -= 2; s.cash -= 300; addMoney(s, "exp", "프러포즈 반지", 300);
     const p = clamp(0.45 + (rel.aff - 85) / 25 + (netWorth(s) > 5000 ? 0.1 : 0) + (s.house.type === "own" ? 0.1 : 0), 0.2, 0.97);
     if (r.chance(p)) return { ok: true, scene: openScene(s, weddingScene(s, id)), lines: [] };
     addAff(s, id, -10); s.mental = clamp(s.mental - 10, 0, 100); return { ok: true, lines: ["호감 −10", "멘탈 −10"], msg: "\"아직은... 우리 조금 더 생각해 보자.\"" };
   }
-  if (kind === "breakup") { endLove(s, id, "헤어졌다."); return { ok: true, lines: ["멘탈 −12"], msg: "까톡 프로필 사진을 내렸다." }; }
+  if (kind === "breakup") { endLove(s, id, "헤어졌다.", "drift"); return { ok: true, lines: ["멘탈 −12"], msg: "까톡 프로필 사진을 내렸다." }; }
   if (kind === "helper") { // arg: board
     if (!c.helper || c.helper.effect === "none") return { ok: false, msg: "도움을 줄 수 있는 분야가 없어요" };
     if (!(rel.helperOk || rel.aff >= 60 || rel.spouse)) return { ok: false, msg: "호감 60 이상이거나 이야기가 진행돼야 부탁할 수 있음" };
@@ -875,7 +904,7 @@ export function helpers(s, effect) { return Object.entries(s.rel).filter(([id, x
 export const helperPower = (s, effect) => helpers(s, effect).reduce((a, h) => a + h.power, 0);
 
 function becomeLover(s, id, out) {
-  for (const [oid, x] of Object.entries(s.rel)) if (x.lover && oid !== id) { endLove(s, oid, "새 사람이 생겼다는 걸 눈치챘다."); out.push(`${jo(CHAR[oid].name, "과", "와")} 이별`); }
+  for (const [oid, x] of Object.entries(s.rel)) if (x.lover && oid !== id) { endLove(s, oid, "새 사람이 생겼다는 걸 눈치챘다.", "left"); out.push(`${jo(CHAR[oid].name, "과", "와")} 이별`); }
   const rel = s.rel[id]; rel.lover = true; rel.loverSince = s.t; rel.dateT = s.t; if (rel.heart == null) rel.heart = s.t; // 11-24 연인이면 표시는 늘 ♥
   s.mental = clamp(s.mental + 10, 0, 100); out.push(`${jo(CHAR[id].name, "과", "와")} 연인이 됐다`, "멘탈 +10");
   log(s, `${jo(CHAR[id].name, "과", "와")} 사귀기 시작했다.`, "love");
@@ -939,14 +968,17 @@ export function relDemo(s, kind, id, opt = {}) {
   if ((kind === "shield" || kind === "shieldsp") && x0) { const sc = shieldScene(s, sid, kind === "shieldsp"); return sc ? openScene(s, sc) : null; }
   return null;
 }
-function endLove(s, id, why) { const rel = s.rel[id]; rel.lover = false; rel.aff = Math.min(rel.aff, 30); s.mental = clamp(s.mental - 12, 0, 100); log(s, `${CHAR[id].name}: ${why}`, "love"); }
+// 11-25 헤어진 달과 이유를 남긴다(rel.exT · rel.exKind: drift 흐지부지 · left 내가 다른 사람에게 감 · letgo 보내 줌). 보내 준 이별(partLove)은 호감을 덜 깎는다
+function endLove(s, id, why, kind = "drift", keep = 30, hurt = 12) { const rel = s.rel[id]; rel.lover = false; rel.aff = Math.min(rel.aff, keep); rel.exT = s.t; rel.exKind = kind; s.mental = clamp(s.mental - hurt, 0, 100); log(s, `${CHAR[id].name}: ${why}`, "love"); }
+export const partLove = (s, id, why, kind, keep) => endLove(s, id, why, kind || "letgo", keep ?? 55, 6);
 
-function weddingScene(s, id) {
+export function weddingScene(s, id) {
   const c = CHAR[id];
   // 29번: '결혼 준비 견적' 장면에서 이미 낸 돈은 예식비에서 뺀다(옛 저장은 낸 돈을 몰라 가장 적은 500만으로 본다)
   const paid = s.flags.wedding_planned !== undefined ? (s.flags.wedPaid ?? 500) : 0;
   const cost = (v) => -Math.max(0, v - paid), more = (v) => (paid ? `, 더 낼 돈 ${won(Math.max(0, v - paid))}` : ""), pre = paid ? ` 준비하며 이미 낸 ${won(paid)}은 빼고 계산한다.` : "";
-  return { kind: "wedding", who: id, title: `프러포즈 · ${c.name}`, text: (c.romance?.propose || "반지를 내밀었다. 대답 대신 눈물이 먼저 떨어졌다.") + " 결혼식은 어떻게 할까?" + pre, choices: [
+  return { kind: "wedding", who: id, title: `프러포즈 · ${c.name}`, text: (HL.proposeText(s, id) || c.romance?.propose || "반지를 내밀었다. 대답 대신 눈물이 먼저 떨어졌다.") + " 결혼식은 어떻게 할까?" + pre, choices: [
+    ...HL.wedOpts(s, id), // 11-25 히로인: 그 사람만의 결혼 방식(예: 식 없는 결혼)
     { t: `스몰 웨딩 (800만${more(800)})`, eff: { cash: cost(800), family: 8 }, text: "가족끼리 조촐하게. 그래서 더 따뜻했다.", wed: true },
     { t: `평범한 예식장 (2,000만, 축의금으로 일부 회수${more(1200)})`, eff: { cash: cost(1200), family: 12 }, text: "300명 하객. 정신없었지만 행복했다.", wed: true },
     { t: `호텔 웨딩 (5,000만${more(4200)})`, eff: { cash: cost(4200), family: 18, mental: 6 }, text: "샹들리에 아래 서약. 카드값은 내일 생각하자.", wed: true },
@@ -954,6 +986,7 @@ function weddingScene(s, id) {
 }
 function marry(s, id) {
   const rel = s.rel[id], c = CHAR[id];
+  for (const k of Object.keys(s.spot || {})) if (Array.isArray(s.spot[k])) s.spot[k] = s.spot[k].filter((x) => x !== id); // 11-25 결혼한 달: 배우자는 그달부터 지도 장소에 서지 않는다(집에 있는 사람)
   rel.lover = false; rel.spouse = true; if (rel.heart == null) rel.heart = s.t; s.fam.spouse = id; s.fam.spouseType = c.romance?.spouseType || "응원형"; s.fam.marriedT = s.t; s.fam.happy = clamp(s.fam.happy + 15, 0, 100);
   // 신혼집: 전세(대출 80%) 또는 투룸 월세
   if (s.house.type === "oneroom") {
@@ -980,12 +1013,12 @@ export function choose(s, i) {
   let res, okv = null;
   if (ch.check) { okv = r.chance(chk(s, ch.check)); res = okv ? ch.ok : ch.ng; } else res = { text: ch.text, eff: ch.eff };
   res = res || { text: "", eff: {} };
-  if (res.eff?.flag === "lover" && sc.who && CHAR[sc.who] && isRomanceable(s, CHAR[sc.who]) && !s.rel[sc.who]?.lover) { const ans = confessAnswer(s, sc.who, sc.onChoose === "lv_ev" ? "" : res.text); if (ans) res = ans; } // 11-24 고백 과정
+  if (res.eff?.flag === "lover" && sc.who && CHAR[sc.who] && isRomanceable(s, CHAR[sc.who]) && !s.rel[sc.who]?.lover && sc.onChoose !== "hl_beat") { const ans = confessAnswer(s, sc.who, sc.onChoose === "lv_ev" ? "" : res.text); if (ans) res = ans; } // 11-24 고백 과정
   curSrc = "sc:" + (sc.id || sc.onChoose || sc.kind || "ev"); // v4.28 장면 능력치 출처
   const lines = applyEff(s, res.eff, sc.who);
   try { lines.push(...sceneStat(s, sc, ch, okv)); } catch (e) { console.warn(e); }
   if (sc.kind === "arc" && sc.who) { s.rel[sc.who].stage = Math.max(s.rel[sc.who].stage, sc.stage); (s.rel[sc.who].mem = s.rel[sc.who].mem || {})[sc.stage] = i; } // mem: 단계마다 고른 선택지(고백 장면이 이 추억을 되짚는다)
-  if (sc.kind === "wedding" && ch.wed) { marry(s, sc.who); lines.push("파이어 목표 30억 → 40억"); s.sceneQ.unshift(story("목표가 바뀌었다", `둘이 살 집, 언젠가 태어날 아이, 양가 부모님. 가계부를 다시 짜 보니 혼자일 때 30억이던 파이어 목표가 40억이 됐어요. 집은 12억에서 15억짜리로, 매달 꺼내 쓸 돈은 600만에서 830만으로. 대신 이제 같이 버는 사람, 저녁에 손을 보태 줄 사람이 있다(행동력 +2).`)); }
+  if (sc.kind === "wedding" && ch.wed) { marry(s, sc.who); try { HL.onWed(s, sc.who); } catch (e) { console.warn(e); } lines.push("파이어 목표 30억 → 40억"); s.sceneQ.unshift(story("목표가 바뀌었다", `둘이 살 집, 언젠가 태어날 아이, 양가 부모님. 가계부를 다시 짜 보니 혼자일 때 30억이던 파이어 목표가 40억이 됐어요. 집은 12억에서 15억짜리로, 매달 꺼내 쓸 돈은 600만에서 830만으로. 대신 이제 같이 버는 사람, 저녁에 손을 보태 줄 사람이 있다(행동력 +2).`)); }
   if (sc.onChoose) { const extra = SCENE_FN[sc.onChoose]?.(s, r, i, okv, sc); if (extra) lines.push(...extra); }
   curSrc = null;
   if (s._sceneText) { res = { ...res, text: s._sceneText }; s._sceneText = null; } // 결과가 확률로 갈리는 장면(투자 이벤트)
@@ -993,7 +1026,7 @@ export function choose(s, i) {
   s.pending = null;
   if (sc.who && sc.onChoose !== "talk_pick" && (okv === true || (res.eff?.aff || 0) >= 6) && r.chance(0.12)) { const k = ch.check?.stat && D.STATS[ch.check.stat] ? ch.check.stat : r.pick(["talk", "charm"]); lines.push(`잘 고른 한마디 · ${D.STATS[k]} +${gainStat(s, k, 1).toFixed(1)}`); } // v4.25: 잘 고르면 가끔 수치도
   if ((okv === true || (res.eff?.aff || 0) >= 8) && sc.kind !== "year") lines.push(...GC.luckyShard(s, 0.05)); // 좋은 선택: 가끔 카드 조각(v4.25)
-  if (sc.kind === "event" && !/^(sj_|af_|fam_|talk_|ms_|sn_|hd_|h2_|lv_)/.test(sc.onChoose || "")) { const l = SJ.hearInfo(s, r, "event", sc.who); if (l) lines.push(l); }
+  if (sc.kind === "event" && !/^(sj_|af_|fam_|talk_|ms_|sn_|hd_|h2_|lv_|hl_|wd_)/.test(sc.onChoose || "")) { const l = SJ.hearInfo(s, r, "event", sc.who); if (l) lines.push(l); }
   return { text: res.text || "", lines, ok: okv, check: ch.check ? `${D.STATS[ch.check.stat]} 판정 ${okv ? "성공" : "실패"}` : null };
 }
 // 장소 장면(v4.25): 최근 8달 안에 본 장면은 쉬고, 취업·자소서 장면은 컨설팅에 관심 없을 때 덜 나온다
@@ -1043,7 +1076,7 @@ export function sceneOk(s, x) {
 const PACE_MAX = 2;
 function paceScenes(s, list, yearSc) {
   const big = (x) => x === yearSc || x.kind === "year" || x.kind === "wedding" || x.cine || x.kind === "perk" || x.once === "big";
-  const light = (x) => !big(x) && !x.onChoose && (x.kind === "event" || x.kind === "story") && x.choices?.length > 1;
+  const light = (x) => !big(x) && !x.onChoose && !x.now && (x.kind === "event" || x.kind === "story") && x.choices?.length > 1; // now: 글에 달이 박혀 있어 미루면 안 되는 장면(11-25)
   const later = s.sceneLater || [];
   let n = list.filter((x) => !big(x)).length;
   const keep = [], defer = [];
@@ -1070,6 +1103,7 @@ const SCENE_FN = {
   lv_way(s, r, i, okv, sc) { // 고백 방식 고르기(11-24): 맞는 방식이면 통하고, 어긋나면 흐지부지된다
     const id = sc.who, X = CONFESS[id], rel = s.rel[id], w = X.ways[i], A = X.answer || {}, m2 = memLine(X.mem2, rel.mem?.[2]);
     const pass = w.fit >= 2 || (w.fit === 1 && r.chance(clamp(0.45 + ((s.st.charm || 0) - 50) / 100 + (rel.aff - 70) / 60, 0.2, 0.95)));
+    if (w.fit === 0) rel.cfMiss = s.t; // 11-25 어긋난 방식으로 말한 적이 있다(히로인 장면의 조건 cfMiss)
     if (!pass) { const g = addAff(s, id, w.fit === 0 ? -3 : -1); s._sceneText = `${w.react} ${X.fail}`; return [`${CHAR[id].name} 호감 ${sgn(g)}`, "다음 달에 다시 말할 수 있어요"]; }
     const tp = confessType(CHAR[id]); rel.cfDone = tp; if (isLoverArc(CHAR[id].arc?.find((a) => a.stage === 3))) rel.stage = Math.max(rel.stage, 3); /* 11-24 3단계가 고백이 아닌 사람(후배의 첫 후배·첫 발표)은 그 이야기를 건너뛰지 않는다 */ const out = [];
     if (tp === "shy" && A.reject && A.back) { s._sceneText = `${w.react} ${A.reject}`; s.mental = clamp(s.mental - 3, 0, 100); s.sceneQ.unshift(confessBack2(s, id, false)); return ["멘탈 −3"]; }
@@ -1128,8 +1162,11 @@ for (const [k, fn] of Object.entries({ ...MT_CHOOSE, ...GS_CHOOSE })) SCENE_FN[k
 for (const [k, fn] of Object.entries(RV_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("rv_")) console.warn(`[라이벌] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 for (const [k, fn] of Object.entries({ ...PR.PR_CHOOSE, ...AB.AB_CHOOSE, ...UC.UC_CHOOSE })) { if (SCENE_FN[k]) console.warn(`[공간 타이쿤] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; } // v4.28 후기·가격 전쟁·명의
 for (const [k, fn] of Object.entries(WV_CHOOSE)) SCENE_FN[k] = fn;
+for (const k of ["x_pe", "x_cross", "x_nick", "x_burn"]) if (!SCENE_FN[k]) SCENE_FN[k] = () => []; // 11-25 조연 장면 처리 이름: 효과는 선택지에 다 들어 있다. 이름만 등록해 둔다
 SCENE_FN.x_nag = () => [`부모님의 걱정이 ${XR.NAG.months}달 간다: 달마다 멘탈 ${XR.NAG.mental} · 행동력 ${XR.NAG.ap}`]; // 마흔·마흔다섯 잔소리(11-24). 벌점은 extras.js nagMonth 가 달마다 준다
 for (const [k, fn] of Object.entries(LOVE.LV_CHOOSE)) SCENE_FN[k] = fn; // 연애 확장(11-24)
+for (const k of ["wd_ask", "wd_wait", "wd_nv", "wd_glad"]) { if (SCENE_FN[k]) console.warn(`[결혼 성향] onChoose ${k} 이름 확인`); else SCENE_FN[k] = (...a) => WED.WD_CHOOSE[k](...a, { weddingScene, endLove }); } // 11-25 결혼 성향(wed.js). 늦게 찾기 + 결혼식 고르기·이별은 여기 것을 넘겨 쓴다
+for (const [k, fn] of Object.entries(HL.HL_CHOOSE)) SCENE_FN[k] = fn; // 히로인·히어로 이야기(11-25)
 for (const [k, fn] of Object.entries(PW_CHOOSE)) SCENE_FN[k] = fn;
 for (const [k, fn] of Object.entries(CHB_CHOOSE)) SCENE_FN[k] = fn; // 판이 바뀐다(11-23)
 for (const [k, fn] of Object.entries(MK_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("mk_")) console.warn(`[시장] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
@@ -1159,8 +1196,11 @@ function houseScene(s, r) {
 }
 function buyHouse(s, o) {
   const down = o.price * 0.3 + o.price * 0.03; // 취득세·중개 3%
-  const avail = s.cash + (s.house.dep || 0) - (s.loans.find((l) => l.n === "전세대출")?.amt || 0);
+  // 11-25 갈아타기: 집이 있는데 또 사면 살던 집을 팔고(집값 − 남은 담보대출) 새 집을 산다. 전에는 먼저 산 집 값이 사라지고 담보대출만 쌓였다
+  const own = s.house.type === "own", oldV = own ? s.house.value || 0 : 0, ml = own ? s.loans.find((l) => l.n === "주택담보대출") : null;
+  const avail = s.cash + (s.house.dep || 0) - (s.loans.find((l) => l.n === "전세대출")?.amt || 0) + oldV - (ml?.amt || 0);
   if (avail < down) return ["돈이 모자라 계약하지 못했다"];
+  if (own) { s.cash += oldV; if (ml) { s.cash -= ml.amt; s.loans = s.loans.filter((l) => l !== ml); } log(s, `살던 집을 ${won(oldV)}에 팔았다.`, "life"); }
   // 전세 보증금 회수·전세대출 상환
   s.cash += s.house.dep || 0; const jl = s.loans.find((l) => l.n === "전세대출"); if (jl) { s.cash -= jl.amt; s.loans = s.loans.filter((l) => l !== jl); }
   s.cash -= down; addLoan(s, "주택담보대출", Math.round(o.price * 0.7), 0.042, true);
@@ -1282,7 +1322,7 @@ export function endMonth(s) {
       { t: (s.co.quit || s.co.fired) ? "이번엔… 신고 안 해도 되겠지?" : "투잡은… 신고 안 해도 되겠지?", eff: {}, text: (s.co.quit || s.co.fired) ? "이번 5월은 조용히 넘어갔다. 회사 그늘이 없는 지금, 정말 괜찮을까." : "회사원이라 그런지 아무 연락도 없었다. 휴." },
     ] });
   }
-  if (s.auditAt && s.t >= s.auditAt) { const amt = s.auditAmt || 0; s.auditAt = null; s.cash -= amt; addMoney(s, "exp", "세무조사 추징", amt); if (!(s.co.quit || s.co.fired)) s.co.eye = clamp(s.co.eye + 10 * eyeMult(s), 0, 100); scenes.push(story("세무조사 통지", `신고 안 한 투잡 수입이 잡혔다. 본세에 가산세까지 ${won(amt)} 추징. ${s.co.quit || s.co.fired ? "회사 그늘이 없으니 통지서는 곧장 내 이름으로 왔다." : "새 회사 원천징수 담당자도 눈치챘다."} 이제라도 세무사를 찾아야겠다.`)); s.taxAsk = 0; s.taxAskT = -99; }
+  if (s.auditAt && s.t >= s.auditAt) { const amt = s.auditAmt || 0; s.auditAt = null; s.cash -= amt; addMoney(s, "exp", "세무조사 추징", amt); if (!(s.co.quit || s.co.fired)) s.co.eye = clamp(s.co.eye + 10 * eyeMult(s), 0, 100); scenes.push(story("세무조사 통지", `신고 안 한 투잡 수입이 잡혔다. 본세에 가산세까지 ${won(amt)} 추징. ${s.co.quit || s.co.fired ? "회사 그늘이 없으니 통지서는 곧장 내 이름으로 왔다." : "회사 원천징수 담당자도 눈치챘다."} 이제라도 세무사를 찾아야겠다.`)); s.taxAsk = 0; s.taxAskT = -99; }
   if (s.cal === 5 && s.lastYearSide > 0) { const tax = Math.round(s.lastYearSide * 0.11 * mod(s, "taxMult", 1) * (helpers(s, "tax").length ? 0.8 : 1) * (s.era.tax ? 1.2 : 1) * (s.taxPro ? 0.85 : 1) * (1 + (s.taxPen || 0))); s.taxPen = 0;
     if (s.taxDodge === s.year) { if (s.co.quit || s.co.fired) s.auditAt = s.t + r.int(12, 24); /* 회사원은 원천징수라 잘 안 걸린다. 전업이면 1~2년 뒤 조사 */ s.auditAmt = Math.round(tax * 1.45); notes.push("종합소득세: 신고 안 함…"); } else if (tax > 0) { s.cash -= tax; addMoney(s, "exp", "종합소득세", tax); notes.push(`5월 종합소득세 ${won(tax)}`); } }
   // 투자
@@ -1469,7 +1509,7 @@ function coEvChoose(s, r, id, i) {
   if (id === "crunch") { if (i === 0) { s.hp = clamp(s.hp - 15, 0, s.hpMax); f("perf", 10, "회사 성과"); out.push("스태미너 −15"); s.mental = clamp(s.mental - 5, 0, 100); } else f("perf", -5, "회사 성과"); }
   if (id === "peer") { s.mental = clamp(s.mental - (i === 0 ? 3 : 6), 0, 100); out.push(`멘탈 −${i === 0 ? 3 : 6}`); if (i === 1) { co.resume = clamp((co.resume || 0) + 25, 0, 100); out.push("헤드헌터 제안 +"); } }
   if (id === "ai") { if (i === 0) { s.apNext -= 1; out.push(`커리어 +${gainStat(s, "career", 3).toFixed(1)}`, "다음 달 행동력 −1"); } else { co.capC = true; out.push("올해 평가 C 이하"); } }
-  if (id === "early") { if (i === 0) { const b = salary(s) * 24; s.cash += b; addMoney(s, "inc", "희망퇴직 위로금", b); co.fired = true; co.retired = true; out.push(`위로금 ${won(b)}`, "퇴사"); log(s, "희망퇴직했다.", "work"); } else { f("boss", -20, "팀장 호감"); co.capC = true; s.mental = clamp(s.mental - 8, 0, 100); out.push("올해 평가 C 이하", "멘탈 −8"); } }
+  if (id === "early") { if (i === 0) { const b = salary(s) * 24; s.cash += b; addMoney(s, "inc", "희망퇴직 위로금", b); co.fired = true; co.retired = true; delete co.party; s.bangs = (s.bangs || []).filter((q) => q.rg !== "company"); fixCoSpots(s); out.push(`위로금 ${won(b)}`, "퇴사"); log(s, "희망퇴직했다.", "work"); } else { f("boss", -20, "팀장 호감"); co.capC = true; s.mental = clamp(s.mental - 8, 0, 100); out.push("올해 평가 C 이하", "멘탈 −8"); } }
   if (id === "good") { const b = salary(s); s.cash += b; addMoney(s, "inc", "특별 격려금", b); out.push(`격려금 ${won(b)}`); }
   if (id === "trend") { if (i === 0) { s.apNext -= 1; out.push(`감각 +${gainStat(s, "sense", 4).toFixed(1)}`, "다음 달 행동력 −1"); } else { s.st.sense = clamp(s.st.sense - 6, 1, D.STAT_MAX); out.push("감각 −6"); } }
   return out;
@@ -1496,12 +1536,12 @@ function peopleMonth(s, r, notes, scenes) {
     if (x.cfBack != null && s.t >= x.cfBack) { delete x.cfBack; if (Object.values(s.rel).some((q) => q.lover)) { if (CHAR[id]) notes.push(`${CHAR[id].name}에게서 연락이 왔지만, 지금은 만나는 사람이 있다고 답했다`); } else if (!x.lover && !s.fam.spouse && CHAR[id] && isRomanceable(s, CHAR[id])) scenes.push(CONFESS[id]?.answer?.back ? confessBack2(s, id, true) : confessBackScene(s, id)); }
     if (x.cfShow === -1) { const q = x.lover && CHAR[id] ? confessShow(s, id) : null; if (q) scenes.push(q); else delete x.cfShow; } // 11-24 사수가 넘어온 다음 날 장면을 아직 못 봤다
     if (x.day1 && x.lover && x.loverSince < s.t + 1) { notes.push(x.day1); delete x.day1; }
-    if (x.lover) { const dg = s.t - (x.dateT ?? x.last); if (dg >= 2) { x.aff = clamp(x.aff - 3, 0, 100); if (dg === 2) notes.push(`${CHAR[id].name}: "요즘 우리 얼굴 본 지 오래됐다?"`); } if (x.aff < 25) { endLove(s, id, "\"너는 늘 바빴어.\" 이별 통보."); scenes.push(story("이별", `${CHAR[id].name}에게서 긴 까톡이 왔다. "너는 늘 바빴어." 답장을 쓰다 지웠다.`)); } }
+    if (x.lover) { const far = HL.isAway(s, id) ? 1 : 0, dg = s.t - (x.dateT ?? x.last); /* 11-25 멀리 있는 연인은 석 달 연락이 없을 때부터 */ if (dg >= 2 + far) { x.aff = clamp(x.aff - 3, 0, 100); if (dg === 2 + far) notes.push(`${CHAR[id].name}: "요즘 우리 얼굴 본 지 오래됐다?"`); } if (x.aff < 25) { endLove(s, id, "\"너는 늘 바빴어.\" 이별 통보."); scenes.push(story("이별", `${CHAR[id].name}에게서 긴 까톡이 왔다. "너는 늘 바빴어." 답장을 쓰다 지웠다.`)); } }
     else if (gap >= 3 && x.aff > 10) x.aff = clamp(x.aff - 1, 0, 100);
   }
   // 고객으로 찾아오는 인연(파티룸 예약)
   if (s.pr.rooms.some((rm) => rm.status === "open") && r.chance(0.35)) {
-    const cands = s.cast.filter((id) => CHAR[id]?.customer?.board === "partyroom");
+    const cands = s.cast.filter((id) => CHAR[id]?.customer?.board === "partyroom" && !HL.isHidden(s, id)); // 11-25 멀리 떠난 사람은 손님으로 안 온다
     if (cands.length) { const id = r.pick(cands); const c = CHAR[id]; const rm = r.pick(s.pr.rooms.filter((x) => x.status === "open")); const fit = rm.concept === c.customer.need; const known = !!s.rel[id]; ensureRel(s, id); addAff(s, id, fit ? 6 : 2); if (fit) rm.rating = clamp(rm.rating + 0.03, 2.5, 5); notes.push(`${c.name}님이 ${jo(rm.name, "을", "를")} 예약했다${fit ? " · 컨셉이 딱 맞아 리뷰 +" : ""}`); if (!known) scenes.push({ kind: "event", who: id, title: `손님으로 온 인연 · ${c.name}`, text: `${rm.name} 예약자 명단에 낯익은 얼굴. "${c.customer.line || "여기 사진이 예뻐서 왔어요."}"`, choices: [{ t: "직접 가서 인사하고 서비스 음료를 챙긴다", check: { stat: "charm", dc: 30 }, ok: { text: "\"사장님이셨어요?\" 다음에 또 오겠다고 했다.", eff: { aff: 8, pr_rating: 0.02 } }, ng: { text: "조금 어색했지만 리뷰는 좋게 남겨 줬다.", eff: { aff: 3 } } }, { t: "앱 메시지로만 감사 인사", eff: { aff: 2 }, text: "깔끔한 응대. 별 다섯 개." }] }); }
   }
   // 가족
@@ -1529,7 +1569,9 @@ function peopleMonth(s, r, notes, scenes) {
   guestMonth(s, r, scenes); // 손님 이벤트(engine/guest.js)
   flirtMonth(s, r, scenes); // 연애·결혼 19금(engine/flirt.js)
   famMonth(s, r, scenes, notes);
+  try { HL.month(s, notes, scenes); } catch (e) { console.warn(e); } // 11-25 히로인·히어로의 인생 시계(사건·소식·장면)
   try { LOVE.loveMonth(s, r, notes, scenes); } catch (e) { console.warn(e); }
+  try { WED.wedMonth(s, r, notes, scenes); } catch (e) { console.warn(e); } // 11-25 상대가 먼저 꺼내는 결혼 얘기·"결혼하길 잘했다"(wed.js)
   try { XR.xMonth(s, r, notes, scenes); } catch (e) { console.warn(e); } // 11-24 겹치는 역할 사건·닉네임 이야기
   // 11-24 기념일·까톡·조력자 사건 // 자녀·배우자·부모님 이벤트(engine/famev.js)
   // 부모님
@@ -1554,7 +1596,7 @@ function lifeMonth(s, r, notes, scenes) {
   }
   // 트렌드에 뒤처지는 나이
   const ag = Math.floor(s.age);
-  if ([37, 42, 46].includes(ag) && s.cal === 6 && !s.flags["trend" + ag]) { s.flags["trend" + ag] = s.t; scenes.push({ kind: "event", title: "요즘 애들 말을 못 알아듣겠다", text: `신입이 회의에서 말한 밈을 혼자 못 알아들었다. 다들 웃는데 나만 늦게 웃었다. 감각은 가만두면 떨어진다.`, onChoose: "co_ev", ev: "trend", choices: [{ t: "주말마다 팝업 거리·전시를 돌아본다", eff: {}, text: "" }, { t: "원래 그런 거지, 넘어간다", eff: {}, text: "" }] }); }
+  if ([37, 42, 46].includes(ag) && s.cal === 6 && !s.flags["trend" + ag]) { s.flags["trend" + ag] = s.t; scenes.push({ kind: "event", title: "요즘 애들 말을 못 알아듣겠다", text: s.co.quit || s.co.fired ? `단골 손님이 댓글에 쓴 밈을 혼자 못 알아들었다. 검색해 보고 3초 늦게 웃었다. 감각은 가만두면 떨어진다.` : `신입이 회의에서 말한 밈을 혼자 못 알아들었다. 다들 웃는데 나만 늦게 웃었다. 감각은 가만두면 떨어진다.`, onChoose: "co_ev", ev: "trend", choices: [{ t: "주말마다 팝업 거리·전시를 돌아본다", eff: {}, text: "" }, { t: "원래 그런 거지, 넘어간다", eff: {}, text: "" }] }); }
   // 인생 장면: 한 달 최대 1개
   const cands = SCENES.filter((x) => x.where === "any" && x.track !== "시대" && !x.id.startsWith("era") && sceneOk(s, x));
   const rr = r.next(); let acc = 0;
@@ -1661,6 +1703,7 @@ function bodyMonth(s, r, notes, scenes) {
   syncSta(s);
   let rec = s.hpMax * 0.4 + mod(s, "hpRec", 0) - Math.max(0, (s.age - 33) / 3) + helperPower(s, "health") * 3;
   if (!(s.co.quit || s.co.fired)) rec -= 6;
+  try { rec -= XR.emptyHp(s); } catch (e) {} // 11-25 공허함: 마흔다섯부터 연인도 배우자도 없으면 회복이 준다(extras.js EMPTY)
   s.hp = clamp(s.hp + rec, 0, s.hpMax);
   // 나이: 체력·감각은 서서히 떨어지고, 말빨·숫자는 경험으로 조금씩 는다
   if (s.age > 35) { s.st.body = clamp(s.st.body - 0.06 * (s.age - 33) / 2, 1, D.STAT_MAX); s.st.sense = clamp(s.st.sense - 0.07, 1, D.STAT_MAX); }
@@ -1779,6 +1822,7 @@ function fillState(s) {
   try { fixCoSpots(s); } catch (e) { console.warn(e); } // 11-25 옛 저장: 회사 종류별 장소가 생기기 전의 장소 id(pantry·dinner 등)에 선 사람·느낌표를 지금 회사의 장소로
   // 11-24 인물 관계. 옛 저장: 사수는 윤가람(c102)으로 보고 판 중간에 바뀌지 않는다. 사수 한쪽(only)은 그 판의 사수일 때만 등장 인물에 든다(곽지헌은 새 게임의 여자 주인공 판에만)
   s.flags = s.flags || {}; if (!s.flags.sasu) s.flags.sasu = "c102";
+  try { HL.ensure(s); } catch (e) { console.warn(e); } // 11-25 히로인·히어로의 인생 시계(옛 저장: 이미 지난 사건은 소식 없이 지난 것으로 적는다. 등장 인물은 바꾸지 않는다)
   for (const c of CHARS) if (c.co && !s.cast.includes(c.id) && (!c.only || c.id === s.flags.sasu)) s.cast.push(c.id);
   // 친분 마크(한 번만): 이미 하트였던 회사 사람이 ◆로 돌아가지 않게 rel.heart 를 채운다. 연인·배우자·고백 기록이 있거나, 연애 가능한 사람과 호감 50 이상. 사수는 대시로만 넘어오니 호감만으로는 안 채운다
   if (s.flags.rel2 === undefined) {
@@ -1792,5 +1836,7 @@ function fillState(s) {
   s.sj.active = s.sj.active.filter((k) => D.SIDEJOBS[k]?.play && (REG.get(k) || ["pr", "cs", "insta", "airbnb", "ucafe"].includes(k))); // 플러그인을 뺀 판에서 그 투잡은 꺼진다
   return s;
 }
-export { D };
+export { D, HL };
+// 11-25 인물 나이: 주인공과 같은 기준(해가 바뀌면 한 살)
+export const charAge = (s, c) => (c?.age || 0) + (ageNow(s) - Math.floor((s.startAge ?? 27) + 1e-9));
 export { yearScene }; // 시험 해시(#autoN-yr2)용
