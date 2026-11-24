@@ -942,6 +942,26 @@ select.btn{min-height:40px}
 .a6bg-c span{flex:1;min-width:0}.a6bg-c b{display:block;font-size:13.5px}.a6bg-c small{color:var(--muted);font-size:11.5px}.a6bg-c em{font-style:normal;color:var(--gold);font-weight:800;font-size:13px}
 .a6of{height:120px;border-radius:14px;background:#1d1b3c center/cover no-repeat;position:relative;margin-bottom:8px;overflow:hidden}
 .a6of span{position:absolute;left:10px;bottom:8px;background:rgba(0,0,0,.6);border-radius:99px;padding:2px 11px;font-size:12px}
+/* 11-25 지도 시안 2차: 호감 70 분홍 테 · 퇴사한 회사·내 가게 핀 · 회식 핀과 불빛 · 온라인 표지(지도 아래 왼쪽, 날짜는 오른쪽으로) · 회식 카드 · 회사 사람 꼬리표 · 잠긴 장소 */
+.a6mp-pin .fc img.lv{border-color:var(--pink)}
+.a6mp-pin.off{filter:grayscale(1)}.a6mp-pin.off b{border-style:dashed}
+.a6mp-pin.shop b{border-color:var(--green);color:var(--green)}
+.a6mp-pin.party{z-index:2}
+.a6mp-pin.party b{background:rgba(58,20,32,.96);border:1.5px solid #ff7a6b;color:#ffe1dc;border-radius:12px;text-align:center;line-height:1.25;padding:2px 9px}
+.a6mp-pin.party b em{font-style:normal;font-weight:900;color:#fff;background:#ff5a4d;border-radius:99px;padding:0 5px;margin-left:2px}
+.a6mp-pin.party .fc img,.a6mp-pin.party .fc u{width:22px;height:22px;margin-left:-8px;line-height:18px}
+.a6mp-pin.party .fc :first-child{margin-left:0}
+.a6mp-glow{position:absolute;width:58%;aspect-ratio:1;transform:translate(-50%,-62%);border-radius:50%;background:radial-gradient(closest-side,rgba(255,226,160,.9),rgba(255,176,104,.62) 45%,rgba(255,122,107,.3) 72%,rgba(255,122,107,0));pointer-events:none;animation:a6glow 2.4s ease-in-out infinite}
+@keyframes a6glow{0%,100%{opacity:.7}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.a6mp-glow{animation:none}}
+.a6mp-onl{position:absolute;left:10px;bottom:10px;font:inherit;font-size:12px;font-weight:800;color:#fff;background:rgba(14,16,32,.9);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:5px 11px;min-height:32px;cursor:pointer}
+.a6mp-onl.has{border-color:var(--gold)}.a6mp-onl b{color:var(--gold)}
+.a6mp-top{left:auto;right:10px}
+.a6bg-c.party{border-color:#ff7a6b;background:#22161a}.a6bg-c.party>i{background:#ff5a4d;color:#fff}
+.a6bg-c .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.a6bg-c .chips span{flex:0 0 auto}
+.pfig .a6rt{position:absolute;bottom:47px;font-size:10.5px;font-weight:700;color:var(--gold);background:rgba(14,16,32,.9);border:1px solid rgba(245,192,78,.45);border-radius:99px;padding:0 7px;white-space:nowrap;z-index:1}
+.pfig.noart .a6rt{bottom:auto;top:-16px}
+.spot.a6lk{display:flex;align-items:center;gap:8px;padding:10px 12px;opacity:.6}.spot.a6lk span{font-size:12px;color:var(--muted)}
 
 /* 11-24 홈 주인공: 그림을 키워 아래 끝이 무대 바닥에 닿게(다리가 떠 보이지 않게) */
 .stage:has(.hero2){min-height:430px}

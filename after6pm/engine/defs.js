@@ -47,6 +47,57 @@ export const STAT_WHERE = {
 export const ROLL = { min: 8, max: 32, body: [18, 40], lang: [3, 25] }; // 시작 능력치 룰렛 범위
 export const staMax = (body) => Math.round(60 + body * 0.6); // 체력 → 최대 스태미너
 
+// ───────── 회사 종류별 장소(11-25 지도 시안) ─────────
+// 장소 id = 배경 그림 키(img/bg/<id>.webp. 그림이 아직 없으면 화면이 desk 그림으로 대신한다).
+// lb = 그 장소에서 보이는 행동 이름(행동 자체는 같다), lockRank = 이 직급(RANKS 순서)부터 열림. 회사 행동 6개는 어느 종류에서도 빠지지 않는다(회식은 회식이 뜬 달의 '회사 앞'에서만)
+export const CO_SPOTS = {
+  big: [
+    { id: "lobby", n: "로비", loc: "office", acts: ["office_chat"], lb: { office_chat: "로비 스몰토크" } },
+    { id: "desk", n: "내 자리", loc: "office", acts: ["work_hard", "overtime"] },
+    { id: "meeting", n: "회의실", loc: "office", acts: ["co_project"] },
+    { id: "cafeteria", n: "구내식당", loc: "office", acts: ["co_lunch"], lb: { co_lunch: "구내식당 점심" } },
+    { id: "cocafe", n: "사내 카페", loc: "office", acts: ["office_chat", "co_resume"], lb: { office_chat: "사내 카페 수다" } },
+    { id: "exec", n: "임원층", loc: "office", acts: [], lockRank: 2 },
+  ],
+  fin: [
+    { id: "desk", n: "내 자리", loc: "office", acts: ["work_hard"] },
+    { id: "pantry", n: "탕비실", loc: "office", acts: ["office_chat", "co_lunch"] },
+    { id: "meeting", n: "회의실", loc: "office", acts: ["co_project", "co_resume"] },
+    { id: "dealing", n: "딜링룸", loc: "office", acts: ["overtime"], lb: { overtime: "장 마감 뒤 야근" } },
+    { id: "viplounge", n: "VIP 라운지", loc: "office", acts: [] },
+  ],
+  mid: [
+    { id: "desk", n: "내 자리", loc: "office", acts: ["work_hard", "overtime"] },
+    { id: "pantry", n: "탕비실", loc: "office", acts: ["co_lunch"] },
+    { id: "meeting", n: "회의실", loc: "office", acts: ["co_project", "co_resume"] },
+    { id: "coroof", n: "옥상", loc: "office", acts: ["office_chat"], lb: { office_chat: "옥상 수다" } },
+  ],
+  public: [
+    { id: "desk", n: "내 자리", loc: "office", acts: ["work_hard"] },
+    { id: "civil", n: "민원실", loc: "office", acts: ["overtime"], lb: { overtime: "민원 창구 연장 근무" } },
+    { id: "meeting", n: "회의실", loc: "office", acts: ["co_project", "co_resume"] },
+    { id: "cogym", n: "구내 체육관", loc: "office", acts: ["office_chat", "co_lunch"], lb: { office_chat: "체육관 수다", co_lunch: "점심 탁구 내기" } },
+  ],
+  startup: [
+    { id: "opendesk", n: "오픈 데스크", loc: "office", acts: ["work_hard", "overtime", "co_project"] },
+    { id: "lounge", n: "라운지", loc: "office", acts: ["office_chat", "co_lunch"], lb: { office_chat: "라운지 수다" } },
+    { id: "phonebooth", n: "폰부스", loc: "office", acts: ["co_resume"], lb: { co_resume: "폰부스에서 경력기술서" } },
+  ],
+};
+export const coSpots = (type) => CO_SPOTS[type] || CO_SPOTS.mid;
+// 회식: 평소에는 없는 장소. 회식이 뜬 달에만 지도에 '회사 앞' 핀이 선다. ap = 행동력, miss = 안 가고 달이 넘어가면 팀장 호감
+export const CO_PARTY_SPOT = { id: "dinner", n: "회사 앞 · 회식", loc: "office", acts: ["company_dinner"] };
+export const CO_PARTY = {
+  ap: 2, boss: 3, miss: -3, from: 1, // boss: 가면 오르는 팀장 호감. 11-25 밸런스로 6 → 3(6이면 봇이 절반만 가도 2회차 파이어 34%). 봇 시험은 환경변수 DING·DINM. from: 입사 첫 달(t 0)은 건너뛴다
+  q: { 3: ["q", "1분기 마감 뒤풀이"], 6: ["q", "상반기 마감 뒤풀이"], 9: ["q", "3분기 마감 뒤풀이"], 12: ["year", "송년회"] },
+  extra: { big: [11, "found", "창립기념일 만찬"], fin: [4, "ws", "봄 워크숍 뒤풀이"], mid: [10, "ws", "가을 워크숍 뒤풀이"], public: [4, "found", "창립기념일 만찬"], startup: [7, "ws", "여름 워크숍 뒤풀이"] },
+  msg: { q: "2차에서 팀장의 \"나 때는\"을 세 번 들었다. 3차 노래방 문 앞에서 탈출했다.", year: "건배사 차례가 돌아왔다. \"올해도 살아남았습니다.\" 웃음은 샀다. 3차는 못 샀다.", ws: "레크리에이션 강사보다 팀장 건배사가 더 길었다. 돌아오는 버스에서는 전원 기절.", found: "근속 20년 상을 받는 부장님께 박수를 쳤다. 내 차례는 아직 한참 남았다." },
+};
+export const coParty = (type, cal) => { const q = CO_PARTY.q[cal], x = CO_PARTY.extra[type]; return q ? { k: q[0], n: q[1] } : x && x[0] === cal ? { k: x[1], n: x[2] } : null; };
+// 모든 종류의 회사 장소를 id 로 합친 목록(D.SPOTS 용. 같은 id 는 행동을 합친다). 화면·엔진은 이 목록 대신 coSpots(종류)를 읽는다
+const CO_ALL = (() => { const m = new Map(); for (const sp of [...CO_SPOTS.mid, ...Object.values(CO_SPOTS).flat(), CO_PARTY_SPOT]) { const o = m.get(sp.id); if (o) { for (const a of sp.acts) if (!o.acts.includes(a)) o.acts.push(a); } else m.set(sp.id, { id: sp.id, n: sp.n, loc: sp.loc, acts: [...sp.acts] }); } return [...m.values()]; })();
+export const CO_SPOT_IDS = CO_ALL.map((sp) => sp.id);
+
 // ───────── 지도: 지역 → 장소(스팟). loc는 인연이 머무는 장소 id ─────────
 export const REGIONS = [
   { id: "town", n: "우리 동네", desc: "집, 헬스장, 단골 카페. 하루가 시작되고 끝나는 곳", spots: [
@@ -57,12 +108,9 @@ export const REGIONS = [
     { id: "pub", n: "동네 포차", loc: "pub", acts: ["drink"] },
     { id: "realty", n: "부동산", loc: "realty", acts: ["pr_search", "house_search"] },
   ] },
-  { id: "company", n: "회사", hub: "co", desc: "월급이 나오는 곳. 그리고 눈치가 쌓이는 곳", spots: [
-    { id: "desk", n: "내 자리", loc: "office", acts: ["work_hard", "overtime"] },
-    { id: "pantry", n: "탕비실", loc: "office", acts: ["office_chat", "co_lunch"] }, // 11-24 alt: "officest" 삭제: 오피스 상권에 다니는 다른 회사 사람(호텔 매니저·헤드헌터 등)이 우리 회사 탕비실에 나오던 원인
-    { id: "meeting", n: "회의실", loc: "office", acts: ["co_project", "co_resume"] },
-    { id: "dinner", n: "회식 자리", loc: "office", acts: ["company_dinner"] },
-  ] },
+  // 11-25 회사 장소는 회사 종류마다 다르다(위 CO_SPOTS). 여기 spots 는 모든 종류를 합친 목록이라, 지금 회사의 장소는 core.js companySpots(s) 로 읽는다.
+  // 11-24 alt: "officest" 삭제: 오피스 상권에 다니는 다른 회사 사람(호텔 매니저·헤드헌터 등)이 우리 회사 탕비실에 나오던 원인
+  { id: "company", n: "회사", hub: "co", desc: "월급이 나오는 곳. 그리고 눈치가 쌓이는 곳", spots: CO_ALL },
   { id: "univ", n: "대학가", desc: "개강하면 붐비는 거리. 취준생과 파티룸 손님이 모인다", spots: [
     { id: "gate", n: "정문 앞", loc: "univ", acts: ["univ_walk"] },
     { id: "center", n: "커리어센터 강의장", loc: "seminar", acts: ["cs_seminar", "cs_lecture"] },
@@ -124,7 +172,7 @@ export const ACTIONS = {
   work_hard: { n: "성과 내기", track: "일", ap: 1, hp: 5, mental: -2, stat: { write: 0.4, num: 0.4, career: 0.5 }, desc: "회사 성과 +, 눈치 −" },
   overtime: { n: "자진 야근", track: "일", ap: 2, hp: 10, mental: -4, stat: { write: 0.5, num: 0.5, career: 0.8, body: -0.3 }, desc: "성과 ++, 승진 심사에 유리" },
   office_chat: { n: "탕비실 수다", track: "사람", ap: 1, hp: 1, mental: 2, stat: { career: 0.3 }, desc: "사내 소문, 동료 인연, 눈치 −" },
-  company_dinner: { n: "회식 참석", track: "일", ap: 1, hp: 6, mental: -2, stat: { charm: 0.6, talk: 0.5, body: -0.3 }, desc: "팀장 호감 + 눈치 −" },
+  company_dinner: { n: "회식 참석", track: "일", ap: 2, hp: 6, mental: -2, stat: { charm: 0.6, talk: 0.5, body: -0.3 }, desc: "회식이 뜬 달에만 · 팀장 호감 + 눈치 −" }, // 11-25 행동력 1 → 2, 회식이 뜬 달에만(core.js partyOn)
   // 파티룸
   pr_search: { n: "파티룸 매물 보기", track: "일", ap: 1, hp: 4, pick: "district", stat: { num: 0.4, sense: 0.3 }, desc: "상권을 골라 매물 3개를 본다" },
   pr_visit: { n: "임장", track: "일", ap: 1, hp: 5, desc: "방음·24시간 출입·온돌 시공 가능 여부 확인" },
@@ -147,7 +195,7 @@ export const ACTIONS = {
   cs_lecture: { n: "대학 강의", track: "일", ap: 2, hp: 8, stat: { talk: 1, career: 0.5, charm: 0.5 }, desc: "강의료 + 신뢰. 섭외가 와야 함" },
   cs_template: { n: "첨삭 템플릿 만들기", track: "일", ap: 2, hp: 6, desc: "고객 1명당 걸리는 시간이 준다(규모의 경제)" },
   cs_group: { n: "그룹 스터디 운영", track: "일", ap: 1, hp: 5, desc: "한 번에 여러 명. 오픈채팅 150명 또는 후기 25개" },
-  cs_focus: { n: "집중 첨삭(미니게임)", track: "일", ap: 1, hp: 5, mental: -1, pick: "quiz", desc: "자소서 문장 3개를 직접 고친다. 잘 고칠수록 합격률 +, 환불 −" },
+  cs_focus: { n: "집중 첨삭(반기에 한 번)", track: "일", ap: 1, hp: 5, mental: -1, pick: "quiz", desc: "문제 3개를 직접 푼다. 잘 풀수록 여섯 달 동안 합격률 +, 환불 −. 상·하반기에 한 번씩만" },
   pr_decor: { n: "파티룸 컨셉 소품", track: "일", ap: 1, hp: 4, pick: "decor", desc: "조명·소파·벽·놀거리·포토존·주방을 골라 컨셉 궁합을 맞춰요" },
   cs_vod: { n: "VOD·전자책 제작", track: "일", ap: 2, hp: 6, desc: "완성되면 매달 저절로 팔린다" },
   // 장소에서 사람 만나기(공통)
@@ -975,6 +1023,19 @@ export const CS_QUIZ = [
   { q: "문과 신입이 '아무 직무나 다 넣을게요'라고 한다.", opts: ["양치기니까 좋다", "직무는 하나로 좁히고 그 직무로 회사를 많이 넣는다(직무 1개 × 회사 여러 개)", "대기업만 쓴다"], a: 1, why: "직무로 먼저 붙어야 한다. 회사는 넓게, 직무는 좁게." },
   { q: "경력기술서에 '업무 총괄'만 10줄.", opts: ["프로젝트별로: 내가 한 일 + 결과 숫자, 빈 숫자는 확인 표시", "'총괄'을 '리드'로 바꾼다", "줄 수를 20줄로 늘린다"], a: 0, why: "성과를 숫자로 뽑는다." },
   { q: "공채 일정 문의: \"자소서는 언제부터 쓰면 돼요?\"", opts: ["공고 뜨면 그때", "상반기 3~4월·하반기 9~10월 전에 미리. 이력서는 한 주 치를 몰아서 써 둔다", "1년 내내 천천히"], a: 1, why: "시즌 감각. 자소서는 양치기." },
+  // 11-25 문제 12개 추가(반기에 한 번 하게 되면서, 같은 문제가 덜 겹치게)
+  { q: "소제목이 '[열정과 도전]'이다.", opts: ["'[끝없는 열정과 도전]'으로 힘을 준다", "내용이 보이게: '[야간 재고 실사로 오차 3%→0.4%]'", "소제목은 빼는 게 깔끔하다"], a: 1, why: "소제목만 읽어도 무슨 이야기인지 보여야 한다. 가시성이 먼저." },
+  { q: "글 마지막 문장이 \"감사합니다.\"로 끝난다.", opts: ["수미상관: 첫 문장의 역량을 회사에 줄 도움으로 다시 묶는다", "'읽어 주셔서 감사합니다'로 늘린다", "마지막 문단을 통째로 지운다"], a: 0, why: "결론은 그 역량으로 회사에 줄 도움. 수미상관으로 닫는다." },
+  { q: "고객: \"편의점 알바밖에 없어서 쓸 게 없어요.\"", opts: ["없는 인턴 경험을 지어낸다", "반복되는 작은 일도 멋지게: 발주 실수 줄인 방법, 단골 응대를 숫자로", "알바 얘기는 빼고 성격 얘기만 쓴다"], a: 1, why: "작은 일도 사실과 숫자로 쓰면 역량이 된다. 꾸미지 않은 그대로의 모습." },
+  { q: "\"성격의 장단점\" 문항에 장점 다섯 가지를 나열했다.", opts: ["장점 하나 + 그걸 보여 준 사건 하나로 줄인다", "일곱 가지로 늘려 풍성하게", "단점은 빼고 장점만 쓴다"], a: 0, why: "한 항목에 한 이야기. 나열하면 하나도 안 남는다." },
+  { q: "지원동기 두 문단, 어떻게 나눌까?", opts: ["회사 연혁 요약 + 인재상 복붙", "내가 이 회사를 고른 이유 + 회사 칭찬(성장성이든 안정성이든 한 관점으로)", "어릴 적 꿈 + 가족 이야기"], a: 1, why: "지원동기 2문단 = 내가 택한 이유 + 회사 칭찬." },
+  { q: "면접 질문 \"마지막으로 하고 싶은 말 있나요?\"의 의도는?", opts: ["면접 끝났다는 인사", "입사 의지와 준비한 깊이를 마지막으로 확인", "면접관이 쉬려고"], a: 1, why: "질문마다 의도부터 짚는다. 마지막 한마디도 답변 뼈대대로." },
+  { q: "면접 답변이 2분째 이어지고 결론이 아직 없다.", opts: ["결론 → 근거 사례 → 회사 연결 순서로 다시 짠다", "더 빨리 말하게 한다", "사례를 하나 더 붙인다"], a: 0, why: "결론이 먼저. 면접관은 첫 문장으로 판단한다." },
+  { q: "경력 3년 차 고객이 이력서를 1년째 안 고쳤다.", opts: ["이직할 때 한 번에 쓰면 된다", "채용 포털·원티즈·리멤바에 경력기술서를 열어 두고 분기마다 고친다", "지인 추천만 기다린다"], a: 1, why: "경력 이직은 직소싱 시대. 열어 두고 계속 업데이트한다." },
+  { q: "헤드헌터 제안이 왔는데 고객이 \"귀찮아서 안 받아요\"라고 한다.", opts: ["잘했어요, 스팸이에요", "일단 받는다. 시장에서 내 값이 얼마인지 아는 정보다", "연봉부터 두 배 부른다"], a: 1, why: "취업은 정보 싸움. 제안은 적극 받는다." },
+  { q: "자소서 초안 전체가 AI가 쓴 티가 난다.", opts: ["그대로 내고 운에 맡긴다", "AI는 뼈대까지만. 내 사건·내 숫자·내 말투로 다시 쓴다", "AI를 하나 더 써서 돌린다"], a: 1, why: "AI는 필수 보조 도구지만 티 나면 안 된다." },
+  { q: "직무를 공부하고 싶다는 고객에게 첫 숙제는?", opts: ["그 직무 채용공고 10개를 모아 공통으로 요구하는 역량 뽑기", "현직자 브이로그 정주행", "자격증부터 따기"], a: 0, why: "직무 해부는 공고 10개에서 시작한다." },
+  { q: "고객: \"이 회사 직무가 저랑 안 맞는 것 같은데 회사는 좋아요.\"", opts: ["직무가 전부다. 포기하라고 한다", "회사가 더 중요하다. 우선 붙을 수 있는 직무로 들어가고 사내 이동을 본다", "둘 다 완벽한 곳이 나올 때까지 기다린다"], a: 1, why: "회사가 직무보다 중요하다. 일은 일일 뿐, 첫 직무가 인생을 정하지 않는다." },
 ];
 
 // 컨설팅 가격 단계마다 필요한 실력(핵심 능력·커리어 평균). 모자라면 환불·혹평

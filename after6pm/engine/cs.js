@@ -78,7 +78,7 @@ export function can(s, id) {
   if (id === "cs_soomgo") return cs.open ? null : "개업 후 가능";
   if (id === "cs_seminar") { if (!cs.niche) return "포지션을 먼저 정하세요"; if (cs.reviews < 5) return "후기 5개부터"; if (cs.seminarT === s.t) return "이번 달엔 이미 했어요"; return null; }
   if (id === "cs_lecture") return cs.offers > 0 ? null : `강의 섭외가 와야 해요(후기 ${D.CS_LECT.rev}개 또는 커리어센터 인연)`;
-  if (id === "cs_focus") return !cs.queue.length ? "대기 고객이 없어요" : null;
+  if (id === "cs_focus") return !cs.queue.length ? "대기 고객이 없어요" : cs.focusH === focusHalf(s) ? `집중 첨삭은 상·하반기에 한 번씩이에요. 지금 효과가 ${focusLeft(s)}달 남았어요` : null;
   if (id === "cs_template") return !cs.open ? "개업 후 가능" : cs.template >= 3 ? "템플릿 완성" : null;
   if (id === "cs_group") { if (!cs.niche) return "포지션을 먼저 정하세요"; if (!(cs.ch.kakao.m >= 150 || cs.reviews >= 25)) return "오픈채팅 150명 또는 후기 25개"; if (cs.groupT === s.t) return "이번 달 진행함"; return null; }
   if (id === "cs_vod") return cs.reviews < 20 ? "후기 20개부터" : null;
@@ -116,10 +116,10 @@ export function act(s, r, id, arg, boost = 1) {
     return { lines: [ok ? "후기 +1 (\"선배 덕분에 서류 붙었어요\")" : "후기 +0.4 (\"음... 고마워요\")", ...lines], msg: "후배 자소서 4문항. 두괄식부터 다시 잡았다." + (opened ? " 이제 진짜 시작이다." : "") };
   }
   if (id === "cs_focus") {
-    const sc = clamp(+arg || 0, 0, 3); cs.focus = sc; let cap = capacity(s, boost) + sc; let done = 0, earned = 0;
+    const sc = clamp(+arg || 0, 0, 3); cs.focus = sc; cs.focusT = s.t; cs.focusH = focusHalf(s); let cap = capacity(s, boost) + sc; let done = 0, earned = 0;
     while (cap > 0 && cs.queue.length) { const q = cs.queue[0]; const use = Math.min(cap, q.left); q.left -= use; cap -= use; if (q.left <= 0) { cs.queue.shift(); done++; earned += finishClient(s, r, q); } }
     if (sc === 3) cs.reviews += 1; gainStat(s, D.NICHES[cs.niche].stat, 0.4 * (sc + 1));
-    return { lines: [`첨삭 실력 ${sc}/3`, `고객 ${done}명 완료 +${won(earned)}`, sc >= 2 ? "이번 달 합격률 +, 환불 위험 −" : "대충 봤다는 느낌이 남았다", sc === 3 ? "후기 +1" : ""].filter(Boolean), msg: sc === 3 ? "\"선생님 진짜 사람이 봐 준 느낌이에요.\"" : sc ? "고칠 건 고쳤다. 아쉬운 데도 있다." : "고객이 고개를 갸웃했다." };
+    return { lines: [`첨삭 실력 ${sc}/3`, `고객 ${done}명 완료 +${won(earned)}`, sc >= 2 ? `${FOCUS.months}달 동안 합격률 +, 환불 위험 −` : sc ? `${FOCUS.months}달 동안 합격률 조금 +` : "대충 봤다는 느낌이 남았다", sc === 3 ? "후기 +1" : ""].filter(Boolean), msg: sc === 3 ? "\"선생님 진짜 사람이 봐 준 느낌이에요.\"" : sc ? "고칠 건 고쳤다. 아쉬운 데도 있다." : "고객이 고개를 갸웃했다." };
   }
   if (id === "cs_work") {
     let cap = capacity(s, boost); let done = 0, earned = 0; const names = [];
@@ -226,8 +226,12 @@ function finishClient(s, r, q) {
   return pay;
 }
 
+// 집중 첨삭(11-24 대표 결정): 매달 하던 퀴즈를 상·하반기에 한 번씩만. 대신 한 번 한 효과(합격률 +·환불 −)가 여섯 달 간다.
+export const FOCUS = { months: 6 };
+export const focusHalf = (s) => s.year * 2 + (s.cal >= 7 ? 1 : 0);
+export const focusLeft = (s) => (s.cs?.focusT == null ? 0 : Math.max(0, FOCUS.months - (s.t - s.cs.focusT)));
 export function monthStart(s, r) {
-  const cs = s.cs; cs.monthRev = 0; cs.newThisMonth = 0; cs.refunds = 0; cs.focus = 0; cs.gRef = 0; cs.gRefN = 0;
+  const cs = s.cs; cs.monthRev = 0; cs.newThisMonth = 0; cs.refunds = 0; if (focusLeft(s) <= 0) cs.focus = 0; cs.gRef = 0; cs.gRefN = 0;
   if (s.cal === 1) cs.leave = 0; // 연차는 해마다 새로
   const G = CS_F30.guar[cs.guar || 0] || CS_F30.guar[0];
   if (!cs.open) { cs.leads = 0; return; }

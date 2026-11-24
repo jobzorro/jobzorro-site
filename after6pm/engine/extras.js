@@ -16,7 +16,7 @@ export const who = (id) => CHAR[id] || EXTRA[id] || BIT[id] || null;
 const hashN = (str) => { let h = 7; for (const ch of String(str)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
 // 단역: 그림이 없어 도트 얼굴로 나온다(이름으로 씨앗을 만들어 늘 같은 얼굴)
 const BIT = {};
-for (const b of BITS) { const id = "b" + (hashN(b.name) % 100000); b.id = id; BIT[id] = { id, name: b.name, gender: b.gender, age: b.older ? 52 : 30, job: "", bit: true }; }
+for (const b of BITS) { const id = "b" + (hashN(b.name) % 100000); b.id = id; BIT[id] = { id, name: b.name, gender: b.gender, age: b.older ? 52 : 30, job: "", bit: true, face: b.face }; } // face: 얼굴 그림 키(img/bit/<키>.webp, 11-24 도트 얼굴 대신). 성별을 따라가는 단역은 { M, F }
 
 const rx = (k) => new RegExp(k, "g");
 const RULES = [ // 앞에 있을수록 먼저(끝나는 자리가 같으면 앞 규칙이 이긴다)
@@ -141,6 +141,7 @@ function burnMonth(s, scenes) {
 }
 export function xMonth(s, r, notes, scenes) {
   if (s.over) return; const V = st(s), nt = s.t + 1;
+  if (nagMonth(s, notes, scenes)) return;
   if (burnMonth(s, scenes)) return;
   // 닉네임 이야기: 유래 질문 → 작은 소동 → 본부장의 딸
   if (s.cs?.open && s.cs.nick === "nick" && CS.nickOf(s) && s.sj.active.includes("cs") && nt - V.nkT >= XB.nickGap) {
@@ -166,6 +167,32 @@ export function personEvent(s, r, actId, arg) {
   const e = r.pick(C), c = CHAR[e.who]; s.rel[e.who].pe = s.t; V.peT = s.t;
   return { kind: "event", who: e.who, expr: "smile", tag: "같이", title: `${jo(c.name, "과", "와")} 함께`, text: e.text, onChoose: "x_pe", choices: [{ t: "좋은 시간이었다", eff: e.eff || {}, text: "" }] };
 }
+// ───────── 본가와 부모님(11-24) ─────────
+// 본가에 다녀오면 부모님이 나오는 짧은 장면이 뜬다(data/extras.json visit). 같은 장면이 연달아 나오지 않게 한다.
+export function visitScene(s, r) {
+  const L = X.visit || []; if (!L.length) return null; const V = st(s);
+  const C = L.filter((_, i) => i !== V.visitI), t = r.pick(C.length ? C : L); V.visitI = L.indexOf(t);
+  return { kind: "story", tag: "본가", title: "본가에 다녀왔다", text: fill(s, t), bg: "parents", choices: [{ t: "잘 먹고 간다", eff: {}, text: "" }] };
+}
+// 마흔·마흔다섯의 잔소리(대표 결정 11-24, 2회차부터): 마흔에 연인도 배우자도 없으면, 마흔다섯에 배우자가 없으면 본가 장면이 뜨고
+// 그 뒤 석 달 동안 달마다 멘탈 −4·다음 달 행동력 −1(부모님의 걱정 전화)
+export const NAG = { ages: [40, 45], months: 3, mental: -4, ap: -1 };
+export function nagScene(s, a) {
+  const N = X.nag?.[a]; if (!N) return null;
+  return { kind: "event", tag: "부모님", title: N.title, text: fill(s, N.text), spk: N.spk, bg: "parents", expr: "sad", onChoose: "x_nag", once: "big",
+    warn: { head: a === NAG.ages[0] ? "마흔, 아직 혼자" : "마흔다섯, 아직 혼자", sub: `부모님의 걱정이 ${NAG.months}달 간다 · 달마다 멘탈 ${NAG.mental} · 행동력 ${NAG.ap}` }, choices: N.choices.map((ch) => fillCh(s, ch)) };
+}
+function nagMonth(s, notes, scenes) {
+  if (RD.isR1(s)) return false; const V = st(s), nt = s.t + 1; V.nag = V.nag || {};
+  if (V.nagLeft > 0) { V.nagLeft--; s.mental = Math.max(0, s.mental + NAG.mental); s.apNext = (s.apNext || 0) + NAG.ap; notes.push(`부모님의 걱정 전화: 멘탈 ${NAG.mental} · 다음 달 행동력 ${NAG.ap}${V.nagLeft ? ` (${V.nagLeft}달 더)` : " (이번 달까지)"}`); }
+  const age = (s.startAge || 27) + nt / 12, lover = Object.values(s.rel || {}).some((x) => x.lover);
+  for (const a of NAG.ages) {
+    if (V.nag[a] !== undefined || age < a || age >= a + 1) continue; V.nag[a] = nt;
+    const single = a === NAG.ages[0] ? !lover && !s.fam?.spouse : !s.fam?.spouse; if (!single) continue;
+    const sc = nagScene(s, a); if (!sc) continue; V.nagLeft = NAG.months; scenes.push(sc); return true;
+  }
+  return false;
+}
 // 시험용: 조연 id 또는 닉네임 이야기 종류로 장면을 바로 만든다
-export function demo(s, key) { if (/^burn/.test(key)) return burnScene(s, key.slice(4)); const c = (X.cross || []).find((x) => x.x === key); if (c) return crossScene(s, c); return nickScene(s, key); }
+export function demo(s, key) { if (/^nag/.test(key)) return nagScene(s, +key.slice(3)); if (key === "visit") return visitScene(s, { pick: (a) => a[0] }); if (/^burn/.test(key)) return burnScene(s, key.slice(4)); const c = (X.cross || []).find((x) => x.x === key); if (c) return crossScene(s, c); return nickScene(s, key); }
 export const roster = () => (X.chars || []).map((c) => ({ id: c.id, name: c.name, role: c.role, job: c.job, also: c.also }));

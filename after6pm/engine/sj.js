@@ -256,7 +256,9 @@ export function refresh(s, r) { // 이번 달 회사·모임에 나오는 사람
   if (!(s.co.quit || s.co.fired)) {
     const pool = r.shuffle(coworkers(s).filter((id) => !s.rel[id]?.spouse)).slice(0, r.int(3, 5));
     for (const sp of Object.values(s.spot)) for (const id of pool) { const i = sp.indexOf(id); if (i >= 0) sp.splice(i, 1); }
-    for (const id of pool) { const k = r.pick(["desk", "pantry", "pantry", "meeting", "dinner"]); (s.spot[k] = s.spot[k] || []).push(id); }
+    // 11-25 회사 종류에 맞는 장소(defs CO_SPOTS)에 고르게 선다: 난수는 전처럼 한 사람에 한 번, 뽑힌 곳에 이미 누가 있으면 그다음 빈 곳으로 옮긴다. 잠긴 곳(대기업 임원층)은 뺀다
+    const L = D.coSpots(s.co.type).filter((sp) => !(sp.lockRank !== undefined && (s.co.rank || 0) < sp.lockRank)).map((sp) => sp.id), full = (k) => (s.spot[k] || []).length > 0;
+    for (const id of pool) { let k = r.pick(L); if (full(k)) { const i = L.indexOf(k); for (let d = 1; d < L.length; d++) { const x = L[(i + d) % L.length]; if (!full(x)) { k = x; break; } } } (s.spot[k] = s.spot[k] || []).push(id); }
   }
   for (const id of s.hb.joined) {
     const m = members(s, id).filter((cid) => !s.rel[cid]?.spouse);
@@ -493,7 +495,7 @@ function coachTip(s, job) {
   const todo = E.tips.map((x, i) => ({ x, i })).filter(({ x, i }) => !p.didA[x.a] && (p.said[i] || 0) < 2).sort((a, b) => pref(a.x) - pref(b.x) || (p.said[a.i] || 0) - (p.said[b.i] || 0));
   const pick = todo.find(({ i }) => !p.said[i]) || todo.find(({ i }) => i !== p.lastI);
   if (pick) { p.said[pick.i] = (p.said[pick.i] || 0) + 1; p.lastI = pick.i; return pick.x.t; }
-  const pct = Math.round((p.f ?? E.f0) * 100), low = E.tips.slice().sort((a, b) => (p.didA[a.a] || 0) - (p.didA[b.a] || 0))[0];
+  const pct = Math.round((p.f ?? E.f0) * 100), low = E.tips.filter((x) => x.a !== "cs_focus").sort((a, b) => (p.didA[a.a] || 0) - (p.didA[b.a] || 0))[0]; // 11-24 집중 첨삭은 반기에 한 번이라 '매달 하라'는 말에서 뺀다
   const nm = D.ACTIONS[low.a]?.n || "홍보";
   const L = [`잘하고 있어요. 손님이 기대치의 ${pct}%까지 왔어요. 이번 달은 '${nm}'를 한 번 더 챙겨요.`, `한 번 하고 끝내면 안 돼요. '${nm}'는 매달 해야 쌓여요. 지금 ${pct}%예요.`, `초반엔 다들 이래요. 꾸준히 하는 사람이 남아요. 지금 ${pct}%, '${nm}' 한 번 더요.`];
   p.gi = ((p.gi ?? -1) + 1) % L.length; return L[p.gi];

@@ -174,7 +174,10 @@ export function newGame(o) {
   return s;
 }
 
-export function log(s, text, kind = "") { s.log.unshift({ t: s.t, age: Math.floor(s.age), cal: s.cal, text, kind }); if (s.log.length > 300) s.log.length = 300; }
+// 화면에 보이는 나이(11-24): 해가 바뀌면 한 살 오른다. 전에는 입사 달(3월)에만 올라 2028년 1·2월에 27세로 보였다.
+// 엔진 판정(결산·체력·명퇴 등)은 그대로 s.age(달 단위)를 쓴다. 화면·기록에만 이 값을 쓴다.
+export const ageNow = (s) => Math.floor((s.startAge ?? 27) + 1e-9) + Math.floor(((((s.cal - 1 - s.t) % 12) + 12) % 12 + s.t) / 12);
+export function log(s, text, kind = "") { s.log.unshift({ t: s.t, age: ageNow(s), cal: s.cal, text, kind }); if (s.log.length > 300) s.log.length = 300; }
 function toast(s, text) { s.toasts.push(text); }
 
 // ───────── 행동력 ─────────
@@ -205,21 +208,61 @@ export function calcApMax(s) {
 
 // ── 달마다 느낌표(11-24): 장소마다 '이번 달에만' 할 수 있는 일이 8~10개 뜬다. 하나에 행동력 1. 다 할 수는 없어서 골라야 한다. 달이 바뀌면 사라진다.
 // 난수는 엔진 난수(s.rs)와 따로 쓴다(봇 측정 숫자가 흔들리지 않게).
-export const BANG = { n: [8, 10], ap: 1, perRg: 3, fresh: 10 };
+// 11-25 회사 느낌표: 회사 종류마다 달에 뜨는 개수(co)가 다르고, 그 종류에만 뜨는 고유 느낌표(자료의 bang: true + when.co)가 섞인다(own = 회사 칸 하나가 고유 느낌표일 확률). 전체 개수(n)는 그대로.
+export const BANG = { n: [8, 10], ap: 1, perRg: 3, fresh: 10, co: { big: [2, 3], fin: [2, 3], mid: [1, 2], public: [1, 2], startup: [1, 2] }, own: 0.55 };
+// 회사 종류에 맞는 장소 목록(11-25). company 동네의 spots(모든 종류를 합친 목록) 대신 이것을 읽는다. spotLocked: 직급이 모자라 잠긴 곳(대기업 임원층)
+export const companySpots = (s) => D.coSpots(s?.co?.type);
+export const spotLocked = (s, sp) => sp.lockRank !== undefined && (s.co.rank || 0) < sp.lockRank;
+const coOpenSpots = (s) => companySpots(s).filter((sp) => !spotLocked(s, sp));
+// 회식(11-25): 회식이 뜬 달에만 s.co.party = { t, k, title, done }. partyOn = 이번 달 회식이 아직 남아 있다
+export const partyOn = (s) => !!(s.co.party && s.co.party.t === s.t && !s.co.party.done && !(s.co.quit || s.co.fired));
+const NOPARTY = typeof process !== "undefined" && !!process.env?.NOPARTY; // 봇 시험용: 회식 달 끔(회식 규칙을 넣기 전과 견줄 때)
+function setParty(s) { const co = s.co, p = !NOPARTY && !(co.quit || co.fired) && s.t >= D.CO_PARTY.from ? D.coParty(co.type, s.cal) : null; if (p) { co.party = { t: s.t, k: p.k, title: p.n }; toast(s, `이번 달 ${p.n}! 지도의 회사 앞에 모여요(빠지면 팀장 호감 −${-D.CO_PARTY.miss})`); } else delete co.party; }
+const BOSS_ID = CHARS.find((c) => c.co && c.rank === "boss")?.id;
+function partyGather(s) { // 회식 달: 팀장·사수와 이번 달 회사에 나온 사람들이 회사 앞에 모인다(난수 안 씀)
+  if (!partyOn(s)) return;
+  const co = new Set(D.CO_SPOT_IDS), here = Object.entries(s.spot).filter(([k]) => co.has(k)).flatMap(([, ids]) => ids);
+  const team = [...new Set([BOSS_ID, sasuOf(s), ...here])].filter((id) => id && CHAR[id] && s.cast.includes(id) && !s.rel[id]?.spouse && !(CHAR[id].hire && !(s.co.hired || []).includes(id))).slice(0, 5);
+  for (const k of Object.keys(s.spot)) s.spot[k] = s.spot[k].filter((id) => !team.includes(id));
+  s.spot.dinner = team;
+}
+// 지금 회사에 없는 회사 장소(회식이 끝난 회사 앞, 이직 전 회사의 장소, 옛 저장의 pantry·dinner)에 선 사람과 느낌표를 있는 장소로 옮긴다(난수 안 씀)
+export function fixCoSpots(s) {
+  const L = coOpenSpots(s), ok = new Set(L.map((sp) => sp.id)), all = new Set(D.CO_SPOT_IDS); if (!L.length) return; if (partyOn(s)) ok.add("dinner");
+  let i = 0; for (const k of Object.keys(s.spot || {})) { if (!all.has(k) || ok.has(k)) continue; for (const id of s.spot[k] || []) { const sp = L[i++ % L.length]; (s.spot[sp.id] = s.spot[sp.id] || []).push(id); } delete s.spot[k]; }
+  if (!partyOn(s)) s.bangs = (s.bangs || []).filter((b) => !b.party);
+  s.bangs = (s.bangs || []).filter((b) => { if (b.rg !== "company" || b.party) return true; const w = SCENES.find((x) => x.id === b.sc)?.when; return !(w?.co && ![].concat(w.co).includes(s.co.type)); }); // 이직한 달: 전 회사 종류의 고유 느낌표는 지운다
+  for (const b of s.bangs) if (b.rg === "company" && !b.party && !ok.has(b.sp)) { b.sp = L[0].id; b.spN = L[0].n; }
+}
 function rollBangs(s) {
   let h = hashStr(String(s.seed) + ":bang:" + s.t); const rnd = () => { h = (Math.imul(h ^ (h >>> 15), 2246822507) + 0x9e3779b9) | 0; return ((h >>> 0) % 100000) / 100000; }, pick = (L) => L[Math.floor(rnd() * L.length)];
-  const spots = D.REGIONS.filter((rg) => !(rg.unlock && !rg.unlock(s)) && !(rg.id === "company" && (s.co.quit || s.co.fired))).flatMap((rg) => rg.spots.map((sp) => ({ rg: rg.id, sp })));
+  const spots = D.REGIONS.filter((rg) => rg.id !== "company" && !(rg.unlock && !rg.unlock(s))).flatMap((rg) => rg.spots.map((sp) => ({ rg: rg.id, sp })));
+  const coSp = s.co.quit || s.co.fired ? [] : coOpenSpots(s);
   const n = BANG.n[0] + Math.floor(rnd() * (BANG.n[1] - BANG.n[0] + 1)), used = new Set(), out = [];
+  const fresh = (x) => !used.has(x.id) && (s.seen[x.id] === undefined || s.t - s.seen[x.id] >= BANG.fresh), ok = (x) => { try { return sceneOk(s, x); } catch (e) { return false; } };
+  const plain = (sp) => SCENES.filter((x) => (x.where === sp.loc || x.where === "any") && !x.bang && !x.mate && !/\{[가-힣]+\}/.test(x.text || "") && fresh(x) && ok(x));
+  const add = (rg, sp, sc) => { used.add(sc.id); out.push({ id: `b${s.t}_${out.length}`, rg, sp: sp.id, spN: sp.n, sc: sc.id, title: sc.title }); };
+  if (coSp.length) { // 회사: 종류별 개수. 회식이 뜬 달은 그중 하나가 회식(행동력 2)
+    const [lo, hi] = BANG.co[s.co.type] || [1, 2]; let left = lo + Math.floor(rnd() * (hi - lo + 1));
+    if (partyOn(s)) { out.push({ id: `b${s.t}_party`, rg: "company", sp: "dinner", spN: D.CO_PARTY_SPOT.n, party: 1, ap: D.CO_PARTY.ap, title: `팀 회식 · ${s.co.party.title}` }); left--; }
+    for (let k = 0; k < 40 && left > 0; k++) {
+      const mine = SCENES.filter((x) => x.bang && x.where === "office" && fresh(x) && ok(x)); // 이 회사 종류의 고유 느낌표(sceneOk 가 when.co 를 본다)
+      if (mine.length && rnd() < BANG.own) { const sc = pick(mine), sp = [].concat(sc.at || []).map((id) => coSp.find((x) => x.id === id)).find(Boolean) || pick(coSp); add("company", sp, sc); left--; continue; }
+      const sp = pick(coSp), L = plain(sp), own = L.filter((x) => x.where === sp.loc), sc = own.length && rnd() < 0.7 ? pick(own) : L.length ? pick(L) : null; if (!sc) continue;
+      add("company", sp, sc); left--;
+    }
+  }
   for (let k = 0; k < 120 && out.length < n; k++) {
     const { rg, sp } = pick(spots); if (out.filter((b) => b.rg === rg).length >= BANG.perRg) continue;
-    const L = SCENES.filter((x) => (x.where === sp.loc || x.where === "any") && !x.mate && !/\{[가-힣]+\}/.test(x.text || "") && !used.has(x.id) && (s.seen[x.id] === undefined || s.t - s.seen[x.id] >= BANG.fresh) && (() => { try { return sceneOk(s, x); } catch (e) { return false; } })());
-    const own = L.filter((x) => x.where === sp.loc), sc = own.length && rnd() < 0.7 ? pick(own) : L.length ? pick(L) : null; if (!sc) continue;
-    used.add(sc.id); out.push({ id: `b${s.t}_${out.length}`, rg, sp: sp.id, spN: sp.n, sc: sc.id, title: sc.title });
+    const L = plain(sp), own = L.filter((x) => x.where === sp.loc), sc = own.length && rnd() < 0.7 ? pick(own) : L.length ? pick(L) : null; if (!sc) continue;
+    add(rg, sp, sc);
   }
   s.bangs = out;
 }
 export function doBang(s, bid) {
   const b = (s.bangs || []).find((x) => x.id === bid); if (!b) return { ok: false, msg: "이미 지나간 일이에요" };
+  if (b.rg === "company" && (s.co.quit || s.co.fired)) { s.bangs = s.bangs.filter((x) => x.rg !== "company"); return { ok: false, msg: "회사를 그만뒀어요" }; } // 11-25 달 중간에 회사를 나왔으면 회사 느낌표는 지나간 일
+  if (b.party) { const res = act(s, "company_dinner"); if (res.ok) s.stat.bangs = (s.stat.bangs || 0) + 1; return res; } // 11-25 회식: '회식 참석' 행동 그대로(행동력 2). 느낌표 지우기·사람들 돌려보내기는 ACT_FN.company_dinner
   if (s.pending) return { ok: false, msg: "장면을 먼저 끝내세요" }; if (s.ap < BANG.ap) return { ok: false, msg: "행동력이 부족해요" };
   const sc = SCENES.find((x) => x.id === b.sc); s.bangs = s.bangs.filter((x) => x !== b); if (!sc) return { ok: false, msg: "이미 지나간 일이에요" };
   s.ap -= BANG.ap; s.seen[sc.id] = s.t; s.stat.bangs = (s.stat.bangs || 0) + 1;
@@ -238,7 +281,7 @@ function refreshSpots(s) {
     if (c.hire && !(s.co.hired || []).includes(id)) continue; // 아직 입사 전
     if (!r.chance(rel?.lover ? 0.85 : 0.62)) continue;
     const loc = r.pick(c.hangouts.filter((h) => SPOT_LOCS.has(h)).length ? c.hangouts.filter((h) => SPOT_LOCS.has(h)) : c.hangouts); // 11-24 지도에 없는 장소(club)를 뽑아 그 달에 안 나오던 것 고침
-    const cands = Object.values(D.SPOTS).filter((sp) => sp.loc === loc || sp.alt === loc);
+    const cands = loc === "office" ? coOpenSpots(s) : Object.values(D.SPOTS).filter((sp) => sp.loc === loc || sp.alt === loc); // 11-25 회사는 지금 회사 종류의 장소에만
     if (!cands.length) continue;
     const sp = r.pick(cands);
     (s.spot[sp.id] = s.spot[sp.id] || []).push(id);
@@ -255,8 +298,10 @@ export function monthStart(s) {
   s.co.workDone = 0; s.co.crunchM = 0;
   if (!s.co.quit && !s.co.fired && s.co.rank >= 1 && R(s).chance(0.08 + 0.05 * s.co.rank)) { s.co.crunchM = 1; toast(s, "이번 달은 마감 주간! 회사 일 +1"); }
   refreshSpots(s);
+  setParty(s); // 11-25 회식이 뜨는 달인지(느낌표를 뽑기 전에 정한다)
   try { rollBangs(s); } catch (e) { console.warn(e); s.bangs = []; } // 11-24 이번 달에만 뜨는 느낌표
   SJ.refresh(s, R(s));
+  try { partyGather(s); } catch (e) { console.warn(e); } // 11-25 회식 달이면 팀 사람들이 회사 앞에 모인다
   PR.monthStart(s);
   if (SJ.isActive(s, "cs")) CS.monthStart(s, R(s)); else { s.cs.leads = 0; s.cs.monthRev = 0; s.cs.newThisMonth = 0; }
   for (const P of REG.JOBS) if (P.monthStart && SJ.isActive(s, P.key)) P.monthStart(s, R(s));
@@ -288,6 +333,7 @@ export function canAct(s, id, arg) {
   if (SIDE_ACTS0.test(id)) { const j = jobOf(id); const why = j === "pr" ? PR.can(s, id, arg) : j === "cs" ? CS.can(s, id, arg) : j === "airbnb" ? AB.can(s, id, arg) : j === "ucafe" ? UC.can(s, id, arg) : INS.can(s, id, arg); if (why) return why; }
   if (/^bg_/.test(id)) { const why = BIG.can(s, id, arg); if (why) return why; }
   if (["work_hard", "overtime", "office_chat", "company_dinner"].includes(id) && (s.co.quit || s.co.fired)) return "회사를 그만뒀어요";
+  if (id === "company_dinner" && !partyOn(s)) return s.co.party?.t === s.t ? "이번 달 회식은 다녀왔어요" : "이번 달은 회식이 없어요"; // 11-25 회식은 회식이 뜬 달에만
   if (id === "rejob" && !(s.co.quit || s.co.fired)) return "이미 회사에 다녀요";
   return null;
 }
@@ -315,7 +361,7 @@ export function applyEff(s, eff, who) {
   if (eff.hp) { s.hp = clamp(s.hp + eff.hp, 0, s.hpMax); out.push(`스태미너 ${sgn(eff.hp)}`); }
   if (eff.mental) { s.mental = clamp(s.mental + eff.mental, 0, 100); out.push(`멘탈 ${sgn(eff.mental)}`); }
   if (eff.eye) { const e = eff.eye > 0 ? eff.eye * eyeMult(s) : eff.eye; s.co.eye = clamp(s.co.eye + e, 0, 100); out.push(`회사 눈치 ${sgn(Math.round(e))}`); }
-  if (eff.family) { s.fam.happy = clamp(s.fam.happy + eff.family, 0, 100); out.push(`가족 ${sgn(eff.family)}`); }
+  if (eff.boss && !(s.co.quit || s.co.fired)) { const b = eff.boss > 0 ? bossUp(s, eff.boss) : eff.boss; s.co.boss = clamp(s.co.boss + b, 0, 100); out.push(`팀장 호감 ${sgn(b)}`); } // 11-25 회사 느낌표용  if (eff.family) { s.fam.happy = clamp(s.fam.happy + eff.family, 0, 100); out.push(`가족 ${sgn(eff.family)}`); }
   if (eff.stat) for (const [k, v] of Object.entries(eff.stat)) { if (!s.st[k] && s.st[k] !== 0) continue; const g = v > 0 ? gainStat(s, k, v, curSrc || "ev") : (s.st[k] = clamp(s.st[k] + v, 0, statCap(s)), v); if (k === "body") syncSta(s); out.push(`${D.STATS[k]} ${sgn(+g.toFixed(1))}`); } // v4.28: 장면 능력치도 곡선을 거친다
   if (eff.statRaw) for (const [k, v] of Object.entries(eff.statRaw)) { if (s.st[k] === undefined) continue; s.st[k] = clamp(s.st[k] + v, 0, statCap(s)); if (k === "body") syncSta(s); out.push(`${D.STATS[k]} ${sgn(v)}`); } // 바로 +N(곡선 없음)
   if (eff.brk) for (const k of [].concat(eff.brk)) { const l = giveBrk(s, k); if (l) out.push(l); } // 돌파 계기
@@ -379,6 +425,7 @@ export function act(s, id, arg) {
   res.ok = true;
   // 장소 행동이면 가끔 장소 장면
   const spot = Object.values(D.SPOTS).find((sp) => sp.acts.includes(id));
+  if (!res.scene && id === "visit_parents") { let vs = null; try { vs = XR.visitScene(s, r); } catch (e) { console.warn(e); } if (vs) res.scene = openScene(s, vs); } // 11-24 본가에 가면 부모님이 나온다
   if (!res.scene) { let pe = null; try { pe = XR.personEvent(s, r, id, arg); } catch (e) { console.warn(e); } if (pe) res.scene = openScene(s, pe); } // 11-24 인물별 개인 사건: 그 사람의 취향과 이어진 행동을 하면 같이 하게 된다(뜨면 이번 행동의 장소 장면은 쉰다)
   if (!res.scene && spot && r.chance(0.22)) { const sc = pickLocScene(s, r, spot.loc); if (sc) res.scene = openScene(s, sc); }
   // 행동이 돌려준 장면(만남 등)은 여기서 연다
@@ -460,7 +507,7 @@ const ACT_FN = {
   beauty(s, r, k) { const b = D.BEAUTY.find((x) => x.k === k) || D.BEAUTY[0]; if (s.cash + b.cash < -creditRoom(s)) return { lines: ["돈이 모자랐다"] }; s.cash += b.cash; addMoney(s, "exp", "꾸미기", -b.cash); const g = gainStat(s, "charm", b.charm); const out = [`매력 +${g.toFixed(1)}`, `돈 ${won(b.cash)}`]; if (b.talk) out.push(`말빨 +${gainStat(s, "talk", b.talk).toFixed(1)}`); return { lines: out, msg: b.desc }; },
   family_time(s) { s.fam.happy = clamp(s.fam.happy + 10, 0, 100); s.flags.familyThisMonth = s.t; if (s.fam.spouse) addAff(s, s.fam.spouse, 3); return { lines: ["가족 행복 +10"], msg: s.fam.kids.length ? "아이가 그린 그림을 냉장고에 붙였다." : "둘이 소파에서 드라마를 봤다." }; },
   kids_play(s) { s.fam.happy = clamp(s.fam.happy + 8, 0, 100); s.flags.familyThisMonth = s.t; return { lines: ["가족 행복 +8"], msg: "트램펄린에서 아이보다 내가 더 신났다." }; },
-  visit_parents(s) { s.fam.parents = clamp(s.fam.parents + 2, 0, 100); s.fam.lastVisit = s.t; s.mental = clamp(s.mental + 2, 0, 100); return { lines: ["부모님 건강 +2", "반찬 3통 획득"], msg: "\"밥은 먹고 다니니?\"" }; },
+  visit_parents(s) { s.fam.parents = clamp(s.fam.parents + 2, 0, 100); s.fam.lastVisit = s.t; s.mental = clamp(s.mental + 2, 0, 100); return { lines: ["부모님 건강 +2", "반찬 3통 획득"], msg: "본가에 다녀왔다." }; },
   drink(s) { socialMental(s); return { lines: ["멘탈 +5"], msg: "소주 한 병, 이야기 두 시간." }; },
   drink_fancy(s) { socialMental(s); return { lines: ["멘탈 +6"], msg: "야경이 예쁘다. 가격도 예쁘다." }; },
   exhibit() { return { lines: ["감각 +"], msg: "색 조합 하나를 머릿속에 저장했다." }; },
@@ -491,7 +538,11 @@ const ACT_FN = {
   },
   co_project(s) { const g = 14 * mod(s, "perfMult", 1); s.co.perf = clamp(s.co.perf + g, 0, 100); const bu = bossUp(s, 5); s.co.boss = clamp(s.co.boss + bu, 0, 100); s.co.eye = clamp(s.co.eye - 4, 0, 100); const c = gainStat(s, "career", 1.4); return { lines: [`회사 성과 +${Math.round(g)}`, `커리어 +${c.toFixed(1)}`, `팀장 호감 +${bu}`], msg: "신사업 TF. 회의만 세 번, 그래도 보고서에 내 이름이 들어갔다." }; },
   co_resume(s) { s.co.resume = clamp((s.co.resume || 0) + 25, 0, 100); return { lines: ["헤드헌터 제안 확률 +"], msg: "경력기술서에 숫자를 채웠다. 원티즈·리멤바에 '이직 제안 받기'를 켰다." }; },
-  company_dinner(s) { const bu = bossUp(s, 6); s.co.boss = clamp(s.co.boss + bu, 0, 100); s.co.eye = clamp(s.co.eye - 5, 0, 100); return { lines: [`팀장 호감 +${bu}`, "회사 눈치 −5"], msg: "3차 노래방에서 탈출했다." }; },
+  company_dinner(s) { const bu = bossUp(s, D.CO_PARTY.boss); s.co.boss = clamp(s.co.boss + bu, 0, 100); s.co.eye = clamp(s.co.eye - 5, 0, 100); const lines = [`팀장 호감 +${bu}`, "회사 눈치 −5"], P = s.co.party;
+    if (P) { // 11-25 회식 달: 같이 간 아는 사람들과 조금 가까워지고, 회식이 끝나면 회사 앞 자리가 사라진다(사람들은 사무실로)
+      P.done = s.t; const here = (s.spot?.dinner || []).filter((id) => CHAR[id] && s.rel[id] && !s.rel[id].spouse); for (const id of here) { s.rel[id].last = s.t; addAff(s, id, 2); } if (here.length) lines.push(`같이 간 ${here.length}명 호감 +2`);
+      fixCoSpots(s); }
+    return { lines, msg: (P && D.CO_PARTY.msg[P.k]) || "3차 노래방에서 탈출했다." }; },
   grad_apply(s, r, k) {
     const g = D.GRADS[k] || D.GRADS.mba; if (s.cash - g.cash < -creditRoom(s)) return { lines: ["입학금이 모자라요"], msg: "등록금 고지서를 보고 창을 닫았다." };
     s.cash -= g.cash; addMoney(s, "exp", "대학원 입학금", g.cash); s.grad = { k: k in D.GRADS ? k : "mba", t0: s.t, n: 0, done: false };
@@ -505,7 +556,7 @@ const ACT_FN = {
     if (cands.length && r.chance(0.3)) return { scene: meetScene(s, r.pick(cands), "조별 과제 같은 조가 됐다. "), lines };
     return { lines: [...lines, `수업 ${G.n}/${g.need}`], msg: r.pick(["케이스 스터디 발표. 교수님이 고개를 끄덕였다.", "밤 10시 수업이 끝나고 동기들과 치맥.", "과제 마감 1시간 전. 회사 보고서보다 어렵다."]) };
   },
-  rejob(s, r) { const p = clamp((0.25 + s.st.career / 300 - Math.max(0, s.age - 40) * 0.02) * mod(s, "rejobMult", 1), 0.08, 0.85); if (r.chance(p)) { s.co.quit = false; s.co.fired = false; s.co.retired = false; s.co.pip = 0; s.co.perf = 45; s.co.eye = 0; s.co.warns = 0; s.co.rank = Math.min(4, Math.max(0, s.co.rank - 1)); s.co.payIdx *= 0.92; s.co.type = r.pick(["mid", "startup", "mid"]); s.co.name = r.pick(D.COMPANY_TYPES[s.co.type].names); log(s, `${s.co.name}에 다시 입사했다.`, "work"); return { lines: [`${s.co.name} 합격!`], msg: "다시 사원증을 목에 걸었다." }; } return { lines: ["불합격"], msg: "\"좋은 인연으로 다시 뵙겠습니다.\"" }; },
+  rejob(s, r) { const p = clamp((0.25 + s.st.career / 300 - Math.max(0, s.age - 40) * 0.02) * mod(s, "rejobMult", 1), 0.08, 0.85); if (r.chance(p)) { s.co.quit = false; s.co.fired = false; s.co.retired = false; s.co.pip = 0; s.co.perf = 45; s.co.eye = 0; s.co.warns = 0; s.co.rank = Math.min(4, Math.max(0, s.co.rank - 1)); s.co.payIdx *= 0.92; s.co.type = r.pick(["mid", "startup", "mid"]); s.co.name = r.pick(D.COMPANY_TYPES[s.co.type].names); delete s.co.party; fixCoSpots(s); /* 11-25 새 회사의 장소로 */ log(s, `${s.co.name}에 다시 입사했다.`, "work"); return { lines: [`${s.co.name} 합격!`], msg: "다시 사원증을 목에 걸었다." }; } return { lines: ["불합격"], msg: "\"좋은 인연으로 다시 뵙겠습니다.\"" }; },
 };
 // 아이템: 사면 능력치가 바로 오른다
 export function buyItem(s, id) {
@@ -962,7 +1013,7 @@ function mateName(t, name) {
 }
 export function pickOffice(s, r) {
   const M = mates(s);
-  const cands = SCENES.filter((x) => x.where === "office" && sceneOk(s, x) && !(x.mate && !M.length) && !(x.when?.once === false && s.seen[x.id] !== undefined && s.t - s.seen[x.id] < 10));
+  const cands = SCENES.filter((x) => x.where === "office" && !x.bang /* 11-25 회사 종류별 고유 느낌표는 지도 느낌표로만 뜬다 */ && sceneOk(s, x) && !(x.mate && !M.length) && !(x.when?.once === false && s.seen[x.id] !== undefined && s.t - s.seen[x.id] < 10));
   if (!cands.length) return null;
   const tot = cands.reduce((a, x) => a + (x.when?.chance ?? 0.1), 0); let v = r.next() * tot, x = cands[0];
   for (const c of cands) { v -= c.when?.chance ?? 0.1; if (v <= 0) { x = c; break; } }
@@ -979,6 +1030,7 @@ export function sceneOk(s, x) {
   if (w.months?.length && !w.months.includes(s.cal)) return false;
   // 11-23 조건 키: 아이 나이 범위(kidMin 이상 kidMax 미만인 아이가 한 명이라도) · 직급 범위(rankMin~rankMax, D.RANKS 순서. 회사에 다닐 때만)
   if (w.kidMin !== undefined || w.kidMax !== undefined) { const lo = w.kidMin ?? 0, hi = w.kidMax ?? 99; if (!s.fam.kids.some((k) => { const a = (s.t - k.born) / 12; return a >= lo && a < hi; })) return false; }
+  if (w.co && (s.co.quit || s.co.fired || ![].concat(w.co).includes(s.co.type))) return false; // 11-25 조건 키 co: 그 회사 종류에 다닐 때만(big·fin·mid·public·startup)
   if (w.rankMin !== undefined || w.rankMax !== undefined) { if (s.co.quit || s.co.fired || s.co.retired) return false; const rk = s.co.rank || 0; if (rk < (w.rankMin ?? 0) || rk > (w.rankMax ?? 99)) return false; }
   if (w.once !== false && x.once !== false && s.seen[x.id] !== undefined && (w.once || x.where === "any")) return false;
   for (const q of w.req || []) { const neg = q.startsWith("!"); const k = neg ? q.slice(1) : q; const has = k.split("|").some((kk) => reqHas(s, kk)); if (neg ? has : !has) return false; } // "a|b" = 둘 중 하나
@@ -1056,7 +1108,7 @@ const SCENE_FN = {
   sj_intro(s, r, i) { return SJ.introChoose(s, i); },
   sj_grind(s, r, i) { return SJ.grindChoose(s, r, i); },
   sj_pick(s, r, i, okv, sc) { return SJ.pickChoose(s, r, i, sc); }, // 11-24 6개월 차에 고르기·해마다 다시 묻기·하나 더
-  rejob_offer(s, r, i) { if (i === 0) { s.co.type = s._offer.type; s.co.name = s._offer.name; s.co.pay = 0; s.co.eye = 0; s.co.warns = 0; s.co.perf = 50; s.co.boss = 45; s.co.remote = 0; s.co.payBoost = Math.min(1.3, (s.co.payBoost || 1) * 1.1); log(s, `${jo(s.co.name, "으로", "로")} 환승 이직했다. 연봉 +10%`, "work"); return [`${s.co.name} 입사`, "월급 +10%"]; } return []; },
+  rejob_offer(s, r, i) { if (i === 0) { s.co.type = s._offer.type; s.co.name = s._offer.name; s.co.pay = 0; s.co.eye = 0; s.co.warns = 0; s.co.perf = 50; s.co.boss = 45; s.co.remote = 0; s.co.payBoost = Math.min(1.3, (s.co.payBoost || 1) * 1.1); delete s.co.party; fixCoSpots(s); /* 11-25 회사 종류가 바뀌면 장소·지도 자리도 바뀐다 */ log(s, `${jo(s.co.name, "으로", "로")} 환승 이직했다. 연봉 +10%`, "work"); return [`${s.co.name} 입사`, "월급 +10%"]; } return []; },
   co_ev(s, r, i) { return coEvChoose(s, r, s.pending.ev, i); },
   cs_ev(s, r, i, ok) { return CS.csEvChoose(s, i, ok); },
   pr_crisis(s, r, i, ok) { return PR.crisisChoose(s, i, ok); },
@@ -1075,6 +1127,7 @@ for (const [k, fn] of Object.entries({ ...MT_CHOOSE, ...GS_CHOOSE })) SCENE_FN[k
 for (const [k, fn] of Object.entries(RV_CHOOSE)) { if (SCENE_FN[k] || !k.startsWith("rv_")) console.warn(`[라이벌] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 for (const [k, fn] of Object.entries({ ...PR.PR_CHOOSE, ...AB.AB_CHOOSE, ...UC.UC_CHOOSE })) { if (SCENE_FN[k]) console.warn(`[공간 타이쿤] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; } // v4.28 후기·가격 전쟁·명의
 for (const [k, fn] of Object.entries(WV_CHOOSE)) SCENE_FN[k] = fn;
+SCENE_FN.x_nag = () => [`부모님의 걱정이 ${XR.NAG.months}달 간다: 달마다 멘탈 ${XR.NAG.mental} · 행동력 ${XR.NAG.ap}`]; // 마흔·마흔다섯 잔소리(11-24). 벌점은 extras.js nagMonth 가 달마다 준다
 for (const [k, fn] of Object.entries(LOVE.LV_CHOOSE)) SCENE_FN[k] = fn; // 연애 확장(11-24)
 for (const [k, fn] of Object.entries(PW_CHOOSE)) SCENE_FN[k] = fn;
 for (const [k, fn] of Object.entries(CHB_CHOOSE)) SCENE_FN[k] = fn; // 판이 바뀐다(11-23)
@@ -1302,6 +1355,7 @@ const ev = (id, title, text, choices) => ({ kind: "event", title, text, onChoose
 function companyMonth(s, r, notes, scenes) {
   const co = s.co;
   if (co.quit || co.fired) return;
+  if (co.party && co.party.t === s.t && !co.party.done) { co.boss = clamp(co.boss + D.CO_PARTY.miss, 0, 100); notes.push(`${co.party.title}에 빠졌다: 팀장 호감 −${-D.CO_PARTY.miss}`); } // 11-25 회식이 뜬 달에 안 가고 넘어갔다
   co.perf = clamp(co.perf - 3 * mod(s, "perfDecay", 1), 0, 100);
   { const need = workNeed(s), gap = Math.max(0, need - (co.workDone || 0));
     if (gap > 0) { co.perf = clamp(co.perf - 7 * gap, 0, 100); co.boss = clamp(co.boss - 4 * gap, 0, 100); co.eye = clamp(co.eye + 2 * gap * eyeMult(s), 0, 100); s.mental = clamp(s.mental - 2 * gap, 0, 100); notes.push(`회사 일이 밀렸다(${co.workDone || 0}/${need}): 성과 −${7 * gap}, 팀장 호감 −${4 * gap}`); } }
@@ -1426,6 +1480,7 @@ export function quitCompany(s) {
   const ready = quitReady(s);
   if (mod(s, "quitLock", false) && !ready.ok) return { ok: false, msg: "선퇴사 금지! 환승 조건을 먼저 채우세요" };
   s.co.quit = true; s.co.eye = 0;
+  delete s.co.party; s.bangs = (s.bangs || []).filter((b) => b.rg !== "company"); fixCoSpots(s); // 11-25 퇴사한 달: 회사 느낌표와 회식은 사라진다
   log(s, ready.ok ? "환승 퇴사. 내일부터 출근지는 내 일이다." : "준비 없이 사직서를 냈다.", "work");
   if (!ready.ok) s.mental = clamp(s.mental + 10, 0, 100);
   return { ok: true, msg: ready.ok ? "환승 퇴사 성공. 행동력 +5" : "속은 시원하다. 다음 달 카드값이 걱정이다." };
@@ -1623,7 +1678,7 @@ function bodyMonth(s, r, notes, scenes) {
 function gameOver(s, cause) { s.over = cause; log(s, { bankrupt: "개인회생 신청. 이번 인생은 여기까지.", burnout: "번아웃 3회. 이번 인생은 여기까지.", fired: "모든 수입이 끊겼다." }[cause] || cause, "end"); }
 export function declareFire(s, keepGoing) {
   const f = fireInfo(s); if (!f.ready) return false;
-  s.fireAt = Math.floor(s.age); s.fireAtM = Math.floor(s.age * 12 + 1e-6); s.fireNW = Math.round(f.nw); // fireAtM: 개월까지(명예의 전당)
+  s.fireAt = ageNow(s); s.fireAtM = Math.floor(s.age * 12 + 1e-6); s.fireNW = Math.round(f.nw); // fireAtM: 개월까지(명예의 전당)
   if (keepGoing) { log(s, `${s.fireAt}세, 파이어 달성! 은퇴하지 않고 ${RD.endAgeOf(s)}세까지 더 달린다.`, "end"); return true; }
   s.ended = "fire"; log(s, `${s.fireAt}세, 파이어 선언!`, "end"); return true;
 }
@@ -1720,6 +1775,7 @@ function fillState(s) {
   if (!s.ins) s.ins = INS.init(); INS.ens(s); /* 인별 v2: 예전 주제 → 컨셉 */ if (!s.big) s.big = BIG.init(); if (!s.ab) s.ab = AB.init(); if (!s.uc) s.uc = UC.init(); s.fame = s.fame || 0; if (s.st.lang === undefined) s.st.lang = 15; s.pi = s.pi || Math.pow(1.025, s.t / 12); s.piX = s.piX || 1; if (s.grad === undefined) s.grad = null; PR.fill(s);
   s.ng = s.ng || { n: 1, hard: false, gifts: [] }; s.items = s.items || {}; GC.ensure(s); s.me.revealed = s.me.revealed || {}; s.me.job = s.me.job || "plan"; if (!D.MAJORS[s.me.major]) s.me.major = "biz";
   const co = s.co; co.payIdx = co.payIdx || Math.pow(1.02, Math.max(0, co.years - 1)); co.pts = co.pts || 0; co.grades = co.grades || []; co.remote = co.remote || 0; co.evT = co.evT ?? -99; co.hired = co.hired || [];
+  try { fixCoSpots(s); } catch (e) { console.warn(e); } // 11-25 옛 저장: 회사 종류별 장소가 생기기 전의 장소 id(pantry·dinner 등)에 선 사람·느낌표를 지금 회사의 장소로
   // 11-24 인물 관계. 옛 저장: 사수는 윤가람(c102)으로 보고 판 중간에 바뀌지 않는다. 사수 한쪽(only)은 그 판의 사수일 때만 등장 인물에 든다(곽지헌은 새 게임의 여자 주인공 판에만)
   s.flags = s.flags || {}; if (!s.flags.sasu) s.flags.sasu = "c102";
   for (const c of CHARS) if (c.co && !s.cast.includes(c.id) && (!c.only || c.id === s.flags.sasu)) s.cast.push(c.id);

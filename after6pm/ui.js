@@ -197,14 +197,15 @@ function bodyOr(key, expr, mode, fallback) {
 }
 const pixFace = (id, expr) => () => { try { return portraitDataURL(lookOf(id), genderOf(id), expr, 4); } catch (e) { return ""; } };
 const pixMe = (expr) => () => { try { return portraitDataURL(S.me.look, S.me.gender, expr, 5); } catch (e) { return ""; } };
-function bodySrc(id, expr, mode) { return id === "me" ? bodyOr(S.me.avatar, expr, mode, pixMe(expr)) : bodyOr(id, expr, mode, pixFace(id, expr)); }
+function bodySrc(id, expr, mode) { return id === "me" ? bodyOr(meAv(), expr, mode, pixMe(expr)) : bodyOr(id, expr, mode, pixFace(id, expr)); }
 // 장소 배경: 장소(spot) → 배경 그림
 const SPOT_BG = { app: "online", chat: "online", market: "online", univ: "gate" };
 const PAGE_BG = { pr: "partyroom", cs: "consult", airbnb: "airbnb", ucafe: "ucafe", co: "desk", insta: "home", grad: "library", family: "apt", hobby: "cafe" };
 function bgUrl(k) { return k && BG.has(k) ? `img/bg/${k}.webp` : ""; }
-function charSpot(id) { for (const [sp, ids] of Object.entries(S.spot || {})) if (ids.includes(id)) return SPOT_BG[sp] || sp; const c = E.CHAR[id]; if (c?.customer) return c.customer.board === "partyroom" ? "partyroom" : "consult"; return null; }
+const CO_IDS = new Set(D.CO_SPOT_IDS || []), coBg = (k) => (k && !BG.has(k) && CO_IDS.has(k) ? "desk" : k); // 11-25 회사 종류별 장소: 배경 그림(img/bg/<장소 id>.webp)이 아직 없으면 내 자리 그림으로 대신한다
+function charSpot(id) { for (const [sp, ids] of Object.entries(S.spot || {})) if (ids.includes(id)) return coBg(SPOT_BG[sp] || sp); const c = E.CHAR[id]; if (c?.customer) return c.customer.board === "partyroom" ? "partyroom" : "consult"; return null; }
 function sceneBg(sc, lead) { // lead: 무대에 선 사람. 조연은 자기 자리(본부장 = 회의실, 엄마 = 부모님 집)가 먼저다(11-24)
-  const cands = [sc.kind === "wedding" ? "wedding" : null, sc.bg, !sc.who && lead ? XR.EXTRA[lead]?.bg : null, ui.lastSpot ? SPOT_BG[ui.lastSpot] || ui.lastSpot : null, PAGE_BG[ui.page], sc.who ? charSpot(sc.who) : null, "street", "alley"];
+  const cands = [sc.kind === "wedding" ? "wedding" : null, sc.bg, !sc.who && lead ? XR.EXTRA[lead]?.bg : null, ui.lastSpot ? coBg(SPOT_BG[ui.lastSpot] || ui.lastSpot) : null, PAGE_BG[ui.page], sc.who ? charSpot(sc.who) : null, "street", "alley"];
   for (const k of cands) if (k && BG.has(k)) return bgUrl(k);
   return "";
 }
@@ -219,8 +220,12 @@ function stageWho(id, expr, mode, bg, cap, noScale) {
   if (!src) return null;
   return `<div class="sstage ${mode}" style="${bg ? `background-image:url(${bg})` : ""}">${noScale ? img(src, "body", "") : bodyImg(id, src, mode === "half" ? 96 : 100)}${cap ? `<div class="cap">${cap}</div>` : ""}</div>`;
 }
-function faceSrc(id, expr = "neutral") { return bodyOr(id, expr, "face", pixFace(id, expr)) ?? artOr(id, expr, pixFace(id, expr)); }
-function meSrc(expr) { return bodyOr(S.me.avatar, expr, "face", pixMe(expr)) ?? artOr(S.me.avatar, expr, pixMe(expr)); }
+// 단역 얼굴 그림(11-24): 도트 얼굴 대신 img/bit/<키>.webp 한 장(표정 없음). 그림 키가 없는 단역만 예전 도트
+const bitFace = (id) => { const f = XR.who(id)?.face; if (!f) return ""; const k = typeof f === "string" ? f : f[S?.me?.gender || "F"] || f.F; return k ? `img/bit/${k}.webp` : ""; };
+function faceSrc(id, expr = "neutral") { return bitFace(id) || (bodyOr(id, expr, "face", pixFace(id, expr)) ?? artOr(id, expr, pixFace(id, expr))); }
+// 내 얼굴: 고른 그림이 없는 옛 저장·시험 인생도 도트 대신 그 성별의 첫 그림을 쓴다(11-24)
+const meAv = () => S.me.avatar || AVATARS(S.me.gender || "F")[0] || null;
+function meSrc(expr) { const a = meAv(); return bodyOr(a, expr, "face", pixMe(expr)) ?? artOr(a, expr, pixMe(expr)); }
 const AVATARS = (g) => [...new Set([...Object.keys(BODY), ...ART])].filter((k) => k.startsWith("p" + g)).sort();
 const img = (src, cls = "face", alt = "") => src ? `<img class="${cls}" src="${src}" alt="${esc(alt)}">` : "";
 function exprFor(id) { const x = S.rel[id]; if (!x) return "neutral"; if (x.lover || x.spouse) return "blush"; return x.aff >= 45 ? "smile" : "neutral"; }
@@ -228,7 +233,7 @@ function myExpr() { if (S.hp < 30 || S.mental < 25) return "sad"; if (S.mental >
 
 // ───────── 저장 ─────────
 // 저장은 store.js가 맡는다(로그인하면 서버 3칸, 아니면 브라우저 3칸)
-function summary() { return { name: S.me.name, gender: S.me.gender, age: Math.floor(S.age), ym: E.ymLabel(S), nw: Math.round(E.netWorth(S)), job: S.co.quit || S.co.fired ? "전업" : `${S.co.name} ${D.RANKS[S.co.rank].n}`, side: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·"), end: S.over || S.ended || null }; }
+function summary() { return { name: S.me.name, gender: S.me.gender, age: E.ageNow(S), ym: E.ymLabel(S), nw: Math.round(E.netWorth(S)), job: S.co.quit || S.co.fired ? "전업" : `${S.co.name} ${D.RANKS[S.co.rank].n}`, side: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·"), end: S.over || S.ended || null }; }
 function save(now) { if (S) { try { const m = meta(); if (PD.dexSync(S, m, E.CHAR)) setMeta(m); } catch (e) {} ST.save(SLOT, E.save(S), summary(), now); } }
 // 인물 도감·관계도(v4.27): people_ui.js 를 열 때 받는다. kind "dex" | "map" | "dex:<id>"
 function pplOpen(kind) { import("./people_ui.js").then((M) => M.open(kind, { S, E, D, esc, openWin, closeWin, charWin, meta, setMeta, toast, stage: (id) => stageWho(id, "smile", "half", bgUrl(PAGE_BG[{ pr: "pr", cs: "cs", co: "co" }[PD.groupOf(E.CHAR[id])]] || "cafe") || bgUrl("street")), face: (id) => faceSrc(id, "smile"), pix: (id) => pixFace(id, "neutral")(), meFace: () => meSrc("smile") })).catch((e) => toast([], "도감을 불러오지 못했어요")); }
@@ -252,7 +257,7 @@ function doAct(id, arg) {
   if (S.pending) return showScene();
   if (id === "hb_go" && !arg) return hobbyPick();
   if (!arg && !a.pick) arg = defaultArg(id);
-  ui.lastSpot = Object.values(D.SPOTS).find((sp) => sp.acts.includes(id))?.id || null;
+  ui.lastSpot = (E.companySpots(S).find((sp) => sp.acts.includes(id)) || Object.values(D.SPOTS).find((sp) => sp.acts.includes(id)))?.id || null; // 11-25 회사 행동은 지금 회사 종류의 장소가 먼저
   if (a.pick && arg === undefined) return pickFor(id);
   if (MGJ[id] && mgDue() && !E.canAct(S, id, arg) && mgKeys(MGJ[id][0]).some((k) => MG[k])) return mgOffer(id, arg); // 미니게임이 아직 없으면(GAME = null) 그냥 행동
   const res = E.act(S, id, arg);
@@ -351,7 +356,10 @@ function pickFor(id) {
 // ───────── 컨설팅 미니게임: 첨삭 퀴즈 3문제 ─────────
 function quizWin(id) {
   const why = E.canAct(S, id, 0); if (why) return toast([], why);
-  const qs = shuffle(D.CS_QUIZ).slice(0, 3); let i = 0, score = 0;
+  // 11-25 최근에 푼 문제(18개까지 기억)는 빼고 뽑는다: 반기에 한 번, 세 문제씩이라 3년은 안 겹친다
+  const seen = S.cs.qSeen || [], allI = D.CS_QUIZ.map((_, k) => k), fresh = allI.filter((k) => !seen.includes(k)), idx = shuffle(fresh.length >= 3 ? fresh : allI).slice(0, 3);
+  S.cs.qSeen = [...seen, ...idx].slice(-18);
+  const qs = idx.map((k) => D.CS_QUIZ[k]); let i = 0, score = 0;
   const show = (fb) => {
     if (i >= qs.length) return openWin(`<h2>집중 첨삭 끝 <button class="x" data-close>✕</button></h2><div class="quizres"><b class="gold">${score} / 3</b><div class="small muted">${score === 3 ? "완벽해요. 고객이 감동했어요." : score === 2 ? "꽤 잘 봤어요." : score === 1 ? "아쉬운 데가 많았어요." : "고객이 고개를 갸웃했어요."}</div></div><button class="btn gold" style="width:100%;margin-top:10px;padding:12px" data-qdone>결과 반영 (행동력 1)</button>`, (w) => w.querySelector("[data-qdone]").onclick = () => { closeWin(); doAct(id, score); }, true);
     const q = qs[i];
@@ -553,7 +561,7 @@ function guideCard() {
   if (Q.on) {
     const it = (ok, cur, go, t, sub) => `<button class="gd ${ok ? "ok" : ""} ${cur ? "cur" : ""}" data-go="${go}"><i>${ok ? "✓" : ""}</i><span><b>${t}</b><small>${sub}</small></span></button>`;
     return `<div class="guide"><div class="gh"><b>${ic("info")}초반 퀘스트 · 내 투잡 찾기</b><span>${Q.left ? `${S.t + 1}/${SJ.QUEST.months}개월` : "천천히 해도 돼요"}</span></div>
-      ${it(Q.info >= SJ.QUEST.info, Q.step === 1, "co", `① 투잡 정보를 ${SJ.QUEST.info}개 모으세요`, `${Math.min(Q.info, SJ.QUEST.info)}/${SJ.QUEST.info} · 회사에도 있어요: 탕비실 수다·동료와 점심·회식에서 소문이 들려요`)}
+      ${it(Q.info >= SJ.QUEST.info, Q.step === 1, "co", `① 투잡 정보를 ${SJ.QUEST.info}개 모으세요`, `${Math.min(Q.info, SJ.QUEST.info)}/${SJ.QUEST.info} · 회사에도 있어요: 동료와 수다·동료와 점심·회식에서 소문이 들려요`)}
       ${Q.step === 1 ? `<div class="a6q-tip">어디로 가 볼까요? <button data-go="co">회사</button><button data-go="hobby">취미 모임</button><button data-go="map">지도 장소</button><button data-go="people">사람들</button><button data-go="sj">리포트·너튜브</button></div>` : ""}
       ${it(Q.cands >= SJ.NEED_CANDS, Q.step === 2, "sj", `② 그중 둘은 100%까지 파고드세요`, `${Math.min(Q.cands, SJ.NEED_CANDS)}/${SJ.NEED_CANDS} · 리포트 읽기·해 본 사람에게 묻기·선배 찾아가기가 빨라요`)}
       ${it(false, Q.step === 3, "sj", SJ.pickOpen(S) ? `③ 궁합 카드를 보고 고르세요` : `③ 궁합 카드를 보고, ${SJ.PICK.t}개월을 채운 달에 고르세요`, Q.step === 3 ? SJ.pickOpen(S) ? "카드가 준비됐어요. 내 역량·특성과 얼마나 맞는지 보여 드려요" : `카드는 지금 봐도 돼요. 고르는 날까지 ${SJ.PICK.t - S.t}달, 그동안은 회사와 취미에 집중해요` : "100%가 되면 내 역량·특성과 얼마나 맞는지 카드로 보여 드려요")}
@@ -564,7 +572,7 @@ function guideCard() {
   const fc = SJ.foundCount(S), know = Object.keys(S.sj.know || {}).length, co = S.flags.coActs || 0, hb = S.hb.joined.length;
   const it = (ok, go, t, sub) => `<button class="gd ${ok ? "ok" : ""}" data-go="${go}"><i>${ok ? "✓" : ""}</i><span><b>${t}</b><small>${sub}</small></span></button>`;
   return `<div class="guide"><div class="gh"><b>${ic("info")}첫 3개월, 이렇게 보내 보세요</b><span>${S.t + 1}/3개월</span></div>
-    ${it(co >= 2, "co", "회사에도 관심을 가져 보세요~", `성과 내기·동료와 점심·탕비실 수다 ${Math.min(co, 2)}/2 · 첫인상이 연말 평가로 가요`)}
+    ${it(co >= 2, "co", "회사에도 관심을 가져 보세요~", `성과 내기·동료와 점심·동료와 수다 ${Math.min(co, 2)}/2 · 첫인상이 연말 평가로 가요`)}
     ${it(hb >= 1, "hobby", "취미도 가져 보세요~", `취미 모임 ${Math.min(hb, 1)}/1 · 모임에서 투잡 이야기를 주워들어요`)}
     ${it(know >= 2, "map", "발품 팔아 알아보세요~", `깊게 알아본 투잡 ${Math.min(know, 2)}/2 · 지도 장소·리포트·선배 찾아가기`)}
     ${it(fc >= SJ.NEED_CANDS, "sj", "투잡 후보를 모아 보세요~", `후보 ${Math.min(fc, SJ.NEED_CANDS)}/${SJ.NEED_CANDS} · 이해도 100%면 후보, 그때 궁합·특성 연계를 보고 골라요`)}
@@ -586,7 +594,7 @@ function pgHome() {
   const places = [...JOBP.filter(jobOn), "co", "hobby", "sj", ...JOBP.filter((k) => !jobOn(k)), "grad", "family"].filter(unlocked);
   return `<div class="stage" style="background-image:url(${bg})">
     ${heroB ? img(heroB, "body hero2", "나") : img(meSrc(myExpr()), "face hero", "나")}
-    <div class="when"><b>${S.year}년 ${S.cal}월</b><span>${Math.floor(S.age)}세 · ${esc(job)}</span></div>
+    <div class="when"><b>${S.year}년 ${S.cal}월</b><span>${E.ageNow(S)}세 · ${esc(job)}</span></div>
     <div class="side">${[!S.sj.active.length ? `<span>투잡 없음 · 회사원</span>` : "", SJ.isActive(S, "pr") ? `<span>파티룸 ${S.pr.rooms.length}곳 · Lv${S.pr.lv}</span>` : "", SJ.isActive(S, "cs") ? `<span>컨설팅 Lv${S.cs.lv}${S.cs.open ? "" : " 준비 중"}</span>` : "", ...REG.JOBS.filter((P) => UJ[P.key]?.side && SJ.isActive(S, P.key)).map((P) => { try { return `<span>${esc(UJ[P.key].side(S))}</span>`; } catch (e) { return ""; } }), S.fam.kids.length ? `<span>아이 ${S.fam.kids.length}명</span>` : "", ...S.hb.joined.map((h) => `<span>${esc(D.HOBBIES[h].n)}</span>`)].filter(Boolean).slice(0, 2).join("")}</div>
     <div class="lovers">${ring.map((id) => `<button data-char="${id}">${img(faceSrc(id, "blush"))}</button>`).join("")}</div>
     <button class="a6hx" data-go="me" aria-label="능력치">${hexStats()}</button>
@@ -654,30 +662,45 @@ const SPOT_OF = Object.fromEntries(D.REGIONS.flatMap((rg) => rg.spots.map((sp) =
 const bangsAt = (f) => (S.bangs || []).filter((b) => f(SPOT_OF[b.sp] || {}, b));
 function bangCards(L) {
   if (!L.length) return "";
-  return `<div class="a6bg">${L.map((b) => `<button class="a6bg-c" data-bang="${b.id}"><i>!</i><span><b>${esc(b.title)}</b><small>${esc(b.spN || "")} · 이번 달에만${(S.spot[b.sp] || []).length ? " · 거기 있는 사람과도 인사해요" : ""}</small></span><em>⚡${E.BANG.ap}</em></button>`).join("")}</div>`;
+  // 11-25 회식 카드(b.party): 행동력 2, 빠지면 팀장 호감이 깎인다는 안내와 능력치 칩
+  return `<div class="a6bg">${L.map((b) => b.party ? `<button class="a6bg-c party" data-bang="${b.id}"><i>!</i><span><b>${esc(b.title)}</b><small>${esc(b.spN || "")} · 이번 달에만 · 빠지면 팀장 호감 −${-D.CO_PARTY.miss}</small><div class="chips">${actChips("company_dinner")}<span class="p">팀장 호감 +</span></div></span><em>⚡${b.ap || D.CO_PARTY.ap}</em></button>` : `<button class="a6bg-c" data-bang="${b.id}"><i>!</i><span><b>${esc(b.title)}</b><small>${esc(b.spN || "")} · 이번 달에만${(S.spot[b.sp] || []).length ? " · 거기 있는 사람과도 인사해요" : ""}</small></span><em>⚡${E.BANG.ap}</em></button>`).join("")}</div>`;
+}
+// 11-25 회사 앞 · 회식: 회식이 뜬 달에만 지도에 서는 자리. 팀장과 팀 사람들이 모여 있고, 회식 카드 하나가 있다
+function pgParty() {
+  const on = E.partyOn(S), ppl = S.spot.dinner || [];
+  return `<div class="row"><button class="btn sm" data-region="">‹ 지도</button><b style="font-size:17px">회사 앞 · 회식</b><span class="tiny muted" style="margin-left:6px">이번 달에만 열려요</span></div>
+  <div class="spot pl" data-spotbox="dinner">${placeStage("dinner", "회사 앞 · 회식", ppl, on ? esc(S.co.party.title) : "자리가 파했다")}${on ? bangCards(bangsAt((q, b) => b.party)) : `<div class="tiny muted" style="padding:10px 12px">이번 달 회식은 끝났어요. 사람들은 사무실로 돌아갔어요.</div>`}</div>`;
 }
 function cityMap() {
   const P = MAPD.pins || {}, file = MAPD.files?.[mapSeason()] || MAPD.files?.fall;
   const town = D.REGIONS.find((r) => r.id === "town"), nt = D.REGIONS.find((r) => r.id === "newtown"), ntLock = nt?.unlock && !nt.unlock(S);
   const facesAt = (ids) => ids.flatMap((sid) => S.spot[sid] || []);
-  const pin = (key, label, attr, spotIds, bangs, lock) => { const xy = P[key]; if (!xy) return ""; const ppl = lock ? [] : facesAt(spotIds), n = lock ? 0 : bangs.length;
-    return `<button class="a6mp-pin ${lock ? "lock" : ""} ${n ? "has" : ""}" style="left:${xy[0]}%;top:${xy[1]}%" ${attr} ${lock ? "disabled" : ""}>${n ? `<i class="bang">!${n > 1 ? `<small>${n}</small>` : ""}</i>` : ""}<span class="fc">${ppl.slice(0, 3).map((id) => S.rel[id] ? img(faceSrc(id, exprFor(id))) : `<u>?</u>`).join("")}</span><b>${esc(label)}</b></button>`; };
+  const face = (id) => (S.rel[id] ? img(faceSrc(id, exprFor(id)), (S.rel[id].aff || 0) >= 70 ? "face lv" : "face") : `<u>?</u>`); // 11-25 호감 70 이상은 분홍 테
+  const pin = (key, label, attr, spotIds, bangs, lock, cls = "") => { const xy = Array.isArray(key) ? key : P[key]; if (!xy) return ""; const ppl = lock ? [] : facesAt(spotIds), n = lock ? 0 : bangs.length;
+    return `<button class="a6mp-pin ${lock ? "lock" : ""} ${n ? "has" : ""} ${cls}" style="left:${xy[0]}%;top:${xy[1]}%" ${attr} ${lock ? "disabled" : ""}>${n ? `<i class="bang">!${n > 1 ? `<small>${n}</small>` : ""}</i>` : ""}<span class="fc">${ppl.slice(0, 3).map(face).join("")}</span><b>${esc(label)}</b></button>`; };
+  // 11-25 회사 핀: 회사 종류마다 자리가 다르다(이직하면 옮겨 간다). 퇴사·해고 뒤에는 불 꺼진 핀으로 남고, 하는 투잡이 있으면 '내 가게·작업실' 핀이 생긴다. 회식이 뜬 달에는 회사 앞에 사람이 모인다
+  const coOut = S.co.quit || S.co.fired, coXY = MAPD.coPins?.[S.co.type] || P.office, shopK = coOut ? (S.sj?.active || []).find((k) => unlocked(k)) : null;
+  const ptyXY = !coOut && E.partyOn(S) ? MAPD.partySpots?.[S.co.type] || MAPD.partySpot : null;
   const pins = [
     ...town.spots.map((sp) => pin(sp.loc, sp.n, `data-region="town" data-spot="${sp.id}"`, [sp.id], bangsAt((q, b) => b.sp === sp.id))),
-    S.co.quit || S.co.fired ? "" : pin("office", S.co.name || "회사", `data-go="co"`, D.REGIONS.find((r) => r.id === "company").spots.map((x) => x.id), bangsAt((q) => q.rg === "company")),
+    coOut ? pin(coXY, "퇴사한 회사", "", [], [], true, "off") : pin(coXY, S.co.name || "회사", `data-go="co"`, E.companySpots(S).map((x) => x.id), bangsAt((q, b) => q.rg === "company" && !b.party)),
+    ptyXY ? `<button class="a6mp-pin party" style="left:${ptyXY[0]}%;top:${ptyXY[1]}%" data-region="party"><span class="fc">${(S.spot.dinner || []).slice(0, 5).map(face).join("")}</span><b>회사 앞 · 회식<br>모이는 중 <em>!</em></b></button>` : "",
+    shopK && MAPD.myShop ? pin(MAPD.myShop, D.SJ_SPACE.includes(shopK) ? "내 가게" : "내 작업실", `data-go="${shopK}"`, [], [], false, "shop") : "",
     ...["officest", "univ", "hot"].map((rid) => { const rg = D.REGIONS.find((r) => r.id === rid); return rg ? pin(rid === "hot" ? "hotplace" : rid, rg.n, `data-region="${rid}"`, rg.spots.map((x) => x.id), bangsAt((q) => q.rg === rid)) : ""; }),
-    nt ? pin("newtown", nt.n, `data-region="newtown"`, nt.spots.map((x) => x.id), bangsAt((q) => q.rg === "newtown"), ntLock) : "",
+    nt ? pin("newtown", ntLock ? `${nt.n} · 31세부터` : nt.n, `data-region="newtown"`, nt.spots.map((x) => x.id), bangsAt((q) => q.rg === "newtown"), ntLock) : "",
     S.hb?.joined?.length || unlocked("hobby") ? pin("hobby", "취미 모임", `data-go="hobby"`, [], []) : "",
   ].join("");
   const all = (S.bangs || []).length, can = Math.floor(S.ap / E.BANG.ap);
-  const off = ["online", "parents"].map((rid) => { const rg = D.REGIONS.find((r) => r.id === rid); if (!rg || (rg.unlock && !rg.unlock(S))) return ""; const n = bangsAt((q) => q.rg === rid).length; return `<button class="btn sm" data-region="${rid}">${esc(rg.n)}${n ? ` <b class="gold">!${n}</b>` : ""}</button>`; }).join("");
-  return `<div class="a6mp" style="aspect-ratio:${MAPD.w || 2}/${MAPD.h || 3};background-image:url(${file})">${pins}<div class="a6mp-top"><span>${S.year}년 ${S.cal}월 · ${{ spring: "봄", summer: "여름", fall: "가을", winter: "겨울", xmas: "12월" }[mapSeason()]}</span></div></div>
+  const off = ["parents"].map((rid) => { const rg = D.REGIONS.find((r) => r.id === rid); if (!rg || (rg.unlock && !rg.unlock(S))) return ""; const n = bangsAt((q) => q.rg === rid).length; return `<button class="btn sm" data-region="${rid}">${esc(rg.n)}${n ? ` <b class="gold">!${n}</b>` : ""}</button>`; }).join("");
+  const onlN = bangsAt((q) => q.rg === "online").length, onl = `<button class="a6mp-onl ${onlN ? "has" : ""}" data-region="online">온라인${onlN ? ` <b>!${onlN > 1 ? onlN : ""}</b>` : ""}</button>`; // 11-25 온라인은 지도 아래 왼쪽 구석 표지로(전에는 지도 밖 버튼)
+  return `<div class="a6mp" style="aspect-ratio:${MAPD.w || 2}/${MAPD.h || 3};background-image:url(${file})">${ptyXY ? `<i class="a6mp-glow" style="left:${ptyXY[0]}%;top:${ptyXY[1]}%"></i>` : ""}${pins}${onl}<div class="a6mp-top"><span>${S.year}년 ${S.cal}월 · ${{ spring: "봄", summer: "여름", fall: "가을", winter: "겨울", xmas: "12월" }[mapSeason()]}</span></div></div>
     <div class="a6mp-bar"><span><b class="gold">느낌표 ${all}개</b> · 지금 행동력으로 ${Math.min(all, can)}개쯤 갈 수 있어요</span>${BMX.bmOn() ? `<button class="btn sm" data-bmap>행동력 채우기</button>` : ""}</div>
     ${off ? `<div class="row wrap" style="margin-top:6px"><span class="tiny muted">지도 밖:</span>${off}</div>` : ""}
     ${more(`이번 달 느낌표 모두 보기 (${all})`, bangCards(S.bangs || []))}
     <div class="tiny muted" style="margin-top:6px">느낌표는 이번 달에만 뜨는 일이에요. 하나에 행동력 ${E.BANG.ap}. 다 할 수는 없으니 골라서 가요. 건물을 누르면 그곳에서 늘 할 수 있는 일도 나와요.</div>`;
 }
 function pgMap() {
+  if (ui.region === "party") return pgParty(); // 11-25 회사 앞 · 회식(회식이 뜬 달에만)
   if (ui.region) return pgRegion(D.REGIONS.find((r) => r.id === ui.region));
   if (MAPD.files && Object.keys(MAPD.pins || {}).length >= 6) return cityMap();
   return `<div class="sec">${ic("map")}어디로 갈까요? <span class="muted small">· 동네를 누르면 장소와 사람이 나와요</span></div><div class="regions">${D.REGIONS.filter((rg) => !rg.hub).map((rg) => {
@@ -715,19 +738,38 @@ function personFig(id, i, n) {
   const src = bodySrc(id, expr, "full");
   const tag = !x ? `<span class="say">말 걸기 ⚡1</span>` : x.spouse ? `<span class="say love">배우자</span>` : x.lover ? `<span class="say love">연인</span>` : `<span class="say h">${"♥".repeat(Math.max(1, Math.round(x.aff / 20)))}</span>`;
   const fig = src ? bodyImg(id, src, 100) : `<span class="pface">${img(faceSrc(id, expr), "face", "")}</span>`;
-  return `<button class="pfig ${!x ? "new" : ""} ${src ? "" : "noart"}" data-char="${id}" style="--i:${i};--n:${n}">${fig}<span class="pn">${x ? esc(c.name) : "???"}</span>${tag}</button>`;
+  const rt = coRoleTag(id);
+  return `<button class="pfig ${!x ? "new" : ""} ${src ? "" : "noart"}" data-char="${id}" style="--i:${i};--n:${n}">${fig}${rt ? `<span class="a6rt">${esc(rt)}</span>` : ""}<span class="pn">${x ? esc(c.name) : "???"}</span>${tag}</button>`;
+}
+// 11-25 회사 사람 이름 위 꼬리표(아는 사이일 때만): 내 사수 / 팀장 / 인물 자료의 직함. 회사를 나오면 안 붙인다
+function coRoleTag(id) {
+  const c = E.CHAR[id]; if (!c?.rank || !S.rel[id] || S.co.quit || S.co.fired || !(c.co || (c.hangouts || []).includes("office"))) return "";
+  if (id === E.sasuOf(S)) return "내 사수"; if (c.rank === "boss") return "팀장";
+  const j = String(c.job || ""), t = j.includes(" · ") ? j.split(" · ").pop() : j.replace(/^(우리 회사 |회사 )/, "");
+  return t && t.length <= 12 ? t : "";
+}
+// 그 장소에 늘 있는 조연: 본가 = 부모님. 본부장(x01)은 대기업이면 임원층, 아니면 회의실. 스타트업은 대표(x03)가 오픈 데스크 옆자리(11-25)
+const RESID = { parents: ["x04", "x05"] };
+function residOf(k) {
+  if (RESID[k]) return RESID[k]; if (S.co.quit || S.co.fired) return [];
+  const t = S.co.type; if (t === "startup") return k === "opendesk" ? ["x03"] : [];
+  return k === (t === "big" ? "exec" : "meeting") ? ["x01"] : [];
 }
 function placeStage(bgKey, title, ppl, sub, extraCls = "") {
-  const bg = bgUrl(SPOT_BG[bgKey] || bgKey);
+  const bg = bgUrl(coBg(SPOT_BG[bgKey] || bgKey));
   // 화면 정리(v4.31): 한 장면에 4명까지. 더 있으면 위쪽 "+N명" 칩을 눌러 다음 사람들을 본다.
   ui.stOff = ui.stOff || {}; const off = ppl.length > 4 ? (ui.stOff[bgKey] || 0) % ppl.length : 0;
   const show = ppl.length > 4 ? Array.from({ length: 4 }, (_, i) => ppl[(off + i) % ppl.length]) : ppl;
-  return `<div class="pstage ${extraCls} ${show.length ? "" : "empty"}" style="${bg ? `background-image:url(${bg})` : ""}">
-    <div class="ptop"><b>${title}</b><span>${sub ?? (ppl.length ? `${ppl.length}명 있음` : "오늘은 조용함")}</span></div>
-    <div class="crowd">${show.map((id, i) => personFig(id, i, show.length)).join("")}</div>
+  const res = residOf(bgKey).filter((id) => XR.EXTRA[id] && BODY[id]), N = show.length + res.length; // 11-24 그 장소에 늘 있는 사람(본가 = 부모님, 회의실·임원층 = 본부장)
+  return `<div class="pstage ${extraCls} ${N ? "" : "empty"}" style="${bg ? `background-image:url(${bg})` : ""}">
+    <div class="ptop"><b>${title}</b><span>${sub ?? (ppl.length ? `${ppl.length}명 있음` : res.length ? (bgKey === "parents" ? "부모님이 계신다" : `${esc(jo(XR.EXTRA[res[0]].role || XR.EXTRA[res[0]].name, "이", "가"))} 있다`) : "오늘은 조용함")}</span></div>
+    <div class="crowd">${res.map((id, i) => `<button class="pfig" data-xfig="${id}" style="--i:${i};--n:${N}">${bodyImg(id, bodySrc(id, bgKey === "parents" ? "smile" : "neutral", "full"), 100)}<span class="pn">${esc(XR.EXTRA[id].name)}</span>${XR.EXTRA[id].role ? `<span class="say">${esc(XR.EXTRA[id].role)}</span>` : ""}</button>`).join("")}${show.map((id, i) => personFig(id, i + res.length, N)).join("")}</div>
     ${ppl.length > 4 ? `<button class="more tjx-stmore" data-stmore="${esc(bgKey)}">+${ppl.length - 4}명 · 다음 사람 ›</button>` : ""}</div>`;
 }
-function spotBlock(sp) { const ppl = S.spot[sp.id] || []; return `<div class="spot pl">${placeStage(sp.id, esc(sp.n), ppl)}<div class="acts">${sp.acts.filter(visibleAct).map((id) => actRow(id, defaultArg(id))).join("")}</div></div>`; }
+function spotBlock(sp) { // 11-25 회사 종류별 장소: 잠긴 곳(대기업 임원층)은 한 줄로, 그 장소에서 부르는 행동 이름(sp.lb), 늘 할 일이 없는 곳은 안내 한 줄
+  if (E.spotLocked(S, sp)) return `<div class="spot pl a6lk"><b>${esc(sp.n)}</b><span>잠김 · ${esc(D.RANKS[sp.lockRank]?.n || "")} 직급부터 열려요</span></div>`;
+  const ppl = S.spot[sp.id] || [], acts = sp.acts.filter(visibleAct);
+  return `<div class="spot pl" data-spotbox="${sp.id}">${placeStage(sp.id, esc(sp.n), ppl)}<div class="acts">${acts.map((id) => actRow(id, defaultArg(id), sp.lb?.[id])).join("") || `<div class="tiny muted">${esc(sp.n)}에서는 느낌표가 뜬 달에만 할 일이 생겨요.</div>`}</div></div>`; }
 function personCard(id) {
   const c = E.CHAR[id], x = S.rel[id];
   const role = !x ? "새 얼굴" : x.spouse ? "배우자" : x.lover ? "연인" : x.helper ? (c.helper?.role || "조력자") : c.job;
@@ -940,7 +982,7 @@ function coEval() {
 }
 function pgCo() {
   const co = S.co, q = E.quitReady(S);
-  const spots = D.REGIONS.find((r) => r.id === "company").spots;
+  const spots = E.companySpots(S); // 11-25 회사 종류에 맞는 장소(대기업 6 · 금융권 5 · 중견·공기업 4 · 스타트업 3)
   if (co.quit || co.fired) return `<div class="card"><h3>${co.retired ? "퇴임·퇴직" : co.fired ? "해고됨" : "퇴사함"}</h3><div class="small muted">낮 시간이 생겨 행동력이 5 늘었어요. 월급은 없어요. 나이가 많을수록 재취업은 어려워져요.</div><div class="acts" style="padding:8px 0 0">${actRow("rejob")}</div></div>`;
   const t = D.COMPANY_TYPES[co.type];
   return `${MAPD.office?.[co.type] ? `<div class="a6of" style="background-image:url(${MAPD.office[co.type]})"><span>${esc(co.name)} · ${t.n}</span></div>` : ""}${bangCards(bangsAt((q) => q.rg === "company"))}<div class="card"><h3>${esc(co.name)} <small>${t.n} · ${D.RANKS[co.rank].n} · ${Math.floor(co.years)}년 차</small></h3>
@@ -1134,10 +1176,10 @@ function pgMe() {
   const h = S.hist.slice(-60);
   const spark = (key, color) => { if (h.length < 2) return ""; const vs = h.map((x) => +x[key] || 0); const mn = Math.min(...vs, 0), mx = Math.max(...vs, 1); const pts = vs.map((v, i) => `${(i / (vs.length - 1) * 300).toFixed(1)},${(78 - (v - mn) / (mx - mn) * 74).toFixed(1)}`).join(" "); return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/>`; };
   const meB = bodySrc("me", myExpr(), "half");
-  return `${meB ? `<div class="mestage" style="background-image:url(${bgUrl("home") || ""})">${img(meB, "body", "나")}<div class="cap"><b>${esc(S.me.name)}</b><span>${Math.floor(S.age)}세 · ${esc(S.co.quit || S.co.fired ? "전업 사장님" : `${S.co.name} ${D.RANKS[S.co.rank].n}`)}</span></div></div>` : ""}<div class="card"><h3>파이어 계산 <small>${Math.round(f.ratio * 100)}%</small></h3>${meter(f.ratio, 1, "linear-gradient(90deg,#f5a524,#5fe0a0)")}
+  return `${meB ? `<div class="mestage" style="background-image:url(${bgUrl("home") || ""})">${img(meB, "body", "나")}<div class="cap"><b>${esc(S.me.name)}</b><span>${E.ageNow(S)}세 · ${esc(S.co.quit || S.co.fired ? "전업 사장님" : `${S.co.name} ${D.RANKS[S.co.rank].n}`)}</span></div></div>` : ""}<div class="card"><h3>파이어 계산 <small>${Math.round(f.ratio * 100)}%</small></h3>${meter(f.ratio, 1, "linear-gradient(90deg,#f5a524,#5fe0a0)")}
     <div class="kv" style="margin-top:8px"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div><div><div class="k">목표 순자산${S.fam.spouse ? "(결혼)" : ""}</div><div class="v">${won(f.target)}</div></div><div><div class="k">월 생활비 전체</div><div class="v">${won(f.spend)}</div></div><div><div class="k">기한</div><div class="v">${RD.endAgeOf(S)}세 · ${Math.max(0, Math.ceil(RD.endAgeOf(S) - S.age))}년</div></div></div>
     ${more("파이어 조건 자세히", `<div class="tiny muted">순자산이 목표(혼자 30억, 결혼하면 40억)에 닿으면 파이어를 선언할 수 있어요. 매니저가 굴리는 파티룸이나 VOD처럼 저절로 들어오는 사업 수입이 생활비를 넘으면 목표의 60%만 모아도 돼요.</div>`)}
-    ${f.ready ? `<button class="btn gold" style="width:100%;margin-top:8px;padding:12px" data-fire>파이어 선언하기 (${Math.floor(S.age)}세)</button>` : ""}${S.fireAt ? `<div class="tag gold" style="margin-top:8px">${S.fireAt}세 파이어 달성 · ${RD.endAgeOf(S)}세까지 더 달리는 중</div>` : ""}</div>
+    ${f.ready ? `<button class="btn gold" style="width:100%;margin-top:8px;padding:12px" data-fire>파이어 선언하기 (${E.ageNow(S)}세)</button>` : ""}${S.fireAt ? `<div class="tag gold" style="margin-top:8px">${S.fireAt}세 파이어 달성 · ${RD.endAgeOf(S)}세까지 더 달리는 중</div>` : ""}</div>
   ${(() => { const fd = `<div class="tiny muted">별점 높은 파티룸, 컨설팅 Lv4~5, 인별·너튜브 팔로워가 명성을 올려요. 명성이 높을수록 문의·협찬·강의료가 오르고, 큰 판(가맹·VIP·AI 플랫폼)이 열려요. ${BIG.isFull(S) ? "지금 전업(온잡)이라 명성이 30% 빨리 올라요." : "회사를 나와 전업하면 판이 더 커져요."}</div>`; return (S.fame || 0) < 10 ? `<div class="card" style="padding:6px 12px">${more(`<b>명성 ${Math.round(S.fame || 0)}</b> · 올리는 법`, fd)}</div>` : `<div class="card"><h3>명성·온잡 <small>명성 ${Math.round(S.fame || 0)}/100</small></h3>${meter(S.fame || 0, 100, "var(--purple)")}${more("올리는 법 자세히", fd)}</div>`; })()}
   <div class="card"><h3>투자·대출</h3><div class="kv"><div><div class="k">투자(ETF)</div><div class="v">${won(S.invest)}</div></div>${E.debt(S) > 0 ? `<div><div class="k">대출 합계</div><div class="v bad">${won(E.debt(S))}</div></div><div><div class="k">월 이자·상환</div><div class="v">${won(Math.round(E.loanPay(S)))}</div></div>` : ""}</div>
     ${!E.investOpen(S) ? `<div class="tiny muted">잠김 · 투자는 1년 차가 지나고 모은 돈이 ${won(E.INV_OPEN.seed)}을 넘으면 열려요. 지금 ${S.t + 1}개월 차 · 모은 돈 ${won(Math.round(S.cash + S.invest))}</div>` : ""}
@@ -1277,7 +1319,7 @@ function cinePlay(sc, key, done) {
   const expr = ["breakup", "fired", "burnout", "parents_bye"].includes(key) ? "sad" : COUPLE.has(key) ? "blush" : "smile";
   const meP = bodySrc("me", expr === "blush" ? "smile" : expr, "full");
   const people = cgf ? (NOPPL.has(cgf.replace(/\.webp$/, "")) ? [COUPLE.has(key) && who ? bodySrc(who, expr, "full") : null, meP] : []) : [who ? bodySrc(who, expr, "full") : null, (COUPLE.has(key) || !who || IGA.DUO.has(key)) && key !== "breakup" ? meP : null]; // v4.27 사람 없는 화보에도 내 캐릭터
-  const p = { k: key, img: imgU, cg: !!cgf, people, title: sc.title.replace(/^특전 카드 · /, ""), line: sc.kind === "story" ? String(sc.text || "").split("\n")[0] : String(sc.text || "").split(/(?<=[.!?])\s/).slice(0, 2).join(" "), when: `${E.ymLabel(S)} · ${Math.floor(S.age)}세`, tag: CINE_TAG[key] };
+  const p = { k: key, img: imgU, cg: !!cgf, people, title: sc.title.replace(/^특전 카드 · /, ""), line: sc.kind === "story" ? String(sc.text || "").split("\n")[0] : String(sc.text || "").split(/(?<=[.!?])\s/).slice(0, 2).join(" "), when: `${E.ymLabel(S)} · ${E.ageNow(S)}세`, tag: CINE_TAG[key] };
   // 인생 앨범에 남기기(다음 인생에도 남는다)
   try { const m = meta(); m.album = [{ k: key, img: imgU, cg: !!cgf, who, ppl: people.filter(Boolean), title: p.title, line: p.line, when: p.when, tag: p.tag, run: S.ng?.n || 1, name: S.me.name }, ...(m.album || [])].slice(0, 300); setMeta(m); } catch (e) {}
   showCine(p, done);
@@ -1437,7 +1479,7 @@ function yearShow(sc) {
   const xw = Math.min(1, (d.x || 0) / 2.5) * 100;
   const ev = d.ev, partial = d.months && d.months < 12 ? ` <small style="display:inline;color:#8d93c4;font-size:11.5px">(${d.months}개월)</small>` : "";
   const pages = [
-    `<div class="yr-pg yr-ttl"><span class="yr-sm">한 해가 저물었습니다</span><b>${d.year}</b><span class="yr-k2">결산</span><em>${esc(S.me.name)} · ${Math.floor(S.age)}세</em></div>`,
+    `<div class="yr-pg yr-ttl"><span class="yr-sm">한 해가 저물었습니다</span><b>${d.year}</b><span class="yr-k2">결산</span><em>${esc(S.me.name)} · ${d.age ?? E.ageNow(S)}세</em></div>`,
     `<div class="yr-pg"><div class="yr-h">① 올해 숫자${partial}<b>${d.year}년 가계부</b></div>
       ${d.work || d.salSum ? `<div class="yr-row"><span>월급 합${d.bon ? ` · 성과급 ${won(d.bon)}` : ""}</span><b>${won(d.salSum + (d.bon || 0))}</b></div>` : ""}
       <div class="yr-row"><span>${d.work ? "투잡 이익" : "내 일 이익"}</span><b class="${d.side >= 0 ? "yr-in" : "yr-out"}">${d.hasJob ? sg(d.side) : "아직 없음"}</b></div>
@@ -1645,6 +1687,7 @@ function bind() {
   q("[data-swipe]", (el) => step(+el.dataset.swipe));
   q("[data-fitcards]", () => fitCardsWin());
   q("[data-sjno]", () => sjNo());
+  q("[data-xfig]", (el) => { const id = el.dataset.xfig, c = XR.EXTRA[id]; if (id === "x04" || id === "x05") return doAct("visit_parents"); toast([], `${c.name} ${c.role || ""} · ${c.tagline || ""}`); }); // 장소에 늘 있는 사람: 부모님을 누르면 본가에 다녀온다
   q("[data-sjstart]", (el) => { const k = el.dataset.sjstart, j = D.SIDEJOBS[k]; openWin(`<h2>${esc(j.n)} 시작할까? <button class="x" data-close>✕</button></h2>${fitCardHtml(k, false)}<div class="small" style="line-height:1.8;margin-top:8px">· 수익: ${esc(j.inc)}<br>· 시간: ${esc(j.hours)} · 시작 자본 ${esc(j.cap)}<br>· 궁합: ${SJ.fit(S, k).g} (${j.fit.map((x) => D.STATS[x]).join("·")})${(() => { const N = SJ.need(S, k), P = S.sj.rp?.[k]; return N ? `<br>· 필요 역량: ${esc(N.n)} ${N.need} (지금 <b class="${N.ok ? "good" : "bad"}">${N.cur}</b>) · 준비 ${P?.prep || 0}/3${N.ok ? "" : "<br>· 코치: 역량이 모자라면 첫 몇 달은 손님이 훨씬 적어요. 홍보·후기로 버텨야 해요."}` : ""; })()}<br>· 회사에 들키면 경고 → 감봉 → 해고. ${k === "cs" ? "실명으로 하면 더 잘 들킨다." : "지점이 늘수록 눈치가 쌓인다."}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>조금 더 고민</button><button class="btn gold grow" data-yes>시작하기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = SJ.start(S, k); closeWin(); toast([], r.msg); save(); if (r.ok) { go(k); if (r.hid?.length) openWin(`<h2>숨은 특성 공개 <button class="x" data-close>✕</button></h2><div class="small muted">${esc(jo(j.n, "을", "를"))} 시작하니 내 성향이 이렇게 드러나요.</div><div class="intro" style="margin-top:8px">${r.hid.map((x) => `<p>★ ${esc(x)}</p>`).join("")}</div><button class="btn gold" style="width:100%;margin-top:10px" data-close>확인</button>`, null, false, true); } else render(); }); });
   q("[data-sjstop]", (el) => openWin(`<h2>${esc(D.SIDEJOBS[el.dataset.sjstop].n)} 그만둘까요? <button class="x" data-close>✕</button></h2><div class="small">쌓은 후기·능력치는 남아요. 나중에 다시 시작할 수 있어요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>접기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = SJ.stop(S, el.dataset.sjstop); closeWin(); toast([], r.msg); save(); render(); }));
   q("[data-sjf]", (el) => { ui.sjf = el.dataset.sjf; render(); });
@@ -1708,7 +1751,7 @@ function bind() {
   q("[data-album]", () => albumWin());
   q("[data-toslots]", () => { save(true); S = null; renderTitle(); });
   if (UJ[ui.page]?.bind) UJ[ui.page].bind(jctx(q)); // 새 투잡 보드의 버튼 연결
-  q("[data-fire]", () => openWin(`<h2>파이어 달성! <button class="x" data-close>✕</button></h2><div class="small">순자산 ${won(E.fireInfo(S).nw)}. 지금 은퇴할 수도 있고, ${RD.endAgeOf(S)}세까지 더 달려서 명예의 전당을 노릴 수도 있어요. 기록에는 ${Math.floor(S.age)}세 파이어가 남아요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-keep>계속 달린다</button><button class="btn gold grow" data-yes>지금 은퇴</button></div>`, (w) => { w.querySelector("[data-yes]").onclick = () => { closeWin(); E.declareFire(S, false); save(true); render(); }; w.querySelector("[data-keep]").onclick = () => { closeWin(); E.declareFire(S, true); save(true); toast([], `${S.fireAt}세 파이어 기록! 계속 달려요`); render(); }; }));
+  q("[data-fire]", () => openWin(`<h2>파이어 달성! <button class="x" data-close>✕</button></h2><div class="small">순자산 ${won(E.fireInfo(S).nw)}. 지금 은퇴할 수도 있고, ${RD.endAgeOf(S)}세까지 더 달려서 명예의 전당을 노릴 수도 있어요. 기록에는 ${E.ageNow(S)}세 파이어가 남아요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-keep>계속 달린다</button><button class="btn gold grow" data-yes>지금 은퇴</button></div>`, (w) => { w.querySelector("[data-yes]").onclick = () => { closeWin(); E.declareFire(S, false); save(true); render(); }; w.querySelector("[data-keep]").onclick = () => { closeWin(); E.declareFire(S, true); save(true); toast([], `${S.fireAt}세 파이어 기록! 계속 달려요`); render(); }; }));
   q("[data-newlife]", () => openWin(`<h2>이 칸에서 새 인생을 시작할까요? <button class="x" data-close>✕</button></h2><div class="small">지금 ${SLOT}번 칸의 인생은 지워져요. 다른 칸에서 시작하려면 '저장 칸으로' 버튼을 눌러 주세요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn gold grow" data-yes>새 인생</button></div>`, (w) => w.querySelector("[data-yes]").onclick = async () => { closeWin(); S = null; await ST.remove(SLOT); ui.wiz = null; startWizard(SLOT); }));
 }
 
@@ -2021,7 +2064,7 @@ function renderWiz() {
 }
 function showIntro() {
   const ea = RD.endAgeOf(S), r1 = RD.isR1(S);
-  openWin(`<h2>${Math.floor(S.age)}세 ${S.cal}월, 퇴근 후 인생이 시작됩니다 <button class="x" data-close>✕</button></h2><div class="intro">
+  openWin(`<h2>${E.ageNow(S)}세 ${S.cal}월, 퇴근 후 인생이 시작됩니다 <button class="x" data-close>✕</button></h2><div class="intro">
     <p><b class="gold">행동력</b> 한 달에 할 수 있는 일의 횟수예요. 행동을 고를 때마다 줄어요.</p>
     <p><b>다음 달</b> 행동력을 다 쓰면 맨 아래 <b>다음 달</b>을 눌러요. 월급이 들어오고 한 달이 지나가요.</p>
     <p><b class="gold">목표</b> ${r1 ? `${ea}세 결산에서 순자산 ${RD.RD.grades.map(([g, v]) => `${v / 10000}억이면 ${g}`).join(", ")}. 1회차는 맛보기예요. 2회차부터 50세까지 본격적인 삶을 살아요.` : `${ea}세까지 순자산 30억(결혼하면 40억).`} 파산하거나 번아웃이 세 번 오면 그 인생은 끝나요.</p>
@@ -2061,7 +2104,7 @@ function gradeCard() {
 // ───────── 엔딩 ─────────
 function renderEnding() {
   const f = E.fireInfo(S), m = meta();
-  const age = Math.floor(S.age);
+  const age = E.ageNow(S);
   const kind = S.over ? "over" : S.ended;
   if (!S.recorded) {
     FX.play(S.over ? "bad" : "win");
@@ -2137,7 +2180,7 @@ const END_JOB = {
 };
 function epilogue() {
   const L = [], sp = S.fam.spouse && E.CHAR[S.fam.spouse], jobs = endJobs(), ended = new Set(REG.endsOf(S).map((e) => e.job));
-  if (S.ended === "fire") L.push(`${Math.floor(S.age)}세 봄, 마지막 출근을 했다. 아니, 처음으로 출근하지 않는 아침이 왔다.`);
+  if (S.ended === "fire") L.push(`${E.ageNow(S)}세 봄, 마지막 출근을 했다. 아니, 처음으로 출근하지 않는 아침이 왔다.`);
   if (S.over === "bankrupt") L.push(`법원 서류를 정리하며 생각했다. ${jobs.some((j) => ["pr", "airbnb", "ucafe", "chicken"].includes(j)) ? "입지가" : "운이"} 아니라 욕심이 문제였다.`);
   if (S.over === "burnout") L.push("몸이 먼저 멈췄다. 다음 인생에서는 쉬는 것도 일정에 넣기로 했다.");
   if (sp) L.push(`${jo(sp.name, "과", "와")}는 ${Math.floor((S.t - S.fam.marriedT) / 12)}년을 함께했다. ${S.fam.happy >= 60 ? "주말 아침 커피는 여전히 둘이 마신다." : "대화가 줄었지만, 아직 같은 집에 산다."}`);
@@ -2155,7 +2198,7 @@ function epilogue() {
 
 // ───────── 자동 시험(#auto) ─────────
 function autoTest(n) {
-  S = E.newGame({ seed: "auto", gender: "F", name: "시험", major: "sw", company: "fin", job: "dfin", traits: ["insider", "cfo"], look: randomLook(Math.random, "F") });
+  S = E.newGame({ seed: "auto", gender: "F", name: "시험", major: "sw", company: (location.hash.match(/-cot_(big|fin|mid|public|startup)/) || [])[1] || "fin" /* 11-25 회사 종류별 오피스 시험: #auto18-co-cot_big · 퇴사 뒤 지도는 -coquit */, job: "dfin", traits: ["insider", "cfo"], look: randomLook(Math.random, "F") });
   S.flags.noProbation = true; SJ.hbJoin(S, "wine"); SJ.hbJoin(S, "book"); S.sj.open = true; SJ.found(S, "pr"); SJ.found(S, "cs"); SJ.found(S, "insta"); SJ.start(S, "pr"); if (location.hash.includes("ucf")) { SJ.found(S, "ucafe"); SJ.start(S, "ucafe"); UC.search(S, E.R(S), "apt"); UC.contract(S, S.uc.listings[0].id, { machine: "buy" }); UC.search(S, E.R(S), "academy"); } if (location.hash.includes("abnb")) { SJ.found(S, "airbnb"); SJ.start(S, "airbnb"); S.st.lang = 55; for (const rk of ["hongdae", "jongno"]) { AB.search(S, E.R(S), rk); const L = S.ab.listings.find((l) => l.rk === rk && l.house && l.owner) || S.ab.listings.find((l) => l.rk === rk); AB.contract(S, L.id, L.house && L.owner ? "legal" : "illegal"); } AB.search(S, E.R(S), "jeju"); } if (location.hash.includes("ins")) { SJ.start(S, "insta"); INS.setNiche(S, "space"); INS.setFace(S, true); S.ins.f = 4200; } else SJ.start(S, "cs"); if (location.hash.includes("grad")) { S.grad = { k: "mba", t0: 0, n: 0, done: false }; } S.cash += 20000;
   for (const P of REG.JOBS) if (new RegExp(`[-_]${P.key}(\\b|$)`).test(location.hash)) { if (S.sj.active.length >= SJ.slots(S)) S.sj.active.pop(); SJ.found(S, P.key); SJ.start(S, P.key); if (UJ[P.key]?.auto) UJ[P.key].auto(jctx()); } // #auto18-<key>
   if (location.hash.includes("rooms")) for (const dk of ["univ", "under", "office", "hot"]) { S.ap = 99; S.hp = S.hpMax; E.act(S, "pr_search", dk); while (S.pending) E.choose(S, 0); const L = S.pr.listings.find((l) => l.dk === dk); if (L) { const c = Object.keys(D.CONCEPTS).filter((k) => !PR.conceptOk(L, k)).sort((x, y) => (D.DISTRICTS[dk].fit[y] || 0) - (D.DISTRICTS[dk].fit[x] || 0))[0]; PR.contract(S, L.id, { concept: c, interior: 1 }); } S.pr.sys.cleanContract = true; }
@@ -2172,6 +2215,7 @@ function autoTest(n) {
   }
   const h = location.hash; ui.page = ["map", "people", "sj", "hobby", "co", "pr", "cs", "insta", "airbnb", "ucafe", "grad", "family", "me", ...REG.JOBS.map((P) => P.key)].find((k) => h.includes("-" + k)) || "home";
   if (h.includes("region")) ui.region = "town";
+  if (h.includes("coquit")) E.quitCompany(S); if (h.includes("-partyspot") && E.partyOn(S)) { ui.page = "map"; ui.region = "party"; } // 11-25 지도 시안 시험: 퇴사 뒤 지도 · 회식 자리(회식 달: #auto18-map-partyspot)
   { const av = h.match(/av=(p[FM][0-9])/); if (av) { S.me.avatar = av[1]; S.me.gender = av[1][1]; } const wh = h.match(/who=(c[0-9]+)/); if (wh) { S.cast.unshift(wh[1]); E.talkTo(S, wh[1]); while (S.pending) E.choose(S, 0); S.rel[wh[1]] = S.rel[wh[1]] || {}; const o = S.rel; S.rel = { [wh[1]]: o[wh[1]], ...o }; } const sp = h.match(/spot=([a-z]+)/); if (sp) ui.lastSpot = sp[1]; }
   if (h.includes("-guide")) { S.flags.noProbation = false; S.sj.active = []; S.flags.coActs = 2; }
   if (h.includes("-wed") || h.includes("-lover")) { const ids = Object.keys(E.CHAR).filter((k) => E.isRomanceable(S, E.CHAR[k])); const id = ids[0]; E.ensureRel(S, id); if (h.includes("-wed")) { Object.assign(S.rel[id], { spouse: true, aff: 72 }); S.fam.spouse = id; S.fam.spouseType = "응원형"; S.fam.marriedT = S.t; if (h.includes("kid")) S.fam.kids.push({ born: S.t - 3, name: "하린" }); } else Object.assign(S.rel[id], { lover: true, loverSince: S.t, aff: 66 }); if (h.includes("-aff")) { E.ensureRel(S, ids[2]); Object.assign(S.rel[ids[2]], { affair: true, aff: 64 }); S.fam.affair = { who: ids[2], t: S.t, sus: 42, crisisT: S.t, used: [], asked: false }; } if (h.includes("two")) { E.ensureRel(S, ids[1]); Object.assign(S.rel[ids[1]], { lover: true, loverSince: S.t, aff: 55 }); } S.apMax = E.calcApMax(S); S.ap = S.apMax; }
