@@ -16,6 +16,7 @@ import * as FX from "./fx.js";
 import { BGM } from "./bgm.js"; BGM.useStore(FX); // 배경 음악(11-23). useStore: 음악 설정도 효과음 설정과 한곳에 저장
 import { ART } from "./gen/art.js";
 import { BODY, BG } from "./gen/body.js";
+import { IC_IMG } from "./gen/ic.js"; // 홈 화면 그림 아이콘(11-24, art/tools/make_icons.py)
 import { CG, CG_NOPPL } from "./gen/cg.js";
 const NOPPL = new Set(CG_NOPPL || []); // v4.27 사람이 안 나오는 화보 → 내 캐릭터를 얹는다
 import { MG, mgRun, mgKeys, mgPrefetch, mg2Init } from "./mg.js";
@@ -103,6 +104,7 @@ const ic = (k, c = "currentColor") => `<svg viewBox="0 0 24 24" fill="none" stro
 const ACT_IC = { rest: "bed", study_home: "book", study: "book", course: "book", workout: "gym", pt: "gym", run_crew: "run", beauty: "spark", family_time: "heart", kids_play: "heart", visit_parents: "home", drink: "glass", drink_fancy: "glass", exhibit: "spark", trend_walk: "search", book_club: "book", dating_app: "heart", network_lunch: "users", cowork: "brief", cafe_work: "brief", univ_walk: "search", house_tour: "bld", house_search: "bld", work_hard: "brief", overtime: "brief", office_chat: "msg", company_dinner: "glass", pr_search: "search", pr_visit: "search", pr_landlord: "msg", pr_appcheck: "search", pr_setup: "wrench", pr_manage: "door", pr_promo: "cam", cs_friend: "pen", cs_work: "pen", cs_blog: "pen", cs_insta: "cam", cs_youtube: "video", cs_kakao: "msg", cs_kmong: "coin", cs_soomgo: "coin", cs_flyer: "mega", cs_seminar: "mega", cs_lecture: "mega", cs_template: "pen", cs_group: "users", cs_vod: "video", rejob: "brief", sj_youtube: "video", sj_report: "book", sj_seminar: "mega", sj_interview: "msg", hb_go: "music", co_lunch: "users", co_project: "chart", co_resume: "pen", pr_meetup: "users", pr_course: "book", pr_teach: "mega", pr_club: "glass", pr_review: "cam", in_post: "cam", in_reel: "video", in_engage: "msg", in_deal: "coin", in_gong: "coin", grad_apply: "book", grad_class: "book", pr_decor: "spark", cs_focus: "pen", ab_search: "search", ab_clean: "bed", ab_photo: "cam", ab_host: "msg", ab_cohost: "users", uc_search: "search", uc_check: "wrench", uc_promo: "mega", uc_agent: "users", bg_prcon: "chart", bg_brand: "bld", bg_vip: "coin", bg_ai: "wrench" };
 
 // ───────── 초상 ─────────
+const icB = (k) => (IC_IMG.has(k) ? `<img class="a6ic" src="img/ic/${k}.webp" alt="" draggable="false">` : ic(k)); // 큰 자리(홈 바로 하기·내 장소·아래 메뉴)는 그림 아이콘, 그림이 없는 키와 작은 자리는 선 아이콘
 function seededRng(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } let a = h >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const lookCache = {};
 const genderOf = (id) => { const g = XR.who(id)?.gender; return g === "same" ? S?.me?.gender || "F" : g || "F"; }; // 조연·단역(engine/extras.js)도 같은 길로 얼굴을 만든다
@@ -279,7 +281,7 @@ function mgOffer(id, arg) {
   if (!G) { const res = E.act(S, id, arg); if (!res.ok) return toast([], res.msg); return afterRes(res); } // 미니게임이 없으면(null) 바로 행동
   mgPrefetch(gk); // 설명을 읽는 동안 미니게임 파일을 받아 둔다
   const canSkip = plays >= MG_SKIP_AT, /* 세 번 해 보면 무료 건너뛰기. 그 전에는 건너뛰기권(돈 버는 자리) */ normalB = +(0.9 + Math.min(200, skill) / 200 * 0.25).toFixed(2);
-  const finish = (boost, lines) => { S.mgT = S.mgT || {}; S.mgT[job] = S.t; { const n = mgCnt(); S.mgYr = S.year; S.mgN = n + 1; } S.mgBoost = boost; closeWin(); const res = E.act(S, id, arg); if (!res.ok) { S.mgBoost = 0; return toast([], res.msg); } res.lines = [...lines, ...(res.lines || [])]; afterRes(res); };
+  const finish = (boost, lines) => { S.mgT = S.mgT || {}; S.mgT[job] = S.t; { const n = mgCnt(); S.mgYr = S.year; S.mgN = n + 1; S.mgK = n ? [...(S.mgK || []), gk] : [gk]; /* 올해 한 게임(같은 게임은 1년에 한 번) */ } S.mgBoost = boost; closeWin(); const res = E.act(S, id, arg); if (!res.ok) { S.mgBoost = 0; return toast([], res.msg); } res.lines = [...lines, ...(res.lines || [])]; afterRes(res); };
   openWin(`<h2>${esc(G.n)} <span class="tag gold">${mgCnt() ? "하반기의 큰 일" : "상반기의 큰 일"}</span></h2><div class="small"><b class="gold">${esc(MG_EV[job] || "큰 일이 왔다")}</b></div><div class="small muted">${esc(G.desc || "")}</div><div class="tiny muted" style="margin-top:4px">미니게임은 1년에 두 번, 큰 일이 왔을 때만 나와요. 잘하면 능력치가 오르고, 같이 일하는 사람의 믿음도 올라요.</div>
     <div class="tiny muted" style="margin-top:6px">점수에 따라 이번 달 ${esc(D.ACTIONS[id].n)} 효과가 ×0.7~1.5. ${canSkip ? `건너뛰면 ${D.STATS[stat]} ${skill} 기준 보통 결과예요.` : `${MG_SKIP_AT}번 해 보면 건너뛰기가 생겨요(지금 ${plays}번).`} 하는 법은 시작 화면에서 알려 드려요.</div>
     <div class="row" style="margin-top:12px">${canSkip ? `<button class="btn grow" data-mgskip>건너뛰기 (보통 결과)</button>` : BMX.bmOn() ? `<button class="btn grow" data-mgskip data-bm="mgSkip">${esc(BMX.label("mgSkip"))}</button>` : ""}<button class="btn gold grow" data-mgplay>미니게임 하기</button></div>
@@ -522,10 +524,12 @@ function apWin() {
 function nav() {
   const td = E.todos(S).filter((t) => t.lv >= 2).length;
   const it = [["home", "홈", "home"], ["map", "지도", "map"], ["people", "사람들", "users"], [S.sj.open ? "sj" : "co", S.sj.open ? "투잡" : "회사", S.sj.open ? "search" : "brief"], ["me", "나·돈", "user"]];
-  return `<div class="nav"><div class="in">${it.map(([k, n, i]) => `<button class="${ui.page === k ? "on" : ""} ${unlocked(k) ? "" : "off"}" data-go="${k}">${ic(i)}${n}${k === "home" && td ? `<span class="badge">${td}</span>` : ""}</button>`).join("")}</div></div>`;
+  return `<div class="nav"><div class="in">${it.map(([k, n, i]) => `<button class="${ui.page === k ? "on" : ""} ${unlocked(k) ? "" : "off"}" data-go="${k}">${icB(i)}${n}${k === "home" && td ? `<span class="badge">${td}</span>` : ""}</button>`).join("")}</div></div>`;
 }
 function meter(v, max, color) { return `<div class="meter"><i style="width:${Math.max(0, Math.min(100, v / max * 100))}%;background:${color}"></i></div>`; }
-function hearts(aff) { const n = Math.round(aff / 20); return `<span class="hearts">${"♥".repeat(n)}${"♡".repeat(5 - n)}</span>`; }
+// 이름 옆 표시(11-24): 동성과 ◆인 회사 사람은 ◆◇ 다섯 칸 + 작은 글자(친구·동료), 나머지는 ♥♡. 누가 어느 쪽인지는 engine/core.js markOf
+function relMark(id, aff) { const n = Math.max(0, Math.min(5, Math.round((aff || 0) / 20))); let m = { k: "heart" }; try { m = E.markOf(S, id); } catch (e) {} return m.k === "dia" ? `<span class="hearts a6dm">${"◆".repeat(n)}${"◇".repeat(5 - n)}<i>${esc(m.label)}</i></span>` : `<span class="hearts">${"♥".repeat(n)}${"♡".repeat(5 - n)}</span>`; }
+const markDia = (id) => { try { return E.markOf(S, id).k === "dia"; } catch (e) { return false; } };
 
 // 홈
 // 첫 3개월 탐색 가이드(v4.25): 권하는 말투로 방향만 준다
@@ -599,9 +603,9 @@ function pgHome() {
   ${gd}
   ${td.length ? `<div class="sec">${ic("list")}이번 달 할 일 ${urgent.length ? `<span class="tjx-urg">급한 일 ${urgent.length}</span>` : ""}<span class="muted small">· 누르면 그곳으로 가요</span></div>${(() => { const tb = (t) => `<button class="l${t.lv}" data-todo="${esc(t.go || "")}"><span class="dot"></span><span class="grow">${esc(t.text)}</span>${t.go ? '<span class="arr">›</span>' : ""}</button>`; const n0 = Math.max(3, Math.min(urgent.length, 5)); return `<div class="todo">${td.slice(0, n0).map(tb).join("")}</div>${more(`더 보기 ${td.length - n0}`, td.length > n0 ? `<div class="todo">${td.slice(n0).map(tb).join("")}</div>` : "")}`; })()}` : ""}
   <div class="sec">${ic("pin")}내 장소 <span class="muted small">· 눌러서 들어가요</span></div>
-  <div class="places hscroll">${places.map((k) => `<button data-go="${k}" style="background-image:linear-gradient(180deg,#0e102033,#0e1020ee),url(${TILE[k].bg})">${ic(TILE[k].ic)}<b>${esc(PAGE_N[k])}</b><span>${esc(tileInfo(k))}</span>${!S.tileSeen?.[k] ? '<em class="nbadge">NEW</em>' : ""}</button>`).join("")}<button data-hub class="more">${ic("grid")}<b>전체 메뉴</b><span>잠긴 곳 ${D.HUB.flat().filter(({ k }) => !unlocked(k)).length}</span></button></div>
+  <div class="places hscroll">${places.map((k) => `<button data-go="${k}" style="background-image:linear-gradient(180deg,#0e102033,#0e1020ee),url(${TILE[k].bg})">${icB(TILE[k].ic)}<b>${esc(PAGE_N[k])}</b><span>${esc(tileInfo(k))}</span>${!S.tileSeen?.[k] ? '<em class="nbadge">NEW</em>' : ""}</button>`).join("")}<button data-hub class="more">${ic("grid")}<b>전체 메뉴</b><span>잠긴 곳 ${D.HUB.flat().filter(({ k }) => !unlocked(k)).length}</span></button></div>
   <div class="sec">${ic("bolt")}바로 하기 <span class="muted small">· ⚡숫자만큼 행동력을 써요</span></div>
-  <div class="grid4">${quick.map((id) => { const a = D.ACTIONS[id]; const why = a.pick ? null : E.canAct(S, id, defaultArg(id)); return `<button data-act="${id}" class="${why ? "qno" : ""}" ${why ? `data-why="${esc(why)}"` : ""}>${ic(ACT_IC[id])}${esc(a.n)}${why ? `<span class="tiny why">${esc(why)}</span>` : `<span class="ap">⚡${a.ap}</span>`}</button>`; }).join("")}${locked.map(([id, why]) => `<button class="qlock" data-qlock="${esc(why)}">${ic("lock", "#f5c04e")}${esc(D.ACTIONS[id].n)}<span class="tiny muted">${esc(why)}</span></button>`).join("")}</div>
+  <div class="grid4">${quick.map((id) => { const a = D.ACTIONS[id]; const why = a.pick ? null : E.canAct(S, id, defaultArg(id)); return `<button data-act="${id}" class="${why ? "qno" : ""}" ${why ? `data-why="${esc(why)}"` : ""}>${icB(ACT_IC[id])}${esc(a.n)}${why ? `<span class="tiny why">${esc(why)}</span>` : `<span class="ap">⚡${a.ap}</span>`}</button>`; }).join("")}${locked.map(([id, why]) => `<button class="qlock" data-qlock="${esc(why)}">${ic("lock", "#f5c04e")}${esc(D.ACTIONS[id].n)}<span class="tiny muted">${esc(why)}</span></button>`).join("")}</div>
   <div class="next"><button class="btn" data-go="me">${ic("chart")}<span class="nx"><span>투자·대출</span><span class="gold small">${won(S.invest)}</span></span></button><button class="btn gold ${S.ap <= 0 ? "pulse" : ""}" data-end><span><span class="nt">다음 달 ${ic("next", "#2a1a00")}</span><small>${S.ap > 0 ? `행동력 ${S.ap} 남음` : "이번 달 끝! 넘어가요"}</small></span></button></div>`;
 }
 // 바로 하기 칸은 인생이 진행될수록 늘어난다
@@ -727,7 +731,7 @@ function spotBlock(sp) { const ppl = S.spot[sp.id] || []; return `<div class="sp
 function personCard(id) {
   const c = E.CHAR[id], x = S.rel[id];
   const role = !x ? "새 얼굴" : x.spouse ? "배우자" : x.lover ? "연인" : x.helper ? (c.helper?.role || "조력자") : c.job;
-  return `<button class="person ${!x ? "new" : x.lover || x.spouse ? "love" : ""}" data-char="${id}"><div class="pic">${img(faceSrc(id, x ? exprFor(id) : "neutral"))}</div><div class="nm">${x ? esc(c.name) : "???"}</div><div class="rl">${esc(role)}${x?.deja ? " · 전생 인연" : ""}</div>${x ? hearts(x.aff) : `<span class="tag gold">말 걸기 ⚡1</span>`}</button>`;
+  return `<button class="person ${!x ? "new" : x.lover || x.spouse ? "love" : ""}" data-char="${id}"><div class="pic">${img(faceSrc(id, x ? exprFor(id) : "neutral"))}</div><div class="nm">${x ? esc(c.name) : "???"}</div><div class="rl">${esc(role)}${x?.deja ? " · 전생 인연" : ""}</div>${x ? relMark(id, x.aff) : `<span class="tag gold">말 걸기 ⚡1</span>`}</button>`;
 }
 function pgRegion(rg) {
   const curSp = rg.spots.find((x) => x.id === ui.spot) || rg.spots.find((x) => (S.bangs || []).some((b) => b.sp === x.id)) || rg.spots[0];
@@ -1114,7 +1118,7 @@ function pgFamily() {
 // 사람
 function pgPeople() {
   const known = Object.keys(S.rel).filter((id) => E.CHAR[id]);
-  const F = { all: () => true, love: (id) => S.rel[id].lover || S.rel[id].spouse || (E.isRomanceable(S, E.CHAR[id]) && S.rel[id].aff >= 45), friend: (id) => S.rel[id].aff >= 45, helper: (id) => E.CHAR[id].helper && E.CHAR[id].helper.effect !== "none", client: (id) => S.rel[id].client || E.CHAR[id].customer };
+  const F = { all: () => true, love: (id) => S.rel[id].lover || S.rel[id].spouse || (E.heartOpen(S, id) && S.rel[id].aff >= 50), /* 11-24 연애 가능 여부는 호감 50부터, ◆인 회사 사람은 빠진다 */ friend: (id) => S.rel[id].aff >= 45, helper: (id) => E.CHAR[id].helper && E.CHAR[id].helper.effect !== "none", client: (id) => S.rel[id].client || E.CHAR[id].customer };
   const list = known.filter(F[ui.filter] || F.all).sort((a, b) => (S.rel[b].spouse - S.rel[a].spouse) || (S.rel[b].lover - S.rel[a].lover) || S.rel[b].aff - S.rel[a].aff);
   const fam = S.fam;
   return `<div class="row" style="gap:6px;margin-bottom:8px"><button class="btn grow" data-ppl="map">🕸 관계도</button><button class="btn grow" data-ppl="dex">📖 인물 도감 ${PD.dexCount(meta(), E.CHAR)}/${CHARS_N}</button></div><div class="card"><h3>사람들 <small>아는 사람 ${known.length}명 · 이번 판 등장 ${S.cast.length}명</small></h3>
@@ -1213,7 +1217,7 @@ function charWin(id) {
   const c = E.CHAR[id], x = S.rel[id];
   if (!x) { const res = E.talkTo(S, id); if (!res.ok) return toast([], res.msg); return afterRes(res); }
   if (LVX.isBig(S, id) && !x.affair) return loveWin(id);
-  const romance = E.isRomanceable(S, c);
+  const romance = E.heartOpen(S, id), dia = markDia(id), DI = E.dashInfo(S, id); // 11-24 ◆인 회사 사람은 연애 표시·고백이 잠긴다 · DI: 사수에게 따로 보자고 하기
   const months = x.lover ? S.t - x.loverSince : 0;
   const here = Object.values(S.spot).some((ids) => ids.includes(id));
   const btn = (k, label, cost, dis) => `<button class="btn" data-pa="${k}" ${dis ? "disabled" : ""}>${label}${cost ? ` <span class="ap">⚡${cost}</span>` : ""}</button>`;
@@ -1223,8 +1227,8 @@ function charWin(id) {
     <div class="scene">${stageWho(id, exprFor(id), "half", bgUrl(charSpot(id)) || bgUrl("street") || bgUrl("alley")) || ""}<div class="who"><div class="pic" ${BODY[id] ? 'style="display:none"' : ""}>${img(faceSrc(id, exprFor(id)))}</div><div class="grow"><div><b>${esc(c.job)}</b> · ${ageTxt(c, K)}</div><div class="tagline">${K.at(10) ? esc(c.tagline || "") : "아직 잘 모르는 사이"}</div>
     <div class="row wrap" style="margin-top:4px">${persTags(c, K)}${x.bond && E.BOND_N[x.bond] ? `<span class="tag">${E.BOND_N[x.bond]}</span>` : ""}${romance && K.v >= 50 ? `<span class="tag pink">연애 가능</span>` : ""}${hs ? `<span class="tag green">${esc(c.helper.role)}</span>` : ""}${c.customer && K.v >= 50 ? `<span class="tag blue">${c.customer.board === "partyroom" ? "파티룸 손님" : "컨설팅 손님"}</span>` : ""}${x.affair ? `<span class="tag red">비밀 관계 · 의심 ${Math.round(S.fam.affair?.sus || 0)}</span>` : x.spouse ? `<span class="tag pink">배우자</span>` : x.lover ? `<span class="tag pink">연인 ${months}개월</span>` : ""}${x.helper ? `<span class="tag gold">조력 중</span>` : ""}</div>
     ${likeTxt(c, K)}</div></div>
-    <div class="small">호감도 <b>${Math.round(x.aff)}</b> ${here ? "· 지금 지도에 있음" : ""}</div>${meter(x.aff, 100, "var(--pink)")}
-    <div class="tiny muted" style="margin:2px 0 8px">친해질수록 이 사람을 더 알게 돼요 · 20 친해짐 · 45 속이야기 · 50 ${romance && K.v >= 50 ? "두근두근 · 70 고백 가능" : "더 깊은 사이 · 70 평생 친구"}</div>
+    <div class="small">${dia ? "친분" : "호감도"} <b>${Math.round(x.aff)}</b> ${relMark(id, x.aff)} ${here ? "· 지금 지도에 있음" : ""}</div>${meter(x.aff, 100, dia ? "var(--a6dm)" : "var(--pink)")}
+    <div class="tiny muted" style="margin:2px 0 8px">친해질수록 이 사람을 더 알게 돼요 · 20 친해짐 · 45 속이야기 · 50 ${!dia && romance && K.v >= 50 ? "두근두근 · 70 고백 가능" : "더 깊은 사이 · 70 평생 친구"}</div>
     ${hs ? helperHint(id) : ""}
     ${hs ? `<div class="tiny muted">조력 효과: ${esc(HELP_DESC[c.helper.effect] || "")} · 수고비 월 ${E.helperPay(S, id)}만 · 능력 ${Math.round(st[E.helperStat(c)] || 50)}</div>` : ""}
     <div class="row wrap" style="margin-top:10px">
@@ -1232,6 +1236,7 @@ function charWin(id) {
       ${btn("giftpick", "선물 고르기", 0)}${x.aff >= LVX.LV.drink.min ? btn("drink", `술 한잔(${LVX.LV.drink.cash}만)`, 1) : ""}
       ${x.lover || x.spouse || x.affair ? btn("date", x.affair ? "몰래 만나기(10만)" : "데이트(10만)", 1) + btn("trip", x.affair ? "몰래 여행(80만)" : "여행(80만)", 3) : ""}
       ${romance && !x.lover && !x.spouse && x.aff >= 70 && !S.fam.spouse ? (RD.loveOpen(S) ? btn("confess", x.cfBack != null ? "대답 기다리는 중" : "고백하기", 1) : `<span class="tiny muted" style="align-self:center">고백은 2회차부터 열려요</span>`) : ""}
+      ${DI?.ok ? btn("dash", "따로 보자고 하기", 1) : DI?.lock ? `<span class="tiny muted" style="align-self:center">${esc(DI.lock)}</span>` : ""}
       ${x.lover && months >= 8 && x.aff >= 85 ? btn("propose", "프러포즈(반지 300만)", 2) : ""}
       ${hs ? btn("helper", x.helper ? "조력 그만 부탁" : "투잡 도와 달라고 부탁", 0) : ""}
       ${x.lover ? btn("breakup", "헤어지기", 0) : ""}
@@ -2021,8 +2026,10 @@ function showIntro() {
     <p><b>다음 달</b> 행동력을 다 쓰면 맨 아래 <b>다음 달</b>을 눌러요. 월급이 들어오고 한 달이 지나가요.</p>
     <p><b class="gold">목표</b> ${r1 ? `${ea}세 결산에서 순자산 ${RD.RD.grades.map(([g, v]) => `${v / 10000}억이면 ${g}`).join(", ")}. 1회차는 맛보기예요. 2회차부터 50세까지 본격적인 삶을 살아요.` : `${ea}세까지 순자산 30억(결혼하면 40억).`} 파산하거나 번아웃이 세 번 오면 그 인생은 끝나요.</p>
     <p class="tiny muted" style="margin-top:10px">지도·회사·투잡 이야기는 그 화면에 처음 들어갈 때 한 줄씩 알려 드려요.</p></div>
-    <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-close>시작하기</button>`, null, false, true);
+    <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-close>시작하기</button>`, (el) => el.querySelectorAll("[data-close]").forEach((b) => b.onclick = () => { closeWin(); sasuFirstGo(); }), false, true);
 }
+// 11-24 사수 첫 장면: 새 게임 첫 달 머리에 한 번(시작 안내를 닫은 뒤). 여기서 못 띄우면 엔진이 첫 달 마감 장면 줄 맨 앞에 넣는다
+function sasuFirstGo() { if (!S || S.pending || S.t !== 0) return; let sc = null; try { sc = E.sasuFirstScene(S); } catch (e) { console.warn(e); } if (!sc) return; E.openScene(S, sc); save(); showScene(); }
 
 function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
@@ -2199,7 +2206,7 @@ function autoTest(n) {
   { const ig = h.match(/igtab_([a-z]+)/); if (ig) setTimeout(() => { S.ap = Math.max(S.ap, 6); if (ig[1] === "inboxplay" || ig[1] === "inboxdone") INS.testInbox(S, E.R(S)); if (h.includes("igdm")) { S.ins.dm = []; for (const k of ["celeb", "fan", "scam", "deal"]) INS.testDm(S, E.R(S), k); } if (h.includes("igedit")) { IGA.openInsta(igctx(), "feed"); document.querySelector("[data-igedit]")?.click(); return; } IGA.openInsta(igctx(), ig[1] === "inboxdone" ? "inboxplay" : ig[1]); if (ig[1] === "inboxdone") { document.querySelectorAll("[data-igpick]").forEach((b, i) => { if (i % 3 === 0) b.click(); }); document.querySelector("[data-igdone]")?.click(); } }, 500); } // 인별 앱 화면 보기(#auto6-ins-igtab_feed|inbox|inboxplay|inboxdone|dm|ins|deal, -igdm, -igedit)
   HU.demo({ S, E, showScene, render, save }, h); // 스승·선배·히든 길 시험(#auto6-mstest-cs-run 등)
   H2U.demo({ S, E, showScene, render, save, go }, h); // 다른 방식 히든 길 시험(#auto6-h2test-fail-run · -h2line-era · -h2hint-hide)
-  if (h.includes("lvtest")) { S.ng = { ...(S.ng || {}), n: 2 }; const tp = (h.match(/lvtest-([a-z]+)/) || [])[1] || "shy", id = S.cast.find((x) => E.CHAR[x] && E.isRomanceable(S, E.CHAR[x]) && E.confessType(E.CHAR[x]) === tp); if (id) { const x = E.ensureRel(S, id); x.aff = 95; x.stage = 2; S.st.charm = 190; S.ap = 9; const r = E.personAct(S, id, "confess"); if (r.scene) showScene(); } } /* 고백 과정 시험(#auto18-lvtest-shy|late|tease|yes) */
+  if (h.includes("lvtest")) { S.ng = { ...(S.ng || {}), n: 2 }; const tp = (h.match(/lvtest-([a-z]+)/) || [])[1] || "shy", id = S.cast.find((x) => E.CHAR[x] && E.isRomanceable(S, E.CHAR[x]) && !E.CHAR[x].rank && E.confessType(E.CHAR[x]) === tp); if (id) { const x = E.ensureRel(S, id); x.aff = 95; x.stage = 2; S.st.charm = 190; S.ap = 9; const r = E.personAct(S, id, "confess"); if (r.scene) showScene(); } } /* 고백 과정 시험(#auto18-lvtest-shy|late|tease|yes) */
   if (h.includes("abtrap")) { const sc = AB.trapDemo(S, (h.match(/abtrap-([a-z]+)/) || [])[1]); if (sc) { E.openScene(S, sc); showScene(); } } /* 에어씨앤씨 숨은 함정 시험(#auto18-abnb-abtrap-bld) */
   if (h.includes("gradetest")) openWin(`<h2>결산 등급 시험 <button class="x" data-close>✕</button></h2>${(S.grade = (h.match(/gradetest-([SABC])/) || [])[1] || "C", gradeCard())}`); /* #auto18-gradetest-C */
   if (h.includes("questtest")) { S.flags.quest = true; S.flags.noProbation = false; delete S.sj.pickT; S.ng = { ...(S.ng || {}), n: 1 }; S.sj.active = []; S.t = Math.max(S.t, 4); const st = (h.match(/questtest-(\d)/) || [])[1] || "3"; S.sj.found = {}; S.sj.int = {}; const ks = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play); ks.slice(0, st === "1" ? 3 : 6).forEach((k, i) => { S.sj.int[k] = 20 + i * 13; }); if (st !== "1") SJ.found(S, ks[0]); if (st === "3") { SJ.found(S, ks[1]); SJ.found(S, ks[3]); } ui.page = "home"; render(); if (h.includes("cards")) fitCardsWin(); } /* 초반 퀘스트 시험(#auto6-questtest-1|2|3[-cards]) */
@@ -2207,7 +2214,8 @@ function autoTest(n) {
   { const nk = (h.match(/-csn-([a-z]+)/) || [])[1]; if (nk && D.NICHES[nk] && S.cs.niche) { S.cs.niche = nk; S.cs.niches = [nk]; if (!S.cs.queue.length) S.cs.queue.push({ id: 999, prod: "coach", niche: nk, left: 1, units: 1, price: 12, wait: 0 }); } } /* 포지션별 미니게임 시험(#auto18-cs-mgdue-csn-interview|career|newgrad|public) */
   if (h.includes("mgdue")) S.mgForce = true; /* 미니게임 '올해의 큰 일' 창 시험(#auto18-abnb-mgdue → 게스트 응대) */
   if (h.includes("chrenew") || h.includes("charea")) import("./engine/jobs/chbrand.js").then((BR) => { const C = S.chicken; if (!C?.stores?.length) return; if (h.includes("charea")) { C.ctT = S.t + 2; BR.survey(S, E.R(S)); ui.page = "chicken"; render(); return; } const sc = h.includes("chrenew2") ? BR.renewScene(S, E.R(S)) : BR.renewWarn(S); E.openScene(S, sc); showScene(); }); /* 치킨 계약 갱신·상권 카드 시험 */
-  if (h.includes("lovewin")) { S.ng = { ...(S.ng || {}), n: 2 }; const id = S.cast.find((x) => E.CHAR[x] && E.isRomanceable(S, E.CHAR[x]) && E.CHAR[x].helper?.effect && E.CHAR[x].helper.effect !== "none"); const x = E.ensureRel(S, id); x.aff = 78; if (h.includes("lovewin-lover")) { x.lover = true; x.loverSince = S.t - 11; x.dateT = S.t; x.anv = { t: S.t + 1, n: "1주년" }; } S.ap = 9; charWin(id); } /* 연인 큰 화면 시험(#auto18-lovewin[-lover]) */
+  if (h.includes("lovewin")) { S.ng = { ...(S.ng || {}), n: 2 }; const id = S.cast.find((x) => E.CHAR[x] && E.isRomanceable(S, E.CHAR[x]) && !E.CHAR[x].rank && E.CHAR[x].helper?.effect && E.CHAR[x].helper.effect !== "none"); const x = E.ensureRel(S, id); x.aff = 78; if (h.includes("lovewin-lover")) { x.lover = true; x.loverSince = S.t - 11; x.dateT = S.t; x.anv = { t: S.t + 1, n: "1주년" }; } S.ap = 9; charWin(id); } /* 연인 큰 화면 시험(#auto18-lovewin[-lover]) */
+  if (h.includes("reltest")) { const m = h.match(/reltest-([a-z0-9]+)(?:-(c\d+))?/) || []; const r = E.relDemo(S, m[1], m[2], { male: h.includes("-relm") }); if (m[1] === "dashlock" && r) { render(); charWin(r); } else if (r) showScene(); else render(); } /* 인물 관계 시험(#auto18-reltest-first | talk-c101(역할 말투·업무 밖 말. 인물 id 를 바꿔 본다) | turn-c109(c070·c108, 남자판은 c104·c019·c107) | dash1 | dash2 | dash3 | dashlock(1회차 잠금 글) | shield | shieldsp(배우자판)). 자동 시험판은 여자 주인공이라 사수는 곽지헌이다. 끝에 -relm 을 붙이면 남자 주인공·윤가람 판으로 바꿔 본다 */
   if (h.includes("chattest")) { const sc = LVX.chatDemo(S, h.includes("chattest-lover") ? "lover" : "crush"); if (sc) { E.openScene(S, sc); showScene(); } } /* 까톡 시험 */
   if (h.includes("xdemo")) { const k = (h.match(/xdemo-([a-z0-9]+)/) || [])[1]; if (/^(why|gag|boss)$/.test(k)) { if (!S.cs.niche) CS.setNiche(S, "newgrad"); CS.setNick(S, "nick", (h.match(/-nk-([a-z]+)/) || [])[1]); } const sc = XR.demo(S, k); if (sc) { E.openScene(S, sc); showScene(); } } /* 조연의 다른 얼굴·닉네임 이야기 시험(#auto18-xdemo-x03 · #auto18-cs-xdemo-why-nk-fairy|elder|fail|deliver|mask) */
   if (h.includes("dlgtest")) { const id = (h.match(/dlgtest-([a-z0-9_]+)/) || [])[1]; import("./gen/data.js").then((G) => { const x = G.SCENES.find((q) => q.id === id); if (x) { E.openScene(S, { kind: "event", ...x }); showScene(); } }); } /* 대화창 시험: 자료 장면 id 로 바로 열기(#auto18-dlgtest-co_new_lead) */

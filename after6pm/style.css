@@ -988,3 +988,16 @@ select.btn{min-height:40px}
 .a6burn .a6w-s{color:#ffe9a8}
 .a6burn-x{display:inline-block;margin-top:18px;font-family:var(--disp);font-weight:900;font-size:clamp(26px,8vw,36px);color:#1a1000;background:linear-gradient(180deg,#ffe07a,#f0a92e);border-radius:14px;padding:4px 22px;transform:rotate(-3deg);box-shadow:0 6px 20px #ffb40066;animation:a6wUp .5s .55s ease-out both}
 .tag.a6burn-t{background:linear-gradient(180deg,#ffe07a,#f0a92e);color:#1a1000;border-color:transparent}
+/* 11-24 홈 화면 그림 아이콘(피그마로 그린 세트, img/ic/) */
+.a6ic{width:40px;height:40px;object-fit:contain;display:block;filter:drop-shadow(0 3px 5px rgba(0,0,0,.45));user-select:none;-webkit-user-drag:none}
+.grid4 button .a6ic{width:46px;height:46px;margin-bottom:2px}
+.grid4 button.qno .a6ic{filter:grayscale(.7) drop-shadow(0 3px 5px rgba(0,0,0,.45))}
+.places button .a6ic{width:36px;height:36px;margin-bottom:auto}
+.nav button .a6ic{width:30px;height:30px;transition:transform .15s}
+.nav button:not(.on) .a6ic{filter:grayscale(.5) brightness(.9);opacity:.78}
+.nav button.on .a6ic{transform:translateY(-2px) scale(1.14)}
+/* 11-24 친분 마크: 동성 친구와 회사 동료는 하트 대신 ◆◇ 다섯 칸 + 작은 글자(ui.js relMark · people_ui.js relMark) */
+:root{--a6dm:#7cc8f2}
+.hearts.a6dm,.pp-h.a6dm{color:var(--a6dm);letter-spacing:0;font-size:10px;white-space:nowrap}
+.hearts.a6dm i,.pp-h.a6dm em{font-style:normal;font-size:9px;font-weight:700;margin-left:3px;opacity:.9}
+.pp-h.a6dm{font-size:11px}

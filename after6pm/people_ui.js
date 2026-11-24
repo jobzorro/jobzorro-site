@@ -48,7 +48,8 @@ function bigEvents(c, o) {
   if (b & BIT.affair) L.push("선을 넘었다");
   return L.slice(-5);
 }
-const hearts = (a) => { const n = Math.round((a || 0) / 20); return `<span class="pp-h">${"♥".repeat(n)}<i>${"♥".repeat(5 - n)}</i></span>`; };
+// 11-24 친분 마크: 동성과 ◆인 회사 사람은 ◆ + 작은 글자, 나머지는 ♥. 도감 기록에 연인·배우자였던 적이 있으면 ♥
+const relMark = (id, a, o) => { const n = Math.max(0, Math.min(5, Math.round((a || 0) / 20))); let m = { k: "heart" }; try { m = X.E.markOf(X.S, id); } catch (e) {} if (o && ((o[3] || 0) & (BIT.lover | BIT.spouse | BIT.affair))) m = { k: "heart" }; return m.k === "dia" ? `<span class="pp-h a6dm">${"◆".repeat(n)}<i>${"◆".repeat(5 - n)}</i><em>${esc(m.label)}</em></span>` : `<span class="pp-h">${"♥".repeat(n)}<i>${"♥".repeat(5 - n)}</i></span>`; };
 function faceHtml(id, px, cls = "") {
   const st = thumbStyle(id, px);
   if (st) return `<i class="pp-f ${cls}" style="width:${px}px;height:${px}px;${st}"></i>`;
@@ -102,7 +103,7 @@ function dexDetail(id, dex) {
     <div class="pp-dh" style="--gc:${G.c}"><b>${esc(c.name)}</b><span class="tag" style="color:${G.c}">${G.ic} ${esc(G.s)}</span><span class="tag pink">${ri !== "·" ? ri + " " : ""}${esc(rn)}</span></div>
     <div class="small">${esc(c.job)} · ${c.age}세</div>
     <div class="small muted" style="margin:2px 0 8px">${o[1] >= 10 ? esc(c.tagline || "") : "아직 잘 모르는 사이"}</div>
-    <div class="kv pp-kv"><div><div class="k">처음 만난 인생</div><div class="v">${o[0] ? `${o[0]}회차` : "예전 인생"}</div></div><div><div class="k">최고 호감</div><div class="v">${hearts(o[1])} ${o[1]}</div></div><div><div class="k">관계 최고</div><div class="v">${esc(rn)}</div></div><div><div class="k">자주 있는 곳</div><div class="v small">${esc(places(c).slice(0, 2).join(", "))}</div></div></div>
+    <div class="kv pp-kv"><div><div class="k">처음 만난 인생</div><div class="v">${o[0] ? `${o[0]}회차` : "예전 인생"}</div></div><div><div class="k">최고 호감</div><div class="v">${relMark(id, o[1], o)} ${o[1]}</div></div><div><div class="k">관계 최고</div><div class="v">${esc(rn)}</div></div><div><div class="k">자주 있는 곳</div><div class="v small">${esc(places(c).slice(0, 2).join(", "))}</div></div></div>
     <div class="card" style="margin-top:8px"><div class="small"><b>같이 겪은 일</b></div>${ev.length ? `<div class="pp-ev">${ev.map((t) => `<span style="--gc:${G.c}">${esc(t)}</span>`).join("")}</div>` : `<div class="tiny muted" style="margin-top:4px">아직 큰 일은 없었어요. 호감 20·45·70에서 이야기가 열려요.</div>`}</div>
     <div class="tiny muted" style="margin-top:6px">${o[1] >= 35 ? `좋아함: ${(c.likes || []).map(esc).join(", ")} · 성격: ${(c.personality || []).map(esc).join(", ")}` : "성격과 취향은 더 친해지면(호감 35) 여기에 적혀요"}</div>`;
 }

@@ -3,7 +3,8 @@
 //   · dialog(): 장면 글을 '바탕 글 / 누가 한 말 / 화면에 뜬 글(문자·단톡방)'로 나눈다. 화면(ui.js)이 대화창으로 그린다.
 //   · 겹치는 역할: 조연마다 다른 투잡에서 손님·독자·거래처로 다시 만난다(cross). 한 사람에 한 번.
 //   · 컨설팅 닉네임 이야기: 닉네임 다섯 개마다 유래 답·작은 소동 하나씩 + 본부장의 딸.
-import { EXTRAS as XD } from "../gen/data.js";
+import * as GEN from "../gen/data.js";
+const XD = GEN.EXTRAS;
 import { CHAR, jo, won } from "./core.js";
 import * as CS from "./cs.js";
 import * as RD from "./round.js";
@@ -151,6 +152,19 @@ export function xMonth(s, r, notes, scenes) {
   const C = (X.cross || []).filter((c) => !V.done[c.x] && jobLive(s, c.job) && !(c.x === "x01" || c.x === "x02" || c.x === "x03" ? s.co?.quit || s.co?.fired : false));
   if (!C.length || !r.chance(Math.min(0.2, XB.p * C.length))) return;
   const c = r.pick(C); V.done[c.x] = nt; V.lastT = nt; scenes.push(crossScene(s, c));
+}
+// ───────── 인물별 개인 사건(11-24) ─────────
+// 그 사람의 취향·직업과 이어진 행동을 하면 같이 하게 된다(data/person_ev.json). 조건: 아는 사이 + 호감 20 이상 + 그 행동.
+// 확률 25%, 한 사람에 12개월에 한 번, 한 달에 하나만. 효과는 작게(호감 +3~5, 능력치 +0.3~0.8).
+export const PE = { p: 0.25, aff: 20, gap: 12 };
+const PE_BY = {}; // 행동 id → 사건들
+for (const e of GEN.PERSON_EV || []) for (const a of e.acts || []) (PE_BY[a] = PE_BY[a] || []).push(e);
+export function personEvent(s, r, actId, arg) {
+  const L = PE_BY[actId]; if (!L || !L.length) return null; const V = st(s); if (V.peT === s.t) return null;
+  const C = L.filter((e) => { const x = s.rel?.[e.who]; if (!x || !CHAR[e.who] || (x.aff || 0) < PE.aff) return false; if (x.pe !== undefined && s.t - x.pe < PE.gap) return false; if (actId === "hb_go" && !(e.hb || []).includes(arg)) return false; return true; });
+  if (!C.length || !r.chance(PE.p)) return null;
+  const e = r.pick(C), c = CHAR[e.who]; s.rel[e.who].pe = s.t; V.peT = s.t;
+  return { kind: "event", who: e.who, expr: "smile", tag: "같이", title: `${jo(c.name, "과", "와")} 함께`, text: e.text, onChoose: "x_pe", choices: [{ t: "좋은 시간이었다", eff: e.eff || {}, text: "" }] };
 }
 // 시험용: 조연 id 또는 닉네임 이야기 종류로 장면을 바로 만든다
 export function demo(s, key) { if (/^burn/.test(key)) return burnScene(s, key.slice(4)); const c = (X.cross || []).find((x) => x.x === key); if (c) return crossScene(s, c); return nickScene(s, key); }

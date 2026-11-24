@@ -1,7 +1,7 @@
 // 컨설팅 제자(v4.25). 합격시킨 손님 중 호감 높은 사람이 가끔 '특별한 제자'가 된다.
 // 제자는 도움이 되기도(정보·소개·후기·조력), 그냥 흘러가기도, 드물게 연애로 이어지기도 한다.
 // core.js peopleMonth 에서 매달 menteeMonth(s, r, scenes) 를 부른다. onChoose 는 "mt_" 로 시작. 많이 나오지 않게: 8달 간격, 월 4%.
-import { CHAR, jo, isRomanceable } from "./core.js";
+import { CHAR, jo, heartOpen } from "./core.js";
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const nm = (id) => CHAR[id]?.name || "제자";
@@ -39,7 +39,7 @@ export function menteeMonth(s, r, scenes) {
   for (const id of ms) {
     const done = rel[id].mtDone || [];
     for (const st of STORIES) if (!done.includes(st[0])) cands.push([id, st]);
-    if (single && !done.includes("love") && s.t - (rel[id].menteeT ?? s.t) >= 10 && isRomanceable(s, CHAR[id]) && rel[id].aff >= 55) cands.push([id, LOVE], [id, LOVE]);
+    if (single && !done.includes("love") && s.t - (rel[id].menteeT ?? s.t) >= 10 && heartOpen(s, id) && rel[id].aff >= 55) cands.push([id, LOVE], [id, LOVE]); // 11-24 ◆인 회사 사람은 빠진다
   }
   // 2) 아직 제자가 아닌 합격 손님(호감 40 이상)은 '특별한 제자'가 될 기회
   const fresh = Object.keys(rel).filter((id) => rel[id].client && !rel[id].mentee && !rel[id].mtNo && rel[id].aff >= 40 && CHAR[id] && !rel[id].spouse);

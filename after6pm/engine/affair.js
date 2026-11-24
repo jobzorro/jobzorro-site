@@ -1,7 +1,7 @@
 // 바람(v4.25). 기혼일 때만. 걸리면 파경, 안 걸려도 위기가 계속 온다.
 // core.js peopleMonth 에서 매달 affMonth(s, r, scenes, notes) 를 부른다. onChoose 이름은 "af_" 로 시작.
 // 상태: s.fam.affair = { who, t, sus(의심 0~100), crisisT, used, asked } / 끝낸 뒤 s.fam.affairPast = { t, sus }
-import { CHAR, jo, won, addMoney, log, isRomanceable, divorce } from "./core.js";
+import { CHAR, jo, won, addMoney, log, heartOpen, divorce } from "./core.js";
 import * as SYN from "./syn.js";
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -90,7 +90,7 @@ export function affMonth(s, r, scenes, notes) {
   }
   // 유혹: 호감 높은 이성, 집이 차갑거나 마음이 지쳤을 때 더 자주
   if (busy || s.t - (s.flags.affTempt ?? -99) < 24 || s.t - (s.fam.marriedT ?? s.t) < 12) return;
-  const cands = Object.entries(s.rel).filter(([id, x]) => !x.spouse && x.aff >= 50 && CHAR[id] && isRomanceable(s, CHAR[id])).map(([id]) => id);
+  const cands = Object.entries(s.rel).filter(([id, x]) => !x.spouse && x.aff >= 50 && CHAR[id] && heartOpen(s, id)).map(([id]) => id); // 11-24 ◆인 회사 사람은 빠진다
   if (!cands.length) return;
   const p = 0.025 + (s.fam.happy < 40 ? 0.04 : 0) + (s.mental < 35 ? 0.03 : 0);
   if (!r.chance(p)) return;

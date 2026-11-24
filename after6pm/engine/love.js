@@ -6,7 +6,7 @@ import * as D from "./defs.js";
 import * as GEN from "../gen/data.js";
 import * as SJ from "./sj.js";
 import * as RD from "./round.js";
-import { CHAR, addAff, addMoney, isRomanceable, creditRoom, gainStat, log, jo } from "./core.js";
+import { CHAR, addAff, addMoney, isRomanceable, heartOpen, creditRoom, gainStat, log, jo } from "./core.js";
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const LV = {
@@ -25,7 +25,7 @@ const box = (s) => (s.lv = s.lv || { chatT: -9, hevT: -9, fseen: {} });
 export function stageOf(s, id) {
   const x = s.rel?.[id], c = CHAR[id]; if (!x || !c) return "none";
   if (x.spouse) return "spouse"; if (x.lover) return "lover";
-  if (isRomanceable(s, c) && x.aff >= LV.crush) return "crush";
+  if (heartOpen(s, id) && x.aff >= LV.crush) return "crush"; // 11-24 회사 사람은 ◆가 ♥로 바뀐 뒤에만(core.js heartOpen)
   return x.aff >= 20 ? "friend" : "known";
 }
 export const STAGE_N = { spouse: "배우자", lover: "연인", crush: "두근두근", friend: "친한 사이", known: "아는 사이" };
@@ -132,7 +132,8 @@ function chatMonth(s, r, scenes, B) {
   const ids = Object.entries(s.rel || {}).filter(([id, x]) => CHAR[id] && x.aff >= LV.crush && !x.affair).sort((a, b) => ((b[1].lover || b[1].spouse) ? 1 : 0) - ((a[1].lover || a[1].spouse) ? 1 : 0) || b[1].aff - a[1].aff);
   for (const [id, x] of ids) {
     if (n >= K.max) break; const c = CHAR[id], st = stageOf(s, id), love = st === "lover" || st === "spouse";
-    if (love || st === "crush") {
+    const dashed = !love && st !== "crush" && (x.dash || 0) >= 1 && x.heart == null && isRomanceable(s, c); // 11-24 사수는 ◆에서 바로 연인이 돼 두근두근 구간이 없다. 대시를 한 번이라도 했고 호감 50 이상이면 두근두근 까톡이 온다
+    if (love || st === "crush" || dashed) {
       const L = (CHATS[id]?.chats || []).filter((ch) => (love ? ch.when !== "crush" : ch.when !== "lover") && s.t - (x.chatSeen?.[ch.k] ?? -99) >= K.again);
       if (!love && nc >= 1) continue; if (!L.length || !r.chance(love ? K.loverP : K.crushP)) continue; if (!love) nc++;
       const ch = r.pick(L); (x.chatSeen = x.chatSeen || {})[ch.k] = s.t; scenes.push(chatScene(s, id, ch, false)); n++;

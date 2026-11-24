@@ -31,6 +31,8 @@ import * as IT from "./items.js";
 import { caughtScene } from "./caught.js"; // 겸업 발각: 투잡마다 다른 경위(11-23)
 
 export const CHAR = Object.fromEntries(CHARS.map((c) => [c.id, c]));
+const FIRST = GEN.FIRST || {}; // 처음 말 걸 때의 반응(인물별, 11-24)
+const RT = GEN.ROLE_TALK || {}, WALL = GEN.WALL || {}; // 11-24 인물 관계: 회사 사람 역할 말투·업무 밖 말(data/role_talk.json) / 사수 첫 장면·진입장벽·사수 대시·사수의 귀띔(data/wall.json)
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 export const R = (s) => makeRng(s.rs);
 export const won = (m) => { // 만원 → 보기 좋은 글
@@ -95,6 +97,8 @@ export function investOpenScene(s) { return story("투자가 열렸다", `통장
 export const investOpen = (s) => !!s.flags?.invOpen || s.invest > 0 || (!s.rd && s.t >= INV_OPEN.t);
 export const START_BOND = { army: 35, club: 30, univ: 32 }; // 시작 인맥의 첫 호감
 export const BOND_N = { army: "군대 동기", club: "동아리 친구", univ: "대학 친구" };
+export const SASU_AFF = 20; // 11-24 사수는 첫날부터 아는 사이(시작 인맥보다 낮게)
+export const sasuOf = (s) => s?.flags?.sasu || "c102"; // 이번 판의 사수. 옛 저장에는 칸이 없다 → 윤가람
 export function newGame(o) {
   const seed = o.seed || String(Date.now());
   const s = {
@@ -134,10 +138,14 @@ export function newGame(o) {
   // 연구 기록 보너스(메타)
   if (o.meta?.bonusCash) s.cash += o.meta.bonusCash;
   // 이번 판에 등장하는 인연: 100명 중 70명 (로그라이크)
-  const pool = CHARS.filter((c) => !c.celeb && !c.mentor).map((c) => c.id); // 유명인(인별)은 인별에서 만난다
+  // 11-24 사수: 판마다 이성 사수 한 명(남자 주인공 = 윤가람, 여자 주인공 = 곽지헌). only 칸이 주인공 성별과 다른 인물은 이번 판에 안 나온다
+  s.flags.sasu = CHARS.find((c) => c.rank === "sasu" && c.only === s.me.gender)?.id || "c102"; s.flags.rel2 = 0; s.flags.sasuFirst = -1; // rel2: 친분 마크 규칙으로 시작한 판(옛 저장 채우기를 안 한다) · sasuFirst −1: 사수 첫 장면을 아직 안 봤다
+  const inPlay = (c) => !!c && (!c.only || c.only === s.me.gender);
+  const pool = CHARS.filter((c) => !c.celeb && !c.mentor && inPlay(c)).map((c) => c.id); // 유명인(인별)은 인별에서 만난다
   s.cast = r.shuffle(pool.filter((id) => !CHAR[id]?.co)).slice(0, Math.min(pool.length, Math.max(12, Math.round(pool.length * 0.7))));
-  s.cast.push(...CHARS.filter((c) => c.co).map((c) => c.id)); // 회사 동료(신입은 입사 사건 뒤에 나온다)
-  if (s.me.perks.includes("yr3") || s.me.gender === "F") for (const id of r.shuffle(CHARS.filter((c) => c.co && !c.hire).map((c) => c.id)).slice(0, 2)) { const x = ensureRel(s, id); x.aff = Math.max(x.aff, 25); } // 3년 차: 사내 인맥
+  s.cast.push(...CHARS.filter((c) => c.co && inPlay(c)).map((c) => c.id)); // 회사 동료(신입은 입사 사건 뒤에 나온다)
+  if (CHAR[s.flags.sasu]) { const x = ensureRel(s, s.flags.sasu); x.aff = Math.max(x.aff, SASU_AFF); } // 사수는 첫날부터 아는 사이(호감 20). 일반 '첫 만남' 장면 대신 사수 첫 장면이 뜬다
+  if (s.me.perks.includes("yr3") || s.me.gender === "F") for (const id of r.shuffle(CHARS.filter((c) => c.co && !c.hire && inPlay(c) && c.id !== s.flags.sasu).map((c) => c.id)).slice(0, 2)) { const x = ensureRel(s, id); x.aff = Math.max(x.aff, 25); } // 3년 차: 사내 인맥(사수는 따로 20을 받으니 뺀다)
   // 11-24 시작 인맥: 남자는 군대 동기 3·동아리 친구 2, 여자는 사내 인맥 2(위)·대학 친구 2·동아리 친구 1. 이번 판 등장 인물 중 또래에서 고른다
   { const used = new Set(Object.keys(s.rel)), plain = (c) => c && !c.co && !c.hire && !c.senior && !c.group && c.age >= 25 && c.age <= 30 && !/우리 회사|우리 팀/.test(c.job || "");
     const take = (n, bond, aff, ok) => { for (const id of r.shuffle(s.cast.filter((id) => !used.has(id) && plain(CHAR[id]) && ok(CHAR[id]))).slice(0, n)) { used.add(id); const x = ensureRel(s, id); x.aff = Math.max(x.aff, aff); x.bond = bond; } };
@@ -148,7 +156,7 @@ export function newGame(o) {
   s.ng = { n: Math.max(1, ng.n || 1), hard: !!ng.hard, gifts: ng.gifts || [], past: ng.past || [] }; // past: 지난 인생 히든 길 기록(v4.30 회차의 길)
   if (ng.cash) s.cash += ng.cash;
   for (const j of ng.know || []) if (D.SIDEJOBS[j]) { SJ.found(s, j, "지난 인생의 기억"); s.sj.know[j] = (s.sj.know[j] || 0) + 10; }
-  for (const id of ng.friends || []) if (CHAR[id]) { if (!s.cast.includes(id)) s.cast.push(id); const x = ensureRel(s, id); x.aff = Math.max(x.aff, 30); x.deja = true; }
+  for (const id of ng.friends || []) if (inPlay(CHAR[id])) { if (!s.cast.includes(id)) s.cast.push(id); const x = ensureRel(s, id); x.aff = Math.max(x.aff, 30); x.deja = true; }
   if (ng.statUp) for (const k of Object.keys(s.st)) s.st[k] = Math.min(D.STAT_MAX, s.st[k] + ng.statUp);
   // 처음 관심: 커리어가 높으면 컨설팅, 숫자가 높으면 파티룸이 눈에 들어온다
   s.sj.int.cs = Math.round(s.st.career * 0.6); s.sj.int.pr = Math.round(s.st.num * 0.4);
@@ -371,6 +379,7 @@ export function act(s, id, arg) {
   res.ok = true;
   // 장소 행동이면 가끔 장소 장면
   const spot = Object.values(D.SPOTS).find((sp) => sp.acts.includes(id));
+  if (!res.scene) { let pe = null; try { pe = XR.personEvent(s, r, id, arg); } catch (e) { console.warn(e); } if (pe) res.scene = openScene(s, pe); } // 11-24 인물별 개인 사건: 그 사람의 취향과 이어진 행동을 하면 같이 하게 된다(뜨면 이번 행동의 장소 장면은 쉰다)
   if (!res.scene && spot && r.chance(0.22)) { const sc = pickLocScene(s, r, spot.loc); if (sc) res.scene = openScene(s, sc); }
   // 행동이 돌려준 장면(만남 등)은 여기서 연다
   if (res.scene && !s.pending) { if (res.scene.kind === "meet" && res.scene.who) ensureRel(s, res.scene.who); res.scene = openScene(s, res.scene); }
@@ -458,7 +467,7 @@ const ACT_FN = {
   trend_walk() { return { lines: ["마케팅·감각 +"], msg: "팝업 줄이 두 블록. 요즘은 이게 뜬다." }; },
   book_club(s) { socialMental(s); return { lines: ["글쓰기 +"], msg: "같은 책을 읽고 다른 이야기를 했다." }; },
   dating_app(s, r) { // 바로 새 인연 하나
-    const cands = s.cast.filter((id) => { const c = CHAR[id]; return c && !s.rel[id] && isRomanceable(s, c); });
+    const cands = s.cast.filter((id) => { const c = CHAR[id]; return c && !s.rel[id] && isRomanceable(s, c) && !(c.hire && !(s.co.hired || []).includes(id)); }); // 11-24 아직 입사 전인 후배·경력직은 앱에 안 나온다(첫 만남 글이 입사 장면이다)
     if (!cands.length) return { lines: ["오늘은 매칭이 없다"], msg: "스와이프만 200번." };
     const p = clamp(0.35 + (s.st.charm - 30) / 80, 0.15, 0.9);
     if (!r.chance(p)) { s.mental = clamp(s.mental - 2, 0, 100); return { lines: ["매칭 실패", "멘탈 −2"], msg: "읽씹. 매력을 더 키워야 할까." }; }
@@ -514,6 +523,18 @@ function socialMental(s) { s.mental = clamp(s.mental + mod(s, "socialMental", 0)
 
 // ───────── 사람 ─────────
 export function isRomanceable(s, c) { return c.roles?.includes("romance") && c.single !== false && c.gender !== s.me.gender && c.age >= 24; }
+// 11-24 친분 마크: 회사 사람(rank 칸이 있는 사람 = 회사 인물 + '우리 회사' 4명)은 ◆(동료)로 시작한다. 업무 밖 말로 문턱을 넘어야(rel.heart) 두근두근·고백이 열린다.
+// 회사 밖 사람은 isRomanceable 과 같다. isRomanceable 은 '연애 자료가 있는 이성인가'만 본다(그대로 둔다).
+export const isCoP = (c) => !!c?.rank;
+export function heartOpen(s, id) { const c = CHAR[id]; if (!c || !isRomanceable(s, c)) return false; return c.rank ? s.rel?.[id]?.heart != null : true; }
+// 이름 옆 표시: 동성과 ◆인 회사 사람은 ◆◇(k "dia") + 작은 글자, 나머지는 ♥♡. 연애 가능 여부는 이 표시로 새지 않는다(성별·회사 사람인지·전환 여부만 본다)
+export function markOf(s, id) {
+  const c = CHAR[id], x = s.rel?.[id]; if (!c) return { k: "heart" };
+  if (x?.lover || x?.spouse || x?.affair) return { k: "heart" };
+  if (c.rank && (c.gender === s.me.gender || x?.heart == null)) return { k: "dia", label: "동료" };
+  if (c.gender === s.me.gender) return { k: "dia", label: "친구" };
+  return { k: "heart" };
+}
 export function relOf(s, id) { return s.rel[id] || null; }
 export function addAff(s, id, v) {
   const rel = s.rel[id]; if (!rel) return 0;
@@ -542,8 +563,8 @@ function chk(s, check) { if (!check) return null; const v = s.st[check.stat] ?? 
 export function meetScene(s, id, pre = "") {
   const c = CHAR[id];
   return { kind: "meet", who: id, title: `첫 만남 · ${c.name}`, text: pre + (c.lines?.meet || `${c.job} ${jo(c.name, "을", "를")} 만났다.`), choices: [
-    { t: "먼저 웃으며 인사를 건넨다", check: { stat: "charm", dc: 35 }, ok: { text: c.lines?.hello || "분위기가 좋다.", eff: { aff: 10 } }, ng: { text: "어색한 웃음이 오갔다.", eff: { aff: 3 } } },
-    { t: "공통 관심사로 말을 이어 간다", check: { stat: "talk", dc: 40 }, ok: { text: "이야기가 술술 풀렸다. 연락처를 교환했다.", eff: { aff: 12 } }, ng: { text: "TMI였다. 그래도 이름은 기억해 줬다.", eff: { aff: 2 } } },
+    { t: "먼저 웃으며 인사를 건넨다", check: { stat: "charm", dc: 35 }, ok: { text: FIRST[id]?.say || c.lines?.hello || "분위기가 좋다.", eff: { aff: 10 } }, ng: { text: "어색한 웃음이 오갔다.", eff: { aff: 3 } } }, // 11-24 처음 말 걸 때의 반응은 인물마다 다르다(data/first_meet.json). 판정·호감은 그대로
+    { t: "공통 관심사로 말을 이어 간다", check: { stat: "talk", dc: 40 }, ok: { text: FIRST[id]?.say ? `${FIRST[id].say} 그 뒤로 이야기가 술술 풀렸다. 연락처를 교환했다.` : "이야기가 술술 풀렸다. 연락처를 교환했다.", eff: { aff: 12 } }, ng: { text: "TMI였다. 그래도 이름은 기억해 줬다.", eff: { aff: 2 } } },
     { t: "가볍게 목례만 한다", eff: { aff: 4 }, text: "다음에 또 보면 인사할 정도는 됐다." },
   ] };
 }
@@ -571,7 +592,56 @@ const TALK_STYLE = [
 // 인사말: 3단계(합격·이직 뒤)부터는 lines.hello3 가 있으면 그것을 먼저 쓴다. busy 도 같다(busy3)
 export function helloOf(c, rel) { return ((rel?.stage || 0) >= 3 && c?.lines?.hello3) || c?.lines?.hello || ""; }
 export function busyOf(c, rel) { return ((rel?.stage || 0) >= 3 && c?.lines?.busy3) || c?.lines?.busy || ""; }
+// ── 11-24 회사 사람 말 걸기: 역할(팀장·사수·선배·동료·후배)마다 대사가 다르다(data/role_talk.json). 호감이 오르는 폭은 아래 plainTalk 와 같다(q 2·1·0).
+// 주인공을 부르는 말: ○○ 씨 → ○ 대리 → ○ 과장(직급이 오르면 바뀐다). 동기는 이름. 이름이 한글 세 글자일 때만 성과 이름을 나눈다.
+export function callName(s, c) {
+  const nm = String(s.me.name || "나"), han3 = /^[가-힣]{3}$/.test(nm), given = han3 ? nm.slice(1) : nm, sur = han3 ? nm[0] : nm;
+  if (/동기/.test(c?.job || "")) return given;
+  const rk = s.co.quit || s.co.fired ? 0 : s.co.rank || 0;
+  return rk >= 1 && D.RANKS[rk] ? `${sur} ${D.RANKS[rk].n}` : `${given} 씨`;
+}
+const fillMe = (s, t) => String(t || "").replace(/\{me\}/g, s.me.name || "나");
+function roleTalk(s, r, id) {
+  const c = CHAR[id], rel = s.rel[id]; if (!c.rank || s.co.quit || s.co.fired) return null; // 회사를 나온 뒤에는 회사 대사를 쓰지 않는다
+  const band = rel.aff >= 45 ? "high" : rel.aff >= 20 ? "mid" : "low", T = RT.by?.[id]?.[band] || RT.roles?.[c.rank]?.[band];
+  if (!T?.opts?.length) return null;
+  const nm = callName(s, c), f = (t) => String(t || "").replace(/\{name\}/g, nm).replace(/\{who\}/g, c.name);
+  const base = 3 + s.st.charm / 25, open = T.open?.length ? f(r.pick(T.open)) : "";
+  const order = T.opts.map((o) => [o, r.range(0, 1)]).sort((a, b) => a[1] - b[1]).map((x) => x[0]);
+  return { kind: "event", who: id, expr: rel.aff >= 45 ? "smile" : "neutral", tag: "대화", title: `${c.name}에게 말 걸기`, text: `${open ? `{${id}}"${open}" ` : ""}무슨 말을 할까? (회사에서 어떤 사이인지 떠올려 보세요)`, onChoose: "talk_pick", tq: order.map((o) => o.q), role: c.rank,
+    choices: order.map((o) => ({ t: f(o.t), eff: { aff: o.q === 2 ? Math.round(base + 4) : o.q === 1 ? Math.round(base) : -1, mental: o.q === 2 ? 2 : 0 }, text: f(o.re) })) };
+}
+// ── 업무 밖 말(11-24): 이성인 회사 사람과 호감 30부터 네 번째 선택지. 연애가 안 되는 사람에게도 보이고(받아넘긴다), 횟수(rel.pv)는 한 달에 한 번만 센다.
+// 횟수와 호감이 그 사람의 문턱(WALL.walls)을 넘으면 ◆가 ♥로 바뀐다(rel.heart). 사수는 문턱이 없다(따로 보자고 하기 세 번).
+export const PV = { aff: 30, gain: 2, turn: [5, 2], mental: 3 };
+function pvShown(s, id) { const c = CHAR[id], x = s.rel[id]; return !!(c?.rank && x && c.gender !== s.me.gender && x.aff >= PV.aff && x.heart == null && !x.lover && !x.spouse && !x.affair && RT.pv?.ask?.length); }
+function pvCount(s, id) { // 이번 달에 꺼낸 말을 센다. outside 형은 그 달에 약속이나 술 한잔을 했을 때만
+  const x = s.rel[id], W = WALL.walls?.[id]; if (!x || x.pvAsk !== s.t || x.pvT === s.t) return;
+  if (W?.extra === "outside" && x.meetT !== s.t && x.drinkT !== s.t) return;
+  x.pv = (x.pv || 0) + 1; x.pvT = s.t;
+}
+function wallOk(s, id) { // extra "arc1"(이야기 1단계 판정에 성공했으면 문턱 −5)은 저장 값으로 알 수 없어 보지 않는다
+  const c = CHAR[id], x = s.rel[id], W = WALL.walls?.[id]; if (!W || !x || x.heart != null || x.lover || x.spouse || id === sasuOf(s) || !isRomanceable(s, c)) return false;
+  if ((x.pv || 0) < W.need || x.aff < W.gate) return false;
+  if (W.extra === "meetup1" && (x.meetN || 0) + (x.drinkN || 0) < 1) return false; // 회사 밖에서 한 번은 만났어야 한다(약속·술 한잔)
+  return true;
+}
+// 전환 장면: 장소 한 줄 · 그 사람의 한마디 · "이름 옆의 표시가 바뀌었다." 표시는 장면이 뜨는 순간 바뀐다(선택지는 호감만 가른다)
+function turnScene(s, id, from) {
+  if (!wallOk(s, id)) return null;
+  const c = CHAR[id], x = s.rel[id], W = WALL.walls[id], sp = Object.keys(s.spot || {}).find((k) => s.spot[k].includes(id)), spN = D.SPOTS[sp]?.n;
+  x.heart = s.t; log(s, `${jo(c.name, "과", "와")} 업무 밖 이야기를 하는 사이가 됐다.`, "love");
+  const place = from === "drink" ? "술자리가 끝나고 나오는 길." : from === "meetup" ? "약속이 끝나고 돌아가는 길." : `${spN ? spN + ". " : ""}돌아서려는데 ${jo(c.name, "이", "가")} 불러 세운다.`;
+  return { kind: "event", who: id, expr: "blush", tag: "인연", title: `${c.name} · 업무 밖 이야기`, onChoose: "lv_turn", text: `${place} {${id}}"${W.turn}" 이름 옆의 표시가 바뀌었다.`, choices: [
+    { t: "웃으며 받는다", eff: { aff: PV.turn[0], mental: PV.mental }, text: "웃음이 먼저 나왔다. 대답은 그걸로 충분했다." },
+    { t: "오늘은 여기까지만", eff: { aff: PV.turn[1], mental: PV.mental }, text: "오늘은 여기까지만 듣기로 했다. 표시는 이미 바뀌어 있었다." }] };
+}
 function talkScene(s, r, id) {
+  const sc = roleTalk(s, r, id) || plainTalk(s, r, id);
+  if (pvShown(s, id)) { const P = RT.pv, ban = (P.banTo || []).includes(id) && P.askBan?.length; sc.choices.push({ t: r.pick(ban ? P.askBan : P.ask), eff: { aff: PV.gain }, text: P.by?.[id] ? `{${id}}"${P.by[id]}"` : "웃으며 말을 돌렸다. 싫은 눈치는 아니다." }); sc.tq.push(-1); sc.pv = sc.choices.length - 1; }
+  return sc;
+}
+function plainTalk(s, r, id) {
   const c = CHAR[id], rel = s.rel[id], P = (c.personality || []).join(" ");
   const fit = TALK_STYLE.find(([re]) => re.test(P)) || TALK_STYLE[2];
   const off = TALK_STYLE.filter((x) => x !== fit)[r.int(0, 2)];
@@ -651,8 +721,8 @@ function nextArc(s, id, confess) {
   const c = CHAR[id], rel = s.rel[id]; if (!c?.arc) return null;
   const st = c.arc.find((a) => a.stage === rel.stage + 1);
   if (!st || rel.aff < st.gate) return null;
-  if (isLoverArc(st) && isRomanceable(s, c) && (!confess || !RD.loveOpen(s))) return null; // 11-24 고백 장면은 내가 고백할 때만(1회차는 잠김)
-  if (st.stage === 3 && isRomanceable(s, c) && Object.values(s.rel).some((x) => x.spouse)) return null; // 기혼이면 연애 장면 생략
+  if (isLoverArc(st) && isRomanceable(s, c) && (!confess || !RD.loveOpen(s) || !heartOpen(s, id))) return null; // 11-24 고백 장면은 내가 고백할 때만(1회차는 잠김). ◆인 회사 사람은 잠긴다
+  if (st.stage === 3 && isLoverArc(st) && isRomanceable(s, c) && Object.values(s.rel).some((x) => x.spouse)) return null; // 기혼이면 연애 장면 생략. 3단계가 고백이 아닌 사람(사수의 발령, 후배의 첫 후배·첫 발표)은 기혼이어도 그대로 뜬다(11-24)
   // 11-23 연인이 될 수 없는 조합(같은 성별 등)인데 3단계 글이 고백 장면이면 친구판으로 바꾼다. 데이터에 친구판(arc[].friend = { title, text, choices: [선택지 순서대로 { t, text } 또는 판정이면 { t, ok, ng }] })이 있으면 그 글, 없으면 공통 글. 효과 값·판정은 그대로.
   if (st.choices.some((ch) => [ch.eff, ch.ok?.eff, ch.ng?.eff].some((e) => e?.flag === "lover")) && !isRomanceable(s, c)) {
     const F = st.friend || FRIEND_ARC[(Number(String(id).replace(/\D/g, "")) || 0) % FRIEND_ARC.length](c.name);
@@ -678,7 +748,8 @@ const FRIEND_ARC = [
 export function personAct(s, id, kind, arg) {
   const c = CHAR[id], rel = s.rel[id]; if (!c || !rel) return { ok: false, msg: "모르는 사람" };
   const r = R(s);
-  { const L2 = LOVE.act(s, r, id, kind, arg); if (L2) { if (L2.ok && L2.scene) L2.scene = openScene(s, L2.scene); return L2; } } // 11-24 연애 행동(love.js)
+  { const L2 = LOVE.act(s, r, id, kind, arg); if (L2) { if (L2.ok && kind === "drink" && !L2.scene) { pvCount(s, id); const tr = turnScene(s, id, "drink"); if (tr) L2.scene = tr; } /* 11-24 술 한잔 뒤에 문턱을 넘었으면 전환 장면 */ if (L2.ok && L2.scene) L2.scene = openScene(s, L2.scene); return L2; } } // 11-24 연애 행동(love.js)
+  if (kind === "dash") return dashAct(s, id); // 11-24 사수에게 따로 보자고 하기
   const cost = { meetup: 1, date: 1, trip: 3, propose: 2, confess: 1, gift: 0, helper: 0, breakup: 0, fire: 0 }[kind] ?? 1;
   if (s.pending) return { ok: false, msg: "장면을 먼저 끝내세요" };
   if (s.ap < cost) return { ok: false, msg: "행동력이 부족해요" };
@@ -687,11 +758,13 @@ export function personAct(s, id, kind, arg) {
     if (rel.aff < 15) return { ok: false, msg: "아직 약속 잡을 사이가 아님(호감 15)" };
     if ((rel.talks[s.t] || 0) >= 2) return { ok: false, msg: "이번 달엔 충분히 만났다" };
     s.ap -= 1; s.hp = clamp(s.hp - 3, 0, s.hpMax); s.cash -= 4; addMoney(s, "exp", "약속·데이트", 4); rel.talks[s.t] = (rel.talks[s.t] || 0) + 1; rel.last = s.t; socialMental(s);
+    rel.meetN = (rel.meetN || 0) + 1; rel.meetT = s.t; // 11-24 회사 밖 약속 횟수·달(회사 사람의 진입장벽이 본다)
     const arc = nextArc(s, id); if (arc) return { ok: true, scene: openScene(s, arc), lines: [] };
     const hit = likeHit(); const g = addAff(s, id, 5 + (hit ? 4 : 0) + s.st.talk / 30);
     s.mental = clamp(s.mental + 2, 0, 100);
-    if (!RD.loveOpen(s) && isRomanceable(s, c) && rel.aff >= 70 && !rel.tz && !s.fam.spouse) { rel.tz = s.t; const T = TEASE[(Number(String(id).replace(/\D/g, "")) || 0) % TEASE.length](c.name); return { ok: true, lines: [`호감 +${g}`, "고백은 2회차부터 열려요"], msg: T }; }
-    const cfHint = isRomanceable(s, c) && !rel.lover && !rel.spouse && !s.fam.spouse && rel.aff >= 70 ? (RD.loveOpen(s) ? "마음이 닿은 것 같다 · 이제 고백할 수 있어요" : "마음이 닿은 것 같다 · 고백은 2회차부터 열려요") : "";
+    pvCount(s, id); { const tr = turnScene(s, id, "meetup"); if (tr) return { ok: true, scene: openScene(s, tr), lines: [`호감 +${g}`, stL(s, isForeign(c) ? "lang" : "talk", isForeign(c) ? 0.8 : 0.3, "meetup")], msg: `${c.name}: "${c.lines?.date || "오늘 재밌었어요."}"` }; } // 11-24 약속 뒤에 문턱을 넘었으면 전환 장면
+    if (!RD.loveOpen(s) && heartOpen(s, id) && rel.aff >= 70 && !rel.tz && !s.fam.spouse) { rel.tz = s.t; const T = TEASE[(Number(String(id).replace(/\D/g, "")) || 0) % TEASE.length](c.name); return { ok: true, lines: [`호감 +${g}`, "고백은 2회차부터 열려요"], msg: T }; }
+    const cfHint = heartOpen(s, id) && !rel.lover && !rel.spouse && !s.fam.spouse && rel.aff >= 70 ? (RD.loveOpen(s) ? "마음이 닿은 것 같다 · 이제 고백할 수 있어요" : "마음이 닿은 것 같다 · 고백은 2회차부터 열려요") : "";
     return { ok: true, lines: [`호감 +${g}`, cfHint, stL(s, isForeign(c) ? "lang" : "talk", isForeign(c) ? 0.8 : 0.3, "meetup"), hit ? `좋아하는 ${r.pick(c.likes)} 이야기로 신났다` : ""].filter(Boolean), msg: `${c.name}: "${c.lines?.date || "오늘 재밌었어요."}"` };
   }
   if (kind === "gift") {
@@ -712,14 +785,14 @@ export function personAct(s, id, kind, arg) {
     return { ok: true, lines: [`호감 +${g}`, rel.spouse ? "가족 행복 +" : "", ...(kind === "trip" ? [stL(s, "lang", 1, "trip"), stL(s, "sense", 0.6, "trip")] : [stL(s, "charm", 0.4, "date")]), sus].filter(Boolean), msg: kind === "trip" ? `둘이 2박 3일 여행을 다녀왔다. ${line}` : line };
   }
   if (kind === "confess") {
-    if (!isRomanceable(s, c) || rel.lover || rel.aff < 70) return { ok: false, msg: "호감 70 이상 연애 가능 인연에게만" };
+    if (!heartOpen(s, id) || rel.lover || rel.aff < 70) return { ok: false, msg: "호감 70 이상 연애 가능 인연에게만" }; // 11-24 ◆인 회사 사람(사수 포함)은 고백이 잠긴다
     if (s.fam.spouse) return { ok: false, msg: "배우자가 있어요" };
     if (!RD.loveOpen(s)) return { ok: false, msg: "연애는 2회차부터 열려요. 1회차는 마음을 쌓는 데까지예요" };
     if (rel.cfBack != null) return { ok: false, msg: "대답을 기다리는 중이에요" };
     if (rel.cfTry === s.t) return { ok: false, msg: "이번 달엔 이미 말을 꺼냈어요. 다음 달에 다시" };
     s.ap -= 1; rel.last = s.t;
     if (CONFESS[id] && !rel.cfDone) { rel.cfTry = s.t; return { ok: true, scene: openScene(s, confessScene(s, id)), lines: [] }; } // 그 사람만의 고백 장면(추억 반영)
-    const arc3 = nextArc(s, id, true); if (arc3) return { ok: true, scene: openScene(s, arc3), lines: [] }; // 그 사람만의 고백 장면
+    const arc3 = isLoverArc(c.arc?.find((a) => a.stage === rel.stage + 1)) ? nextArc(s, id, true) : null; if (arc3) return { ok: true, scene: openScene(s, arc3), lines: [] }; // 그 사람만의 고백 장면(다음 단계가 고백 장면일 때만. 사수·후배의 3단계는 고백이 아니다)
     const p = clamp(0.3 + (rel.aff - 70) / 40 + (s.st.charm - 40) / 150, 0.1, 0.95);
     if (r.chance(p)) { const ans = confessAnswer(s, id, ""); const out = ans ? applyEff(s, ans.eff, id) : []; if (!ans) becomeLover(s, id, out); if (!ans || ans.eff.flag === "lover") out.push(stL(s, "charm", 1.5, "love")); const q0 = !s.pending && s.sceneQ[0]?.onChoose === "lv_ev" ? s.sceneQ.shift() : null, q = q0 ? openScene(s, { ...q0, text: (ans?.text ? ans.text + " " : "") + q0.text }) : null; return { ok: true, lines: out, scene: q || undefined, msg: ans ? ans.text : "사귀자고 말했다. 대답은 길지 않았다. \"저도 같은 마음이었어요.\"" }; }
     addAff(s, id, -6); s.mental = clamp(s.mental - 8, 0, 100); return { ok: true, lines: ["호감 −6", "멘탈 −8"], msg: "\"조금만 더 시간을 주세요.\"" };
@@ -751,9 +824,68 @@ export const helperPower = (s, effect) => helpers(s, effect).reduce((a, h) => a 
 
 function becomeLover(s, id, out) {
   for (const [oid, x] of Object.entries(s.rel)) if (x.lover && oid !== id) { endLove(s, oid, "새 사람이 생겼다는 걸 눈치챘다."); out.push(`${jo(CHAR[oid].name, "과", "와")} 이별`); }
-  const rel = s.rel[id]; rel.lover = true; rel.loverSince = s.t; rel.dateT = s.t;
+  const rel = s.rel[id]; rel.lover = true; rel.loverSince = s.t; rel.dateT = s.t; if (rel.heart == null) rel.heart = s.t; // 11-24 연인이면 표시는 늘 ♥
   s.mental = clamp(s.mental + 10, 0, 100); out.push(`${jo(CHAR[id].name, "과", "와")} 연인이 됐다`, "멘탈 +10");
   log(s, `${jo(CHAR[id].name, "과", "와")} 사귀기 시작했다.`, "love");
+}
+// ── 11-24 사수의 세 번: 따로 보자고 하기(행동력 1). 두 번 거절당하고 세 번째에 넘어온다(data/wall.json dash).
+// 조건: 단계별 호감·이야기 단계, 대시 사이 3개월. 세 번째는 호감 70 + 팀이 갈린 뒤(이야기 3단계를 봤거나 내가 회사를 나옴) + 연애가 열린 회차(2회차부터).
+// 넘어오면 그 자리에서 ♥로 바뀌고 연인이 된다(고백 장면을 거치지 않는다). 그 뒤 confess.json 의 '다음 날' 장면을 효과 없이 한 번 보여 준다.
+export const DASH_GAP = 3;
+export function dashInfo(s, id) { // 인물 창 버튼용. null = 해당 없음 · { n, ok, why, lock }
+  const c = CHAR[id], x = s.rel?.[id], L = WALL.dash?.[id];
+  if (!c || !x || !L || id !== sasuOf(s) || !isRomanceable(s, c) || x.heart != null || x.lover || x.spouse) return null;
+  const n = (x.dash || 0) + 1, st = L[n - 1]; if (!st) return null;
+  const out = !!(s.co.quit || s.co.fired), split = (x.stage || 0) >= 3 || out; // 팀이 갈렸다
+  let why = "";
+  if (s.fam.spouse) why = "배우자가 있어요";
+  else if (x.aff < st.aff) why = `호감 ${st.aff}부터 말을 꺼낼 수 있어요`;
+  else if (n === 3 ? !split : (x.stage || 0) < (st.stage || 0)) why = n === 3 ? "아직 같은 팀이에요. 사수와 팀이 갈린 뒤에 말할 수 있어요" : "이 사람과의 이야기가 더 쌓여야 해요";
+  else if (x.dashT != null && s.t - x.dashT < DASH_GAP) why = `지난번 말을 꺼낸 지 얼마 안 됐어요(${DASH_GAP}개월 뒤)`;
+  const lock = n === 3 && !RD.loveOpen(s) ? (st.lock || "세 번째 말은 아직 꺼내지 못했다. (연애는 2회차부터 열려요)") : "";
+  return { n, ok: !why && !lock, why: why || lock, lock, quit: out };
+}
+function dashAct(s, id) {
+  const I = dashInfo(s, id), c = CHAR[id], x = s.rel[id];
+  if (!I) return { ok: false, msg: "지금은 꺼낼 수 없는 말이에요" };
+  if (s.pending) return { ok: false, msg: "장면을 먼저 끝내세요" };
+  if (!I.ok) return { ok: false, msg: I.why };
+  if (s.ap < 1) return { ok: false, msg: "행동력이 부족해요" };
+  const st = WALL.dash[id][I.n - 1];
+  s.ap -= 1; x.last = s.t; x.dash = I.n; x.dashT = s.t;
+  const text = fillMe(s, st.win && I.quit && st.textQuit ? st.textQuit : st.text);
+  return { ok: true, lines: [], scene: openScene(s, { kind: "event", who: id, expr: st.win ? "blush" : "neutral", tag: st.win ? "고백" : "따로 보자고 하기", title: `${c.name} · ${["첫", "두", "세"][I.n - 1]} 번째 말`, text, onChoose: "lv_dash", dashN: I.n,
+    choices: [{ t: st.win ? "고개를 끄덕인다" : I.n === 1 ? "알겠다고 하고 돌아선다" : "오늘은 여기까지 듣는다", eff: st.win ? {} : { ...st.eff }, text: "" }] }) };
+}
+// 사수가 넘어온 다음 날: confess.json 의 사수 장면을 효과 없이 한 번(rel.cfShow: −1 대기 → 본 달)
+function confessShow(s, id) {
+  const c = CHAR[id], X = CONFESS[id], x = s.rel[id]; if (!c || !X?.scene || !x) return null;
+  return { kind: "event", who: id, expr: "blush", tag: "연인", title: `${c.name} · ${X.scene.title}`, text: X.scene.text + memLine(X.mem1, x.mem?.[1]), onChoose: "lv_cfshow",
+    choices: (X.ways || []).map((w) => ({ t: w.t, eff: {}, text: w.fit >= 1 ? `${w.react} ${X.answer?.text || ""}${memLine(X.mem2, x.mem?.[2])}`.trim() : `${w.react} ${X.fail || ""}`.trim() })) };
+}
+// ── 11-24 사수의 귀띔: 사수가 연인·배우자면 눈치가 찼을 때 한 번 귀띔해 준다(연인 12개월·배우자 9개월에 한 번). 경고 횟수는 그대로고 발각 판정도 그대로 굴린다.
+function shieldScene(s, id, spouse) {
+  const c = CHAR[id], T = WALL.shield?.[id], K = WALL.shield?.[spouse ? "spouse" : "lover"]; if (!c || !T || !K) return null;
+  return { kind: "event", who: id, expr: "neutral", tag: "사수의 귀띔", title: `${c.name}의 귀띔`, text: fillMe(s, spouse ? WALL.shield.spouseText?.[id] || T.text : T.text), onChoose: "lv_shield", best: [], // best 빈 칸: 길잡이(추천)를 달지 않는다(눈치는 점수에 안 잡혀 엉뚱한 선택지에 붙는다)
+    choices: T.choices.map((ch, i) => { const { perf, ...e } = ch.eff || {}; return { t: ch.t, eff: { ...e, eye: K.cut?.[i] ?? e.eye }, perf: perf || 0, text: fillMe(s, ch.text) }; }) }; // perf(회사 성과)는 applyEff 가 몰라 SCENE_FN.lv_shield 가 넣는다
+}
+// 사수 첫 장면(새 게임 첫 달에 한 번, data/wall.json first). 사수에게는 일반 '첫 만남' 장면이 뜨지 않는다
+export function sasuFirstScene(s) {
+  const id = sasuOf(s), F = WALL.first?.[id], c = CHAR[id]; if (s.flags?.sasuFirst !== -1 || !F || !c || !s.rel[id]) return null;
+  return { kind: "event", who: id, expr: "neutral", tag: "사수", bg: "desk", title: F.title || `사수 · ${c.name}`, text: fillMe(s, F.text), onChoose: "lv_sasu1", choices: (F.choices || []).map((ch) => ({ t: ch.t, eff: { ...(ch.eff || {}) }, text: fillMe(s, ch.text) })) };
+}
+// 화면 시험용(ui.js #…-reltest-…): 조건을 맞춰 놓고 장면을 연다. kind: first · talk(id) · turn(id) · dash1~3 · dashlock · shield · shieldsp
+export function relDemo(s, kind, id, opt = {}) {
+  s.pending = null; s.ap = Math.max(s.ap, 5);
+  if (opt.male && s.me.gender !== "M") { const old = sasuOf(s); s.me.gender = "M"; s.flags.sasu = "c102"; s.cast = s.cast.filter((q) => q !== old); delete s.rel[old]; for (const k of Object.keys(s.spot || {})) s.spot[k] = s.spot[k].filter((q) => q !== old); if (!s.cast.includes("c102")) s.cast.push("c102"); const x = ensureRel(s, "c102"); x.aff = Math.max(x.aff, SASU_AFF); } // 시험판(여자 주인공)을 남자 주인공·윤가람 판으로 바꿔 본다
+  const sid = sasuOf(s), x0 = CHAR[sid] ? ensureRel(s, sid) : null;
+  if (kind === "talk") { const tid = CHAR[id] ? id : sid; if (!s.cast.includes(tid)) s.cast.push(tid); const x = ensureRel(s, tid); x.aff = Math.max(x.aff, 46); x.stage = Math.max(x.stage || 0, 2); return openScene(s, talkScene(s, R(s), tid)); } // 역할 말투 + 업무 밖 말 선택지
+  if (kind === "first") { s.flags.sasuFirst = -1; const sc = sasuFirstScene(s); return sc ? openScene(s, sc) : null; }
+  if (kind === "turn") { const W = WALL.walls?.[id]; if (!W || !CHAR[id]) return null; if (!s.cast.includes(id)) s.cast.push(id); const x = ensureRel(s, id); delete x.heart; x.lover = false; x.aff = Math.max(x.aff, W.gate + 2); x.pv = W.need; x.meetN = 1; const sc = turnScene(s, id, "talk"); return sc ? openScene(s, sc) : null; }
+  if (/^dash[123]$/.test(kind) && x0) { const n = +kind.slice(4), L = WALL.dash?.[sid]; if (!L) return null; s.ng = { ...(s.ng || {}), n: Math.max(2, s.ng?.n || 1) }; delete x0.heart; x0.lover = false; x0.dash = n - 1; delete x0.dashT; x0.aff = Math.max(x0.aff, L[n - 1].aff + 2); x0.stage = Math.max(x0.stage || 0, n === 3 ? 3 : L[n - 1].stage || 0); const res = dashAct(s, sid); return res.ok ? res.scene : null; }
+  if (kind === "dashlock" && x0) { s.ng = { ...(s.ng || {}), n: 1 }; s.rd = 1; delete x0.heart; x0.lover = false; x0.dash = 2; delete x0.dashT; x0.aff = Math.max(x0.aff, 72); return sid; } // 1회차 잠금 글(인물 창에서 본다)
+  if ((kind === "shield" || kind === "shieldsp") && x0) { const sc = shieldScene(s, sid, kind === "shieldsp"); return sc ? openScene(s, sc) : null; }
+  return null;
 }
 function endLove(s, id, why) { const rel = s.rel[id]; rel.lover = false; rel.aff = Math.min(rel.aff, 30); s.mental = clamp(s.mental - 12, 0, 100); log(s, `${CHAR[id].name}: ${why}`, "love"); }
 
@@ -770,7 +902,7 @@ function weddingScene(s, id) {
 }
 function marry(s, id) {
   const rel = s.rel[id], c = CHAR[id];
-  rel.lover = false; rel.spouse = true; s.fam.spouse = id; s.fam.spouseType = c.romance?.spouseType || "응원형"; s.fam.marriedT = s.t; s.fam.happy = clamp(s.fam.happy + 15, 0, 100);
+  rel.lover = false; rel.spouse = true; if (rel.heart == null) rel.heart = s.t; s.fam.spouse = id; s.fam.spouseType = c.romance?.spouseType || "응원형"; s.fam.marriedT = s.t; s.fam.happy = clamp(s.fam.happy + 15, 0, 100);
   // 신혼집: 전세(대출 80%) 또는 투룸 월세
   if (s.house.type === "oneroom") {
     const dep = Math.round(housePrice(s, "jeonse"));
@@ -886,7 +1018,7 @@ const SCENE_FN = {
     const id = sc.who, X = CONFESS[id], rel = s.rel[id], w = X.ways[i], A = X.answer || {}, m2 = memLine(X.mem2, rel.mem?.[2]);
     const pass = w.fit >= 2 || (w.fit === 1 && r.chance(clamp(0.45 + ((s.st.charm || 0) - 50) / 100 + (rel.aff - 70) / 60, 0.2, 0.95)));
     if (!pass) { const g = addAff(s, id, w.fit === 0 ? -3 : -1); s._sceneText = `${w.react} ${X.fail}`; return [`${CHAR[id].name} 호감 ${sgn(g)}`, "다음 달에 다시 말할 수 있어요"]; }
-    const tp = confessType(CHAR[id]); rel.cfDone = tp; rel.stage = Math.max(rel.stage, 3); const out = [];
+    const tp = confessType(CHAR[id]); rel.cfDone = tp; if (isLoverArc(CHAR[id].arc?.find((a) => a.stage === 3))) rel.stage = Math.max(rel.stage, 3); /* 11-24 3단계가 고백이 아닌 사람(후배의 첫 후배·첫 발표)은 그 이야기를 건너뛰지 않는다 */ const out = [];
     if (tp === "shy" && A.reject && A.back) { s._sceneText = `${w.react} ${A.reject}`; s.mental = clamp(s.mental - 3, 0, 100); s.sceneQ.unshift(confessBack2(s, id, false)); return ["멘탈 −3"]; }
     if (tp === "late" && A.reject && A.back) { s._sceneText = `${w.react} ${A.reject}`; s.mental = clamp(s.mental - 4, 0, 100); rel.cfBack = s.t; return ["멘탈 −4", "대답을 듣지 못했다"]; }
     s._sceneText = `${w.react} ${A.text || "고개를 끄덕였다."}${m2}`; addAff(s, id, 10); becomeLover(s, id, out); out.push(stL(s, "charm", 1.5, "love")); if (X.day1) rel.day1 = X.day1; s.flags.lover = s.t;
@@ -898,8 +1030,25 @@ const SCENE_FN = {
     const q = sc?.tq?.[i] ?? 1, out = [];
     if (q === 2 && r.chance(0.18)) { const k = r.pick(["talk", "charm", "sense"]); out.push(`대화가 잘 풀렸다 · ${D.STATS[k]} +${gainStat(s, k, 1).toFixed(1)}`); }
     if (q >= 1) { const l = SJ.hearInfo(s, r, "people", sc.who); if (l) out.push(l); }
+    if (sc?.pv === i && s.rel[sc.who]) { s.rel[sc.who].pvAsk = s.t; pvCount(s, sc.who); const tr = turnScene(s, sc.who, "talk"); if (tr) s.sceneQ.unshift(tr); } // 11-24 업무 밖 말: 횟수를 세고, 문턱을 넘었으면 말 걸기 뒤에 전환 장면이 이어진다
     return out;
   },
+  lv_turn() { return []; }, // 전환 장면(효과는 선택지에 있다. 표시는 장면이 뜰 때 이미 바뀌었다)
+  lv_sasu1(s) { s.flags.sasuFirst = s.t; return []; }, // 사수 첫 장면을 봤다
+  lv_dash(s, r, i, okv, sc) { // 사수에게 따로 보자고 하기: 1·2번째는 거절(효과는 선택지), 3번째는 그 자리에서 ♥ + 연인
+    const id = sc.who, x = s.rel[id], st = WALL.dash?.[id]?.[(sc.dashN || 1) - 1]; if (!x || !st?.win) return [];
+    const out = [], e = st.eff || {};
+    if (x.heart == null) x.heart = s.t;
+    if (e.aff) out.push(`${CHAR[id].name} 호감 ${sgn(addAff(s, id, e.aff))}`);
+    x.cfDone = x.cfDone || confessType(CHAR[id]); if ((s.co.quit || s.co.fired) && (x.stage || 0) < 3) x.stage = 3; // 회사를 나와 팀이 갈린 길: 발령 이야기(3단계)는 건너뛴다
+    becomeLover(s, id, out); if ((e.mental || 0) !== 10) s.mental = clamp(s.mental + (e.mental || 0) - 10, 0, 100); // becomeLover 가 멘탈 +10 을 준다(자료 값과 같다)
+    out.push(stL(s, "charm", 1.5, "love")); s.flags.lover = s.t;
+    if (CONFESS[id]?.day1) x.day1 = CONFESS[id].day1;
+    if (CONFESS[id]?.scene) { x.cfShow = -1; const q = confessShow(s, id); if (q) s.sceneQ.unshift(q); } // 다음 날 장면(효과 없음). 못 보고 달이 넘어가면 달 마감에 다시 넣는다(peopleMonth)
+    return out;
+  },
+  lv_cfshow(s, r, i, okv, sc) { const x = s.rel[sc.who]; if (x) x.cfShow = s.t; return []; },
+  lv_shield(s, r, i, okv, sc) { const p = sc.choices?.[i]?.perf || 0; if (!p) return []; s.co.perf = clamp(s.co.perf + p, 0, 100); return [`회사 성과 ${sgn(p)}`]; }, // 사수의 귀띔: 성과(perf)만 여기서 넣는다
   fam_oppose(s, r, i, okv) { if (i === 2 || (i === 0 && okv === false)) { s.fam.opposeUntil = s.t + 6; return ["6개월 동안 배우자 도움 없음(행동력 −1)"]; } return []; },
   baby(s, r, i) { if (i === 0) { s.fam.pregnant = s.t + 10; return ["10개월 뒤 아기가 온다"]; } s.flags.noKidUntil = s.t + 18; return []; },
   house_buy(s, r, i) { const o = s.pending?.opts?.[i] || s._houseOpts?.[i]; if (!o) return []; return buyHouse(s, o); },
@@ -1022,6 +1171,7 @@ export function endMonth(s) {
   if (s.pending || s.over || s.ended) return null;
   const r = R(s), M = s.month, notes = M.notes;
   const scenes = [];
+  if (s.t === 0) { const f = sasuFirstScene(s); if (f) scenes.push(f); } // 11-24 사수 첫 장면: 화면이 첫 달 머리에 못 띄웠으면(봇·자동 진행) 첫 달 장면 줄 맨 앞에 넣는다
   if (!s.yr0) yearMark(s); // 연말 결산 기준점(새 판 첫 달·옛 저장)
   // 1) 회사
   const sal = salary(s);
@@ -1233,6 +1383,9 @@ function companyMonth(s, r, notes, scenes) {
     const type = r.pick(["big", "mid", "startup", "fin"]); s._offer = { type, name: r.pick(D.COMPANY_TYPES[type].names) };
     scenes.push({ kind: "event", title: "헤드헌터의 연락", text: `링크드온 메시지가 왔다. "${s._offer.name} ${D.COMPANY_TYPES[type].n} 포지션, 연봉 10% 인상 가능합니다." 겸업 규정은 모른다.`, onChoose: "rejob_offer", choices: [{ t: "환승 이직한다", eff: { mental: 4 }, text: "새 사원증을 받았다." }, { t: "지금 회사에 남는다", eff: {}, text: "익숙함도 자산이다." }] });
   }
+  // 11-24 사수의 귀띔(발각 판정 바로 앞): 사수가 연인이면 눈치 45부터 12개월에 한 번, 배우자면 40부터 9개월에 한 번(data/wall.json shield). 경고 횟수는 안 지우고 아래 판정도 그대로 굴린다
+  { const sid = sasuOf(s), x = s.rel[sid], K = x?.spouse ? WALL.shield?.spouse : x?.lover ? WALL.shield?.lover : null;
+    if (K && (s.pr.rooms.length || s.cs.open || (s.sj?.active || []).length) && co.eye >= K.eye && s.t - (co.shieldT ?? -99) >= K.gap) { const sc = shieldScene(s, sid, !!x.spouse); if (sc) { co.shieldT = s.t; scenes.push(sc); notes.push(`${CHAR[sid].name}의 귀띔: 인사팀이 겸업 제보를 모으고 있다`); } } }
   // 겸업 발각
   const ex = s.co.eye;
   if (ex >= 50 && (s.pr.rooms.length || s.cs.open || (s.sj?.active || []).length) && r.chance( /* 11-23 결정: 하는 투잡이 하나라도 있으면 들킬 수 있다(전에는 파티룸·컨설팅만) */ (ex - 50) / 140 * D.COMPANY_TYPES[co.type].eye)) {
@@ -1285,6 +1438,7 @@ function peopleMonth(s, r, notes, scenes) {
     const gap = s.t - x.last;
     if (x.spouse) continue;
     if (x.cfBack != null && s.t >= x.cfBack) { delete x.cfBack; if (Object.values(s.rel).some((q) => q.lover)) { if (CHAR[id]) notes.push(`${CHAR[id].name}에게서 연락이 왔지만, 지금은 만나는 사람이 있다고 답했다`); } else if (!x.lover && !s.fam.spouse && CHAR[id] && isRomanceable(s, CHAR[id])) scenes.push(CONFESS[id]?.answer?.back ? confessBack2(s, id, true) : confessBackScene(s, id)); }
+    if (x.cfShow === -1) { const q = x.lover && CHAR[id] ? confessShow(s, id) : null; if (q) scenes.push(q); else delete x.cfShow; } // 11-24 사수가 넘어온 다음 날 장면을 아직 못 봤다
     if (x.day1 && x.lover && x.loverSince < s.t + 1) { notes.push(x.day1); delete x.day1; }
     if (x.lover) { const dg = s.t - (x.dateT ?? x.last); if (dg >= 2) { x.aff = clamp(x.aff - 3, 0, 100); if (dg === 2) notes.push(`${CHAR[id].name}: "요즘 우리 얼굴 본 지 오래됐다?"`); } if (x.aff < 25) { endLove(s, id, "\"너는 늘 바빴어.\" 이별 통보."); scenes.push(story("이별", `${CHAR[id].name}에게서 긴 까톡이 왔다. "너는 늘 바빴어." 답장을 쓰다 지웠다.`)); } }
     else if (gap >= 3 && x.aff > 10) x.aff = clamp(x.aff - 1, 0, 100);
@@ -1566,7 +1720,15 @@ function fillState(s) {
   if (!s.ins) s.ins = INS.init(); INS.ens(s); /* 인별 v2: 예전 주제 → 컨셉 */ if (!s.big) s.big = BIG.init(); if (!s.ab) s.ab = AB.init(); if (!s.uc) s.uc = UC.init(); s.fame = s.fame || 0; if (s.st.lang === undefined) s.st.lang = 15; s.pi = s.pi || Math.pow(1.025, s.t / 12); s.piX = s.piX || 1; if (s.grad === undefined) s.grad = null; PR.fill(s);
   s.ng = s.ng || { n: 1, hard: false, gifts: [] }; s.items = s.items || {}; GC.ensure(s); s.me.revealed = s.me.revealed || {}; s.me.job = s.me.job || "plan"; if (!D.MAJORS[s.me.major]) s.me.major = "biz";
   const co = s.co; co.payIdx = co.payIdx || Math.pow(1.02, Math.max(0, co.years - 1)); co.pts = co.pts || 0; co.grades = co.grades || []; co.remote = co.remote || 0; co.evT = co.evT ?? -99; co.hired = co.hired || [];
-  for (const c of CHARS) if (c.co && !s.cast.includes(c.id)) s.cast.push(c.id);
+  // 11-24 인물 관계. 옛 저장: 사수는 윤가람(c102)으로 보고 판 중간에 바뀌지 않는다. 사수 한쪽(only)은 그 판의 사수일 때만 등장 인물에 든다(곽지헌은 새 게임의 여자 주인공 판에만)
+  s.flags = s.flags || {}; if (!s.flags.sasu) s.flags.sasu = "c102";
+  for (const c of CHARS) if (c.co && !s.cast.includes(c.id) && (!c.only || c.id === s.flags.sasu)) s.cast.push(c.id);
+  // 친분 마크(한 번만): 이미 하트였던 회사 사람이 ◆로 돌아가지 않게 rel.heart 를 채운다. 연인·배우자·고백 기록이 있거나, 연애 가능한 사람과 호감 50 이상. 사수는 대시로만 넘어오니 호감만으로는 안 채운다
+  if (s.flags.rel2 === undefined) {
+    for (const [id, x] of Object.entries(s.rel || {})) { const c = CHAR[id]; if (!c?.rank || x.heart != null) continue;
+      if (x.lover || x.spouse || x.affair || x.cfDone || x.cfBack != null || x.cfTry != null || (id !== s.flags.sasu && x.aff >= 50 && isRomanceable(s, c))) x.heart = x.loverSince ?? s.t; }
+    s.flags.rel2 = s.t;
+  }
   // 플러그인 투잡: 옛 저장에는 상태가 없으니 만들고, 플러그인이 자기 저장 이전을 한다
   for (const P of REG.JOBS) { if (!s[P.key]) s[P.key] = P.init(s); if (P.migrate) { try { P.migrate(s, s[P.key]); } catch (e) { console.warn(e); } } }
   s.sx = s.sx || {}; for (const X of REG.STORY) { if (!s.sx[X.key]) s.sx[X.key] = X.init(s); if (X.migrate) { try { X.migrate(s, s.sx[X.key]); } catch (e) { console.warn(e); } } }

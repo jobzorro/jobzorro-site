@@ -15,7 +15,7 @@ const pathOf = (s, job) => { const x = s?.wv?.[job]; if (!x) return null; if (jo
 // 종합(cs3 공고 중매술)과 '내가 안 고른 쪽' 게임은 컨설팅을 다 하게 됐을 때만 섞인다.
 export const CS_MG = {
   side: { newgrad: "doc", public: "doc", interview: "itv", career: "car" },
-  games: { doc: ["cs"], itv: ["cs4", "cs5", "cs2"], car: ["cs6"] },
+  games: { doc: ["cs", "cs3"], itv: ["cs4", "cs5", "cs2"], car: ["cs6"] }, // 11-24 대표 결정: 서류 쪽에 공고 중매술(cs3)을 처음부터 섞는다(서류만 하면 게임이 하나뿐이던 것)
   all: ["cs3"], // 종합
   allLv: 4, // Lv4 「1:1 종합 컨설턴트」부터는 포지션을 안 늘렸어도 다 한다고 본다
 };
@@ -93,7 +93,8 @@ export function mgPool(s, job, keys, arg) {
   } catch (e) { return keys; }
 }
 export function mgChoose(s, job, keys, plays = 0, arg) {
-  const pool = mgPool(s, job, keys, arg);
+  let pool = mgPool(s, job, keys, arg);
+  if (s) { const used = s.mgYr === s.year ? s.mgK || [] : []; pool = pool.filter((k) => !used.includes(k)); } // 11-24 대표 결정: 같은 미니게임은 1년에 한 번. 올해 이미 한 게임은 빼고, 남는 게 없으면 올해는 더 안 나온다
   if (!pool.length) return undefined;
   if (!s) return pool[plays % pool.length];
   const c = s.mgC || {};
