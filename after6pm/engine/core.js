@@ -361,7 +361,8 @@ export function applyEff(s, eff, who) {
   if (eff.hp) { s.hp = clamp(s.hp + eff.hp, 0, s.hpMax); out.push(`스태미너 ${sgn(eff.hp)}`); }
   if (eff.mental) { s.mental = clamp(s.mental + eff.mental, 0, 100); out.push(`멘탈 ${sgn(eff.mental)}`); }
   if (eff.eye) { const e = eff.eye > 0 ? eff.eye * eyeMult(s) : eff.eye; s.co.eye = clamp(s.co.eye + e, 0, 100); out.push(`회사 눈치 ${sgn(Math.round(e))}`); }
-  if (eff.boss && !(s.co.quit || s.co.fired)) { const b = eff.boss > 0 ? bossUp(s, eff.boss) : eff.boss; s.co.boss = clamp(s.co.boss + b, 0, 100); out.push(`팀장 호감 ${sgn(b)}`); } // 11-25 회사 느낌표용  if (eff.family) { s.fam.happy = clamp(s.fam.happy + eff.family, 0, 100); out.push(`가족 ${sgn(eff.family)}`); }
+  if (eff.boss && !(s.co.quit || s.co.fired)) { const b = eff.boss > 0 ? bossUp(s, eff.boss) : eff.boss; s.co.boss = clamp(s.co.boss + b, 0, 100); out.push(`팀장 호감 ${sgn(b)}`); } // 11-25 회사 느낌표용
+  if (eff.family) { s.fam.happy = clamp(s.fam.happy + eff.family, 0, 100); out.push(`가족 ${sgn(eff.family)}`); }
   if (eff.stat) for (const [k, v] of Object.entries(eff.stat)) { if (!s.st[k] && s.st[k] !== 0) continue; const g = v > 0 ? gainStat(s, k, v, curSrc || "ev") : (s.st[k] = clamp(s.st[k] + v, 0, statCap(s)), v); if (k === "body") syncSta(s); out.push(`${D.STATS[k]} ${sgn(+g.toFixed(1))}`); } // v4.28: 장면 능력치도 곡선을 거친다
   if (eff.statRaw) for (const [k, v] of Object.entries(eff.statRaw)) { if (s.st[k] === undefined) continue; s.st[k] = clamp(s.st[k] + v, 0, statCap(s)); if (k === "body") syncSta(s); out.push(`${D.STATS[k]} ${sgn(v)}`); } // 바로 +N(곡선 없음)
   if (eff.brk) for (const k of [].concat(eff.brk)) { const l = giveBrk(s, k); if (l) out.push(l); } // 돌파 계기
