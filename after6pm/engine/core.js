@@ -214,7 +214,9 @@ export function doBang(s, bid) {
   if (s.pending) return { ok: false, msg: "장면을 먼저 끝내세요" }; if (s.ap < BANG.ap) return { ok: false, msg: "행동력이 부족해요" };
   const sc = SCENES.find((x) => x.id === b.sc); s.bangs = s.bangs.filter((x) => x !== b); if (!sc) return { ok: false, msg: "이미 지나간 일이에요" };
   s.ap -= BANG.ap; s.seen[sc.id] = s.t; s.stat.bangs = (s.stat.bangs || 0) + 1;
-  return { ok: true, scene: openScene(s, sc), lines: [] };
+  const lines = [], here = (s.spot?.[b.sp] || []).filter((id) => CHAR[id] && !s.rel[id]?.spouse);
+  if (here.length) { const id = here.find((x) => !s.rel[x]) || here.slice().sort((p, q) => (s.rel[p]?.aff || 0) - (s.rel[q]?.aff || 0))[0], isNew = !s.rel[id]; const x = ensureRel(s, id); x.last = s.t; const g = addAff(s, id, isNew ? 4 : 2); lines.push(isNew ? `거기 있던 ${jo(CHAR[id].name, "과", "와")} 인사를 나눴다 · 새 인연(행동력 0)` : `${CHAR[id].name}도 거기 있었다 · 호감 +${g}`); }
+  return { ok: true, scene: openScene(s, sc), lines };
 }
 const SPOT_LOCS = new Set(Object.values(D.SPOTS).flatMap((sp) => [sp.loc, sp.alt]).filter(Boolean));
 function refreshSpots(s) {

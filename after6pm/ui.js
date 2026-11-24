@@ -204,10 +204,15 @@ function sceneBg(sc) {
   return "";
 }
 // 장소 위에 사람을 세운 무대. 몸 그림이 없으면 예전처럼 얼굴 칸.
-function stageWho(id, expr, mode, bg, cap) {
+// 키(11-24): 인물 프로필의 height(cm)를 그림 높이에 반영한다. 같은 거리에 서 있다고 보고, 기준 키(HREF)일 때 무대 높이를 꽉 채운다
+const HREF = 184, ME_H = { M: 176, F: 163 };
+const heightOf = (id) => (id === "me" ? S?.me?.height || ME_H[S?.me?.gender] || 170 : E.CHAR[id]?.height || 0);
+const hPct = (id, full = 100) => { const h = heightOf(id); return h ? Math.round(full * Math.max(0.8, Math.min(1.04, h / HREF)) * 10) / 10 : full; };
+const bodyImg = (id, src, full) => img(src, "body", "").replace("<img ", `<img style="height:${hPct(id, full)}%" `);
+function stageWho(id, expr, mode, bg, cap, noScale) {
   const src = bodySrc(id, expr, mode);
   if (!src) return null;
-  return `<div class="sstage ${mode}" style="${bg ? `background-image:url(${bg})` : ""}">${img(src, "body", "")}${cap ? `<div class="cap">${cap}</div>` : ""}</div>`;
+  return `<div class="sstage ${mode}" style="${bg ? `background-image:url(${bg})` : ""}">${noScale ? img(src, "body", "") : bodyImg(id, src, mode === "half" ? 96 : 100)}${cap ? `<div class="cap">${cap}</div>` : ""}</div>`;
 }
 function faceSrc(id, expr = "neutral") { return bodyOr(id, expr, "face", pixFace(id, expr)) ?? artOr(id, expr, pixFace(id, expr)); }
 function meSrc(expr) { return bodyOr(S.me.avatar, expr, "face", pixMe(expr)) ?? artOr(S.me.avatar, expr, pixMe(expr)); }
@@ -639,7 +644,7 @@ const SPOT_OF = Object.fromEntries(D.REGIONS.flatMap((rg) => rg.spots.map((sp) =
 const bangsAt = (f) => (S.bangs || []).filter((b) => f(SPOT_OF[b.sp] || {}, b));
 function bangCards(L) {
   if (!L.length) return "";
-  return `<div class="a6bg">${L.map((b) => `<button class="a6bg-c" data-bang="${b.id}"><i>!</i><span><b>${esc(b.title)}</b><small>${esc(b.spN || "")} · 이번 달에만</small></span><em>⚡${E.BANG.ap}</em></button>`).join("")}</div>`;
+  return `<div class="a6bg">${L.map((b) => `<button class="a6bg-c" data-bang="${b.id}"><i>!</i><span><b>${esc(b.title)}</b><small>${esc(b.spN || "")} · 이번 달에만${(S.spot[b.sp] || []).length ? " · 거기 있는 사람과도 인사해요" : ""}</small></span><em>⚡${E.BANG.ap}</em></button>`).join("")}</div>`;
 }
 function cityMap() {
   const P = MAPD.pins || {}, file = MAPD.files?.[mapSeason()] || MAPD.files?.fall;
@@ -699,7 +704,7 @@ function personFig(id, i, n) {
   const expr = x ? exprFor(id) : "neutral";
   const src = bodySrc(id, expr, "full");
   const tag = !x ? `<span class="say">말 걸기 ⚡1</span>` : x.spouse ? `<span class="say love">배우자</span>` : x.lover ? `<span class="say love">연인</span>` : `<span class="say h">${"♥".repeat(Math.max(1, Math.round(x.aff / 20)))}</span>`;
-  const fig = src ? img(src, "body", "") : `<span class="pface">${img(faceSrc(id, expr), "face", "")}</span>`;
+  const fig = src ? bodyImg(id, src, 100) : `<span class="pface">${img(faceSrc(id, expr), "face", "")}</span>`;
   return `<button class="pfig ${!x ? "new" : ""} ${src ? "" : "noart"}" data-char="${id}" style="--i:${i};--n:${n}">${fig}<span class="pn">${x ? esc(c.name) : "???"}</span>${tag}</button>`;
 }
 function placeStage(bgKey, title, ppl, sub, extraCls = "") {
@@ -719,8 +724,10 @@ function personCard(id) {
   return `<button class="person ${!x ? "new" : x.lover || x.spouse ? "love" : ""}" data-char="${id}"><div class="pic">${img(faceSrc(id, x ? exprFor(id) : "neutral"))}</div><div class="nm">${x ? esc(c.name) : "???"}</div><div class="rl">${esc(role)}${x?.deja ? " · 전생 인연" : ""}</div>${x ? hearts(x.aff) : `<span class="tag gold">말 걸기 ⚡1</span>`}</button>`;
 }
 function pgRegion(rg) {
-  return `<div class="row"><button class="btn sm" data-region="">‹ 지도</button><b style="font-size:17px">${esc(rg.n)}</b></div><div class="muted small">${esc(rg.desc)}</div>
-  ${rg.spots.map((sp) => { const ppl = S.spot[sp.id] || []; return `<div class="spot pl" data-spotbox="${sp.id}">${placeStage(sp.id, esc(sp.n), ppl)}${bangCards(bangsAt((q, b) => b.sp === sp.id))}
+  const curSp = rg.spots.find((x) => x.id === ui.spot) || rg.spots.find((x) => (S.bangs || []).some((b) => b.sp === x.id)) || rg.spots[0];
+  const tabs = rg.spots.length > 1 && rg.id !== "town" ? `<div class="a6sp-tabs">${rg.spots.map((x) => { const n = (S.bangs || []).filter((b) => b.sp === x.id).length, pp = (S.spot[x.id] || []).length; return `<button class="${x === curSp ? "on" : ""}" data-region="${rg.id}" data-spot="${x.id}">${esc(x.n)}${n ? ` <b>!${n > 1 ? n : ""}</b>` : ""}${pp ? ` <i>${pp}명</i>` : ""}</button>`; }).join("")}</div>` : "";
+  return `<div class="row"><button class="btn sm" data-region="">‹ 지도</button><b style="font-size:17px">${esc(curSp.n)}</b><span class="tiny muted" style="margin-left:6px">${esc(rg.n)}</span></div>${tabs}
+  ${[curSp].map((sp) => { const ppl = S.spot[sp.id] || []; return `<div class="spot pl" data-spotbox="${sp.id}">${placeStage(sp.id, esc(sp.n), ppl)}${bangCards(bangsAt((q, b) => b.sp === sp.id))}
     <div class="acts"><div class="tiny muted">${esc(sp.n)}에서 언제든</div>${sp.acts.filter(visibleAct).map((id) => actRow(id, defaultArg(id))).join("") || '<div class="tiny muted">투잡을 시작하면 여기서 할 일이 생겨요</div>'}${sp.id === "home" ? actRow("beauty") : ""}${(S.co.quit || S.co.fired) && sp.id === "cowork" ? actRow("rejob") : ""}</div></div>`; }).join("")}`;
 }
 
@@ -1169,9 +1176,9 @@ function loveWin(id) {
   const top = love && Q ? Q.label : st === "crush" ? "두근두근" : LVX.STAGE_N[st];
   const anv = x.anv ? `<b class="bad">${x.anv.t <= S.t ? `이번 달이 ${x.anv.n}이에요` : `다음 달이 ${x.anv.n}이에요`}</b>` : love && Q ? `다음 기념일 ${Q.nextN} · ${Q.left}개월 뒤` : st === "crush" ? (x.aff >= 70 ? "마음이 닿은 것 같다" : `호감 70이면 고백할 수 있어요`) : "";
   openWin(`<div class="a6lv"><button class="x a6lv-x" data-close>✕</button>
-    <div class="a6lv-st">${stageWho(id, exprFor(id), "full", bgUrl(charSpot(id)) || bgUrl("street") || bgUrl("alley")) || `<div class="sstage full">${img(faceSrc(id, exprFor(id)), "body", "")}</div>`}
+    <div class="a6lv-st">${stageWho(id, exprFor(id), "full", bgUrl(charSpot(id)) || bgUrl("street") || bgUrl("alley"), undefined, true) || `<div class="sstage full">${img(faceSrc(id, exprFor(id)), "body", "")}</div>`}
       <span class="a6lv-tag ${love ? "love" : ""}">${esc(top)}</span><div class="a6lv-say">${esc(c.lines?.hello || "왔어요?")}</div>
-      <div class="a6lv-nm"><b>${esc(c.name)}</b><span>${esc(c.job)} · ${c.age + Math.floor(S.t / 12)}세</span></div></div>
+      <div class="a6lv-nm"><b>${esc(c.name)}</b><span>${esc(c.job)} · ${c.age + Math.floor(S.t / 12)}세${c.height ? ` · ${c.height}cm` : ""}</span></div></div>
     <div class="a6lv-in"><div class="row"><span class="pink"><b>♥ ${Math.round(x.aff)}</b></span><div class="grow">${meter(x.aff, 100, "var(--pink)")}</div><span class="tiny muted">${anv}</span></div>
       <div class="row wrap" style="margin-top:6px">${(c.personality || []).map((p) => `<span class="tag">${esc(p)}</span>`).join("")}${x.bond && E.BOND_N[x.bond] ? `<span class="tag">${E.BOND_N[x.bond]}</span>` : ""}${hs ? `<span class="tag green">${esc(c.helper.role)}</span>` : ""}</div>
       <div class="tiny muted" style="margin-top:4px">좋아함: ${(c.likes || []).map(esc).join(", ")}${(c.dislikes || []).length ? ` · 싫어함: ${c.dislikes.map(esc).join(", ")}` : ""}</div>
@@ -1192,7 +1199,7 @@ function charWin(id) {
   const hs = c.helper && c.helper.effect !== "none";
   const st = c.stats || {};
   openWin(`<h2>${esc(c.name)} <button class="x" data-close>✕</button></h2>
-    <div class="scene">${stageWho(id, exprFor(id), "half", bgUrl(charSpot(id)) || bgUrl("street") || bgUrl("alley")) || ""}<div class="who"><div class="pic" ${BODY[id] ? 'style="display:none"' : ""}>${img(faceSrc(id, exprFor(id)))}</div><div class="grow"><div><b>${esc(c.job)}</b> · ${c.age + Math.floor(S.t / 12)}세</div><div class="tagline">${esc(c.tagline || "")}</div>
+    <div class="scene">${stageWho(id, exprFor(id), "half", bgUrl(charSpot(id)) || bgUrl("street") || bgUrl("alley")) || ""}<div class="who"><div class="pic" ${BODY[id] ? 'style="display:none"' : ""}>${img(faceSrc(id, exprFor(id)))}</div><div class="grow"><div><b>${esc(c.job)}</b> · ${c.age + Math.floor(S.t / 12)}세${c.height ? ` · ${c.height}cm` : ""}</div><div class="tagline">${esc(c.tagline || "")}</div>
     <div class="row wrap" style="margin-top:4px">${(c.personality || []).map((p) => `<span class="tag">${esc(p)}</span>`).join("")}${x.bond && E.BOND_N[x.bond] ? `<span class="tag">${E.BOND_N[x.bond]}</span>` : ""}${romance ? `<span class="tag pink">연애 가능</span>` : ""}${hs ? `<span class="tag green">${esc(c.helper.role)}</span>` : ""}${c.customer ? `<span class="tag blue">${c.customer.board === "partyroom" ? "파티룸 손님" : "컨설팅 손님"}</span>` : ""}${x.affair ? `<span class="tag red">비밀 관계 · 의심 ${Math.round(S.fam.affair?.sus || 0)}</span>` : x.spouse ? `<span class="tag pink">배우자</span>` : x.lover ? `<span class="tag pink">연인 ${months}개월</span>` : ""}${x.helper ? `<span class="tag gold">조력 중</span>` : ""}</div>
     <div class="tiny muted" style="margin-top:4px">좋아함: ${(c.likes || []).map(esc).join(", ")}</div></div></div>
     <div class="small">호감도 <b>${Math.round(x.aff)}</b> ${here ? "· 지금 지도에 있음" : ""}</div>${meter(x.aff, 100, "var(--pink)")}
@@ -1584,7 +1591,7 @@ function bind() {
   q("[data-sjmemo]", (el) => sjMemoWin(el.dataset.sjmemo));
   q("[data-act]", (el) => { if (S.pending) return showScene(); if (el.dataset.why) return toast([], el.dataset.why); doAct(el.dataset.act, el.dataset.arg); });
   q("[data-end]", () => endMonthFlow(false));
-  q("[data-region]", (el) => { ui.region = el.dataset.region || null; const sp = el.dataset.spot; render(); const bx = sp && $app.querySelector(`[data-spotbox="${sp}"]`); if (bx) bx.scrollIntoView({ block: "start" }); else window.scrollTo(0, 0); });
+  q("[data-region]", (el) => { ui.region = el.dataset.region || null; ui.spot = el.dataset.spot || null; render(); window.scrollTo(0, 0); });
   q("[data-bang]", (el) => { const res = E.doBang(S, el.dataset.bang); if (!res.ok) return toast([], res.msg); afterRes(res); });
   q("[data-char]", (el) => charWin(el.dataset.char));
   q("[data-ppl]", (el) => pplOpen(el.dataset.ppl));

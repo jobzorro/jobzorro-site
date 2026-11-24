@@ -569,6 +569,8 @@ export const FIRE_TARGET = { single: 300000, married: 400000 }; // 30억(집 12�
 
 // ───────── 투잡 탐색 (21개, 지금은 파티룸·취업컨설팅만 플레이 가능) ─────────
 // type: 투잡연구소 유형. fit: 궁합 계산에 쓰는 능력치. cap: 시작 자본(만원). hours: 주당 시간. inc: 문서에 적힌 수익.
+// 11-24 방문 펫시팅은 새 인물과 그림이 준비될 때까지 숨긴다(true 로 바꾸면 열린다). 봇 시험: 환경변수 PSON=1
+export const PETSIT_ON = typeof process !== "undefined" && !!process.env?.PSON;
 export const SIDEJOBS = {
   pr: { n: "파티룸", type: "투자", ic: "door", play: true, fit: ["num", "sense", "hands"], cap: "3,000만~", hours: "주 6~10시간", inc: "월 순수익 약 200만", line: "입지가 전부. 청소·민원은 덤.", hint: "러닝크루·와인·보드게임 모임 뒤풀이에서" },
   cs: { n: "취업컨설팅", type: "전문성", ic: "pen", play: true, fit: ["career", "write", "talk"], cap: "거의 0", hours: "주 5~15시간", inc: "월 200~300만, 잘되면 연 1억+", line: "진입과 마케팅이 전부. 첫 후기는 지인에게서.", hint: "독서·글쓰기 모임, 멘토링 봉사에서" },
@@ -590,6 +592,7 @@ export const SIDEJOBS = {
   bouquet: { n: "웨딩 부케", type: "전문성", ic: "heart", fit: ["sense", "hands", "mkt"], cap: "100만", hours: "주말 몰아서", inc: "월 60~100만(월 3~5건)", line: "결혼 시즌에만 바쁘다.", hint: "플라워 클래스에서" },
   goods: { n: "굿즈", type: "전문성", ic: "spark", fit: ["sense", "mkt", "hands"], cap: "100만~", hours: "주 6시간", inc: "월 순이익 약 50만", line: "재고가 쌓이면 방이 좁아진다.", hint: "보드게임·클라이밍 모임에서" },
   aivideo: { n: "AI 영상 제작", type: "전문성", ic: "video", fit: ["sense", "num", "mkt"], cap: "구독료", hours: "주 6시간", inc: "월 50~150만", line: "툴이 매달 바뀐다.", hint: "사진·밴드·코딩 모임에서" },
+  petsit: { n: "방문 펫시팅", type: "돌봄", ic: "heart", fit: ["sense", "write", "charm"], cap: "거의 0", hours: "약속한 날 저녁", inc: "부업 월 30~60만 · 회사로 키우면 달라짐", line: "노는 시간보다 약속을 지키는 시간.", hint: "고양이·강아지를 키우는 사람들, 동네 게시판에서" },
   club: { n: "취미 모임", type: "네트워크", ic: "users", fit: ["charm", "talk", "mkt"], cap: "거의 0", hours: "주 1회 저녁", inc: "회원 20명이면 월 60~120만", line: "회원이 많을수록 잘된다. 내가 빠지면 흩어진다.", hint: "모이는 취미를 오래 다니면" },
   vibe: { n: "바이브코딩", type: "전문성", ic: "wrench", fit: ["num", "write", "sense"], cap: "구독료", hours: "주 6시간", inc: "월 100만 안팎", line: "AI에게 말로 시켜 만든다.", hint: "코딩 스터디, 보드게임·밴드 모임에서" },
 };

@@ -17,7 +17,17 @@ function swAllowed() {
 }
 
 export function initApp({ onBack } = {}) {
-  if (swAllowed()) navigator.serviceWorker.register("sw.js").catch(() => {});
+  if (swAllowed()) {
+    // 11-24 새 버전 알림: 저장해 둔 옛 파일로 먼저 열리기 때문에, 새 버전이 받아지면 위에 띠를 띄워 한 번 새로 고치게 한다
+    const had = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register("sw.js").then((reg) => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!had || document.getElementById("a6upd")) return;
+      const b = document.createElement("button"); b.id = "a6upd"; b.textContent = "새 버전이 나왔어요 · 눌러서 새로 고침";
+      b.style.cssText = "position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:99999;font:700 13px/1.2 inherit;padding:9px 16px;border-radius:99px;border:0;background:#ffce5a;color:#14152b;box-shadow:0 4px 14px rgba(0,0,0,.45);cursor:pointer";
+      b.onclick = () => location.reload(); document.body.appendChild(b);
+    });
+  }
   try { if (isApp()) document.documentElement.classList.add("app"); } catch (e) {}
   // 뒤로 가기: 창이 열려 있으면 창을 닫고, 아니면 홈으로, 홈이면 앱 종료(기본 동작)
   if (isApp() && onBack) {

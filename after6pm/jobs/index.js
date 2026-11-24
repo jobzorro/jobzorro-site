@@ -6,4 +6,6 @@ import tutoring from "./tutoring_ui.js";
 import chicken from "./chicken_ui.js";
 import vibe from "./vibe_ui.js";
 import club from "./club_ui.js"; // 11-23 취미 모임
-export const UI_PLUGINS = [tarot, webnovel, tutoring, chicken, vibe, club].filter(Boolean);
+import petsit from "./petsit_ui.js"; // 11-24 방문 펫시팅
+import { PETSIT_ON } from "../engine/defs.js";
+export const UI_PLUGINS = [tarot, webnovel, tutoring, chicken, vibe, club, PETSIT_ON ? petsit : null].filter(Boolean);
