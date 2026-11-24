@@ -1,0 +1,440 @@
+{
+  "title": "CAREER BRIEFING",
+  "date": "2026-11-25",
+  "generated_at": "2026-11-25 07:55",
+  "stats": {
+    "collected": 1991,
+    "deduped": 1882,
+    "recent": 900,
+    "fresh": 805,
+    "relevant": 117,
+    "published": 20,
+    "feeds": 30,
+    "dead_feeds": []
+  },
+  "sections": [
+    {
+      "key": "hiring",
+      "name": "채용 시즌·공고",
+      "en": "HIRING NOW",
+      "desc": "대기업·계열사·중견·외국계·공기업이 지금 사람을 뽑는 공고와 일정",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "부산사회서비스원, 채용 실수로 기간제→무기계약직 전환",
+          "lead": "(부산=연합뉴스) 김선호 기자 = 부산사회서비스원이 허술하게 채용 공고를 내는 바람에 기간제 직원을 무기계약직으로 전환할 수밖에 없었던 사실이 ...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261124153600051",
+          "source": "연합뉴스",
+          "published": "2026-11-24 16:45",
+          "score": 14,
+          "keywords": [
+            "채용"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "취준생 75% “하반기 취업 어려웠다”…AI발 채용공고 감소 체감 커져",
+          "lead": "2026년 하반기 취업시장에 대한 구직자들의 체감 온도가 크게 낮아졌다.",
+          "summary": "취업준비생 10명 중 7명 이상이 올해 하반기 취업이 어려웠다고 평가했으며, 기업의 채용공고 감소 원인으로 인공지능(AI) 도입을 지목한 응답도 상반기보다 크게 늘었다. AI가 기업의 업무 효율을 높이는 기술을",
+          "url": "https://www.startupn.kr/news/articleView.html?idxno=60789",
+          "source": "스타트업엔(StartupN)",
+          "published": "2026-11-24 12:09",
+          "score": 13,
+          "keywords": [
+            "채용공고",
+            "채용"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "서울지하철 노조, 총파업 철회…출근길 정상 운행",
+          "lead": "이어 서울교통공사통합노조(제2노조)가 오전 3시 16분쯤 합의서에 서명했다.",
+          "summary": "김정섭 서울교통공사노조 위원장은 이날 교섭 타결 직후 취재진과 만나 \"교섭은 난항이었지만 노사 서로 한 발씩 양보해 합의점을 도출했다\"며 \"현재 800여 명이 부족하지만 500명을 채용하기로 했다\"고 설명했다.",
+          "url": "https://www.mt.co.kr/policy/2026/11/25/2026112504575727648",
+          "source": "머니투데이",
+          "published": "2026-11-25 05:22",
+          "score": 12,
+          "keywords": [],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "moves",
+      "name": "이직·연봉·HR",
+      "en": "MOVES & PAY",
+      "desc": "경력직 수요, 연봉·성과급, 희망퇴직, 평가·승진, 면접과 채용 프로세스의 변화",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "삼성전기, 총 15명 승진...임원인사 시행",
+          "lead": "삼성전기가 '2027년 정기 임원 인사'를 단행했다.",
+          "summary": "인공지능(AI) 시대 대응에 초점을 맞췄다.24일 삼성전기는 2027년 정기 임원 인사를 시행했다고 밝혔다.▲부사장 5명 ▲상무 8명 ▲마스터 2명 총 15명이 승진했다.삼성전기는 \"급변하는 AI 시대에 발맞춰 '시장 선점'과 '지속 성장'에 필요한 1등 제품/기술력 확보를 위해 연령/성별에 구애받지 않는 성과주의 원칙을 바탕으로 전문성과 성과 창출 역량이 검증된 인재 중심으로 리더십을 보강했다\"라며 \"빠른 시일내 임원 업무위촉 및 조직개편을 실시할 예정\"이라고 설명했다.또 \"▲",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=157732",
+          "source": "테크M",
+          "published": "2026-11-24 20:21",
+          "score": 30,
+          "keywords": [
+            "승진",
+            "인사"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "[2027년 삼성 계열사 인사] '차별화 기술·미래 성장' 기여자 승진 집중",
+          "lead": "삼성 주요 전자 계열사 임원 인사는 차별화된 성과와 미래 기술 확보에 기여한 인물 발탁으로 요약된다.",
+          "summary": "장덕현 삼성전기, 이청 삼성디스플레이, 최주선 삼성SDI, 이준희 삼성SDS 사장 등 대표이사가 모두 유임된 가운데, 사업별 성과에 따라 승진 규모는 엇갈렸다. 삼성전기는 부사장 5명, 상무 8명, 마스터 2명 등 총 15명이 승진했다. 지난해와 비교하면 승진자가 8명에서 13명으로 늘었다. 인공지능(AI) 데이터센터용 MLCC와 반도체 패키지",
+          "url": "https://www.etnews.com/20261124000352",
+          "source": "전자신문",
+          "published": "2026-11-24 14:13",
+          "score": 27,
+          "keywords": [
+            "승진",
+            "인사"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "“퇴직금 3억, 통장 하나면 편할 줄 알았는데”…은퇴자 울린 IRP의 함정",
+          "lead": "퇴직IRP·저축IRP 계좌 섞었다가 ‘낭패’#지난해 직장 생활을 마치고 퇴직한 이모(60)씨는 최근 개인형퇴직연금(IRP) 계좌를 들여다보다",
+          "summary": "고민에 빠졌다. 퇴직금 3억원에 연말정..",
+          "url": "https://www.mk.co.kr/news/economy/12216956",
+          "source": "매일경제",
+          "published": "2026-11-24 11:10",
+          "score": 21,
+          "keywords": [
+            "퇴직금"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 4,
+          "title": "베네수엘라, 공공부채 2375억달러…대규모 채무 구조조정 추진",
+          "lead": "베네수엘라 정부가 국내총생산(GDP)의 2배를 웃도는 공공부채 규모를 공개하며 대규모 채무 구조조정에 시동을 걸.",
+          "summary": "",
+          "url": "https://www.asiae.co.kr/article/2026112506263201328",
+          "source": "아시아경제",
+          "published": "2026-11-25 06:26",
+          "score": 20,
+          "keywords": [
+            "구조조정"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "베네수엘라, 정부 빚만 320조원…채무 구조조정 시동",
+              "source": "연합뉴스",
+              "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE14ZGoxOVFMbmdUWWdKRHdpWEl1SlNqSG9KQ0pCNzEtREg5RTllYVh5OXNtNmlMRDZBUjFsb01UOEZtY09zZEJsNVFuR3hudlJkXy1VQ0R0WHhwRGfSAWBBVV95cUxPZDVhYmw1RnhmT1F0X0hrYWpVZFFoOTZYalZUZzAwOTM1N3o2amNxNmpKbnJGV2FJck0zT1NUTjY5ZHVrRWZfeVBxdDRaWjZFTGNwSTlEcy1XOXg4RXdsWXA?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "title": "\"송년회서 술 안 마셔요\"…가장 바쁠 연말에 '희망퇴직' 받는 주류회사들",
+          "lead": "주류업계가 가장 바쁜 연말이다.",
+          "summary": "과거에는 송년회 특수로 주류회사들의 매출이 집중되고 마케팅도 활발하던 시기. 하지만 재작년부터 이러한 분위기는 사라진지 오래다. 송년회와 단체 회식이 줄고 고물가와 내수침체까지 겹치면서 송년회 특수는 옛말이 됐다. 술이 안 팔리니 주류업…",
+          "url": "https://news.mtn.co.kr/article/2026112412352717383",
+          "source": "MTN 머니투데이방송",
+          "published": "2026-11-25 06:00",
+          "score": 20,
+          "keywords": [
+            "희망퇴직",
+            "회사"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 6,
+          "title": "서울 지하철 1·2노조 임단협 타결…파업 철회 수순(종합)",
+          "lead": "(서울=연합뉴스) 김동규 김준태 기자 = 서울 지하철 1∼8호선을 운영하는 서울교통공사 사측과 제1·2노조 간 임금·단체협약(임단협) 협상이 노...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261125004251004",
+          "source": "연합뉴스",
+          "published": "2026-11-25 03:35",
+          "score": 20,
+          "keywords": [
+            "임단협",
+            "노조"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "\"내 출근길은 괜찮을까?\"…서울 지하철 파업, 운행정보 꼭 확인하세요",
+              "source": "머니투데이",
+              "url": "https://www.mt.co.kr/society/2026/11/24/2026112422035052643"
+            }
+          ]
+        },
+        {
+          "rank": 7,
+          "title": "서울교통공사 노조 \"구조조정 논의 진전…후속 실무협의\"",
+          "lead": "[서울=뉴시스] 최현호 기자 = 25일 첫차부터 무기한 총파업을 예고한 서울교통공사 노조가 사측과 밤샘 교섭을 벌이고 있는 가운데, 서울교통공사 제1노조(조합원 비중 약 57%)가 사측이 제시한 안을 검토한 결과 구조조정 문제에서 진전이 있었다며 후속 실무협의에 들어간다고 전했다.서울교통공사노동조합(제1노조)은 쟁의대책위원회 회의를 마친 뒤 공지를 통해 \"..",
+          "summary": "",
+          "url": "https://www.newsis.com/view/NISX20261125_0003881843",
+          "source": "뉴시스",
+          "published": "2026-11-25 01:02",
+          "score": 20,
+          "keywords": [
+            "구조조정",
+            "노조"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "company",
+      "name": "기업·산업 레이더",
+      "en": "COMPANY WATCH",
+      "desc": "실적·적자·사업재편·증설·폐점 — 지원해도 되는 회사인지 가르는 신호",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "포스코, 美 셰일가스전 인수 ...연평균 영업익 1천억원 기대",
+          "lead": "5억 5000만 달러 규모 가스전 인수 완료 펜실베이니아 1305개 생산정 전량 확보 연간 LNG 100만 톤 규모 가스 생산 2040년까지 연평균 영업익 1000억 기대",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/business/12217047",
+          "source": "매일경제",
+          "published": "2026-11-24 14:08",
+          "score": 34,
+          "keywords": [
+            "영업익",
+            "인수",
+            "포스코"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "포스코, 미국 셰일가스전 5억5000만달러에 인수…북미 가스 생산거점 확보",
+              "source": "경향신문",
+              "url": "https://www.khan.co.kr/article/202611241602001/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news"
+            },
+            {
+              "title": "‘트리플 코어’ 중 에너지 확보…포스코, 미 셰일가스전 인수 완료",
+              "source": "경향신문",
+              "url": "https://www.khan.co.kr/article/202611242043015/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news"
+            },
+            {
+              "title": "포스코, 미국 셰일가스전 5억5천만달러에 인수",
+              "source": "한겨레",
+              "url": "https://www.hani.co.kr/arti/economy/marketing/1288835.html"
+            }
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "삼성 금융계열사 수장 유임…\"조직 안정 속 신사업 강화\"",
+          "lead": "삼성그룹의 핵심 금융 계열사인 삼성생명·화재·증권을 맡는 수장이 유임된다.",
+          "summary": "조직 안정을 유지하는 가운데 신사업을 확대하는 임무를 부여받은 것으로 알려졌다. 24일 매일경제 취재를 ..",
+          "url": "https://www.mk.co.kr/news/economy/12217393",
+          "source": "매일경제",
+          "published": "2026-11-24 17:33",
+          "score": 27,
+          "keywords": [
+            "신사업",
+            "금융",
+            "삼성"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "실적은 K조선 … 방산·기계보다 '한수 위'",
+          "lead": "중후장대 3각축 엇갈린 명암조선3사 영업익 30~60%대 쑥올해 수주잔고 139조원 육박방산은 일감 수주 넉넉하지만각사 납품일정 따라 실적 갈려기계, 북미·신흥시장서 회복세",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/business/12217354",
+          "source": "매일경제",
+          "published": "2026-11-24 17:25",
+          "score": 27,
+          "keywords": [
+            "실적",
+            "조선",
+            "방산"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 4,
+          "title": "엔키화이트햇 \"IPO 흥행 걱정 없다\"...내년 '중기', 후년 '국방' 분야까지 진출",
+          "lead": "엔키화이트햇이 설립 10년 만에 기업공개(IPO)에 도전한다.",
+          "summary": "최근의 수익성 개선세가 발판이 됐다. 그 중심엔 오펜시브 보안 통합 플랫폼 '오펜'이 있다. 화이트해커의 보안 점검 업무를 자동화해 매출 증가에 따른 인건비 부담을 낮췄다. 내년에는 경량화된 '오펜'을 출시해 고객군을 중소기업까지 넓힌다. 내후년에는 안티드론 설루션을 상용화해 추가 수익원을 확보할 계획이다. 내부에선 이미 제품 중심으로 조직을 개편하고 중장기 성장 채비에 나섰다.이성권 엔키화이트햇 대표는 24일 서울 영등포구 여의도에서 IPO 기자간담회를 열고 국내 금융",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=157750",
+          "source": "테크M",
+          "published": "2026-11-24 23:42",
+          "score": 26,
+          "keywords": [
+            "IPO"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "macro",
+      "name": "고용지표·정책",
+      "en": "MACRO",
+      "desc": "통계청 고용동향, 청년고용, 최저임금·실업급여, 노동법 — 시장 전체의 온도",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "노동부·대한상의, 지역 청년 일자리 창출 협력…K-뉴딜 5배↑",
+          "lead": "(서울=연합뉴스) 옥성구 기자 = 고용노동부와 전국 대한상공회의소는 24일 서울 중구 대한상의에서 간담회를 열고, 지역 청년의 일할 기회를 넓히...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261124066300530",
+          "source": "연합뉴스",
+          "published": "2026-11-24 16:00",
+          "score": 35,
+          "keywords": [
+            "청년 일자리",
+            "일자리 창출",
+            "일자리",
+            "청년"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "전국상의·노동부, 청년 일자리·지역 중소 인력난 해결 '맞손'",
+              "source": "뉴스1",
+              "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE1aU05OWUxTaVlZZmlKd0VyakVHNTM1Y055blZoT08xdE5WbnltbnhkODRGTkdaOTZlV0daOS1WcFlqZkNsMjdlaWk1NkMtVzlXZWFiZ2hDVGc?oc=5"
+            },
+            {
+              "title": "전국상의·노동부, 청년 일자리·지역 中企 인력난 해결",
+              "source": "오토투데이",
+              "url": "https://news.google.com/rss/articles/CBMib0FVX3lxTE1HdGJPNzJYUlFoZG41YW9vRllyXzM2c0RqdTRJMVEwMkx4OHpWeDI2Uk83RlNzNk83NC12TlVVYUVRclFmcjRfSm44UE9PZ1R4Ri03LUtOTmRZMzZtZl91VndyMU9fV0U1RV92anB3SQ?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "일자리 증가 이끈 돌봄·요양…청년 고용은 15분기째 뒷걸음",
+          "lead": "일자리 증가 이끈 돌봄·요양…청년 고용은 15분기째 뒷걸음 보건·사회복지 16만개 증가 건설·제조업은 감소세 지속 양지혜 기자 입력 : 2026.11.24 15:16:19 💡 핵심요약 쏙 임금근로 일자리가 1년 만에 40만 개 이상 증가했지만, 20대 이하 청년층의 일자리는 오히려 5만6000개 줄어들었다. 증가는 주로 보건·사회복지 분야에서 이루어졌고, 60대 이상의 일자리가 전체 증가분의 68%를 차지하며 가장 큰 증가세를 보였다. 반면, 제조업과 건설업에서는 각각 4000개와 1만6000개가 감소해 어려운 상황이 계속되고 있다.",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/business/12217112",
+          "source": "매일경제",
+          "published": "2026-11-24 15:16",
+          "score": 29,
+          "keywords": [
+            "청년 고용",
+            "일자리",
+            "고용",
+            "청년"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "‘쉬었음’ 청년 11만 명…경기청년 일자리 예산은 59.2% 삭감 '엇박자'",
+          "lead": "경기도 내 ‘쉬었음’ 청년이 11만 명에 이르고 청년 실업률도 오른 가운데, 청년 취업 지원사업인 경기청년 일자리 매치업 예산이 2025년보다",
+          "summary": "59.2% 줄어든 것으로 나타나, 청년 고용 상황과 예산 편성이 엇박자를 보이고 있다.경기도의회 경제노동위원회 소속 최보라 의원(더불어민주당·광",
+          "url": "https://www.g-enews.com/article/General-News/2026/11/2026112407572614578fbfc802b3_1",
+          "source": "글로벌이코노믹",
+          "published": "2026-11-24 08:56",
+          "score": 28,
+          "keywords": [
+            "쉬었음",
+            "청년 일자리",
+            "일자리",
+            "경기"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "future",
+      "name": "커리어의 변화",
+      "en": "CAREER SHIFT",
+      "desc": "AI가 바꾸는 직무, 40대 이후의 생존, 중장년 재이직, N잡과 멀티커리어",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "공기관 퇴직 후 에어컨 세척 창업…서울 중장년 경력전환 수기 16편 선정",
+          "lead": "서울시50플러스재단이 이처럼 기존 경력과 새로운 기술을 접목해 재취업과 창업에 도전한 중장년의 우수사례 16편을 선정했다.",
+          "summary": "25일 서울시50플러스재단에 따르면 재단은 전날 중장년 경력전환 우수사례 공모전 '내 인생의 체인지업",
+          "url": "https://www.mt.co.kr/policy/2026/11/25/2026112500335842246",
+          "source": "머니투데이",
+          "published": "2026-11-25 06:00",
+          "score": 29,
+          "keywords": [
+            "창업",
+            "퇴직",
+            "중장년"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "NH농협은행 만40세 이상부터 명예퇴직 신청 접수, 특별퇴직금 최대 40개월분",
+          "lead": "",
+          "summary": "",
+          "url": "https://www.businesspost.co.kr/BP?command=article_view&num=452803",
+          "source": "비즈니스포스트",
+          "published": "2026-11-24 16:36",
+          "score": 27,
+          "keywords": [
+            "명예퇴직",
+            "퇴직금"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "NH농협은행 40세부터 명예퇴직…명퇴금 ‘최대 2배’ 늘렸다",
+              "source": "이데일리",
+              "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNaW9XYzUyeUltMklUdEVZb01HMlJjRVkteXBqN3FGaWl6cFNuUDZla2tsM1kzWlk3T0loY1VwaEhqMlFzR0dlM3lqRHkxUkJZcGpLcVc5dnQtMEFPNzBsaTNYNmZkaFQ3RWI2Q3JvdGQzZFNma2E2dDJhY0lzVV9JXw?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "SK텔레콤, 50대 이상 직원 희망퇴직 추진",
+          "lead": "SK텔레콤이 50대 이상 직원 대상으로 희망퇴직을 추진한다.",
+          "summary": "2024년부터 주기적인 인력재편 프로그램을 가동해 50대 이상이 전체 구성원의 30%가 넘는 인력 구조를 정비한다. 23일 업계에 따르면 SK텔레콤은 이번주부터 50대 이상 직원을 대상으로 희망퇴직 신청을 받는다. 퇴직 조건과 지원금 규모 등은 해당 직원에게 별도로 안내할 방침이다. 희망퇴직은 직원의 자발적인 신청을 원칙으로 한다. 회사는 별도의 퇴직 목표 인원을 정하지 않고, 신청하",
+          "url": "https://www.etnews.com/20261123000409",
+          "source": "전자신문",
+          "published": "2026-11-23 15:16",
+          "score": 24,
+          "keywords": [
+            "희망퇴직"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "SKT, 50대 이상 희망퇴직 추진…인력 구조 재정비",
+              "source": "MTN 머니투데이방송",
+              "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTE8xZ2xJeDJEMG1xWDJrYmVhMHdKTlNxbDZDSjRYS1dJak9ZVmFfVVVqbFZ3MFZuU005LS10anlCLXFvUEZqeUFvM3VEV1RNTnlzX0VDMld0c1REdkFxNWQ4?oc=5"
+            },
+            {
+              "title": "SKT, 50대 이상 직원 대상 희망퇴직",
+              "source": "IT조선",
+              "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTFBFdzdxb3NQaERfT3ZEZjU1QUlBak9lSnZLTng2SHV5aDhDSjJ2ZzJSSW1QS1VrTEJ1Y0NIV0xZUHhZanhZMmI5bEJIcHZWS3RjcEdtVVBrVEFxMF9INlZRY2ZoZjQyaWhIZGNFZ29CUlTSAXRBVV95cUxNQ3RXdlg0QVFDWHVOMldNVnh0ZzY3S2dsV0lYNHBEWUNHNHBQSXo4NGctZ2hBR1kyVFAzdGppVThGeEJRUjlUalpDV01SRVh5aFRYdldPejVsd0xTTDdZdGc5ZTVDQUEwdnFVbWRrY1pNNzZGdw?oc=5"
+            },
+            {
+              "title": "SKT, 50대 이상 희망퇴직 추진…인력 구조 재정비 나선다",
+              "source": "뉴시스",
+              "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE40dG80aTZhQkJJX1BRWnV3aXJHQ016VzVURm1SVGl6Mnd6aTV2WmMyRU9oMF91MVh4YWNnSDMwX19lZWtZQi1fcjdBQUNYSER0ZEJLN2U2TGJxZkRLRngzVdIBeEFVX3lxTE1VNTRsOHlJNEdSN3ljQ0paYmk3Mkl5RXhzeXBfYXJWcFVXTmU4amNsY0M0U045cFJBMS1VQjBqSXRMOVJMUndZXzY0SlROUkEyb3JCcHhJczh0V3dsN04wTUxZM2swdml6ZHpVa1pBQm5Jek5ZZTVZRQ?oc=5"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
