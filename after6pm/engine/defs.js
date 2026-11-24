@@ -217,7 +217,7 @@ export const COMPANY_TYPES = {
   big: { n: "대기업", pay: 330, eye: 1.3, trust: 0.3, layoff: 0.6, top: 5, kind: "gen", stat: { career: 3, talk: 1 }, names: ["사성전자", "현재자동차", "LC전자", "SQ하이닉스", "CZ제일제당", "롯대쇼핑", "포스크", "한와솔루션"] },
   fin: { n: "금융권", pay: 360, eye: 1.5, trust: 0.28, layoff: 0.7, top: 5, kind: "fin", stat: { num: 3, career: 1 }, names: ["KP궁민은행", "신안은행", "하니은행", "우리들은행", "사성증권", "모레투자증권", "사성생명", "현재카드"] },
   mid: { n: "중견기업", pay: 285, eye: 1.0, trust: 0.18, layoff: 1.0, top: 5, kind: "gen", stat: { career: 2, num: 1 }, names: ["코웨어", "오뚝이", "한셈", "농신", "동완F&B", "대승"] },
-  startup: { n: "스타트업", pay: 265, eye: 0.6, trust: 0.1, layoff: 1.8, top: 6, kind: "gen", fast: true, stat: { mkt: 2, sense: 2 }, names: ["토쓰", "홍당무", "유신사", "야놀까", "마켓컬러", "직빵"] },
+  startup: { n: "스타트업", pay: 265, eye: 0.6, trust: 0.1, layoff: 1.8, top: 6, kind: "gen", fast: true, stat: { mkt: 2, sense: 2 }, names: ["토쓰", "홍당무", "유신사", "야놀까", "마켓걸리", "직빵"] },
   public: { n: "공기업", pay: 270, eye: 1.8, trust: 0.24, layoff: 0.1, top: 4, kind: "pub", stat: { write: 2, num: 1 }, names: ["대한전력공사", "대한철도공사", "대한토지주택공사", "국민튼튼보험공단", "인청국제공항공사"] },
 };
 // 임원(상무·전무)은 1년 계약. 평가가 나쁘면 퇴임한다. years: 그 직급에서 보통 걸리는 햇수(스타트업은 더 빠름)
@@ -562,8 +562,8 @@ export const HOUSING = {
   wolse2: { n: "투룸 월세", rent: 95, dep: 3000 },
   own: { n: "내 집", rent: 0 },
 };
-export const END_AGE = 50; // 남자 50세, 여자 48세까지 (endAge)
-export const endAge = (g) => (g === "F" ? 48 : 50);
+export const END_AGE = 50; // 11-23 남녀 모두 50세까지(27세 시작, 23년). 1회차는 34세 결산(engine/round.js)
+export const endAge = (g) => 50;
 export const FIRE_MULT = 25;
 export const FIRE_TARGET = { single: 300000, married: 400000 }; // 30억(집 12억 + 4%씩 꺼내 써도 안 줄어드는 돈 18억, 월 600만), 결혼하면 40억(집 15억 + 25억, 월 830만) (만원)
 
@@ -590,6 +590,7 @@ export const SIDEJOBS = {
   bouquet: { n: "웨딩 부케", type: "전문성", ic: "heart", fit: ["sense", "hands", "mkt"], cap: "100만", hours: "주말 몰아서", inc: "월 60~100만(월 3~5건)", line: "결혼 시즌에만 바쁘다.", hint: "플라워 클래스에서" },
   goods: { n: "굿즈", type: "전문성", ic: "spark", fit: ["sense", "mkt", "hands"], cap: "100만~", hours: "주 6시간", inc: "월 순이익 약 50만", line: "재고가 쌓이면 방이 좁아진다.", hint: "보드게임·클라이밍 모임에서" },
   aivideo: { n: "AI 영상 제작", type: "전문성", ic: "video", fit: ["sense", "num", "mkt"], cap: "구독료", hours: "주 6시간", inc: "월 50~150만", line: "툴이 매달 바뀐다.", hint: "사진·밴드·코딩 모임에서" },
+  club: { n: "취미 모임", type: "네트워크", ic: "users", fit: ["charm", "talk", "mkt"], cap: "거의 0", hours: "주 1회 저녁", inc: "회원 20명이면 월 60~120만", line: "회원이 많을수록 잘된다. 내가 빠지면 흩어진다.", hint: "모이는 취미를 오래 다니면" },
   vibe: { n: "바이브코딩", type: "전문성", ic: "wrench", fit: ["num", "write", "sense"], cap: "구독료", hours: "주 6시간", inc: "월 100만 안팎", line: "AI에게 말로 시켜 만든다.", hint: "코딩 스터디, 보드게임·밴드 모임에서" },
 };
 // 11-23 투잡 갈래(장면 조건 req "space"·"online"·"platform", 라이벌 사건 글 갈래가 같이 쓴다)
@@ -613,6 +614,7 @@ export const HOBBIES = {
   travel: { n: "여행 모임", like: ["여행"], fee: 10, hp: 5, mental: 6, stat: { sense: 0.5, mkt: 0.5, lang: 0.6 }, jobs: ["airbnb", "vibe", "webnovel"], desc: "숙소 고르는 눈이 생긴다" },
   tarot: { n: "타로 원데이 클래스", like: ["영화", "쇼핑"], fee: 8, hp: 3, mental: 3, stat: { talk: 1.0 }, jobs: ["tarot", "insta"], desc: "카드 78장, 사람 고민은 무한" },
   flower: { n: "플라워 클래스", like: ["쇼핑", "전시"], fee: 12, hp: 3, mental: 4, stat: { sense: 1.0 }, jobs: ["ucafe", "airbnb"], desc: "꽃값이 생각보다 비싸다" },
+  soccer: { n: "축구 관람 모임", like: ["운동", "맛집"], fee: 6, hp: 3, mental: 6, stat: { talk: 0.6, charm: 0.4 }, jobs: ["chicken", "pr"], desc: "주말 밤 큰 화면 앞. 골이 들어가면 모르는 사람과 껴안는다" },
   code: { n: "코딩 스터디", like: ["게임"], fee: 3, hp: 4, mental: 1, stat: { num: 1.0, mkt: 0.3 }, jobs: ["vibe", "tutoring", "webnovel"], desc: "AI한테 시키는 법을 배운다" },
   write: { n: "글쓰기 모임", like: ["책", "영화"], fee: 3, hp: 3, mental: 2, stat: { write: 1.3 }, jobs: ["webnovel", "tutoring", "tarot", "cs"], desc: "합평은 아프고 글은 는다" },
   lingo: { n: "언어 교환 모임", like: ["여행", "카페"], fee: 4, hp: 3, mental: 4, stat: { lang: 1.3, talk: 0.3 }, jobs: ["airbnb", "tutoring"], desc: "영어 반, 손짓 반. 외국인 친구가 생긴다" }, // v4.28 외국어 길

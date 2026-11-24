@@ -5,4 +5,5 @@ import webnovel from "./webnovel_ui.js";
 import tutoring from "./tutoring_ui.js";
 import chicken from "./chicken_ui.js";
 import vibe from "./vibe_ui.js";
-export const UI_PLUGINS = [tarot, webnovel, tutoring, chicken, vibe].filter(Boolean);
+import club from "./club_ui.js"; // 11-23 취미 모임
+export const UI_PLUGINS = [tarot, webnovel, tutoring, chicken, vibe, club].filter(Boolean);

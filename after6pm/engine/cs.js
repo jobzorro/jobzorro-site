@@ -82,7 +82,7 @@ function roomBoost(s) { if (!SYN.on(s, "cs_room")) return 1; return s.pr.rooms.s
 export const CS_AI = { from: 9, perYear: 0.07, floor: 0.4, w: { newgrad: 1, public: 1, interview: 0.6, career: 0 }, lectPer: 0.02, lectMax: 0.1, priceW: 0.35, lectFeeW: 1, lectOfferW: 0.4 }; // lectOfferW: 취업 특강 섭외도 덜 들어오는 정도 // lectFeeW: 강의료도 같이 내려가는 정도(취업 특강 예산이 줄어서) // priceW: 단가도 같이 내려가는 정도(AI 첨삭이 싸져서)
 export function aiCut(s, k) { // 그 분야 문의 배수(1 = 그대로)
   if (typeof process !== "undefined" && process.env?.CSAI) Object.assign(CS_AI, JSON.parse(process.env.CSAI)); // 봇 시험용
-  const yrs = Math.max(0, s.t / 12 - aiFrom(s)), w = CS_AI.w[k] ?? 1;
+  const yrs = Math.max(0, s.t / 12 - aiFrom(s)), w = k === "interview" && s.wv?.cs?.path === "b" ? 0 : CS_AI.w[k] ?? 1; // 면접 전문(길 B)을 고르면 면접 코칭은 줄지 않는다
   const cut = Math.min(1 - CS_AI.floor, yrs * CS_AI.perYear) * w * (1 - Math.min(CS_AI.lectMax, (s.cs.lectN || 0) * CS_AI.lectPer));
   return 1 - cut;
 }

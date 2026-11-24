@@ -26,13 +26,68 @@ export function compTable(s, u) { const A = s.ab, w = A.war?.[u.rk]; return RVW.
 export function setPeak(s, v) { s.ab.peak = v; return { ok: true, msg: v === 1 ? "성수기에도 평소 1박 가격" : `성수기 1박 가격 +${Math.round((v - 1) * 100)}%` }; }
 export function setRevEv(s, k) { if (!D.PR_REVIEW.ev[k]) return { ok: false }; s.ab.revEv = k; return { ok: true, msg: `후기 이벤트: ${D.PR_REVIEW.ev[k].n}` }; }
 
+// ── 진입 다시 설계(11-24): 합법 매물은 발품 → 집주인 설득 → 서류 확인 → 전입·등록(한 달) 네 단계. 서류를 안 보면 숨은 함정을 모른 채 계약한다.
+// 첫 손님: 후기 5개 전에는 검색에 잘 안 보인다(예약 1/3부터). 반값 행사·사진·지인 숙박으로 후기를 모은다.
+export const AB_ENTRY = { houseP: 0.35, trapP: 0.45, askBase: 0.22, askTalk: 1 / 150, askPlus: 0.25, plusRent: 0.1, docBase: 0.35, docNum: 1 / 110, regWait: 1, waitMo: [2, 3], quitLoss: 0.3,
+  boom: { n: 5, f0: 0.28, bad: 4.3, badF: 0.8, half: 0.5, friendAff: 40, friendCost: 6, photoDc: 50, photoF: 0.15, photoMax: 0.3 } };
+if (typeof process !== "undefined" && process.env?.ABB) Object.assign(AB_ENTRY, JSON.parse(process.env.ABB)); // 봇 시험용
+export const AB_TRAPS = {
+  addr: { n: "전입신고가 안 된다", text: "주민센터 창구에서 서류가 되돌아왔다. 이 주소에 이미 다른 사람이 올라가 있다고 한다. 전에 살던 세입자가 주소를 안 뺐다. 집주인은 전화를 안 받는다.", wait: "전 세입자를 찾아 주소를 빼 달라고 한다(그동안 월세는 나간다)", doc: "전입세대 열람에 다른 사람 이름이 남아 있다" },
+  bld: { n: "위반 건축물이었다", text: "구청에서 등록 신청이 반려됐다. 건축물대장에 '위반 건축물' 도장이 찍혀 있다. 옥상에 올린 방 한 칸이 무허가였다. 계약할 때는 아무도 말해 주지 않았다.", wait: "집주인에게 원상 복구를 요구하고 기다린다(그동안 월세는 나간다)", doc: "건축물대장에 위반 건축물 표시가 있다" },
+  seal: { n: "집주인이 도장을 안 찍는다", text: "구청에 낼 동의서를 들고 갔는데 집주인이 말을 바꿨다. \"내가 언제 그런다 그랬어. 그냥 조용히 해.\" 말로는 된다던 사람이다. 서류에는 도장이 없다.", wait: "과일을 사 들고 몇 번 더 찾아간다(그동안 월세는 나간다)", doc: "집주인이 동의서에 도장 찍기를 미루고 있다" },
+  crowd: { n: "이 건물에 숙소가 이미 셋이다", text: "등록하러 갔더니 담당자가 한숨을 쉰다. 이 건물에서만 민원이 올해 열두 건이라고 한다. 이미 숙소가 세 곳이고, 주민들이 새 등록을 막아 달라는 서명을 냈다.", wait: "이웃집을 돌며 인사하고 서명을 풀어 달라고 한다(그동안 월세는 나간다)", doc: "같은 건물에 숙소가 이미 세 곳이고 민원이 쌓여 있다" },
+};
+const spendAp = (s) => { if (s.pending) return "장면을 먼저 끝내세요"; if (s.ap < 1) return "행동력이 부족해요"; s.ap -= 1; return null; };
+export const askOwnerP = (s, plus) => clamp(AB_ENTRY.askBase + (s.st.talk || 0) * AB_ENTRY.askTalk + (plus ? AB_ENTRY.askPlus : 0), 0.1, 0.95);
+// 2단계 집주인 설득(행동력 1). plus = 월세를 10% 올려 준다
+export function persuade(s, r, id, plus) {
+  const A = s.ab, L = A.listings.find((x) => x.id === id); if (!L) return { ok: false, msg: "매물이 없어요" };
+  if (!L.house) return { ok: false, msg: "등록이 안 되는 건물이에요" }; if (L.owner === true) return { ok: false, msg: "이미 동의를 받았어요" };
+  const why = spendAp(s); if (why) return { ok: false, msg: why };
+  if (r.chance(askOwnerP(s, plus))) { L.owner = true; if (plus) L.rent = Math.round(L.rent * (1 + AB_ENTRY.plusRent)); gainStat(s, "talk", 0.4); return { ok: true, msg: plus ? `"월세를 그만큼 더 준다면야." 집주인이 동의서를 받아 갔다. 월세 ${won(L.rent)}.` : "\"깨끗하게만 써요.\" 집주인이 숙박업 동의를 해 줬다.", lines: ["집주인 동의 O", "말빨 +0.4"] }; }
+  A.listings = A.listings.filter((x) => x !== L); gainStat(s, "talk", 0.2);
+  return { ok: true, msg: r.pick(["\"모르는 사람이 들락거리는 건 싫어요.\" 집주인이 전화를 끊었다. 이 매물은 끝났다.", "\"숙박업? 우리 건물은 안 해요.\" 부동산 사장님이 전단을 도로 가져갔다.", "집주인이 한참 듣더니 고개를 저었다. \"세입자들이 싫어해요.\""]), lines: ["집주인 거절 · 매물이 사라졌어요", "말빨 +0.2"] };
+}
+// 3단계 서류 확인(행동력 1). 숫자가 높을수록 잘 본다
+export function docs(s, r, id) {
+  const A = s.ab, L = A.listings.find((x) => x.id === id); if (!L) return { ok: false, msg: "매물이 없어요" };
+  if (L.doc) return { ok: false, msg: "이미 확인했어요" };
+  const why = spendAp(s); if (why) return { ok: false, msg: why };
+  gainStat(s, "num", 0.4);
+  if (!r.chance(clamp(AB_ENTRY.docBase + (s.st.num || 0) * AB_ENTRY.docNum, 0.2, 0.97))) return { ok: true, msg: "건축물대장, 등기부, 전입세대 열람. 서류 세 장을 봤는데 뭘 봐야 하는지 모르겠다. 한 번 더 봐야 한다.", lines: ["서류를 다 못 읽었어요(다시 볼 수 있어요)", "숫자 +0.4"] };
+  L.doc = true;
+  return { ok: true, msg: L.trap ? `서류에서 걸리는 게 나왔다. ${AB_TRAPS[L.trap].doc}.` : "건축물대장 깨끗, 용도 주택, 전입세대 없음. 걸리는 게 없다.", lines: [L.trap ? `숨은 함정 발견: ${AB_TRAPS[L.trap].n}` : "서류 이상 없음", "숫자 +0.4"] };
+}
+// 첫 후기 5개 전의 노출 배율
+export function boomF(u) { const B = AB_ENTRY.boom; if ((u.reviews || 0) >= B.n || u.boomOff) return 1; return clamp((B.f0 + (1 - B.f0) * 0.6 * (u.reviews || 0) / B.n) * (u.rating < B.bad ? B.badF : 1) * (1 + (u.bPhoto || 0)), 0.1, 1); }
+export const booming = (u) => !u.boomOff && (u.reviews || 0) < AB_ENTRY.boom.n && u.regT == null;
+export function setHalf(s, id, v) { const u = s.ab.units.find((x) => x.id === id); if (!u) return { ok: false }; u.half = !!v; return { ok: true, msg: v ? `${u.name}: 후기 5개까지 반값에 내놓아요(적자를 감수해요)` : `${u.name}: 반값 행사를 껐어요` }; }
+// 지인에게 묵어 달라고 한다(행동력 1, 호감 소모, 후기 +1)
+export function friendCands(s) { return Object.entries(s.rel || {}).filter(([id, x]) => CHAR[id] && x.aff >= AB_ENTRY.boom.friendAff && x.abStay !== s.t).sort((a, b) => b[1].aff - a[1].aff).map(([id]) => id); }
+export function friendStay(s, r, id) {
+  const u = s.ab.units.find((x) => x.id === id); if (!u || !booming(u)) return { ok: false, msg: "후기 5개를 모으는 동안만 부탁할 수 있어요" };
+  if (u.friendT === s.t) return { ok: false, msg: "이 숙소는 이번 달에 이미 부탁했어요" };
+  const who = friendCands(s)[0]; if (!who) return { ok: false, msg: `부탁할 만큼 가까운 사람이 없어요(호감 ${AB_ENTRY.boom.friendAff})` };
+  const why = spendAp(s); if (why) return { ok: false, msg: why };
+  const x = s.rel[who]; x.aff = clamp(x.aff - AB_ENTRY.boom.friendCost, 0, 100); x.abStay = s.t; u.friendT = s.t; u.reviews = (u.reviews || 0) + 1; u.stays = (u.stays || 0) + 1;
+  return { ok: true, msg: `${jo(CHAR[who].name, "이", "가")} 하룻밤 묵고 후기를 남겨 줬다. "다음엔 진짜 손님으로 올게." 밥은 내가 샀다.`, lines: [`${u.name} 후기 +1 (${u.reviews}/${AB_ENTRY.boom.n})`, `${CHAR[who].name} 호감 −${AB_ENTRY.boom.friendCost}`] };
+}
+export function trapDemo(s, k) { const u = s.ab.units[0]; if (!u) return null; u.trap = k && AB_TRAPS[k] ? k : "addr"; u.regT = s.t; u.trapDone = true; return trapScene(s, u); } // 화면 시험용
+function trapScene(s, u) {
+  const T = AB_TRAPS[u.trap], back = Math.round(u.dep * (1 - AB_ENTRY.quitLoss));
+  return { kind: "event", tag: "에어씨앤씨", title: `${u.name} · ${T.n}`, onChoose: "ab_trap", abU: u.id, warn: true, text: `${T.text} ${u.trapSeen ? "서류에서 본 그대로다." : "서류를 한 번만 떼어 봤어도 알았을 일이다."} 세팅은 끝났고 월세는 이미 나가고 있다.`, choices: [
+    { t: `계약을 깨고 나온다 (돌려받는 보증금 ${won(back)})`, eff: {}, text: "집주인과 한참 실랑이를 했다. 보증금 일부와 세팅비는 수업료가 됐다." },
+    { t: "미등록으로 그냥 연다 (단속 위험)", eff: {}, text: "등록번호 칸을 비운 채 숙소를 올렸다. 예약 알림이 울릴 때마다 초인종 소리처럼 들린다." },
+    { t: T.wait, eff: {}, text: "달력에 동그라미를 쳤다. 빈 숙소에 월세가 나간다. 풀릴 때까지 버틴다." }] };
+}
 // 매물
 export function search(s, r, rk) {
   const R = D.AB_REGIONS[rk], pi = SYN.pi(s);
   const ls = Array.from({ length: 3 }, () => {
     const ty = r.pick(R.types), T = D.AB_TYPES[ty];
     const rent = Math.round(r.range(R.rent[0], R.rent[1]) * T.rentF * pi * (s.era.rentup ? 1.15 : 1) / 5) * 5;
-    return { id: "A" + (++s.ab.seq), t: s.t, rk, ty, rent, dep: Math.round(rent * r.range(8, 15) / 100) * 100, setup: Math.round(T.setup * pi), owner: r.chance(0.45), house: R.house && ty !== "officetel" };
+    const house = R.house && ty !== "officetel" && r.chance(AB_ENTRY.houseP); // 11-24 등록되는 집은 드물다
+    return { id: "A" + (++s.ab.seq), t: s.t, rk, ty, rent, dep: Math.round(rent * r.range(8, 15) / 100) * 100, setup: Math.round(T.setup * pi), owner: null /* 설득해 봐야 안다 */, house, trap: house && r.chance(AB_ENTRY.trapP) ? r.pick(Object.keys(AB_TRAPS)) : null, doc: false };
   });
   s.ab.listings = s.ab.listings.filter((l) => l.rk !== rk).concat(ls);
   return ls;
@@ -46,7 +101,7 @@ export function contract(s, id, reg) {
   const A = s.ab, L = A.listings.find((x) => x.id === id); if (!L) return { ok: false, msg: "매물이 없어요" };
   fillA(A);
   if (reg === "legal" && !L.house) return { ok: false, msg: "오피스텔은 숙박업 등록이 안 돼요(합법으로는 불가)" };
-  if (reg === "legal" && !L.owner) return { ok: false, msg: "집주인이 숙박업 등록에 동의하지 않았어요" };
+  if (reg === "legal" && L.owner !== true) return { ok: false, msg: "집주인의 숙박업 동의를 먼저 받아야 해요" };
   if (reg === "legal" && lawOn(s) && legalCount(s) >= legalSlots(s)) return { ok: false, msg: `명의가 모자라요(합법 ${legalCount(s)}/${legalSlots(s)}채). 명의를 더 모으거나 미등록으로` };
   const regFee = reg === "legal" ? Math.round(80 * SYN.pi(s)) : 0;
   const total = L.dep + L.setup + regFee, lack = total - s.cash;
@@ -54,9 +109,11 @@ export function contract(s, id, reg) {
   s.cash -= total; addMoney(s, "exp", "에어씨앤씨 오픈", total);
   const n = A.units.length + 1, R = D.AB_REGIONS[L.rk];
   const u = { ...L, id: "U" + (++A.seq), name: `${n}호 ${R.n} ${D.AB_TYPES[L.ty].n}`, reg, adr: Math.round(R.adr * D.AB_TYPES[L.ty].adrF * SYN.pi(s)), rating: 4.5, stays: 0, reviews: 0, unrep: 0, buzz: 0, months: 0, photo: 30 + s.st.sense / 3, ap: 0, last: null, hist: [], invested: total, banned: 0 };
+  if (reg === "legal" && L.owner === true && L.trap !== undefined) { u.regT = s.t + AB_ENTRY.regWait; u.trapSeen = !!L.doc; if (!L.trap) delete u.trap; } else delete u.trap; // 11-24 전입·등록에 한 달
   A.units.push(u); A.listings = A.listings.filter((x) => x !== L);
   if (A.t0 == null) A.t0 = s.t;
   log(s, `${u.name} 오픈 (${reg === "legal" ? "합법 등록" : "미등록"}). ${won(total)}`, "work");
+  if (u.regT != null) return { ok: true, msg: `${u.name} 계약. 주소를 옮기고 구청에 신고해요. 등록까지 한 달, 그동안은 월세만 나가요.`, unit: u };
   return { ok: true, msg: `${u.name} 오픈! ${reg === "legal" ? (R.city ? "외국인 위주(내국인은 일부), 등록 숙소 노출 +8%" : "누구나 받아요, 등록 숙소 노출 +8%") : "누구나 받지만 노출이 줄고 단속 위험이 있어요"}`, unit: u };
 }
 export function close(s, id) { const A = s.ab, u = A.units.find((x) => x.id === id); if (!u) return { ok: false }; s.cash += u.dep; addMoney(s, "inc", "보증금 회수", u.dep); A.units = A.units.filter((x) => x !== u); log(s, `${u.name} 정리`, "work"); return { ok: true, msg: `${u.name} 정리, 보증금 ${won(u.dep)} 회수` }; }
@@ -80,7 +137,7 @@ export function act(s, r, id, arg, boost = 1) {
   const u = A.units.find((x) => x.id === arg) || (id === "ab_reply" ? [...A.units].sort((a, b) => b.unrep - a.unrep)[0] : A.units[0]);
   if (id === "ab_reply") { const n = Math.min(u.unrep || 0, Math.round(15 + (s.st.lang || 0) / 4 + (s.st.write || 0) / 5)); u.unrep = Math.max(0, u.unrep - n); u.replyT = s.t; gainStat(s, "lang", 0.3); return { lines: [`${u.name} 답글 ${Math.round(n)}개 · 남은 것 ${Math.round(u.unrep)}`, "이번 달 별점 +"], msg: r.pick(["\"Thank you for staying! Come back for cherry blossoms!\"", "일본어 후기엔 일본어로. 번역기 반, 정성 반.", "\"다음엔 루프탑 비밀번호도 알려 드릴게요.\" 답글이 또 예약이 됐다."]) }; }
   if (id === "ab_clean") { u.ap += boost * clamp(0.85 + (s.st.hands || 0) / 300, 0.85, 1.25); u.unrep = Math.round((u.unrep || 0) * (1 - D.PR_REVIEW.reply.manageCut)); gainStat(s, "hands", 0.3); return { lines: [`${u.name} 관리 ${Math.round(u.ap * 10) / 10}/${needAp(s, u)}`], msg: "침구 교체, 머리카락 0개 작전, 웰컴 카드." }; }
-  if (id === "ab_photo") { u.photo = Math.min(100, u.photo + 8 + s.st.sense / 20); gainStat(s, "sense", 0.5); return { lines: [`${u.name} 사진·소개 ${Math.round(u.photo)}`], msg: "광각 렌즈, 오전 10시 햇살, 침대 위 수건 백조." }; }
+  if (id === "ab_photo") { u.photo = Math.min(100, u.photo + 8 + s.st.sense / 20); gainStat(s, "sense", 0.5); const B = AB_ENTRY.boom, bk = booming(u) && (u.bPhoto || 0) < B.photoMax && r.chance(clamp(0.5 + ((s.st.sense || 0) - B.photoDc) / 60, 0.15, 0.95)); if (bk) u.bPhoto = Math.min(B.photoMax, (u.bPhoto || 0) + B.photoF); return { lines: [`${u.name} 사진·소개 ${Math.round(u.photo)}`, ...(booming(u) ? [bk ? "첫 화면 사진이 눈에 띄어요 · 검색 노출 +" : "사진은 나아졌지만 검색에서 눈에 띄진 않아요"] : [])], msg: "광각 렌즈, 오전 10시 햇살, 침대 위 수건 백조." }; }
   if (id === "ab_host") {
     u.host = s.t; const ok = r.chance(clamp(0.35 + s.st.lang / 120 + s.st.talk / 400, 0.1, 0.95)); gainStat(s, "lang", 0.8);
     u.rating = clamp(u.rating + (ok ? 0.05 : -0.03), 3.5, 5);
@@ -100,16 +157,22 @@ export function month(s, r, notes, scenes) {
   const RK = D.PR_REVIEW, UK = D.UTIL_K.ab; let shortSum = 0;
   for (const u of A.units) {
     const R = D.AB_REGIONS[u.rk], T = D.AB_TYPES[u.ty];
+    if (u.regT != null) { // 11-24 전입·등록 대기
+      if (s.t >= u.regT && u.trap && !u.trapDone) { u.trapDone = true; scenes.push(trapScene(s, u)); s.cash -= u.rent; addMoney(s, "exp", "에어씨앤씨 비용", u.rent); total -= u.rent; continue; }
+      if (s.t >= u.regT) { delete u.regT; notes.push(`${u.name}: 숙박업 등록 완료. 오늘부터 손님을 받아요`); }
+      else { s.cash -= u.rent; addMoney(s, "exp", "에어씨앤씨 비용", u.rent); total -= u.rent; notes.push(`${u.name}: 전입·등록 기다리는 중(월세만 나감)`); continue; }
+    }
     if (u.banned > 0) { u.banned--; s.cash -= u.rent; addMoney(s, "exp", "에어씨앤씨 비용", u.rent); total -= u.rent; notes.push(`${u.name}: 영업정지 중(월세는 나감)`); continue; }
     const seas = (R.peak.includes(s.cal) ? 1.35 : R.off ?? 1) * (D.AB_SEASON[s.cal - 1]);
     const fx = A.fx > 0 ? 1.3 : 1, intl = s.era.pandemic ? 0.15 : s.era.intl ? 0.5 : 1;
     const langF = clamp(0.45 + s.st.lang / 110, 0.4, 1.3) * mod(s, "abLang", 1);
     const foreignD = R.foreign * fx * intl * langF * (SYN.on(s, "ovs_ab") ? 1.1 : 1) * (SYN.on(s, "insta_ab") ? 1.06 : 1), domesticD = (u.reg === "legal" && R.city ? AB_LAW.cityDomestic : 1) * (1 - R.foreign) * (s.era.winter ? 0.8 : 1); // 서울 합법: 내국인은 공유숙박 특례로 절반만
     const dl = DF.lift(s, u); // 안 꾸민 숙소는 '알아서' 수준(거의 0)
-    const pEff = adrNow(s, u), ref = refNow(s, u); // v4.28 성수기 가격·경쟁사 시세(성수기 인상·전쟁)
+    const pEff = adrNow(s, u) * (u.half && booming(u) ? AB_ENTRY.boom.half : 1), ref = refNow(s, u); // v4.28 성수기 가격·경쟁사 시세(성수기 인상·전쟁)
     let occ = AB_LAW.occ * seas * (foreignD + domesticD) * (0.6 + u.photo / 250 + dl * DF.DECO.photo) * (1 + (u.rating - 4.6) * 0.8) * Math.pow(ref / pEff, elOf(u.rk, s.cal)) * (A.super ? 1.12 * (u.reg === "legal" ? AB_LAW.legalSuper : 1) : 1) * (u.reg === "legal" ? AB_LAW.legalShow : AB_LAW.illegalShow) * (1 - 0.03 * (s.pr?.mkt?.[u.rk]?.comp || 0));
     occ *= RVW.reviewMult("ab", u) * (1 + (RK.ev[A.revEv]?.rebook || 0)) * (1 + Math.min(0.2, (u.buzz || 0) / 300)); // v4.28 후기 수·상위 노출·단골·입소문
     if (u.months === 0) occ *= 0.6;
+    occ *= boomF(u); if (u.half && !booming(u)) { u.half = false; notes.push(`${u.name}: 후기 ${AB_ENTRY.boom.n}개를 채웠어요. 반값 행사를 끝내고 정상 노출돼요`); } // 11-24 첫 후기 5개 전에는 검색에 잘 안 보인다
     occ *= SJ.ramp(s, "airbnb"); // 첫 숙소 초반 고생(sj.js ENTRY)
     const q = A.cohost ? 1 : clamp(u.ap / needAp(s, u), 0, 1); occ *= 0.8 + 0.2 * q;
     occ = clamp(occ * (1 + 0.08 * r.normal()), 0.03, 0.97);
@@ -416,6 +479,12 @@ const F30_CHOOSE = {
 
 // v4.28 장면 선택(core.js 가 SCENE_FN 에 붙인다). 봇 기본 선택: 모두 0번이 무난
 export const AB_CHOOSE = {
+  ab_trap(s, r, i, ok, sc) { // 11-24 숨은 함정
+    const A = s.ab, u = A.units.find((x) => x.id === sc.abU); if (!u) return [];
+    if (i === 0) { const back = Math.round(u.dep * (1 - AB_ENTRY.quitLoss)); s.cash += back; addMoney(s, "inc", "보증금 회수", back); A.units = A.units.filter((x) => x !== u); log(s, `${u.name}: ${AB_TRAPS[u.trap].n}. 계약을 깨고 나왔다.`, "work"); return [`보증금 ${won(back)} 회수`, `세팅비·보증금 ${won(u.invested - back)} 손실`]; }
+    if (i === 1) { u.reg = "illegal"; delete u.regT; log(s, `${u.name}: 등록이 막혀 미등록으로 열었다.`, "work"); return ["미등록으로 영업 시작", "노출이 줄고 단속 위험이 있어요"]; }
+    const m = r.int(AB_ENTRY.waitMo[0], AB_ENTRY.waitMo[1]); u.regT = s.t + m; if (u.trap === "crowd") nbAdd(s, -10); return [`${m}개월쯤 걸려요`, "그동안 월세만 나가요", ...(u.trap === "crowd" ? ["이웃 인심 −10"] : [])];
+  },
   ...F30_CHOOSE,
   ab_rv(s, r, i, ok) { return RVW.reviewChoose(s, r, i, ok, s.ab.units); },
   ab_war(s, r, i) {

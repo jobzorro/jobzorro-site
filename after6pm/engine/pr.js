@@ -6,6 +6,9 @@ import * as BIG from "./big.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 import * as DF from "./decofx.js"; // 방 꾸미기 감성 점수 효과
 import { JOBEV } from "../gen/data.js";
+import * as RD from "./round.js";
+export const PR_R1 = { occ: 1.6 }; if (typeof process !== "undefined" && process.env?.PRR1) PR_R1.occ = +process.env.PRR1;
+import * as PW from "./prwave.js"; // 11-23 컨셉 위기·컨셉 잠금·관리 이득
 import * as RVW from "./review.js"; // v4.28 경쟁사 가격표·가격 전쟁·후기 사건
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -62,7 +65,7 @@ export function decorCost(s, rm, picks) {
   return Math.round(c * rm.size / 22 * SYN.pi(s) * D.scaleF(s.pr.rooms.length) * mod(s, "interiorCost", 1));
 }
 export const avgProfit = (rm) => { const h = rm.hist.slice(-6); return h.length ? h.reduce((a, x) => a + x.profit, 0) / h.length : 0; };
-export const conceptOk = (L, k) => { const c = D.CONCEPTS[k]; return c.req ? c.req(L) : null; };
+export const conceptOk = (L, k, s) => { const c = D.CONCEPTS[k]; return (c.req ? c.req(L) : null) || (s ? PW.lockWhy(s, k) : null); }; // s 를 주면 능력치 잠금도 본다(11-23)
 export function quote(s, L, o) {
   const it = D.INTERIORS[o.interior ?? 1], scale = L.size / 22, pi = SYN.pi(s), n = s.pr.rooms.length + 1, sf = D.scaleF(n);
   let interior = Math.round(it.cost * scale * pi * sf * (D.PR_COND[L.cond || "empty"]?.cost ?? 1) * mod(s, "interiorCost", 1) * mod(s, "openCost", 1) * (1 - helperPower(s, "pr_interior") * 0.12));
@@ -223,7 +226,7 @@ const fmt = (x) => Math.round(x * 10) / 10;
 export function contract(s, listingId, o) {
   const pr = s.pr; const L = pr.listings.find((x) => x.id === listingId); if (!L) return { ok: false, msg: "매물이 없어요" };
   const it = D.INTERIORS[o.interior ?? 1];
-  const why = conceptOk(L, o.concept); if (why) return { ok: false, msg: `${D.CONCEPTS[o.concept].n}: ${why}` };
+  const why = conceptOk(L, o.concept, s); if (why) return { ok: false, msg: `${D.CONCEPTS[o.concept].n}: ${why}` };
   if (o.ondol && !L.hid.ondolOk && L.seen.ondolOk) return { ok: false, msg: "이 매물은 온돌 시공이 안 돼요" };
   const qt = quote(s, L, { ...o, ondol: o.ondol && L.hid.ondolOk }); const total = qt.total;
   const lack = total - s.cash;
@@ -241,7 +244,7 @@ export function contract(s, listingId, o) {
   return { ok: true, msg: `${rm.name} 계약! ${o.self ? "셀프 공사 3번 필요" : "업체 공사 중, 다음 달 오픈"}`, room: rm };
 }
 export function setPrice(s, roomId, price) { const rm = s.pr.rooms.find((x) => x.id === roomId); if (rm) rm.price = clamp(Math.round(price), 5, 120); }
-export function setConcept(s, roomId, concept) { const rm = s.pr.rooms.find((x) => x.id === roomId); if (!rm || rm.concept === concept) return { ok: false }; const why = conceptOk(rm, concept); if (why) return { ok: false, msg: why }; const c = Math.round((300 * rm.size / 22 + (D.CONCEPTS[concept].kit || 0)) * SYN.pi(s)); s.cash -= c; addMoney(s, "exp", "컨셉 변경 공사", c); rm.concept = concept; rm.rating = Math.max(3.8, rm.rating - 0.1); return { ok: true, msg: `컨셉 변경 (${won(c)})` }; }
+export function setConcept(s, roomId, concept) { const rm = s.pr.rooms.find((x) => x.id === roomId); if (!rm || rm.concept === concept) return { ok: false }; const why = conceptOk(rm, concept, s); if (why) return { ok: false, msg: why }; const c = Math.round((300 * rm.size / 22 + (D.CONCEPTS[concept].kit || 0)) * SYN.pi(s)); s.cash -= c; addMoney(s, "exp", "컨셉 변경 공사", c); rm.concept = concept; rm.rating = Math.max(3.8, rm.rating - 0.1); return { ok: true, msg: `컨셉 변경 (${won(c)})` }; }
 export function buySystem(s, key, roomId) {
   const sys = s.pr.sys, def = D.SCALE.systems[key];
   const nOpen = s.pr.rooms.length;
@@ -325,7 +328,7 @@ export function cutAdvice(s, rm) {
   if (decorFilled(rm.decor) < 3) fixes.push({ w: "휑한 공간은 사진에서 걸러져요", a: "꾸미기로 빈 칸 채우기" });
   if (rm.rating < 4.3) fixes.push({ w: `별점 ${rm.rating.toFixed(2)}`, a: "청소·꾸미기로 별점 4.5 회복" });
   if ((rm.buzz || 0) < 15) fixes.push({ w: "입소문이 거의 없어요", a: "리뷰 이벤트·홍보 사진" });
-  const best = Object.entries(d.fit).filter(([k]) => !conceptOk(rm, k)).sort((a, b) => b[1] - a[1])[0];
+  const best = Object.entries(d.fit).filter(([k]) => !conceptOk(rm, k, s) && !PW.sunk(s, k)).sort((a, b) => b[1] - a[1])[0];
   if (best && (d.fit[rm.concept] ?? 0.8) < best[1] - 0.25) fixes.push({ w: `이 상권엔 '${D.CONCEPTS[best[0]].n}' 컨셉이 더 맞아요`, a: "컨셉 변경" });
   if (rm.walk > 10) walls.push(`역에서 ${rm.walk}분. 위치는 못 고쳐요`);
   if (rm.hid?.landlord === "싫어함" || rm.notice) walls.push("건물주가 파티룸을 싫어해요");
@@ -366,6 +369,7 @@ export function needAp(s, rm) {
   n -= helperPower(s, "pr_clean") * 0.4;
   n -= Math.min(1.5, (s.pr.know || 0) / 60);
   if ([3, 4, 9, 10].includes(s.cal) && SYN.on(s, "season")) n += 0.5;
+  n *= PW.apMult(s, rm); // 11-23 같은 컨셉 지점이 여럿이면 관리가 덜 든다
   return Math.max(0.5, Math.round(n * 2) / 2);
 }
 export function totalNeed(s) { return s.pr.rooms.reduce((a, rm) => a + needAp(s, rm), 0); }
@@ -446,6 +450,8 @@ function settle(s, r, rm, ctx) {
   let base = (d.we * (c.we ?? 1) * sw * 24 + d.wk * (c.wk ?? 1) * sk * 22 * BIG.fullWk(s)) / 46 * D.PR_K * (d.fit[rm.concept] ?? 0.8);
   base *= s.cal === 12 ? (c.dec ?? 1) : isPeak(s.cal) ? 1 : (c.off ?? 1);
   let m = 1;
+  m *= PW.occMult(s, rm); // 11-23 침몰한 컨셉은 예약이 해마다 준다
+  if (RD.isR1(s)) m *= PR_R1.occ; // 11-24 1회차(7년 맛보기)는 동네 첫 파티룸 효과로 예약이 더 든다. 2회차부터는 원래대로
   m *= { 좋음: 1.05, 보통: 1, 나쁨: 0.9 }[rm.hid.sound];
   m *= rm.walk <= 5 ? 1.08 : rm.walk <= 10 ? 0.95 : 0.78; // 역에서 멀면 크게 손해
   if (rm.floor === -1 && rm.concept === "bridal") m *= 0.82;
@@ -498,7 +504,7 @@ function settle(s, r, rm, ctx) {
   const cleanUnit = (s.pr.sys.cleanContract ? D.SCALE.cleanCost(nAll, cluster) : cleanH ? D.SCALE.cleanCost(nAll, cluster) * 0.7 : 0) * pi;
   const UK = D.UTIL_K.pr; // v4.28 쓰는 만큼: 기본 + 예약당 전기·수도 + 겨울 온돌(예약당 크게)·여름 에어컨
   const util = Math.round((UK.base + bookings * (UK.per + (winter ? (rm.ondol ? UK.ondol : rm.heating === "냉난방기만" ? UK.air : UK.boiler) : [7, 8].includes(s.cal) ? UK.ac : 0))) * (rm.size / 22) * pi * (0.6 + 0.4 * sf));
-  const mgmt = (rm.rent * 0.1 + util + bookings * (cleanUnit + D.SCALE.supply(nAll) * pi)) * knowCost(s) * (1 - (ctx.B?.cost || 0)); // 묶음 효과: 공용 고정비 나눠 쓰기
+  const mgmt = (rm.rent * 0.1 + util + bookings * (cleanUnit + D.SCALE.supply(nAll) * pi)) * knowCost(s) * (1 - (ctx.B?.cost || 0)) * PW.costMult(s, rm); // 묶음 효과: 공용 고정비 나눠 쓰기 · 11-23 같은 컨셉 지점끼리 비품·청소 묶음
   let cost = rm.rent + mgmt + rev * (D.PR_FEE + (s.era.fee ? 0.02 * mod(s, "feeShock", 1) : 0));
   cost *= mod(s, "prCost", 1) * clamp(1.02 - (s.st.num || 0) / 3000, 0.96, 1.02);
   const utilB = Math.round(util * knowCost(s) * (1 - (ctx.B?.cost || 0)) * mod(s, "prCost", 1)); // 장부 '전기·난방비'

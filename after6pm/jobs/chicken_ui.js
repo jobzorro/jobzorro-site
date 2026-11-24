@@ -1,5 +1,6 @@
 // 프랜차이즈 치킨 보드: 매장 카드(배달퉁 별점·플레이스 순위·11% 막대·알바·점장), 창업 준비 체크리스트, 개인회생 위험 신호.
 import * as CH from "../engine/jobs/chicken.js";
+import * as BR from "../engine/jobs/chbrand.js"; // 브랜드(11-23)
 
 const pct = (v, t) => (t > 0 ? Math.round((v / t) * 100) : 0);
 // 매출 100원이 어디로 가나: 재료·배달수수료·인건비·임차료·기타·남는 돈
@@ -27,6 +28,16 @@ function dangerCard(c) {
     <div class="tiny ${d.lv >= 2 ? "bad" : "muted"}" style="margin-top:2px">${tip}</div></div>`;
 }
 
+// 상권 카드(11-23): 분석한 동네의 손님 구성·전망·브랜드 궁합, 계약 갱신까지 남은 달
+function areaCard(c) {
+  const { S, esc } = c, q = BR.areaInfo(S); if (!q) return "";
+  const pc = (f) => `${f >= 1 ? "+" : "−"}${Math.abs(Math.round((f - 1) * 100))}%`;
+  const bar = (m) => `<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin:3px 0">${m.map((v, i) => `<i style="width:${Math.round(v * 100)}%;background:${["#8db8f0", "#f0bd4a", "#b78cff", "#74c796"][i]}"></i>`).join("")}</div>`;
+  const svT = (v) => v ? `${bar(v.mix)}<div class="tiny muted">${BR.SEGS.map((n, i) => `${n} ${Math.round(v.mix[i] * 100)}→${Math.round(v.next[i] * 100)}%`).join(" · ")} (지금→5년 뒤)</div>` : `<div class="tiny muted">상권 분석을 안 해서 손님 구성을 몰라요</div>`;
+  const rows = (q.cands || []).map((x) => `<div style="margin-top:6px"><b class="small">${esc(x.n)}</b>${svT(x.sv)}</div>`).join("") + q.stores.map((x) => `<div style="margin-top:6px"><div class="row"><b class="small">${esc(x.name)} · ${esc(x.area)}</b><span class="grow"></span>${x.fit != null ? `<span class="tiny" style="color:${x.fit >= 1 ? "var(--green)" : "var(--red)"}">브랜드 궁합 ${pc(x.fit)}</span>` : ""}</div>${svT(x.sv)}</div>`).join("");
+  if (!rows) return "";
+  return `<div class="card"><div class="row"><b>상권</b><span class="grow"></span>${q.left != null ? `<span class="tiny ${q.left <= 3 ? "bad" : "muted"}">가맹 계약 갱신까지 ${Math.max(0, q.left)}개월</span>` : ""}</div>${rows}${q.open && S.chicken.stores.length ? `<div class="tiny bad" style="margin-top:6px">계약 갱신이 다가와요. 지금 상권 분석을 할 수 있어요.</div>` : ""}</div>`;
+}
 function prepCard(c) {
   const { S, won, actRow, esc } = c, C = S.chicken;
   const steps = ["가맹 상담·정보공개서(14일 숙려)", "점주 교육(평일 닷새)", "견적·계약·오픈"];
@@ -37,7 +48,7 @@ function prepCard(c) {
     <div class="tiny muted" style="margin-top:6px">정보공개서는 계약 14일 전에 받아야 해요(가맹거래사 동행 시 7일). 본사 공시 창업비는 5천만 원이지만 전기·가스·닥트·철거·소방·권리금이 붙어 실제는 2배가 넘어요. 모자라면 창업대출(최대 ${won(CH.LOAN_MAX)}, 5년 원금 상환) → 신용대출 순서로 빌려요.</div>
     <div class="small" style="margin-top:6px">내 현금 ${won(Math.max(0, S.cash))} · 빌릴 수 있는 돈 포함 <b>${won(cap)}</b></div></div>
     ${C.step >= 2 ? row(CH.TYPES.deliv.n, qd) + row(CH.TYPES.hall.n, qh) : ""}
-    <div class="acts" style="padding:0">${actRow("ch_prep", undefined, ["가맹 상담 받기 (정보공개서)", "점주 교육 받기", "견적 받고 계약·오픈"][C.step])}</div>`;
+    ${areaCard(c)}<div class="acts" style="padding:0">${C.step === 0 && !C.brand ? actRow("ch_survey") : ""}${actRow("ch_prep", undefined, C.step === 0 && !C.pickA && !C.brand ? "부동산 발품 (자리 고르기)" : C.step === 0 && !C.brand ? "브랜드 고르기 (창업 박람회)" : ["가맹 상담 받기 (정보공개서)", "점주 교육 받기", "견적 받고 계약·오픈"][C.step])}</div>`;
 }
 
 function storeCard(c, st) {
@@ -72,7 +83,7 @@ function storeCard(c, st) {
 
 export default {
   key: "chicken", ic: "coin", bg: "pub", sjBg: "pub",
-  icons: { ch_prep: "brief", ch_shift: "wrench", ch_market: "mega", ch_crew: "users", ch_mgr: "users" },
+  icons: { ch_survey: "search", ch_prep: "brief", ch_shift: "wrench", ch_market: "mega", ch_crew: "users", ch_mgr: "users" },
   tile: (S) => (S.chicken.stores.length ? `${S.chicken.stores.length}곳 · ★${S.chicken.stores[0].rating.toFixed(1)}` : ["상담 전", "교육 전", "오픈 전"][S.chicken.step] || "준비 중"),
   side: (S) => `치킨 Lv${S.chicken.lv}`,
   quick: (S) => (S.chicken.step < 3 ? "ch_prep" : S.chicken.stores.length ? "ch_shift" : null),
@@ -94,13 +105,15 @@ export default {
     else if (lv === 3) prog = st1 ? Math.min(1, Math.max(0, st1.cum) / st1.invested) : 0;
     else if (lv === 4) prog = Math.min(1, C.stores.length / 3);
     else prog = 1;
-    return `${boardHead("chicken")}<div class="card"><h3>${esc("황금닭")} 치킨 <small>Lv${lv} ${esc(LV[lv].n)}</small></h3>
+    return `${boardHead("chicken")}<div class="card"><h3>${esc(C.brand || C.stores.length || C.step ? BR.name(S) : "브랜드 미정")} <small>Lv${lv} ${esc(LV[lv].n)}</small></h3>
+      ${C.brand || C.stores.length ? `<div class="tiny muted" style="margin:-4px 0 6px">${esc(BR.f(S).tag)} · 올해 주문 ${BR.dem(S) >= 1 ? "+" : "−"}${Math.abs(Math.round((BR.dem(S) - 1) * 100))}% · 재료비 ${Math.round(BR.f(S).mat * 100)}%${BR.f(S).ad ? ` · 광고 분담금 ${(BR.f(S).ad * 100).toFixed(1)}%` : ""} · 업계 ${BR.rank(S).findIndex((x) => x.k === BR.cur(S)) + 1}위</div>` : ""}
       <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div><div><div class="k">매장</div><div class="v">${C.stores.length}/3곳</div></div>
       <div><div class="k">회수</div><div class="v gold">${inv ? `${pct(Math.max(0, cum), inv)}%` : "-"}</div></div>${C.scandal ? `<div><div class="k">불매</div><div class="v bad">${C.scandal}달</div></div>` : ""}${C.costUp ? `<div><div class="k">닭값 급등</div><div class="v bad">${C.costUp}달</div></div>` : ""}</div>
       ${lv < 5 ? `<div class="small" style="margin-top:6px">다음 <b class="gold">Lv${lv + 1} ${esc(LV[lv + 1].n)}</b>: ${esc(nx.need)}</div>${meter(prog * 100, 100, "var(--gold)")}<div class="tiny muted">열리는 것: ${esc(LV[lv + 1].open)}</div>` : `<div class="small good" style="margin-top:6px">치킨 3형제 완성. 법인 전환·본업 전환을 고를 수 있어요.</div>`}
       <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">매출 100원이 어디로 가나 · 자세히 ▾</summary><div class="tiny muted">월매출에서 재료 47%·배달수수료 15%·인건비 17%·임차료 10%를 빼면 11% 남아요. 직접 튀기면 인건비가 줄고 별점이 올라요. 알바가 그만두면 그 빈자리는 내가 튀겨야 해요. 연말·여름이 성수기, 2월이 비수기. 매년 1월 최저임금이 올라요.</div></details></div>
       ${(C.stores.length || C.loan > 0) && (() => { const d = CH.danger(S); return d.late > 0 || d.loss > 0 || d.flow < 0 || d.runway <= 6 || d.lv >= 2; })() ? dangerCard(c) : ""}
       ${C.step < 3 ? prepCard(c) : ""}
+      ${C.step >= 3 && C.stores.length ? `${areaCard(c)}${BR.surveyOpen(S) ? `<div class="acts" style="padding:0">${actRow("ch_survey")}</div>` : ""}` : ""}
       ${C.stores.map((st) => storeCard(c, st)).join("")}
       ${C.stores.length ? `<details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">깃발·리뷰 이벤트·리뉴얼 자세히 ▾</summary><div class="tiny muted">깃발 하나에 월 ${won(Math.round(CH.CH_F30.flag.cost * (S.pi || 1)))}. 내 깃발 하나 = 주문 +3%(5개째부터 반), 옆 가게 깃발 하나 = −3%. 내가 더 꽂으면 옆 가게도 따라 꽂아요. 리뷰 이벤트는 별점 +0.12, 원가는 매출의 2%. 3달 넘게 하다 끊으면 4달 동안 별점이 내려가요. 가맹 5년마다 본사가 리뉴얼(배달형 2,500만·홀 4,000만)을 요구해요. 거부하면 1년 뒤 재계약이 거절될 수 있어요.</div></details>` : ""}
       ${C.step >= 3 && !(C.stores.length && (lv < 4 || C.stores.length >= 3)) ? `<div class="acts" style="padding:0">${actRow("ch_prep", undefined, C.stores.length ? `${C.stores.length + 1}호점 출점 상담` : "다시 창업하기(견적·계약)")}</div>` : ""}

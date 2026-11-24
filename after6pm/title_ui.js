@@ -167,7 +167,7 @@ export function draw(root, c) {
     <div class="a6t-pb">
       <h1 class="a6t-logo">After <span>6</span>PM</h1>
       <div class="a6t-sub">파이어족을 꿈꾸는 퇴근 후 사장님</div>
-      <div class="a6t-tag2">회사 다니며 투잡으로 ${won(target0)} 모아 은퇴하기. ${years}년짜리 인생 한 판.</div>
+      <div class="a6t-tag2">회사 다니며 투잡으로 ${won(target0)} 모아 은퇴하기. 1회차는 7년 맛보기, 2회차부터 ${years}년짜리 인생 한 판.</div>
       <div class="a6t-marq" aria-label="투잡 ${jobs.length}개: ${jobs.map(esc).join(", ")}"><span aria-hidden="true">${marq}${marq}</span></div>
       ${ngLine}${contCard}
       ${mode === "ng" ? ngBtn : mode === "first" ? `<button class="a6t-gold" data-new>새 인생 시작</button>` : ""}
@@ -245,7 +245,7 @@ function startWin(c, slot) {
 function quickWin(c, slot) {
   const { esc, u, D } = c, st = { gender: "M", name: "" };
   const paint = () => c.openWin(`<h2>추천 캐릭터로 시작 <button class="x" data-close>✕</button></h2><div class="small muted">성별과 이름만 정해 주세요. 나머지는 시작할 때 한 번 뽑아요. 뽑힌 결과는 '나' 화면에서 볼 수 있어요.</div>
-    <div class="seg" style="margin-top:10px"><button class="${st.gender === "M" ? "on" : ""}" data-a6g="M">남자 · ${D.endAge("M")}세까지</button><button class="${st.gender === "F" ? "on" : ""}" data-a6g="F">여자 · ${D.endAge("F")}세까지</button></div>
+    <div class="seg" style="margin-top:10px"><button class="${st.gender === "M" ? "on" : ""}" data-a6g="M">남자 · 27세</button><button class="${st.gender === "F" ? "on" : ""}" data-a6g="F">여자 · 27세</button></div>
     ${u?.nick ? `<div class="card small" style="margin-top:8px">닉네임 <b class="gold">${esc(u.nick)}</b>${((w) => { w = String(w ?? ""); const ch = w.charCodeAt(w.length - 1); if (ch < 0xac00 || ch > 0xd7a3) return "로"; const f = (ch - 0xac00) % 28; return f && f !== 8 ? "으로" : "로"; })(u.nick)} 살아요.</div>` : `<input class="a6t-in" placeholder="이름 (비우면 '나')" value="${esc(st.name)}" data-a6name maxlength="8">`}
     <div class="row" style="margin-top:12px"><button class="btn grow" data-a6wiz style="padding:12px">직접 만들기</button><button class="btn gold grow" data-a6go style="padding:12px">이대로 시작</button></div>`, (w) => {
     const nm = w.querySelector("[data-a6name]"); if (nm) nm.oninput = () => (st.name = nm.value.trim());
@@ -261,10 +261,10 @@ function tourWin(c, onStart) {
   const { won, D, esc } = c, target = won(D.FIRE_TARGET.single), nJobs = Object.values(D.SIDEJOBS).filter((j) => j.play).length, nPpl = Object.keys(c.CHAR).length;
   const ppl = pickCast(c);
   const P = [
-    { bg: "img/bg/desk.webp", who: [], h: `낮에는 <span>회사원</span>`, t: `막 취업한 1~3년 차 직장인으로 시작해요. 한 달에 한 번씩 행동력을 받아 회사 일, 공부, 취미, 사람 만나기에 나눠 써요. 평가와 승진도 내 몫이에요.` },
+    { bg: "img/bg/desk.webp", who: [], h: `낮에는 <span>회사원</span>`, t: `27세 직장인으로 시작해요. 한 달에 한 번씩 행동력을 받아 회사 일, 공부, 취미, 사람 만나기에 나눠 써요. 평가와 승진도 내 몫이에요.` },
     { bg: "img/bg/partyroom.webp", who: [], h: `퇴근 후에는 <span>사장님</span>`, t: `투잡은 ${nJobs}가지. 회사 소문이나 취미에서 발견하고, 두 개까지 굴릴 수 있어요. 투잡마다 규칙과 골칫거리가 달라요. 회사에 들키지 않는 것도 실력이에요.` },
     { bg: "img/bg/dinner.webp", who: ppl, h: `사람 <span>${nPpl}명</span>, 인생은 판마다 달라요`, t: `동네에서 사람을 만나 친구, 스승, 연인이 돼요. 결혼하면 목표가 커지지만 손도 늘어요. 큰 순간은 화보로 앨범에 남아요.` },
-    { bg: "img/keyvisual.webp", who: [], h: `목표는 순자산 <span>${target}</span> 파이어`, t: `내 집과, 꺼내 써도 줄지 않는 돈을 합쳐 ${target}. 남자는 27세부터 ${D.endAge("M")}세, 여자는 25세부터 ${D.endAge("F")}세까지 똑같이 ${D.endAge("M") - 27}년이에요. 한번 재미지게 살아 보십시다!` },
+    { bg: "img/keyvisual.webp", who: [], h: `목표는 순자산 <span>${target}</span> 파이어`, t: `내 집과, 꺼내 써도 줄지 않는 돈을 합쳐 ${target}. 1회차는 27세부터 34세까지 맛보는 7년이에요. 2회차부터 ${D.endAge("M")}세까지 ${D.endAge("M") - 27}년, 본격적인 삶을 살아요. 한번 재미지게 살아 보십시다!` },
   ];
   let at = 0;
   const paint = () => c.openWin(`<div class="a6t-tour"><h2>After 6PM은 이런 게임 <button class="x" data-close>✕</button></h2>

@@ -1,5 +1,6 @@
 // 투잡 탐색 + 취미. 투잡은 처음부터 정해져 있지 않다. 너튜브·리포트·세미나·회사 소문·취미에서 '발견'하고, 두 개까지 고른다.
 import * as D from "./defs.js";
+import * as RD from "./round.js";
 import { CHAR, addMoney, log, jo, won, gainStat, meetScene, openScene, sceneOk, reveal, ensureRel } from "./core.js";
 import { DISC, SCENES } from "../gen/data.js";
 import * as REG from "./reg.js"; // 새 투잡 플러그인(투잡 칸 +1·접기 조건)
@@ -10,7 +11,8 @@ export function hbInit() { return { joined: [], cnt: {}, lastT: {}, since: {} };
 
 // ───────── 투잡 ─────────
 // 투잡 칸: 기본 2개, 매니저(파티룸 매니저·에어씨앤씨 코호스트·컨설팅 공동 코치)를 두면 3개
-export function slots(s) { const coach = Object.entries(s.rel || {}).some(([id, x]) => x.helper && CHAR[id]?.helper?.effect === "cs_coach"); const plug = REG.JOBS.some((P) => P.slot && s[P.key] && P.slot(s)); return D.SJ_SLOTS + (s.pr?.sys?.manager || s.ab?.cohost || s.uc?.agent || coach || plug ? 1 : 0); }
+export function slots(s) { return slots0(s) + RD.slotMore(s); } // 11-23 3회차 특전: 투잡 칸 +1
+function slots0(s) { const coach = Object.entries(s.rel || {}).some(([id, x]) => x.helper && CHAR[id]?.helper?.effect === "cs_coach"); const plug = REG.JOBS.some((P) => P.slot && s[P.key] && P.slot(s)); return D.SJ_SLOTS + (s.pr?.sys?.manager || s.ab?.cohost || s.uc?.agent || coach || plug ? 1 : 0); }
 // 버그 6: 투잡 칸 +1 을 주는 것(위탁·매니저·점장·코호스트·조교·하청·공동 코치)을 끄려 할 때, 끈 뒤 칸 수보다 하는 투잡이 많으면 막는다.
 // off = 잠깐 꺼 보는 함수(되돌리는 함수를 돌려준다). 막아야 하면 안내 글, 아니면 null
 export function slotLock(s, off) { const back = off(); const n = slots(s); back(); return (s.sj?.active?.length || 0) > n ? `투잡 하나를 먼저 접으세요(이걸 끊으면 투잡 칸이 ${n}개로 줄어요)` : null; }
@@ -60,10 +62,32 @@ export function found(s, job, how) {
 // 첫 3개월은 투잡 탐색만(v4.25): 시작은 4개월 차부터
 export const PROBATION = 3;
 export const NEED_CANDS = 2; // 투잡 후보(발견한 투잡)가 이만큼 있어야 고를 수 있다
+// 초반 퀘스트(11-24): 첫 6개월 동안 ① 투잡 정보 5개 이상 → ② 이해도 100% 두 개 이상 → ③ 궁합 카드를 보고 고른다. 1회차 새 게임(s.flags.quest)에만 건다
+export const QUEST = { info: 5, months: 6, hearX: 1.6 };
+export const questOn = (s) => !!s.flags?.quest && (s.ng?.n || 1) <= 1 && !s.flags?.noProbation;
+export const infoCount = (s) => Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && ((s.sj.int[k] || 0) > 0 || isFound(s, k))).length;
+export function questInfo(s) {
+  const info = infoCount(s), cands = foundCount(s), picked = (s.sj.active || []).length > 0 || !!s.flags?.questDone;
+  const step = info < QUEST.info ? 1 : cands < NEED_CANDS ? 2 : picked ? 4 : 3;
+  return { on: questOn(s) && !picked, info, cands, step, left: Math.max(0, QUEST.months - s.t), list: Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && (s.sj.int[k] || 0) > 0).sort((a, b) => (s.sj.int[b] || 0) - (s.sj.int[a] || 0)).map((k) => ({ k, n: D.SIDEJOBS[k].n, v: Math.round(s.sj.int[k] || 0) })) };
+}
+// 궁합 카드: 내 역량·특성이 그 투잡에 얼마나 맞는지 + 무엇을 키우면 좋은지
+export function fitCard(s, job) {
+  const j = D.SIDEJOBS[job]; if (!j) return null; const f = fit(s, job), W = [50, 30, 20], N = need(s, job);
+  const stats = (j.fit || []).map((k, i) => ({ k, n: D.STATS[k], v: Math.round(s.st[k] || 0), w: W[i] || 0 }));
+  const links = []; for (const id of s.me.traits || []) { const tr = D.TRAITS.find((x) => x.id === id); for (const h of tr?.hid || []) if (h.d === job) links.push({ n: tr.n, t: h.t }); }
+  const grow = []; const seen = new Set();
+  if (N && !N.ok) { grow.push({ n: N.n, cur: N.cur, to: N.need, how: N.how, why: "시작 문턱" }); seen.add(N.st); }
+  if (SKILL[job] && N && !seen.has(N.st) && N.cur < SKILL[job]) { grow.push({ n: N.n, cur: N.cur, to: SKILL[job], how: N.how, why: "제값을 받는 수준" }); seen.add(N.st); }
+  for (const x of stats) if (!seen.has(x.k) && x.v < 55) { grow.push({ n: x.n, cur: x.v, to: 55, how: STAT_HOW[x.k] || "공부", why: `궁합의 ${x.w}%` }); seen.add(x.k); }
+  const line = { S: "타고났어요. 시작만 하면 돼요.", A: "잘 맞아요. 초반 고생이 짧아요.", B: "할 만해요. 아래 역량을 키우면 훨씬 편해요.", C: "쉽지 않아요. 역량부터 올리고 시작하는 걸 권해요.", D: "지금은 안 맞아요. 다른 후보를 먼저 보세요." }[f.g];
+  return { job, n: j.n, g: f.g, v: f.v, stats, links, grow: grow.slice(0, 3), need: N, line, inc: j.inc, hours: j.hours, cap: j.cap };
+}
 export const foundCount = (s) => Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && isFound(s, k)).length;
 export function startLock(s) {
   if (s.flags?.noProbation) return null;
   if (s.t < PROBATION) return `입사 첫 ${PROBATION}개월은 회사 적응과 탐색 기간이에요. ${PROBATION + 1}개월 차부터 시작할 수 있어요`;
+  if (questOn(s) && infoCount(s) < QUEST.info) return `투잡 정보를 ${QUEST.info}개 이상 모아야 해요(지금 ${infoCount(s)}개). 회사 수다·취미 모임·지도 장소·사람들에게서 들을 수 있어요`;
   if (foundCount(s) < NEED_CANDS) return `투잡 후보를 ${NEED_CANDS}개 이상 찾아야 고를 수 있어요(지금 ${foundCount(s)}개). 취미 모임·지도 장소·리포트·선배 찾아가기로 알아보세요`;
   return null;
 }
@@ -274,7 +298,7 @@ export const ENTRY = {
       { t: "\"1만 명 넘으면 협찬이 건당 13만~65만 원이에요. 광고 표기는 꼭 하고, 회사 사람이 팔로우할 수 있다는 것도 각오해요.\"", m: "1만 넘으면 건당 13~65만 · 광고 표기 필수 · 회사 노출 각오" }],
     ask: "\"올리는 요일과 시간을 정해요. 저는 화·목·토 저녁 9시예요.\"", help: ["sense", "선배 촬영을 하루 도왔다. 30초 영상에 4시간. 조명 하나 옮기는 데만 20분."],
     next: "계정이 자리 잡았어요. 이제 협찬 단가를 올리고, 한 달에 한 번은 정보형 릴스로 새 사람을 데려와요." },
-  airbnb: { st: "lang", need: 30, f0: 0.55, rm: 8, pt: 32, disc: 8, who: "c049", whoN: "숙소 3채 운영 4년 차 호스트",
+  airbnb: { st: "lang", need: 40, /* 11-24 진입을 늦춘다 */ f0: 0.55, rm: 8, pt: 32, disc: 8, who: "c049", whoN: "숙소 3채 운영 4년 차 호스트",
     prep: { cost: 3, list: ["입주민 동의·영업신고 절차 알아보기", "외국인 게스트 응대 문장 연습", "사진 잘 나온 숙소 30곳 분석"] },
     acts: { ab_photo: "qual", ab_host: "rev" },
     shock: "첫 달 예약률이 바닥이다. 후기 0개 숙소는 검색 뒤로 밀리고, 사진은 어둡다. 게스트 질문에 답이 늦어서 예약이 옆 숙소로 넘어갔다.",
@@ -541,14 +565,16 @@ export function candMonth(s, notes, scenes) {
 // 곳곳에서 조금씩 듣는 투잡 정보(v4.25): 회사·사람·이벤트에서 이해도가 조금씩 오른다
 const WHO_JOB = [[/디자이너|인테리어|포토|사진|스타일/, ["insta", "pr", "airbnb"]], [/개발|엔지니어|데이터|프로그래/, ["vibe"]], [/작가|에디터|기자|웹툰|PD|편집/, ["webnovel", "insta"]], [/교사|강사|선생|과외|대학원|연구/, ["tutoring", "cs"]], [/사장|카페|바리스타|요리|셰프|자영업|가게/, ["ucafe", "chicken", "pr"]], [/부동산|중개|건축|공인/, ["airbnb", "pr"]], [/인사|HR|채용|컨설/, ["cs"]], [/타로|명리|상담|심리/, ["tarot"]], [/마케|MD|브랜드|광고/, ["insta", "vibe"]]];
 export function hearInfo(s, r, src, who) {
-  const P = { co: 0.3, people: 0.35, event: 0.18 }[src] || 0.2;
+  const QN = questOn(s) && s.t < QUEST.months && !(s.sj.active || []).length; // 초반 퀘스트 동안은 소문이 더 잘 들리고, 처음 듣는 투잡부터 들린다
+  const P = ({ co: 0.3, people: 0.35, event: 0.18 }[src] || 0.2) * (QN ? QUEST.hearX : 1);
   if (!s.sj?.open || !r.chance(P)) return null;
   let pool = null;
   if (who && CHAR[who]) { const m = WHO_JOB.find(([re]) => re.test(CHAR[who].job || "")); if (m) pool = m[1]; }
   let cands = (pool || Object.keys(D.SIDEJOBS)).filter((k) => D.SIDEJOBS[k]?.play && !isFound(s, k));
   if (!cands.length) cands = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && !isFound(s, k));
   if (!cands.length) return null;
-  const l = addInt(s, r.pick(cands), r.int(4, 8)); if (!l) return null;
+  if (QN && infoCount(s) < QUEST.info) { const fresh = cands.filter((k) => !(s.sj.int[k] > 0)); if (fresh.length) cands = fresh; }
+  const l = addInt(s, r.pick(cands), r.int(4, 8) + (QN ? 4 : 0)); if (!l) return null;
   const pre = { co: "회사에서 주워들은 얘기", people: who && CHAR[who] ? `${CHAR[who].name}에게 들은 얘기` : "사람들에게 들은 얘기", event: "흘려들은 얘기" }[src];
   return `${pre} · ${l}`;
 }

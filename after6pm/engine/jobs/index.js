@@ -5,4 +5,5 @@ import webnovel from "./webnovel.js";
 import tutoring from "./tutoring.js";
 import chicken from "./chicken.js";
 import vibe from "./vibe.js";
-export const PLUGINS = [tarot, webnovel, tutoring, chicken, vibe].filter(Boolean);
+import club from "./club.js"; // 11-23 취미 모임
+export const PLUGINS = [tarot, webnovel, tutoring, chicken, vibe, club].filter(Boolean);
