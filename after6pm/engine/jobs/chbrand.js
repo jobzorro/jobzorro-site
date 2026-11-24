@@ -171,6 +171,7 @@ export function renewScene(s, r) {
 }
 // 달마다: 계약 갱신 경고와 갱신
 export function areaMonth(s, r, notes, scenes) {
+  { const C0 = s.chicken; if (C0 && !C0.stores.length && (C0.ctT != null || C0.ctWarned)) { C0.ctT = null; C0.ctWarned = false; } } // 11-24 다 접었으면 옛 계약 날짜를 지운다
   const C = s.chicken, B = AREA_BAL; if (!C.stores.length) return; initArea(s, r);
   for (const st of C.stores) if (typeof st.ai !== "number") st.ai = areaOf(st);
   if (C.ctT == null) C.ctT = s.t + r.int(B.term[0], B.term[1]) - Math.max(...C.stores.map((x) => x.months)) % B.term[0];

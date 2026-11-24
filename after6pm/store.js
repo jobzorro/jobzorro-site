@@ -6,7 +6,10 @@
 //   B) window.AFTER6PM_API 만 넣고, 서버의 GET {API}/me 가 { id, nick } 를 돌려준다(로그인 안 됐으면 401).
 // 서버 주소 규칙은 docs/SAVE_API.md 참고. 사용자 확인은 서버가 세션 쿠키로 한다(게임이 보내는 id를 믿지 않는다).
 
-export const SLOTS = 3; // 아이디마다 진행 칸 3개. 0번 칸은 연구 기록(지난 판 결과)용.
+export const SLOTS = 3;
+let allow = 1; // 쓸 수 있는 칸 수(기본 1, 저장 칸 추가로 3까지). ui.js 가 setAllow 로 정한다
+export function setAllow(n) { allow = Math.max(1, Math.min(SLOTS, n | 0)); }
+export const allowed = () => allow; // 아이디마다 진행 칸 3개. 0번 칸은 연구 기록(지난 판 결과)용.
 const LS = "after6pm_v4_slot_"; // 로컬: after6pm_v4_slot_0 ~ _3
 let mode = "local", user = null, API = "";
 const pend = {}; let timer = null;
@@ -39,7 +42,9 @@ export async function list() {
   let rows = [];
   if (mode === "server") { try { rows = (await call("GET", "/slots"))?.slots || []; } catch (e) { rows = []; } }
   else for (let n = 1; n <= SLOTS; n++) { const v = lsGet(n); if (v) rows.push({ slot: n, summary: v.summary, updatedAt: v.updatedAt }); }
-  return Array.from({ length: SLOTS }, (_, i) => rows.find((x) => +x.slot === i + 1) || { slot: i + 1, empty: true });
+  const all = Array.from({ length: SLOTS }, (_, i) => rows.find((x) => +x.slot === i + 1) || { slot: i + 1, empty: true });
+  let room = Math.max(0, allow - all.filter((x) => !x.empty).length); // 11-24 빈 칸은 허용된 수만큼만 보인다(쓰던 칸은 늘 보인다)
+  return all.filter((x) => !x.empty || room-- > 0);
 }
 // 칸 하나 읽기 → 저장 문자열(data) 또는 null
 export async function load(n) {

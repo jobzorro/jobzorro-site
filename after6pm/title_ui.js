@@ -224,7 +224,7 @@ export function draw(root, c) {
 // 저장 칸 목록: 불러오기 + 지우기(시작 화면에서는 지우기를 밖에 두지 않는다)
 function slotsWin(c, last) {
   const { esc, won } = c, saved = c.slots.filter((x) => !x.empty);
-  c.openWin(`<h2>저장한 인생 <span class="tag gold">${saved.length}/${c.slots.length}칸</span> <button class="x" data-close>✕</button></h2><div class="small muted">누르면 그 인생을 이어서 해요. 한 아이디에 ${c.slots.length}칸까지 저장돼요.</div>
+  c.openWin(`<h2>저장한 인생 <span class="tag gold">${saved.length}/${c.slots.length}칸</span> <button class="x" data-close>✕</button></h2><div class="small muted">누르면 그 인생을 이어서 해요. 기본 1칸이고, 저장 칸 추가로 3칸까지 늘릴 수 있어요.</div>
     <div class="a6t-sl">${saved.map((sl) => `<div class="${sl === last ? "a6t-cur" : ""}"><button class="a6t-go" data-a6go="${sl.slot}"><b>${sl.slot}번 칸 · ${esc(sl.summary?.name || "")}${sl === last ? ' <span class="tag gold">마지막에 하던 인생</span>' : ""}</b><span>${sl.summary?.end ? "끝난 인생 · " : ""}${sl.summary?.age ?? "?"}세 · ${esc(sl.summary?.ym || "")} · 순자산 ${won(sl.summary?.nw || 0)}</span><span class="tiny muted">${esc(sl.summary?.job || "")}${sl.summary?.side ? " · 투잡 " + esc(sl.summary.side) : ""}</span></button><button class="a6t-del" data-a6del="${sl.slot}">지우기</button></div>`).join("")}</div>`, (w) => {
     w.querySelectorAll("[data-a6go]").forEach((b) => (b.onclick = () => { c.closeWin(); c.act.load(+b.dataset.a6go); }));
     w.querySelectorAll("[data-a6del]").forEach((b) => (b.onclick = () => { const n = +b.dataset.a6del;

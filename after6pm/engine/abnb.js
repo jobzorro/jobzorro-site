@@ -116,7 +116,7 @@ export function contract(s, id, reg) {
   if (u.regT != null) return { ok: true, msg: `${u.name} 계약. 주소를 옮기고 구청에 신고해요. 등록까지 한 달, 그동안은 월세만 나가요.`, unit: u };
   return { ok: true, msg: `${u.name} 오픈! ${reg === "legal" ? (R.city ? "외국인 위주(내국인은 일부), 등록 숙소 노출 +8%" : "누구나 받아요, 등록 숙소 노출 +8%") : "누구나 받지만 노출이 줄고 단속 위험이 있어요"}`, unit: u };
 }
-export function close(s, id) { const A = s.ab, u = A.units.find((x) => x.id === id); if (!u) return { ok: false }; s.cash += u.dep; addMoney(s, "inc", "보증금 회수", u.dep); A.units = A.units.filter((x) => x !== u); log(s, `${u.name} 정리`, "work"); return { ok: true, msg: `${u.name} 정리, 보증금 ${won(u.dep)} 회수` }; }
+export function close(s, id) { const A = s.ab, u = A.units.find((x) => x.id === id); if (!u) return { ok: false }; if (u.trap && u.trapDone && u.regT != null) u.dep = Math.round(u.dep * (1 - AB_ENTRY.quitLoss)); /* 11-24 등록이 막힌 채 정리하면 계약을 깬 것과 같다 */ s.cash += u.dep; addMoney(s, "inc", "보증금 회수", u.dep); A.units = A.units.filter((x) => x !== u); log(s, `${u.name} 정리`, "work"); return { ok: true, msg: `${u.name} 정리, 보증금 ${won(u.dep)} 회수` }; }
 export function setAdr(s, id, v) { const u = s.ab.units.find((x) => x.id === id); if (u) u.adr = clamp(Math.round(v), 3, 80); }
 
 export const needAp = (s, u) => { const A = s.ab, far = D.AB_REGIONS[u.rk].far * 0.5, m = A.clean || "self"; if (A.cohost) return 0.25; if (m !== "self") return Math.max(0.5, Math.round((far + AB_F30.clean[m].ap) * 2) / 2); return Math.max(0.5, Math.round(((u.last?.shortStays ?? u.last?.stays ?? 8) / 4 + far) * 2) / 2); }; // v4.29 청소 방식

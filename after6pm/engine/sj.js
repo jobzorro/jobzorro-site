@@ -100,7 +100,7 @@ export function start(s, job) {
   if (isActive(s, job)) return { ok: false, msg: "이미 하고 있어요" };
   { const why = startLock(s); if (why) return { ok: false, msg: why }; }
   if (sj.active.length >= slots(s)) return { ok: false, msg: `투잡은 지금 ${slots(s)}개까지. 매니저를 두면 한 칸 늘어요` };
-  sj.active.push(job); log(s, `${jo(j.n, "을", "를")} 시작하기로 했다.`, "work");
+  sj.active.push(job); s.flags.questDone = s.t; log(s, `${jo(j.n, "을", "를")} 시작하기로 했다.`, "work");
   { const P = REG.get(job); if (P) { if (!s[job]) s[job] = P.init(s); if (P.onStart) P.onStart(s); } }
   const hid = reveal(s, job);
   const N = need(s, job); const warn = N && !N.ok ? ` · ${N.n} ${N.cur}/${N.need}: 초반이 더 힘들 거예요` : "";

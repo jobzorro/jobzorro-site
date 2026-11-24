@@ -477,7 +477,7 @@ function top() {
     <div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div>
     <div><div class="k">목표까지</div><div class="v ${f.ready ? "good" : ""}">${Math.round(f.ratio * 100)}%</div></div><span class="more">${ic("info")}</span></button>
     ${(() => { const rw = E.runway(S), used = S.loans.find((l) => l.n === "신용대출")?.amt || 0; if (!(rw.late || rw.months <= 12 || used > 0)) return ""; const red = rw.late || rw.months <= 3; return `<button class="runway ${red ? "bad" : "warn"}" data-money>${rw.late ? `⚠ 카드값 연체 ${rw.late}개월째 · ${3 - rw.late}달 더 밀리면 개인회생` : `${rw.months === Infinity ? "흑자 중" : `버틸 수 있는 달 <b>${rw.months}개월</b>`} · 남은 신용 한도 <b>${won(rw.credit)}</b>${used ? ` · 신용대출 ${won(used)}` : ""}`}</button>`; })()}
-    ${ui.page === "home" || ui.page === "family" ? relChips() : ""}<div class="apbar" data-apinfo><span class="lab">${ic("bolt")}이번 달 행동력</span><div class="bar"><i style="width:${apPct}%"></i></div><span class="num">${S.ap}/${S.apMax}</span>${BMX.bmOn() ? `<button class="a6ap-plus" data-bmap aria-label="행동력 채우기">+</button>` : ""}<span class="hp">스태미너 <b>${Math.round(S.hp)}</b></span></div></div>`;
+    ${ui.page === "home" || ui.page === "family" ? relChips() : ""}<div class="apbar" data-apinfo><span class="lab">${ic("bolt")}이번 달 행동력</span><div class="bar"><i style="width:${apPct}%"></i></div><span class="num">${S.ap}/${S.apMax}</span>${BMX.qaOn() ? `<span class="tag red" style="margin-left:4px">QA</span>` : ""}${BMX.bmOn() ? `<button class="a6ap-plus" data-bmap aria-label="행동력 채우기">+</button>` : ""}<span class="hp">스태미너 <b>${Math.round(S.hp)}</b></span></div></div>`;
 }
 // 위쪽 왼쪽 관계 얼굴(v4.25): 배우자·연인·아이. 누르면 그 사람 창(아이는 가족 화면)
 function relChips() {
@@ -1161,7 +1161,7 @@ function loveWin(id) {
     love && S.sj.active.length ? b("showwork", "내 일 보여 주기", "⚡1 · 투잡 +30%", done("workT")) : "",
     love ? b("trip", "여행", "⚡3 · 80만") : "",
     x.anv && x.anv.t <= S.t ? b("anniv", `${x.anv.n} 챙기기`, `⚡1 · ${x.anv.n === "100일" ? LK.anniv.cash[0] : LK.anniv.cash[1]}만`, false, true) : "",
-    st === "crush" && x.aff >= 70 && !S.fam.spouse ? (RD.loveOpen(S) ? b("confess", x.cfBack ? "대답 기다리는 중" : "고백하기", "⚡1", !!x.cfBack, true) : `<div class="a6lv-b lock"><b>고백</b><span>2회차부터 열려요</span></div>`) : "",
+    st === "crush" && x.aff >= 70 && !S.fam.spouse ? (RD.loveOpen(S) ? b("confess", x.cfBack != null ? "대답 기다리는 중" : "고백하기", "⚡1", x.cfBack != null, true) : `<div class="a6lv-b lock"><b>고백</b><span>2회차부터 열려요</span></div>`) : "",
     x.lover && months >= 8 && x.aff >= 85 ? b("propose", "프러포즈", "⚡2 · 반지 300만", false, true) : "",
     hs ? b("helper", x.helper ? "조력 그만 부탁" : "투잡 도와 달라고", "⚡0") : "",
     x.lover ? b("breakup", "헤어지기", "") : "",
@@ -1177,13 +1177,14 @@ function loveWin(id) {
       <div class="tiny muted" style="margin-top:4px">좋아함: ${(c.likes || []).map(esc).join(", ")}${(c.dislikes || []).length ? ` · 싫어함: ${c.dislikes.map(esc).join(", ")}` : ""}</div>
       ${hs ? helperHint(id) : ""}
       <div class="a6lv-g">${acts}</div>
+      ${x.lastChat && x.lastChat.q < 2 && S.t - x.lastChat.t <= 1 ? `<button class="btn sm" style="width:100%;margin-top:8px" data-bmredo="${id}">지난 까톡 다시 답하기 · ${esc(BMX.label("chatRedo"))}</button>` : ""}
       <div class="tiny muted" style="margin-top:6px">까톡은 찾아가지 않아도 와요(행동력 0). ${love ? "두 달 넘게 못 만나면 서운해해요. 바쁜 달엔 연락하기라도." : RD.loveOpen(S) ? "" : "연애는 2회차부터 열려요. 지금은 두근두근까지."}</div></div></div>`,
     (el) => el.querySelectorAll("[data-pa]").forEach((bt) => bt.onclick = () => { const k = bt.dataset.pa; if (S.pending) { closeWin(); return showScene(); } const res = k === "talk" ? E.talkTo(S, id) : E.personAct(S, id, k); if (!res.ok) return toast([], res.msg); closeWin(); afterRes(res); }), false, true);
 }
 function charWin(id) {
   const c = E.CHAR[id], x = S.rel[id];
   if (!x) { const res = E.talkTo(S, id); if (!res.ok) return toast([], res.msg); return afterRes(res); }
-  if (LVX.isBig(S, id)) return loveWin(id);
+  if (LVX.isBig(S, id) && !x.affair) return loveWin(id);
   const romance = E.isRomanceable(S, c);
   const months = x.lover ? S.t - x.loverSince : 0;
   const here = Object.values(S.spot).some((ids) => ids.includes(id));
@@ -1202,7 +1203,7 @@ function charWin(id) {
       ${here ? btn("talk", "말 걸기", 1) : ""}${x.aff >= 15 ? btn("meetup", "약속 잡기(4만)", 1) : ""}
       ${btn("giftpick", "선물 고르기", 0)}${x.aff >= LVX.LV.drink.min ? btn("drink", `술 한잔(${LVX.LV.drink.cash}만)`, 1) : ""}
       ${x.lover || x.spouse || x.affair ? btn("date", x.affair ? "몰래 만나기(10만)" : "데이트(10만)", 1) + btn("trip", x.affair ? "몰래 여행(80만)" : "여행(80만)", 3) : ""}
-      ${romance && !x.lover && !x.spouse && x.aff >= 70 && !S.fam.spouse ? (RD.loveOpen(S) ? btn("confess", x.cfBack ? "대답 기다리는 중" : "고백하기", 1) : `<span class="tiny muted" style="align-self:center">고백은 2회차부터 열려요</span>`) : ""}
+      ${romance && !x.lover && !x.spouse && x.aff >= 70 && !S.fam.spouse ? (RD.loveOpen(S) ? btn("confess", x.cfBack != null ? "대답 기다리는 중" : "고백하기", 1) : `<span class="tiny muted" style="align-self:center">고백은 2회차부터 열려요</span>`) : ""}
       ${x.lover && months >= 8 && x.aff >= 85 ? btn("propose", "프러포즈(반지 300만)", 2) : ""}
       ${hs ? btn("helper", x.helper ? "조력 그만 부탁" : "투잡 도와 달라고 부탁", 0) : ""}
       ${x.lover ? btn("breakup", "헤어지기", 0) : ""}
@@ -1210,7 +1211,7 @@ function charWin(id) {
     const k = b.dataset.pa; let res;
     if (S.pending) { closeWin(); return showScene(); }
     if (k === "talk") res = E.talkTo(S, id);
-    else if (k.startsWith("gift")) res = E.personAct(S, id, "gift", +k.slice(4));
+    else if (/^gift\d+$/.test(k)) res = E.personAct(S, id, "gift", +k.slice(4));
     else res = E.personAct(S, id, k);
     if (!res.ok) return toast([], res.msg);
     closeWin(); afterRes(res);
@@ -1526,7 +1527,8 @@ function settingsWin(slots) {
   const empty = slots?.find((x) => x.empty);
   openWin(`<h2>설정 <button class="x" data-close>✕</button></h2>
     ${sw("sound", "효과음", "누를 때·돈 들어올 때 짧은 소리")}${sw("music", "배경 음악", "화면에 맞춰 잔잔한 음악. 처음 들을 때 곡을 받아요")}<label class="setrow tjx-vol${g.music ? "" : " off"}"><span class="grow"><b>음악 크기</b></span><input type="range" min="0" max="100" step="5" value="${Math.round(BGM.volume() * 100)}" data-mvol aria-label="음악 크기"><span class="tjx-onoff on" data-mvolv>${Math.round(BGM.volume() * 100)}</span></label>${sw("vib", "진동", "안드로이드 폰에서만 울려요")}${sw("big", "큰 글씨", "화면 전체를 조금 크게")}${S ? `<button class="setrow" data-coach><span class="grow"><b>투잡 코치</b><span class="tiny muted">초반 고생 구간의 코치 한마디·할 일 안내</span></span><span class="tjx-onoff ${S.sj.coachOff ? "" : "on"}">${S.sj.coachOff ? "끔" : "켬"}</span><span class="tgl ${S.sj.coachOff ? "" : "on"}"><i></i></span></button>` : ""}
-    ${!S ? `<div class="tiny muted" style="margin-top:8px">한 아이디에 인생 3개까지 저장돼요. 세 칸이 다 차면 한 칸을 지우고 시작해요.</div>` : ""}
+    ${!S ? `<div class="tiny muted" style="margin-top:8px">인생은 ${ST.allowed()}칸까지 저장돼요(기본 1칸, 저장 칸 추가로 3칸까지). 칸이 다 차면 한 칸을 지우고 시작해요.</div>` : ""}
+    <button class="btn" style="width:100%;margin-top:8px" data-bmshop>상점 ${BMX.qaOn() ? "(QA 모드)" : "(준비 중)"}</button>
     <div class="card" style="margin-top:10px"><h3>저장 백업</h3><div class="tiny muted" style="margin-bottom:6px">로그인하지 않으면 이 기기에만 저장돼요. 앱을 지우기 전에 코드를 복사해 두면 다시 불러올 수 있어요.</div>
       ${S ? `<button class="btn sm" data-bkcopy>지금 인생 코드 복사</button>` : ""}
       ${!S && slots ? (empty ? `<textarea data-bkin rows="3" placeholder="백업 코드를 붙여 넣으세요" style="width:100%;margin-top:6px;font-size:11px;background:#0b0d1a;color:#dfe3ff;border:1px solid #2a2e55;border-radius:8px;padding:6px"></textarea><button class="btn sm gold" data-bkload style="margin-top:6px">${empty.slot}번 칸으로 불러오기</button>` : `<div class="tiny muted">불러오려면 빈 칸이 하나 있어야 해요.</div>`) : ""}
@@ -1671,6 +1673,7 @@ function diffChips(a, b) { return D.STAT_KEYS.filter((k) => Math.round(b[k]) !==
 // ───────── 시작 화면(B안, 11-23): 사람에 따라 세 모습. 그리기는 title_ui.js, 여기서는 재료와 동작만 잇는다 ─────────
 async function renderTitle() {
   bgmGo();
+  ST.setAllow(1 + BMX.extraSlots() + (BMX.qaOn() ? 2 : 0)); // 저장 칸: 기본 1 + 산 만큼(QA 모드는 3칸)
   const slots = await ST.list(), u = ST.who(), m = meta(), hall = await ST.hallList();
   const done = mgDoneMap(), all = mgAll();
   const loadSlot = async (n) => {
@@ -1781,7 +1784,7 @@ function renderGift() {
   };
   const hardOk = (m.runs?.length || 0) >= 2;
   return `<h2>${n}회차 인생</h2><div class="small muted">지난 인생에서 얻은 <b class="gold">기억 포인트</b>로 선물을 골라요. 안 쓴 포인트는 다음 회차로 넘어가요.</div>
-    <div class="card" style="text-align:center"><div class="tiny muted">남은 기억 포인트</div><div class="gold" style="font-size:26px;font-weight:900">${left} / ${pts}</div></div>
+    <div class="card" style="text-align:center"><div class="tiny muted">남은 기억 포인트</div><div class="gold" style="font-size:26px;font-weight:900">${left} / ${pts}</div>${BMX.bmOn() ? `<button class="btn sm" style="margin-top:6px" data-bmpts>기억 포인트 +${BMX.BM.slots.giftSlot.pts} · ${esc(BMX.label("giftSlot"))}</button>` : ""}</div>
     ${GIFTS.map(row).join("")}
     <div class="card gift ${hardOk ? "" : "lock"}"><div class="row"><div class="grow"><b>어려움 모드</b> <span class="tag red">3회차부터</span><div class="small muted">연말 평가가 더 짜고 파이어 목표가 25% 높아요. 대신 끝날 때 기억 포인트가 2배예요.</div></div><button class="btn sm ${w.hard ? "gold" : ""}" data-ghard ${hardOk ? "" : "disabled"}>${w.hard ? "켜짐" : "꺼짐"}</button></div></div>
     ${ngCollection(m)}`;
@@ -1961,12 +1964,19 @@ function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { co
 // 1회차 결산 등급 카드(11-23): 등급과 2회차에 들고 가는 것. C는 '구원의 손길'로 B 보상
 // 행동력 채우기(돈 버는 자리): 광고 +1(한 달 1번) · 에너지 드링크 +2
 // 돈 버는 자리 버튼은 어느 화면에 있든 눌리게 문서 전체에서 받는다
-document.addEventListener("click", async (e) => { const t = e.target.closest?.("[data-bmap],[data-bmgrade]"); if (!t || !S) return; e.stopPropagation(); if (t.hasAttribute("data-bmap")) return bmApWin(); const pr = await BMX.pay("gradeUp"); if (!pr.ok) return toast([], pr.msg); const m = meta(); m.r1Grade = "S"; m.r1GradeUp = true; setMeta(m); S.gradeUp = true; toast(["2회차 시작 보상이 S등급으로 바뀌었어요"], pr.msg); save(); render();  if ($modal.innerHTML) closeWin(); }, true);
+document.addEventListener("click", async (e) => { const t = e.target.closest?.("[data-bmap],[data-bmgrade],[data-bmshop],[data-bmpts],[data-bmredo]"); if (!t) return; if (t.hasAttribute("data-bmshop")) { e.stopPropagation(); return bmShopWin(); } if (t.hasAttribute("data-bmpts")) { e.stopPropagation(); const pr = await BMX.pay("giftSlot"); toast([], pr.msg); if (pr.ok) { const m = meta(); m.ngPts = (m.ngPts || 0) + BMX.BM.slots.giftSlot.pts; setMeta(m); render(); } return; } if (!S) return; e.stopPropagation(); if (t.hasAttribute("data-bmredo")) { const pr = await BMX.pay("chatRedo"); if (!pr.ok) return toast([], pr.msg); const sc = LVX.chatRedo(S, t.dataset.bmredo); if (!sc) return toast([], "다시 답할 까톡이 없어요"); closeWin(); E.openScene(S, sc); save(); return showScene(); } if (t.hasAttribute("data-bmap")) return bmApWin(); const pr = await BMX.pay("gradeUp"); if (!pr.ok) return toast([], pr.msg); const m = meta(); m.r1Grade = "S"; m.r1GradeUp = true; setMeta(m); S.gradeUp = true; toast(["2회차 시작 보상이 S등급으로 바뀌었어요"], pr.msg); save(); render();  if ($modal.innerHTML) closeWin(); }, true);
+// 상점: 사서 계속 갖는 것(저장 칸·광고 없애기·화보 팩)
+function bmShopWin() {
+  const L = Object.entries(BMX.BM.slots).filter(([, x]) => x.shop);
+  openWin(`<h2>상점 <button class="x" data-close>✕</button></h2><div class="small muted">${BMX.qaOn() ? "QA 모드예요. 누르면 결제 없이 바로 적용돼요." : "결제가 연결되면 열려요. 지금은 무엇을 팔 예정인지만 보여 드려요."}</div>
+    <div class="col" style="gap:8px;margin-top:12px">${L.map(([k, x]) => `<button class="btn" style="text-align:left" data-bms="${k}"><b>${esc(x.n)}</b> <span class="gold">${BMX.priceText(k)}</span>${BMX.owned(k) ? ` <span class="tag green">${x.max ? `${BMX.owned(k)}/${x.max}` : "쓰는 중"}</span>` : ""}<br><span class="tiny muted">${esc(x.d)}</span></button>`).join("")}</div>`,
+    (w) => w.querySelectorAll("[data-bms]").forEach((b) => b.onclick = async () => { const pr = await BMX.pay(b.dataset.bms); toast([], pr.msg); if (pr.ok) { closeWin(); if (!S) renderTitle(); else bmShopWin(); } }), false, true);
+}
 function bmApWin() {
   const adUsed = S.bmApT === S.t, itLeft = BMX.trialLeft("apItem");
   openWin(`<h2>행동력 채우기 <button class="x" data-close>✕</button></h2><div class="small muted">이번 달에 할 일이 남았는데 행동력이 모자랄 때 써요. 지금 ${S.ap}/${S.apMax}.</div>
-    <div class="col" style="gap:8px;margin-top:12px"><button class="btn gold" data-bma="apAd" ${adUsed ? "disabled" : ""}>광고 보고 행동력 +1 ${adUsed ? "(이번 달에 씀)" : "(한 달 1번)"}</button><button class="btn" data-bma="apItem">에너지 드링크 · 행동력 +2 ${itLeft ? "(체험 1회)" : "(준비 중)"}</button></div>
-    <div class="tiny muted" style="margin-top:8px">체험 운영 중이에요. 광고는 아직 안 나오고, 아이템은 한 번만 무료로 써 볼 수 있어요.</div>`, (w) => w.querySelectorAll("[data-bma]").forEach((b) => b.onclick = async () => { const k = b.dataset.bma; if (k === "apAd" && S.bmApT === S.t) return; const pr = await BMX.pay(k); if (!pr.ok) return toast([], pr.msg); const n = BMX.BM.slots[k].ap; S.ap += n; if (k === "apAd") S.bmApT = S.t; S.bmApN = (S.bmApN || 0) + n; closeWin(); toast([`행동력 +${n}`], pr.msg); save(); render(); }), false, true);
+    <div class="col" style="gap:8px;margin-top:12px"><button class="btn gold" data-bma="apAd" ${adUsed ? "disabled" : ""}>광고 보고 행동력 +1 ${adUsed ? "(이번 달에 씀)" : "(한 달 1번)"}</button><button class="btn" data-bma="apItem">${esc(BMX.label("apItem"))} · 행동력 +2</button></div>
+    <div class="tiny muted" style="margin-top:8px">${BMX.qaOn() ? "QA 모드라 바로 통과해요." : "광고와 결제가 연결되면 열려요. 지금은 준비 중이에요."}</div>`, (w) => w.querySelectorAll("[data-bma]").forEach((b) => b.onclick = async () => { const k = b.dataset.bma; if (k === "apAd" && S.bmApT === S.t) return; const pr = await BMX.pay(k); if (!pr.ok) return toast([], pr.msg); const n = BMX.BM.slots[k].ap; S.ap += n; if (k === "apAd") S.bmApT = S.t; S.bmApN = (S.bmApN || 0) + n; closeWin(); toast([`행동력 +${n}`], pr.msg); save(); render(); }), false, true);
 }
 function gradeCard() {
   const g = S.grade, rw = RD.rewardOf(g), nwv = Math.round(E.netWorth(S)), next = RD.RD.grades.slice().reverse().find(([k, v]) => v > nwv);
@@ -1974,7 +1984,7 @@ function gradeCard() {
   return `<div class="card"><div class="row"><div style="font-size:44px;font-weight:900;line-height:1;color:${col}">${g}</div><div class="grow" style="margin-left:12px"><b>1회차 결산</b><div class="tiny muted">순자산 ${won(nwv)} · ${RD.RD.grades.map(([k, v]) => `${k} ${v / 10000}억`).join(" · ")}${next ? ` · ${next[0]}까지 ${won(next[1] - nwv)}` : ""}</div></div></div>
     <div class="small" style="margin-top:8px">여기까지가 맛보기였어요. <b class="gold">2회차부터 50세까지 본격적인 삶</b>을 살아요. 연애와 결혼, 판이 바뀌는 큰 사건이 열려요.</div>
     <div class="small" style="margin-top:6px">${rw.rescued ? `<b class="gold">구원의 손길</b> · C등급이지만 B등급 보상으로 올려 드려요.<br>` : ""}2회차에 들고 가는 것: 시작 자금 +${won(rw.cash)}${rw.statUp ? ` · 모든 능력치 +${rw.statUp}` : ""}</div>
-    ${g !== "S" ? (S.gradeUp ? `<div class="tiny gold" style="margin-top:6px">S등급 보상으로 바꿨어요: 시작 자금 +${won(RD.RD.reward.S.cash)} · 모든 능력치 +${RD.RD.reward.S.statUp}</div>` : BMX.bmOn() ? `<button class="btn" style="width:100%;margin-top:8px" data-bmgrade>S등급 보상으로 받기 (시작 자금 +${won(RD.RD.reward.S.cash)} · 능력치 +${RD.RD.reward.S.statUp}) · ${BMX.trialLeft("gradeUp") ? "아이템(체험 1회)" : "아이템(준비 중)"}</button>` : "") : ""}</div>`;
+    ${g !== "S" ? (S.gradeUp ? `<div class="tiny gold" style="margin-top:6px">S등급 보상으로 바꿨어요: 시작 자금 +${won(RD.RD.reward.S.cash)} · 모든 능력치 +${RD.RD.reward.S.statUp}</div>` : BMX.bmOn() ? `<button class="btn" style="width:100%;margin-top:8px" data-bmgrade>S등급 보상으로 받기 (시작 자금 +${won(RD.RD.reward.S.cash)} · 능력치 +${RD.RD.reward.S.statUp}) · ${BMX.priceText("gradeUp")}${BMX.qaOn() ? "" : " · 준비 중"}</button>` : "") : ""}</div>`;
 }
 // ───────── 엔딩 ─────────
 function renderEnding() {

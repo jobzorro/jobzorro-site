@@ -18,6 +18,7 @@ export const LV = {
   hev: { gap: 4, p: { big: 0.1, small: 0.2, ap: 0.16 }, first: 3 },
 };
 const CHATS = GEN.CHATS || {}, FCHATS = GEN.FCHATS || [], HEV = GEN.HELPER_EV || [];
+const HEVP = GEN.HELPER_EV_P || {}; // 인물별로 다시 쓴 조력자 사건 글(11-24). 효과 숫자는 유형 사건(HEV)의 것을 쓴다
 const box = (s) => (s.lv = s.lv || { chatT: -9, hevT: -9, fseen: {} });
 
 // 관계 단계
@@ -31,7 +32,7 @@ export const STAGE_N = { spouse: "배우자", lover: "연인", crush: "두근두
 export const isBig = (s, id) => ["spouse", "lover", "crush"].includes(stageOf(s, id)); // 큰 화면으로 여는 사람
 // 만난 지 n개월 · 다음 기념일
 export function sinceInfo(s, id) {
-  const x = s.rel?.[id]; if (!x) return null; const t0 = x.spouse ? (s.fam.marriedT ?? x.loverSince) : x.loverSince; if (t0 == null || (!x.lover && !x.spouse)) return null;
+  const x = s.rel?.[id]; if (!x) return null; const t0 = x.loverSince ?? (x.spouse ? s.fam.marriedT : null); if (t0 == null || (!x.lover && !x.spouse)) return null;
   const m = Math.max(0, s.t - t0), nx = m < 3 ? 3 : (Math.floor(m / 12) + 1) * 12;
   return { months: m, label: m >= 12 ? `만난 지 ${Math.floor(m / 12)}년${m % 12 ? ` ${m % 12}개월` : ""}` : `만난 지 ${m}개월`, next: nx, nextN: nx === 3 ? "100일" : `${nx / 12}주년`, left: nx - m, due: x.anv ? x.anv.n : null };
 }
@@ -59,7 +60,9 @@ export function act(s, r, id, kind, arg) {
   const st = stageOf(s, id);
   if (kind === "giftpick") {
     if (x.gift === s.t) return { ok: false, msg: "이번 달엔 이미 선물했다" };
+    if (x.giftLook === s.t) return { ok: false, msg: "이번 달엔 이미 둘러봤다. 다음 달에 다시" };
     if (s.pending) return { ok: false, msg: "장면을 먼저 끝내세요" };
+    x.giftLook = s.t;
     return { ok: true, scene: giftScene(s, r, id), lines: [] };
   }
   if (kind === "drink") {
@@ -111,7 +114,7 @@ export function loveMonth(s, r, notes, scenes) {
   // 기념일: 그 달에 챙기지 않으면 서운해한다
   for (const [id, x] of Object.entries(s.rel || {})) {
     if (!CHAR[id] || (!x.lover && !x.spouse)) { if (x.anv) delete x.anv; continue; }
-    if (x.anv && x.anv.t < s.t) { const g = addAff(s, id, LV.anniv.miss); notes.push(`${CHAR[id].name}: ${x.anv.n}을 그냥 넘겼다 · 호감 ${g}`); if (x.spouse) s.fam.happy = clamp(s.fam.happy - 5, 0, 100); delete x.anv; }
+    if (x.anv && x.anv.t <= s.t) { const g = addAff(s, id, LV.anniv.miss); notes.push(`${CHAR[id].name}: ${x.anv.n}을 그냥 넘겼다 · 호감 ${g}`); if (x.spouse) s.fam.happy = clamp(s.fam.happy - 5, 0, 100); delete x.anv; }
     const q = sinceInfo({ ...s, t: s.t + 1 }, id); // 다음 달 기준
     if (q && (q.months === 3 || (q.months > 0 && q.months % 12 === 0)) && !x.anv) { x.anv = { t: s.t + 1, n: q.months === 3 ? "100일" : `${q.months / 12}주년` }; notes.push(`${jo(CHAR[id].name, "과", "와")} 다음 달이 ${x.anv.n}이에요. 그 달 안에 챙겨야 해요`); }
   }
@@ -121,7 +124,7 @@ export function loveMonth(s, r, notes, scenes) {
 const isJon = (c) => /요[.?!~ ]|요$|니다/.test(`${c.lines?.hello || ""} ${c.lines?.gift || ""}`);
 function chatScene(s, id, ch, friend) {
   const c = CHAR[id], Q = LV.chat.q;
-  return { kind: "event", who: id, expr: "smile", tag: "까톡", chat: true, title: `${c.name} · ${ch.time || "밤 10:30"}`, onChoose: "lv_chat", chatK: ch.k, text: (ch.msg || []).join("\n"),
+  return { kind: "event", who: id, expr: "smile", tag: "까톡", chat: true, chatF: !!friend, title: `${c.name} · ${ch.time || "밤 10:30"}`, onChoose: "lv_chat", chatK: ch.k, text: (ch.msg || []).join("\n"),
     choices: [...ch.opts.map((o) => ({ t: o.t, eff: { aff: Q[o.q] ?? 0, mental: o.q === 2 ? 1 : 0 }, text: o.re, chatQ: o.q })), { t: "답하지 않는다", eff: { aff: friend ? -1 : LV.chat.ignore }, text: ch.ignore || "읽고 답하지 않았다. 며칠 동안 연락이 없었다.", chatQ: -1 }] };
 }
 function chatMonth(s, r, scenes, B) {
@@ -149,14 +152,20 @@ function helperMonth(s, r, scenes, B) {
   const C = [];
   for (const [id, x] of Object.entries(s.rel || {})) { const c = CHAR[id]; if (!c?.helper?.effect || !jobOk(s, c.helper.board)) continue; for (const e of HEV) if (e.effect === c.helper.effect && x.aff >= e.aff && x.hev?.[e.tier] == null) C.push([id, e]); }
   if (!C.length) return; const [id, e] = r.pick(C); if (!r.chance(LV.hev.p[e.tier] || 0.15)) return;
-  const c = CHAR[id], x = s.rel[id], fill = (t) => String(t || "").replace(/\{n\}/g, c.name), fx = (ef) => { if (!ef) return ef; const o = { ...ef }; if (o.boost && x.spouse) o.boost = { ...o.boost, pct: o.boost.pct * 1.2 }; return o; };
+  const c = CHAR[id], x = s.rel[id], P = HEVP[id]?.[e.tier], pOk = P && Array.isArray(P.choices) && P.choices.length === e.choices.length, fill = (t) => String(t || "").replace(/\{n\}/g, c.name), fx = (ef) => { if (!ef) return ef; const o = { ...ef }; if (o.boost && x.spouse) o.boost = { ...o.boost, pct: o.boost.pct * 1.2 }; return o; };
   (x.hev = x.hev || {})[e.tier] = s.t; B.hevT = s.t;
-  scenes.push({ kind: "event", who: id, expr: "smile", tag: e.tier === "big" ? "인연 · 큰 건" : e.tier === "ap" ? "인연 · 일손" : "인연 · 호의", hev: e.id, once: "big", title: `${c.name} · ${e.title}`, text: fill(e.text),
-    choices: e.choices.map((ch) => (ch.check ? { t: fill(ch.t), check: ch.check, ok: { text: fill(ch.ok?.text), eff: fx(ch.ok?.eff) }, ng: { text: fill(ch.ng?.text), eff: fx(ch.ng?.eff) } } : { t: fill(ch.t), eff: fx(ch.eff), text: fill(ch.text) })) });
+  scenes.push({ kind: "event", who: id, expr: "smile", tag: e.tier === "big" ? "인연 · 큰 건" : e.tier === "ap" ? "인연 · 일손" : "인연 · 호의", hev: e.id, once: "big", title: `${c.name} · ${pOk ? P.title : e.title}`, text: pOk ? P.text : fill(e.text),
+    choices: e.choices.map((ch, i) => { const q = pOk ? P.choices[i] : null; return ch.check ? { t: q?.t || fill(ch.t), check: ch.check, ok: { text: q?.ok || fill(ch.ok?.text), eff: fx(ch.ok?.eff) }, ng: { text: q?.ng || fill(ch.ng?.text), eff: fx(ch.ng?.eff) } } : { t: q?.t || fill(ch.t), eff: fx(ch.eff), text: q?.text || fill(ch.text) }; }) });
 }
 export function helperDemo(s, tier) { // 화면 시험용
   for (const [id, x] of Object.entries(s.rel || {})) { const c = CHAR[id]; const e = HEV.find((q) => q.effect === c?.helper?.effect && q.tier === (tier || "big")); if (e) { const sc = []; x.aff = Math.max(x.aff, 80); const B = box(s); B.hevT = -99; const keep = s.sj.active; s.sj.active = [...new Set([...keep, "pr", "cs"])]; x.hev = {}; const r = { pick: () => [id, e], chance: () => true }; helperMonth(s, r, sc, B); s.sj.active = keep; return sc[0] || null; } }
   return null;
+}
+// 까톡 답 바꾸기: 지난 답의 호감 변화를 되돌리고 같은 까톡을 다시 연다
+export function chatRedo(s, id) {
+  const x = s.rel?.[id], L = x?.lastChat; if (!x || !L || L.q >= 2) return null;
+  const ch = L.f ? FCHATS.find((q) => q.k === L.k) : (CHATS[id]?.chats || []).find((q) => q.k === L.k); if (!ch) return null;
+  x.aff = clamp(x.aff - L.d, 0, 100); delete x.lastChat; return chatScene(s, id, ch, L.f);
 }
 export function chatDemo(s, when) { for (const [id, x] of Object.entries(s.rel || {})) { const ch = (CHATS[id]?.chats || []).find((q) => q.when === (when || "crush")); if (ch) { x.aff = Math.max(x.aff, 60); return chatScene(s, id, ch, false); } } const id = Object.keys(CHATS).find((k) => CHAR[k]); if (!id) return null; return chatScene(s, id, CHATS[id].chats[0], false); }
 
@@ -171,6 +180,7 @@ export const LV_CHOOSE = {
   },
   lv_chat(s, r, i, okv, sc) {
     const x = s.rel[sc.who], q = sc.choices[i]?.chatQ; if (!x) return [];
+    x.lastChat = { k: sc.chatK, t: s.t, q: q ?? -1, d: sc.choices[i]?.eff?.aff || 0, f: !!sc.chatF }; // 까톡 답 바꾸기(돈 버는 자리)용
     if (q === 2) { x.chatGood = (x.chatGood || 0) + 1; if ((x.lover || x.spouse) && x.chatGood % LV.chat.streak === 0) { s.mental = clamp(s.mental + 5, 0, 100); return ["말이 잘 통하는 사이 · 멘탈 +5"]; } } else x.chatGood = 0;
     return [];
   },
