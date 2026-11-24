@@ -59,7 +59,7 @@ export const REGIONS = [
   ] },
   { id: "company", n: "회사", hub: "co", desc: "월급이 나오는 곳. 그리고 눈치가 쌓이는 곳", spots: [
     { id: "desk", n: "내 자리", loc: "office", acts: ["work_hard", "overtime"] },
-    { id: "pantry", n: "탕비실", loc: "office", alt: "officest", acts: ["office_chat", "co_lunch"] },
+    { id: "pantry", n: "탕비실", loc: "office", acts: ["office_chat", "co_lunch"] }, // 11-24 alt: "officest" 삭제: 오피스 상권에 다니는 다른 회사 사람(호텔 매니저·헤드헌터 등)이 우리 회사 탕비실에 나오던 원인
     { id: "meeting", n: "회의실", loc: "office", acts: ["co_project", "co_resume"] },
     { id: "dinner", n: "회식 자리", loc: "office", acts: ["company_dinner"] },
   ] },

@@ -17,7 +17,7 @@ export const LV = {
   anniv: { ok: 10, miss: -8, cash: [5, 15], warn: 2 },
   hev: { gap: 4, p: { big: 0.1, small: 0.2, ap: 0.16 }, first: 3 },
 };
-const CHATS = GEN.CHATS || {}, FCHATS = GEN.FCHATS || [], HEV = GEN.HELPER_EV || [];
+const CHATS = GEN.CHATS || {}, FCHATS = GEN.FCHATS || [], HEV = (GEN.HELPER_EV || []).map((e) => ({ ...e, aff: Math.max(50, e.aff) })); // 11-24 투잡에 도움이 되는 사람인지는 호감 50부터 드러난다
 const HEVP = GEN.HELPER_EV_P || {}; // 인물별로 다시 쓴 조력자 사건 글(11-24). 효과 숫자는 유형 사건(HEV)의 것을 쓴다
 const box = (s) => (s.lv = s.lv || { chatT: -9, hevT: -9, fseen: {} });
 

@@ -84,12 +84,61 @@ export function fitCard(s, job) {
   return { job, n: j.n, g: f.g, v: f.v, stats, links, grow: grow.slice(0, 3), need: N, line, inc: j.inc, hours: j.hours, cap: j.cap };
 }
 export const foundCount = (s) => Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && isFound(s, k)).length;
+// 고르는 때(11-24): 입사 6개월까지는 못 고른다 → 6개월을 채운 달에 '고르는 장면'이 꼭 뜬다 → 안 한다고 하면 1년 차에 다시, 그 뒤로는 해마다 묻는다.
+// 투잡이 하나뿐이고 행동력이 남으면 "하나 더?"를 묻는다(5년 차 이후 한 번, 그 뒤로는 10년에 한 번). 둘을 하고 있으면 안 묻는다.
+export const PICK = { t: 6, again: 12, addFirst: 60, addGap: 120, addAp: 2, max: 3 };
+export const pickOpen = (s) => !!s.flags?.noProbation || s.t >= PICK.t || s.sj?.pickT !== undefined || (s.sj?.active || []).length > 0;
 export function startLock(s) {
-  if (s.flags?.noProbation) return null;
-  if (s.t < PROBATION) return `입사 첫 ${PROBATION}개월은 회사 적응과 탐색 기간이에요. ${PROBATION + 1}개월 차부터 시작할 수 있어요`;
-  if (questOn(s) && infoCount(s) < QUEST.info) return `투잡 정보를 ${QUEST.info}개 이상 모아야 해요(지금 ${infoCount(s)}개). 회사 수다·취미 모임·지도 장소·사람들에게서 들을 수 있어요`;
-  if (foundCount(s) < NEED_CANDS) return `투잡 후보를 ${NEED_CANDS}개 이상 찾아야 고를 수 있어요(지금 ${foundCount(s)}개). 취미 모임·지도 장소·리포트·선배 찾아가기로 알아보세요`;
-  return null;
+  if (pickOpen(s)) return null;
+  const n = foundCount(s), left = PICK.t - s.t;
+  return n >= NEED_CANDS
+    ? `아직 이르다. 후보는 ${n}개나 알아 뒀으니, 지금은 회사와 취미에 집중하자. 투잡은 입사 ${PICK.t}개월을 채우고 신중하게 고른다(${left}달 남음)`
+    : `아직 이르다. 입사 ${PICK.t}개월까지는 회사 적응과 탐색 기간. 그동안 후보를 ${NEED_CANDS}개 이상 알아 두자(지금 ${n}개 · ${left}달 남음)`;
+}
+function pickCands(s, fillTo) { // 발견한 후보(궁합 높은 순) + 모자라면 이해도 높은 순으로 채운다
+  const play = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && !isActive(s, k));
+  const a = play.filter((k) => isFound(s, k)).sort((x, y) => fit(s, y).v - fit(s, x).v).slice(0, PICK.max);
+  if (a.length < fillTo) for (const k of play.filter((k) => !isFound(s, k)).sort((x, y) => (s.sj.int[y] || 0) - (s.sj.int[x] || 0))) { if (a.length >= fillTo) break; a.push(k); }
+  return a;
+}
+export function pickScene(s, kind) { // kind: first(6개월) · again(다시 묻기) · add(하나 더)
+  const ks = pickCands(s, kind === "add" ? 1 : 2); if (!ks.length) return null;
+  const label = (k) => `${D.SIDEJOBS[k].n}${isFound(s, k) ? ` · 궁합 ${fit(s, k).g}` : " · 아직 덜 알아본 후보"}`;
+  const T = {
+    first: ["투잡을 고를 시간", `입사 ${PICK.t}개월. 회사 일은 손에 익었고, 메모장에는 후보가 적혀 있다. ${ks.map((k) => D.SIDEJOBS[k].n).join(", ")}. 이제 하나를 고르자.`, "아직은 회사에 집중한다 (1년 차에 다시 고민)"],
+    again: ["올해는 투잡을 해 볼까", `또 한 해가 지났다. 퇴근 후 시간은 여전히 비어 있다. 메모장의 후보: ${ks.map((k) => D.SIDEJOBS[k].n).join(", ")}.`, "올해도 회사에 집중한다 (1년 뒤에 다시 고민)"],
+    add: ["투잡을 하나 더?", `${jo(D.SIDEJOBS[s.sj.active[0]]?.n || "투잡", "은", "는")} 손에 익었다. 이번 달도 행동력이 남았다. 남는 시간에 투잡을 하나 더 얹어 볼까? 둘을 굴리면 버는 길은 넓어지지만 저녁은 더 바빠진다.`, "지금 하는 일에 집중한다"],
+  }[kind];
+  return { kind: "event", tag: "투잡 탐색", title: T[0], text: T[1], onChoose: "sj_pick", pk: { kind, ks }, choices: [...ks.map((k) => ({ t: label(k), eff: {}, text: "" })), { t: T[2], eff: {}, text: "" }] };
+}
+export function pickChoose(s, r, i, sc) {
+  const P = sc.pk || {}, k = (P.ks || [])[i], sj = s.sj;
+  if (!k) {
+    if (P.kind === "add") { s._sceneText = "하나를 제대로 키우는 것도 방법이다. 남는 저녁은 쉬거나, 회사나 사람에게 쓰자."; return ["지금 투잡에 집중"]; }
+    sj.pickNext = s.t < PICK.again ? PICK.again : s.t + 12;
+    s._sceneText = "서두르지 않기로 했다. 그동안 후보를 더 알아보고, 역량을 올려 두자. 마음이 바뀌면 투잡 탐색에서 언제든 시작할 수 있다.";
+    return [`${Math.max(1, sj.pickNext - s.t)}달 뒤에 다시 고민한다`];
+  }
+  if (!isFound(s, k)) found(s, k, "급하게 알아봄");
+  const res = start(s, k);
+  if (!res.ok) { s._sceneText = res.msg; return []; }
+  s._sceneText = `${jo(D.SIDEJOBS[k].n, "으로", "로")} 정했다. 퇴근 후 시간에 이름이 생겼다. 전체 메뉴에 ${D.SIDEJOBS[k].n} 칸이 열렸다.`;
+  return [`${D.SIDEJOBS[k].n} 시작`, ...(res.hid || []).map((x) => `숨은 특성: ${x}`)];
+}
+export function pickMonth(s, r, notes, scenes) { // 달 마감(s.t 가 오르기 전)에 돈다. nt = 다음 달
+  if (s.flags?.noProbation || s.over) return;
+  const sj = s.sj, nt = s.t + 1, n = (sj.active || []).length;
+  if (n === 0) {
+    const due = sj.pickT === undefined ? nt >= PICK.t : nt >= (sj.pickNext ?? nt + 1);
+    if (!due) return;
+    const sc = pickScene(s, sj.pickT === undefined && nt <= PICK.t ? "first" : "again"); if (!sc) return;
+    sj.pickT = nt; sj.pickNext = nt + 12; scenes.push(sc); return;
+  }
+  if (sj.pickT === undefined) sj.pickT = nt; // 이미 투잡을 하고 있으면 고르는 장면은 지나간 것으로 본다
+  if (n === 1 && slots(s) >= 2 && s.ap >= PICK.addAp && nt >= PICK.addFirst && nt - (sj.addT ?? -999) >= PICK.addGap) {
+    const sc = pickScene(s, "add"); if (!sc) return;
+    sj.addT = nt; scenes.push(sc);
+  }
 }
 const INFO = 0.7; // 정보 구하기는 생각보다 어렵다(v4.25): 관심 오르는 양 30% 줄임
 export function start(s, job) {
@@ -99,6 +148,7 @@ export function start(s, job) {
   if (!j.play) return { ok: false, msg: "이 투잡은 준비 중이에요(다음 업데이트)" };
   if (isActive(s, job)) return { ok: false, msg: "이미 하고 있어요" };
   { const why = startLock(s); if (why) return { ok: false, msg: why }; }
+  if (sj.pickT === undefined) sj.pickT = s.t;
   if (sj.active.length >= slots(s)) return { ok: false, msg: `투잡은 지금 ${slots(s)}개까지. 매니저를 두면 한 칸 늘어요` };
   sj.active.push(job); s.flags.questDone = s.t; log(s, `${jo(j.n, "을", "를")} 시작하기로 했다.`, "work");
   { const P = REG.get(job); if (P) { if (!s[job]) s[job] = P.init(s); if (P.onStart) P.onStart(s); } }
@@ -199,7 +249,8 @@ export function members(s, id) {
 }
 function hashN(str) { let h = 7; for (const ch of str) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
 const CO_RE = /(대리|과장|사원|팀장|기획|마케터|개발자|인사|회계|영업|MD|PM|디자이너|연구원|재무|컨설턴트|애널리스트|회사원|직장인|행원)/;
-export function coworkers(s) { return s.cast.filter((id) => { const c = CHAR[id]; return c && (CO_RE.test(c.job) || (c.hangouts || []).some((h) => h === "office" || h === "officest")); }); }
+// 11-24 우리 회사 사람만: 예전에는 직업 글에 '사원·인사·팀장' 같은 낱말이 있거나 오피스 거리(officest)에 다니기만 해도 회사에 나와서, 호텔 매니저·대학 취업지원센터 팀장이 우리 사무실에 앉아 있었다. 다른 회사 사람은 자기 장소(오피스 거리 등)에만 나온다
+export function coworkers(s) { return s.cast.filter((id) => { const c = CHAR[id]; return c && (c.co || (c.hangouts || []).includes("office")); }); }
 export function refresh(s, r) { // 이번 달 회사·모임에 나오는 사람들
   for (const job of s.sj?.active || []) { const p = s.sj.rp?.[job]; if (ENTRY[job] && p && p.t0 !== undefined && p.t0 < s.t && p.shock === undefined && p.done === undefined) { p.shock = s.t; (s.sceneQ = s.sceneQ || []).push(shockScene(s, job)); } } // 첫 영업 달 정산 뒤 '생각보다 안 되네'
   if (!(s.co.quit || s.co.fired)) {
@@ -246,7 +297,7 @@ export function todos(s) {
   const t = [];
   if (!s.sj.open) return t;
   const ready = Object.keys(s.sj.found).filter((k) => D.SIDEJOBS[k].play && !isActive(s, k));
-  if (ready.length && s.sj.active.length < D.SJ_SLOTS) t.push({ lv: 1, text: `발견한 투잡: ${ready.map((k) => D.SIDEJOBS[k].n).join(", ")} · 시작할 수 있어요`, go: "sj" });
+  if (ready.length && s.sj.active.length < D.SJ_SLOTS) t.push(pickOpen(s) ? { lv: 1, text: `발견한 투잡: ${ready.map((k) => D.SIDEJOBS[k].n).join(", ")} · 시작할 수 있어요`, go: "sj" } : { lv: 0, text: `투잡 후보: ${ready.map((k) => D.SIDEJOBS[k].n).join(", ")} · 고르는 건 ${PICK.t}개월을 채운 뒤(${PICK.t - s.t}달 남음)`, go: "sj" });
   if (!s.sj.active.length && !ready.length && s.t >= 2) t.push({ lv: 0, text: "투잡 탐색: 너튜브·리포트·취미에서 찾아보기", go: "sj" });
   for (const id of s.hb.joined) if (s.hb.lastT[id] !== s.t) t.push({ lv: 0, text: `${D.HOBBIES[id].n} 이번 달 모임 아직(회비 ${D.HOBBIES[id].fee}만)`, go: "hobby" });
   if (!s.hb.joined.length && s.t >= 1) t.push({ lv: 0, text: "취미가 없다. 인연도 투잡도 취미에서 온다", go: "hobby" });
@@ -559,7 +610,8 @@ export function candMonth(s, notes, scenes) {
   if (n < NEED_CANDS) { if (s.t === PROBATION - 1) notes.push(`투잡 후보 ${n}/${NEED_CANDS}: 후보가 ${NEED_CANDS}개는 모여야 고를 수 있어요`); return; }
   s.sj.candT = s.t;
   const c = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && isFound(s, k)).map((k) => D.SIDEJOBS[k].n);
-  scenes.push({ kind: "story", title: "후보가 모였다", tag: "투잡 탐색", text: `메모장에 적어 둔 후보: ${c.join(", ")}. 발품 팔아 모은 정보라 아직 다 믿을 수는 없다. 그래도 이제 고를 수 있다. 투잡 탐색에서 하나를 골라 시작하자.`, choices: [{ t: "좋아, 골라 보자", eff: { mental: 4 }, text: "" }] });
+  const early = !pickOpen(s) && s.t + 1 < PICK.t;
+  scenes.push({ kind: "story", title: "후보가 모였다", tag: "투잡 탐색", text: early ? `메모장에 적어 둔 후보: ${c.join(", ")}. 발품 팔아 모은 정보라 아직 다 믿을 수는 없다. 윤곽은 잡혔다. 고르는 건 입사 ${PICK.t}개월을 채운 뒤. 그때까지는 회사와 취미에 집중하면서 조금 더 알아보자.` : `메모장에 적어 둔 후보: ${c.join(", ")}. 발품 팔아 모은 정보라 아직 다 믿을 수는 없다. 그래도 이제 고를 수 있다. 투잡 탐색에서 하나를 골라 시작하자.`, choices: [{ t: early ? "좋아, 서두르지 말자" : "좋아, 골라 보자", eff: { mental: 4 }, text: "" }] });
 }
 
 // 곳곳에서 조금씩 듣는 투잡 정보(v4.25): 회사·사람·이벤트에서 이해도가 조금씩 오른다

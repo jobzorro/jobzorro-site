@@ -952,3 +952,39 @@ select.btn{min-height:40px}
 .a6sp-tabs button{flex:0 0 auto;font:inherit;font-size:12.5px;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:4px 12px;cursor:pointer}
 .a6sp-tabs button.on{border-color:var(--gold);color:var(--gold);font-weight:700}
 .a6sp-tabs button b{color:var(--gold)}.a6sp-tabs button i{font-style:normal;color:var(--muted);font-size:11px}
+
+/* 11-24 대화창: 사건에서 누가 말하면 얼굴·이름표·말풍선으로 */
+.a6dl{display:flex;flex-direction:column;gap:8px;margin:2px 0 4px}
+.a6dl>*{animation:a6dlIn .32s ease-out both}
+@keyframes a6dlIn{from{opacity:.25;transform:translateY(6px)}to{opacity:1;transform:none}}
+.a6dl-n{margin:0;font-size:14.5px;line-height:1.65;color:var(--fg);opacity:.92;white-space:pre-wrap}
+.a6dl-s,.a6dl-p{display:flex;gap:9px;align-items:flex-start}
+.a6dl-f{flex:none;width:50px;height:50px;border-radius:50%;overflow:hidden;background:linear-gradient(180deg,#3a3f78,#1b1f3a);border:2px solid var(--gold);box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.a6dl-f img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;image-rendering:auto}
+.a6dl-b{position:relative;flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:7px 12px 9px}
+.a6dl-b>b{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;font-size:12.5px;color:var(--gold)}
+.a6dl-b>b i{font-style:normal;font-weight:500;font-size:11px;color:var(--muted)}
+.a6dl-b>b em{font-style:normal;font-weight:600;font-size:10.5px;color:var(--fg);background:rgba(255,255,255,.1);border-radius:99px;padding:0 7px}
+.a6dl-b>p{margin:3px 0 0;font-size:15px;line-height:1.6;white-space:pre-wrap}
+.a6dl-s.me{flex-direction:row-reverse}.a6dl-s.me .a6dl-b{border-radius:14px 4px 14px 14px;background:rgba(245,192,78,.1);border-color:rgba(245,192,78,.45)}
+.a6dl-s.me .a6dl-f{border-color:var(--fg)}
+.a6dl-ic{flex:none;width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;background:#1f2a44;border:1px solid #3d5a8f}
+.a6dl-p .a6dl-b{background:#16223a;border-color:#3d5a8f;border-radius:12px}.a6dl-p .a6dl-b>b{color:#8fb8ff}
+.result .a6dl{margin-top:6px}
+@media (prefers-reduced-motion:reduce){.a6dl>*{animation:none}}
+/* 11-24 컨설팅 닉네임 다섯 개 */
+.a6nk{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.a6nk button{font:inherit;text-align:left;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.a6nk button b{font-size:13.5px}.a6nk button span{font-size:11px;color:var(--muted)}
+.a6nk button.on{border-color:var(--gold);background:rgba(245,192,78,.1)}.a6nk button.on b{color:var(--gold)}
+.a6nk button:last-child:nth-child(odd){grid-column:1/-1}
+/* 11-24 아직 모르는 인물 정보 */
+.tag.a6q{border-style:dashed;color:var(--muted);opacity:.8}
+/* 11-24 BURNING 화면: WARNING 틀에 금색(좋은 쪽의 큰 사건) */
+.a6w.a6burn{background:#140d02}
+.a6w.a6burn::before{background:radial-gradient(ellipse at center,#ffb4004d,#0000 70%)}
+.a6burn .a6w-st{background:repeating-linear-gradient(-45deg,#ffd25e 0 22px,#3a2600 22px 44px);background-size:62.2px 100%}
+.a6burn .a6w-w{color:#ffd25e;text-shadow:0 0 22px #ffb400cc,0 2px 0 #000}
+.a6burn .a6w-s{color:#ffe9a8}
+.a6burn-x{display:inline-block;margin-top:18px;font-family:var(--disp);font-weight:900;font-size:clamp(26px,8vw,36px);color:#1a1000;background:linear-gradient(180deg,#ffe07a,#f0a92e);border-radius:14px;padding:4px 22px;transform:rotate(-3deg);box-shadow:0 6px 20px #ffb40066;animation:a6wUp .5s .55s ease-out both}
+.tag.a6burn-t{background:linear-gradient(180deg,#ffe07a,#f0a92e);color:#1a1000;border-color:transparent}

@@ -5,6 +5,7 @@ import * as BIG from "./big.js";
 import { CHAR, addMoney, applyEff, helperPower, helpers, mod, won, log, eyeMult, ensureRel, isRomanceable, addAff, gainStat, giveBrk, R } from "./core.js";
 import { jobEvent } from "./pr.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
+import { EXTRAS } from "../gen/data.js"; // 닉네임 다섯 개와 그 이야기(data/extras.json, 11-24)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 // 11-21 밸런스(10개 투잡 공통 비교, 기획 jobconsult.json: 중위 월 200만·p95 1,500만·1:1 한계 연 3억).
@@ -56,7 +57,15 @@ export function setNiche(s, k) { const n = D.NICHES[k]; if (!n) return { ok: fal
   if (k === "career" && (s.cs.passes || 0) < D.CS_CAREER_PASS) return { ok: false, msg: `경력 이직은 합격자 ${D.CS_CAREER_PASS}명부터(지금 ${s.cs.passes || 0}명)` }; // v4.28 히든 길
   s.cs.niches.push(k); return { ok: true, msg: `포지션 추가: ${n.n}` };
 }
-export function setNick(s, k) { s.cs.nick = k; return { ok: true, msg: k === "real" ? "실명으로 활동: 신뢰 +, 회사 눈치 ×1.4" : "닉네임으로 활동" }; }
+// 닉네임(11-24): 정해 둔 다섯 개 중에서 고른다(s.cs.nickK). 숫자 효과는 같고, 닉네임마다 작은 이야기가 따라온다(engine/extras.js)
+export const NICKS = (EXTRAS && EXTRAS.nicks) || [];
+export const nickOf = (s) => (s.cs?.nick === "nick" ? NICKS.find((n) => n.k === s.cs.nickK) || null : null);
+export const nickName = (s) => nickOf(s)?.n || "";
+export function setNick(s, k, nk) {
+  s.cs.nick = k;
+  if (k === "nick") { if (nk && NICKS.some((n) => n.k === nk)) s.cs.nickK = nk; else if (!nickOf(s)) s.cs.nickK = NICKS[0]?.k; }
+  return { ok: true, msg: k === "real" ? "실명으로 활동: 신뢰 +, 회사 눈치 ×1.4" : `닉네임 '${nickName(s)}'${((w) => { const ch = w.charCodeAt(w.length - 1), f = (ch - 0xac00) % 28; return f && f !== 8 ? "으로" : "로"; })(nickName(s) || "가")} 활동` };
+}
 export function setPrice(s, k) { const p = D.CS_PRICE[k]; if (p.req && s.cs.reviews < p.req) return { ok: false, msg: `후기 ${p.req}개부터` }; s.cs.price = k; return { ok: true, msg: `가격: ${p.n}` }; }
 export function setAds(s, v) { s.cs.ads = clamp(Math.round(v), 0, 300); }
 function checkOpen(s, notes) { if (!s.cs.open && entrySteps(s).every((x) => x.done)) { s.cs.open = true; notes?.push("취업컨설팅 개업! 다음 달부터 문의가 들어온다"); log(s, "취업컨설팅을 정식으로 시작했다.", "work"); return true; } return false; }

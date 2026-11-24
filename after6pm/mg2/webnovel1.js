@@ -217,7 +217,8 @@ export const GAME = {
   run(host, ez, finish, skill, opts = {}) {
     const dbg = typeof window !== "undefined" && window.__mgdbg;
     const F = frame(host, "webnovel1", "작가님 마감이요", "wn-st");
-    const GK = pick(Object.keys(GEN)), G = GEN[GK], OTH = Object.keys(GEN).filter((k) => k !== GK), EP = 30 + rint(90);
+    const myG = opts.ctx && GEN[opts.ctx.genre] ? opts.ctx.genre : null; // 11-24 내가 연재하는 장르(mg_pick.js mgCtx). 판타지·연습 판은 없으니 무작위
+    const GK = myG || pick(Object.keys(GEN)), G = GEN[GK], OTH = Object.keys(GEN).filter((k) => k !== GK), EP = 30 + rint(90);
     const st = F.stage;
     st.style.setProperty("--gc", G.c);
     st.insertAdjacentHTML("beforeend", `<div class="wn-bgi"></div><canvas class="wn-cv"></canvas><div class="wn-rc"><div class="wn-me"></div></div><canvas class="wn-cv wn-fr"></canvas>

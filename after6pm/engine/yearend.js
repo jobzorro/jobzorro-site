@@ -63,7 +63,7 @@ export function yearData(s) {
   const fi = fireInfo(s), nw = Math.round(netWorth(s));
   const x = annual > 0 ? side / annual : 0;
   const prevSide = sum(s.hist.filter((h) => h.t < y0.t), (h) => h.side);
-  const yt = (t) => t !== undefined && t >= y0.t && t <= s.t;
+  const yt = (t) => t != null && t >= y0.t && t <= s.t; // 11-24 null(결혼한 적 없음)이 첫해(y0.t = 0)에 "올해 있었던 일"로 잡히던 버그: null >= 0 이 참이라 '둘이 된 해'가 떴다
   const mon = (t) => ((s.cal - 1 - (s.t - t)) % 12 + 12) % 12 + 1; // t 가 몇 월이었나
   const moments = D.MOMENTS.filter((m) => yt(s.moments?.[m.key])).map((m) => ({ t: s.moments[m.key], text: m.title, p: 0 }));
   const KEY = /승진|본잡|오픈|개업|출간|퇴사|사직|이직|결혼|태어|연인|첫 |호점|합격|계약|엔딩|파이어|해고|퇴임|매각|양도|폐업|특전 카드/;

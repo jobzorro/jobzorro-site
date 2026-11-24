@@ -4,6 +4,7 @@ import * as RD from "./round.js"; // 11-23 회차 구조(1회차 34세 결산, 2
 import * as D from "./defs.js";
 import { CHARS, SCENES, JOBEV } from "../gen/data.js";
 import * as GEN from "../gen/data.js";
+import * as XR from "./extras.js"; // 11-24 주변 사람(조연)·겹치는 역할 사건·닉네임 이야기
 import * as LOVE from "./love.js"; // 11-24 두근두근·연애 행동·까톡·기념일·조력자 사건 // CONFESS(인물별 고백 장면 글, 11-24)는 없을 수도 있다
 import * as PR from "./pr.js";
 import * as CS from "./cs.js";
@@ -302,7 +303,7 @@ export function applyEff(s, eff, who) {
   if (!eff) return [];
   const out = [];
   const r = R(s);
-  if (eff.cash) { s.cash += eff.cash; addMoney(s, eff.cash > 0 ? "inc" : "exp", "그 밖의 일", Math.abs(eff.cash)); out.push(`돈 ${eff.cash > 0 ? "+" : ""}${won(eff.cash)}`); }
+  if (eff.cash) { s.cash += eff.cash; addMoney(s, eff.cash > 0 ? "inc" : "exp", eff.cashAs || "그 밖의 일", Math.abs(eff.cash)); /* cashAs: 가계부에 적을 이름(버닝 이벤트 등) */ out.push(`돈 ${eff.cash > 0 ? "+" : ""}${won(eff.cash)}`); }
   if (eff.hp) { s.hp = clamp(s.hp + eff.hp, 0, s.hpMax); out.push(`스태미너 ${sgn(eff.hp)}`); }
   if (eff.mental) { s.mental = clamp(s.mental + eff.mental, 0, 100); out.push(`멘탈 ${sgn(eff.mental)}`); }
   if (eff.eye) { const e = eff.eye > 0 ? eff.eye * eyeMult(s) : eff.eye; s.co.eye = clamp(s.co.eye + e, 0, 100); out.push(`회사 눈치 ${sgn(Math.round(e))}`); }
@@ -905,6 +906,7 @@ const SCENE_FN = {
   sj_disc(s, r, i) { return SJ.discChoose(s, s.pending, i); },
   sj_intro(s, r, i) { return SJ.introChoose(s, i); },
   sj_grind(s, r, i) { return SJ.grindChoose(s, r, i); },
+  sj_pick(s, r, i, okv, sc) { return SJ.pickChoose(s, r, i, sc); }, // 11-24 6개월 차에 고르기·해마다 다시 묻기·하나 더
   rejob_offer(s, r, i) { if (i === 0) { s.co.type = s._offer.type; s.co.name = s._offer.name; s.co.pay = 0; s.co.eye = 0; s.co.warns = 0; s.co.perf = 50; s.co.boss = 45; s.co.remote = 0; s.co.payBoost = Math.min(1.3, (s.co.payBoost || 1) * 1.1); log(s, `${jo(s.co.name, "으로", "로")} 환승 이직했다. 연봉 +10%`, "work"); return [`${s.co.name} 입사`, "월급 +10%"]; } return []; },
   co_ev(s, r, i) { return coEvChoose(s, r, s.pending.ev, i); },
   cs_ev(s, r, i, ok) { return CS.csEvChoose(s, i, ok); },
@@ -1055,6 +1057,7 @@ export function endMonth(s) {
   if (s.t === 0 && !s.sj.open) { scenes.push(SJ.introScene()); scenes.push(SJ.grindScene()); }
   SJ.grindMonth(s, r, notes, scenes); // 탐색의 3개월
   SJ.candMonth(s, notes, scenes); // 후보가 모였다
+  SJ.pickMonth(s, r, notes, scenes); // 11-24 고르는 때(6개월·해마다·하나 더)
   // 조력자 수고비
   let hp = 0; for (const [id, x] of Object.entries(s.rel)) if (x.helper && !x.spouse) { const p = helperPay(s, id); hp += p; if (x.aff < 35) { x.helper = null; notes.push(`${jo(CHAR[id].name, "이", "가")} 조력을 그만뒀다(호감 부족)`); } else addAff(s, id, 0.5); }
   if (hp) { s.cash -= hp; addMoney(s, "exp", "조력자 수고비", hp); }
@@ -1316,7 +1319,9 @@ function peopleMonth(s, r, notes, scenes) {
   guestMonth(s, r, scenes); // 손님 이벤트(engine/guest.js)
   flirtMonth(s, r, scenes); // 연애·결혼 19금(engine/flirt.js)
   famMonth(s, r, scenes, notes);
-  try { LOVE.loveMonth(s, r, notes, scenes); } catch (e) { console.warn(e); } // 11-24 기념일·까톡·조력자 사건 // 자녀·배우자·부모님 이벤트(engine/famev.js)
+  try { LOVE.loveMonth(s, r, notes, scenes); } catch (e) { console.warn(e); }
+  try { XR.xMonth(s, r, notes, scenes); } catch (e) { console.warn(e); } // 11-24 겹치는 역할 사건·닉네임 이야기
+  // 11-24 기념일·까톡·조력자 사건 // 자녀·배우자·부모님 이벤트(engine/famev.js)
   // 부모님
   s.fam.parents = clamp(s.fam.parents - (s.age > 38 ? 0.28 : 0.14) - (s.t - s.fam.lastVisit > 6 ? 0.1 : 0), 0, 100);
   if (s.fam.parents < 45 && !s.flags.parentCare) { s.flags.parentCare = s.t; scenes.push(story("부모님 간병", "어머니가 입원하셨다. 주말마다 병원에 간다. 투잡보다 중요한 게 있다. (매달 행동력 −1, 간병비 40만)")); }

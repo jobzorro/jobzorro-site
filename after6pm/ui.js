@@ -19,10 +19,12 @@ import { BODY, BG } from "./gen/body.js";
 import { CG, CG_NOPPL } from "./gen/cg.js";
 const NOPPL = new Set(CG_NOPPL || []); // v4.27 사람이 안 나오는 화보 → 내 캐릭터를 얹는다
 import { MG, mgRun, mgKeys, mgPrefetch, mg2Init } from "./mg.js";
+import { mgChoose, mgCtx, mgSkillStat } from "./mg_pick.js"; // 내 선택(포지션·컨셉·길)에 맞는 미니게임 고르기(11-24)
 import * as REG from "./engine/reg.js";
 import * as WV from "./engine/wave.js";
 import * as PW from "./engine/prwave.js";
 import { MAP as MAPD } from "./map_data.js"; // 도시 맵 그림과 핀 좌표(11-24)
+import * as XR from "./engine/extras.js"; // 주변 사람(조연)·대화창(11-24)
 import * as LVX from "./engine/love.js"; // 두근두근·연애 행동·까톡(11-24)
 import * as BMX from "./bm.js"; // 돈 버는 자리(11-24, 아직 꺼짐)
 import * as RD from "./engine/round.js"; // 회차 구조(11-23) // 파티룸 컨셉 위기(11-23) // 판이 바뀐다(11-23)
@@ -103,7 +105,8 @@ const ACT_IC = { rest: "bed", study_home: "book", study: "book", course: "book",
 // ───────── 초상 ─────────
 function seededRng(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } let a = h >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const lookCache = {};
-function lookOf(id) { const c = E.CHAR[id]; if (c?.look?.hair) return c.look; if (!lookCache[id]) lookCache[id] = randomLook(seededRng(id), c?.gender || "F", { older: (c?.age || 30) >= 40 }); return lookCache[id]; }
+const genderOf = (id) => { const g = XR.who(id)?.gender; return g === "same" ? S?.me?.gender || "F" : g || "F"; }; // 조연·단역(engine/extras.js)도 같은 길로 얼굴을 만든다
+function lookOf(id) { const c = XR.who(id); if (c?.look?.hair) return c.look; const k = id + genderOf(id); if (!lookCache[k]) lookCache[k] = randomLook(seededRng(id), genderOf(id), { older: (c?.age || 30) >= 40 }); return lookCache[k]; }
 // 그림체 초상화: img/ch/<id>.webp 한 장에 표정 6칸(3x2). 불러오기 전에는 도트 얼굴을 보여 주고, 다 불러오면 그 자리에서 바꾼다.
 const EXI = { neutral: 0, smile: 1, sad: 2, angry: 3, blush: 4, surprised: 5 };
 const ART_CACHE = {}, ART_LOAD = {}, ART_FALL = new Map(), ART_THUMB = {};
@@ -190,7 +193,7 @@ function bodyOr(key, expr, mode, fallback) {
   let fb = null; if (BODY_TH[key] instanceof Image) try { fb = bodyCut(key, i, mode, BODY_TH[key]); } catch (e) {}
   fb = fb || ghost(key, i, mode); if (fb) BODY_WAIT.set(fb, [key, i, mode]); bodyThumb(key); bodyLoad(key); return fb;
 }
-const pixFace = (id, expr) => () => { try { return portraitDataURL(lookOf(id), E.CHAR[id]?.gender || "F", expr, 4); } catch (e) { return ""; } };
+const pixFace = (id, expr) => () => { try { return portraitDataURL(lookOf(id), genderOf(id), expr, 4); } catch (e) { return ""; } };
 const pixMe = (expr) => () => { try { return portraitDataURL(S.me.look, S.me.gender, expr, 5); } catch (e) { return ""; } };
 function bodySrc(id, expr, mode) { return id === "me" ? bodyOr(S.me.avatar, expr, mode, pixMe(expr)) : bodyOr(id, expr, mode, pixFace(id, expr)); }
 // 장소 배경: 장소(spot) → 배경 그림
@@ -198,15 +201,15 @@ const SPOT_BG = { app: "online", chat: "online", market: "online", univ: "gate" 
 const PAGE_BG = { pr: "partyroom", cs: "consult", airbnb: "airbnb", ucafe: "ucafe", co: "desk", insta: "home", grad: "library", family: "apt", hobby: "cafe" };
 function bgUrl(k) { return k && BG.has(k) ? `img/bg/${k}.webp` : ""; }
 function charSpot(id) { for (const [sp, ids] of Object.entries(S.spot || {})) if (ids.includes(id)) return SPOT_BG[sp] || sp; const c = E.CHAR[id]; if (c?.customer) return c.customer.board === "partyroom" ? "partyroom" : "consult"; return null; }
-function sceneBg(sc) {
-  const cands = [sc.kind === "wedding" ? "wedding" : null, ui.lastSpot ? SPOT_BG[ui.lastSpot] || ui.lastSpot : null, PAGE_BG[ui.page], sc.who ? charSpot(sc.who) : null, "street", "alley"];
+function sceneBg(sc, lead) { // lead: 무대에 선 사람. 조연은 자기 자리(본부장 = 회의실, 엄마 = 부모님 집)가 먼저다(11-24)
+  const cands = [sc.kind === "wedding" ? "wedding" : null, sc.bg, !sc.who && lead ? XR.EXTRA[lead]?.bg : null, ui.lastSpot ? SPOT_BG[ui.lastSpot] || ui.lastSpot : null, PAGE_BG[ui.page], sc.who ? charSpot(sc.who) : null, "street", "alley"];
   for (const k of cands) if (k && BG.has(k)) return bgUrl(k);
   return "";
 }
 // 장소 위에 사람을 세운 무대. 몸 그림이 없으면 예전처럼 얼굴 칸.
 // 키(11-24): 인물 프로필의 height(cm)를 그림 높이에 반영한다. 같은 거리에 서 있다고 보고, 기준 키(HREF)일 때 무대 높이를 꽉 채운다
 const HREF = 184, ME_H = { M: 176, F: 163 };
-const heightOf = (id) => (id === "me" ? S?.me?.height || ME_H[S?.me?.gender] || 170 : E.CHAR[id]?.height || 0);
+const heightOf = (id) => (id === "me" ? S?.me?.height || ME_H[S?.me?.gender] || 170 : XR.who(id)?.height || 0);
 const hPct = (id, full = 100) => { const h = heightOf(id); return h ? Math.round(full * Math.max(0.8, Math.min(1.04, h / HREF)) * 10) / 10 : full; };
 const bodyImg = (id, src, full) => img(src, "body", "").replace("<img ", `<img style="height:${hPct(id, full)}%" `);
 function stageWho(id, expr, mode, bg, cap, noScale) {
@@ -256,25 +259,28 @@ function doAct(id, arg) {
 }
 // ───────── 투잡 미니게임: 1년에 한 번, 그해의 큰 일이 왔을 때(11-24. 전에는 한 달에 한 번) ─────────
 // 그해 큰 일이 오는 달은 해마다 다르다(2~10월). 그 달부터 핵심 행동을 누르면 나온다. 23년이면 22번쯤.
-const mgMonth = () => 2 + ((S.year * 7 + (String(S.seed).length || 3)) % 9);
-const mgDue = () => S.mgForce || (S.mgYr !== S.year && S.cal >= mgMonth());
+// 11-24(대표 결정): 1년에 두 번. 상반기 큰 일(2~5월)과 하반기 큰 일(7~10월)이 한 번씩 온다. 횟수는 MG_PER_YEAR 하나로 바꾼다
+const MG_PER_YEAR = 2;
+const mgMonths = () => { const k = S.year * 7 + (String(S.seed).length || 3); return [2 + (k % 4), 7 + ((k >> 1) % 4)]; };
+const mgCnt = () => (S.mgYr === S.year ? S.mgN ?? 1 : 0); // 올해 한 판 수(옛 저장은 mgYr 만 있다 → 한 번 한 것으로 본다)
+const mgDue = () => S.mgForce || (mgCnt() < MG_PER_YEAR && S.cal >= (mgMonths()[mgCnt()] ?? 13));
 const MG_EV = { pr: "올해 가장 큰 단체 예약이 들어왔다", cs: "공채 시즌, 의뢰가 한꺼번에 몰렸다", airbnb: "성수기 만실 주간이 시작됐다", ucafe: "1년에 한 번 하는 기계 전체 점검 날", insta: "올해의 콜라보 촬영 제안이 왔다" };
 const MGJ = { pr_manage: ["pr", "hands"], cs_work: ["cs", "write"], ab_host: ["airbnb", "lang"], uc_check: ["ucafe", "sense"], in_post: ["insta", "sense"] };
 const MG_SKIP_AT = 3;
 // 이 투잡에서 다음에 나올 미니게임: 같은 투잡에 게임이 여럿이면 번갈아(1탄 → 2탄 → 1탄 …)
-function mgNext(job, plays = (meta().mgPlays || {})[job] || 0) { const keys = mgKeys(job).filter((k) => MG[k]); return keys[plays % Math.max(1, keys.length)]; }
+function mgNext(job, plays = (meta().mgPlays || {})[job] || 0, arg) { const keys = mgKeys(job).filter((k) => MG[k]); return mgChoose(S, job, keys, plays, arg); } // 11-24 내 선택에 맞는 게임 중 이번 인생에 가장 덜 한 것(mg_pick.js, S.mgC)
 // 투잡 보드를 열면(시작 직후 포함) 그 투잡 다음 미니게임 파일을 조용히 미리 받는다
 function mgWarm(page) { try { if (Object.values(MGJ).some(([j]) => j === page)) mgPrefetch(mgNext(page)); } catch (e) {} }
 function mgOffer(id, arg) {
-  const [job, stat] = MGJ[id], m = meta(), plays = (m.mgPlays || {})[job] || 0, skill = Math.round(S.st[stat] || 0);
+  const [job, stat0] = MGJ[id], stat = mgSkillStat(S, job, stat0), m = meta(), plays = (m.mgPlays || {})[job] || 0, skill = Math.round(S.st[stat] || 0);
   // 같은 투잡에 게임이 여럿이면 번갈아 나온다(1탄 → 2탄 → 1탄 …)
   mgDoneMap(); // 옛 저장이면 이번 판을 세기 전에 기록부터 옮겨 둔다
-  const gk = mgNext(job, plays), G = gk && MG[gk];
+  const gk = mgNext(job, plays, arg), G = gk && MG[gk];
   if (!G) { const res = E.act(S, id, arg); if (!res.ok) return toast([], res.msg); return afterRes(res); } // 미니게임이 없으면(null) 바로 행동
   mgPrefetch(gk); // 설명을 읽는 동안 미니게임 파일을 받아 둔다
   const canSkip = plays >= MG_SKIP_AT, /* 세 번 해 보면 무료 건너뛰기. 그 전에는 건너뛰기권(돈 버는 자리) */ normalB = +(0.9 + Math.min(200, skill) / 200 * 0.25).toFixed(2);
-  const finish = (boost, lines) => { S.mgT = S.mgT || {}; S.mgT[job] = S.t; S.mgYr = S.year; S.mgBoost = boost; closeWin(); const res = E.act(S, id, arg); if (!res.ok) { S.mgBoost = 0; return toast([], res.msg); } res.lines = [...lines, ...(res.lines || [])]; afterRes(res); };
-  openWin(`<h2>${esc(G.n)} <span class="tag gold">올해의 큰 일</span></h2><div class="small"><b class="gold">${esc(MG_EV[job] || "올해의 큰 일이 왔다")}</b></div><div class="small muted">${esc(G.desc || "")}</div><div class="tiny muted" style="margin-top:4px">미니게임은 1년에 한 번, 큰 일이 왔을 때만 나와요. 잘하면 능력치가 오르고, 같이 일하는 사람의 믿음도 올라요.</div>
+  const finish = (boost, lines) => { S.mgT = S.mgT || {}; S.mgT[job] = S.t; { const n = mgCnt(); S.mgYr = S.year; S.mgN = n + 1; } S.mgBoost = boost; closeWin(); const res = E.act(S, id, arg); if (!res.ok) { S.mgBoost = 0; return toast([], res.msg); } res.lines = [...lines, ...(res.lines || [])]; afterRes(res); };
+  openWin(`<h2>${esc(G.n)} <span class="tag gold">${mgCnt() ? "하반기의 큰 일" : "상반기의 큰 일"}</span></h2><div class="small"><b class="gold">${esc(MG_EV[job] || "큰 일이 왔다")}</b></div><div class="small muted">${esc(G.desc || "")}</div><div class="tiny muted" style="margin-top:4px">미니게임은 1년에 두 번, 큰 일이 왔을 때만 나와요. 잘하면 능력치가 오르고, 같이 일하는 사람의 믿음도 올라요.</div>
     <div class="tiny muted" style="margin-top:6px">점수에 따라 이번 달 ${esc(D.ACTIONS[id].n)} 효과가 ×0.7~1.5. ${canSkip ? `건너뛰면 ${D.STATS[stat]} ${skill} 기준 보통 결과예요.` : `${MG_SKIP_AT}번 해 보면 건너뛰기가 생겨요(지금 ${plays}번).`} 하는 법은 시작 화면에서 알려 드려요.</div>
     <div class="row" style="margin-top:12px">${canSkip ? `<button class="btn grow" data-mgskip>건너뛰기 (보통 결과)</button>` : BMX.bmOn() ? `<button class="btn grow" data-mgskip data-bm="mgSkip">${esc(BMX.label("mgSkip"))}</button>` : ""}<button class="btn gold grow" data-mgplay>미니게임 하기</button></div>
     <button class="btn" style="width:100%;margin-top:8px" data-mgcancel data-close>취소 (이번엔 안 함)</button>`, (w) => {
@@ -288,12 +294,12 @@ function mgOffer(id, arg) {
         window.addEventListener("error", onErr); window.addEventListener("unhandledrejection", onErr);
         w2.querySelector("[data-mgquit]").onclick = () => bail("quit");
         let r = null, err = false;
-        try { r = await Promise.race([mgRun(gk, w2.querySelector(".mghost"), { skill, avatar: S.me.avatar || null, gender: S.me.gender || "F" }), bailP]); } catch (e) { r = null; err = true; try { console.warn("미니게임 오류", gk, e); } catch (e2) {} }
+        try { r = await Promise.race([mgRun(gk, w2.querySelector(".mghost"), { skill, avatar: S.me.avatar || null, gender: S.me.gender || "F", ctx: mgCtx(S, job, arg) }), bailP]); } catch (e) { r = null; err = true; try { console.warn("미니게임 오류", gk, e); } catch (e2) {} }
         window.removeEventListener("error", onErr); window.removeEventListener("unhandledrejection", onErr);
         if (r === "quit") return finish(normalB, [`미니게임 그만하기: 보통 결과(효과 ×${normalB})`]);
         if (r === "err") { r = null; err = true; }
         if (r && r.loadFail) return finish(normalB, [`미니게임을 불러오지 못했어요: 보통 결과(효과 ×${normalB})`]); // 오프라인 등. 판 수는 안 센다
-        const mm = meta(); mm.mgPlays = { ...(mm.mgPlays || {}), [job]: plays + 1 }; setMeta(mm);
+        const mm = meta(); mm.mgPlays = { ...(mm.mgPlays || {}), [job]: plays + 1 }; setMeta(mm); S.mgC = { ...(S.mgC || {}), [gk]: ((S.mgC || {})[gk] || 0) + 1 }; // S.mgC: 이번 인생에 게임별로 한 판 수
         if (err || !r || !Number.isFinite(+r.score)) return finish(normalB, [`미니게임을 끝까지 못 했어요: 보통 결과(효과 ×${normalB})`]); // 오류가 나도 보통 결과로 닫는다
         mgRecord(gk, r); try { const m3 = meta(); m3.mgAv = { avatar: S.me.avatar || null, gender: S.me.gender || "F" }; setMeta(m3); } catch (e) {} // 시작 화면 '미니게임 다시 하기'용
         let sc = Math.max(0, Math.min(1, +r.score));
@@ -531,12 +537,12 @@ function fitCardHtml(k, withStart) {
     <div class="a6fc-t">내 역량</div>${c.stats.map((x) => `<div class="a6fc-r"><span>${esc(x.n)} <i class="tiny muted">궁합의 ${x.w}%</i></span><b>${x.v}</b>${meter(x.v, 100, "var(--fc)")}</div>`).join("")}
     <div class="a6fc-t">내 특성</div>${c.links.length ? c.links.map((x) => `<div class="tiny">★ <b>${esc(x.n)}</b> · ${esc(x.t)}</div>`).join("") : `<div class="tiny muted">이 투잡과 이어지는 특성 카드는 없어요</div>`}
     <div class="a6fc-t">이 역량을 키우면 좋아요</div>${c.grow.length ? c.grow.map((x) => `<div class="tiny">▲ <b>${esc(x.n)}</b> ${x.cur} → ${x.to} <span class="muted">(${esc(x.why)})</span><br><span class="muted">방법: ${esc(x.how)}</span></div>`).join("") : `<div class="tiny good">지금 역량으로 충분해요</div>`}
-    ${withStart ? `<button class="btn gold" style="width:100%;margin-top:10px" data-sjstart="${k}" ${SJ.startLock(S) || S.sj.active.length >= SJ.slots(S) ? "disabled" : ""}>${esc(c.n)} 시작하기</button>` : ""}</div>`;
+    ${withStart ? `<button class="btn gold" style="width:100%;margin-top:10px" ${SJ.startLock(S) ? "data-sjno" : `data-sjstart="${k}"`} ${!SJ.startLock(S) && S.sj.active.length >= SJ.slots(S) ? "disabled" : ""}>${esc(c.n)} 시작하기</button>` : ""}</div>`;
 }
 function fitCardsWin() {
   const ks = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && SJ.isFound(S, k) && !SJ.isActive(S, k)).sort((a, b) => SJ.fit(S, b).v - SJ.fit(S, a).v);
   if (!ks.length) return toast([], "아직 이해도 100%인 투잡이 없어요");
-  openWin(`<h2>궁합 카드 <button class="x" data-close>✕</button></h2><div class="small muted">이해도 100%가 된 투잡이에요. 내 역량과 특성에 얼마나 맞는지 보고 골라요. 궁합이 높은 순서예요.</div><div class="a6fcs hscroll">${ks.map((k) => fitCardHtml(k, true)).join("")}</div><div class="tiny muted" style="margin-top:6px">옆으로 밀면 다음 카드 · 더 알아본 뒤에 골라도 돼요</div>`, (w) => w.querySelectorAll("[data-sjstart]").forEach((b) => b.onclick = () => { const k = b.dataset.sjstart, r = SJ.start(S, k); closeWin(); toast(r.hid || [], r.msg); save(); if (r.ok) go(k); else render(); }), true);
+  openWin(`<h2>궁합 카드 <button class="x" data-close>✕</button></h2><div class="small muted">이해도 100%가 된 투잡이에요. 내 역량과 특성에 얼마나 맞는지 보고 골라요. 궁합이 높은 순서예요.</div><div class="a6fcs hscroll">${ks.map((k) => fitCardHtml(k, true)).join("")}</div><div class="tiny muted" style="margin-top:6px">옆으로 밀면 다음 카드 · 더 알아본 뒤에 골라도 돼요</div>`, (w) => { w.querySelectorAll("[data-sjno]").forEach((b) => b.onclick = () => sjNo()); w.querySelectorAll("[data-sjstart]").forEach((b) => b.onclick = () => { const k = b.dataset.sjstart, r = SJ.start(S, k); closeWin(); toast(r.hid || [], r.msg); save(); if (r.ok) go(k); else render(); }); }, true);
 }
 function guideCard() {
   const Q = SJ.questInfo(S);
@@ -546,7 +552,7 @@ function guideCard() {
       ${it(Q.info >= SJ.QUEST.info, Q.step === 1, "co", `① 투잡 정보를 ${SJ.QUEST.info}개 모으세요`, `${Math.min(Q.info, SJ.QUEST.info)}/${SJ.QUEST.info} · 회사에도 있어요: 탕비실 수다·동료와 점심·회식에서 소문이 들려요`)}
       ${Q.step === 1 ? `<div class="a6q-tip">어디로 가 볼까요? <button data-go="co">회사</button><button data-go="hobby">취미 모임</button><button data-go="map">지도 장소</button><button data-go="people">사람들</button><button data-go="sj">리포트·너튜브</button></div>` : ""}
       ${it(Q.cands >= SJ.NEED_CANDS, Q.step === 2, "sj", `② 그중 둘은 100%까지 파고드세요`, `${Math.min(Q.cands, SJ.NEED_CANDS)}/${SJ.NEED_CANDS} · 리포트 읽기·해 본 사람에게 묻기·선배 찾아가기가 빨라요`)}
-      ${it(false, Q.step === 3, "sj", `③ 궁합 카드를 보고 고르세요`, Q.step === 3 ? "카드가 준비됐어요. 내 역량·특성과 얼마나 맞는지 보여 드려요" : "100%가 되면 내 역량·특성과 얼마나 맞는지 카드로 보여 드려요")}
+      ${it(false, Q.step === 3, "sj", SJ.pickOpen(S) ? `③ 궁합 카드를 보고 고르세요` : `③ 궁합 카드를 보고, ${SJ.PICK.t}개월을 채운 달에 고르세요`, Q.step === 3 ? SJ.pickOpen(S) ? "카드가 준비됐어요. 내 역량·특성과 얼마나 맞는지 보여 드려요" : `카드는 지금 봐도 돼요. 고르는 날까지 ${SJ.PICK.t - S.t}달, 그동안은 회사와 취미에 집중해요` : "100%가 되면 내 역량·특성과 얼마나 맞는지 카드로 보여 드려요")}
       ${Q.step === 3 ? `<button class="btn gold" style="width:100%;margin-top:6px" data-fitcards>궁합 카드 보기</button>` : ""}
       ${Q.list.length ? `<div class="a6q-chips">${Q.list.map((x) => `<span class="${x.v >= 100 ? "full" : ""}">${esc(x.n)} ${x.v}%</span>`).join("")}</div>` : `<div class="tiny muted" style="margin-top:6px">아직 들은 투잡 얘기가 없어요</div>`}</div>`;
   }
@@ -613,7 +619,7 @@ function quickActs() {
     ...REG.JOBS.filter((P) => UJ[P.key]?.quick && SJ.isActive(S, P.key)).map((P) => { let id = null; try { id = UJ[P.key].quick(S); } catch (e) {} return [id && D.ACTIONS[id] ? id : null, () => true, ""]; }),
     ["hb_go", () => S.hb.joined.length > 0, "취미에 가입하면"],
     ["co_lunch", () => !quit && S.t >= 1, "2달째부터"],
-    ["sj_youtube", () => S.sj.open && S.sj.active.length < 2, !S.sj.open ? "투잡 탐색이 열리면" : "투잡 2개 진행 중 · 하나를 접으면"],
+    [S.t < 12 ? "sj_youtube" : null, () => S.sj.open && S.sj.active.length < 2, !S.sj.open ? "투잡 탐색이 열리면" : "투잡 2개 진행 중 · 하나를 접으면"],
     [S.fam.spouse || S.fam.kids.length ? "family_time" : "dating_app", () => S.fam.spouse || S.t >= 3 || nRel >= 3, "인연 3명 또는 4달째"],
     ["beauty", () => S.t >= 2, "3달째부터"],
     ["co_project", () => !quit && (S.co.rank >= 1 || S.t >= 6), "7달째부터"],
@@ -884,7 +890,7 @@ function pgCS() {
     return `${boardHead("cs")}<div class="card"><h3>취업컨설팅 개업 준비 <small>진입이 제일 어렵다</small></h3><div class="small muted" style="margin-bottom:8px">회사 경력과 직무 지식이 곧 신뢰예요. 첫 후기는 지인에게서, 첫 손님은 크멍이나 블로그에서 와요.</div>
       <div class="steps">${steps.map((x) => `<div class="${x.done ? "done" : ""}"><span class="ck">${x.done ? "✓" : ""}</span><span class="grow">${esc(x.n)}<div class="tiny muted">${esc(x.hint)}</div></span></div>`).join("")}</div></div>
     <div class="sec">포지션</div>${nicheCards}
-    <div class="sec">활동명</div><div class="pick"><button class="${cs.nick === "nick" ? "on" : ""}" data-nick="nick"><b>닉네임</b><span class="tiny muted">회사에 덜 들킴</span></button><button class="${cs.nick === "real" ? "on" : ""}" data-nick="real"><b>실명·회사 공개</b><span class="tiny muted">신뢰 +6%p · 회사 눈치 ×1.4</span></button></div>
+    <div class="sec">활동명</div><div class="pick"><button class="${cs.nick === "nick" ? "on" : ""}" data-nick="nick"><b>닉네임</b><span class="tiny muted">회사에 덜 들킴</span></button><button class="${cs.nick === "real" ? "on" : ""}" data-nick="real"><b>실명·회사 공개</b><span class="tiny muted">신뢰 +6%p · 회사 눈치 ×1.4</span></button></div>${nickPick(cs)}
     <div class="acts" style="padding:0">${actRow("study", "career", "커리어 공부 (스터디카페)")}${actRow("cs_friend")}${actRow("cs_kmong", undefined, "크멍 입점")}${actRow("cs_blog")}</div>`;
   }
   const units = cs.queue.reduce((a, q) => a + q.left, 0);
@@ -892,7 +898,7 @@ function pgCS() {
   const lvc = D.CS_LEVELS[cs.lv] ? D.CS_LEVELS[cs.lv].c : "최고 레벨";
   const niche = D.NICHES[cs.niche];
   const maxS = Math.max(...niche.season);
-  return `${boardHead("cs")}<div class="card"><h3>취업컨설팅 <small>Lv${cs.lv} 「${D.CS_LEVELS[cs.lv - 1].n}」</small></h3><div class="tiny muted">다음 레벨: ${esc(lvc)}</div>
+  return `${boardHead("cs")}<div class="card"><h3>취업컨설팅 <small>Lv${cs.lv} 「${D.CS_LEVELS[cs.lv - 1].n}」</small></h3><div class="tiny muted">다음 레벨: ${esc(lvc)}</div>${cs.nick === "nick" ? more(`활동명 · ${CS.nickName(S) || "닉네임을 골라 주세요"} · 바꾸기`, nickPick(cs)) : `<div class="tiny muted" style="margin-top:4px">활동명 · 실명·회사 공개</div>`}
     <div class="funnel" style="margin-top:8px"><div><div class="v">${r1(cs.leads)}</div><div class="k">이번 달 문의</div></div><div><div class="v">${cs.newThisMonth}</div><div class="k">새 고객</div></div><div><div class="v ${cs.queue.length ? "gold" : ""}">${cs.queue.length}</div><div class="k">대기</div></div><div><div class="v good">${won(cs.monthRev)}</div><div class="k">이번 달 매출</div></div></div>
     ${more(`전환 ${Math.round(cs.conv * 100)}% · 합격 ${cs.passes} · 지표 더 보기`, `<div class="row wrap small">${Object.entries(cs.src).filter(([, v]) => v > 0.05).map(([k, v]) => `<span class="tag">${k} ${r1(v)}</span>`).join("") || `<span class="muted">유입 채널을 키우자</span>`}</div>
     <div class="kv" style="margin-top:8px"><div><div class="k">결제 전환</div><div class="v">${Math.round(cs.conv * 100)}%</div></div><div><div class="k">합격 누적</div><div class="v good">${cs.passes}</div></div><div><div class="k">후기</div><div class="v">${Math.floor(cs.reviews)}개</div></div><div><div class="k">신뢰</div><div class="v">${Math.round((cs.trust || 0) * 100)}</div></div><div><div class="k">처리 용량</div><div class="v">${cap}명/행동</div></div></div>`)}</div>
@@ -955,7 +961,7 @@ function pgSJ() {
     const j = D.SIDEJOBS[k], f = SJ.isFound(S, k), on = SJ.isActive(S, k), it = Math.round(sj.int[k] || 0), know = f || sj.know[k];
     const fg = SJ.insight(S, k); // 이해도 100%가 되어야 궁합·특성 연계가 보인다
     const btns = on ? `<button class="btn sm gold" data-go="${k}">보드 열기</button>`
-      : f ? (j.play ? `${SJ.startLock(S) ? `<span class="tiny muted">${S.t < SJ.PROBATION ? `${SJ.PROBATION + 1}개월 차부터` : `후보 ${SJ.foundCount(S)}/${SJ.NEED_CANDS}개 모이면`} 시작</span>` : `<button class="btn sm gold" data-sjstart="${k}" ${act.length >= SJ.slots(S) ? "disabled" : ""}>시작하기</button>`}` : `<span class="tiny muted">다음 업데이트에서 열림</span>`)
+      : f ? (j.play ? `${SJ.startLock(S) ? `<button class="btn sm" data-sjno>시작하기</button>` : `<button class="btn sm gold" data-sjstart="${k}" ${act.length >= SJ.slots(S) ? "disabled" : ""}>시작하기</button>`}` : `<span class="tiny muted">다음 업데이트에서 열림</span>`)
       : `<button class="btn sm" data-act="sj_report" data-arg="${k}">리포트 ⚡1</button>`;
     const ask = !sj.know[k] && (it >= 30 || f) ? `<button class="btn sm" data-act="sj_interview" data-arg="${k}">해 본 사람에게 묻기 ⚡1</button>` : "";
     if (!f && !on) return `<details class="sjc sjline ${j.play ? "" : "soon"}"><summary class="row"><span class="ic">${ic(j.ic)}</span><div class="grow ellip"><b>${esc(j.n)}</b> <span class="tiny muted">이해도 ${it}%${j.play ? "" : " · 준비 중"} ▾</span>${meter(it, 100, "var(--gold)")}</div>${btns}</summary><div class="tiny muted" style="margin-top:4px">단서: ${esc(j.hint)}${it >= 50 ? " · 100%가 되면 궁합·특성 연계가 보여요" : ""}</div>${(() => { const e = sjEntry(k, f, on, it); return e.html + (ask || e.btns ? `<div class="row wrap" style="margin-top:6px">${ask}${e.btns}</div>` : ""); })()}</details>`; // 정리(v4.27): 못 찾은 투잡은 사진 없는 한 줄
@@ -1146,6 +1152,21 @@ function pgMe() {
 }
 
 // ───────── 인물 창 ─────────
+// 인물 정보는 친해진 만큼만 보인다(11-24). 기준은 지금까지의 최고 호감(rel.mx). 성격에 따라 여는 속도가 조금 다르다(시크·과묵은 늦게, 유쾌·털털은 빨리).
+// 한 줄 소개 10 · 나이·키·성격 하나 20 · 좋아하는 것 하나 25 · 성격 전부 35 · 좋아하는 것 전부 40 · 싫어하는 것 45 · 투잡에 도움이 되는지·손님인지·연애 가능 50(이것만은 누구나 50)
+const SHY_RE = /시크|도도|수줍|무뚝뚝|차분|과묵|냉정|건조|덤덤|소심|예민|깐깐|원칙/, OPEN_RE = /유쾌|털털|낙천|엉뚱|발랄|호탕|솔직|허당|다정/;
+function knowLv(id) {
+  const x = S.rel[id] || {}, c = E.CHAR[id] || {}; if (S.rel[id]) x.mx = Math.max(x.mx || 0, Math.round(x.aff || 0));
+  const v = x.spouse || x.lover ? 100 : Math.max(x.mx || 0, x.bond ? 40 : 0), p = (c.personality || []).join(" "), d = SHY_RE.test(p) ? 8 : OPEN_RE.test(p) ? -6 : 0;
+  return { v, at: (n) => v >= n + d };
+}
+function ageTxt(c, K) { const a = c.age + Math.floor(S.t / 12); return K.at(20) ? `${a}세${c.height ? ` · ${c.height}cm` : ""}` : `${Math.floor(a / 10) * 10}대 ${a % 10 < 4 ? "초반" : a % 10 < 7 ? "중반" : "후반"}쯤`; }
+function persTags(c, K) { const P = c.personality || [], n = K.at(35) ? P.length : K.at(20) ? 1 : 0; return P.slice(0, n).map((p) => `<span class="tag">${esc(p)}</span>`).join("") + (n < P.length ? `<span class="tag a6q">성격 ?</span>` : ""); }
+function likeTxt(c, K) { const L = c.likes || [], n = K.at(40) ? L.length : K.at(25) ? 1 : 0, dis = K.at(45) && (c.dislikes || []).length ? ` · 싫어함: ${c.dislikes.map(esc).join(", ")}` : ""; return `<div class="tiny muted" style="margin-top:4px">좋아함: ${n ? L.slice(0, n).map(esc).join(", ") + (n < L.length ? " …" : "") : "아직 몰라요"}${dis}</div>`; }
+function nickPick(cs) {
+  if (cs.nick !== "nick") return ""; const cur = CS.nickOf(S);
+  return `<div class="a6nk">${CS.NICKS.map((n) => `<button class="${cur?.k === n.k ? "on" : ""}" data-nickk="${n.k}"><b>${esc(n.n)}</b><span>${esc(n.tag)}</span></button>`).join("")}</div><div class="tiny muted" style="margin-top:4px">${cur ? `지금 활동명 <b class="gold">${esc(cur.n)}</b> · 효과는 같고, 닉네임마다 작은 이야기가 따라와요` : `<b class="bad">닉네임을 하나 골라 주세요</b>`}</div>`;
+}
 // 조력자에게서 올 수 있는 일(호감 단계별). 그 사람의 분야 투잡을 하고 있을 때만 온다
 function helperHint(id) {
   const T = LVX.helperTiers(S, id); if (!T || !T.length) return "";
@@ -1155,7 +1176,7 @@ function helperHint(id) {
 // 두근두근·연인·배우자는 화면 전체로 연다(11-24)
 function loveWin(id) {
   const c = E.CHAR[id], x = S.rel[id], st = LVX.stageOf(S, id), love = st === "lover" || st === "spouse", Q = LVX.sinceInfo(S, id), LK = LVX.LV;
-  const here = Object.values(S.spot).some((ids) => ids.includes(id)), months = x.lover ? S.t - x.loverSince : 0, hs = c.helper && c.helper.effect !== "none";
+  const here = Object.values(S.spot).some((ids) => ids.includes(id)), months = x.lover ? S.t - x.loverSince : 0, hs = c.helper && c.helper.effect !== "none" && (knowLv(id).v >= 50 || !!x.helper);
   const b = (k, label, sub, dis, hot) => `<button class="a6lv-b ${hot ? "hot" : ""}" data-pa="${k}" ${dis ? "disabled" : ""}><b>${label}</b><span>${sub}</span></button>`;
   const done = (k) => x[k] === S.t;
   const acts = [
@@ -1196,14 +1217,14 @@ function charWin(id) {
   const months = x.lover ? S.t - x.loverSince : 0;
   const here = Object.values(S.spot).some((ids) => ids.includes(id));
   const btn = (k, label, cost, dis) => `<button class="btn" data-pa="${k}" ${dis ? "disabled" : ""}>${label}${cost ? ` <span class="ap">⚡${cost}</span>` : ""}</button>`;
-  const hs = c.helper && c.helper.effect !== "none";
+  const K = knowLv(id), hs = c.helper && c.helper.effect !== "none" && (K.v >= 50 || !!x.helper); // 투잡에 도움이 되는지는 호감 50부터 보인다
   const st = c.stats || {};
   openWin(`<h2>${esc(c.name)} <button class="x" data-close>✕</button></h2>
-    <div class="scene">${stageWho(id, exprFor(id), "half", bgUrl(charSpot(id)) || bgUrl("street") || bgUrl("alley")) || ""}<div class="who"><div class="pic" ${BODY[id] ? 'style="display:none"' : ""}>${img(faceSrc(id, exprFor(id)))}</div><div class="grow"><div><b>${esc(c.job)}</b> · ${c.age + Math.floor(S.t / 12)}세${c.height ? ` · ${c.height}cm` : ""}</div><div class="tagline">${esc(c.tagline || "")}</div>
-    <div class="row wrap" style="margin-top:4px">${(c.personality || []).map((p) => `<span class="tag">${esc(p)}</span>`).join("")}${x.bond && E.BOND_N[x.bond] ? `<span class="tag">${E.BOND_N[x.bond]}</span>` : ""}${romance ? `<span class="tag pink">연애 가능</span>` : ""}${hs ? `<span class="tag green">${esc(c.helper.role)}</span>` : ""}${c.customer ? `<span class="tag blue">${c.customer.board === "partyroom" ? "파티룸 손님" : "컨설팅 손님"}</span>` : ""}${x.affair ? `<span class="tag red">비밀 관계 · 의심 ${Math.round(S.fam.affair?.sus || 0)}</span>` : x.spouse ? `<span class="tag pink">배우자</span>` : x.lover ? `<span class="tag pink">연인 ${months}개월</span>` : ""}${x.helper ? `<span class="tag gold">조력 중</span>` : ""}</div>
-    <div class="tiny muted" style="margin-top:4px">좋아함: ${(c.likes || []).map(esc).join(", ")}</div></div></div>
+    <div class="scene">${stageWho(id, exprFor(id), "half", bgUrl(charSpot(id)) || bgUrl("street") || bgUrl("alley")) || ""}<div class="who"><div class="pic" ${BODY[id] ? 'style="display:none"' : ""}>${img(faceSrc(id, exprFor(id)))}</div><div class="grow"><div><b>${esc(c.job)}</b> · ${ageTxt(c, K)}</div><div class="tagline">${K.at(10) ? esc(c.tagline || "") : "아직 잘 모르는 사이"}</div>
+    <div class="row wrap" style="margin-top:4px">${persTags(c, K)}${x.bond && E.BOND_N[x.bond] ? `<span class="tag">${E.BOND_N[x.bond]}</span>` : ""}${romance && K.v >= 50 ? `<span class="tag pink">연애 가능</span>` : ""}${hs ? `<span class="tag green">${esc(c.helper.role)}</span>` : ""}${c.customer && K.v >= 50 ? `<span class="tag blue">${c.customer.board === "partyroom" ? "파티룸 손님" : "컨설팅 손님"}</span>` : ""}${x.affair ? `<span class="tag red">비밀 관계 · 의심 ${Math.round(S.fam.affair?.sus || 0)}</span>` : x.spouse ? `<span class="tag pink">배우자</span>` : x.lover ? `<span class="tag pink">연인 ${months}개월</span>` : ""}${x.helper ? `<span class="tag gold">조력 중</span>` : ""}</div>
+    ${likeTxt(c, K)}</div></div>
     <div class="small">호감도 <b>${Math.round(x.aff)}</b> ${here ? "· 지금 지도에 있음" : ""}</div>${meter(x.aff, 100, "var(--pink)")}
-    <div class="tiny muted" style="margin:2px 0 8px">20 친해짐 · 45 속이야기·조력 · ${romance ? "50 두근두근 · 70 고백 가능" : "70 평생 친구"}</div>
+    <div class="tiny muted" style="margin:2px 0 8px">친해질수록 이 사람을 더 알게 돼요 · 20 친해짐 · 45 속이야기 · 50 ${romance && K.v >= 50 ? "두근두근 · 70 고백 가능" : "더 깊은 사이 · 70 평생 친구"}</div>
     ${hs ? helperHint(id) : ""}
     ${hs ? `<div class="tiny muted">조력 효과: ${esc(HELP_DESC[c.helper.effect] || "")} · 수고비 월 ${E.helperPay(S, id)}만 · 능력 ${Math.round(st[E.helperStat(c)] || 50)}</div>` : ""}
     <div class="row wrap" style="margin-top:10px">
@@ -1470,28 +1491,63 @@ function warnPlay(sc, done) {
   let ok = false; setTimeout(() => { ok = true; el.classList.add("rdy"); }, 900);
   el.onclick = () => { if (!ok) return; el.remove(); done(); };
 }
+// BURNING 화면(11-24): WARNING 과 같은 틀에 금색. 좋은 쪽의 큰 사건(engine/extras.js burnScene)
+function burnPlay(sc, done) {
+  const w = sc.burn || {}, el = document.createElement("div"); el.className = "a6w a6burn";
+  el.innerHTML = `<div class="a6w-st t"></div><div class="a6w-mid"><div class="a6w-w">BURNING</div><div class="a6w-h">${esc(w.head || sc.title)}</div>${w.sub ? `<div class="a6w-s">${esc(w.sub)}</div>` : ""}<div class="a6burn-x">수입 ×2</div><div class="a6w-go">눌러서 계속</div></div><div class="a6w-st b"></div>`;
+  document.body.appendChild(el); FX.play("win"); setTimeout(() => { if (el.isConnected) FX.play("ok"); }, 450);
+  let ok = false; setTimeout(() => { ok = true; el.classList.add("rdy"); }, 900);
+  el.onclick = () => { if (!ok) return; el.remove(); done(); };
+}
 function showScene() {
   const sc = S.pending; if (!sc) return;
   bgmGo();
   if (document.querySelector(".cine, .a6w")) return;
   if (sc.warn && !sc._warned) { sc._warned = 1; return warnPlay(sc, () => { if (S.pending === sc) showScene(); }); } // 11-23 큰 사건은 WARNING 화면부터
+  if (sc.burn && !sc._burned) { sc._burned = 1; return burnPlay(sc, () => { if (S.pending === sc) showScene(); }); } // 11-24 버닝 이벤트(1회차 5년 차의 큰 건)는 금색 BURNING 화면부터
   if (sc.kind === "year") return yearShow(sc); // 연말 결산은 전용 화면(v4.24)
   { const ck = cineKey(sc); if (ck && !sc._cined) { sc._cined = 1; return cinePlay(sc, ck, () => { if (S.pending !== sc) return; if (sc.kind === "story") { E.choose(S, 0); save(); closeWin(); continueChain(); } else showScene(); }); } }
   FX.play(sc.kind === "wedding" ? "win" : "scene");
-  const who = sc.who && E.CHAR[sc.who];
+  let segs = null; try { segs = XR.dialog(S, sc, sc.text); } catch (e) { console.warn(e); }
+  const talk = !!segs && segs.some((x) => x.k !== "n"); // 누가 말하는 장면이면 대화창으로 그린다(11-24)
+  let lead = sc.who; try { lead = XR.leadOf(S, sc, segs) || sc.who; } catch (e) {}
+  const who = lead && XR.who(lead);
   const pf = ui.preFx; ui.preFx = null;
   const pre = pf && (pf.msg || pf.lines.length) ? `<div class="prefx">${pf.msg ? `<span>${esc(pf.msg)}</span>` : ""}${pf.lines.filter(Boolean).map((l) => `<b>${esc(l)}</b>`).join("")}</div>` : "";
   const expr = sc.expr || (sc.kind === "meet" ? "neutral" : sc.kind === "wedding" ? "blush" : sc.kind === "arc" ? (sc.stage === 3 ? "blush" : "smile") : "neutral");
   openWin(`<div class="scene">${pre}<h2>${esc(String(sc.title).replace(/^선배 찾아가기 · (.+?) (\d+\/\d+)(?: · (질문 \d+\/\d+))?$/,(m, j, a, b) => `${j} 선배 ${a}${b ? ` · ${b}` : ""}`))}${sc.tag ? ` <span class="tag gold">${esc(sc.tag)}</span>` : ""}</h2>
-    ${who ? stageWho(sc.who, expr, "full", sceneBg(sc), `<b>${esc(who.name)}</b><span>${esc(who.job)}</span>`) ?? `<div class="who${sc.mentor ? " big" : ""}"><div class="pic">${img(faceSrc(sc.who, expr))}</div><div><b>${esc(who.name)}</b><div class="tagline">${esc(who.job)} · ${esc(who.tagline || "")}</div></div></div>` : ""}
-    <div class="txt">${esc(sc.text)}</div>
+    ${who ? stageWho(lead, expr, "full", sceneBg(sc, lead), `<b>${esc(who.name)}</b><span>${esc(XR.EXTRA[lead] ? XR.EXTRA[lead].role || who.job : who.job)}</span>`) ?? `<div class="who${sc.mentor ? " big" : ""}"><div class="pic">${img(faceSrc(lead, expr))}</div><div><b>${esc(who.name)}</b><div class="tagline">${esc(who.job)} · ${esc(who.tagline || "")}</div></div></div>` : ""}
+    ${talk ? dlgHtml(segs, expr) : `<div class="txt">${esc(XR.plain(sc.text))}</div>`}
     <div class="choices">${((H) => sc.choices.map((c, i) => `<button data-ch="${i}" class="${H[i] ? "a6rec" : ""}"><span>${H[i] ? `<i class="a6rec-t ${/모 아니면 도/.test(H[i]) ? "g" : ""}">${H[i]}</i>` : ""}${esc(c.t)}</span>${c.pct != null ? `<span class="pct">${D.STATS[c.check.stat]} ${c.pct}%</span>` : ""}</button>`).join(""))((() => { try { return E.choiceHints(S, sc); } catch (e) { return []; } })())}</div>${S.t < E.HINT_T && (() => { try { return E.choiceHints(S, sc).some(Boolean); } catch (e) { return false; } })() ? `<div class="tiny muted" style="margin-top:4px;text-align:center">처음 2년 동안은 좋은 선택지에 추천 표시가 붙어요</div>` : ""}</div>`, (el) => el.querySelectorAll("[data-ch]").forEach((b) => b.onclick = () => {
     const res = E.choose(S, +b.dataset.ch); save(); FX.play(res.ok === false ? "bad" : "ok");
     if (sc.kind === "story" && !res.lines.length && !res.text) { closeWin(); return continueChain(); }
-    openWin(`<div class="scene"><h2>${esc(sc.title)}</h2>${who ? stageWho(sc.who, res.ok === false ? "sad" : sc.kind === "wedding" || sc.kind === "arc" ? "blush" : "smile", "half", sceneBg(sc)) ?? `<div class="who"><div class="pic">${img(faceSrc(sc.who, res.ok === false ? "sad" : "smile"))}</div></div>` : ""}
-      <div class="result">${res.check ? `<div class="${res.ok ? "ok" : "ng"}">${esc(res.check)}</div>` : ""}<div class="txt">${esc(res.text || "")}</div>${res.lines.length ? `<div class="effs">${res.lines.map((l) => `<span>${esc(l)}</span>`).join("")}</div>` : ""}</div>
+    openWin(`<div class="scene"><h2>${esc(sc.title)}</h2>${who ? stageWho(lead, res.ok === false ? "sad" : sc.kind === "wedding" || sc.kind === "arc" ? "blush" : "smile", "half", sceneBg(sc, lead)) ?? `<div class="who"><div class="pic">${img(faceSrc(lead, res.ok === false ? "sad" : "smile"))}</div></div>` : ""}
+      <div class="result">${res.check ? `<div class="${res.ok ? "ok" : "ng"}">${esc(res.check)}</div>` : ""}${resTxt(sc, res, segs)}${res.lines.length ? `<div class="effs">${res.lines.map((l) => `<span>${esc(l)}</span>`).join("")}</div>` : ""}</div>
       <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-ok>확인</button></div>`, (el2) => el2.querySelector("[data-ok]").onclick = () => { closeWin(); continueChain(); }, true, true);
   }), true, true);
+}
+// 대화창(11-24): 장면 글을 바탕 글·사람이 한 말·화면에 뜬 글로 나눠 그린다. 나누는 일은 engine/extras.js dialog()
+const DL_IC = { chat: "💬", msg: "✉", mail: "📧", bell: "🔔" };
+function dlgHtml(segs, expr = "neutral") {
+  return `<div class="a6dl">${segs.map((x, i) => {
+    const d = `style="animation-delay:${(Math.min(i, 7) * 0.13).toFixed(2)}s"`;
+    if (x.k === "n") return `<p class="a6dl-n" ${d}>${esc(x.t)}</p>`;
+    if (x.k === "p") return `<div class="a6dl-p" ${d}><span class="a6dl-ic">${DL_IC[x.ic] || "💬"}</span><div class="a6dl-b"><b>${esc(x.name)}</b><p>${esc(x.t)}</p></div></div>`;
+    const me = x.id === "me", c = me ? null : XR.who(x.id), ex = XR.EXTRA[x.id];
+    const sub = me ? "" : ex ? ex.role : c?.bit ? "" : c?.job || "";
+    return `<div class="a6dl-s ${me ? "me" : ""}" ${d}><span class="a6dl-f">${img(me ? meSrc("neutral") : faceSrc(x.id, expr))}</span><div class="a6dl-b"><b>${esc(me ? S.me.name : c?.name || "")}${sub ? `<i>${esc(sub)}</i>` : ""}${x.via ? `<em>${esc(x.via)}</em>` : ""}</b><p>${esc(x.t)}</p></div></div>`;
+  }).join("")}</div>`;
+}
+function resTxt(sc, res, segs) {
+  let g = null; try { g = XR.dialog(S, sc, res.text || "", XR.lastSpeaker(segs)); } catch (e) {}
+  return g && g.some((x) => x.k !== "n") ? dlgHtml(g, res.ok === false ? "sad" : "smile") : `<div class="txt">${esc(XR.plain(res.text))}</div>`;
+}
+// 아직 고를 때가 아닌데 시작하기를 눌렀을 때: 주인공이 스스로 말린다(11-24)
+function sjNo() {
+  const why = SJ.startLock(S); if (!why) return render();
+  FX.play("bad");
+  openWin(`<div class="scene"><h2>아직 이르다 <span class="tag gold">투잡 탐색</span></h2><div class="a6dl"><div class="a6dl-s"><span class="a6dl-f">${img(meSrc("neutral"))}</span><div class="a6dl-b"><b>${esc(S.me.name)}<i>속마음</i></b><p>${esc(why)}</p></div></div></div>
+    <div class="row" style="margin-top:12px"><button class="btn grow" data-g="co">회사로</button><button class="btn grow" data-g="hobby">취미로</button><button class="btn gold grow" data-close>알겠어</button></div></div>`, (w) => w.querySelectorAll("[data-g]").forEach((b) => b.onclick = () => { closeWin(); go(b.dataset.g); }), false, true);
 }
 function continueChain() {
   if (S.over && (S.pending || S.sceneQ?.length)) { S.pending = null; S.sceneQ = []; save(); } // 11-23 개인회생·번아웃으로 끝난 달에 줄 서 있던 장면은 버린다(끝 화면 위에 회사 장면이 뜨던 문제)
@@ -1583,6 +1639,7 @@ function bind() {
   q("[data-coach]", () => { S.coachOff = 1; save(); render(); });
   q("[data-swipe]", (el) => step(+el.dataset.swipe));
   q("[data-fitcards]", () => fitCardsWin());
+  q("[data-sjno]", () => sjNo());
   q("[data-sjstart]", (el) => { const k = el.dataset.sjstart, j = D.SIDEJOBS[k]; openWin(`<h2>${esc(j.n)} 시작할까? <button class="x" data-close>✕</button></h2>${fitCardHtml(k, false)}<div class="small" style="line-height:1.8;margin-top:8px">· 수익: ${esc(j.inc)}<br>· 시간: ${esc(j.hours)} · 시작 자본 ${esc(j.cap)}<br>· 궁합: ${SJ.fit(S, k).g} (${j.fit.map((x) => D.STATS[x]).join("·")})${(() => { const N = SJ.need(S, k), P = S.sj.rp?.[k]; return N ? `<br>· 필요 역량: ${esc(N.n)} ${N.need} (지금 <b class="${N.ok ? "good" : "bad"}">${N.cur}</b>) · 준비 ${P?.prep || 0}/3${N.ok ? "" : "<br>· 코치: 역량이 모자라면 첫 몇 달은 손님이 훨씬 적어요. 홍보·후기로 버텨야 해요."}` : ""; })()}<br>· 회사에 들키면 경고 → 감봉 → 해고. ${k === "cs" ? "실명으로 하면 더 잘 들킨다." : "지점이 늘수록 눈치가 쌓인다."}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>조금 더 고민</button><button class="btn gold grow" data-yes>시작하기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = SJ.start(S, k); closeWin(); toast([], r.msg); save(); if (r.ok) { go(k); if (r.hid?.length) openWin(`<h2>숨은 특성 공개 <button class="x" data-close>✕</button></h2><div class="small muted">${esc(jo(j.n, "을", "를"))} 시작하니 내 성향이 이렇게 드러나요.</div><div class="intro" style="margin-top:8px">${r.hid.map((x) => `<p>★ ${esc(x)}</p>`).join("")}</div><button class="btn gold" style="width:100%;margin-top:10px" data-close>확인</button>`, null, false, true); } else render(); }); });
   q("[data-sjstop]", (el) => openWin(`<h2>${esc(D.SIDEJOBS[el.dataset.sjstop].n)} 그만둘까요? <button class="x" data-close>✕</button></h2><div class="small">쌓은 후기·능력치는 남아요. 나중에 다시 시작할 수 있어요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>접기</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = SJ.stop(S, el.dataset.sjstop); closeWin(); toast([], r.msg); save(); render(); }));
   q("[data-sjf]", (el) => { ui.sjf = el.dataset.sjf; render(); });
@@ -1609,6 +1666,7 @@ function bind() {
   $app.querySelectorAll("[data-concept]").forEach((el) => el.addEventListener("change", () => { const r = PR.setConcept(S, el.dataset.concept, el.value); if (r.msg) toast([], r.msg); save(); render(); }));
   q("[data-niche]", (el) => { const r = CS.setNiche(S, el.dataset.niche); toast([], r.msg || ""); save(); render(); });
   q("[data-nick]", (el) => { const r = CS.setNick(S, el.dataset.nick); toast([], r.msg); save(); render(); });
+  q("[data-nickk]", (el) => { const r = CS.setNick(S, "nick", el.dataset.nickk); toast([], r.msg); save(); render(); });
   q("[data-cprice]", (el) => { const r = CS.setPrice(S, el.dataset.cprice); toast([], r.msg); save(); render(); });
   q("[data-cspol]", (el) => { const r = CS.setPolicy(S, el.dataset.cspol); if (r.msg) toast([], r.msg); save(); render(); }); // f30 운영 원칙
   $app.querySelectorAll("[data-ads]").forEach((el) => el.addEventListener("change", () => { CS.setAds(S, +el.value); save(); render(); }));
@@ -2144,12 +2202,16 @@ function autoTest(n) {
   if (h.includes("lvtest")) { S.ng = { ...(S.ng || {}), n: 2 }; const tp = (h.match(/lvtest-([a-z]+)/) || [])[1] || "shy", id = S.cast.find((x) => E.CHAR[x] && E.isRomanceable(S, E.CHAR[x]) && E.confessType(E.CHAR[x]) === tp); if (id) { const x = E.ensureRel(S, id); x.aff = 95; x.stage = 2; S.st.charm = 190; S.ap = 9; const r = E.personAct(S, id, "confess"); if (r.scene) showScene(); } } /* 고백 과정 시험(#auto18-lvtest-shy|late|tease|yes) */
   if (h.includes("abtrap")) { const sc = AB.trapDemo(S, (h.match(/abtrap-([a-z]+)/) || [])[1]); if (sc) { E.openScene(S, sc); showScene(); } } /* 에어씨앤씨 숨은 함정 시험(#auto18-abnb-abtrap-bld) */
   if (h.includes("gradetest")) openWin(`<h2>결산 등급 시험 <button class="x" data-close>✕</button></h2>${(S.grade = (h.match(/gradetest-([SABC])/) || [])[1] || "C", gradeCard())}`); /* #auto18-gradetest-C */
-  if (h.includes("questtest")) { S.flags.quest = true; S.flags.noProbation = false; S.ng = { ...(S.ng || {}), n: 1 }; S.sj.active = []; S.t = Math.max(S.t, 4); const st = (h.match(/questtest-(\d)/) || [])[1] || "3"; S.sj.found = {}; S.sj.int = {}; const ks = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play); ks.slice(0, st === "1" ? 3 : 6).forEach((k, i) => { S.sj.int[k] = 20 + i * 13; }); if (st !== "1") SJ.found(S, ks[0]); if (st === "3") { SJ.found(S, ks[1]); SJ.found(S, ks[3]); } ui.page = "home"; render(); if (h.includes("cards")) fitCardsWin(); } /* 초반 퀘스트 시험(#auto6-questtest-1|2|3[-cards]) */
+  if (h.includes("questtest")) { S.flags.quest = true; S.flags.noProbation = false; delete S.sj.pickT; S.ng = { ...(S.ng || {}), n: 1 }; S.sj.active = []; S.t = Math.max(S.t, 4); const st = (h.match(/questtest-(\d)/) || [])[1] || "3"; S.sj.found = {}; S.sj.int = {}; const ks = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play); ks.slice(0, st === "1" ? 3 : 6).forEach((k, i) => { S.sj.int[k] = 20 + i * 13; }); if (st !== "1") SJ.found(S, ks[0]); if (st === "3") { SJ.found(S, ks[1]); SJ.found(S, ks[3]); } ui.page = "home"; render(); if (h.includes("cards")) fitCardsWin(); } /* 초반 퀘스트 시험(#auto6-questtest-1|2|3[-cards]) */
   if (h.includes("invopen")) { E.openScene(S, E.investOpenScene(S)); showScene(); } /* 투자 해금 장면 시험 */
+  { const nk = (h.match(/-csn-([a-z]+)/) || [])[1]; if (nk && D.NICHES[nk] && S.cs.niche) { S.cs.niche = nk; S.cs.niches = [nk]; if (!S.cs.queue.length) S.cs.queue.push({ id: 999, prod: "coach", niche: nk, left: 1, units: 1, price: 12, wait: 0 }); } } /* 포지션별 미니게임 시험(#auto18-cs-mgdue-csn-interview|career|newgrad|public) */
   if (h.includes("mgdue")) S.mgForce = true; /* 미니게임 '올해의 큰 일' 창 시험(#auto18-abnb-mgdue → 게스트 응대) */
   if (h.includes("chrenew") || h.includes("charea")) import("./engine/jobs/chbrand.js").then((BR) => { const C = S.chicken; if (!C?.stores?.length) return; if (h.includes("charea")) { C.ctT = S.t + 2; BR.survey(S, E.R(S)); ui.page = "chicken"; render(); return; } const sc = h.includes("chrenew2") ? BR.renewScene(S, E.R(S)) : BR.renewWarn(S); E.openScene(S, sc); showScene(); }); /* 치킨 계약 갱신·상권 카드 시험 */
   if (h.includes("lovewin")) { S.ng = { ...(S.ng || {}), n: 2 }; const id = S.cast.find((x) => E.CHAR[x] && E.isRomanceable(S, E.CHAR[x]) && E.CHAR[x].helper?.effect && E.CHAR[x].helper.effect !== "none"); const x = E.ensureRel(S, id); x.aff = 78; if (h.includes("lovewin-lover")) { x.lover = true; x.loverSince = S.t - 11; x.dateT = S.t; x.anv = { t: S.t + 1, n: "1주년" }; } S.ap = 9; charWin(id); } /* 연인 큰 화면 시험(#auto18-lovewin[-lover]) */
   if (h.includes("chattest")) { const sc = LVX.chatDemo(S, h.includes("chattest-lover") ? "lover" : "crush"); if (sc) { E.openScene(S, sc); showScene(); } } /* 까톡 시험 */
+  if (h.includes("xdemo")) { const k = (h.match(/xdemo-([a-z0-9]+)/) || [])[1]; if (/^(why|gag|boss)$/.test(k)) { if (!S.cs.niche) CS.setNiche(S, "newgrad"); CS.setNick(S, "nick", (h.match(/-nk-([a-z]+)/) || [])[1]); } const sc = XR.demo(S, k); if (sc) { E.openScene(S, sc); showScene(); } } /* 조연의 다른 얼굴·닉네임 이야기 시험(#auto18-xdemo-x03 · #auto18-cs-xdemo-why-nk-fairy|elder|fail|deliver|mask) */
+  if (h.includes("dlgtest")) { const id = (h.match(/dlgtest-([a-z0-9_]+)/) || [])[1]; import("./gen/data.js").then((G) => { const x = G.SCENES.find((q) => q.id === id); if (x) { E.openScene(S, { kind: "event", ...x }); showScene(); } }); } /* 대화창 시험: 자료 장면 id 로 바로 열기(#auto18-dlgtest-co_new_lead) */
+  if (h.includes("picktest")) { const sc = SJ.pickScene(S, (h.match(/picktest-([a-z]+)/) || [])[1] || "first"); if (sc) { E.openScene(S, sc); showScene(); } } /* 투잡 고르는 장면 시험(#auto6-questtest-3-picktest-first|again|add) */
   if (h.includes("hevtest")) { const sc = LVX.helperDemo(S, (h.match(/hevtest-([a-z]+)/) || [])[1] || "big"); if (sc) { E.openScene(S, sc); showScene(); } } /* 조력자 사건 시험(#auto18-hevtest-big|small|ap) */
   if (h.includes("pwtest")) { const sc = PW.crisisScene(S); if (sc) { E.openScene(S, sc); showScene(); } } /* 파티룸 컨셉 위기 시험(#auto18-pr-pwtest) */
   if (h.includes("wvtest")) { const j = (h.match(/wvtest-([a-z]+)/) || [])[1] || S.sj.active[0] || "cs"; const sc = WV.waveScene(S, j, h.includes("wvlate"), h.includes("wvtwo") ? 2 : 1, h.includes("hitb") ? "b" : "a", h.includes("patha") ? "a" : h.includes("pathb") ? "b" : null); if (sc) { E.openScene(S, sc); showScene(); } } /* 판이 바뀐다 시험(#auto18-<투잡>-wvtest-<투잡>) */
