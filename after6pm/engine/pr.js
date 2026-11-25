@@ -7,7 +7,7 @@ import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 import * as DF from "./decofx.js"; // 방 꾸미기 감성 점수 효과
 import { JOBEV } from "../gen/data.js";
 import * as RD from "./round.js";
-export const PR_R1 = { occ: 1.68 /* 11-25: 1.6 → 1.68. 예약률 상수를 0.62로 낮춘 만큼 1회차 배율을 올려 1회차 체감은 0.65 × 1.6 때와 같게 둔다 */ }; if (typeof process !== "undefined" && process.env?.PRR1) PR_R1.occ = +process.env.PRR1;
+export const PR_R1 = { occ: 1.35 /* 11-25: 1.6 → 1.68 → 1.35. 대표 기준(24평 비수기 이익 50~150만)보다 1회차가 높아(비수기 가운데 115~158만, 위 25% 220~260만) 낮췄다. 봇 손잡이: 환경변수 PRR1 */ }; if (typeof process !== "undefined" && process.env?.PRR1) PR_R1.occ = +process.env.PRR1;
 const PR_KOCC = (typeof process !== "undefined" && +process.env?.PRK) || D.PR_K; // 예약률 상수(봇 손잡이: 환경변수 PRK)
 import * as PW from "./prwave.js"; // 11-23 컨셉 위기·컨셉 잠금·관리 이득
 import * as RVW from "./review.js"; // v4.28 경쟁사 가격표·가격 전쟁·후기 사건
@@ -124,11 +124,11 @@ function makeListing(s, r, dk) {
   const down5 = (x) => Math.floor(x / 5 + 1e-9) * 5; // 내림: 반올림 때문에 평당 값이 기준을 살짝 넘지 않게
   const rent = pricey ? down5(r.range(D.PR_RENT.bad[0], D.PR_RENT.bad[1]) * size * pi) : down5(rentFor(s, { dk, size, floor, elevator, toilet, walk }, r.next()) * eraF);
   const dep = Math.round(rent * r.range(8, 12) / 100) * 100; // 보증금은 월세 10배 안팎(월세가 내려가면 같이 내려간다)
-  const key = Math.round(r.range(d.key[0], d.key[1]) * (walk <= 5 ? 1.2 : 1) * pi / 50) * 50;
+  const KY = D.PR_KEY, noKey = r.chance(KY.none[dk] ?? 0.15); // 11-25 권리금은 300만~1,200만(물가 반영), 없는 자리도 있다
   const far = dk === "local" ? 3 : r.int(0, 2); // 집과 거리(관리 행동력 가중)
   const cond = r.weighted([["empty", 0.5], ["half", 0.3], ["turnkey", 0.2]]);
   const pre = cond === "turnkey" ? presetDecor(r) : cond === "half" ? { light: 1, kitchen: 1 } : {};
-  const L = { id: "L" + (++s.pr.seq), t: s.t, dk, size, cap: capOf(size), floor, elevator, parking, toilet, heating, walk, rent, dep, key: Math.round(key * D.PR_COND[cond].key / 10) * 10, far, cond, pre,
+  const L = { id: "L" + (++s.pr.seq), t: s.t, dk, size, cap: capOf(size), floor, elevator, parking, toilet, heating, walk, rent, dep, key: noKey ? 0 : Math.round(clamp(r.range(d.key[0], d.key[1]) * (walk <= 5 ? 1.2 : 1) * D.PR_COND[cond].key, KY.lo, KY.hi) * pi / 10) * 10, far, cond, pre,
     hid: { sound, access24, landlord, comp, ondolOk }, seen: {} };
   // 조력자: 중개사가 숨은 정보 1개 공개
   if (helpers(s, "pr_realty").length) { const k = r.pick(["sound", "access24", "landlord", "comp", "ondolOk"]); L.seen[k] = true; }
@@ -242,12 +242,36 @@ export function act(s, r, id, arg, boost = 1) {
 const fmt = (x) => Math.round(x * 10) / 10;
 
 // 계약 (UI에서 직접 부름, 행동력 0)
+// 11-25 권리금 흥정(대표 요청: "깎는 것도 기술이니 깎는 시도를 무조건 하게"). 매물마다 한 번. 고른 방법의 능력치가 높을수록 잘 깎인다.
+// 권리금이 없는 자리는 월세를 조금 깎아 본다. 화면은 계약 검토에서 흥정을 끝내야 '계약하기'가 열린다. 화면을 거치지 않는 계약(봇 등)은 가장 센 방법으로 저절로 한 번 한다
+export function negoBest(s) { return (s.st.num || 0) >= (s.st.talk || 0) ? "data" : "talk"; }
+export function nego(s, r, listingId, way) {
+  const L = s.pr.listings.find((x) => x.id === listingId); if (!L) return { ok: false, msg: "매물이 없어요" };
+  if (L.nego) return { ok: false, msg: "이 매물은 이미 흥정했어요" };
+  const N = D.PR_NEGO, W = N.ways[way] || N.ways.talk; way = N.ways[way] ? way : "talk";
+  const st = s.st[W.st] || 0, p = clamp((st - 20) / 140, 0, 1) + Math.min(0.15, (s.pr.know || 0) / 400);
+  let cut = way === "bluff" ? (r.chance(N.bluff.hit[0] + N.bluff.hit[1] * p) ? r.range(N.bluff.cut[0], N.bluff.cut[1]) : 0)
+    : r.chance(N.hit[0] + N.hit[1] * p) ? r.range(N.base[0], N.base[1]) + N.up * Math.min(1, p) : 0; // 안 통하면 그대로(찔끔 깎인 것처럼 보이지 않게)
+  const onKey = L.key > 0;
+  if (!onKey) cut = Math.min(cut * 0.25, N.rentMax);
+  const before = onKey ? L.key : L.rent;
+  const after = onKey ? Math.round(before * (1 - cut) / 10) * 10 : Math.max(5, Math.floor(before * (1 - cut) / 5) * 5);
+  if (onKey) L.key = after; else { L.dep = Math.round(L.dep * after / before / 100) * 100; L.rent = after; }
+  const saved = before - after;
+  L.nego = { way, on: onKey ? "key" : "rent", before, after, saved };
+  gainStat(s, W.st, 0.4, "nego");
+  const what = onKey ? "권리금" : "월세";
+  const msg = saved > 0 ? `${W.n}: ${what} ${won(before)} → ${won(after)} (${won(saved)} 깎음)` : `${W.n}: ${way === "bluff" ? "\"그럼 그 매물 하세요.\" 안 통했다" : "꿈쩍도 안 한다"}. ${what} ${won(before)} 그대로`;
+  log(s, `${D.DISTRICTS[L.dk].n} ${L.size}평 흥정 · ${msg}`, "work");
+  return { ok: true, msg, saved, on: L.nego.on };
+}
 export function contract(s, listingId, o) {
   const pr = s.pr; const L = pr.listings.find((x) => x.id === listingId); if (!L) return { ok: false, msg: "매물이 없어요" };
   const it = D.INTERIORS[o.interior ?? 1];
   const why = conceptOk(L, o.concept, s); if (why) return { ok: false, msg: `${D.CONCEPTS[o.concept].n}: ${why}` };
   if (o.ondol && !L.hid.ondolOk && L.seen.ondolOk) return { ok: false, msg: "이 매물은 온돌 시공이 안 돼요" };
   // 11-25 첫 매물 지키기: 가진 방이 0개일 때 규칙 밖 매물은 주인공이 말린다. 둘째 방부터는 경고만
+  if (!L.nego) nego(s, R(s), listingId, negoBest(s)); // 11-25 흥정은 꼭 한 번(화면은 계약 검토에서 먼저 한다)
   const rule = rentRule(s, L);
   if (rule && !pr.rooms.length) return { ok: false, rule: rule.k, msg: `"내가 찾아본 규칙에 어긋난다." ${rule.why} 첫 매물은 규칙 안에서 잡자.` };
   const qt = quote(s, L, { ...o, ondol: o.ondol && L.hid.ondolOk }); const total = qt.total;
@@ -516,7 +540,7 @@ function settle(s, r, rm, ctx) {
   // 관리 행동력 충족도
   const need = needAp(s, rm); const q = need ? clamp(rm.ap / need, 0, 1) : 1;
   m *= D.PR_HARD.effort[0] + D.PR_HARD.effort[1] * q; // v4.27 노력 승부: 관리를 꽉 채우면 +, 돈만 넣고 손 놓으면 크게 −
-  const occ = clamp(base * m * (1 + 0.07 * r.normal()), 0.03, isPeak(s.cal) ? 0.95 : D.PR_HARD.offCap); // v4.27 비수기는 아무리 잘해도 상한
+  const occ = clamp(base * m * (1 + 0.07 * r.normal()), 0.03, s.cal === 12 ? D.PR_HARD.decCap : isPeak(s.cal) ? D.PR_HARD.peakCap : D.PR_HARD.offCap); // v4.27 비수기는 아무리 잘해도 상한 · 11-25 성수기·12월도 꽉 차지 않는다(대표 지적: "거의 꽉꽉 차는 구조")
   const bookings = Math.round(occ * D.PR_SLOTS);
   // 11-25 예약 구성: 대형 단체는 방 가격(pEff)을 내고, 작은 모임은 그보다 싼값을 낸다. pAvg = 이번 달 한 건 평균 값
   const bigN = Z.split ? clamp(Math.round(bookings * Z.big * (1 + 0.2 * r.normal())), 0, bookings) : bookings;
@@ -626,10 +650,11 @@ export function sizeMix(rm, cal) {
 export const smallPrice = (s, rm) => rm.price * sizeMix(rm, s.cal).smallF;
 // 화면에 쓰는 방·매물 요약: 인원, 평당 월세, 규칙에 맞는지
 export function roomInfo(s, x) { const cap = capOf(x.size); return { cap, per: Math.round(x.rent / (x.size || 20) * 10) / 10, rule: rentRule(s, x), big: cap >= 40, split: cap > 15 }; }
-// 성수기 가격 배율: 12월은 고른 배율 그대로, 1·2·7·8월은 그 절반쯤
-export const isPeak = (cal) => [12, 1, 2, 7, 8].includes(cal);
+// 성수기 가격 배율: 12월은 고른 배율 그대로, 1·7·8·11월은 그 절반쯤
+// 11-25 대표 기준(24평형 이익): 비수기 50~150만 · 7·8·11·1월 200~400만 · 12월 400~700만. 그래서 2월은 비수기, 11월(송년 모임 시작)은 성수기다(전에는 12·1·2·7·8월)
+export const isPeak = (cal) => [12, 1, 7, 8, 11].includes(cal);
 export function peakMult(s, cal) { const p = s.pr.peak || 1; return cal === 12 ? p : isPeak(cal) ? 1 + (p - 1) * 0.5 : 1; }
-export function setPeak(s, v) { s.pr.peak = v; return { ok: true, msg: v === 1 ? "성수기에도 평소 가격" : `성수기 가격 +${Math.round((v - 1) * 100)}% (1·2·7·8월은 +${Math.round((v - 1) * 50)}%)` }; }
+export function setPeak(s, v) { s.pr.peak = v; return { ok: true, msg: v === 1 ? "성수기에도 평소 가격" : `성수기 가격 +${Math.round((v - 1) * 100)}% (1·7·8·11월은 +${Math.round((v - 1) * 50)}%)` }; }
 // 비교 기준 = 그 상권 경쟁사 평균 1건 가격 × 컨셉·인테리어·크기
 // v4.28 이번 달 실제 비교 시세: 경쟁사 성수기 인상·비수기 할인 + 가격 전쟁
 export function refNow(s, rm) { return refPrice(s, rm) * RVW.compF(s.cal, isPeak(s.cal)) * RVW.warF(mkt(s, rm.dk).war, s.t); }

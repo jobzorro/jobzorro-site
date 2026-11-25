@@ -857,10 +857,10 @@ function pgPR() {
 }
 function peakCard() {
   const pr = S.pr, p = pr.peak || 1, mx = Math.max(...D.PR_SEASON.map((x) => x.we * 24 + x.wk * 22));
-  return `<div class="card"><h3>성수기 가격 <small>12월 극성수기 · 1·2·7·8월 성수기</small></h3>
+  return `<div class="card"><h3>성수기 가격 <small>12월 극성수기 · 1·7·8·11월 성수기</small></h3>
     <div class="season">${D.PR_SEASON.map((x, i) => `<i class="${i + 1 === S.cal ? "now" : ""} ${PR.isPeak(i + 1) ? "pk" : ""}" style="height:${Math.round((x.we * 24 + x.wk * 22) / mx * 100)}%"></i>`).join("")}</div><div class="season-l">${D.PR_SEASON.map((_, i) => `<span>${i + 1}</span>`).join("")}</div>
     <div class="seg" style="margin-top:8px">${D.PR_PEAK.map((v) => `<button class="${p === v ? "on" : ""}" data-peak="${v}">${v === 1 ? "그대로" : `+${Math.round((v - 1) * 100)}%`}</button>`).join("")}</div>
-    ${more("성수기 가격 자세히", `<div class="tiny muted">12월엔 주말이 다 차고 평일도 차요. 비싸도 손님이 오니 이때 가격을 올리는 게 핵심이에요. 너무 올리면 공실이 생겨요. 1·2·7·8월에는 고른 인상폭의 절반이 붙고, 나머지 달은 지점별 기본 가격 그대로예요.${pr.rooms[0] ? ` 예) ${esc(pr.rooms[0].name)} 12월 1건 ${Math.round(pr.rooms[0].price * p)}만` : ""}</div>`)}</div>`;
+    ${more("성수기 가격 자세히", `<div class="tiny muted">12월엔 주말이 다 차고 평일도 차요. 비싸도 손님이 오니 이때 가격을 올리는 게 핵심이에요. 너무 올리면 공실이 생겨요. 1·7·8·11월에는 고른 인상폭의 절반이 붙고, 나머지 달은 지점별 기본 가격 그대로예요.${pr.rooms[0] ? ` 예) ${esc(pr.rooms[0].name)} 12월 1건 ${Math.round(pr.rooms[0].price * p)}만` : ""}</div>`)}</div>`;
 }
 function prDecor(f) {
   const rm = S.pr.rooms.find((x) => x.id === f.id); if (!rm) { ui.prFlow = null; return pgPR(); }
@@ -960,9 +960,18 @@ function prContract(f) {
   <div class="tiny muted">${qt.sf < 1 ? `${S.pr.rooms.length + 1}호점 규모의 경제로 공사·비품 ×${qt.sf}. ` : ""}물가 ×${qt.pi.toFixed(2)}가 이미 들어가 있어요.</div><div class="row" style="margin-top:6px"><b class="grow" style="font-size:17px">합계 ${won(total)}</b><span class="small muted">현금 ${won(S.cash)}</span></div>
   ${total > S.cash ? `<div class="small bad">모자란 돈은 사업자대출(연 4.8%, 한도 6,000만)로 채운다.</div>` : ""}
   ${unseen ? `<div class="small gold">확인 안 한 정보 ${unseen}개. 그대로 계약하면 운영하다가 드러난다.</div>` : ""}
-  ${(() => { const rb = PR.reserveNeed(S, L.rent), left = S.cash - total; return `<div class="small ${left < rb ? "bad" : "muted"}" style="margin-top:4px">${left < rb ? "⚠ " : ""}계약 뒤 남는 현금 ${won(Math.max(0, left))}${left < 0 ? `(대출 ${won(-left)})` : ""}. 비수기(3~6·9월)를 버티려면 월세 ${PR.RESERVE_MONTHS}달 치 + 생활비 2달 치, 약 ${won(rb)}는 남기세요.${left < rb && S.pr.rooms.length ? " 지점을 늘리다 비수기에 신용대출까지 다 쓰면 개인회생이에요." : ""}</div>`; })()}
+  ${(() => { const rb = PR.reserveNeed(S, L.rent), left = S.cash - total; return `<div class="small ${left < rb ? "bad" : "muted"}" style="margin-top:4px">${left < rb ? "⚠ " : ""}계약 뒤 남는 현금 ${won(Math.max(0, left))}${left < 0 ? `(대출 ${won(-left)})` : ""}. 비수기(2~6·9·10월)를 버티려면 월세 ${PR.RESERVE_MONTHS}달 치 + 생활비 2달 치, 약 ${won(rb)}는 남기세요.${left < rb && S.pr.rooms.length ? " 지점을 늘리다 비수기에 신용대출까지 다 쓰면 개인회생이에요." : ""}</div>`; })()}
   ${(() => { const R0 = PR.rentRule(S, L); return !R0 ? "" : S.pr.rooms.length ? `<div class="small gold" style="margin-top:4px">⚠ 내가 찾아본 규칙 밖 매물이에요. ${esc(R0.why)} 그래도 계약은 돼요.</div>` : `<div class="small bad" style="margin-top:4px">"내가 찾아본 규칙에 어긋난다." ${esc(R0.why)} 첫 매물은 규칙 안에서 잡아요. 이 매물은 계약하지 않아요.</div>`; })()}
-  <button class="btn gold" style="width:100%;margin-top:8px;padding:12px" data-sign="${L.id}">계약하기</button></div>`;
+  ${prNego(L)}</div>`;
+}
+// 11-25 권리금 흥정(대표 요청): 계약 전에 한 번은 꼭 깎아 본다. 흥정을 끝내야 '계약하기'가 열린다
+function prNego(L) {
+  const N = D.PR_NEGO, onKey = L.nego ? L.nego.on === "key" : L.key > 0, what = onKey ? "권리금" : "월세";
+  if (L.nego) { const g = L.nego; return `<div class="card" style="margin-top:8px"><div class="small"><b>흥정 결과</b> · ${esc(N.ways[g.way].n)}</div><div class="small">${g.saved > 0 ? `${what} ${won(g.before)} → <b class="good">${won(g.after)}</b> (${won(g.saved)} 깎음)` : `${what} ${won(g.before)} 그대로. 이번엔 안 통했다`}</div></div>
+    <button class="btn gold" style="width:100%;margin-top:8px;padding:12px" data-sign="${L.id}">계약하기</button>`; }
+  return `<div class="sec">${what} 흥정 <span class="muted small">· 깎는 것도 기술이에요. 계약 전에 한 번은 꼭 해 봐요${onKey ? "" : " (권리금이 없는 자리라 월세를 조금 깎아 봐요)"}</span></div>
+  <div class="pick">${Object.entries(N.ways).map(([k, w]) => `<button data-nego="${L.id}:${k}"><b>${esc(w.n)}</b><span class="tiny muted">${esc(w.d)}</span><span class="tiny">${D.STATS[w.st]} ${Math.round(S.st[w.st] || 0)}</span></button>`).join("")}</div>
+  <button class="btn" style="width:100%;margin-top:8px;padding:12px" disabled>흥정부터 해 봐요</button>`;
 }
 
 function pgCS() {
@@ -1756,6 +1765,7 @@ function bind() {
   q("[data-it]", (el) => { ui.prFlow.interior = +el.dataset.it; render(); });
   q("[data-self]", () => { ui.prFlow.self = !ui.prFlow.self; render(); });
   q("[data-ondol]", () => { ui.prFlow.ondol = !ui.prFlow.ondol; render(); });
+  q("[data-nego]", (el) => { const [id, way] = el.dataset.nego.split(":"); const r = PR.nego(S, E.R(S), id, way); toast([], r.msg); save(); render(); });
   q("[data-sign]", (el) => { const f = ui.prFlow; const r = PR.contract(S, el.dataset.sign, { concept: f.concept, interior: f.interior, self: !!f.self, ondol: !!f.ondol }); toast([], r.msg); if (r.ok) ui.prFlow = null; save(); render(); if (r.ok && r.room) DK.decoAsk(dctx(), "pr", r.room.id); });
   q("[data-price]", (el) => { const [id, d] = el.dataset.price.split(":"); const rm = S.pr.rooms.find((x) => x.id === id); PR.setPrice(S, id, rm.price + +d); save(); render(); });
   q("[data-sys]", (el) => { const r = PR.buySystem(S, el.dataset.sys); toast([], r.msg); save(); render(); });

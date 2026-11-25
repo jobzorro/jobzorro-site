@@ -57,7 +57,7 @@ export function prPanels(c) {
     <div class="seg" style="margin-top:8px">${D.PR_PEAK.map((v) => `<button class="${pk0 === v ? "on" : ""}" data-peak="${v}">${v === 1 ? "그대로" : `+${Math.round((v - 1) * 100)}%`}</button>`).join("")}</div>${market}
     ${more("경쟁사·관리비·성수기 가격 규칙: 경쟁사도 성수기엔 올리고 비수기엔 내려요. 표의 내 가격은 성수기 버튼까지 붙은 이번 달 실제 가격이에요. 관리비(전기·수도·온돌 난방)는 예약이 많을수록 늘어요. 12월엔 주말이 다 차고 평일도 차요. 1·2·7·8월에는 고른 인상폭의 절반이 붙고, 나머지 달은 지점별 기본 가격 그대로예요.")}</div>
   <div class="card"><h3>후기 관리 <small>후기 ${RK.top.n}개·별점 ${RK.top.star}면 상위 노출(예약 +${Math.round(RK.top.occ * 100)}%)</small></h3>${revSeg(S, "pr")}
-    ${more("후기 규칙: 후기가 적으면 예약이 최대 ${Math.round((1 - RK.cntLo) * 100)}% 덜 들어와요. 답글이 ${RK.unrep.max}개 넘게 밀리면 별점이 깎이고, 답글을 단 달은 별점이 올라요. 악성 후기·별점 테러는 사건으로 와요. 지점별 후기·답글은 지점 카드에 있어요.")}</div>
+    ${more(`후기 규칙: 후기가 적으면 예약이 최대 ${Math.round((1 - RK.cntLo) * 100)}% 덜 들어와요. 답글이 ${RK.unrep.max}개 넘게 밀리면 별점이 깎이고, 답글을 단 달은 별점이 올라요. 악성 후기·별점 테러는 사건으로 와요. 지점별 후기·답글은 지점 카드에 있어요.`)}</div>
   ${prRules(c)}`;
 }
 

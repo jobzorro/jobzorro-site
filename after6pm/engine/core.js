@@ -1840,6 +1840,7 @@ export function load(str) {
 }
 // 없는 칸 기본값 채우기. 불러올 때와 새 판을 만들 때 같이 돈다(버그 10: '이어 한 판'과 '껐다 켠 판'이 같아지게)
 function fillState(s) {
+  { const RN = { "LC전자": "엘쥐전자", "SQ하이닉스": "스크하이닉스" }; if (s.co && RN[s.co.name]) s.co.name = RN[s.co.name]; } // 11-25 대표 결정: 게임 속 이름을 스크하이닉스·엘쥐전자로(옛 저장의 회사 이름도 바꾼다)
   if (!s.sj) { s.sj = SJ.init(); s.sj.open = true; for (const k of ["pr", "cs"]) if ((k === "pr" && s.pr.rooms.length) || (k === "cs" && s.cs.niche)) { s.sj.found[k] = 0; s.sj.int[k] = 100; s.sj.active.push(k); } }
   if (!s.hb) s.hb = SJ.hbInit();
   s.me.perks = s.me.perks || [];
