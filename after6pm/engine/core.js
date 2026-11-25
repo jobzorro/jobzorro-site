@@ -331,7 +331,8 @@ export function monthStart(s) {
 const SIDE_ACTS0 = /^(pr_|cs_|in_|ab_|uc_)/;
 const SIDE_ACTS = { test: (id) => SIDE_ACTS0.test(id) || REG.isPlugAct(id) }; // 기존 5개 + 플러그인 접두사
 const jobOf = (id) => REG.byAct(id)?.key || (id.startsWith("pr_") ? "pr" : id.startsWith("cs_") ? "cs" : id.startsWith("ab_") ? "airbnb" : id.startsWith("uc_") ? "ucafe" : "insta");
-export function canAct(s, id, arg) {
+// 11-25 고르는 행동(공부 등)을 고르기 전에도 행동력·스태미너·돈은 본다(대표 지적: 행동력 0인데 공부 칸만 불이 켜져 있었다)
+export function canActBase(s, id) {
   const a = D.ACTIONS[id]; if (!a) return "없는 행동이에요";
   if (s.over || s.ended) return "이미 끝난 인생이에요";
   if (s.pending) return "장면을 먼저 끝내세요";
@@ -341,6 +342,10 @@ export function canAct(s, id, arg) {
   if (hp > 0 && s.hp - hp < 1) return "스태미너가 바닥났어요. 쉬거나 다음 달로";
   if (a.cash && s.cash + a.cash < -creditRoom(s)) return "돈이 모자라요";
   if (a.need && !a.need(s)) return "지금은 할 수 없어요";
+  return null;
+}
+export function canAct(s, id, arg) {
+  { const w = canActBase(s, id); if (w) return w; }
   if (SIDE_ACTS.test(id)) { const job = jobOf(id); if (!SJ.isActive(s, job)) return `${jo(D.SIDEJOBS[job].n, "을", "를")} 먼저 시작하세요(투잡 탐색)`; }
   if (id === "grad_apply" && s.grad && !s.grad.done) return "이미 대학원에 다니고 있어요";
   if (id === "grad_apply" && s.grad?.done) return "이미 졸업했어요";

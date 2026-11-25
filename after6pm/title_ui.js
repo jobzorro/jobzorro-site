@@ -52,6 +52,13 @@ html.app .title.a6t{min-height:calc(100dvh - env(safe-area-inset-top,0px) - env(
 .a6t .a6t-bar u{display:block;height:100%;background:linear-gradient(90deg,#f5a524,#ffd76a);border-radius:4px;transition:width .4s}
 .a6t .a6t-barl{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:#c9c6e6;white-space:nowrap}
 .a6t .a6t-barl span:last-child{color:var(--gold);font-weight:700}
+/* 11-25 저장한 인생이 여럿이면 시작 화면에 모두 보인다(대표 요청) */
+.a6t .a6t-oth{display:grid;gap:6px;margin-top:6px;width:100%}
+.a6t .a6t-oth button{display:grid;grid-template-columns:34px 1fr auto;gap:0 9px;align-items:center;text-align:left;width:100%;padding:6px 10px;border-radius:12px;background:rgba(30,26,58,.88);border:1px solid rgba(245,192,78,.35);color:#eceaff}
+.a6t .a6t-oth .a6t-face{grid-column:1;grid-row:1/3;width:34px;height:34px;font-size:14px;border-width:1px}
+.a6t .a6t-oth b{grid-column:2;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a6t .a6t-oth span.l2{grid-column:2;font-size:11.5px;color:#c9c6e6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a6t .a6t-oth em{grid-column:3;grid-row:1/3;font-style:normal;font-size:12px;color:var(--gold);font-weight:700;white-space:nowrap}
 .a6t .a6t-mini{display:flex;gap:6px}
 .a6t .a6t-mini button{flex:1;min-width:0;min-height:46px;background:rgba(24,22,56,.86);border:1px solid rgba(255,255,255,.16);border-radius:11px;padding:5px 9px;text-align:left;display:flex;flex-direction:column;justify-content:center;line-height:1.35}
 .a6t .a6t-mini b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -128,7 +135,7 @@ export function draw(root, c) {
   const target0 = D.FIRE_TARGET.single, years = D.endAge("M") - 27;
   const jobs = Object.entries(D.SIDEJOBS).filter(([, j]) => j.play).map(([k, j]) => SHORT[k] || j.n);
   const marq = jobs.map(esc).join(" · ") + " · ";
-  const others = saved.filter((x) => x !== last).length;
+  const othL = saved.filter((x) => x !== last).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")) || a.slot - b.slot), others = othL.length;
 
   // ── 조각 ──
   const sm = last?.summary || {};
@@ -137,6 +144,8 @@ export function draw(root, c) {
     <b>이어 하기 · ${sm.age ?? "?"}세${sm.ym ? " " + esc(String(sm.ym).replace(/^\d+년\s*/, "")) : ""}</b><span>${esc([sm.name, sm.job, sm.side].filter(Boolean).join(" · "))}</span>
     <div class="a6t-bar"><u data-a6bar style="width:${pctOf(pk?.nw ?? sm.nw, pk?.target || target0)}%"></u></div>
     <div class="a6t-barl"><span>순자산 ${won(sm.nw || 0)}</span><span data-a6pct>파이어까지 ${pctOf(pk?.nw ?? sm.nw, pk?.target || target0)}%</span></div></button>` : "";
+  // 11-25 다른 칸 인생도 시작 화면에 바로 보인다(누르면 이어 하기). 얼굴은 불러온 뒤 채운다
+  const othCards = othL.length ? `<div class="a6t-oth">${othL.map((sl) => { const o = sl.summary || {}, op = PEEK.get(sl.slot + "|" + (sl.updatedAt || "")); return `<button data-sload="${sl.slot}"><span class="a6t-face" data-a6oface="${sl.slot}">${op?.face || esc((o.name || "나").slice(0, 1))}</span><b>${sl.slot}번 칸 · ${esc(o.name || "나")} · ${o.age != null ? Math.floor(o.age) : "?"}세${o.end ? " · 끝난 인생" : ""}</b><span class="l2">${esc([o.job, o.side ? "투잡 " + o.side : ""].filter(Boolean).join(" · ") || "이어 하기")}</span><em>${won(o.nw || 0)}</em></button>`; }).join("")}</div>` : "";
   const lastRun = runs[runs.length - 1];
   const lastTxt = !lastRun ? "" : lastRun.fireAt ? `${lastRun.fireAt}세 파이어` : lastRun.kind === "over" ? `${lastRun.age}세에 멈춤` : `${lastRun.age}세 결산`;
   const ngLine = hasRuns ? `<div class="a6t-ng"><span>지난 인생 <b>${esc(lastTxt)}</b></span><span>내 최고 <b>${m.best ? m.best + "세" : "아직"}</b></span></div>` : "";
@@ -149,7 +158,7 @@ export function draw(root, c) {
   const cAlbum = card("data-album", "인생 앨범", `${c.n.album}장`), cMg = card("data-mgre", "미니게임", `${c.n.mg}/${c.n.mgAll}`), cDex = card("data-dex", "인물 도감", `<span data-a6dex>${c.n.dex}</span>/${c.n.dexAll}`);
   const mini = mode === "ng" ? `<div class="a6t-mini">${cAlbum}${card("data-ends", "엔딩", `${c.n.end}/${c.n.endAll}`)}${card("data-hall", "명예의 전당", esc(myHall))}</div>`
     : mode === "cont" || collected ? `<div class="a6t-mini">${cAlbum}${cMg}${cDex}</div>` : "";
-  const slotsBtn = saved.length ? `<button class="a6t-line" data-others>${last ? (others ? `다른 인생 · ${others}칸` : "저장 칸 관리") : `지난 인생 · ${saved.length}칸`}</button>` : "";
+  const slotsBtn = saved.length ? `<button class="a6t-line" data-others>저장 칸 관리 · ${saved.length}/${slots.length}칸</button>` : ""; // 11-25 다른 인생은 위에 바로 보이니 버튼은 관리(지우기·빈 칸)로
   const row = mode === "ng" ? `<div class="a6t-rowb${slotsBtn ? " a6t-n3" : ""}">${slotsBtn}<button class="a6t-line" data-mgre>미니게임 연습</button><button class="a6t-line" data-dex>인물 도감</button></div>`
     : mode === "cont" ? `<div class="a6t-rowb">${slotsBtn}<button class="a6t-line" data-new>새 인생 시작</button></div>`
     : `<button class="a6t-line" data-tour>어떤 게임인지 30초만 보기</button>`;
@@ -169,7 +178,7 @@ export function draw(root, c) {
       <div class="a6t-sub">파이어족을 꿈꾸는 퇴근 후 사장님</div>
       <div class="a6t-tag2">회사 다니며 투잡으로 ${won(target0)} 모아 은퇴하기. 1회차는 7년 맛보기, 2회차부터 ${years}년짜리 인생 한 판.</div>
       <div class="a6t-marq" aria-label="투잡 ${jobs.length}개: ${jobs.map(esc).join(", ")}"><span aria-hidden="true">${marq}${marq}</span></div>
-      ${ngLine}${contCard}
+      ${ngLine}${contCard}${othCards}
       ${mode === "ng" ? ngBtn : mode === "first" ? `<button class="a6t-gold" data-new>새 인생 시작</button>` : ""}
       ${mini}${row}
       ${foot ? `<div class="a6t-foot">${foot}</div>` : ""}
@@ -201,6 +210,8 @@ export function draw(root, c) {
     };
     if (pk) fill(pk); else c.peek(last.slot).then((p) => { if (p) PEEK.set(key, p); fill(p); }).catch(() => fill(null));
   }
+  for (const sl of othL) { const k = sl.slot + "|" + (sl.updatedAt || ""); if (PEEK.has(k)) continue;
+    c.peek(sl.slot).then((p) => { if (!p) return; PEEK.set(k, p); const f = el.isConnected && el.querySelector(`[data-a6oface="${sl.slot}"]`); if (f && p.face) f.innerHTML = p.face; }).catch(() => {}); }
 
   // ── 누르는 곳 ──
   on("[data-set]", () => c.act.set());

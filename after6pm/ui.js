@@ -641,7 +641,7 @@ function pgHome() {
   <div class="sec">${ic("pin")}내 장소 <span class="muted small">· 눌러서 들어가요</span></div>
   <div class="places hscroll">${places.map((k) => `<button data-go="${k}" style="background-image:linear-gradient(180deg,#0e102033,#0e1020ee),url(${TILE[k].bg})">${icB(TILE[k].ic)}<b>${esc(PAGE_N[k])}</b><span>${esc(tileInfo(k))}</span>${!S.tileSeen?.[k] ? '<em class="nbadge">NEW</em>' : ""}</button>`).join("")}<button data-hub class="more">${ic("grid")}<b>전체 메뉴</b><span>잠긴 곳 ${D.HUB.flat().filter(({ k }) => !unlocked(k)).length}</span></button></div>
   <div class="sec">${ic("bolt")}바로 하기 <span class="muted small">· ⚡숫자만큼 행동력을 써요</span></div>
-  <div class="grid4">${quick.map((id) => { const a = D.ACTIONS[id]; const why = a.pick ? null : E.canAct(S, id, defaultArg(id)); return `<button data-act="${id}" class="${why ? "qno" : ""}" ${why ? `data-why="${esc(why)}"` : ""}>${icB(ACT_IC[id])}${esc(a.n)}${why ? `<span class="tiny why">${esc(why)}</span>` : `<span class="ap">⚡${a.ap}</span>`}</button>`; }).join("")}${locked.map(([id, why]) => `<button class="qlock" data-qlock="${esc(why)}">${ic("lock", "#f5c04e")}${esc(D.ACTIONS[id].n)}<span class="tiny muted">${esc(why)}</span></button>`).join("")}</div>
+  <div class="grid4">${quick.map((id) => { const a = D.ACTIONS[id]; const why = a.pick ? E.canActBase(S, id) : E.canAct(S, id, defaultArg(id)); return `<button data-act="${id}" class="${why ? "qno" : ""}" ${why ? `data-why="${esc(why)}"` : ""}>${icB(ACT_IC[id])}${esc(a.n)}${why ? `<span class="tiny why">${esc(why)}</span>` : `<span class="ap">⚡${a.ap}</span>`}</button>`; }).join("")}${locked.map(([id, why]) => `<button class="qlock" data-qlock="${esc(why)}">${ic("lock", "#f5c04e")}${esc(D.ACTIONS[id].n)}<span class="tiny muted">${esc(why)}</span></button>`).join("")}</div>
   <div class="next"><button class="btn" data-go="me">${ic("chart")}<span class="nx"><span>투자·대출</span><span class="gold small">${won(S.invest)}</span></span></button><button class="btn gold ${S.ap <= 0 ? "pulse" : ""}" data-end><span><span class="nt">다음 달 ${ic("next", "#2a1a00")}</span><small>${S.ap > 0 ? `행동력 ${S.ap} 남음` : "이번 달 끝! 넘어가요"}</small></span></button></div>`;
 }
 // 바로 하기 칸은 인생이 진행될수록 늘어난다
@@ -761,7 +761,7 @@ function actChips(id) {
   return c.join("");
 }
 function actRow(id, arg, label) {
-  const a = D.ACTIONS[id]; const why = a.pick && arg === undefined ? (a.need && !a.need(S) ? "지금은 할 수 없음" : null) : E.canAct(S, id, arg);
+  const a = D.ACTIONS[id]; const why = a.pick && arg === undefined ? E.canActBase(S, id) : E.canAct(S, id, arg); // 11-25 고르기 전에도 행동력·스태미너는 본다
   return `<button class="actrow" data-act="${id}" ${arg !== undefined ? `data-arg="${esc(arg)}"` : ""} ${why ? `data-why="${esc(why)}" style="opacity:.5"` : ""}><div class="ic">${ic(ACT_IC[id])}</div><div class="grow"><div class="t">${esc(label || a.n)}</div><div class="d">${esc(why || a.desc)}</div><div class="chips">${actChips(id)}</div></div><span class="ap">⚡${a.ap}</span></button>`;
 }
 // 행동력·스태미너·돈 부족 같은 '지금만' 이유는 빼고 본 잠금 이유
