@@ -7,6 +7,7 @@ import * as GEN from "../gen/data.js";
 import * as XR from "./extras.js"; // 11-24 주변 사람(조연)·겹치는 역할 사건·닉네임 이야기
 import * as HL from "./heroine.js"; // 11-25 히로인·히어로 이야기(인생 시계·장면·갈림길·재회)
 import * as LOVE from "./love.js"; // 11-24 두근두근·연애 행동·까톡·기념일·조력자 사건 // CONFESS(인물별 고백 장면 글, 11-24)는 없을 수도 있다
+import * as SPO from "./spouse.js"; // 11-25 배우자의 일과 수입(연봉표·승진·육아휴직·그만둘까)
 import * as WED from "./wed.js"; // 11-25 결혼 성향·상대가 먼저 꺼내는 결혼 얘기·비혼 네 명
 import * as PR from "./pr.js";
 import * as CS from "./cs.js";
@@ -193,6 +194,7 @@ export function spouseAp(s) {
   if ((s.fam.opposeUntil ?? -1) > s.t) return -1;
   let a = s.fam.spouseType === "동업형" ? 3 : 2;
   if (s.fam.kids.some((k) => s.t - k.born < 12)) a = 0; else if (s.fam.kids.some((k) => s.t - k.born < 84)) a = Math.floor(a / 2);
+  a += SPO.quitAp(s); // 11-25 일을 그만둔 배우자는 손을 더 보탠다
   return a;
 }
 // 아이 보며 힘내기(v4.25): 아이 1명당 +1(최대 2), 지난달·이번 달 가족과 시간을 보냈으면 +1
@@ -542,7 +544,7 @@ const ACT_FN = {
   cowork(s) { s.buff.cowork = 1; return { lines: ["다음 투잡 행동 효과 +50%"], msg: "공유오피스 1일권. 집중 모드." }; },
   cafe_work(s) { s.buff.cafe = 1; return { lines: ["다음 투잡 행동 효과 +30%"], msg: "아이스 아메리카노 한 잔으로 3시간 버티기." }; },
   univ_walk(s, r) { s.pr.known.univ = (s.pr.known.univ || 0) + 1; return { lines: ["대학가 상권 정보 +"], msg: r.pick(["개강 첫 주, 술집마다 줄이 섰다.", "엠티 버스가 줄지어 서 있다.", "취업 스터디 모집 전단이 벽을 덮었다."]) }; },
-  house_tour(s, r) { s.flags.houseInfo = s.t; return { lines: ["집 시세 정보 +"], msg: `요즘 34평 시세 ${won(housePrice(s, "apt"))}. 숨이 막힌다.` }; },
+  house_tour(s, r) { s.flags.houseInfo = s.t; return { lines: ["집 시세 정보 +"], msg: `요즘 34평 시세 ${won(housePrice(s, "apt"))}. ${houseMoodText(s)}` }; },
   house_search(s, r) { return { scene: houseScene(s, r), lines: [] }; },
   work_hard(s, r) { const g = 9 * mod(s, "perfMult", 1); s.co.perf = clamp(s.co.perf + g, 0, 100); s.co.eye = clamp(s.co.eye - 3, 0, 100); if (r.chance(0.2)) return { lines: [`회사 성과 +${Math.round(g)}`, "회사 눈치 −3", stL(s, "lang", 0.8, "mail")], msg: "해외 법인 메일에 영어로 답장했다. 번역기는 반만 썼다." }; return { lines: [`회사 성과 +${Math.round(g)}`, "회사 눈치 −3"], msg: "보고서 한 장을 끝냈다. 팀장이 고개를 끄덕였다." }; },
   overtime(s) { const g = 20 * mod(s, "perfMult", 1); s.co.perf = clamp(s.co.perf + g, 0, 100); s.co.eye = clamp(s.co.eye - 6, 0, 100); s.co.boss = clamp(s.co.boss + bossUp(s, 4), 0, 100); return { lines: [`회사 성과 +${Math.round(g)}`, "회사 눈치 −6"], msg: "밤 10시의 사무실. 형광등 소리만 들린다." }; },
@@ -988,6 +990,7 @@ function marry(s, id) {
   const rel = s.rel[id], c = CHAR[id];
   for (const k of Object.keys(s.spot || {})) if (Array.isArray(s.spot[k])) s.spot[k] = s.spot[k].filter((x) => x !== id); // 11-25 결혼한 달: 배우자는 그달부터 지도 장소에 서지 않는다(집에 있는 사람)
   rel.lover = false; rel.spouse = true; if (rel.heart == null) rel.heart = s.t; s.fam.spouse = id; s.fam.spouseType = c.romance?.spouseType || "응원형"; s.fam.marriedT = s.t; s.fam.happy = clamp(s.fam.happy + 15, 0, 100);
+  try { const amt = WED.saveOf(s, id); if (amt > 0) { s.cash += amt; addMoney(s, "inc", "배우자가 모은 돈", amt); log(s, `${c.name}의 통장을 합쳤다. ${won(amt)}`, "money"); (s.sceneQ = s.sceneQ || []).push(WED.saveScene(s, id, amt)); } } catch (e) { console.warn(e); } // 11-25 배우자가 모은 돈(wed.js SAVE): 신혼집을 구하기 전에 합친다
   // 신혼집: 전세(대출 80%) 또는 투룸 월세
   if (s.house.type === "oneroom") {
     const dep = Math.round(housePrice(s, "jeonse"));
@@ -1163,6 +1166,7 @@ for (const [k, fn] of Object.entries(RV_CHOOSE)) { if (SCENE_FN[k] || !k.startsW
 for (const [k, fn] of Object.entries({ ...PR.PR_CHOOSE, ...AB.AB_CHOOSE, ...UC.UC_CHOOSE })) { if (SCENE_FN[k]) console.warn(`[공간 타이쿤] onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; } // v4.28 후기·가격 전쟁·명의
 for (const [k, fn] of Object.entries(WV_CHOOSE)) SCENE_FN[k] = fn;
 for (const k of ["x_pe", "x_cross", "x_nick", "x_burn"]) if (!SCENE_FN[k]) SCENE_FN[k] = () => []; // 11-25 조연 장면 처리 이름: 효과는 선택지에 다 들어 있다. 이름만 등록해 둔다
+SCENE_FN.sp_ev = (s, r, i, okv, sc) => SPO.choose(s, r, i, okv, sc); // 11-25 배우자 "그만둘까"·"다시 일해 볼까"
 SCENE_FN.x_nag = () => [`부모님의 걱정이 ${XR.NAG.months}달 간다: 달마다 멘탈 ${XR.NAG.mental} · 행동력 ${XR.NAG.ap}`]; // 마흔·마흔다섯 잔소리(11-24). 벌점은 extras.js nagMonth 가 달마다 준다
 for (const [k, fn] of Object.entries(LOVE.LV_CHOOSE)) SCENE_FN[k] = fn; // 연애 확장(11-24)
 for (const k of ["wd_ask", "wd_wait", "wd_nv", "wd_glad"]) { if (SCENE_FN[k]) console.warn(`[결혼 성향] onChoose ${k} 이름 확인`); else SCENE_FN[k] = (...a) => WED.WD_CHOOSE[k](...a, { weddingScene, endLove }); } // 11-25 결혼 성향(wed.js). 늦게 찾기 + 결혼식 고르기·이별은 여기 것을 넘겨 쓴다
@@ -1178,10 +1182,19 @@ for (const [k, fn] of Object.entries(FAM_CHOOSE)) { if (SCENE_FN[k] || !k.starts
 for (const P of REG.JOBS) for (const [k, fn] of Object.entries(P.choose || {})) { if (SCENE_FN[k] || !k.startsWith(P.prefix)) console.warn(`[투잡 등록표] ${P.key}: onChoose ${k} 이름 확인`); else SCENE_FN[k] = fn; }
 
 // ───────── 집 ─────────
+// 집값 흐름(대표 결정 11-25): 꾸준히 오르지 않고 오르내린다. 길게 보면 조금만 오른다(해마다 trend). 떨어질 때 사면 회복분을 번다.
+// 흐름은 판마다 다르다(주기 7~11년, 시작 위치는 씨앗에서). 매물 값·전세 보증금·내 집 값이 모두 같은 흐름을 탄다. 엔진 난수는 안 쓴다.
+export const HOUSE_MKT = { trend: 0.012, amp: 0.17, period: [84, 132], noise: 0.004 };
+function hmk(s) { if (!s.hmk) { let h = hashStr(String(s.seed) + ":house"); const u = () => { h = (Math.imul(h ^ (h >>> 15), 2246822507) + 0x9e3779b9) | 0; return ((h >>> 0) % 100000) / 100000; }; s.hmk = { p: Math.round(HOUSE_MKT.period[0] + u() * (HOUSE_MKT.period[1] - HOUSE_MKT.period[0])), ph: u() }; } return s.hmk; }
+const hCyc = (s, t) => { const k = hmk(s); return Math.sin(2 * Math.PI * (t / k.p + k.ph)); };
+export function houseIdx(s, t = s.t) { return Math.pow(1 + HOUSE_MKT.trend, t / 12) * (1 + HOUSE_MKT.amp * hCyc(s, t)); }
+// 지금 시세가 흐름의 어디쯤인지: pct = 흐름 평균보다 몇 % 위아래 · dir = 오르는 중·내리는 중 · turn = 이번 달이 꼭대기("top")·바닥("bottom")
+export function houseMood(s, t = s.t) { const c = hCyc(s, t), d0 = hCyc(s, t) - hCyc(s, t - 1), d1 = hCyc(s, t + 1) - hCyc(s, t); return { pct: Math.round(c * HOUSE_MKT.amp * 100), dir: d1 >= 0 ? "up" : "down", turn: d0 > 0 && d1 <= 0 ? "top" : d0 < 0 && d1 >= 0 ? "bottom" : "" }; }
+export function houseMoodText(s) { const m = houseMood(s), a = Math.abs(m.pct); return m.pct >= 10 ? `집값이 꼭대기 근처다(흐름 평균보다 +${a}%). ${m.dir === "down" ? "꺾이기 시작했다." : "아직 오르는 중이다."} 기다리면 내려올 수 있다.` : m.pct <= -10 ? `집값이 바닥 근처다(흐름 평균보다 −${a}%). ${m.dir === "up" ? "돌아서기 시작했다." : "아직 내리는 중이다."} 이럴 때 사면 회복분을 번다.` : m.dir === "up" ? `집값이 오르는 중이다(평균 ${m.pct >= 0 ? "+" : "−"}${a}%).` : `집값이 내리는 중이다(평균 ${m.pct >= 0 ? "+" : "−"}${a}%). 더 기다려 볼 만하다.`; }
 export function housePrice(s, kind) {
   const yrs = s.t / 12, boom = s.era.house ? 1.12 : 1;
   const base = { apt: 72000, villa: 32000, jeonse: 26000 }[kind] || 30000;
-  return Math.round(base * Math.pow(1.035, yrs) * boom * (s.housePriceNoise || 1));
+  void yrs; return Math.round(base * houseIdx(s) * boom * (s.housePriceNoise || 1)); // 11-25 전에는 해마다 3.5%씩 꾸준히 올랐다
 }
 function houseScene(s, r) {
   const opts = [
@@ -1189,7 +1202,7 @@ function houseScene(s, r) {
     { kind: "villa", n: "서울 구축 빌라 24평", price: housePrice(s, "villa") * r.range(0.85, 1.1) },
   ].map((o) => ({ ...o, price: Math.round(o.price / 100) * 100 }));
   s._houseOpts = opts;
-  return { kind: "house", title: "내 집 마련", text: `중개사가 매물 두 개를 보여 줬다. 대출은 집값의 70%까지(연 4.2%). 지금 현금 ${won(s.cash)}.`, onChoose: "house_buy", opts, choices: [
+  return { kind: "house", title: "내 집 마련", text: `중개사가 매물 두 개를 보여 줬다. 대출은 집값의 70%까지(연 4.2%). 지금 현금 ${won(s.cash)}. ${houseMoodText(s)}`, onChoose: "house_buy", opts, choices: [
     ...opts.map((o) => ({ t: `${o.n} · ${won(o.price)} (계약금 ${won(o.price * 0.3 + o.price * 0.03)})`, eff: {}, text: "" })),
     { t: "아직은 아니다", eff: {}, text: "집은 도망가지 않는다. 가격이 도망갈 뿐." },
   ] };
@@ -1225,8 +1238,18 @@ export function salary(s) {
   if (s.burnLeft > 0) p *= 0.7;
   return Math.round(p);
 }
-export function spouseIncome(s) { if (!s.fam.spouse) return 0; const c = CHAR[s.fam.spouse]; if (/학생|취준|준비생/.test(c.job)) return 120; const kidBaby = s.fam.kids.some((k) => s.t - k.born < 12); return Math.round((c.age > 35 ? 330 : 270) * (kidBaby ? 0.6 : 1)); }
-export function kidCost(s) { return s.fam.kids.reduce((a, k) => { const y = (s.t - k.born) / 12; return a + (y < 1 ? 120 : y < 8 ? 80 : y < 14 ? 110 : y < 20 ? 150 : 40); }, 0); }
+// 배우자 수입(11-25): 인물별 나이마다의 연봉표, 승진, 육아휴직 급여, 퇴사는 engine/spouse.js 가 맡는다
+export function spouseIncome(s) { if (!s.fam.spouse) return 0; try { return SPO.payNow(s); } catch (e) { return 270; } }
+export const spouseStat = (s) => { try { return SPO.statLine(s); } catch (e) { return ""; } };
+// 나라에서 달마다 주는 아이 지원금(11-25, defs.js KID_AID): 부모 급여(0·1세) + 아동 수당 + 아이가 둘이면 다자녀 수당
+export function kidAid(s) { const A = D.KID_AID, K = s.fam.kids || []; if (!K.length) return 0; let a = 0; for (const k of K) { const y = (s.t - k.born) / 12; a += y < 1 ? A.parent[0] : y < 2 ? A.parent[1] : 0; if (y < A.childTo) a += A.child; } if (K.length >= 2 && K.some((k) => (s.t - k.born) / 12 < A.multiTo)) a += A.multi; return a; }
+export function kidAidScene(s, amt) {
+  const A = D.KID_AID;
+  return { kind: "event", tag: "나라 지원", title: "다자녀 가구가 됐다", once: "big", bg: "civil",
+    text: `주민센터 창구. 둘째 출생신고서를 내밀자 직원이 서류 뭉치를 하나 더 꺼낸다. {주민센터 직원}"둘째시네요. 오늘부터 다자녀 가구세요. 받으실 게 좀 많습니다." 형광펜이 세 줄을 긋는다. 축하금 ${won(amt)}, 다자녀 수당 달마다 ${A.multi}만(막내가 ${A.multiTo}세가 될 때까지), 부모 급여와 아동 수당은 아이마다 따로. {주민센터 직원}"신청서는 한 장이면 됩니다. 사인은 여기요."`,
+    choices: [{ t: "사인한다", eff: { mental: 3 }, text: "통장에 처음 보는 이름으로 돈이 들어왔다. '다자녀'. 나쁘지 않은 이름이다." }] };
+}
+export function kidCost(s) { return Math.round(SPO.kidCut(s) * s.fam.kids.reduce((a, k) => { const y = (s.t - k.born) / 12; return a + (y < 1 ? 120 : y < 8 ? 80 : y < 14 ? 110 : y < 20 ? 150 : 40); }, 0)); } // 11-25 배우자가 일을 그만두면 돌봄 비용이 준다
 export function livingCost(s) {
   const base = s.fam.spouse ? D.LIVING.married : D.LIVING.single;
   const infl = Math.pow(1.022, s.t / 12) * (s.piX || 1);
@@ -1306,7 +1329,7 @@ export function endMonth(s) {
   let hp = 0; for (const [id, x] of Object.entries(s.rel)) if (x.helper && !x.spouse) { const p = helperPay(s, id); hp += p; if (x.aff < 35) { x.helper = null; notes.push(`${jo(CHAR[id].name, "이", "가")} 조력을 그만뒀다(호감 부족)`); } else addAff(s, id, 0.5); }
   if (hp) { s.cash -= hp; addMoney(s, "exp", "조력자 수고비", hp); }
   // 3) 생활비·주거·대출·아이·간병
-  const liv = livingCost(s); s.cash -= liv; addMoney(s, "exp", "생활비", liv - kidCost(s)); if (kidCost(s)) addMoney(s, "exp", "아이", kidCost(s));
+  const liv = livingCost(s); s.cash -= liv; addMoney(s, "exp", "생활비", liv - kidCost(s)); if (kidCost(s)) addMoney(s, "exp", "아이", kidCost(s)); { const aid = kidAid(s); if (aid) { s.cash += aid; addMoney(s, "inc", "아이 지원금", aid); } } // 11-25 나라 지원(달마다)
   const hc = housingCost(s); if (hc) { s.cash -= hc; addMoney(s, "exp", s.house.type === "own" ? "집 관리비·세금" : "월세", hc); }
   const lp = Math.round(loanPay(s)); if (lp) { s.cash -= lp; addMoney(s, "exp", "대출 이자·상환", lp); for (const l of s.loans) if (l.amort) l.amt = Math.max(0, l.amt - l.amt / 360); }
   if (s.fam.parents < 45 && s.fam.parents > 0) { s.cash -= 40; addMoney(s, "exp", "부모님 간병", 40); }
@@ -1327,7 +1350,8 @@ export function endMonth(s) {
     if (s.taxDodge === s.year) { if (s.co.quit || s.co.fired) s.auditAt = s.t + r.int(12, 24); /* 회사원은 원천징수라 잘 안 걸린다. 전업이면 1~2년 뒤 조사 */ s.auditAmt = Math.round(tax * 1.45); notes.push("종합소득세: 신고 안 함…"); } else if (tax > 0) { s.cash -= tax; addMoney(s, "exp", "종합소득세", tax); notes.push(`5월 종합소득세 ${won(tax)}`); } }
   // 투자
   invPhase(s, r, notes); if (s.invest > 0) { const PH = D.INV_PH, ph = s.invPh; const mu = D.INV.mu - ((s.sj?.active || []).length ? PH.sideChurn : 1) * (D.INV.churn || 0) * (s.invHabit ?? 1) + (ph.p === "b" ? PH.bearMu : ph.p === "r" ? PH.recMu : 0) + (s.era.slump ? -0.01 : 0) + (s.era.winter ? -0.008 : 0) + (s.era.recovery ? 0.006 : 0) + helperPower(s, "invest") * 0.001; const ret = Math.round(s.invest * (mu + D.INV.sd * r.normal())); s.invest = Math.max(0, s.invest + ret); addMoney(s, ret >= 0 ? "inc" : "exp", "투자 손익", Math.abs(ret)); }
-  if (s.house.type === "own") s.house.value = Math.round(s.house.value * (1 + 0.0028 + (s.era.house ? 0.006 : 0) + 0.008 * r.normal()));
+  if (s.house.type === "own") s.house.value = Math.round(s.house.value * (houseIdx(s, s.t + 1) / houseIdx(s, s.t) + (s.era.house ? 0.006 : 0) + HOUSE_MKT.noise * r.normal())); // 11-25 집값 흐름을 따라 오르내린다(전에는 달마다 +0.28%)
+  { const hm = houseMood(s, s.t + 1); if (hm.turn) { const own = s.house.type === "own", txt = hm.turn === "top" ? `집값이 꺾였다는 기사가 났다. ${own ? "내 집 값도 당분간 내려간다." : "집을 살 사람은 기다릴 때다."}` : `집값이 바닥을 찍었다는 기사가 났다. ${own ? "내 집 값이 돌아서기 시작한다." : "집을 살 생각이면 지금이 싸다."}`; notes.push(txt); log(s, txt, "era"); } }
   invMonth(s, r, notes, scenes);
   // 4) 사람
   peopleMonth(s, r, notes, scenes);
@@ -1553,7 +1577,7 @@ function peopleMonth(s, r, notes, scenes) {
     if (s.fam.happy < 20) { s.mental = clamp(s.mental - 3, 0, 100); s.fam.lowHappy++; if (s.fam.lowHappy === 1) notes.push("집안 공기가 차갑다(가족 행복 20 미만)"); } else s.fam.lowHappy = 0;
     if (s.fam.lowHappy >= 8) divorce(s, scenes);
     // 아이 계획
-    if (s.fam.spouse && !s.fam.pregnant && s.fam.kids.length < 3 && s.t - s.fam.marriedT >= 6 && (s.flags.noKidUntil ?? -1) < s.t && r.chance(s.fam.kids.length ? 0.025 : 0.06) && s.age < 44) {
+    if (s.fam.spouse && !s.fam.pregnant && s.fam.kids.length < D.KID_AID.max && s.t - s.fam.marriedT >= 6 && (s.flags.noKidUntil ?? -1) < s.t && r.chance(s.fam.kids.length ? 0.025 : 0.06) && s.age < 44) {
       scenes.push({ kind: "event", title: s.fam.kids.length ? "둘째 이야기" : "아이 이야기", text: `${jo(CHAR[s.fam.spouse].name, "이", "가")} 조심스럽게 물었다. "우리... ${s.fam.kids.length ? "둘째" : "아이"} 가져 볼까?" 아이가 어리면 육아가 행동력을 가져가고, 배우자도 손을 보태기 어려워진다. 대신 아이 얼굴을 보면 힘이 난다.`, onChoose: "baby", choices: [{ t: "그래, 가져 보자", eff: { family: 10 }, text: "손을 꼭 잡았다." }, { t: "조금만 더 있다가", eff: { family: -4 }, text: "\"그래, 아직 바쁘니까.\"" }] });
     }
     // 배우자 반대(v4.25): 빚이 크거나 투잡이 적자일 때, 불안형이면 더 자주
@@ -1562,7 +1586,11 @@ function peopleMonth(s, r, notes, scenes) {
       const p = (risky ? 0.05 : 0.012) * (s.fam.spouseType === "불안형" ? 2 : s.fam.spouseType === "응원형" ? 0.6 : 1);
       if (r.chance(p)) { s.flags.opposeT = s.t; const nm = CHAR[s.fam.spouse].name; scenes.push({ kind: "event", who: s.fam.spouse, title: "배우자의 반대", text: `밤 11시, 노트북을 켜는데 ${jo(nm, "이", "가")} 식탁에 앉았다. "${risky ? "이번 달도 마이너스야. 이거 계속하는 게 맞아?" : "요즘 주말에 우리 얼굴 본 적 있어? 투잡 좀 줄이면 안 돼?"}" 배우자는 지금까지 손을 보태 줬다(행동력 +${spouseAp(s)}).`, onChoose: "fam_oppose", choices: [{ t: "숫자를 보여 주며 차근차근 설득한다", check: { stat: "charm", dc: 40 }, ok: { text: "한참 표를 들여다보더니 \"6개월만 더 보자\"고 했다.", eff: { family: 2 } }, ng: { text: "\"숫자 말고 당신 얼굴을 보고 싶다고.\" 대화가 끊겼다.", eff: { family: -8 } } }, { t: "알겠어, 한 달은 투잡을 쉰다", eff: { family: 10, ap: -3 }, text: "다음 달 행동력 −3. 둘이 오랜만에 저녁을 먹었다." }, { t: "못 들은 척 노트북을 켠다", eff: { family: -15 }, text: "방문이 조용히 닫혔다. 6개월 동안 도움 없음(행동력 −1)." }] }); }
     }
-    if (s.fam.pregnant !== null && s.t >= s.fam.pregnant) { s.fam.kids.push({ born: s.t, name: r.pick(["하린", "도윤", "서아", "이준", "지안", "시우", "유나", "건우"]) }); s.fam.pregnant = null; if (s.seen.life_postpartum !== undefined && !s.flags.ppUsed) s.flags.ppUsed = s.t; /* 조리원 장면에서 이미 냄 */ else { s.cash -= 300; addMoney(s, "exp", "출산·산후조리", 300); } s.fam.happy = clamp(s.fam.happy + 20, 0, 100); scenes.push(story("아이가 태어났다", "새벽 3시 수유, 새벽 5시 기저귀. 투잡에 쓰던 시간이 사라졌다. 그런데 이상하게 힘이 난다.")); log(s, `아이 ${jo(s.fam.kids[s.fam.kids.length - 1].name, "이", "가")} 태어났다.`, "life"); }
+    if (s.fam.pregnant !== null && s.t >= s.fam.pregnant) { s.fam.kids.push({ born: s.t, name: r.pick(["하린", "도윤", "서아", "이준", "지안", "시우", "유나", "건우"]) }); s.fam.pregnant = null; if (s.seen.life_postpartum !== undefined && !s.flags.ppUsed) s.flags.ppUsed = s.t; /* 조리원 장면에서 이미 냄 */ else { s.cash -= 300; addMoney(s, "exp", "출산·산후조리", 300); } s.fam.happy = clamp(s.fam.happy + 20, 0, 100); scenes.push(story("아이가 태어났다", "새벽 3시 수유, 새벽 5시 기저귀. 투잡에 쓰던 시간이 사라졌다. 그런데 이상하게 힘이 난다.")); log(s, `아이 ${jo(s.fam.kids[s.fam.kids.length - 1].name, "이", "가")} 태어났다.`, "life");
+      try { const ln = SPO.onBirth(s); if (ln) notes.push(ln); } catch (e) { console.warn(e); } // 11-25 배우자 육아휴직
+      { const A = D.KID_AID, n = s.fam.kids.length, amt = A.birth[Math.min(n, A.birth.length) - 1] || 0; if (amt) { s.cash += amt; addMoney(s, "inc", "출산 지원금", amt); } // 11-25 나라 지원: 출산 지원금, 둘째면 다자녀 장면
+        if (n === 1) notes.push(`나라 지원: 출산 지원금 +${won(amt)} · 부모 급여 달마다 ${A.parent[0]}만(첫돌까지, 그다음 한 해는 ${A.parent[1]}만) · 아동 수당 달마다 ${A.child}만(${A.childTo}세 전까지)`);
+        else if (n === 2) scenes.push(kidAidScene(s, amt)); } }
   }
   affMonth(s, r, scenes, notes); // 바람(engine/affair.js)
   menteeMonth(s, r, scenes); // 컨설팅 제자(engine/mentee.js)
@@ -1571,6 +1599,7 @@ function peopleMonth(s, r, notes, scenes) {
   famMonth(s, r, scenes, notes);
   try { HL.month(s, notes, scenes); } catch (e) { console.warn(e); } // 11-25 히로인·히어로의 인생 시계(사건·소식·장면)
   try { LOVE.loveMonth(s, r, notes, scenes); } catch (e) { console.warn(e); }
+  try { SPO.spMonth(s, r, notes, scenes); } catch (e) { console.warn(e); } // 11-25 배우자 승진·복직·"그만둘까"
   try { WED.wedMonth(s, r, notes, scenes); } catch (e) { console.warn(e); } // 11-25 상대가 먼저 꺼내는 결혼 얘기·"결혼하길 잘했다"(wed.js)
   try { XR.xMonth(s, r, notes, scenes); } catch (e) { console.warn(e); } // 11-24 겹치는 역할 사건·닉네임 이야기
   // 11-24 기념일·까톡·조력자 사건 // 자녀·배우자·부모님 이벤트(engine/famev.js)

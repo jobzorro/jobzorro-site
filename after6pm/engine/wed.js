@@ -8,7 +8,7 @@
 import * as GEN from "../gen/data.js";
 import * as RD from "./round.js";
 import * as HL from "./heroine.js";
-import { CHAR, addAff, addMoney, isRomanceable, creditRoom, ensureRel, log, jo } from "./core.js";
+import { CHAR, addAff, addMoney, isRomanceable, creditRoom, ensureRel, log, jo, won } from "./core.js";
 
 const M = GEN.MARRY || {};
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -27,6 +27,15 @@ export const WD = {
   ring: 300, ap: 2, know: 60, // 반지 값 · 행동력 · 인물 창에 성향이 보이는 호감
   skipCal: [12], // 연말 결산 달에는 먼저 꺼내지 않는다(한 달에 큰 장면 하나)
 };
+
+// 배우자가 모은 돈(대표 결정 11-25): 결혼하는 날 그 사람이 모아 온 돈이 내 현금에 합쳐진다. 0.5억~3억, 인물마다 다르다(data/marry.json save: [금액(만원), 한마디]).
+// 부자로 설정된 사람이 많이 들고 오는 게 아니라 착실하게 모으는 사람이 많이 들고 온다. 전체 크기는 x 하나로 조정한다(봇으로 견줄 때는 환경변수 SAVEX, 0 이면 끔). 물가가 오른 만큼(최대 1.5배) 같이 는다.
+export const SAVE = { x: 1, base: 8000, piCap: 1.5 };
+export function saveOf(s, id) { const env = typeof process !== "undefined" ? process.env?.SAVEX : undefined, x = env !== undefined && env !== "" ? +env : SAVE.x; const b = M.save?.[id]?.[0] ?? SAVE.base; return Math.round(b * x * Math.min(SAVE.piCap, Math.max(1, s.pi || 1)) / 100) * 100; }
+export function saveScene(s, id, amt) {
+  const c = CHAR[id], line = M.save?.[id]?.[1];
+  return { kind: "event", who: id, tag: "결혼", expr: "smile", title: `${c.name} · 통장을 합친 날`, text: `신혼집 식탁에 통장 두 개를 나란히 놓았다. ${c.name}의 통장에는 ${won(amt)}이 들어 있었다.${line ? ` "${line}"` : ""}`, choices: [{ t: "같이 불려 보자고 한다", eff: {}, text: "" }] };
+}
 
 export const typeOf = (id) => M.types?.[id] || (CHAR[id]?.roles?.includes("romance") ? "normal" : null);
 const box = (s) => { s.wed = s.wed || {}; s.wed.p = s.wed.p || {}; return s.wed; };

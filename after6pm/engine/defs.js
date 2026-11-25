@@ -514,17 +514,29 @@ export const TRAITS = [
 export const DOMAIN_N = { co: "회사" }; // 투잡은 SIDEJOBS 이름을 쓴다
 
 // ───────── 파티룸 ─────────
-// rate: 2층 기준 평당 월세(만원). 한국부동산원 서울 집합상가 평균 1층 약 16만·2층 7.6만·지하 5.1만/평, 역세권·핫플은 1.5~2배
-export const PR_FLOOR_RENT = (L) => (L.floor === -1 ? 0.65 : L.floor === 1 ? 2.0 : L.floor === 2 ? 1 : L.floor === 3 ? 0.85 : L.elevator ? 0.8 : 0.65);
-export const DISTRICTS = {
-  univ: { n: "대학가", wk: 0.55, we: 1.0, rate: [10, 13], rent: [120, 180], key: [300, 1500], dep: [1000, 2000], comp: [3, 7], noise: 0.8, price: 16, park: 0.2, base: 0.25, size: [15, 25], fit: { bridal: 1.0, party: 1.35, study: 1.2, work: 0.6, kids: 0.4, home: 0.9, game: 1.3, lecture: 1.1, mega: 1.3, edu: 0.5 }, tip: "주말·밤 수요 최고, 소음 내성 높음, 경쟁 많음" },
-  office: { n: "오피스가", wk: 1.0, we: 0.45, rate: [9, 12], rent: [150, 230], key: [500, 2000], dep: [1500, 3000], comp: [2, 5], noise: 0.6, price: 18, park: 0.6, base: 0.2, size: [18, 30], fit: { bridal: 0.8, party: 0.6, study: 1.0, work: 1.45, kids: 0.4, home: 0.6, game: 0.8, lecture: 1.3, mega: 0.8, edu: 1.5 }, tip: "평일 저녁 워크숍·회식, 주말은 텅 빔" },
-  home: { n: "주택가·신도시", wk: 0.3, we: 0.85, rate: [6, 8], rent: [70, 110], key: [0, 500], dep: [500, 1500], comp: [1, 3], noise: 0.3, price: 14, park: 1.0, base: 0.1, size: [20, 35], fit: { bridal: 1.0, party: 0.5, study: 0.8, work: 0.5, kids: 1.45, home: 1.3, game: 0.7, lecture: 0.7, mega: 0.6, edu: 0.5 }, tip: "키즈·돌잔치, 주차 필수, 소음 민원 위험" },
-  hot: { n: "성숲길 핫플", wk: 0.6, we: 1.0, rate: [13.5, 19], rent: [180, 260], key: [1000, 3000], dep: [2000, 3000], comp: [4, 8], noise: 0.7, price: 21, park: 0.3, base: 0.15, size: [15, 25], fit: { bridal: 1.45, party: 1.0, study: 0.6, work: 0.9, kids: 0.5, home: 1.2, game: 0.8, lecture: 0.8, mega: 0.9, edu: 0.6 }, tip: "사진발·브라이덜 성지, 월세·권리금 최고" },
-  under: { n: "역세권 지하", wk: 0.7, we: 0.9, rate: [8.5, 11.5], rent: [90, 140], key: [200, 1000], dep: [1000, 2000], comp: [3, 6], noise: 0.95, price: 13, park: 0.3, base: 1.0, size: [40, 60], fit: { bridal: 0.7, party: 1.3, study: 0.9, work: 1.1, kids: 0.5, home: 0.6, game: 1.35, lecture: 0.9, mega: 1.2, edu: 0.9 }, tip: "넓고 싸고 시끄러워도 됨. 대신 사진이 어둡다" },
-  local: { n: "지방 중소도시", wk: 0.35, we: 0.7, rate: [2.5, 4], rent: [45, 75], key: [0, 300], dep: [300, 1000], comp: [0, 2], noise: 0.6, price: 13, park: 1.0, base: 0.1, size: [25, 40], fit: { bridal: 1.0, party: 1.0, study: 0.6, work: 0.8, kids: 1.2, home: 1.0, game: 0.9, lecture: 0.8, mega: 1.1, edu: 0.9 }, tip: "싸고 경쟁 없음, 수요도 작음. 집에서 멀면 관리가 힘듦" },
+// 11-25 월세 규칙(현장 기준): 파티룸 매물은 2~5층과 지하만 본다(1층은 월세만 비싸고 안 맞는다). 평당 5만~8만 원이 보통이고, 32평까지는 월세 80만~160만.
+// rate: 그 상권의 평당 월세 폭(만원). 층·역 거리·화장실로 조금 움직인 뒤 PR_RENT.per 안으로 자른다(지방만 더 싸다). 계산은 engine/pr.js rentFor
+// 예전(11-24까지): 2층 기준 평당 10~19만에 1층 2배·지하 0.65배 → 20평 월세가 200만~600만까지 나왔다
+export const PR_FLOOR_RENT = (L) => (L.floor === -1 ? 0.88 : L.floor === 2 ? 1.05 : L.floor === 3 ? 1 : L.elevator ? 0.97 : 0.9);
+// per: 보통 평당 월세 · cap: capSize 평까지 월세 상한 · min: minSize 평부터 월세 하한 · badP: 규칙 밖 비싼 매물이 섞일 확률 · bad: 그 매물의 평당 월세
+export const PR_RENT = { per: [5, 8], cap: 160, capSize: 32, min: 80, minSize: 15, badP: 0.15, bad: [8.6, 11] };
+// 평수와 인원: 15~20평은 15명 아래, 30평은 40명, 50~60평은 80명. 20평을 넘는 방은 예약이 '작은 모임'과 '대형 단체'로 나뉜다(계산은 engine/pr.js sizeMix)
+// pf: 대형 단체(방을 꽉 채우는 손님) 한 건 값 배율(15명 방 = 1) · small: 가장 큰 방에 온 작은 모임이 내는 값(15명 방 시세의 배)
+// big: 예약 가운데 대형 단체 비율 [평달, 성수기(1·2·7·8월), 12월] · occ: 가장 큰 방의 예약 건수 배율 [평달, 성수기, 12월](방 크기에 비례해 1에서 이 값까지)
+export const PR_SIZE = {
+  cap: (z) => (z <= 20 ? Math.round(z * 0.75) : z < 30 ? Math.round(15 + (z - 20) * 2.5) : z < 50 ? 40 + (z - 30) * 2 : 80),
+  pf: (cap) => (cap <= 40 ? Math.max(0.85, Math.pow(cap / 15, 0.55)) : Math.pow(40 / 15, 0.55) * cap / 40),
+  small: 1.05, big: [0.15, 0.3, 0.7], occ: [0.85, 0.92, 1.08],
 };
-// we/wk: 주말·평일 수요 배율, sns: 손님이 인별·블로그에 올리는 정도, kit: 장비비(만원), seg: 주 고객, req: 매물 조건(안 맞으면 이유)
+export const DISTRICTS = {
+  univ: { n: "대학가", wk: 0.55, we: 1.0, rate: [5.5, 7.5], rent: [120, 180], key: [300, 1500], dep: [1000, 2000], comp: [3, 7], noise: 0.8, price: 16, park: 0.2, base: 0.25, size: [15, 25], fit: { bridal: 1.0, party: 1.35, study: 1.2, work: 0.6, kids: 0.4, home: 0.9, game: 1.3, lecture: 1.1, mega: 1.3, edu: 0.5 }, tip: "주말·밤 수요 최고, 소음 내성 높음, 경쟁 많음" },
+  office: { n: "오피스가", wk: 1.0, we: 0.45, rate: [6, 8], rent: [150, 230], key: [500, 2000], dep: [1500, 3000], comp: [2, 5], noise: 0.6, price: 18, park: 0.6, base: 0.2, size: [18, 30], fit: { bridal: 0.8, party: 0.6, study: 1.0, work: 1.45, kids: 0.4, home: 0.6, game: 0.8, lecture: 1.3, mega: 0.8, edu: 1.5 }, tip: "평일 저녁 워크숍·회식, 주말은 텅 빔" },
+  home: { n: "주택가·신도시", wk: 0.3, we: 0.85, rate: [5, 6.5], rent: [70, 110], key: [0, 500], dep: [500, 1500], comp: [1, 3], noise: 0.3, price: 14, park: 1.0, base: 0.1, size: [20, 35], fit: { bridal: 1.0, party: 0.5, study: 0.8, work: 0.5, kids: 1.45, home: 1.3, game: 0.7, lecture: 0.7, mega: 0.6, edu: 0.5 }, tip: "키즈·돌잔치, 주차 필수, 소음 민원 위험" },
+  hot: { n: "성숲길 핫플", wk: 0.6, we: 1.0, rate: [6.5, 8], rent: [180, 260], key: [1000, 3000], dep: [2000, 3000], comp: [4, 8], noise: 0.7, price: 21, park: 0.3, base: 0.15, size: [15, 25], fit: { bridal: 1.45, party: 1.0, study: 0.6, work: 0.9, kids: 0.5, home: 1.2, game: 0.8, lecture: 0.8, mega: 0.9, edu: 0.6 }, tip: "사진발·브라이덜 성지, 월세·권리금 최고" },
+  under: { n: "역세권 지하", wk: 0.7, we: 0.9, rate: [5.8, 7.4], rent: [90, 140], key: [200, 1000], dep: [1000, 2000], comp: [3, 6], noise: 0.95, price: 13, park: 0.3, base: 1.0, size: [40, 60], fit: { bridal: 0.7, party: 1.3, study: 0.9, work: 1.1, kids: 0.5, home: 0.6, game: 1.35, lecture: 0.9, mega: 1.2, edu: 0.9 }, tip: "넓고 싸고 시끄러워도 됨. 대신 사진이 어둡다" },
+  local: { n: "지방 중소도시", wk: 0.35, we: 0.7, rate: [3.5, 5], rent: [45, 75], key: [0, 300], dep: [300, 1000], comp: [0, 2], noise: 0.6, price: 13, park: 1.0, base: 0.1, size: [25, 40], fit: { bridal: 1.0, party: 1.0, study: 0.6, work: 0.8, kids: 1.2, home: 1.0, game: 0.9, lecture: 0.8, mega: 1.1, edu: 0.9 }, tip: "싸고 경쟁 없음, 수요도 작음. 집에서 멀면 관리가 힘듦" },
+};
+// big: 예약 가운데 대형 단체 비율에 더하는 값(대형 전문 컨셉). we/wk: 주말·평일 수요 배율, sns: 손님이 인별·블로그에 올리는 정도, kit: 장비비(만원), seg: 주 고객, req: 매물 조건(안 맞으면 이유)
 const upNeedsLift = (L, f) => (L.floor >= f && !L.elevator ? `${f}층 이상이면 엘리베이터가 있어야 해요` : null);
 export const CONCEPTS = {
   bridal: { n: "브라이덜·생일", noisy: 0.3, elev: 0.15, park: 0.5, toilet: 0.15, ondol: 0.08, priceF: 1.1, need24: 0.3, we: 1, wk: 1, sns: 1.5, kit: 0, seg: ["브라이덜 샤워", "생일·기념일"] },
@@ -535,7 +547,7 @@ export const CONCEPTS = {
   lecture: { n: "강의·세미나룸", noisy: 0.1, elev: 0.2, park: 0.4, toilet: 0.08, ondol: 0, priceF: 1.1, need24: 0.05, we: 0.8, wk: 1.3, sns: 0.5, kit: 250, seas: 0.5, seg: ["강사·코치", "스터디 모임", "소규모 설명회"], req: (L) => (L.size < 20 ? "20평 이상이어야 해요" : upNeedsLift(L, 3)) },
   work: { n: "워크숍·회식", noisy: 0.6, elev: 0.15, park: 0.8, toilet: 0.06, ondol: 0.0, priceF: 1.15, need24: 0.2, we: 1, wk: 1, sns: 0.5, kit: 0, seg: ["회사 워크숍", "회식 2차"] },
   edu: { n: "B2B 교육장", noisy: 0.15, elev: 0.3, park: 0.9, toilet: 0.1, ondol: 0, priceF: 1.1, need24: 0, we: 0.35, wk: 1.15, sns: 0.35, kit: 400, seas: 0.45, seg: ["기업 교육·워크숍", "공공기관 연수", "HRD 업체"], req: (L) => (L.size < 28 ? "28평 이상이어야 해요" : L.parking === 0 ? "주차가 있어야 해요" : upNeedsLift(L, 2)) },
-  mega: { n: "초대형 파티룸", noisy: 1.0, elev: 0.2, park: 0.6, toilet: 0.2, ondol: 0.1, priceF: 2.0, need24: 0.8, we: 0.95, wk: 0.35, sns: 1.1, kit: 500, dec: 1.5, off: 0.75, seg: ["대학 과 MT", "동호회 정모", "회사 송년회"], req: (L) => (L.size < 40 ? "40평 이상이어야 해요" : null) },
+  mega: { n: "초대형 파티룸", noisy: 1.0, elev: 0.2, park: 0.6, toilet: 0.2, ondol: 0.1, priceF: 1.15 /* 11-25: 2.0 → 1.15. 큰 방 값은 이제 평수(PR_SIZE.pf)가 정한다. 대신 대형 단체가 더 온다(big) */, big: 0.15, need24: 0.8, we: 0.95, wk: 0.35, sns: 1.1, kit: 500, dec: 1.5, off: 0.75, seg: ["대학 과 MT", "동호회 정모", "회사 송년회"], req: (L) => (L.size < 40 ? "40평 이상이어야 해요" : null) },
   kids: { n: "키즈·돌잔치", noisy: 0.5, elev: 0.25, park: 1.0, toilet: 0.15, ondol: 0.25, priceF: 1.05, need24: 0.0, we: 1, wk: 1, sns: 1.2, kit: 0, seg: ["돌잔치", "키즈 생일"], req: (L) => upNeedsLift(L, 2) },
 };
 export const INTERIORS = [
@@ -549,7 +561,7 @@ export const PR_SEASON = [
   { we: 1.25, wk: 0.8, el: 0.8 }, { we: 1.2, wk: 0.75, el: 0.8 }, { we: 0.8, wk: 0.46, el: 1.3 }, { we: 0.85, wk: 0.48, el: 1.3 }, { we: 0.88, wk: 0.48, el: 1.3 }, { we: 0.8, wk: 0.46, el: 1.3 },
   { we: 1.2, wk: 0.8, el: 0.8 }, { we: 1.25, wk: 0.85, el: 0.8 }, { we: 0.8, wk: 0.46, el: 1.3 }, { we: 0.88, wk: 0.48, el: 1.3 }, { we: 0.9, wk: 0.54, el: 1.3 }, { we: 1.7, wk: 1.5, el: 0.5 },
 ];
-export const PR_K = 0.82;
+export const PR_K = 0.62; // 11-25 월세를 내리면서 예약률을 낮췄다(0.82 → 0.62). 봇 2회차 파이어가 30% 안팎에 오게 맞춘 값(0.65면 38%, 0.72면 43%, 0.78이면 53%). 1회차는 pr.js PR_R1.occ 로 따로 맞춘다. 봇 손잡이: 환경변수 PRK
 // v4.27 파티룸 업계 현실(과포화·가격 상한·계속 나가는 투자비). 계산은 engine/pr.js
 // priceInfl: 시세가 해마다 오르는 비율(물가 2.5%보다 훨씬 낮음 = 가격은 못 올리는데 비용만 오른다)
 // compIn: 새 파티룸이 생길 확률 추가(달마다) · compMax: 동네 경쟁 상한(기본 최대 + 이만큼)
@@ -613,6 +625,9 @@ export const HOUSING = {
 export const END_AGE = 50; // 11-23 남녀 모두 50세까지(27세 시작, 23년). 1회차는 34세 결산(engine/round.js)
 export const endAge = (g) => 50;
 export const FIRE_MULT = 25;
+// 아이와 나라 지원(대표 결정 11-25): 아이는 최대 2명. 나라에서 주는 돈으로 아이 비용이 덜 든다. 특히 둘째부터는 다자녀 지원이 크다. 금액(만원)은 봇으로 재서 조정한다(봇은 환경변수 KIDP 로 덮어쓴다).
+//   birth 출산 지원금(첫째·둘째, 한 번) · parent 부모 급여(0세·1세, 달마다) · child 아동 수당(childTo 세 전까지, 달마다) · multi 다자녀 수당(아이가 둘이고 막내가 multiTo 세 전까지, 달마다)
+export const KID_AID = { max: 2, birth: [200, 1000], parent: [100, 50], child: 10, childTo: 8, multi: 40, multiTo: 18 };
 export const FIRE_TARGET = { single: 300000, married: 400000 }; // 30억(집 12억 + 4%씩 꺼내 써도 안 줄어드는 돈 18억, 월 600만), 결혼하면 40억(집 15억 + 25억, 월 830만) (만원)
 
 // ───────── 투잡 탐색 (21개, 지금은 파티룸·취업컨설팅만 플레이 가능) ─────────

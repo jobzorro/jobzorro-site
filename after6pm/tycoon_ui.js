@@ -56,7 +56,7 @@ function testSetup(S, kind) {
   if (h.includes("_sum")) S.cal = 8;
   if (kind === "pr") {
     S.pr.rooms = []; const dks = Object.keys(D.DISTRICTS);
-    for (let i = 0; i < n; i++) { const dk = dks[i % dks.length]; S.ap = 99; S.hp = S.hpMax; E.act(S, "pr_search", dk); while (S.pending) E.choose(S, 0); const L = S.pr.listings.find((l) => l.dk === dk); if (!L) continue; const c = Object.keys(D.CONCEPTS).filter((k) => !PR.conceptOk(L, k))[i % 3] || Object.keys(D.CONCEPTS).find((k) => !PR.conceptOk(L, k)); PR.contract(S, L.id, { concept: c, interior: 1 }); }
+    for (let i = 0; i < n; i++) { const dk = dks[i % dks.length]; S.ap = 99; S.hp = S.hpMax; E.act(S, "pr_search", dk); while (S.pending) E.choose(S, 0); const L = S.pr.listings.find((l) => l.dk === dk && !PR.rentRule(S, l)) || S.pr.listings.find((l) => l.dk === dk); if (!L) continue; const c = Object.keys(D.CONCEPTS).filter((k) => !PR.conceptOk(L, k))[i % 3] || Object.keys(D.CONCEPTS).find((k) => !PR.conceptOk(L, k)); PR.contract(S, L.id, { concept: c, interior: 1 }); }
     S.pr.rooms.forEach((rm, i) => { rm.status = "open"; rm.months = 6; rm.rating = i === 0 && h.includes("_hi") ? 4.82 : 4.3 + (i % 3) * 0.1; rm.last = { occ: occ[i], bookings: Math.round(occ[i] * 40), rev: 500, cost: 400, ig: 3, bl: 1 }; rm.hist = [{ profit: 100 }]; });
   } else if (kind === "airbnb") {
     S.ab.units = []; const rks = ["hongdae", "jongno", "jeju", "seongsu", "busan", "gyeongju"];

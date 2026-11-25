@@ -3,6 +3,8 @@ import * as D from "./defs.js";
 import * as RD from "./round.js";
 import { CHAR, addMoney, log, jo, won, gainStat, meetScene, openScene, sceneOk, reveal, ensureRel } from "./core.js";
 import { DISC, SCENES } from "../gen/data.js";
+import * as GEN_ALL from "../gen/data.js";
+export const TIPS = GEN_ALL.SJ_TIPS || {}; // 11-25 투잡 진입 정보(data/sj_tips.json): 시작한 첫 달 창과 알림 종에서 본다
 import * as REG from "./reg.js"; // 새 투잡 플러그인(투잡 칸 +1·접기 조건)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -151,6 +153,7 @@ export function start(s, job) {
   if (sj.pickT === undefined) sj.pickT = s.t;
   if (sj.active.length >= slots(s)) return { ok: false, msg: `투잡은 지금 ${slots(s)}개까지. 매니저를 두면 한 칸 늘어요` };
   sj.active.push(job); s.flags.questDone = s.t; log(s, `${jo(j.n, "을", "를")} 시작하기로 했다.`, "work");
+  if (TIPS[job]) { (sj.tipNew = sj.tipNew || []).push(job); sj.tipT = sj.tipT || {}; sj.tipT[job] = s.t; } // 11-25 화면이 '지금까지 조사로 알게 된 것' 창을 띄운다
   { const P = REG.get(job); if (P) { if (!s[job]) s[job] = P.init(s); if (P.onStart) P.onStart(s); } }
   const hid = reveal(s, job);
   const N = need(s, job); const warn = N && !N.ok ? ` · ${N.n} ${N.cur}/${N.need}: 초반이 더 힘들 거예요` : "";

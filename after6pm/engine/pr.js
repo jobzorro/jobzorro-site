@@ -7,13 +7,31 @@ import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 import * as DF from "./decofx.js"; // 방 꾸미기 감성 점수 효과
 import { JOBEV } from "../gen/data.js";
 import * as RD from "./round.js";
-export const PR_R1 = { occ: 1.6 }; if (typeof process !== "undefined" && process.env?.PRR1) PR_R1.occ = +process.env.PRR1;
+export const PR_R1 = { occ: 1.68 /* 11-25: 1.6 → 1.68. 예약률 상수를 0.62로 낮춘 만큼 1회차 배율을 올려 1회차 체감은 0.65 × 1.6 때와 같게 둔다 */ }; if (typeof process !== "undefined" && process.env?.PRR1) PR_R1.occ = +process.env.PRR1;
+const PR_KOCC = (typeof process !== "undefined" && +process.env?.PRK) || D.PR_K; // 예약률 상수(봇 손잡이: 환경변수 PRK)
 import * as PW from "./prwave.js"; // 11-23 컨셉 위기·컨셉 잠금·관리 이득
 import * as RVW from "./review.js"; // v4.28 경쟁사 가격표·가격 전쟁·후기 사건
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 export function init() { return { rooms: [], listings: [], sys: { cleanContract: false, smartlock: [], booking: false, manager: false }, known: {}, lv: 1, seq: 0, promo: {}, profitHist: [], evT: -99, bestMonth: 0, know: 0, courseT: -99, teachT: -1, clubT: -1, offerT: -99, sold: 0, soldSum: 0 }; }
-export const fill = (s) => { const p = s.pr; p.know = p.know || 0; p.courseT = p.courseT ?? -99; p.offerT = p.offerT ?? -99; p.sold = p.sold || 0; p.soldSum = p.soldSum || 0; for (const rm of p.rooms) { rm.buzz = rm.buzz || 0; rm.decor = rm.decor || { light: 1, seat: 1, wall: 1 }; } };
+export const fill = (s) => { const p = s.pr; p.know = p.know || 0; p.courseT = p.courseT ?? -99; p.offerT = p.offerT ?? -99; p.sold = p.sold || 0; p.soldSum = p.soldSum || 0; for (const rm of p.rooms) { rm.buzz = rm.buzz || 0; rm.decor = rm.decor || { light: 1, seat: 1, wall: 1 }; fillSize(s, rm); } for (const L of p.listings || []) fillSize(s, L); };
+// 11-25 옛 저장: 평수·층이 없는 방은 월세에서 거꾸로 어림한다(평당 6.5만 기준, 10~60평). 층이 없으면 2층. 인원은 평수에서 다시 센다
+function fillSize(s, x) {
+  if (!(x.size > 0)) x.size = clamp(Math.round((x.rent || 130) / (6.5 * SYN.pi(s))) || 20, 10, 60);
+  if (x.floor === undefined || x.floor === null) x.floor = 2;
+  x.cap = capOf(x.size);
+  if (x.concept !== undefined && !x.rv) fillOld(s, x);
+}
+// 11-25 새 규칙 전에 계약한 방(rv 없음)을 한 번만 옮긴다. 예약률 상수를 낮췄으니 옛 월세를 그대로 두면 옛 방만 손해를 본다
+// 1) 월세가 지금 기준(그 상권 가운데 값)보다 비싸면 그 값으로 내린다(싸면 그대로)  2) 한 건 값을 새 크기 배율로 바꿔 시세와 같은 비율을 지킨다
+function fillOld(s, rm) {
+  rm.rv = 1;
+  const oldP = (rm.size >= 40 ? 1 + (rm.size - 30) / 60 : rm.size < 18 ? 0.85 : 1) * (rm.concept === "mega" ? 2.0 / D.CONCEPTS.mega.priceF : 1), k = sizeP(rm) / oldP;
+  if (rm.price && Math.abs(k - 1) > 0.01) { rm.price = clamp(Math.round(rm.price * k), 5, PRICE_MAX); if (rm.warBase) rm.warBase = Math.round(rm.warBase * k); }
+  const fair = D.DISTRICTS[rm.dk] ? rentFor(s, { ...rm, walk: rm.walk ?? 8 }, 0.5) : rm.rent;
+  if (rm.rent > fair) { log(s, `${rm.name}: 건물주와 월세를 다시 맞췄다. 월 ${won(rm.rent)} → ${won(fair)}(요즘 시세: 평당 ${Math.round(fair / rm.size * 10) / 10}만)`, "work"); rm.rent = fair; }
+}
+const PRICE_MAX = 300; // 한 건 가격 상한(만원). 80명 방의 대형 단체 값이 100만을 넘을 수 있어 120 → 300
 // 노하우 0~100: 별점 +최대 0.25, 비용 −최대 20%, 관리 행동력 −최대 1.5
 const knowStar = (s) => (s.pr.know || 0) / 400, knowCost = (s) => 1 - (s.pr.know || 0) / 500;
 // 상권 시장 상태: 경쟁 파티룸 수와 그들의 평균 1건 가격. 잘되는 상권엔 새 가게가 들어오고, 불황엔 문을 닫는다
@@ -87,9 +105,9 @@ export function monthStart(s) {
 // ───────── 매물 만들기 ─────────
 function makeListing(s, r, dk) {
   const d = D.DISTRICTS[dk];
-  const size = r.chance(0.12) ? r.int(40, 65) : r.int(d.size[0], d.size[1]);
+  const size = r.chance(0.12) ? r.int(40, 60) : r.int(d.size[0], d.size[1]);
   const basement = r.chance(d.base);
-  const floor = basement ? -1 : r.weighted([[1, 0.2], [2, 0.35], [3, 0.25], [4, 0.12], [5, 0.08]]);
+  const floor = basement ? -1 : r.weighted([[2, 0.4], [3, 0.3], [4, 0.18], [5, 0.12]]); // 11-25 파티룸 매물은 2~5층과 지하만(1층은 안 나온다)
   const elevator = floor >= 2 ? r.chance(floor >= 4 ? 0.75 : 0.45) : false;
   const parking = r.weighted([[0, 1 - d.park * 0.6], [1, 0.35], [2, d.park * 0.4]]);
   const toilet = r.chance(basement ? 0.4 : 0.55) ? "in" : "out";
@@ -99,17 +117,18 @@ function makeListing(s, r, dk) {
   const access24 = r.chance(0.68);
   let landlord = r.weighted([["환영", 0.25], ["찜찜", 0.45], ["싫어함", 0.3]]);
   const comp = mkt(s, dk).comp;
-  const walk = r.int(2, 15);
-  const sizeF = size / ((d.size[0] + d.size[1]) / 2);
-  const floorF = basement ? 0.75 : floor === 1 ? 1.15 : floor >= 3 && !elevator ? 0.9 : 1;
-  const pi = SYN.pi(s) * (s.era.rentup ? 1.2 : 1);
-  const rent = rentFor(s, { dk, size, floor, elevator, toilet, walk }, r.next()) * (s.era.rentup ? 1.2 : 1);
-  const dep = Math.round(rent * r.range(8, 12) / 100) * 100; // 보증금은 월세 10배 안팎
+  // 11-25 가끔 규칙 밖 비싼 매물이 섞인다: 역 코앞이라며 평당 8만을 넘게 부른다(첫 매물로는 계약이 막힌다. rentRule)
+  const pricey = r.chance(D.PR_RENT.badP);
+  const walk = pricey ? r.int(1, 4) : r.int(2, 15);
+  const eraF = s.era.rentup ? 1.2 : 1, pi = SYN.pi(s) * eraF;
+  const down5 = (x) => Math.floor(x / 5 + 1e-9) * 5; // 내림: 반올림 때문에 평당 값이 기준을 살짝 넘지 않게
+  const rent = pricey ? down5(r.range(D.PR_RENT.bad[0], D.PR_RENT.bad[1]) * size * pi) : down5(rentFor(s, { dk, size, floor, elevator, toilet, walk }, r.next()) * eraF);
+  const dep = Math.round(rent * r.range(8, 12) / 100) * 100; // 보증금은 월세 10배 안팎(월세가 내려가면 같이 내려간다)
   const key = Math.round(r.range(d.key[0], d.key[1]) * (walk <= 5 ? 1.2 : 1) * pi / 50) * 50;
   const far = dk === "local" ? 3 : r.int(0, 2); // 집과 거리(관리 행동력 가중)
   const cond = r.weighted([["empty", 0.5], ["half", 0.3], ["turnkey", 0.2]]);
   const pre = cond === "turnkey" ? presetDecor(r) : cond === "half" ? { light: 1, kitchen: 1 } : {};
-  const L = { id: "L" + (++s.pr.seq), t: s.t, dk, size, floor, elevator, parking, toilet, heating, walk, rent, dep, key: Math.round(key * D.PR_COND[cond].key / 10) * 10, far, cond, pre,
+  const L = { id: "L" + (++s.pr.seq), t: s.t, dk, size, cap: capOf(size), floor, elevator, parking, toilet, heating, walk, rent, dep, key: Math.round(key * D.PR_COND[cond].key / 10) * 10, far, cond, pre,
     hid: { sound, access24, landlord, comp, ondolOk }, seen: {} };
   // 조력자: 중개사가 숨은 정보 1개 공개
   if (helpers(s, "pr_realty").length) { const k = r.pick(["sound", "access24", "landlord", "comp", "ondolOk"]); L.seen[k] = true; }
@@ -228,6 +247,9 @@ export function contract(s, listingId, o) {
   const it = D.INTERIORS[o.interior ?? 1];
   const why = conceptOk(L, o.concept, s); if (why) return { ok: false, msg: `${D.CONCEPTS[o.concept].n}: ${why}` };
   if (o.ondol && !L.hid.ondolOk && L.seen.ondolOk) return { ok: false, msg: "이 매물은 온돌 시공이 안 돼요" };
+  // 11-25 첫 매물 지키기: 가진 방이 0개일 때 규칙 밖 매물은 주인공이 말린다. 둘째 방부터는 경고만
+  const rule = rentRule(s, L);
+  if (rule && !pr.rooms.length) return { ok: false, rule: rule.k, msg: `"내가 찾아본 규칙에 어긋난다." ${rule.why} 첫 매물은 규칙 안에서 잡자.` };
   const qt = quote(s, L, { ...o, ondol: o.ondol && L.hid.ondolOk }); const total = qt.total;
   const lack = total - s.cash;
   if (lack > 0) { const lim = 6000 - (s.loans.find((l) => l.n === "사업자대출")?.amt || 0); if (lack > lim + creditRoom(s) * 0.5) return { ok: false, msg: `돈이 ${won(lack)} 모자랍니다(사업자대출 한도 ${won(Math.max(0, lim))})` }; addLoan(s, "사업자대출", Math.min(lack + 100, Math.max(0, lim)), 0.048); s.cash += Math.min(lack + 100, Math.max(0, lim)); }
@@ -236,14 +258,15 @@ export function contract(s, listingId, o) {
   const n = pr.rooms.length + 1;
   const ondolInstalled = !!(o.ondol && L.hid.ondolOk);
   const rm = { id: "R" + (++pr.seq), name: `${n}호점 ${D.DISTRICTS[L.dk].n}`, ...L, concept: o.concept, interior: o.interior ?? 1, ondol: ondolInstalled, price: Math.round(mkt(s, L.dk).price * D.CONCEPTS[o.concept].priceF * it.priceF * sizeP(L)),
-    status: "setup", buzz: 0, decor: { ...(L.pre || {}) }, self: o.self ? 3 : 0, selfQ: 0, openT: null, rating: 0, reviews: 0, complaints: 0, months: 0, ap: 0, promo: 0, invested: total, notice: null, last: null, hist: [] };
+    status: "setup", rv: 1, buzz: 0, decor: { ...(L.pre || {}) }, self: o.self ? 3 : 0, selfQ: 0, openT: null, rating: 0, reviews: 0, complaints: 0, months: 0, ap: 0, promo: 0, invested: total, notice: null, last: null, hist: [] };
   pr.rooms.push(rm);
   pr.listings = pr.listings.filter((x) => x.id !== listingId);
   if (o.ondol && !L.hid.ondolOk) rm.ondolFail = true;
   log(s, `${rm.name} 계약 (${D.CONCEPTS[o.concept].n} · ${it.n}${ondolInstalled ? " · 온돌" : ""}). 투자금 ${won(total)}${qt.sf < 1 ? ` · 규모의 경제 ×${qt.sf}` : ""}`, "work");
-  return { ok: true, msg: `${rm.name} 계약! ${o.self ? "셀프 공사 3번 필요" : "업체 공사 중, 다음 달 오픈"}`, room: rm };
+  if (rule) log(s, `${rm.name}: 내가 찾아본 규칙 밖 매물. ${rule.why}`, "work");
+  return { ok: true, msg: `${rm.name} 계약! ${o.self ? "셀프 공사 3번 필요" : "업체 공사 중, 다음 달 오픈"}${rule ? ` (규칙 밖 매물: ${rule.why})` : ""}`, room: rm, warn: rule ? rule.why : null };
 }
-export function setPrice(s, roomId, price) { const rm = s.pr.rooms.find((x) => x.id === roomId); if (rm) rm.price = clamp(Math.round(price), 5, 120); }
+export function setPrice(s, roomId, price) { const rm = s.pr.rooms.find((x) => x.id === roomId); if (rm) rm.price = clamp(Math.round(price), 5, PRICE_MAX); }
 export function setConcept(s, roomId, concept) { const rm = s.pr.rooms.find((x) => x.id === roomId); if (!rm || rm.concept === concept) return { ok: false }; const why = conceptOk(rm, concept, s); if (why) return { ok: false, msg: why }; const c = Math.round((300 * rm.size / 22 + (D.CONCEPTS[concept].kit || 0)) * SYN.pi(s)); s.cash -= c; addMoney(s, "exp", "컨셉 변경 공사", c); rm.concept = concept; rm.rating = Math.max(3.8, rm.rating - 0.1); return { ok: true, msg: `컨셉 변경 (${won(c)})` }; }
 export function buySystem(s, key, roomId) {
   const sys = s.pr.sys, def = D.SCALE.systems[key];
@@ -314,7 +337,7 @@ export function bundle(s) {
 export function storyListing(s, kind, near) {
   const r = R(s), dk = near?.dk && D.DISTRICTS[near.dk] ? near.dk : "univ";
   const L = makeListing(s, r, dk);
-  if (kind === "small") { L.size = r.int(8, 12); L.rent = rentFor(s, L, r.next()); L.dep = Math.round(L.rent * 10 / 100) * 100; L.key = Math.round(L.key * 0.4 / 10) * 10; L.walk = Math.min(L.walk, near?.walk || L.walk); L.tagN = `소형 ${(s.pr.rooms || []).length + 1}호점 후보`; }
+  if (kind === "small") { L.size = r.int(8, 12); L.cap = capOf(L.size); L.rent = rentFor(s, L, r.next()); L.dep = Math.round(L.rent * 10 / 100) * 100; L.key = Math.round(L.key * 0.4 / 10) * 10; L.walk = Math.min(L.walk, near?.walk || L.walk); L.tagN = `소형 ${(s.pr.rooms || []).length + 1}호점 후보`; }
   if (kind === "quiet") { L.hid.sound = "좋음"; L.hid.landlord = "환영"; L.seen.sound = L.seen.landlord = L.seen.meet = true; L.tagN = "옮길 자리(조용한 건물)"; }
   s.pr.listings.push(L);
   return L;
@@ -447,7 +470,7 @@ function settle(s, r, rm, ctx) {
   const winter = [12, 1, 2].includes(s.cal);
   const SEA = D.PR_SEASON[s.cal - 1];
   const sa = c.seas ?? 1, sw = 1 + (SEA.we - 1) * sa, sk = 1 + (SEA.wk - 1) * sa; // 교육장처럼 계절을 덜 타는 컨셉
-  let base = (d.we * (c.we ?? 1) * sw * 24 + d.wk * (c.wk ?? 1) * sk * 22 * BIG.fullWk(s)) / 46 * D.PR_K * (d.fit[rm.concept] ?? 0.8);
+  let base = (d.we * (c.we ?? 1) * sw * 24 + d.wk * (c.wk ?? 1) * sk * 22 * BIG.fullWk(s)) / 46 * PR_KOCC * (d.fit[rm.concept] ?? 0.8);
   base *= s.cal === 12 ? (c.dec ?? 1) : isPeak(s.cal) ? 1 : (c.off ?? 1);
   let m = 1;
   m *= PW.occMult(s, rm); // 11-23 침몰한 컨셉은 예약이 해마다 준다
@@ -487,14 +510,21 @@ function settle(s, r, rm, ctx) {
   if (DP) m *= DP.occ;
   if (s.pr.depo) m *= F.depo.occ;
   if (s.pr.idCheck && F.minor.conc.includes(rm.concept)) m *= F.minor.idOcc;
+  // 11-25 방 크기: 큰 방은 평달 예약이 덜 잡히고(대형 단체가 드문드문) 12월에 몰린다. 작은 방(20평까지)은 그대로
+  const Z = sizeMix(rm, s.cal);
+  m *= Z.occ;
   // 관리 행동력 충족도
   const need = needAp(s, rm); const q = need ? clamp(rm.ap / need, 0, 1) : 1;
   m *= D.PR_HARD.effort[0] + D.PR_HARD.effort[1] * q; // v4.27 노력 승부: 관리를 꽉 채우면 +, 돈만 넣고 손 놓으면 크게 −
   const occ = clamp(base * m * (1 + 0.07 * r.normal()), 0.03, isPeak(s.cal) ? 0.95 : D.PR_HARD.offCap); // v4.27 비수기는 아무리 잘해도 상한
   const bookings = Math.round(occ * D.PR_SLOTS);
-  const RM = RVW.reviewMonth("pr", s.pr, bookings, bookings * pEff, rm); // v4.28 후기 이벤트(페이백·할인)
-  const noshow = DP ? Math.round(bookings * DP.noshow) : 0, nsLoss = DP ? Math.round(noshow * pEff * (1 - DP.keep)) : 0; // 12월 노쇼·당일 취소
-  const rev = Math.round(bookings * pEff) - RM.disc - nsLoss;
+  // 11-25 예약 구성: 대형 단체는 방 가격(pEff)을 내고, 작은 모임은 그보다 싼값을 낸다. pAvg = 이번 달 한 건 평균 값
+  const bigN = Z.split ? clamp(Math.round(bookings * Z.big * (1 + 0.2 * r.normal())), 0, bookings) : bookings;
+  const pAvg = bookings ? (bigN * pEff + (bookings - bigN) * pEff * Z.smallF) / bookings : pEff;
+  const RM = RVW.reviewMonth("pr", s.pr, bookings, bookings * pAvg, rm); // v4.28 후기 이벤트(페이백·할인)
+  const noshow = DP ? Math.round(bookings * DP.noshow) : 0, nsLoss = DP ? Math.round(noshow * pAvg * (1 - DP.keep)) : 0; // 12월 노쇼·당일 취소
+  const rev = Math.round(bookings * pAvg) - RM.disc - nsLoss;
+  if (Z.split && s.cal === 12 && bigN) notes.push(`12월 대형 단체 ${bigN}건(송년회·크리스마스, 최대 ${Z.cap}명) · 작은 모임 ${bookings - bigN}건`);
   if (noshow) notes.push(`12월 노쇼·취소 ${noshow}건 (${DP.n}${nsLoss ? ` · 날린 매출 ${won(nsLoss)}` : " · 위약금으로 메움"})`);
   // 비용
   const nAll = ctx.nAll;
@@ -549,19 +579,53 @@ function settle(s, r, rm, ctx) {
   // v4.29 보증금 분쟁 · 미성년자 출입
   if (s.pr.depo && bookings >= 5 && !scenes.length && r.chance(F.depo.disputeP)) scenes.push(depoScene(s, rm));
   if (F.minor.conc.includes(rm.concept) && bookings >= 4 && !scenes.length && r.chance(([2, 3].includes(s.cal) ? F.minor.pSpring : F.minor.p) * (rm.dk === "univ" ? 1.5 : 1))) {
-    if (s.pr.idCheck) { const l = Math.round(pEff * 0.5); cost += l; notes.push(`입실 때 신분증 확인: 고등학생이 섞인 단체를 돌려보냈다(환불 ${won(l)})`); }
-    else scenes.push(minorScene(s, rm, pEff));
+    if (s.pr.idCheck) { const l = Math.round(pAvg * 0.5); cost += l; notes.push(`입실 때 신분증 확인: 고등학생이 섞인 단체를 돌려보냈다(환불 ${won(l)})`); }
+    else scenes.push(minorScene(s, rm, pAvg));
   }
   // 2년마다 월세 인상
   // 2년마다 재계약. 상가임대차보호법상 인상은 5%까지(11-21: 원래 1.03·1.08 × 임대료 상승기 1.12 × 물가, 상한 없음 → 월세가 매출보다 빨리 올라 말년 적자)
   if (rm.months > 0 && rm.months % 24 === 0) { const up = Math.min(D.PR_RENT_CAP, 1 + (rm.hid.landlord === "환영" ? D.PR_HARD.rentUpGood : D.PR_HARD.rentUp)); /* v4.27 재계약마다 5%(환영 3%) */ rm.rent = Math.round(rm.rent * up); notes.push(`재계약, 월세 ${won(rm.rent)}(+${Math.round((up - 1) * 100)}%, 법정 상한 5%)`); }
   if (isPeak(s.cal) && rev > 150 && !scenes.length && r.chance((s.cal === 12 ? 0.16 : 0.09) * (1 - (s.pr.know || 0) / 250) * (helpers(s, "pr_repair").length ? 0.6 : 1))) { const sc = crisis(s, r, rm, rev); if (sc) scenes.push(sc); }
   if (RVW.topOn(rm) && !rm.topOn) notes.push(`플랫폼 상위 노출! 후기 ${rm.reviews}개·별점 ${rm.rating.toFixed(2)} (예약 +${Math.round(D.PR_REVIEW.top.occ * 100)}%)`); else if (!RVW.topOn(rm) && rm.topOn) notes.push("상위 노출에서 밀려났다(후기 50개·별점 4.8)"); rm.topOn = RVW.topOn(rm);
-  return { occ, bookings, rev, cost, notes, scenes, need, q, ig, bl, util: Math.min(utilB, cost), pay: RM.pay, disc: RM.disc, newRev: RM.add };
+  return { occ, bookings, rev, cost, notes, scenes, need, q, ig, bl, util: Math.min(utilB, cost), pay: RM.pay, disc: RM.disc, newRev: RM.add, big: Z.split ? bigN : 0, split: Z.split, pAvg: Math.round(pAvg * 10) / 10 };
 }
-// 월세 = 평당 단가 × 평수 × 층 배율(1층 2배, 지하 0.65배) × 역 거리 × 물가
-export function rentFor(s, L, q = 0.5) { const d = D.DISTRICTS[L.dk]; const per = d.rate[0] + (d.rate[1] - d.rate[0]) * q; return Math.max(L.walk <= 5 && L.dk !== "local" ? Math.round(100 * SYN.pi(s)) : 0, Math.round(per * L.size * D.PR_FLOOR_RENT(L) * (L.toilet === "in" ? 1.05 : 1) * (L.walk <= 5 ? 1.1 : L.walk > 10 ? 0.85 : 1) * SYN.pi(s) / 5) * 5); } // v4.27 역 5분 안 서울 매물은 100만 아래가 없다
-export const sizeP = (L) => (L.size >= 40 ? 1 + (L.size - 30) / 60 : L.size < 18 ? 0.85 : 1); // 넓으면 비싸고 작으면 싸다
+// 11-25 월세 = 평당 값(상권 폭 × 층 × 역 거리 × 화장실, 5만~8만으로 자름) × 평수 × 물가. 32평까지는 160만을 안 넘고 15평부터는 80만 아래가 없다(defs PR_RENT)
+// 예전: 2층 기준 평당 10~19만 × 1층 2배 · 역 5분 안 서울 매물 최소 100만
+export function rentFor(s, L, q = 0.5) {
+  const d = D.DISTRICTS[L.dk], K = D.PR_RENT;
+  const per = clamp((d.rate[0] + (d.rate[1] - d.rate[0]) * q) * D.PR_FLOOR_RENT(L) * (L.toilet === "in" ? 1.03 : 1) * (L.walk <= 5 ? 1.06 : L.walk > 10 ? 0.92 : 1), Math.min(K.per[0], d.rate[0]), K.per[1]);
+  let rent = per * L.size;
+  if (L.size <= K.capSize) rent = Math.min(rent, K.cap);
+  if (L.size >= K.minSize) rent = Math.max(rent, K.min);
+  return Math.floor(rent * SYN.pi(s) / 5 + 1e-9) * 5;
+}
+// 받을 수 있는 인원(평수에서 센다): 15~20평 11~15명 · 30평 40명 · 50~60평 80명
+export const capOf = (size) => D.PR_SIZE.cap(size || 20);
+// 지금 '보통' 월세 기준: 평당 lo~hi만, 32평까지 월세 min~cap만. 물가와 임대료 급등기만큼 같이 오른다
+export function rentNorm(s) { const K = D.PR_RENT, f = SYN.pi(s) * (s.era?.rentup ? 1.2 : 1); return { lo: K.per[0] * f, hi: K.per[1] * f, min: K.min * f, cap: K.cap * f, capSize: K.capSize }; }
+// 내가 찾아본 규칙: 평당 8만 초과, 또는 32평 이하인데 월세 160만 초과면 어긋난다. 어긋나면 { k, per, why }, 맞으면 null
+export function rentRule(s, L) {
+  if (!L || !(L.size > 0)) return null;
+  const N = rentNorm(s), per = L.rent / L.size, f1 = (x) => Math.round(x * 10) / 10;
+  if (per > N.hi + 0.01) return { k: "per", per, why: `평당 ${f1(per)}만 원이다. 보통은 평당 ${f1(N.lo)}만~${f1(N.hi)}만 원.` };
+  if (L.size <= N.capSize && L.rent > N.cap + 0.01) return { k: "cap", per, why: `${L.size}평에 월세 ${won(L.rent)}이다. ${N.capSize}평까지는 보통 월세 ${won(Math.round(N.min))}~${won(Math.round(N.cap))}.` };
+  return null;
+}
+// 한 건 값 배율: 방을 꽉 채우는 대형 단체 기준(15명 방 = 1). 작은 방은 조금 싸다
+export const sizeP = (L) => D.PR_SIZE.pf(capOf(L.size));
+// 방 크기에 따른 예약 구성(11-25). 20평(15명)까지는 전부 같은 손님. 그보다 크면 '작은 모임'과 '대형 단체'로 나뉜다
+// b: 크기 0~1(15명 0 → 80명 1) · big: 예약 가운데 대형 단체 비율 · occ: 예약 건수 배율 · smallF: 작은 모임이 내는 값 ÷ 대형 단체 값
+export function sizeMix(rm, cal) {
+  const Z = D.PR_SIZE, cap = capOf(rm.size), b = clamp((cap - 15) / 65, 0, 1);
+  if (b <= 0) return { cap, b: 0, big: 1, occ: 1, smallF: 1, split: false };
+  const i = cal === 12 ? 2 : isPeak(cal) ? 1 : 0, c = D.CONCEPTS[rm.concept] || {};
+  const occ = c.dec || c.off ? 1 : 1 + (Z.occ[i] - 1) * b; // 초대형 컨셉은 자기 계절 배율(dec·off)이 이미 있다(겹쳐 곱하지 않는다)
+  return { cap, b, big: Math.min(0.95, Z.big[i] + (c.big || 0)), occ, smallF: Math.min(1, (1 + (Z.small - 1) * b) / Z.pf(cap)), split: true };
+}
+// 큰 방에 온 작은 모임 한 건 값(만원). 20평까지는 방 가격 그대로
+export const smallPrice = (s, rm) => rm.price * sizeMix(rm, s.cal).smallF;
+// 화면에 쓰는 방·매물 요약: 인원, 평당 월세, 규칙에 맞는지
+export function roomInfo(s, x) { const cap = capOf(x.size); return { cap, per: Math.round(x.rent / (x.size || 20) * 10) / 10, rule: rentRule(s, x), big: cap >= 40, split: cap > 15 }; }
 // 성수기 가격 배율: 12월은 고른 배율 그대로, 1·2·7·8월은 그 절반쯤
 export const isPeak = (cal) => [12, 1, 2, 7, 8].includes(cal);
 export function peakMult(s, cal) { const p = s.pr.peak || 1; return cal === 12 ? p : isPeak(cal) ? 1 + (p - 1) * 0.5 : 1; }
@@ -677,7 +741,7 @@ export function todos(s) {
   if (pend.length) t.push({ lv: 0, text: `확인 안 한 매물 정보 ${pend.length}곳`, go: "pr" });
   // 비수기(3~6월, 9~11월) 앞두고 현금 점검
   if ([2, 8].includes(s.cal) && s.pr.rooms.some((x) => x.status === "open")) { const need = reserveNeed(s); const low = s.cash < need; t.push({ lv: low ? 2 : 0, text: `${s.cal === 2 ? "3~6월" : "9~11월"} 비수기가 와요: 월세 ${RESERVE_MONTHS}달 치+생활비 2달 치 ${won(need)} ${low ? `필요(현금 ${won(Math.max(0, s.cash))})` : "준비됨"}`, go: "pr" }); }
-  if ([11, 6].includes(s.cal) && s.pr.rooms.length) t.push({ lv: (s.pr.peak || 1) === 1 ? 2 : 0, text: s.cal === 11 ? `다음 달 12월 극성수기! 성수기 가격 ${(s.pr.peak || 1) === 1 ? "아직 그대로" : `+${Math.round((s.pr.peak - 1) * 100)}%`}` : "7·8월 성수기가 온다: 성수기 가격·에어컨 점검", go: "pr" });
+  if ([11, 6].includes(s.cal) && s.pr.rooms.length) t.push({ lv: (s.pr.peak || 1) === 1 ? 2 : 0, text: s.cal === 11 ? `다음 달 12월 극성수기! 성수기 가격 ${(s.pr.peak || 1) === 1 ? "아직 그대로" : `+${Math.round((s.pr.peak - 1) * 100)}%`}${s.pr.rooms.some((x) => capOf(x.size) >= 40) ? " · 큰 방은 대형 단체가 몰려요" : ""}` : "7·8월 성수기가 온다: 성수기 가격·에어컨 점검", go: "pr" });
   return t;
 }
 
@@ -697,8 +761,10 @@ export function setIdCheck(s, v) { s.pr.idCheck = !!v; return { ok: true, msg: v
 const pcF = (x) => `${x >= 1 ? "+" : "−"}${Math.abs(Math.round((x - 1) * 100))}%`;
 function decScene(s) {
   const P = PR_F30.dec.pol, cur = s.pr.decPol || "half";
+  const bigRm = s.pr.rooms.filter((x) => x.status === "open" && capOf(x.size) >= 40).sort((a, b) => b.size - a.size)[0]; // 11-25 큰 방: 12월에 대형 단체가 몰린다
+  const bigLine = bigRm ? ` ${bigRm.name}(${bigRm.size}평·최대 ${capOf(bigRm.size)}명)에는 송년회 단체 문의가 줄을 섰다. 평소엔 드문드문하던 대형 단체가 12월엔 예약 열 건에 ${Math.round(sizeMix(bigRm, 12).big * 10)}건꼴이다. 대형 단체는 한 건이 커서 노쇼 한 번이 더 아프다.` : "";
   return { kind: "event", tag: "파티룸", title: "12월 예약 오픈 전쟁", onChoose: "pr_dec",
-    text: `9월 1일 0시, 12월 예약 문을 연다. 송년회·크리스마스 단체들이 새로고침을 누르고 있다. 연말 한 달이 1년 장사를 좌우한다. 취소 규정을 정해야 한다. (지금: ${P[cur].n})`,
+    text: `9월 1일 0시, 12월 예약 문을 연다. 송년회·크리스마스 단체들이 새로고침을 누르고 있다. 연말 한 달이 1년 장사를 좌우한다.${bigLine} 취소 규정을 정해야 한다. (지금: ${P[cur].n})`,
     choices: [
       { t: `7일 전까지 취소하면 50% 환불 (무난)`, eff: {}, text: "공지를 올렸다. 3분 만에 크리스마스이브가 찼다." },
       { t: `전액 환불 가능 (예약 ${pcF(P.full.occ)}, 노쇼 많음)`, eff: {}, text: "\"부담 없이 잡으세요!\" 예약이 쏟아졌다. 몇 팀이나 진짜 올까." },

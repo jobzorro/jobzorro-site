@@ -1021,3 +1021,27 @@ select.btn{min-height:40px}
 .hearts.a6dm,.pp-h.a6dm{color:var(--a6dm);letter-spacing:0;font-size:10px;white-space:nowrap}
 .hearts.a6dm i,.pp-h.a6dm em{font-style:normal;font-size:9px;font-weight:700;margin-left:3px;opacity:.9}
 .pp-h.a6dm{font-size:11px}
+
+/* 알림 종과 투잡 조사 노트(11-25) */
+.a6tb{display:flex;align-items:center;gap:6px}
+.a6tb .assets{flex:1;min-width:0}
+.a6bell{flex:none;position:relative;width:40px;height:40px;border-radius:50%;border:1px solid rgba(245,192,78,.5);background:radial-gradient(circle at 50% 35%,#2a2410,#14110a);display:grid;place-items:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.a6bell .a6ic{width:28px;height:28px;display:block}
+.a6bell svg{width:20px;height:20px;color:var(--gold)}
+.a6bell i{position:absolute;right:-4px;top:-4px;min-width:17px;height:17px;border-radius:9px;background:#ff5a4d;color:#fff;font-size:10px;font-weight:800;font-style:normal;display:grid;place-items:center;padding:0 4px;border:1.5px solid #0e1020}
+.a6tip-lead{margin:10px 0 8px;padding:8px 12px;border-left:3px solid var(--gold);background:rgba(245,192,78,.08);border-radius:0 8px 8px 0;font-weight:700;line-height:1.5}
+.a6tip{margin:0;padding:0;list-style:none;counter-reset:a6tip;display:flex;flex-direction:column;gap:6px}
+.a6tip li{counter-increment:a6tip;display:grid;grid-template-columns:26px 1fr;gap:2px 8px;align-items:start;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2,#1f2342)}
+.a6tip li::before{content:counter(a6tip);grid-row:1/3;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#221a05;font-weight:800;font-size:12px;display:grid;place-items:center;margin-top:1px}
+.a6tip li b{color:var(--gold);font-size:13px}
+.a6tip li span{grid-column:2;font-size:13.5px;line-height:1.5}
+.a6tip-foot{margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.a6noti-d{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:6px;background:var(--panel2,#1f2342)}
+.a6noti-d summary{display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;list-style:none}
+.a6noti-d summary::-webkit-details-marker{display:none}
+.a6noti-d summary span{font-size:12px;color:var(--muted)}
+.a6noti-l{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.a6noti-l>div{display:grid;grid-template-columns:64px 1fr;gap:8px;padding:6px 8px;border-radius:8px;font-size:13px;line-height:1.45}
+.a6noti-l>div.new{background:rgba(255,90,77,.1);border:1px solid rgba(255,90,77,.35)}
+.a6noti-l>div span{color:var(--muted);font-size:11.5px;white-space:nowrap;padding-top:1px}
+.a6noti-l>div p{margin:0}
