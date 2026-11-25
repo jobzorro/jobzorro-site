@@ -1,0 +1,434 @@
+{
+  "title": "CAREER BRIEFING",
+  "date": "2026-11-26",
+  "generated_at": "2026-11-26 07:55",
+  "stats": {
+    "collected": 1729,
+    "deduped": 1653,
+    "recent": 931,
+    "fresh": 788,
+    "relevant": 107,
+    "published": 20,
+    "feeds": 30,
+    "dead_feeds": []
+  },
+  "sections": [
+    {
+      "key": "hiring",
+      "name": "채용 시즌·공고",
+      "en": "HIRING NOW",
+      "desc": "대기업·계열사·중견·외국계·공기업이 지금 사람을 뽑는 공고와 일정",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "쿠팡CFS, 27일 용인서 중장년 채용박람회…100여명 모집",
+          "lead": "(서울=연합뉴스) 조민정 기자 = 쿠팡풀필먼트서비스(CFS)는 오는 27일 경기도 용인고용복지플러스센터에서 중장년 채용박람회를 열고 현장 물류 ...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261125102400030",
+          "source": "연합뉴스",
+          "published": "2026-11-25 14:02",
+          "score": 17,
+          "keywords": [
+            "명 모집",
+            "채용",
+            "쿠팡",
+            "모집"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "연쇄 해킹에… 몸값 뛰는 ‘화이트해커’",
+          "lead": "금융권 연쇄 해킹 이후 정보보호 전문인력 확보 경쟁이 치열해졌다.",
+          "summary": "금융보안원 화이트해커에게 경력직 채용 제안이 늘었고, 10년 이상 경력의 팀장급 이직도 이어졌다. 은행과 증권, 보험사도 모의 해킹과 취약점 진단 인력을 찾고 있다.",
+          "url": "https://www.seoul.co.kr/news/newsView.php?id=20261126031006",
+          "source": "서울신문",
+          "published": "2026-11-26 00:31",
+          "score": 16,
+          "keywords": [],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "쿠팡풀필먼트서비스, 만 62세 미만까지 채용 확대...입고·출고 현장직 모집",
+          "lead": "[잡포스트] 김경은 기자 = 쿠팡풀필먼트서비스(CFS)가 시니어까지 채용 대상을 넓히고 중장년 현장물류사원 100여 명을 모집한다.",
+          "summary": "쿠팡풀필먼트서비스(CFS)는",
+          "url": "https://www.job-post.co.kr/news/articleViewAmp.html?idxno=241001",
+          "source": "잡포스트",
+          "published": "2026-11-25 17:58",
+          "score": 13,
+          "keywords": [
+            "채용 확대",
+            "채용",
+            "쿠팡",
+            "모집"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "moves",
+      "name": "이직·연봉·HR",
+      "en": "MOVES & PAY",
+      "desc": "경력직 수요, 연봉·성과급, 희망퇴직, 평가·승진, 면접과 채용 프로세스의 변화",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "\"5년 더 버티자\" 고연봉 직장인 돌변하자…기업 '초비상'",
+          "lead": "\"5년 더 버티자\" 고연봉 직장인 돌변하자…기업 '초비상', 희망퇴직 급감…기업 구조조정 비상 총소득 측면서 잔류하는 게 유리 직무 재배치마저 노동법에 발목",
+          "summary": "",
+          "url": "https://www.hankyung.com/article/2026112502941",
+          "source": "한국경제",
+          "published": "2026-11-25 17:37",
+          "score": 32,
+          "keywords": [
+            "연봉",
+            "직장인",
+            "직장"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "[단독]AI 일자리 쇼크, 고연봉-고복지 은행권도 덮쳐… 희망퇴직 20% 늘듯",
+          "lead": "은행 지점장으로 일하던 50대 권인수(가명) 씨는 지난해 희망퇴직을 하며 인공지능(AI)의 일자리 대체 속도를 체감했다.",
+          "summary": "기업 대출 심사 과정에서 은행 내부망에 기업의 재무제표를 정리하고 현장 사진 올리는 일을 AI가 대신했기 때문이다. 신선한 충격을 받은 그는 퇴직…",
+          "url": "https://www.donga.com/news/Economy/article/all/20261126/135091976/2",
+          "source": "동아일보",
+          "published": "2026-11-26 04:30",
+          "score": 29,
+          "keywords": [
+            "연봉",
+            "희망퇴직"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "“팀장님~ AI가 한 일까지 제가 봐야 하나요?”…직장인 덮친 ‘AI 피로’",
+          "lead": "일 줄여준다더니 AI 뒤치다꺼리에 골머리 가트너 “기업 성과에 AI 피로가 최대 걸림돌”",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/it/12217871",
+          "source": "매일경제",
+          "published": "2026-11-25 10:47",
+          "score": 24,
+          "keywords": [
+            "직장인",
+            "직장"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 4,
+          "title": "잡코리아, 가을 이직시장 분석…7년 차 이상 경력직 지원 비중 확대",
+          "lead": "올가을 이직 시즌에는 경력 7년 차 이상 직장인들의 이직 준비 움직임이 두드러진 것으로 나타났다.",
+          "summary": "AI·데이터 기반 HR테크 플랫폼 잡코리아는 올해 9~10월 자사 회원의 이력서 업데이트 및 입사지원 데이터를 분석한 결과를 25일 발표했다.분석 결과 경력직 회원의 이력서 업데이트 건수는",
+          "url": "https://www.beyondpost.co.kr/view.php?ud=20261125084119596146a9e4dd7f_30",
+          "source": "비욘드포스트",
+          "published": "2026-11-25 08:42",
+          "score": 22,
+          "keywords": [
+            "이직",
+            "경력직",
+            "경력",
+            "잡코리아"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 5,
+          "title": "9조 '샤힌' 준공…석화 구조조정 속 엇갈린 셈법",
+          "lead": "[앵커멘트] 에쓰오일이 9조 원 넘게 투자한 샤힌 프로젝트가 준공됐습니다.",
+          "summary": "세계 최대 규모의 에틸렌 생산설비를 갖추고 석유화학 사업 확대에 나서는 건데요. 다만 국내 석화업계가 생산설비 감축에 나선 상황에서 에쓰오일의 대규모 증설을 바라보는 업계의 시선은 엇갈립니다.…",
+          "url": "https://news.mtn.co.kr/video/2026112516403024476",
+          "source": "MTN 머니투데이방송",
+          "published": "2026-11-25 17:50",
+          "score": 20,
+          "keywords": [
+            "구조조정"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "에쓰오일 9조원 샤힌프로젝트 준공…석화업계 구조조정 엇박자 우려 어쩌나",
+              "source": "경향신문",
+              "url": "https://www.khan.co.kr/article/202611251632001/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news"
+            },
+            {
+              "title": "샤힌 효과 기대 속 석화업계 공급과잉 우려…구조조정 부담도",
+              "source": "매일경제 마켓",
+              "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE4ySW9fOHk3R1RBRUY1ODJpQlA4TVpiX1NBRDYzZWpBUjZzNm5Nb2kyaDNELS1RQUYyRGpxTkZyY2hRa3ZjemU4bFhISVh1Ry01NVE?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 6,
+          "title": "국내 위스키 시장 1위 '골든블루'… 2년 만에 또다시 '희망퇴직'",
+          "lead": "",
+          "summary": "",
+          "url": "https://www.asiae.co.kr/article/2026112515462569081",
+          "source": "아시아경제",
+          "published": "2026-11-25 16:25",
+          "score": 20,
+          "keywords": [
+            "희망퇴직"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "골든블루, 2년 만에 또 희망퇴직 실시…위스키 시장 침체 여파",
+              "source": "뉴스1",
+              "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTFAzaHBISTdfLUtaMmpwVWw1cmZCMW92dDVwUGU4M0xQVWl0UXZUUy1CSl9oazNiNVVveERMVWh5WFZzb1NiQUxTc2t6VW1HNGhzRnlJMi04VE1VSlo3d1Nr?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 7,
+          "title": "자영업자·가계 신용대출 부실채권비율 12년 만에 최고···금감원 “신용위험 확대 가능성 대비해야”",
+          "lead": "올해 3분기 국내 은행의 부실채권비율이 소폭 낮아졌으나 자영업자와 가계 신용대출의 건전성은 뒷걸음질한 것으로 나타났다.",
+          "summary": "26일 금융감독원이 발표한 '2026년 9월 말 국내은행의 부실채권 현황'을 보면, 9월 말 개인사업자 대출의 부실채권비율은 0.72%로 3개월 전보다 0.05%포인트, 1년 전보다 0.11%포인트 높아졌다. 가계대출 중 주택담보대출...",
+          "url": "https://www.khan.co.kr/article/202611260736001/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news",
+          "source": "경향신문",
+          "published": "2026-11-26 07:36",
+          "score": 19,
+          "keywords": [
+            "감원"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "company",
+      "name": "기업·산업 레이더",
+      "en": "COMPANY WATCH",
+      "desc": "실적·적자·사업재편·증설·폐점 — 지원해도 되는 회사인지 가르는 신호",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "“수익성 유지·매출 회복 추진”…한신공영, 3분기 누적 영업이익 649억원, 전년比 15%↑",
+          "lead": "3분기 누적 영업익 649억원 영업이익률 8.5% 상승 부채비율 153.6% 하락 도시정비·공공공사로 매출 회복 추진",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/business/12218277",
+          "source": "매일경제",
+          "published": "2026-11-25 16:42",
+          "score": 36,
+          "keywords": [
+            "영업이익",
+            "매출"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "한신공영, 3분기 누적 영업이익 649억원…작년 대비 15%↑",
+              "source": "연합뉴스",
+              "url": "https://www.yna.co.kr/view/AKR20261125088200003"
+            }
+          ]
+        },
+        {
+          "rank": 2,
+          "title": "현대모비스, 독자 개발 부품으로 북미·유럽서 1조원 수주…올해 수주실적, 목표치 123% 초과 전망",
+          "lead": "현대모비스가 독자 개발한 차세대 부품으로 글로벌 고객사로부터 총 1조원 규모의 수주를 달성했다.",
+          "summary": "현대모비스 측은 \"고객사 생산 물량에 따라 유동적이지만, 공급 규모가 최소 수조원이 될 것으로 예상한다\"고 말했다. 현대모비스는 올해 글로벌 고객사들을 대상으로 한 수주실적이 145억달러에 달할 것으로 바라보고 있다.",
+          "url": "https://www.khan.co.kr/article/202611251100011/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news",
+          "source": "경향신문",
+          "published": "2026-11-25 11:00",
+          "score": 32,
+          "keywords": [
+            "실적",
+            "수주"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "현대모비스, 유럽·북미서 1조원대 수주…올해 해외 수주 20조원 전망",
+              "source": "서울신문",
+              "url": "https://www.seoul.co.kr/news/newsView.php?id=20261125500317"
+            },
+            {
+              "title": "현대모비스, 유럽·북미서 1조 수주",
+              "source": "매일경제",
+              "url": "https://www.mk.co.kr/news/business/12218396"
+            },
+            {
+              "title": "현대모비스, 유럽·북미서 1조원 수주... 올해 해외 수주 20조원 돌파 전망",
+              "source": "매일경제",
+              "url": "https://www.mk.co.kr/news/business/12218239"
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "다올증권, 경영권 매각 추진…회사측은 \"구체적 결정사항 없어\"",
+          "lead": "(서울=연합뉴스) 정회인 곽윤아 기자 = 인수·합병(M&A) 시장에서 꾸준히 잠재 매물로 거론돼 온 다올투자증권[030210]이 경영권 ...",
+          "summary": "",
+          "url": "https://www.yna.co.kr/view/AKR20261125151500008",
+          "source": "연합뉴스",
+          "published": "2026-11-25 17:08",
+          "score": 26,
+          "keywords": [
+            "매각",
+            "증권"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 4,
+          "title": "3분기 중견기업 수출 또 최고치 경신...반도체·바이오가 실적 견인",
+          "lead": "중견기업, 분기별 최고 수출액 경신 반도체 분기 최초 90억 달러 돌파 바이오헬스·석유화학 등 큰 폭 증가",
+          "summary": "",
+          "url": "https://www.mk.co.kr/news/economy/12218110",
+          "source": "매일경제",
+          "published": "2026-11-25 14:57",
+          "score": 26,
+          "keywords": [
+            "실적",
+            "반도체",
+            "바이오",
+            "중견기업"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "macro",
+      "name": "고용지표·정책",
+      "en": "MACRO",
+      "desc": "통계청 고용동향, 청년고용, 최저임금·실업급여, 노동법 — 시장 전체의 온도",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "취업해도 다시 '쉬었음'…與 토론회서 \"청년 일자리 질 높여야\"",
+          "lead": "어렵게 취업에 성공한 청년들이 열악한 근로조건 탓에 다시 노동시장을 이탈하는 악순환을 끊기 위해 일자리의 질을 높여야 한다는 목소리가 나왔다.",
+          "summary": "전문가들은 화이트칼라(사무직) 쏠림에 따른 직종 간 미스매치를 해소하는 한편, 기간제 근로자 보호와 고용 형태에 관계없이 일하는 사람의 기본적인 권리를 보장하는 제도 개선을 주문했다.",
+          "url": "https://www.mt.co.kr/index.php/politics/2026/11/25/2026112515152221039",
+          "source": "머니투데이",
+          "published": "2026-11-25 18:31",
+          "score": 35,
+          "keywords": [
+            "쉬었음",
+            "청년 일자리",
+            "일자리",
+            "청년"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "동아대, 재학생 1042명 정부 취업지원 연결… 청년고용정책 성과",
+          "lead": "동아대학교가 대학 내 진로·취업 지원 조직과 학과 교수진의 협력을 바탕으로 재학생들의 정부 취업지원제도 참.",
+          "summary": "",
+          "url": "https://www.asiae.co.kr/article/2026112515540123676",
+          "source": "아시아경제",
+          "published": "2026-11-25 16:19",
+          "score": 32,
+          "keywords": [
+            "청년고용",
+            "고용",
+            "정부",
+            "정책"
+          ],
+          "image": null,
+          "related": [
+            {
+              "title": "동아대, ‘찾아가는 청년고용정책 설명회’로 재학생 1,042명 정부 취업 지원 연계",
+              "source": "국제신문",
+              "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxQbXhHX3BiTzVuenJvVkZUd2hSaGNXTERvSHY3TEZZcDIzZWVkd2RKa2J1am9LSG5OaVFlTjZrdWs3SEg1enNJclRLMDJGb3ptSWlCSDMtWFVveXdVOGJnM3pJUm5vSGh6dm81d1ZzMmZlVGhpUC10REx5MHNkQzNZcHVCVTgySy1UeTNSOXRB?oc=5"
+            },
+            {
+              "title": "동아대 ‘청년고용정책 설명회’로 재학생 1천여명 취업 지원 연계",
+              "source": "BBS 불교방송",
+              "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE1peHZ0SHRLMzFDNW9rMVNFM0RDdWpxM0c3ZGFMNUc4a2dyVG5KQzRtSmpVUFZuLVFNQjN6bHp5OFlYYy1lWVVtWHJtZGRwQVNJeUhaRlNkTW5sMzkzaVBzY1ZQd1NfQlB1MHB3?oc=5"
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "title": "소상공인연합회 “고용노동부엔 노동만 있나…노동법 개정하면 김영훈 장관 퇴진 운동”",
+          "lead": "[헤럴드경제=홍석희 기자] 소상공인연합회가 정부의 노동관계법 개정 추진에 반발해 김영훈 고용노동부 장관 퇴진 운동 가능성을 공식 거론했다.",
+          "summary": "지난 17일 기자회견을 열",
+          "url": "https://biz.heraldcorp.com/article/10949089",
+          "source": "헤럴드경제",
+          "published": "2026-11-25 14:44",
+          "score": 29,
+          "keywords": [
+            "고용노동부",
+            "노동법",
+            "고용"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    },
+    {
+      "key": "future",
+      "name": "커리어의 변화",
+      "en": "CAREER SHIFT",
+      "desc": "AI가 바꾸는 직무, 40대 이후의 생존, 중장년 재이직, N잡과 멀티커리어",
+      "articles": [
+        {
+          "rank": 1,
+          "title": "AI 시대 대비, KT-LG전자 데이터 업로드 용량 늘리는 6G 기술 검증",
+          "lead": "인공지능 시대에 대비해 KT가 LG전자와 함께 데이터 업로드 용량을 5G보다",
+          "summary": "최대 4.9배 늘리는 6G 핵심 기술을 검증했다고 25일 밝혔다. 이 기술을 적용하면 다운로드와 업로드 주파수를 구분해 주변 기지국의 간섭 영향을 줄이며 기존에는 다운로드만 하던 시간에도 업로드를 할 수 있다. SSFD는 다운로드에 사용 중인 주파수에서 업로드 데이터를 동시에...",
+          "url": "https://www.khan.co.kr/article/202611251022011/?utm_source=khan_rss&utm_medium=rss&utm_campaign=economy_news",
+          "source": "경향신문",
+          "published": "2026-11-25 10:22",
+          "score": 21,
+          "keywords": [
+            "AI 시대",
+            "AI",
+            "데이터"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 2,
+          "title": "AI시대 회계사 양성제도 재설계해야 [MT시평/김범준]",
+          "lead": "최근 세무사 시험 수석합격자가 초소형 카메라와 생성형 인공지능(AI)을 이용한 부정행위를 인정했다.",
+          "summary": "공인회계사는 거래의 실질을 파악하고, 감사증거를 수집하고 평가하여 감사의견을 표명하는 회계감사를 담당한다.",
+          "url": "https://www.mt.co.kr/opinion/2026/11/26/2026112308333762527",
+          "source": "머니투데이",
+          "published": "2026-11-26 02:00",
+          "score": 19,
+          "keywords": [
+            "AI"
+          ],
+          "image": null,
+          "related": []
+        },
+        {
+          "rank": 3,
+          "title": "과기정통부, 우편물류 현장서 피지컬 AI 실증...신규 사업 2건에 660억원",
+          "lead": "과학기술정보통신부가 2027년 피지컬 AI 상용화를 지원하기 위한 신규 사업에 660억원을 투입한다.",
+          "summary": "우정사업본부 물류 현장 작업 중 자동화가 어려웠던 분야에 피지컬 AI 기술을 적용한다. 기업들이 로봇의 행동 데이터를 생산하고 AI 모델을 학습시킬 수 있는 트레이닝 센터도 만든다.강효진 정보통신산업진흥원(NIPA) 수석은 24일 서울 강남구 삼정호텔에서 열린 '2026 K-AX 데이' 인사이트 세션에 참여해 과학기술정보통신부가 2027년 중점 추진하는 피지컬 AI 핵심 사업 2건을 소개했다. 이날 행사는 국내 AI 산업의 경쟁력",
+          "url": "https://www.techm.kr/news/articleView.html?idxno=157759",
+          "source": "테크M",
+          "published": "2026-11-25 00:57",
+          "score": 19,
+          "keywords": [
+            "AI"
+          ],
+          "image": null,
+          "related": []
+        }
+      ]
+    }
+  ]
+}
