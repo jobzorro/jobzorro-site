@@ -211,25 +211,32 @@ export function draw(root, c) {
   on("[data-ends]", () => endsWin(c));
   on("[data-tour]", () => tourWin(c, mode === "first" ? () => newLife() : null));
   on("[data-sload]", (b) => c.act.load(+b.dataset.sload));
-  on("[data-others]", () => slotsWin(c, last));
+  on("[data-others]", () => slotsWin(c, last, (slot) => begin(slot)));
   on("[data-ios]", () => c.toast([], "아이폰: 공유 버튼 → '홈 화면에 추가'로 앱처럼 쓸 수 있어요"));
   on("[data-install]", async (b) => { if (await c.app.install()) c.toast([], "설치했어요! 홈 화면에서 열어 보세요"); b.hidden = true; });
   // 새 인생: 빈 칸이 없으면 덮어쓸 칸을 먼저 고른다(새 인생이 실제로 시작될 때 덮어쓴다) → 끝낸 판이 있으면 선물 고르기부터, 처음이면 바로 시작/직접 만들기
   const begin = (slot) => (hasRuns ? c.act.wizard(slot) : startWin(c, slot));
   const newLife = () => empty ? begin(empty.slot) : c.openWin(`<h2>칸이 다 찼어요 <button class="x" data-close>✕</button></h2><div class="small muted">새 인생을 넣을 칸을 골라 주세요. 새 인생이 시작되면 그 칸의 인생은 사라지고, 되돌릴 수 없어요.</div><div class="a6t-sl">${slots.map((sl) => `<div><button class="a6t-go" data-a6over="${sl.slot}"><b>${sl.slot}번 칸 · ${esc(sl.summary?.name || "")}</b><span>${sl.summary?.end ? "끝난 인생 · " : ""}${sl.summary?.age ?? "?"}세 · 순자산 ${won(sl.summary?.nw || 0)}</span></button></div>`).join("")}</div>`,
-    (w) => w.querySelectorAll("[data-a6over]").forEach((b) => (b.onclick = () => { c.closeWin(); begin(+b.dataset.a6over); })));
+    (w) => w.querySelectorAll("[data-a6over]").forEach((b) => (b.onclick = () => { c.closeWin(); const sl = slots.find((x) => +x.slot === +b.dataset.a6over); askTwice(c, sl, "새 인생을 시작하면 이 칸의 인생 위에 덮어써요.", () => begin(sl.slot)); })));
   on("[data-new]", () => newLife());
 }
 
 // 저장 칸 목록: 불러오기 + 지우기(시작 화면에서는 지우기를 밖에 두지 않는다)
-function slotsWin(c, last) {
-  const { esc, won } = c, saved = c.slots.filter((x) => !x.empty);
+// 지우기 전에 두 번 묻는다(대표 요청 11-25): 칸 지우기와, 꽉 찬 칸에 새 인생을 덮어쓸 때
+function askTwice(c, sl, what, yes) {
+  const { esc, won } = c, who = `${sl.slot}번 칸${sl.summary?.name ? " · " + esc(sl.summary.name) : ""}`, info = sl.summary ? `${sl.summary.age ?? "?"}세 · 순자산 ${won(sl.summary.nw || 0)}` : "";
+  const step = (n) => c.openWin(`<h2>${n === 1 ? `${sl.slot}번 칸을 지울까요?` : "정말 지울까요?"} <button class="x" data-close>✕</button></h2><div class="small muted">${n === 1 ? `${what ? what + " " : ""}지운 인생은 되돌릴 수 없어요.` : `마지막 확인이에요. <b>${who}</b>${info ? ` (${info})` : ""}의 인생이 완전히 사라져요.`}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>${n === 1 ? "지우기" : "네, 정말 지워요"}</button></div>`,
+    (w) => (w.querySelector("[data-yes]").onclick = () => { c.closeWin(); if (n === 1) step(2); else yes(); }));
+  step(1);
+}
+function slotsWin(c, last, begin) {
+  const { esc, won } = c, saved = c.slots.filter((x) => !x.empty), free = begin ? c.slots.filter((x) => x.empty) : []; // 11-25 빈 칸도 보여 준다(QA 모드·저장 칸 추가로 칸이 늘었을 때)
   c.openWin(`<h2>저장한 인생 <span class="tag gold">${saved.length}/${c.slots.length}칸</span> <button class="x" data-close>✕</button></h2><div class="small muted">누르면 그 인생을 이어서 해요. 기본 1칸이고, 저장 칸 추가로 3칸까지 늘릴 수 있어요.</div>
-    <div class="a6t-sl">${saved.map((sl) => `<div class="${sl === last ? "a6t-cur" : ""}"><button class="a6t-go" data-a6go="${sl.slot}"><b>${sl.slot}번 칸 · ${esc(sl.summary?.name || "")}${sl === last ? ' <span class="tag gold">마지막에 하던 인생</span>' : ""}</b><span>${sl.summary?.end ? "끝난 인생 · " : ""}${sl.summary?.age ?? "?"}세 · ${esc(sl.summary?.ym || "")} · 순자산 ${won(sl.summary?.nw || 0)}</span><span class="tiny muted">${esc(sl.summary?.job || "")}${sl.summary?.side ? " · 투잡 " + esc(sl.summary.side) : ""}</span></button><button class="a6t-del" data-a6del="${sl.slot}">지우기</button></div>`).join("")}</div>`, (w) => {
+    <div class="a6t-sl">${saved.map((sl) => `<div class="${sl === last ? "a6t-cur" : ""}"><button class="a6t-go" data-a6go="${sl.slot}"><b>${sl.slot}번 칸 · ${esc(sl.summary?.name || "")}${sl === last ? ' <span class="tag gold">마지막에 하던 인생</span>' : ""}</b><span>${sl.summary?.end ? "끝난 인생 · " : ""}${sl.summary?.age ?? "?"}세 · ${esc(sl.summary?.ym || "")} · 순자산 ${won(sl.summary?.nw || 0)}</span><span class="tiny muted">${esc(sl.summary?.job || "")}${sl.summary?.side ? " · 투잡 " + esc(sl.summary.side) : ""}</span></button><button class="a6t-del" data-a6del="${sl.slot}">지우기</button></div>`).join("")}${free.map((sl) => `<div><button class="a6t-go" data-a6new="${sl.slot}"><b>${sl.slot}번 칸 · 비어 있음</b><span>여기서 새 인생을 시작해요</span></button></div>`).join("")}</div>`, (w) => {
     w.querySelectorAll("[data-a6go]").forEach((b) => (b.onclick = () => { c.closeWin(); c.act.load(+b.dataset.a6go); }));
-    w.querySelectorAll("[data-a6del]").forEach((b) => (b.onclick = () => { const n = +b.dataset.a6del;
-      c.openWin(`<h2>${n}번 칸을 지울까요? <button class="x" data-close>✕</button></h2><div class="small muted">지운 인생은 되돌릴 수 없어요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>지우기</button></div>`,
-        (w2) => (w2.querySelector("[data-yes]").onclick = async () => { c.closeWin(); await c.act.remove(n); })); }));
+    w.querySelectorAll("[data-a6new]").forEach((b) => (b.onclick = () => { c.closeWin(); begin(+b.dataset.a6new); }));
+    w.querySelectorAll("[data-a6del]").forEach((b) => (b.onclick = () => { const n = +b.dataset.a6del, sl = c.slots.find((x) => +x.slot === n);
+      askTwice(c, sl, "", async () => { await c.act.remove(n); }); }));
   });
 }
 

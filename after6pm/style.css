@@ -1045,3 +1045,6 @@ select.btn{min-height:40px}
 .a6noti-l>div.new{background:rgba(255,90,77,.1);border:1px solid rgba(255,90,77,.35)}
 .a6noti-l>div span{color:var(--muted);font-size:11.5px;white-space:nowrap;padding-top:1px}
 .a6noti-l>div p{margin:0}
+/* 11-25 동료·동성 표시(◆◇): 장소에 선 사람의 꼬리표와 지도 얼굴 테도 하늘색 */
+.pfig .say.h.a6dm{color:var(--a6dm);letter-spacing:0;font-size:10px}
+.a6mp-pin .fc img.lv.a6dmf{border-color:var(--a6dm)}

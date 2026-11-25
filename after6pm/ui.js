@@ -700,7 +700,7 @@ function cityMap() {
   const P = MAPD.pins || {}, file = MAPD.files?.[mapSeason()] || MAPD.files?.fall;
   const town = D.REGIONS.find((r) => r.id === "town"), nt = D.REGIONS.find((r) => r.id === "newtown"), ntLock = nt?.unlock && !nt.unlock(S);
   const facesAt = (ids) => ids.flatMap((sid) => S.spot[sid] || []);
-  const face = (id) => (S.rel[id] ? img(faceSrc(id, exprFor(id)), (S.rel[id].aff || 0) >= 70 ? "face lv" : "face") : `<u>?</u>`); // 11-25 호감 70 이상은 분홍 테
+  const face = (id) => (S.rel[id] ? img(faceSrc(id, exprFor(id)), (S.rel[id].aff || 0) >= 70 ? (markDia(id) ? "face lv a6dmf" : "face lv") : "face") : `<u>?</u>`); // 11-25 호감 70 이상은 분홍 테
   const pin = (key, label, attr, spotIds, bangs, lock, cls = "") => { const xy = Array.isArray(key) ? key : P[key]; if (!xy) return ""; const ppl = lock ? [] : facesAt(spotIds), n = lock ? 0 : bangs.length;
     return `<button class="a6mp-pin ${lock ? "lock" : ""} ${n ? "has" : ""} ${cls}" style="left:${xy[0]}%;top:${xy[1]}%" ${attr} ${lock ? "disabled" : ""}>${n ? `<i class="bang">!${n > 1 ? `<small>${n}</small>` : ""}</i>` : ""}<span class="fc">${ppl.slice(0, 3).map(face).join("")}</span><b>${esc(label)}</b></button>`; };
   // 11-25 회사 핀: 회사 종류마다 자리가 다르다(이직하면 옮겨 간다). 퇴사·해고 뒤에는 불 꺼진 핀으로 남고, 하는 투잡이 있으면 '내 가게·작업실' 핀이 생긴다. 회식이 뜬 달에는 회사 앞에 사람이 모인다
@@ -761,7 +761,7 @@ function personFig(id, i, n) {
   const c = E.CHAR[id], x = S.rel[id];
   const expr = x ? exprFor(id) : "neutral";
   const src = bodySrc(id, expr, "full");
-  const tag = !x ? `<span class="say">말 걸기 ⚡1</span>` : x.spouse ? `<span class="say love">배우자</span>` : x.lover ? `<span class="say love">연인</span>` : `<span class="say h">${"♥".repeat(Math.max(1, Math.round(x.aff / 20)))}</span>`;
+  const tag = !x ? `<span class="say">말 걸기 ⚡1</span>` : x.spouse ? `<span class="say love">배우자</span>` : x.lover ? `<span class="say love">연인</span>` : markDia(id) ? `<span class="say h a6dm">${((n) => "◆".repeat(n) + "◇".repeat(5 - n))(Math.max(0, Math.min(5, Math.round(x.aff / 20))))}</span>` : `<span class="say h">${"♥".repeat(Math.max(1, Math.round(x.aff / 20)))}</span>`; // 11-25 장소에 선 사람도 동료·동성은 ◆◇(전에는 여기만 하트였다)
   const fig = src ? bodyImg(id, src, 100) : `<span class="pface">${img(faceSrc(id, expr), "face", "")}</span>`;
   const rt = coRoleTag(id);
   return `<button class="pfig ${!x ? "new" : ""} ${src ? "" : "noart"}" data-char="${id}" style="--i:${i};--n:${n}">${fig}${rt ? `<span class="a6rt">${esc(rt)}</span>` : ""}<span class="pn">${x ? esc(c.name) : "???"}</span>${tag}</button>`;
@@ -1801,7 +1801,8 @@ function bind() {
   q("[data-toslots]", () => { save(true); S = null; renderTitle(); });
   if (UJ[ui.page]?.bind) UJ[ui.page].bind(jctx(q)); // 새 투잡 보드의 버튼 연결
   q("[data-fire]", () => openWin(`<h2>파이어 달성! <button class="x" data-close>✕</button></h2><div class="small">순자산 ${won(E.fireInfo(S).nw)}. 지금 은퇴할 수도 있고, ${RD.endAgeOf(S)}세까지 더 달려서 명예의 전당을 노릴 수도 있어요. 기록에는 ${E.ageNow(S)}세 파이어가 남아요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-keep>계속 달린다</button><button class="btn gold grow" data-yes>지금 은퇴</button></div>`, (w) => { w.querySelector("[data-yes]").onclick = () => { closeWin(); E.declareFire(S, false); save(true); render(); }; w.querySelector("[data-keep]").onclick = () => { closeWin(); E.declareFire(S, true); save(true); toast([], `${S.fireAt}세 파이어 기록! 계속 달려요`); render(); }; }));
-  q("[data-newlife]", () => openWin(`<h2>이 칸에서 새 인생을 시작할까요? <button class="x" data-close>✕</button></h2><div class="small">지금 ${SLOT}번 칸의 인생은 지워져요. 다른 칸에서 시작하려면 '저장 칸으로' 버튼을 눌러 주세요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn gold grow" data-yes>새 인생</button></div>`, (w) => w.querySelector("[data-yes]").onclick = async () => { closeWin(); S = null; await ST.remove(SLOT); ui.wiz = null; startWizard(SLOT); }));
+  q("[data-newlife]", () => openWin(`<h2>이 칸에서 새 인생을 시작할까요? <button class="x" data-close>✕</button></h2><div class="small">지금 ${SLOT}번 칸의 인생은 지워져요. 다른 칸에서 시작하려면 '저장 칸으로' 버튼을 눌러 주세요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn gold grow" data-yes>새 인생</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { closeWin(); // 11-25 대표 요청: 지우기 전에 한 번 더 묻는다
+    openWin(`<h2>정말 지울까요? <button class="x" data-close>✕</button></h2><div class="small">마지막 확인이에요. <b>${SLOT}번 칸 · ${esc(S?.me?.name || "")}</b>의 인생이 완전히 사라지고 되돌릴 수 없어요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes2>네, 정말 지워요</button></div>`, (w2) => w2.querySelector("[data-yes2]").onclick = async () => { closeWin(); S = null; await ST.remove(SLOT); ui.wiz = null; startWizard(SLOT); }); }));
 }
 
 // ───────── 능력치 도형(능력치 수만큼 꼭짓점) ─────────

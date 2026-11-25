@@ -22,7 +22,10 @@ export const BM = {
   },
 };
 const LS = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
-if (typeof location !== "undefined") { if (/#.*qaoff/.test(location.hash)) LS("a6_qa", "0"); else if (/#.*\bqa\b/.test(location.hash)) LS("a6_qa", "1"); }
+// 11-25: #QA·#Qa 처럼 대문자로 들어와도 켜진다(전에는 소문자 #qa 만 알아봤다). 열어 둔 화면에서 주소만 바꿔도(hashchange) 바로 다시 연다
+const qaHash = () => { if (typeof location === "undefined") return; const h = location.hash; if (/#.*qaoff/i.test(h)) LS("a6_qa", "0"); else if (/#.*\bqa\b/i.test(h)) LS("a6_qa", "1"); };
+qaHash();
+if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("hashchange", () => { const was = LS("a6_qa"); qaHash(); if (LS("a6_qa") !== was) location.reload(); });
 export const qaOn = () => LS("a6_qa") === "1" || (typeof location !== "undefined" && /bmtest/.test(location.hash));
 export const bmOn = () => BM.on;
 const own = () => { try { return JSON.parse(LS("a6_bm_own") || "{}"); } catch (e) { return {}; } };
