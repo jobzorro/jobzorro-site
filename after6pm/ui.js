@@ -1,5 +1,7 @@
 // After 6PM v4 · 화면. 엔진(engine/*.js)은 계산만, 여기서는 그리기와 클릭만.
 import * as E from "./engine/core.js";
+import { SCENES as GEN_SCENES } from "./gen/data.js"; // 11-25 느낌표 카드의 능력치 칩(장면 선택지 효과)
+const SCN = Object.fromEntries(GEN_SCENES.map((x) => [x.id, x]));
 import * as PR from "./engine/pr.js";
 import * as CS from "./engine/cs.js";
 import * as SJ from "./engine/sj.js";
@@ -688,7 +690,9 @@ const bangsAt = (f) => (S.bangs || []).filter((b) => f(SPOT_OF[b.sp] || {}, b));
 function bangCards(L) {
   if (!L.length) return "";
   // 11-25 회식 카드(b.party): 행동력 2, 빠지면 팀장 호감이 깎인다는 안내와 능력치 칩
-  return `<div class="a6bg">${L.map((b) => b.party ? `<button class="a6bg-c party" data-bang="${b.id}"><i>!</i><span><b>${esc(b.title)}</b><small>${esc(b.spN || "")} · 이번 달에만 · 빠지면 팀장 호감 −${-D.CO_PARTY.miss}</small><div class="chips">${actChips("company_dinner")}<span class="p">팀장 호감 +</span></div></span><em>⚡${b.ap || D.CO_PARTY.ap}</em></button>` : `<button class="a6bg-c" data-bang="${b.id}"><i>!</i><span><b>${esc(b.title)}</b><small>${esc(b.spN || "")} · 이번 달에만${(S.spot[b.sp] || []).length ? " · 거기 있는 사람과도 인사해요" : ""}</small></span><em>⚡${E.BANG.ap}</em></button>`).join("")}</div>`;
+  const chipsOf = (b) => { const sc = SCN[b.sc]; const ks = new Set(); for (const c of sc?.choices || []) for (const e of [c.eff, c.ok?.eff, c.ng?.eff]) for (const k of Object.keys(e?.stat || {})) ks.add(k); const st = [...ks].slice(0, 3).map((k) => `<span>${esc(D.STATS[k] || k)} +</span>`).join(""), aff = (S.spot[b.sp] || []).length || (sc?.choices || []).some((c) => c.eff?.aff > 0) ? `<span class="p">호감 +</span>` : ""; return st || aff ? `<div class="chips">${st}${aff}</div>` : ""; }; // 11-25 맵 시안 ③: 보통 느낌표에도 오르는 능력치·호감 칩
+  const lockOf = (b) => b.after === "party" && !S.co.party?.done; // 2차는 회식에 다녀와야 열린다
+  return `<div class="a6bg">${L.map((b) => b.party ? `<button class="a6bg-c party" data-bang="${b.id}"><i>!</i><span><b>${esc(b.title)}</b><small>${esc(b.spN || "")} · 이번 달에만 · 빠지면 팀장 호감 −${-D.CO_PARTY.miss}</small><div class="chips">${actChips("company_dinner")}<span class="p">팀장 호감 +</span></div></span><em>⚡${b.ap || D.CO_PARTY.ap}</em></button>` : `<button class="a6bg-c${lockOf(b) ? " lk" : ""}" data-bang="${b.id}"><i>!</i><span><b>${esc(b.title)}</b><small>${esc(b.spN || "")} · ${lockOf(b) ? "회식에 다녀오면 열려요" : "이번 달에만"}${(S.spot[b.sp] || []).length ? " · 거기 있는 사람과도 인사해요" : ""}</small>${chipsOf(b)}</span><em>⚡${E.BANG.ap}</em></button>`).join("")}</div>`;
 }
 // 11-25 회사 앞 · 회식: 회식이 뜬 달에만 지도에 서는 자리. 팀장과 팀 사람들이 모여 있고, 회식 카드 하나가 있다
 function pgParty() {
@@ -707,19 +711,26 @@ function cityMap() {
   const coOut = S.co.quit || S.co.fired, coXY = MAPD.coPins?.[S.co.type] || P.office, shopK = coOut ? (S.sj?.active || []).find((k) => unlocked(k)) : null;
   const ptyXY = !coOut && E.partyOn(S) ? MAPD.partySpots?.[S.co.type] || MAPD.partySpot : null;
   const pins = [
-    ...town.spots.map((sp) => pin(sp.loc, sp.n, `data-region="town" data-spot="${sp.id}"`, [sp.id], bangsAt((q, b) => b.sp === sp.id))),
+    ...town.spots.map((sp) => pin(sp.loc, sp.n, `data-region="town" data-spot="${sp.id}"`, [sp.id], bangsAt((q, b) => b.sp === sp.id), false, sp.id === "home" ? "home" : "")), // 11-25 맵 시안: 우리 집은 초록 점
     coOut ? pin(coXY, "퇴사한 회사", "", [], [], true, "off") : pin(coXY, S.co.name || "회사", `data-go="co"`, E.companySpots(S).map((x) => x.id), bangsAt((q, b) => q.rg === "company" && !b.party)),
     ptyXY ? `<button class="a6mp-pin party" style="left:${ptyXY[0]}%;top:${ptyXY[1]}%" data-region="party"><span class="fc">${(S.spot.dinner || []).slice(0, 5).map(face).join("")}</span><b>회사 앞 · 회식<br>모이는 중 <em>!</em></b></button>` : "",
     shopK && MAPD.myShop ? pin(MAPD.myShop, D.SJ_SPACE.includes(shopK) ? "내 가게" : "내 작업실", `data-go="${shopK}"`, [], [], false, "shop") : "",
     ...["officest", "univ", "hot"].map((rid) => { const rg = D.REGIONS.find((r) => r.id === rid); return rg ? pin(rid === "hot" ? "hotplace" : rid, rg.n, `data-region="${rid}"`, rg.spots.map((x) => x.id), bangsAt((q) => q.rg === rid)) : ""; }),
     nt ? pin("newtown", ntLock ? `${nt.n} · 31세부터` : nt.n, `data-region="newtown"`, nt.spots.map((x) => x.id), bangsAt((q) => q.rg === "newtown"), ntLock) : "",
-    S.hb?.joined?.length || unlocked("hobby") ? pin("hobby", "취미 모임", `data-go="hobby"`, [], []) : "",
+    S.hb?.joined?.length || unlocked("hobby") ? pin("hobby", "호수 공원 · 취미 모임", `data-go="hobby"`, [], []) : "",
   ].join("");
   const all = (S.bangs || []).length, can = Math.floor(S.ap / E.BANG.ap);
   const off = ["parents"].map((rid) => { const rg = D.REGIONS.find((r) => r.id === rid); if (!rg || (rg.unlock && !rg.unlock(S))) return ""; const n = bangsAt((q) => q.rg === rid).length; return `<button class="btn sm" data-region="${rid}">${esc(rg.n)}${n ? ` <b class="gold">!${n}</b>` : ""}</button>`; }).join("");
   const onlN = bangsAt((q) => q.rg === "online").length, onl = `<button class="a6mp-onl ${onlN ? "has" : ""}" data-region="online">온라인${onlN ? ` <b>!${onlN > 1 ? onlN : ""}</b>` : ""}</button>`; // 11-25 온라인은 지도 아래 왼쪽 구석 표지로(전에는 지도 밖 버튼)
-  return `<div class="a6mp" style="aspect-ratio:${MAPD.w || 2}/${MAPD.h || 3};background-image:url(${file})">${ptyXY ? `<i class="a6mp-glow" style="left:${ptyXY[0]}%;top:${ptyXY[1]}%"></i>` : ""}${pins}${onl}<div class="a6mp-top"><span>${S.year}년 ${S.cal}월 · ${{ spring: "봄", summer: "여름", fall: "가을", winter: "겨울", xmas: "12월" }[mapSeason()]}</span></div></div>
-    <div class="a6mp-bar"><span><b class="gold">느낌표 ${all}개</b> · 지금 행동력으로 ${Math.min(all, can)}개쯤 갈 수 있어요</span>${BMX.bmOn() ? `<button class="btn sm" data-bmap>행동력 채우기</button>` : ""}</div>
+  // 11-25 맵 시안 ①②: 지도 위 요약 줄(회사·직급 / 이번 달 회사 일 n/m 또는 회식 달 · 투잡 / 느낌표 N)
+  const sjTxt = (S.sj?.active || []).filter((k) => D.SIDEJOBS[k]).map((k) => k === "pr" && S.pr.rooms.length ? `파티룸 ${S.pr.rooms.length}곳` : D.SIDEJOBS[k].n).join("·");
+  const coLine = coOut ? (S.fullJob ? "투잡 전업" : "회사 밖") : `${esc(D.COMPANY_TYPES[S.co.type]?.n || "")} · ${esc(D.RANKS[S.co.rank]?.n || "")}`;
+  const need = coOut ? 0 : E.workNeed(S), doneN = Math.min(S.co.workDone || 0, need);
+  const sub2 = [coOut ? "" : E.partyOn(S) || S.co.party?.t === S.t ? `${esc(E.jo(S.co.party.title, "이", "가"))} 있는 달` : need ? `이번 달 회사 일 ${doneN}/${need}` : "이번 달 회사 일 없음", sjTxt ? `투잡 ${esc(sjTxt)}` : "투잡 탐색 중"].filter(Boolean).join(" · ");
+  const sum = `<div class="a6mp-sum"><div><b>${coLine}</b><span>${sub2}</span></div><em>느낌표 ${all}</em></div>`;
+  const lk2 = (S.bangs || []).some((b) => b.after === "party") && !S.co.party?.done;
+  return `${sum}<div class="a6mp" style="aspect-ratio:${MAPD.w || 2}/${MAPD.h || 3};background-image:url(${file})">${ptyXY ? `<i class="a6mp-glow" style="left:${ptyXY[0]}%;top:${ptyXY[1]}%"></i>` : ""}${pins}${onl}<div class="a6mp-top"><span><b>서울</b> ${S.year}년 ${S.cal}월 · ${E.ageNow(S)}세 · ${coOut ? "회사 밖" : `${Math.floor(S.co.years)}년 차`} · ${{ spring: "봄", summer: "여름", fall: "가을", winter: "겨울", xmas: "12월" }[mapSeason()]}</span></div></div>
+    <div class="a6mp-bar"><span><b class="gold">느낌표 ${all}개</b> · ${lk2 ? "회식 가면 +1(2차)" : `지금 행동력으로 ${Math.min(all, can)}개쯤 갈 수 있어요`}</span>${BMX.bmOn() ? `<button class="btn sm" data-bmap>행동력 채우기</button>` : ""}</div>
     ${off ? `<div class="row wrap" style="margin-top:6px"><span class="tiny muted">지도 밖:</span>${off}</div>` : ""}
     ${more(`이번 달 느낌표 모두 보기 (${all})`, bangCards(S.bangs || []))}
     <div class="tiny muted" style="margin-top:6px">느낌표는 이번 달에만 뜨는 일이에요. 하나에 행동력 ${E.BANG.ap}. 다 할 수는 없으니 골라서 가요. 건물을 누르면 그곳에서 늘 할 수 있는 일도 나와요.</div>`;
@@ -791,10 +802,10 @@ function placeStage(bgKey, title, ppl, sub, extraCls = "") {
     <div class="crowd">${res.map((id, i) => `<button class="pfig" data-xfig="${id}" style="--i:${i};--n:${N}">${bodyImg(id, bodySrc(id, bgKey === "parents" ? "smile" : "neutral", "full"), 100)}<span class="pn">${esc(XR.EXTRA[id].name)}</span>${XR.EXTRA[id].role ? `<span class="say">${esc(XR.EXTRA[id].role)}</span>` : ""}</button>`).join("")}${show.map((id, i) => personFig(id, i + res.length, N)).join("")}</div>
     ${ppl.length > 4 ? `<button class="more tjx-stmore" data-stmore="${esc(bgKey)}">+${ppl.length - 4}명 · 다음 사람 ›</button>` : ""}</div>`;
 }
-function spotBlock(sp) { // 11-25 회사 종류별 장소: 잠긴 곳(대기업 임원층)은 한 줄로, 그 장소에서 부르는 행동 이름(sp.lb), 늘 할 일이 없는 곳은 안내 한 줄
+function spotBlock(sp, withBang) { // 11-25 회사 종류별 장소: 잠긴 곳(대기업 임원층)은 한 줄로, 그 장소에서 부르는 행동 이름(sp.lb), 늘 할 일이 없는 곳은 안내 한 줄
   if (E.spotLocked(S, sp)) return `<div class="spot pl a6lk"><b>${esc(sp.n)}</b><span>잠김 · ${esc(D.RANKS[sp.lockRank]?.n || "")} 직급부터 열려요</span></div>`;
   const ppl = S.spot[sp.id] || [], acts = sp.acts.filter(visibleAct);
-  return `<div class="spot pl" data-spotbox="${sp.id}">${placeStage(sp.id, esc(sp.n), ppl)}<div class="acts">${acts.map((id) => actRow(id, defaultArg(id), sp.lb?.[id])).join("") || `<div class="tiny muted">${esc(sp.n)}에서는 느낌표가 뜬 달에만 할 일이 생겨요.</div>`}</div></div>`; }
+  return `<div class="spot pl" data-spotbox="${sp.id}">${placeStage(sp.id, esc(sp.n), ppl)}${withBang ? bangCards(bangsAt((q, b) => b.sp === sp.id && !b.party)) : ""}<div class="acts">${acts.length ? `<div class="tiny muted">${esc(sp.n)}에서 언제든</div>` : ""}${acts.map((id) => actRow(id, defaultArg(id), sp.lb?.[id])).join("") || `<div class="tiny muted">${esc(sp.n)}에서는 느낌표가 뜬 달에만 할 일이 생겨요.</div>`}</div></div>`; }
 function personCard(id) {
   const c = E.CHAR[id], x = S.rel[id];
   const role = !x ? "새 얼굴" : x.spouse ? "배우자" : x.lover ? "연인" : x.helper ? (c.helper?.role || "조력자") : E.HL.jobOf(S, id); // 11-25 히로인은 인생 단계의 직업 줄
@@ -1030,12 +1041,14 @@ function pgCo() {
   const spots = E.companySpots(S); // 11-25 회사 종류에 맞는 장소(대기업 6 · 금융권 5 · 중견·공기업 4 · 스타트업 3)
   if (co.quit || co.fired) return `<div class="card"><h3>${co.retired ? "퇴임·퇴직" : co.fired ? "해고됨" : "퇴사함"}</h3><div class="small muted">낮 시간이 생겨 행동력이 5 늘었어요. 월급은 없어요. 나이가 많을수록 재취업은 어려워져요.</div><div class="acts" style="padding:8px 0 0">${actRow("rejob")}</div></div>`;
   const t = D.COMPANY_TYPES[co.type];
-  return `${MAPD.office?.[co.type] ? `<div class="a6of" style="background-image:url(${MAPD.office[co.type]})"><span>${esc(co.name)} · ${t.n}</span></div>` : ""}${bangCards(bangsAt((q) => q.rg === "company"))}<div class="card"><h3>${esc(co.name)} <small>${t.n} · ${D.RANKS[co.rank].n} · ${Math.floor(co.years)}년 차</small></h3>
+  // 11-25 맵 시안 ③: 회사 장소를 한 곳씩 본다(탭). 느낌표는 그 장소에 붙어 있고, 회식만 맨 위에
+  const open = spots.filter((x) => !E.spotLocked(S, x)), cur = spots.find((x) => x.id === ui.coSpot) || open.find((x) => (S.bangs || []).some((b) => b.sp === x.id && !b.party)) || open[0] || spots[0];
+  const tabs = `<div class="a6sp-tabs">${spots.map((x) => { const n = (S.bangs || []).filter((b) => b.sp === x.id && !b.party).length, pp = (S.spot[x.id] || []).length; return `<button class="${x === cur ? "on" : ""}" data-cospot="${x.id}">${esc(x.n)}${n ? ` <b>!${n > 1 ? n : ""}</b>` : ""}${pp ? ` <i>${pp}명</i>` : ""}${E.spotLocked(S, x) ? " 🔒" : ""}</button>`; }).join("")}</div>`;
+  return `${MAPD.office?.[co.type] ? `<div class="a6of" style="background-image:url(${MAPD.office[co.type]})"><span>${esc(co.name)} · ${t.n}</span></div>` : ""}${bangCards(bangsAt((q, b) => b.party))}${tabs}${spotBlock(cur, true)}<div class="card"><h3>${esc(co.name)} <small>${t.n} · ${D.RANKS[co.rank].n} · ${Math.floor(co.years)}년 차</small></h3>
     <div class="kv"><div><div class="k">월급(실수령)</div><div class="v">${won(E.salary(S))}</div></div><div><div class="k">성과</div><div class="v">${Math.round(co.perf)}</div></div><div><div class="k">팀장 호감</div><div class="v">${Math.round(co.boss)}</div></div>${co.warns ? `<div><div class="k">겸업 경고</div><div class="v bad">${co.warns}회</div></div>` : ""}</div>
     <div style="margin-top:8px" class="small">회사 눈치 ${Math.round(co.eye)} ${meter(co.eye, 100, "var(--orange)")}</div>
     ${coEval()}
     ${more("눈치 50 넘으면 겸업이 들킬 수 있어요 · 자세히", `<div class="tiny muted">눈치가 50을 넘으면 겸업이 들킬 수 있어요(경고 → 감봉 → 해고). ${t.n}은 ×${t.eye}.</div><div class="tiny muted" style="margin-top:4px">투잡 없이 회사만 다녀도 돼요. 다만 연봉은 천천히 오르고 지방 발령, 구조조정 같은 일도 생겨서 회사만으로 30억은 쉽지 않아요.</div>`)}</div>
-  ${spots.map(spotBlock).join("")}
   ${(q.x || 0) >= 0.5 || (S.fame || 0) >= 30 ? `<div class="card"><h3>온잡(전업)으로 가면 <small>명성 ${Math.round(S.fame || 0)}</small></h3><div class="small muted">회사를 나오면 행동력 +5, 컨설팅 처리량 ×1.6·문의 ×1.3, 인별 성장 ×1.3, 파티룸 평일 영업 +15%. 명성이 높으면 파티룸 창업 컨설팅·가맹 사업·VIP 상품·AI 플랫폼이 열려요. 대신 월급이 끊기고 지역 건강보험이 나가요. 잘될 때 가면 크게, 빨리 벌어요.</div></div>` : ""}
   <div class="card"><details class="more qmore" ${q.ok ? "open" : ""}><summary><b>환승 퇴사</b> · 조건 ${(q.yearOk ? 1 : 0) + (q.emer ? 1 : 0)}/2 · 선퇴사 금지 ▾</summary>
     <div class="steps"><div class="${q.yearOk ? "done" : ""}"><span class="ck">${q.yearOk ? "✓" : ""}</span><span class="grow">연말 결산 투잡 이익 ≥ 연봉 (지난 결산 ${(q.x || 0).toFixed(1)}배 · 1.5배면 강력 추천, 2배면 나와라!)</span></div><div class="${q.emer ? "done" : ""}"><span class="ck">${q.emer ? "✓" : ""}</span><span class="grow">비상금 6개월 치(${won(E.monthlySpend(S) * 6)})</span></div></div>
@@ -1134,9 +1147,9 @@ function pgAirbnb() {
     <div class="row"><span class="tiny ${(u.unrep || 0) > D.PR_REVIEW.unrep.max ? "bad" : "muted"}">밀린 답글 ${Math.round(u.unrep || 0)}${u.last?.newRev != null ? ` · 지난달 후기 +${u.last.newRev}` : ""}</span><span class="grow"></span><button class="btn sm" data-act="ab_reply" data-arg="${u.id}" ${(u.unrep || 0) >= 1 ? "" : "disabled"}>답글 ⚡1</button></div>${more("숙소 정리 · 더 보기", `<div class="row"><span class="grow tiny muted">정리하면 보증금 ${won(u.dep)}을 돌려받아요.</span><button class="btn sm danger" data-abclose="${u.id}">숙소 정리</button></div>`)}</div>`, A.units.length <= 1, "room", lowAp ? `<button class="btn sm" data-act="ab_clean" data-arg="${u.id}">청소 ⚡1</button>` : ""); };
   const ls = A.listings.filter((l) => s0(l));
   return `${tycoonScene(S, "airbnb")}${boardHead("airbnb")}<div class="card"><h3>에어씨앤씨 <small>${A.super ? "★ 슈퍼호스트" : `숙소 ${A.units.length}채`}</small></h3>
-    <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div><div><div class="k">외국어</div><div class="v">${Math.round(S.st.lang)}</div></div><div><div class="k">코호스트</div><div class="v">${A.cohost ? "고용 중" : "없음"}</div></div>${A.fx ? `<div><div class="k">환율 급등</div><div class="v good">${A.fx}개월</div></div>` : ""}</div>
+    <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div><div><div class="k">외국어</div><div class="v">${Math.round(S.st.lang)}</div></div>${A.cohost || A.units.length >= 2 ? `<div><div class="k">코호스트</div><div class="v">${A.cohost ? "고용 중" : "없음"}</div></div>` : ""}${A.fx ? `<div><div class="k">환율 급등</div><div class="v good">${A.fx}개월</div></div>` : ""}</div>
     ${more("합법·미등록·슈퍼호스트 자세히", `<div class="tiny muted">파티룸이 '몇 시간'이라면 에어씨앤씨는 '1박'이에요. 서울에서 합법(외국인관광 도시민박업)으로 하면 외국인 위주라 <b class="gold">외국어</b>가 곧 매출이에요(내국인은 공유숙박 특례로 일부만). 합법 숙소는 등록번호가 있어 <b class="gold">노출 +8%</b>, 슈퍼호스트가 되면 5% 더. 미등록은 누구나 받지만 노출이 줄고, 이웃 신고·등록번호 점검으로 단속되면 과태료 400~1,200만과 영업정지. 별점 4.8 이상·숙박 10건이면 슈퍼호스트(노출 +12%, 요금 +8%).</div>`)}</div>
-  <div class="acts" style="padding:0">${actRows(["ab_search", ["ab_cohost", undefined, A.cohost ? "코호스트 해지" : "코호스트 고용(매출 20%, 투잡 칸 +1)"], ["study", "lang", "외국어 공부 (스터디카페)"]])}</div>
+  <div class="acts" style="padding:0">${actRows(["ab_search", ...(A.cohost || A.units.length >= 2 ? [["ab_cohost", undefined, A.cohost ? "코호스트 해지" : "코호스트 고용(매출 20%, 투잡 칸 +1)"]] : []), ["study", "lang", "외국어 공부 (스터디카페)"]])}</div>
   ${SP.abLaw(spc())}
   ${(() => { const pn = SP.abPanels(spc()); return pn ? fold("ab-ops", `<span class="tjx-s1"><b>운영 설정</b><span class="tiny muted">가격표·후기·청소·한 달 살기</span></span><span class="tjx-s2">${SP.abOpsSum(spc())}</span>`, `<div class="tjx-ops">${pn}</div>`, false, "tjx-opsbox") : ""; })()}
   ${A.units.map(unit).join("")}
@@ -1156,9 +1169,9 @@ function pgUcafe() {
     <div class="row wrap"><span class="small">점검 <b class="${U.agent || st.ap >= n ? "good" : "bad"}">${U.agent ? "대행" : `${st.ap}/${n}`}</b></span><span class="grow"></span>${U.agent ? "" : `<button class="btn sm" data-act="uc_check" data-arg="${st.id}">점검 ⚡1</button>`}<button class="btn sm" data-act="uc_promo" data-arg="${st.id}">홍보 ⚡1</button><button class="btn sm" data-ucbean="${st.id}">${st.bean ? "가성비로" : "스페셜티로"}</button>${st.cctv ? "" : `<button class="btn sm" data-uccctv="${st.id}">CCTV 80만</button>`}</div>
     ${more("매장 양도 · 더 보기", `<div class="row"><span class="grow tiny muted">장사를 접고 매장을 넘겨요.</span><button class="btn sm danger" data-ucclose="${st.id}">양도</button></div>`)}</div>`, U.stores.length <= 1, "room", lowAp ? `<button class="btn sm" data-act="uc_check" data-arg="${st.id}">점검 ⚡1</button>` : ""); };
   return `${tycoonScene(S, "ucafe")}${boardHead("ucafe")}<div class="card"><h3>무인카페 <small>${U.stores.length}곳</small></h3>
-    <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div><div><div class="k">관리 대행</div><div class="v">${U.agent ? "계약 중" : "없음"}</div></div>${U.beanUp ? `<div><div class="k">원두값 급등</div><div class="v bad">${U.beanUp}개월</div></div>` : ""}</div>
+    <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div>${U.agent || U.stores.length >= 2 ? `<div><div class="k">관리 대행</div><div class="v">${U.agent ? "계약 중" : "없음"}</div></div>` : ""}${U.beanUp ? `<div><div class="k">원두값 급등</div><div class="v bad">${U.beanUp}개월</div></div>` : ""}</div>
     ${more("머신·원두·먹튀 자세히", `<div class="tiny muted">기계가 일하고 나는 새벽에 청소·재고를 채워요. 머신을 사면 처음에 비싸지만 매달 렌탈비가 없고 맛이 조금 더 좋아요. 렌탈은 고장 나도 수리가 공짜예요. 여름 아이스가 성수기, 겨울은 비수기. CCTV가 없으면 먹튀가 3배예요. 한 잔 가격을 올리면 잔 수가 줄어요.</div>`)}</div>
-  <div class="acts" style="padding:0">${actRows(["uc_search", ["uc_agent", undefined, U.agent ? "관리 대행 해지" : "관리 대행 계약(매장당 월 40만, 투잡 칸 +1)"]])}</div>
+  <div class="acts" style="padding:0">${actRows(["uc_search", ...(U.agent || U.stores.length >= 2 ? [["uc_agent", undefined, U.agent ? "관리 대행 해지" : "관리 대행 계약(매장당 월 40만, 투잡 칸 +1)"]] : [])])}</div>
   ${(() => { const pn = SP.ucPanels(spc()); return pn ? fold("uc-ops", `<span class="tjx-s1"><b>운영 설정</b><span class="tiny muted">영업 시간·원두 재고</span></span><span class="tjx-s2">${SP.ucOpsSum(spc())}</span>`, `<div class="tjx-ops">${pn}</div>`, false, "tjx-opsbox") : ""; })()}
   ${U.stores.map(store).join("")}
   ${U.listings.length ? `<div class="sec">보던 자리 <span class="muted small">${U.listings.length}개</span></div>${((f) => U.listings.slice(0, 2).map(f).join("") + more(`보던 자리 더 보기 ${U.listings.length - 2}`, U.listings.length > 2 ? U.listings.slice(2).map(f).join("") : ""))((l) => { const A = D.UC_AREAS[l.ak], qr = UC.quote(S, l, { machine: "rent" }), qb = UC.quote(S, l, { machine: "buy" }); return `<div class="room"><div class="body"><div class="nm">${esc(A.n)} ${l.size}평</div>${A.risk ? `<div class="tiny bad">⚠ ${esc(A.risk)}</div>` : ""}<div class="small">보증금 ${won(l.dep)} · 월세 <b>${won(l.rent)}</b> · 권리금 ${won(l.key)} · 유동인구 ${"●".repeat(Math.round(l.traffic * 3))} · 경쟁 ${l.comp}곳</div>
@@ -1472,8 +1485,10 @@ function albPpl(a) { if (a.ppl?.length) return a.ppl; if (!a.cg && a.who && E.CH
 function albumWin() {
   const A = meta().album || [];
   const keys = new Set(A.map((a) => a.k));
+  const RUNS = (meta().runs || []).map((r, i) => ({ ...r, n: i + 1 })).filter((r) => r.wv?.length); // 11-25 지난 인생에서 간 길(판 변화)
+  const runWv = RUNS.length ? `<div class="sec" style="margin-top:12px">지난 인생에서 간 길</div>${RUNS.slice(-5).reverse().map((r) => `<div class="card" style="padding:8px 10px"><div class="tiny muted">${r.n}회차 · ${r.age}세 ${r.kind === "fire" ? "파이어" : "결산"}</div><div class="small">${r.wv.map(esc).join("<br>")}</div></div>`).join("")}` : "";
   openWin(`<h2>인생 앨범 <span class="tag gold">${A.length}장</span> <button class="x" data-close>✕</button></h2><div class="small muted">큰 순간을 맞을 때마다 한 장씩 쌓여요. 같은 순간도 그림이 여러 장이라 인생마다 달라요. 모은 순간 ${keys.size}/${Object.keys(CINE_TAG).length}가지.</div>
-    ${A.length ? `<div class="album">${A.map((a, i) => `<button data-alb="${i}" style="background-image:linear-gradient(180deg,#0000 40%,#000c),url(${a.img})">${albPpl(a).map((src, j) => `<img class="albp p${j}" src="${src}" alt="" loading="lazy">`).join("")}<b>${esc(a.title)}</b><span>${a.run}회차 · ${esc(a.when)}</span></button>`).join("")}</div>` : `<div class="card small muted" style="margin-top:10px">아직 비어 있어요. 연애·결혼·투잡 첫 오픈 같은 큰 순간에 채워져요.</div>`}`, (w) => w.querySelectorAll("[data-alb]").forEach((b) => b.onclick = () => { const a = A[+b.dataset.alb]; showCine({ ...a, people: albPpl(a), tapText: "눌러서 닫기" }); }));
+    ${A.length ? `<div class="album">${A.map((a, i) => `<button data-alb="${i}" style="background-image:linear-gradient(180deg,#0000 40%,#000c),url(${a.img})">${albPpl(a).map((src, j) => `<img class="albp p${j}" src="${src}" alt="" loading="lazy">`).join("")}<b>${esc(a.title)}</b><span>${a.run}회차 · ${esc(a.when)}</span></button>`).join("")}</div>` : `<div class="card small muted" style="margin-top:10px">아직 비어 있어요. 연애·결혼·투잡 첫 오픈 같은 큰 순간에 채워져요.</div>`}${runWv}`, (w) => w.querySelectorAll("[data-alb]").forEach((b) => b.onclick = () => { const a = A[+b.dataset.alb]; showCine({ ...a, people: albPpl(a), tapText: "눌러서 닫기" }); }));
 }
 // ───────── 연말 결산 화면(v4.24) ─────────
 // 매년 12월 마감에 엔진이 kind "year" 장면을 넣는다(engine/yearend.js). 막 내림 → 타이틀 → 숫자 → 광고 자리 → 올해의 장면 → 한 줄 정리 → 본잡 신호/다음 해로
@@ -1754,6 +1769,7 @@ function bind() {
   q("[data-sjmemo]", (el) => sjMemoWin(el.dataset.sjmemo));
   q("[data-act]", (el) => { if (S.pending) return showScene(); if (el.dataset.why) return toast([], el.dataset.why); doAct(el.dataset.act, el.dataset.arg); });
   q("[data-end]", () => endMonthFlow(false));
+  q("[data-cospot]", (el) => { ui.coSpot = el.dataset.cospot; render(); });
   q("[data-region]", (el) => { ui.region = el.dataset.region || null; ui.spot = el.dataset.spot || null; render(); window.scrollTo(0, 0); });
   q("[data-bang]", (el) => { const res = E.doBang(S, el.dataset.bang); if (!res.ok) return toast([], res.msg); afterRes(res); });
   q("[data-char]", (el) => charWin(el.dataset.char));
@@ -1965,7 +1981,7 @@ function renderGift() {
 function ngGiftsToStart(w) {
   const g = w.gifts || {}, M0 = meta(), n0 = ngNext(M0), rw = n0 === 2 && M0.r1Grade ? RD.rewardOf(M0.r1Grade) : { cash: 0, statUp: 0 }; // 2회차: 1회차 등급 보상
   const fr = [...(g.friend || [])]; if (n0 >= 3 && !fr.length && (M0.pastFriends || []).length) fr.push(M0.pastFriends[0]); // 3회차 특전: 지난 판 인연 한 명
-  return { n: n0, hard: !!w.hard, cash: (g.cash || 0) * 300 + (rw.cash || 0), statUp: (g.stat || 0) * 3 + (rw.statUp || 0), know: g.know || [], friends: fr, past: (meta().hidPast || []).slice(-2), hl: E.HL.ngIn(M0), gifts: Object.keys(g).filter((k) => (Array.isArray(g[k]) ? g[k].length : g[k])) };
+  return { n: n0, hard: !!w.hard, cash: (g.cash || 0) * 300 + (rw.cash || 0), statUp: (g.stat || 0) * 3 + (rw.statUp || 0), know: g.know || [], friends: fr, past: (meta().hidPast || []).slice(-2), hl: E.HL.ngIn(M0), wvGone: M0.wvGone || [], gifts: Object.keys(g).filter((k) => (Array.isArray(g[k]) ? g[k].length : g[k])) };
 }
 function ngGiftsToStart_old(w) {
   const g = w.gifts || {};
@@ -2169,11 +2185,12 @@ function renderEnding() {
   const kind = S.over ? "over" : S.ended;
   if (!S.recorded) {
     FX.play(S.over ? "bad" : "win");
-    m.runs = m.runs || []; m.runs.push({ age, kind, nw: Math.round(f.nw), t: Date.now(), fireAt: S.fireAt || null });
+    m.runs = m.runs || []; m.runs.push({ age, kind, nw: Math.round(f.nw), t: Date.now(), fireAt: S.fireAt || null, wv: WV.tookList(S) }); // 11-25 wv: 판 변화에서 간 길(앨범에 남김)
     if (S.fireAt && (!m.best || S.fireAt < m.best)) m.best = S.fireAt;
     ngEndRecord(m, f);
     if (S.grade) m.r1Grade = S.gradeUp ? "S" : S.grade; // 1회차 결산 등급 → 2회차 시작 보상
-    m.hidPast = [...(m.hidPast || []), H2U.runRec(S)].slice(-5); // v4.30 회차의 길: 지난 인생에서 연 히든 길·한 투잡
+    m.hidPast = [...(m.hidPast || []), { ...H2U.runRec(S), wv: WV.tookList(S) }].slice(-5); // v4.30 회차의 길: 지난 인생에서 연 히든 길·한 투잡 · 11-25 판 변화에서 간 길
+    m.wvGone = [...new Set([...(m.wvGone || []), ...WV.goneOut(S)])]; // 11-25 다음 회차 특전: 안 가 본 길만 조건 −10
     const rec = { name: S.me.name, nw: Math.round(f.nw), fireAt: S.fireAt || null, fireM: S.fireAtM || (S.fireAt ? S.fireAt * 12 : null), age, path: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·") || "회사원", full: BIG.isFull(S), t: Date.now(), kind, hid: [...HU.hidNames(S), ...H2U.names(S)] };
     // 개인회생으로 끝난 판은 명예의 전당에 올리지 않는다
     if (S.over !== "bankrupt") { m.hall = (m.hall || []).concat(rec).sort((a, b) => b.nw - a.nw).slice(0, 10); S.hallRank = m.hall.indexOf(rec) + 1; if (rec.fireAt) { m.hallFire = (m.hallFire || []).concat(rec).sort(fireSort).slice(0, 10); S.hallFireRank = m.hallFire.indexOf(rec) + 1; } ST.hallSubmit(rec); }
@@ -2184,6 +2201,7 @@ function renderEnding() {
   $app.innerHTML = `<div class="ending"><div class="px gold">THE END · ${esc(S.me.name)}의 인생</div><div class="big">${esc(title)}</div>
     <div class="card"><div class="kv tjx-endkv"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div>${endJobs().map((j) => `<div><div class="k">${esc(END_JOB[j].n)}</div><div class="v">${esc(END_JOB[j].kv())}</div></div>`).join("") || `<div><div class="k">투잡</div><div class="v">회사만 다님</div></div>`}<div><div class="k">인연</div><div class="v">${Object.keys(S.rel).length}명</div></div></div></div>
     ${S.grade ? gradeCard() : ""}${jobEndCard()}
+    ${(() => { const L = WV.tookList(S); return L.length ? `<div class="card"><h3>이번 판에 간 길</h3><div class="small" style="line-height:1.8">${L.map(esc).join("<br>")}</div></div>` : ""; })()}
     <div class="card"><h3>그 뒤의 이야기</h3><div class="small" style="line-height:1.8">${epilogue().map(esc).join("<br>")}</div></div>
     ${S.hallRank ? hallBox(null, m, `명예의 전당 ${S.hallRank}위 등록!${S.hallFireRank ? ` · 파이어 나이 ${S.hallFireRank}위` : ""}`) : ""}
     <div class="card"><h3>기억 포인트 +${S.ngGot?.pts || 0} <small>다음은 ${ngNext(m)}회차 · 모은 포인트 ${ngPoints(m)}</small></h3><div class="small">${(S.ngGot?.got || []).map(([p, why]) => `+${p} ${esc(why)}`).join("<br>")}</div>${S.ngGot?.newEnds?.length ? `<div class="small gold" style="margin-top:6px">새 엔딩을 도감에 올렸어요!</div>` : ""}${ngCollection(m)}<div class="tiny muted" style="margin-top:6px">지금까지 ${(m.runs || []).length}판 · 최고 파이어 ${m.best ? m.best + "세" : "아직 없음"}</div></div>

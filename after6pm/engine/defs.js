@@ -50,6 +50,8 @@ export const staMax = (body) => Math.round(60 + body * 0.6); // 체력 → 최�
 // ───────── 회사 종류별 장소(11-25 지도 시안) ─────────
 // 장소 id = 배경 그림 키(img/bg/<id>.webp. 그림이 아직 없으면 화면이 desk 그림으로 대신한다).
 // lb = 그 장소에서 보이는 행동 이름(행동 자체는 같다), lockRank = 이 직급(RANKS 순서)부터 열림. 회사 행동 6개는 어느 종류에서도 빠지지 않는다(회식은 회식이 뜬 달의 '회사 앞'에서만)
+// 11-25 맵 시안: 회사 크기별로 한 달에 회사에 나와 있는 사람 수(대기업은 많고 스타트업은 적다). sj.js refresh
+export const CO_PPL = { big: [5, 7], fin: [4, 6], mid: [3, 5], public: [3, 4], startup: [2, 3] };
 export const CO_SPOTS = {
   big: [
     { id: "lobby", n: "로비", loc: "office", acts: ["office_chat"], lb: { office_chat: "로비 스몰토크" } },

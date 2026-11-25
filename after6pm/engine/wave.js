@@ -35,7 +35,9 @@ export const WV_REQ = {
   chicken: { a: ["talk", 60], b: ["num", 85], da: ["hands", 140], db: ["num", 115] }, vibe: { a: ["sense", 90], b: ["career", 100], da: ["num", 150], db: ["talk", 80] },
 };
 if (typeof process !== "undefined" && process.env?.WVREQ) Object.assign(WV_REQ, JSON.parse(process.env.WVREQ)); // 봇 시험용
-const rq = (s, q) => { if (!q || !q[0] || !q[1] || (typeof process !== "undefined" && process.env?.WVNOREQ)) return null; const cur = Math.floor(s.st?.[q[0]] || 0), need = Math.max(1, q[1] - RD.reqCut(s)); /* 3회차 특전: 조건 −10 */ return { k: q[0], n: D.STATS[q[0]] || q[0], need, cur, ok: cur >= need }; };
+// 3회차 특전(회차구조 시안, 대표 승인): 지난 판에 안 가 본 길만 조건 −10. tok = "투잡:길"(지난 판들에 간 길은 s.ng.wvGone)
+const reqCutFor = (s, tok) => (tok && (s.ng?.wvGone || []).includes(tok) ? 0 : RD.reqCut(s));
+const rq = (s, q, tok) => { if (!q || !q[0] || !q[1] || (typeof process !== "undefined" && process.env?.WVNOREQ)) return null; const cur = Math.floor(s.st?.[q[0]] || 0), need = Math.max(1, q[1] - reqCutFor(s, tok)); return { k: q[0], n: D.STATS[q[0]] || q[0], need, cur, ok: cur >= need }; };
 const bal = (job) => { const k = WV_K[job] ?? 1, B = WV_BAL, r2 = (x) => Math.round(x * 100) / 100; return { first: r2(B.first * k), perYear: r2(B.perYear * k), cap: Math.min(B.capMax, r2(B.cap * k)) }; };
 const M = (s, x) => Math.max(5, Math.round(x * SYN.pi(s) / 5) * 5); // 만원, 물가 반영
 
@@ -172,15 +174,15 @@ export function pathNow(s, job) {
 // 갈아탈 수 있는 길들: [{ key, t, res, cost, q(조건) }]
 function opts(s, job, n) {
   const W1 = WAVES[job], R = WV_REQ[job] || {};
-  if (n !== 2) return [{ key: "a", t: W1.ch[0][0], res: W1.ch[0][1], cost: W1.ch[0][2], q: rq(s, R.a) }, W1.b && { key: "b", t: W1.b[0], res: W1.b[1], cost: W1.b[2], q: rq(s, R.b) }].filter(Boolean);
+  if (n !== 2) return [{ key: "a", t: W1.ch[0][0], res: W1.ch[0][1], cost: W1.ch[0][2], q: rq(s, R.a, `${job}:a`) }, W1.b && { key: "b", t: W1.b[0], res: W1.b[1], cost: W1.b[2], q: rq(s, R.b, `${job}:b`) }].filter(Boolean);
   const W = W2(s, job); if (!W) return [];
-  if (W.ch) { const out = [{ key: "r2", t: W.ch[0][0], res: W.ch[0][1], cost: W.ch[0][2], q: rq(s, R.r2) }];
-    if (W.fill) { const q = rq(s, R.fill) || { k: "charm", n: "매력", need: 0, cur: 0, ok: true }, hob = clubOk(s); out.push({ key: "fill", t: W.fill[0], res: W.fill[1], cost: W.fill[2], q: { ...q, n: hob ? q.n : `모이는 취미 6번 + ${q.n}`, ok: q.ok && hob } }); } // 길 B: 취미 경험 + 매력
+  if (W.ch) { const out = [{ key: "r2", t: W.ch[0][0], res: W.ch[0][1], cost: W.ch[0][2], q: rq(s, R.r2, `${job}:r2`) }];
+    if (W.fill) { const q = rq(s, R.fill, `${job}:fill`) || { k: "charm", n: "매력", need: 0, cur: 0, ok: true }, hob = clubOk(s); out.push({ key: "fill", t: W.fill[0], res: W.fill[1], cost: W.fill[2], q: { ...q, n: hob ? q.n : `모이는 취미 6번 + ${q.n}`, ok: q.ok && hob } }); } // 길 B: 취미 경험 + 매력
     return out; }
   const hit = hitOf(s, job), other = hit === "a" ? "b" : "a", cur = pathNow(s, job), out = [];
-  if (cur === hit && W.deep) out.push({ key: "d", t: W.deep[0], res: W.deep[1], cost: W.deep[2], q: rq(s, R["d" + hit]) });
+  if (cur === hit && W.deep) out.push({ key: "d", t: W.deep[0], res: W.deep[1], cost: W.deep[2], q: rq(s, R["d" + hit], `${job}:d${hit}`) });
   const o = other === "a" ? W1.ch[0] : W1.b;
-  if (o && !(job === "cs" && other === "a")) out.push({ key: "x" + other, t: `길을 바꾼다: ${o[0]}`, res: o[1], cost: o[2] || 0, q: rq(s, R[other]) }); // 컨설팅의 경력 이직은 분야 화면에서 연다
+  if (o && !(job === "cs" && other === "a")) out.push({ key: "x" + other, t: `길을 바꾼다: ${o[0]}`, res: o[1], cost: o[2] || 0, q: rq(s, R[other], `${job}:${other}`) }); // 컨설팅의 경력 이직은 분야 화면에서 연다
   return out;
 }
 // 한 차수의 감소율(0~cap). 컨설팅 1차는 cs.js 가 직접 줄이므로 0
@@ -226,7 +228,7 @@ export function waveMonth(s, r, notes, scenes) {
     if (cut > 0) { const prof = profitOf(s, job); if (prof > 0) { const amt = Math.round(prof * cut); if (amt > 0) { s.cash -= amt; addMoney(s, "exp", WV_LABEL, amt); } } }
     if (s.cal === 1 && cut > 0) notes.push(`${jobN(job)}: 판이 바뀌어 이익이 ${pct(cut)}% 줄고 있어요. 하던 대로면 해마다 더 줄어요.`);
     // 컨설팅 면접 전문(길 B)을 준비하던 사람: 조건을 채우면 바로 자리 잡는다
-    if (job === "cs" && V.cs?.wantB && V.cs.path !== "b") { const q = rq(s, WV_REQ.cs.b); if (!q || q.ok) { V.cs.path = "b"; V.cs.wantB = 0; notes.push(`컨설팅: ${q ? `${q.n} ${q.need}을 채워 ` : ""}면접 전문으로 자리 잡았어요. 면접 코칭 문의는 AI 대세에도 줄지 않아요.`); } }
+    if (job === "cs" && V.cs?.wantB && V.cs.path !== "b") { const q = rq(s, WV_REQ.cs.b, "cs:b"); if (!q || q.ok) { V.cs.path = "b"; V.cs.wantB = 0; notes.push(`컨설팅: ${q ? `${q.n} ${q.need}을 채워 ` : ""}면접 전문으로 자리 잡았어요. 면접 코칭 문의는 AI 대세에도 줄지 않아요.`); } }
     for (const n of [1, 2]) {
       const W = WV(s, job, n); if (!W) continue;
       const key = RK(job, n), x = V[key];
@@ -258,7 +260,7 @@ export function waveMonth(s, r, notes, scenes) {
 function scene(s, job, n, late) {
   const W = WV(s, job, n), B = WV_BAL, J = bal(job), nm = jobN(job), x = s.wv[RK(job, n)];
   if (n === 1 && W.own) { // 컨설팅 1차: 줄어드는 건 cs.js. 길 A = 경력 이직 분야(분야 화면에서 연다), 길 B = 면접 전문
-    const nc = D.NICHES.career.req, hasA = s.cs?.niches?.includes("career"), q = rq(s, WV_REQ.cs.b);
+    const nc = D.NICHES.career.req, hasA = s.cs?.niches?.includes("career"), q = rq(s, WV_REQ.cs.b, "cs:b");
     const chB = !q || q.ok ? { t: W.b[0], eff: { mental: -1 }, text: W.b[1], wv: "csb" } : { t: `면접 전문을 준비한다 (${q.n} ${q.need} 필요 · 지금 ${q.cur})`, eff: { stat: { talk: 2 } }, text: "아직은 말이 모자라다. 모의 면접을 돌리며 그날을 준비하기로 했다.", wv: "cswantb" };
     return { kind: "event", tag: "WARNING", warn: { head: W.head, sub: `${nm} · 판이 바뀐다` }, title: W.head, onChoose: "wv_ev", wvJob: job, wvN: n,
       text: `${W.text}\n(신입 취업 쪽 문의가 해마다 ${pct(CS_AI.perYear)}%p씩, 최대 ${pct(1 - CS_AI.floor)}%까지 줄어요. 강의는 버팀목이지만 강의료와 섭외도 같이 줄어요)\n(길 A 경력 이직: 줄지 않아요. 커리어 ${nc.career}·회사 경력 ${nc.years}년이 돼야 분야 화면에서 열려요. ${hasA ? "이미 열었어요" : `지금 커리어 ${Math.floor(s.st?.career || 0)}`})\n(길 B 면접 전문: 면접 코칭 문의가 줄지 않아요${q ? `. ${q.n} ${q.need} 필요 · 지금 ${q.cur}` : ""})\n(어느 길이 끝까지 안전할지는 아무도 몰라요. 몇 해 뒤 한쪽이 또 흔들려요)`,
@@ -282,6 +284,7 @@ export const WV_CHOOSE = {
   wv_ev(s, r, i, okv, sc) {
     const job = sc?.wvJob, n = sc?.wvN === 2 ? 2 : 1, W = WV(s, job, n), V = st(s), x = V[RK(job, n)]; if (!W || !x) return [];
     const c = sc.choices[i] || {}, was = x.mode, B = WV_BAL;
+    if (c.wv === "go" || c.wv === "csb") { const req = n === 1 ? (c.wv === "csb" ? "b" : c.key) : c.key === "d" ? "d" + hitOf(s, job) : c.key === "xa" ? "a" : c.key === "xb" ? "b" : c.key; (s.wvTook = s.wvTook || []).push({ job, n, req, t: s.t, title: String(c.t || "").replace(/^길을 바꾼다: /, "").replace(/ \(.*\)$/, "") }); } // 11-25 이번 판에 간 길(엔딩·앨범, 다음 회차 특전)
     if (n === 1 && W.own) { // 컨설팅 1차
       x.mode = "own"; log(s, `[판 변화] ${W.head}`, "work");
       if (c.wv === "csb") { x.path = "b"; return ["면접 전문으로 간판을 바꿨어요", "면접 코칭 문의는 AI 대세에도 줄지 않아요"]; }
@@ -314,3 +317,7 @@ export function waveScene(s, job, late, n = 1, hit, path) {
   if (late && !V[k].mode) { V[k].mode = "stay"; V[k].mt = s.t; V[k].t = s.t - 24; }
   return scene(s, job, n, !!late);
 }
+
+// 11-25 이번 판에 간 길: 엔딩 결산·앨범 기록 줄("파티룸 · 모임으로 채운다 (35세)")과, 다음 회차에 넘길 "투잡:길" 목록
+export function tookList(s) { return (s.wvTook || []).map((x) => `${jobN(x.job)} · ${x.title}${x.t != null && s.startAge ? ` (${Math.floor(s.startAge + x.t / 12)}세)` : ""}`); }
+export function goneOut(s) { return [...new Set((s.wvTook || []).map((x) => `${x.job}:${x.req}`))]; }

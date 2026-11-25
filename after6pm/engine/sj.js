@@ -257,7 +257,7 @@ export function coworkers(s) { return s.cast.filter((id) => { const c = CHAR[id]
 export function refresh(s, r) { // 이번 달 회사·모임에 나오는 사람들
   for (const job of s.sj?.active || []) { const p = s.sj.rp?.[job]; if (ENTRY[job] && p && p.t0 !== undefined && p.t0 < s.t && p.shock === undefined && p.done === undefined) { p.shock = s.t; (s.sceneQ = s.sceneQ || []).push(shockScene(s, job)); } } // 첫 영업 달 정산 뒤 '생각보다 안 되네'
   if (!(s.co.quit || s.co.fired)) {
-    const pool = r.shuffle(coworkers(s).filter((id) => !s.rel[id]?.spouse)).slice(0, r.int(3, 5));
+    const [pLo, pHi] = D.CO_PPL[s.co.type] || [3, 5], pool = r.shuffle(coworkers(s).filter((id) => !s.rel[id]?.spouse)).slice(0, r.int(pLo, pHi)); // 11-25 회사 크기별 인원(난수 쓰는 횟수는 그대로)
     for (const sp of Object.values(s.spot)) for (const id of pool) { const i = sp.indexOf(id); if (i >= 0) sp.splice(i, 1); }
     // 11-25 회사 종류에 맞는 장소(defs CO_SPOTS)에 고르게 선다: 난수는 전처럼 한 사람에 한 번, 뽑힌 곳에 이미 누가 있으면 그다음 빈 곳으로 옮긴다. 잠긴 곳(대기업 임원층)은 뺀다
     const L = D.coSpots(s.co.type).filter((sp) => !(sp.lockRank !== undefined && (s.co.rank || 0) < sp.lockRank)).map((sp) => sp.id), full = (k) => (s.spot[k] || []).length > 0;

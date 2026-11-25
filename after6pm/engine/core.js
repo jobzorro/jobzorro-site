@@ -158,7 +158,7 @@ export function newGame(o) {
     else { take(3, "army", START_BOND.army, (c) => c.gender === "M" && !isForeign(c)); take(left(2, "club"), "club", START_BOND.club, () => true); } }
   // N회차(회귀): 지난 인생의 선물
   const ng = o.ng || {};
-  s.ng = { n: Math.max(1, ng.n || 1), hard: !!ng.hard, gifts: ng.gifts || [], past: ng.past || [], hl: ng.hl || {} }; // hl: 지난 회차의 히로인 결말·본 사건(heroine.js ngIn) // past: 지난 인생 히든 길 기록(v4.30 회차의 길)
+  s.ng = { n: Math.max(1, ng.n || 1), hard: !!ng.hard, gifts: ng.gifts || [], past: ng.past || [], hl: ng.hl || {}, wvGone: ng.wvGone || [] }; // 11-25 wvGone: 지난 판들에 간 판 변화 길(3회차 특전은 안 가 본 길에만) // hl: 지난 회차의 히로인 결말·본 사건(heroine.js ngIn) // past: 지난 인생 히든 길 기록(v4.30 회차의 길)
   if (ng.cash) s.cash += ng.cash;
   for (const j of ng.know || []) if (D.SIDEJOBS[j]) { SJ.found(s, j, "지난 인생의 기억"); s.sj.know[j] = (s.sj.know[j] || 0) + 10; }
   for (const id of ng.friends || []) if (inPlay(CHAR[id])) { if (!s.cast.includes(id)) s.cast.push(id); const x = ensureRel(s, id); x.aff = Math.max(x.aff, 30); x.deja = true; }
@@ -252,7 +252,10 @@ function rollBangs(s) {
   const add = (rg, sp, sc) => { used.add(sc.id); out.push({ id: `b${s.t}_${out.length}`, rg, sp: sp.id, spN: sp.n, sc: sc.id, title: sc.title }); };
   if (coSp.length) { // 회사: 종류별 개수. 회식이 뜬 달은 그중 하나가 회식(행동력 2)
     const [lo, hi] = BANG.co[s.co.type] || [1, 2]; let left = lo + Math.floor(rnd() * (hi - lo + 1));
-    if (partyOn(s)) { out.push({ id: `b${s.t}_party`, rg: "company", sp: "dinner", spN: D.CO_PARTY_SPOT.n, party: 1, ap: D.CO_PARTY.ap, title: `팀 회식 · ${s.co.party.title}` }); left--; }
+    if (partyOn(s)) { out.push({ id: `b${s.t}_party`, rg: "company", sp: "dinner", spN: D.CO_PARTY_SPOT.n, party: 1, ap: D.CO_PARTY.ap, title: `팀 회식 · ${s.co.party.title}` }); left--;
+      // 11-25 맵 시안 ②: 회식 달에는 성숲길 2차(회식에 다녀와야 열림)와 집에서 기다리는 사람(연인·배우자가 있을 때)이 같이 떠서 어디로 갈지 고른다
+      if (SCENES.some((x) => x.id === "party_2cha")) out.push({ id: `b${s.t}_2cha`, rg: "hot", sp: "rooftop", spN: "성숲길 · 2차", sc: "party_2cha", title: "2차 · 회식 끝나고", after: "party" });
+      if (Object.values(s.rel || {}).some((x) => x.lover || x.spouse) && SCENES.some((x) => x.id === "party_wait")) out.push({ id: `b${s.t}_wait`, rg: "town", sp: "home", spN: "우리 집", sc: "party_wait", title: "기다리는 사람" }); }
     for (let k = 0; k < 40 && left > 0; k++) {
       const mine = SCENES.filter((x) => x.bang && x.where === "office" && fresh(x) && ok(x)); // 이 회사 종류의 고유 느낌표(sceneOk 가 when.co 를 본다)
       if (mine.length && rnd() < BANG.own) { const sc = pick(mine), sp = [].concat(sc.at || []).map((id) => coSp.find((x) => x.id === id)).find(Boolean) || pick(coSp); add("company", sp, sc); left--; continue; }
@@ -266,7 +269,7 @@ function rollBangs(s) {
     add(rg, sp, sc);
   }
   if (out.length < n) { // 11-25 모자란 달(퇴사 뒤·인생 후반에 0~5개만 뜨던 것): 그 장소의 장면은 쉬는 기간(BANG.fresh) 없이 다시 쓴다
-    const again = (sp) => SCENES.filter((x) => x.where === sp.loc && !x.bang && !x.mate && !/\{[가-힣]+\}/.test(x.text || "") && !used.has(x.id) && ok(x));
+    const again = (sp) => SCENES.filter((x) => (x.where === sp.loc || x.where === "any") && !x.bang && !x.mate && !/\{[가-힣]+\}/.test(x.text || "") && !used.has(x.id) && ok(x)); // 11-25 장소 장면이 바닥난 달은 어디서나 뜨는 장면(any)도 쓴다(스타트업 21달째 5개만 뜨던 것)
     for (let k = 0; k < 120 && out.length < n; k++) { const { rg, sp } = pick(spots); if (out.filter((b) => b.rg === rg).length >= BANG.perRg) continue; const L = again(sp); if (L.length) add(rg, sp, pick(L)); }
   }
   s.bangs = out;
@@ -275,6 +278,7 @@ export function doBang(s, bid) {
   const b = (s.bangs || []).find((x) => x.id === bid); if (!b) return { ok: false, msg: "이미 지나간 일이에요" };
   if (b.rg === "company" && (s.co.quit || s.co.fired)) { s.bangs = s.bangs.filter((x) => x.rg !== "company"); return { ok: false, msg: "회사를 그만뒀어요" }; } // 11-25 달 중간에 회사를 나왔으면 회사 느낌표는 지나간 일
   if (b.party) { const res = act(s, "company_dinner"); if (res.ok) s.stat.bangs = (s.stat.bangs || 0) + 1; return res; } // 11-25 회식: '회식 참석' 행동 그대로(행동력 2). 느낌표 지우기·사람들 돌려보내기는 ACT_FN.company_dinner
+  if (b.after === "party" && !s.co.party?.done) return { ok: false, msg: "회식에 가야 2차도 가요" }; // 11-25 2차는 회식 다녀온 뒤
   if (s.pending) return { ok: false, msg: "장면을 먼저 끝내세요" }; if (s.ap < BANG.ap) return { ok: false, msg: "행동력이 부족해요" };
   const sc = SCENES.find((x) => x.id === b.sc); s.bangs = s.bangs.filter((x) => x !== b); if (!sc) return { ok: false, msg: "이미 지나간 일이에요" };
   s.ap -= BANG.ap; s.seen[sc.id] = s.t; s.stat.bangs = (s.stat.bangs || 0) + 1;
@@ -1036,7 +1040,7 @@ export function choose(s, i) {
 const CS_SCENE = new Set(SCENES.filter((x) => x.id.startsWith("loc_") && /자소서|면접|취준|취업|첨삭|이력서/.test(x.title + x.text)).map((x) => x.id));
 function pickLocScene(s, r, loc) {
   if (loc === "office") return pickOffice(s, r);
-  let cands = SCENES.filter((x) => x.where === loc && sceneOk(s, x));
+  let cands = SCENES.filter((x) => x.where === loc && !x.bang && sceneOk(s, x)); // 11-25 느낌표 전용 장면(회식 달 2차·기다리는 사람)은 장소 장면으로 안 뽑는다
   const fresh = cands.filter((x) => s.seen[x.id] === undefined || s.t - s.seen[x.id] >= 8); if (fresh.length) cands = fresh;
   const csOn = SJ.isFound(s, "cs") || (s.sj?.int?.cs || 0) >= 50;
   if (!csOn) { const rest = cands.filter((x) => !CS_SCENE.has(x.id)); if (rest.length && !r.chance(0.25)) cands = rest; }
@@ -1840,7 +1844,8 @@ export function load(str) {
 }
 // 없는 칸 기본값 채우기. 불러올 때와 새 판을 만들 때 같이 돈다(버그 10: '이어 한 판'과 '껐다 켠 판'이 같아지게)
 function fillState(s) {
-  { const RN = { "LC전자": "엘쥐전자", "SQ하이닉스": "스크하이닉스" }; if (s.co && RN[s.co.name]) s.co.name = RN[s.co.name]; } // 11-25 대표 결정: 게임 속 이름을 스크하이닉스·엘쥐전자로(옛 저장의 회사 이름도 바꾼다)
+  { const RN = { "LC전자": "엘쥐전자", "SQ하이닉스": "스크하이닉스" }; if (s.co && RN[s.co.name]) s.co.name = RN[s.co.name]; }
+  for (const x of Object.values(s.rel || {})) if (x && x.loverSince != null && !x.lover && !x.spouse && x.exT == null) { x.exT = s.t; x.exKind = "drift"; } // 11-25 옛 저장(이별 기록 전)의 헤어진 사이: 이별 달·이유를 채워 재회 장면이 뜨게 한다(히로인 설계 4-4) // 11-25 대표 결정: 게임 속 이름을 스크하이닉스·엘쥐전자로(옛 저장의 회사 이름도 바꾼다)
   if (!s.sj) { s.sj = SJ.init(); s.sj.open = true; for (const k of ["pr", "cs"]) if ((k === "pr" && s.pr.rooms.length) || (k === "cs" && s.cs.niche)) { s.sj.found[k] = 0; s.sj.int[k] = 100; s.sj.active.push(k); } }
   if (!s.hb) s.hb = SJ.hbInit();
   s.me.perks = s.me.perks || [];

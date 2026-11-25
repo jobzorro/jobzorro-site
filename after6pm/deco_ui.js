@@ -16,7 +16,7 @@ export function decoRow(ctx, kind, x) {
   const sc = DF.score(ctx.S, x), how = x.decoS == null ? "안 꾸밈 · 기본" : x.decoAuto ? "알아서 꾸밈" : "직접 꾸밈";
   const cls = sc >= 75 ? "good" : sc < DF.DECO.pivot ? "bad" : "gold";
   return `<div class="row small" style="gap:6px"><span>감성 점수 <b class="${cls}">${sc}</b> <span class="tiny muted">${how}</span></span><span class="grow"></span><button class="btn sm gold" data-deco="${kind}:${x.id}">방 꾸미기</button></div>
-    <div class="tiny ${sc > DF.DECO.pivot ? "good" : "muted"}" style="margin-top:-2px">${DF.effectTxt(ctx.S, x, kind)}${sc < 75 ? " · 직접 잘 꾸미면 더 올라요" : ""}</div>`;
+    <details class="more"><summary>감성 효과 ▾</summary><div class="more-b tiny ${sc > DF.DECO.pivot ? "good" : "muted"}">${DF.effectTxt(ctx.S, x, kind)}${sc < 75 ? " · 직접 잘 꾸미면 더 올라요" : ""}</div></details>`; // 11-25 화면 정리 41·59: 감성 효과 설명은 접어 둔다
 }
 
 // 계약 직후: 직접 / 알아서 / 나중에
