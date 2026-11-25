@@ -41,18 +41,18 @@ const GEAR = [
   G("vb_mon", "vibe", "듀얼 모니터", 70, { vbSpeed: 1.04 }, "개발 속도 +4%"),
   G("vb_cloud", "vibe", "서버 크레딧", 100, { vbOps: 0.85 }, "앱 장애 손실 −15%"),
 ];
-// 세트 효과: 그 투잡 장비 2개를 다 모으면
+// 세트 효과: 그 투잡 장비 2개를 다 모으면 · 11-25 성장 +%(그 투잡 핵심 능력치 성장 +6%, 벽 구간에서 특히 셈)
 export const SETS = {
-  pr: { n: "파티룸 풀세트", m: { star: 0.04 }, d: "별점 +0.04, 예약률 약 +5%" },
-  cs: { n: "컨설팅 작업실", m: { referMult: 1.08, passBonus: 0.005 }, d: "소개 +8%, 합격률 +0.5%p" },
-  insta: { n: "1인 스튜디오", m: { instaMult: 1.04 }, d: "팔로워 증가 +4%" },
-  airbnb: { n: "호텔급 숙소", m: { abStar: 0.03 }, d: "숙소 별점 +0.03" },
-  ucafe: { n: "무인 매장 완성", m: { ucRepeat: 1.03 }, d: "단골 +3%" },
-  tarot: { n: "점집 분위기", m: { trMult: 1.04 }, d: "타로 손님 +4%" },
-  webnovel: { n: "작가의 책상", m: { wnBuzz: 1.08 }, d: "연재 화제성 +8%" },
-  tutoring: { n: "온라인 교실", m: { tuRefer: 1.1 }, d: "학부모 소개 +10%" },
-  chicken: { n: "주방 장인", m: { chStar: 0.03 }, d: "치킨 별점 +0.03" },
-  vibe: { n: "개발 장비 완비", m: { vbPrice: 1.04 }, d: "개발 단가 +4%" },
+  pr: { n: "파티룸 풀세트", m: { star: 0.04, growMult: { sense: 1.06, hands: 1.06 } }, d: "별점 +0.04, 예약률 약 +5% · 감각·손재주 성장 +6%" },
+  cs: { n: "컨설팅 작업실", m: { referMult: 1.08, passBonus: 0.005, growMult: { write: 1.06, talk: 1.06 } }, d: "소개 +8%, 합격률 +0.5%p · 글쓰기·말빨 성장 +6%" },
+  insta: { n: "1인 스튜디오", m: { instaMult: 1.04, growMult: { mkt: 1.06, sense: 1.06 } }, d: "팔로워 증가 +4% · 마케팅·감각 성장 +6%" },
+  airbnb: { n: "호텔급 숙소", m: { abStar: 0.03, growMult: { lang: 1.06, hands: 1.06 } }, d: "숙소 별점 +0.03 · 외국어·손재주 성장 +6%" },
+  ucafe: { n: "무인 매장 완성", m: { ucRepeat: 1.03, growMult: { sense: 1.06, num: 1.06 } }, d: "단골 +3% · 감각·숫자 성장 +6%" },
+  tarot: { n: "점집 분위기", m: { trMult: 1.04, growMult: { talk: 1.06, sense: 1.06 } }, d: "타로 손님 +4% · 말빨·감각 성장 +6%" },
+  webnovel: { n: "작가의 책상", m: { wnBuzz: 1.08, growMult: { write: 1.06 } }, d: "연재 화제성 +8% · 글쓰기 성장 +6%" },
+  tutoring: { n: "온라인 교실", m: { tuRefer: 1.1, growMult: { talk: 1.06, num: 1.06 } }, d: "학부모 소개 +10% · 말빨·숫자 성장 +6%" },
+  chicken: { n: "주방 장인", m: { chStar: 0.03, growMult: { hands: 1.06, num: 1.06 } }, d: "치킨 별점 +0.03 · 손재주·숫자 성장 +6%" },
+  vibe: { n: "개발 장비 완비", m: { vbPrice: 1.04, growMult: { num: 1.06, career: 1.06 } }, d: "개발 단가 +4% · 숫자·커리어 성장 +6%" },
 };
 // 기념품 12개: 이벤트에서만. 얻을 때 멘탈 + 작은 영구 효과
 const MEMO = [

@@ -34,6 +34,9 @@ export const CS_F30 = {
 };
 const ORGS = ["지방 국립대 커리어센터", "구청 청년 일자리센터", "공공기관 신입 교육", "고용센터 청년 프로그램", "도서관 취업 아카데미"];
 const employedCs = (s) => !(s.co?.quit || s.co?.fired);
+// 11-25 히든 길 '경력 이직 컨설턴트' 위기(hidden.js HID_RISK.cs: 현직 정보로 상담한다는 말이 회사에 돌았다) 동안: 헤드헌터 소개가 끊기고 경력 이직 단가 ×price
+export const CS_HID = { price: 0.7 };
+const csHidPause = (s) => s.hid?.j?.cs?.open !== undefined && s.hid.j.cs.pause > s.t;
 export function init() {
   return { open: false, niche: null, niches: [], nick: null, price: "low", reviews: 0, passes: 0, fails: 0, clients: 0, friends: 0,
     queue: [], outcomes: [], ch: { kmong: { on: false, q: 0 }, blog: { posts: 0, idx: 0, lastT: -99 }, insta: { f: 0 }, youtube: { subs: 0, videos: 0 }, kakao: { m: 0 } },
@@ -67,6 +70,46 @@ export function setNick(s, k, nk) {
   return { ok: true, msg: k === "real" ? "실명으로 활동: 신뢰 +, 회사 눈치 ×1.4" : `닉네임 '${nickName(s)}'${((w) => { const ch = w.charCodeAt(w.length - 1), f = (ch - 0xac00) % 28; return f && f !== 8 ? "으로" : "로"; })(nickName(s) || "가")} 활동` };
 }
 export function setPrice(s, k) { const p = D.CS_PRICE[k]; if (p.req && s.cs.reviews < p.req) return { ok: false, msg: `후기 ${p.req}개부터` }; s.cs.price = k; return { ok: true, msg: `가격: ${p.n}` }; }
+// ───────── 11-25 대표: 마케팅 대행 ─────────
+// 표준 가격부터는 마케팅 대행이 꼭 필요하다(SEO 최적화 + 블로그·인별 주 4회 발행). 저가일 땐 없어도 된다.
+// 대행사 다섯 곳, 월 60·80·100만(물가 반영). 취업(신입 자소서·면접·공기업)과 이직(경력 이직)을 얼마나 아는지 등급이 따로다.
+// 등급은 그 분야 문의에 곱한다. 표준 이상인데 대행이 없으면 문의가 크게 준다(none). 커리어노트 마케팅에는 브랜드 마케터 서다인이 있다(사건 셋)
+export const CS_AGENCY = {
+  list: {
+    cn: { n: "커리어노트 마케팅", fee: 80, job: "A", move: "B", d: "취업 카페 운영진 출신이 차린 곳. 신입 검색어는 꿰고 있다. 담당은 브랜드 마케터 서다인", mk: 1 },
+    fj: { n: "퍼스트잡 컴퍼니", fee: 100, job: "S", move: "A", d: "현직 인사담당자 출신 에디터가 직접 쓴다. 비싸다" },
+    hs: { n: "하이어링 스튜디오", fee: 80, job: "B", move: "A", d: "헤드헌터 고객이 많아 경력 이직 글에 강하다" },
+    tb: { n: "탑블로그랩", fee: 60, job: "B", move: "C", d: "체험단 출신. 신입 검색어는 아는데 이직은 모른다" },
+    gb: { n: "글밭 콘텐츠", fee: 60, job: "C", move: "B", d: "글은 매일 올라오는데 취업을 모른다. 가끔 엉뚱한 글이 나간다", oops: 0.1 },
+  },
+  grade: { S: 1.25, A: 1.12, B: 1, C: 0.85 }, none: 0.55, per: 4, // per: 주 몇 회 발행
+};
+export const agOf = (s) => CS_AGENCY.list[s.cs?.agency] || null;
+export const agFee = (s) => { const a = agOf(s); return a ? Math.round(a.fee * SYN.pi(s)) : 0; };
+export const agNeed = (s) => s.cs.price !== "low"; // 표준부터
+export function agGrade(s, k) { const a = agOf(s); if (!a) return null; return s.cs.agency === "cn" && s.cs.agGone && k !== "career" ? "B" : k === "career" ? a.move : a.job; }
+export function agMult(s, k) { const a = agOf(s); if (!a) return agNeed(s) ? CS_AGENCY.none : 1; return CS_AGENCY.grade[agGrade(s, k)] * (s.cs.agOops === s.t ? 0.8 : 1) * (s.cs.agBoost && s.t <= s.cs.agBoost.until ? 1 + s.cs.agBoost.x : 1); }
+export function setAgency(s, id) {
+  if (id && !CS_AGENCY.list[id]) return { ok: false, msg: "없는 대행사예요" };
+  const was = s.cs.agency; s.cs.agency = id || null; if (id && id !== was) { s.cs.agT = s.t; s.cs.agMk = 0; }
+  return { ok: true, msg: id ? `마케팅 대행: ${CS_AGENCY.list[id].n} (월 ${won(agFee(s))}, 주 ${CS_AGENCY.per}회)` : "마케팅 대행 해지. 표준 가격부터는 문의가 크게 줄어요" };
+}
+export const agLine = (a) => `${a.n} · 월 ${a.fee}만 · 취업 ${a.job} · 이직 ${a.move}`;
+export function agencyScene(s) {
+  const L = Object.entries(CS_AGENCY.list);
+  return { kind: "event", tag: "투잡", title: "마케팅 대행사를 고를 때", onChoose: "cs_ag", ag: "pick", bg: "cowork", best: [],
+    text: `가격을 표준으로 올리자 문의가 같은 값의 다른 코치들 쪽으로 흩어진다. 혼자 블로그 하나로는 검색 첫 장에 못 남는다. 대행사 다섯 곳에서 제안서가 왔다. 모두 SEO와 블로그·인별을 주 ${CS_AGENCY.per}회 올려 준다. 다른 건 취업과 이직을 얼마나 아느냐다.\n\n${L.map(([, a]) => `· ${agLine(a)}: ${a.d}`).join("\n")}`,
+    choices: [...L.map(([k, a]) => ({ t: `${a.n}와 계약한다 (월 ${a.fee}만)`, eff: {}, text: `${a.n}와 계약했다. 다음 달부터 글이 올라간다.` })), { t: "아직은 직접 한다", eff: { mental: -1 }, text: "밤마다 블로그를 붙잡기로 했다. 표준 가격에서는 문의가 반쯤 줄 것이다." }] };
+}
+// 서다인(커리어노트 마케팅 브랜드 마케터) 사건 셋: 계약 다음 달 첫 미팅 · 4달째 제목 다툼 · 9달째 이직 고민
+const MK_EV = [
+  { at: 1, title: "커리어노트 마케팅 · 첫 미팅", text: "회의실에 들어온 담당자가 명함을 내민다. 브랜드 마케터 서다인. 노트북을 열자마자 내 블로그 글 세 개를 띄운다. {서다인}\"글은 좋은데 검색어가 없어요. 취준생은 '자소서 잘 쓰는 법'이 아니라 '대기업 인사팀 자소서 첫 문장'을 쳐요.\"",
+    choices: [{ t: "합격 후기를 숫자로 정리해 넘긴다", eff: { stat: { mkt: 0.5 } }, text: "{서다인}\"이거예요. 숫자는 거짓말을 안 하거든요.\" 첫 달 글 열두 편의 제목이 그 자리에서 정해졌다.", mk: { lead: 0.05, n: 3 } }, { t: "말투만은 내 걸로 해 달라고 한다", eff: { stat: { write: 0.4 } }, text: "{서다인}\"좋아요. 대표님 말투 샘플 다섯 개만 주세요.\" 서다인이 녹음기를 켰다." }] },
+  { at: 4, title: "제목 하나로 싸웠다", text: "서다인이 보낸 이번 주 제목은 '이 자소서 첫 문장, 인사팀은 3초 만에 버립니다'. 조회수는 오르는데 댓글에 '낚시'가 섞이기 시작했다. {서다인}\"솔직히 이런 게 클릭돼요. 대표님 결정이에요.\"",
+    choices: [{ t: "자극적이어도 간다, 클릭이 먼저다", eff: { mental: -1 }, text: "문의가 확 늘었다. 그만큼 '생각보다 별거 없네요' 후기도 섞였다.", mk: { lead: 0.1, n: 3, rev: -1 } }, { t: "제목은 담백하게, 대신 사례를 앞에", eff: { stat: { write: 0.5 } }, text: "{서다인}\"알겠어요. 대신 사례는 제가 골라요.\" 늘어나는 속도는 느려도 후기가 단단해졌다.", mk: { rev: 1 } }] },
+  { at: 9, title: "서다인의 고민", text: "미팅 끝에 서다인이 노트북을 덮는다. {서다인}\"대표님, 사적인 거 하나만요. 대기업 브랜드팀에서 연락이 왔어요. 연봉이 지금의 1.5배예요. 근데 여기서 대표님 같은 분들 키우는 게 재밌기도 하고요.\"",
+    choices: [{ t: "가라고, 경력기술서를 같이 봐 준다", eff: { stat: { career: 0.5 } }, text: "두 주 뒤 까톡이 왔다. '붙었어요. 후임한테 대표님 건 특별히 부탁해 놨어요.' 새 담당자는 아직 서툴다. 대신 서다인이 지인 셋을 소개해 줬다.", mk: { leave: 1, refer: 3 } }, { t: "남으면 좋겠다고 솔직히 말한다", eff: {}, text: "{서다인}\"그 말 듣고 싶었나 봐요.\" 서다인은 남았다. 대신 다음 달부터 대행비가 월 10만 원 오른다.", mk: { stay: 1 } }] },
+];
 export function setAds(s, v) { s.cs.ads = clamp(Math.round(v), 0, 300); }
 function checkOpen(s, notes) { if (!s.cs.open && entrySteps(s).every((x) => x.done)) { s.cs.open = true; notes?.push("취업컨설팅 개업! 다음 달부터 문의가 들어온다"); log(s, "취업컨설팅을 정식으로 시작했다.", "work"); return true; } return false; }
 
@@ -200,7 +243,7 @@ function prodPick(s, r, niche) {
   const w = { newgrad: [["edit", 0.65], ["coach", 0.2], ["pkg", 0.15]], public: [["edit", 0.65], ["coach", 0.2], ["pkg", 0.15]], interview: [["coach", 0.75], ["edit", 0.1], ["pkg", 0.15]], career: [["edit", 0.4], ["coach", 0.2], ["pkg", 0.4]] }[niche];
   let p = r.weighted(w); if (p === "pkg" && !pk) p = niche === "interview" ? "coach" : "edit"; return p;
 }
-function priceOf(s, prod, niche) { const b = D.CS_PRODUCTS[prod].price * D.NICHES[niche].priceF * (1 - (1 - aiCut(s, niche)) * CS_AI.priceW) * D.CS_PRICE[s.cs.price].mult * (s.cs.lv >= 4 ? 1.3 * mod(s, "csLv4Price", 1) : 1) * (s.cs.lv >= 5 ? 1.25 : 1); return Math.round(b * 10) / 10; }
+function priceOf(s, prod, niche) { const b = D.CS_PRODUCTS[prod].price * D.NICHES[niche].priceF * (1 - (1 - aiCut(s, niche)) * CS_AI.priceW) * D.CS_PRICE[s.cs.price].mult * (s.cs.lv >= 4 ? 1.3 * mod(s, "csLv4Price", 1) : 1) * (s.cs.lv >= 5 ? 1.25 : 1) * (niche === "career" && csHidPause(s) ? CS_HID.price : 1); return Math.round(b * 10) / 10; }
 function addClient(s, r, src) {
   const cs = s.cs; const niche = r.pick(cs.niches); const prod = prodPick(s, r, niche);
   let who = null;
@@ -244,9 +287,9 @@ export function monthStart(s, r) {
     오픈채팅: ch.kakao.m / 100,
     광고: Math.sqrt(cs.ads) * 0.7 * mod(s, "adsMult", 1),
     소개: cs.refer,
-    헤드헌터: cs.niches.includes("career") ? helperPower(s, "cs_headhunter") * 2.5 : 0,
+    헤드헌터: cs.niches.includes("career") && !csHidPause(s) ? helperPower(s, "cs_headhunter") * 2.5 : 0,
   };
-  const seas = cs.niches.reduce((a, k) => a + (s.era.rolling ? 1 : D.NICHES[k].season[s.cal - 1]) * D.NICHES[k].demand * aiCut(s, k), 0) / Math.max(1, cs.niches.length) * (1 + 0.35 * (cs.niches.length - 1));
+  const seas = cs.niches.reduce((a, k) => a + (s.era.rolling ? 1 : D.NICHES[k].season[s.cal - 1]) * D.NICHES[k].demand * aiCut(s, k) * agMult(s, k) /* 11-25 마케팅 대행 등급 */, 0) / Math.max(1, cs.niches.length) * (1 + 0.35 * (cs.niches.length - 1));
   let mult = 0.58 * BIG.fullLead(s) * seas * (s.era.winter ? 0.9 : 1) * mod(s, "leadMult", 1) * (s.era.ai && cs.niche === "newgrad" ? 0.85 : 1) * (s.era.freeze ? 1.2 : 1) * SJ.ramp(s, "cs") * SJ.skillRamp(s, "cs") * G.lead; // v4.25b 배우는 기간 · f30 합격 보장
   let leads = 0; cs.src = {};
   for (const [k, v] of Object.entries(src)) leads += v * mult;
@@ -321,7 +364,28 @@ export function month(s, r, notes, scenes) {
   else if (cs.open && s.t - (cs.ev2T ?? -99) >= 2 && r.chance(0.4)) { const sc = csEvent(s, r, pass, fail); if (sc) { cs.ev2T = s.t; scenes.push(sc); } }
   // 사건 카드
   if (cs.open && s.t - cs.evT >= 3 && r.chance(0.3)) { const ev = jobEvent(s, r, "jobconsult"); if (ev) { cs.evT = s.t; scenes.push(ev); } }
-  return cs.monthRev - (cs.ads || 0);
+  // 11-25 마케팅 대행: 대행비, 표준 이상인데 대행이 없으면 고르는 장면, 담당자 사건, 엉뚱한 글
+  let agCost = 0;
+  if (cs.open && cs.agency) { agCost = agFee(s) + (cs.agency === "cn" && cs.agStay ? Math.round(10 * SYN.pi(s)) : 0); s.cash -= agCost; addMoney(s, "exp", "마케팅 대행", agCost); }
+  if (cs.open && agNeed(s) && !cs.agency && cs.agAsk == null) { cs.agAsk = s.t; scenes.push(agencyScene(s)); }
+  else if (cs.open && agNeed(s) && !cs.agency && s.t % 3 === 0) notes.push("컨설팅: 마케팅 대행이 없어 표준 가격 문의가 반쯤 줄었어요(보드에서 대행사를 고를 수 있어요)");
+  if (cs.open && cs.agency === "cn" && !cs.agGone && !scenes.length) { const k = cs.agMk || 0, e = MK_EV[k]; if (e && s.t - (cs.agT ?? s.t) >= e.at) { cs.agMk = k + 1; scenes.push({ kind: "event", tag: "투잡", title: e.title, text: e.text, onChoose: "cs_ag", ag: "mk", agK: k, bg: "cowork", best: [], choices: e.choices.map((c) => ({ t: c.t, eff: c.eff, text: c.text })) }); } }
+  const AGX = agOf(s); if (cs.open && AGX?.oops && !scenes.length && r.chance(AGX.oops)) scenes.push({ kind: "event", tag: "투잡", title: "엉뚱한 글이 올라갔다", onChoose: "cs_ag", ag: "oops", bg: "cowork", best: [], text: `${AGX.n}가 올린 이번 주 글 제목은 '취업 잘 되는 MBTI 순위 TOP 5'. 내 이름이 박혀 있다. 댓글에 '컨설턴트가 이런 글을?'이 달렸다.`, choices: [{ t: "당장 내리고 대행사에 항의한다", eff: { mental: -2 }, text: "글은 내려갔다. 다음 달 문의는 조금 빠질 것이다." }, { t: "그냥 둔다, 조회수는 조회수다", eff: {}, text: "조회수는 올랐다. 문의 전환은 안 됐다." }] });
+  return cs.monthRev - (cs.ads || 0) - agCost;
+}
+// 11-25 대행사 장면 선택(core.js SCENE_FN.cs_ag)
+export function agChoose(s, sc, i) {
+  const cs = s.cs;
+  if (sc?.ag === "pick") { const k = Object.keys(CS_AGENCY.list)[i]; if (!k) return ["대행 없이 간다"]; return [setAgency(s, k).msg]; }
+  if (sc?.ag === "oops") { cs.agOops = s.t + 1; return ["다음 달 문의 −20%"]; }
+  if (sc?.ag === "mk") { const m = MK_EV[sc.agK]?.choices?.[i]?.mk || {}, out = [];
+    if (m.lead) { cs.agBoost = { x: m.lead, until: s.t + (m.n || 3) }; out.push(`문의 +${Math.round(m.lead * 100)}% (${m.n || 3}달)`); }
+    if (m.rev) { cs.reviews = Math.max(0, cs.reviews + m.rev); out.push(`후기 ${m.rev > 0 ? "+" : ""}${m.rev}`); }
+    if (m.leave) { cs.agGone = 1; out.push("서다인이 떠났다: 커리어노트 마케팅 취업 등급 A → B"); }
+    if (m.refer) { cs.refer = (cs.refer || 0) + m.refer; out.push(`소개 +${m.refer}`); }
+    if (m.stay) { cs.agStay = 1; out.push("서다인이 남았다: 대행비 월 +10만"); }
+    return out; }
+  return [];
 }
 
 // ───────── 컨설팅 사건: 진상·환불·스토킹·연애·가격 대비 실력 ─────────

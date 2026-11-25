@@ -1056,3 +1056,13 @@ select.btn{min-height:40px}
 .a6mp-pin.home b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#7fe0a8;margin-right:5px;vertical-align:1px}
 .a6bg-c.lk{opacity:.6}
 .a6bg-c:not(.party) .chips span{border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700;background:#1d2c4a;color:#9cc0ff}.a6bg-c:not(.party) .chips span.p{background:#3a1b2e;color:#ff9cc4}
+/* 11-25 투자 1단계: 홈 화면 시장 줄 */
+.a6mkt{margin:8px 0 0;padding:7px 12px;border-radius:12px;font-size:12.5px;background:var(--panel);border:1px solid var(--line)}
+.a6mkt.bear{border-color:#5a2a33;background:#22161a}.a6mkt.bear b{color:#ff9d94}
+.a6mkt.rec{border-color:#1f4a35;background:#14231c}.a6mkt.rec b{color:#7fe0a8}
+/* 11-25 컨설팅 마케팅 대행사 카드 */
+.a6ag{display:grid;gap:6px;margin-top:6px}
+.a6ag button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;font:inherit;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;cursor:pointer}
+.a6ag button.on{border-color:var(--gold)}
+.a6ag b{font-size:13.5px}.a6ag span{font-size:12px}.a6ag small{font-size:11px;color:var(--muted)}
+.a6ag i{font-style:normal;font-weight:900}

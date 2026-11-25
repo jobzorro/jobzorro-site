@@ -514,7 +514,7 @@ function sceneStat(s, sc, ch, okv) {
   const out = [], t = (ch.t || "") + " " + (ch.text || ""), had = ch.eff?.stat || {};
   const w = D.STAT_WORDS.find(([k, re]) => !(had[k] < 0) && re.test(t));
   if (w) out.push(stL(s, w[0], D.STAT_WORD_GAIN, "sc"));
-  else if (sc.where && D.LOC_STAT[sc.where] && /^loc_|^of_|^hb_/.test(sc.id || "")) out.push(stL(s, D.LOC_STAT[sc.where], D.STAT_WORD_GAIN * 0.75, "loc"));
+  else if (sc.where && D.LOC_STAT[sc.where] && /^loc_|^of_|^hb_/.test(sc.id || "")) { out.push(stL(s, D.LOC_STAT[sc.where], D.STAT_WORD_GAIN * 0.75, "loc")); const k2 = D.LOC_STAT2?.[sc.where]; if (k2 && k2 !== D.LOC_STAT[sc.where]) out.push(stL(s, k2, D.STAT_WORD_GAIN * 0.4, "loc")); } // 11-25 장소마다 두 번째 능력치(능력치 성장 개편 2-1)
   if (sc.who && isForeign(CHAR[sc.who])) out.push(stL(s, "lang", 0.5, "fr"));
   return out;
 }
@@ -1153,8 +1153,10 @@ const SCENE_FN = {
   rejob_offer(s, r, i) { if (i === 0) { s.co.type = s._offer.type; s.co.name = s._offer.name; s.co.pay = 0; s.co.eye = 0; s.co.warns = 0; s.co.perf = 50; s.co.boss = 45; s.co.remote = 0; s.co.payBoost = Math.min(1.3, (s.co.payBoost || 1) * 1.1); delete s.co.party; fixCoSpots(s); /* 11-25 회사 종류가 바뀌면 장소·지도 자리도 바뀐다 */ log(s, `${jo(s.co.name, "으로", "로")} 환승 이직했다. 연봉 +10%`, "work"); return [`${s.co.name} 입사`, "월급 +10%"]; } return []; },
   co_ev(s, r, i) { return coEvChoose(s, r, s.pending.ev, i); },
   cs_ev(s, r, i, ok) { return CS.csEvChoose(s, i, ok); },
+  cs_ag(s, r, i, ok, sc) { return CS.agChoose(s, sc, i); }, // 11-25 마케팅 대행사
   pr_crisis(s, r, i, ok) { return PR.crisisChoose(s, i, ok); },
   pr_furn(s, r, i) { return PR.furnChoose(s, i); },
+  pr_want(s, r, i) { return PR.wantChoose(s, i); }, // 11-25 부동산에 원하는 조건 말하기
   full_ev(s, r, i) { if (i !== 0) return []; const job = s._fullJob; const res = quitCompany(s); if (!res.ok) return [res.msg]; s.fullJob = job; s.moments = s.moments || {}; s.moments.quit = s.t; log(s, `${jo(D.SIDEJOBS[job]?.n || "투잡", "을", "를")} 본잡으로. 회사를 나왔다.`, "work"); return ["본잡 전환", "행동력 +5", "월급 끊김"]; },
   ab_raid(s, r, i, ok) { return AB.raidChoose(s, i, ok); },
   inv_ev(s, r, i) { const e = D.INV_EV.find((x) => x.id === s.pending.ev); const c = e?.choices[i]; return c ? invChoose(s, r, c) : []; },
@@ -1642,7 +1644,7 @@ const INV_L = "투자 판단 손익";
 function invPhase(s, r, notes) {
   const PH = D.INV_PH, ph = s.invPh || (s.invPh = { p: "n", u: 0 });
   if (s.t < ph.u) return;
-  if (ph.p === "b") { ph.p = "r"; ph.u = s.t + r.int(PH.rec[0], PH.rec[1]); if (s.invest > 0) notes.push("시장: 하락장이 끝났다. 천천히 회복장이 온다"); }
+  if (ph.p === "b") { ph.p = "r"; ph.u = s.t + r.int(PH.rec[0], PH.rec[1]); ph.t = s.t; if (s.invest > 0) notes.push("시장: 하락장이 끝났다. 천천히 회복장이 온다"); } // 11-25 ph.t: 이 국면이 시작된 달(홈 화면 "하락장 N개월째")
   else if (ph.p === "r") { ph.p = "n"; ph.u = s.t; }
   else if (r.chance(PH.p)) { ph.p = "b"; ph.u = s.t + r.int(PH.bear[0], PH.bear[1]); ph.t = s.t; if (s.invest > 0) notes.push("시장: 하락장이 시작됐다. 몇 달은 계좌가 파랄 것 같다"); }
 }
@@ -1666,6 +1668,7 @@ function invMonth(s, r, notes, scenes) {
   s.invT = s.t; s.invSeen = { ...(s.invSeen || {}), [e.id]: s.t };
   let pre = 0;
   if (e.pre?.inv) { pre = Math.round(s.invest * e.pre.inv); s.invest += pre; addMoney(s, pre >= 0 ? "inc" : "exp", "투자 손익", Math.abs(pre)); }
+  if (e.toRec) { const ph = s.invPh || (s.invPh = { p: "n", u: 0 }); if (ph.p === "n") { ph.p = "r"; ph.u = s.t + r.int(D.INV_PH.rec[0], D.INV_PH.rec[1]); ph.t = s.t; } } // 11-25 투자 1단계: 폭락 뒤 "반드시 +20%" 대신 회복장이 온다(판 사람은 못 탄다)
   if (e.pre?.house && s.house.type === "own") { pre = Math.round(s.house.value * e.pre.house); s.house.value += pre; }
   const text = (((s.co.quit || s.co.fired) && e.textQ) || e.text).replace("{pre}", won(Math.abs(pre))).replace("{div}", won(Math.round(s.invest * 0.03))); // 21번: 퇴사자용 문장
   log(s, `[투자] ${e.title}`, "money");

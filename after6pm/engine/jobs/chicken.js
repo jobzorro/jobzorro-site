@@ -7,6 +7,10 @@ import { addMoney, log, won, gainStat, mod, creditRoom, addLoan, salary, spouseI
 import * as SYN from "../syn.js";
 import * as BR from "./chbrand.js"; // 11-23 브랜드 선택·브랜드 인기·갈아타기 제안
 import * as SJ from "../sj.js"; // 초반 고생 배율(ramp)
+import * as SP from "../space.js"; // 11-25 재계약 인상(건물주 성향)·지점 수 파손 배율·히든 길 켜짐 여부
+// 11-25 히든 길 '내 브랜드 독립'(hidden.js): 열린 뒤로는 가맹 본사가 없다. 재료 원가 −mat(매출 대비 %p), 본사 광고 분담금·리뉴얼 요구·본사 사건(근접 출점·영업지역·오너 논란) 없음.
+// 소스 납품 수입은 hidden.js HID_REW.chicken.fix. 간판을 바꾼 날 입소문은 0에서 다시(hidden.js openPath)
+export const CH_HID = { mat: 0.08 };
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const BRAND = "황금닭";
@@ -346,15 +350,16 @@ function pickEvent(s, r) {
   add("e05", 1, mo >= 4 && !seen("e05") && C.fee < 0.17);
   add("e06", 1 + (st.morale < 45 ? 2 : 0), mo >= 3 && !seen("e06", 10) && !st.mgr);
   add("e07", 0.6 + (st.rating < 4.6 ? 1.5 : 0), mo >= 3 && !seen("e07", 12));
-  add("e17", 0.6, mo >= 12 && !seen("e17", 36));
+  add("e17", 0.6 * SP.dmgX(stores.length), mo >= 12 && !seen("e17", 36)); // 11-25 지점 하나 늘 때마다 튀김기 고장 +30%
   add("e18", 0.6, mo >= 4 && !seen("e18", 30));
   add("e19", 0.4, mo >= 6 && !seen("e19", 48));
   add("e20", 0.6, mo >= 5 && !seen("e20", 36));
   add("e08", 0.8, mo >= 5 && !seen("e08"));
   add("e11", 0.7, C.lv >= 4 && !seen("e11", 24) && stores.every((x) => x.months >= 12));
-  add("e13", 0.5 * BR.f(s).near, mo >= 10 && !seen("e13"));
-  add("e14", 0.6, mo >= 30 && !seen("e14"));
-  add("e15", 0.4 * BR.f(s).risk, mo >= 8 && !seen("e15", BR.f(s).risk > 1.5 ? 72 : 999)); // 사고 잦은 본사는 6년 뒤 또 터질 수 있다
+  const hq = !SP.hidOpen(s, "chicken"); // 11-25 내 브랜드로 독립하면 본사 사건이 없다
+  add("e13", 0.5 * BR.f(s).near, hq && mo >= 10 && !seen("e13"));
+  add("e14", 0.6, hq && mo >= 30 && !seen("e14"));
+  add("e15", 0.4 * BR.f(s).risk, hq && mo >= 8 && !seen("e15", BR.f(s).risk > 1.5 ? 72 : 999)); // 사고 잦은 본사는 6년 뒤 또 터질 수 있다
   if (!P.length) return null;
   const tot = P.reduce((a, x) => a + x[1], 0); let v = r.next() * tot, id = P[0][0];
   for (const [k, w] of P) { v -= w; if (v <= 0) { id = k; break; } }
@@ -448,6 +453,7 @@ export default {
     if (C.scandal > 0) C.scandal--;
     if (C.selfFill > 0) C.selfFill--;
     const syn = (SYN.on(s, "ch_insta") ? 1.04 : 1) * (SYN.on(s, "ch_ucafe") || C.barter ? 1.03 : 1);
+    const indep = SP.hidOpen(s, "chicken"), matR = BR.f(s).mat - (indep ? CH_HID.mat : 0), adR = indep ? 0 : BR.f(s).ad; // 11-25 내 브랜드 독립
     for (const st of C.stores) {
       const T = TYPES[st.type], need = needAp(s, st) + (C.selfFill && !st.mgr ? 1 : 0), q = st.mgr ? clamp(0.85 + 0.15 * st.ap / need, 0, 1) : clamp(st.ap / need, 0, 1), own = st.mgr ? 0 : Math.min(3, st.shifts);
       // 알바: 사기·이탈·태업
@@ -474,11 +480,11 @@ export default {
       dem *= flagMul(st) * (st.freshM > 0 ? 1 + CH_F30.renew.boost : 1) * (st.old ? 1 - CH_F30.renew.old : 1); // 11-22 깃발·리뉴얼
       dem = Math.max(0.2, dem * (1 + 0.05 * r.normal()));
       const orders = Math.round(T.base * dem / 2.4), rev = Math.round(orders * 2.4 * P * st.price);
-      const mat = rev / st.price * BR.f(s).mat * (C.costUp ? 1.1 : 1) * (1 + C.cost) + (st.revEv ? rev * CH_F30.rev.cost : 0);
+      const mat = rev / st.price * matR * (C.costUp ? 1.1 : 1) * (1 + C.cost) + (st.revEv ? rev * CH_F30.rev.cost : 0);
       const fee = rev * T.dshare * C.fee * (st.app ? 0.8 : 1);
       let lab = (T.lab + 0.1 * T.base * dem) * C.wage * P * (1 - 0.12 * short) - own * 45 * P - (st.fam ? 120 * P : 0) - (C.selfFill && !st.mgr ? 40 * P : 0);
       lab = Math.max(T.lab * 0.4 * P, lab) + (st.mgr ? (310 * C.wage - 140) * P : 0); // 점장 월급 − 점장이 대신하는 알바 시간
-      const other = rev * (C.corp ? 0.015 : 0.03) + (45 - CH_F30.flag.def * CH_F30.flag.cost + (st.flags ?? CH_F30.flag.def) * CH_F30.flag.cost) * P + (st.inc ? rev * 0.015 : 0) + rev * BR.f(s).ad; // 본사 광고 분담금
+      const other = rev * (C.corp ? 0.015 : 0.03) + (45 - CH_F30.flag.def * CH_F30.flag.cost + (st.flags ?? CH_F30.flag.def) * CH_F30.flag.cost) * P + (st.inc ? rev * 0.015 : 0) + rev * adR; // 본사 광고 분담금(독립하면 없음)
       const cost = Math.round(mat + fee + lab + st.rent + other);
       const profit = rev - cost;
       s.cash += rev - cost; addMoney(s, "inc", "치킨 매출", rev); addMoney(s, "exp", "치킨 비용", cost);
@@ -493,14 +499,15 @@ export default {
       if (st.mgr && st.crew < st.crewNeed) st.crew = Math.min(st.crewNeed, st.crew + 1); // 점장이 뽑는다
       if (st.mgr && st.shifts < 1 && !st.inc) st.mgrIdle++; else st.mgrIdle = 0;
       st.buzz = Math.max(0, st.buzz * 0.78 - (st.months > 18 ? 1 : 0)); st.fry = st.fry * 0.85 + 0.45 * 0.15;
-      if (st.months > 0 && st.months % 24 === 0) { st.rent = Math.round(st.rent * 1.05); notes.push(`${st.name}: 건물주가 월세를 5% 올렸다(${won(st.rent)})`); }
+      if (st.months > 0 && st.months % 24 === 0) { const up = SP.rentUpOf(s, "chicken", st); st.rent = Math.round(st.rent * (1 + up)); notes.push(up ? `${st.name}: 건물주가 월세를 ${Math.round(up * 100)}% 올렸다${up < SP.SPACE_RENT ? "(건물주 인연 덕에 덜 올림)" : ""} (${won(st.rent)})` : `${st.name}: 재계약, 월세 그대로 (건물 장기 임대 · ${won(st.rent)})`); } // 11-25 2년마다 5%, 건물주가 반기면 3%(space.js)
       st.months++; st.ap = 0; st.shifts = 0; st.mk = 0;
       // 11-22 깃발 경쟁·리뉴얼·리뷰 이벤트
       { const F3 = CH_F30.flag, R3 = CH_F30.renew; st.flags ??= F3.def; st.rv ??= F3.def;
         if (st.months >= 2) { if (st.rv < F3.max && ((st.flags > st.rv && r.chance(F3.rvUp)) || r.chance(F3.rvRand))) { st.rv++; if (s.t - (C.flagT ?? -99) >= F3.gap) { C.flagT = s.t; fsc = fsc || flagScene(s, st); } else notes.push(`${st.name}: 옆 치킨집 깃발이 ${st.rv}개로 늘었다`); } else if (st.rv > F3.def && st.flags <= st.rv && r.chance(F3.rvDown)) st.rv--; }
         if (st.freshM > 0) st.freshM--;
         if (st.revEv) st.revM = (st.revM || 0) + 1; else if (st.revOff > 0) st.revOff--;
-        if (st.months % R3.every === 0 && st.renewAt !== st.months) { st.renewAt = st.months; fsc = renewScene(s, st, "ask"); }
+        if (indep) { /* 독립한 가게엔 본사 리뉴얼 요구가 없다 */ }
+        else if (st.months % R3.every === 0 && st.renewAt !== st.months) { st.renewAt = st.months; fsc = renewScene(s, st, "ask"); }
         else if (st.old && st.refuseT !== undefined && st.months - st.refuseT === R3.wait) { if (r.chance(R3.refuseP)) fsc = renewScene(s, st, "deny"); else { st.refuseT = undefined; notes.push(`${st.name}: 본사가 이번 재계약은 넘어갔다. 낡은 매장은 그대로`); } } }
       // 창업대출 원금: 5년 분할(이자는 대출 이자로 따로 나간다)
       if (st.loan > 0) { const p = Math.min(st.loan, Math.round((st.loan0 || st.loan) / 60)); st.loan -= p; C.loan = Math.max(0, C.loan - p); s.cash -= p; addMoney(s, "exp", "창업대출 원금", p); const l = s.loans.find((x) => x.n === "창업대출"); if (l) { l.amt -= p; if (l.amt <= 1) s.loans = s.loans.filter((x) => x !== l); } }

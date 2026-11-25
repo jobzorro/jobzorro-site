@@ -6,12 +6,17 @@ import * as SYN from "./syn.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 import * as DF from "./decofx.js"; // 방 꾸미기 감성 점수 효과(사진 클릭·별점)
 import * as RVW from "./review.js"; // v4.28 경쟁사 가격표·가격 전쟁·후기 사건
+import * as SP from "./space.js"; // 11-25 지점 수 파손 배율·히든 길 켜짐 여부
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 // 11-21 밸런스: 공개 게임이라 미등록이 정답이 되면 안 된다. 합법이 기대값이 조금 더 낫게.
 // 원래: 노출 배율 없음, 서울 합법은 내국인 0, 단속 월 1.2%(+0.8%)·12개월 간격·과태료 300~1000만·설득 판정 42
 // 11-21 밸런스 2차(10개 투잡 공통 비교, 기획 stay.json: 1채 중위 월 90만·p75 180만): 기본 예약률 occ 0.85 → 0.75
 export const AB_LAW = { occ: 0.75, legalShow: 1.08, legalSuper: 1.05, cityDomestic: 0.45, illegalShow: 0.95, raidP: 0.018, raidDom: 0.012, raidGap: 9, fine: [400, 1200], talkDc: 55 };
+// 11-25 히든 길 '기업 장기 숙소 계약'(hidden.js): 합법 숙소 n채(먼저 연 순)가 출장자 장기 계약으로 가동률 occ 아래로 안 내려간다. 단속 걱정 없음(raid 배율 0).
+// 위기(계약사가 출장을 끊음)로 멈춘 달에는 그 숙소들이 한꺼번에 빈다(empty 배율)
+export const AB_HID = { n: 3, occ: 0.9, raid: 0, empty: 0.5 };
+export const corpUnits = (s) => s.ab.units.filter((u) => u.reg === "legal" && u.regT == null).slice(0, AB_HID.n);
 export function init() { return { units: [], listings: [], seq: 0, cohost: false, evT: -99, hist: [], fx: 0, peak: 1, revEv: "none", feeAuto: true, law: null, names: [], war: {}, clean: "self" }; }
 const fillA = (A) => { A.peak = A.peak || 1; A.revEv = A.revEv || "none"; if (A.feeAuto === undefined) A.feeAuto = true; A.names = A.names || []; A.war = A.war || {}; A.clean = A.clean || "self"; for (const u of A.units) { u.longR = u.longR || 0; u.reviews = u.reviews ?? Math.round((u.stays || 0) * 0.45); u.unrep = u.unrep || 0; u.buzz = u.buzz || 0; } };
 
@@ -28,7 +33,7 @@ export function setRevEv(s, k) { if (!D.PR_REVIEW.ev[k]) return { ok: false }; s
 
 // ── 진입 다시 설계(11-24): 합법 매물은 발품 → 집주인 설득 → 서류 확인 → 전입·등록(한 달) 네 단계. 서류를 안 보면 숨은 함정을 모른 채 계약한다.
 // 첫 손님: 후기 5개 전에는 검색에 잘 안 보인다(예약 1/3부터). 반값 행사·사진·지인 숙박으로 후기를 모은다.
-export const AB_ENTRY = { houseP: 0.35, trapP: 0.45, askBase: 0.22, askTalk: 1 / 150, askPlus: 0.25, plusRent: 0.1, docBase: 0.35, docNum: 1 / 110, regWait: 1, waitMo: [2, 3], quitLoss: 0.3,
+export const AB_ENTRY = { houseP: 0.35, trapP: 0.45, askBase: 0.22, askTalk: 1 / 150, askPlus: 0.25, plusRent: 0.1, warm: 0.35 /* 11-25 웃돈 없이 동의한 집주인 중 반기는 비율(설득 판정 아래쪽 35%) */, docBase: 0.35, docNum: 1 / 110, regWait: 1, waitMo: [2, 3], quitLoss: 0.3,
   boom: { n: 5, f0: 0.28, bad: 4.3, badF: 0.8, half: 0.5, friendAff: 40, friendCost: 6, photoDc: 50, photoF: 0.15, photoMax: 0.3 } };
 if (typeof process !== "undefined" && process.env?.ABB) Object.assign(AB_ENTRY, JSON.parse(process.env.ABB)); // 봇 시험용
 export const AB_TRAPS = {
@@ -44,7 +49,8 @@ export function persuade(s, r, id, plus) {
   const A = s.ab, L = A.listings.find((x) => x.id === id); if (!L) return { ok: false, msg: "매물이 없어요" };
   if (!L.house) return { ok: false, msg: "등록이 안 되는 건물이에요" }; if (L.owner === true) return { ok: false, msg: "이미 동의를 받았어요" };
   const why = spendAp(s); if (why) return { ok: false, msg: why };
-  if (r.chance(askOwnerP(s, plus))) { L.owner = true; if (plus) L.rent = Math.round(L.rent * (1 + AB_ENTRY.plusRent)); gainStat(s, "talk", 0.4); return { ok: true, msg: plus ? `"월세를 그만큼 더 준다면야." 집주인이 동의서를 받아 갔다. 월세 ${won(L.rent)}.` : "\"깨끗하게만 써요.\" 집주인이 숙박업 동의를 해 줬다.", lines: ["집주인 동의 O", "말빨 +0.4"] }; }
+  const ox = r.next(), op = askOwnerP(s, plus); // r.chance 와 같은 난수 한 번. 넉넉히 넘으면 원래 숙박업을 반기는 집주인
+  if (ox < op) { L.owner = true; L.ownerWarm = !plus && ox < op * AB_ENTRY.warm; /* 11-25 반기는 집주인 = 재계약 3%(space.js). 웃돈 동의는 늘 5% */ if (plus) L.rent = Math.round(L.rent * (1 + AB_ENTRY.plusRent)); gainStat(s, "talk", 0.4); return { ok: true, msg: plus ? `"월세를 그만큼 더 준다면야." 집주인이 동의서를 받아 갔다. 월세 ${won(L.rent)}.` : L.ownerWarm ? "\"요즘 젊은 사람들 이런 것도 하네. 잘해 봐요.\" 집주인이 반기며 동의서를 써 줬다." : "\"깨끗하게만 써요.\" 집주인이 숙박업 동의를 해 줬다.", lines: ["집주인 동의 O", L.ownerWarm ? "반기는 집주인: 재계약 때 월세 +3%" : "재계약 때 월세 +5%", "말빨 +0.4"] }; }
   A.listings = A.listings.filter((x) => x !== L); gainStat(s, "talk", 0.2);
   return { ok: true, msg: r.pick(["\"모르는 사람이 들락거리는 건 싫어요.\" 집주인이 전화를 끊었다. 이 매물은 끝났다.", "\"숙박업? 우리 건물은 안 해요.\" 부동산 사장님이 전단을 도로 가져갔다.", "집주인이 한참 듣더니 고개를 저었다. \"세입자들이 싫어해요.\""]), lines: ["집주인 거절 · 매물이 사라졌어요", "말빨 +0.2"] };
 }
@@ -148,13 +154,14 @@ export function act(s, r, id, arg, boost = 1) {
 
 // 한 달 정산
 export function month(s, r, notes, scenes) {
-  const A = s.ab, pi = SYN.pi(s); let total = 0; fillA(A);
+  const A = s.ab, pi = SYN.pi(s); let total = 0, abX = 0; fillA(A);
   if (A.units.length && A.t0 == null) A.t0 = s.t;
   if (A.fx > 0) A.fx--;
   const n0 = scenes.length; lawMonth(s, r, notes, scenes, n0); // v4.28 법 개정·명의 팀·용돈
   warMonth(s, r, notes, scenes); // v4.28 가격 전쟁
   const nAll = A.units.length + (s.pr?.rooms?.length || 0) * (SYN.on(s, "pr_ab") ? 1 : 0), sf = D.scaleF(Math.max(1, nAll));
   const RK = D.PR_REVIEW, UK = D.UTIL_K.ab; let shortSum = 0;
+  const hOn = SP.hidOn(s, "airbnb"), hPause = SP.hidPaused(s, "airbnb"), corp = hOn || hPause ? corpUnits(s) : [], dX = SP.dmgX(A.units.length); // 11-25 히든 길 · 지점 수 파손 배율
   for (const u of A.units) {
     const R = D.AB_REGIONS[u.rk], T = D.AB_TYPES[u.ty];
     if (u.regT != null) { // 11-24 전입·등록 대기
@@ -175,7 +182,9 @@ export function month(s, r, notes, scenes) {
     occ *= boomF(u); if (u.half && !booming(u)) { u.half = false; notes.push(`${u.name}: 후기 ${AB_ENTRY.boom.n}개를 채웠어요. 반값 행사를 끝내고 정상 노출돼요`); } // 11-24 첫 후기 5개 전에는 검색에 잘 안 보인다
     occ *= SJ.ramp(s, "airbnb"); // 첫 숙소 초반 고생(sj.js ENTRY)
     const q = A.cohost ? 1 : clamp(u.ap / needAp(s, u), 0, 1); occ *= 0.8 + 0.2 * q;
+    const adLv = A.ad ?? 2, AD = D.PR_AD[adLv] || D.PR_AD[2]; occ *= adLv === 0 && (u.photoT === s.t || A.promoT === s.t) ? D.PR_AD_SELF : AD.occ; // 11-25 마케팅비(숙소마다): 안 쓰면 손님이 준다
     occ = clamp(occ * (1 + 0.08 * r.normal()), 0.03, 0.97);
+    if (corp.includes(u)) occ = hOn ? Math.max(occ, AB_HID.occ) : occ * AB_HID.empty; // 11-25 히든 길: 출장자 장기 계약(가동률 고정) / 위기 달엔 한꺼번에 빔
     // v4.29 한 달 살기: 장기 비율 LR 만큼은 계절·외국인과 상관없이 꾸준히 차지만 1박 값이 싸다. 손님이 덜 바뀌니 청소·후기·민원도 적다
     const LR = u.longR || 0, 엘쥐 = AB_F30.long;
     const nS = Math.round(occ * 30 * (1 - LR)), nL = LR ? Math.round(30 * LR * 엘쥐.occ * (0.85 + 0.15 * q) * (u.months === 0 ? 0.6 : 1)) : 0;
@@ -183,9 +192,9 @@ export function month(s, r, notes, scenes) {
     shortSum += u.ty === "detached" ? shortStays * 0.4 : shortStays;
     const gross = Math.round((nS * pEff + nL * pEff * 엘쥐.price) * (A.super ? 1.08 : 1)), RM = RVW.reviewMonth("ab", A, stays, gross, u), rev = gross - RM.disc;
     const winter = [12, 1, 2].includes(s.cal), summer = [7, 8].includes(s.cal);
-    const util = Math.round((UK.base * T.rentF + nights * (UK.per + (winter ? UK.heat : summer ? UK.ac : 0))) * pi * (0.6 + 0.4 * sf)); // v4.28 숙박일만큼 전기·수도·난방
+    const util = Math.round((UK.base * T.rentF + (D.UTIL_K.season[s.cal] || 0) * 0.7 * T.rentF /* 11-25 여름·겨울 한철 냉난방 */ + nights * (UK.per + (winter ? UK.heat : summer ? UK.ac : 0))) * pi * (0.6 + 0.4 * sf)); // v4.28 숙박일만큼 전기·수도·난방
     const clean = (A.cohost ? 3.5 : AB_F30.clean[A.clean || "self"].per) * stays * pi * sf, fee = rev * 0.035, cohost = A.cohost ? rev * 0.2 : 0;
-    const costOther = Math.round(u.rent + clean + fee + cohost + stays * 0.8 * pi);
+    const adFee = Math.round(AD.fee * pi), costOther = Math.round(u.rent + clean + fee + cohost + stays * 0.8 * pi) + adFee; // 11-25 마케팅비
     const cost = costOther + util + Math.round(RM.pay);
     // 별점: 청결(관리)·응대(외국어)·사진 + v4.28 답글
     let target = 4.35 + q * 0.35 + (s.st.lang - 40) / 400 + (u.host === s.t ? 0.05 : 0) + mod(s, "abStar", 0) + (SYN.on(s, "travel_ab") ? 0.05 : 0) + dl * DF.DECO.abStar;
@@ -198,7 +207,7 @@ export function month(s, r, notes, scenes) {
     // 사건
     // 미등록 단속: 이웃 신고·플랫폼 등록번호 점검. 6개월에 한 번까지, 설득은 어렵다. v4.28 법 시행 뒤엔 배율
     const raidX = lawOn(s) ? D.AB_NAME.holdRaid : 1;
-    if (u.reg === "illegal" && s.t - (A.raidT ?? -99) >= AB_LAW.raidGap && r.chance((AB_LAW.raidP + (u.last.foreign < 50 ? AB_LAW.raidDom : 0)) * raidX * nbF(s) * (1 - 엘쥐.raid * LR))) {
+    if (u.reg === "illegal" && s.t - (A.raidT ?? -99) >= AB_LAW.raidGap && r.chance((AB_LAW.raidP + (u.last.foreign < 50 ? AB_LAW.raidDom : 0)) * raidX * nbF(s) * (1 - 엘쥐.raid * LR) * (hOn ? AB_HID.raid : 1))) {
       const fine = Math.round(r.int(AB_LAW.fine[0], AB_LAW.fine[1]) * pi); A.raidT = s.t; A.raidN = (A.raidN || 0) + 1; s._abRaid = { id: u.id, fine };
       const canReg = u.house && (!lawOn(s) || legalCount(s) < legalSlots(s));
       scenes.push({ kind: "event", tag: "에어씨앤씨", title: "불법 숙박 단속", onChoose: "ab_raid", text: `${u.name}에 구청 단속반이 왔다. ${lawOn(s) ? "법이 바뀐 뒤라 미등록 숙소를 집중 점검 중이다." : "이웃 신고였다."} 그대로면 과태료 ${won(fine)}에 3개월 영업정지. 어떻게 할까?`, choices: [
@@ -209,7 +218,7 @@ export function month(s, r, notes, scenes) {
     }
     else if (!A.cohost && A.clean === "gig" && shortStays && scenes.length === n0 && s.t - (A.raceT ?? -99) >= 2 && r.chance(1 - Math.pow(1 - AB_F30.clean.gig.punk, shortStays))) { A.raceT = s.t; scenes.push(raceScene(s, u)); } // v4.29 청소 펑크
     else if (stays && scenes.length === n0 && r.chance(RK.evP)) { const sc = RVW.reviewEvent(s, r, "ab", u, A); if (sc) scenes.push(sc); }
-    else if (stays && r.chance(0.06)) scenes.push(abEvent(s, r, u));
+    else if (stays && (abX = r.next()) < 0.06 * dX) scenes.push(abEvent(s, r, u, abX >= 0.06)); // 11-25 지점 하나 늘 때마다 파손·고장 +30%(늘어난 몫은 파손·고장 사건만)
   }
   total += f30Month(s, r, notes, scenes, n0, shortSum); // v4.29 청소팀 고정비·이웃 인심·첫 안내 장면
   // 환율·국제 이슈
@@ -538,15 +547,15 @@ export const AB_CHOOSE = {
     return out;
   },
 };
-function abEvent(s, r, u) {
+function abEvent(s, r, u, dmgOnly) {
   s._abEv = { id: u.id };
   const L = [
     { t: "체크인 대소동", x: `밤 11시, ${u.name} 게스트가 도어락 앞에서 메시지를 보냈다. "The code doesn't work!!" 게스트는 스페인어만 쓴다.`, c: [{ t: "영상통화로 직접 안내한다", check: { stat: "lang", dc: 50 }, ok: { text: "손짓 반, 영어 반. 문이 열렸다. 후기에 'Super kind host' 가 달렸다.", eff: { mental: 2 } }, ng: { text: "결국 택시 타고 달려갔다. 새벽 1시 귀가.", eff: { hp: -12, mental: -5 } } }, { t: "근처 호텔을 잡아 주고 환불", eff: { cash: -Math.round(u.adr * 3), mental: -2 }, text: "돈으로 해결했다. 별점은 지켰다." }] },
-    { t: "파티 금지 위반", x: `${u.name}에서 게스트 8명이 파티를 열었다. 아랫집에서 경찰에 신고했다.`, c: [{ t: "보증금 청구하고 정중히 퇴실 요청", check: { stat: "lang", dc: 45 }, ok: { text: "규정을 차분히 설명했다. 손해 배상을 받아 냈다.", eff: { cash: 20 } }, ng: { text: "\"We didn't do anything!\" 별점 1개 후기가 달렸다.", eff: { mental: -6 } } }, { t: "이웃에게 먼저 사과하러 간다", eff: { mental: -3, cash: -5 }, text: "케이크 하나 들고 내려갔다. 이웃이 조금 누그러졌다." }] },
+    { t: "파티 금지 위반", dmg: 1, x: `${u.name}에서 게스트 8명이 파티를 열었다. 아랫집에서 경찰에 신고했다.`, c: [{ t: "보증금 청구하고 정중히 퇴실 요청", check: { stat: "lang", dc: 45 }, ok: { text: "규정을 차분히 설명했다. 손해 배상을 받아 냈다.", eff: { cash: 20 } }, ng: { text: "\"We didn't do anything!\" 별점 1개 후기가 달렸다.", eff: { mental: -6 } } }, { t: "이웃에게 먼저 사과하러 간다", eff: { mental: -3, cash: -5 }, text: "케이크 하나 들고 내려갔다. 이웃이 조금 누그러졌다." }] },
     { t: "외국어 후기 폭탄", x: `${u.name}에 일본어·중국어 후기가 10개 쌓였다. 다 칭찬인데 답글을 아직 못 달았다.`, c: [{ t: "번역기 없이 직접 답글을 쓴다", check: { stat: "lang", dc: 55 }, ok: { text: "답글이 정성스럽다는 말에 재예약이 들어왔다.", eff: { mental: 3 } }, ng: { text: "번역 투가 어색했지만 마음은 전해졌다.", eff: {} } }, { t: "그냥 둔다", eff: {}, text: "답글 없는 숙소는 노출이 조금 준다." }] },
-    { t: "고장 난 보일러", x: `한겨울, ${u.name} 게스트가 사진을 보냈다. 온도계 12도.`, c: [{ t: "긴급 출장 수리", eff: { cash: -Math.round(15 * SYN.pi(s)) }, text: "한 시간 만에 해결했다." }, { t: "전기장판을 들고 달려간다", eff: { hp: -8, cash: -3 }, text: "게스트가 웃으며 사진을 찍었다." }] },
+    { t: "고장 난 보일러", dmg: 1, x: `한겨울, ${u.name} 게스트가 사진을 보냈다. 온도계 12도.`, c: [{ t: "긴급 출장 수리", eff: { cash: -Math.round(15 * SYN.pi(s)) }, text: "한 시간 만에 해결했다." }, { t: "전기장판을 들고 달려간다", eff: { hp: -8, cash: -3 }, text: "게스트가 웃으며 사진을 찍었다." }] },
   ];
-  const e = r.pick(L);
+  const e = r.pick(dmgOnly ? L.filter((x) => x.dmg) : L);
   return { kind: "event", tag: "에어씨앤씨", title: e.t, text: e.x, choices: e.c };
 }
 export function value(s) { return s.ab.units.reduce((a, u) => a + u.dep, 0); }

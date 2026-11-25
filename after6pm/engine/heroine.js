@@ -3,7 +3,7 @@
 //   사이에 따라 장면(같이 겪는다) · 까톡 한 통 · 달 마감 소식 한 줄로 전해진다. 모르는 사이면 아무것도 안 뜬다.
 // - 장면(beats)과 갈림길(fork): 조건(need)·표시(who)·뜨는 길(from)을 자료가 정한다. 선택 처리 이름은 hl_ 로 시작한다.
 // - 결말(end): together 함께 · far 멀리서 이어 감(지도에서 사라짐) · letgo 보내 줌 · stay 붙잡아 남음 · with 같이 내려감. 연인·배우자가 아니면 그 사람이 혼자 정한다(life.solo).
-// - 저장: s.hl[id] = { plan{열쇠:일어날 달}, L{열쇠:일어난 달}, B{장면:고른 번호}, BT{장면:본 달}, BN{장면:본 횟수}, mem{기억:달}, bT, end, endT, away, home, sp, due, loans[], lock{}, saw[], exRe } · s.hlx = { sT }
+// - 저장: s.hl[id] = { plan{열쇠:일어날 달}, L{열쇠:일어난 달}, B{장면:고른 번호}, BT{장면:본 달}, BN{장면:본 횟수}, mem{기억:달}, bT, end, endT, away, home, sp, due, loans[], lock{}, saw[], exRe, exN(헤어진 뒤 처음 소식이 간 달), evT(간격 까톡을 센 달), tripOnce{late.trip 줄:여행 번호} } · s.hlx = { sT }
 import * as GEN from "../gen/data.js";
 import * as D from "./defs.js";
 import * as RD from "./round.js";
@@ -19,6 +19,13 @@ const pickAt = (seed, key, lo, hi) => lo + (hashStr(String(seed) + ":hl:" + key)
 const fillMe = (s, t) => String(t || "").replace(/\{me\}/g, s.me?.name || "나");
 const txt = (s, id, v) => { if (Array.isArray(v)) { for (const e of v) if (needOk(s, id, e.need)) return fillMe(s, e.text); return ""; } return fillMe(s, v); }; // 글 한 줄 또는 [{ need, text }] 가운데 조건이 맞는 첫 줄
 const myLove = (s, except) => Object.entries(s.rel || {}).some(([q, x]) => q !== except && (x.lover || x.spouse));
+/* 인생 사건의 갈래 판(life[].alt: [{ need, …칸 }]): 조건이 맞는 첫 갈래의 칸이 그 사건의 칸을 덮는다(away·back·job·news·chat… 무엇이든). 없으면 사건 그대로 */
+function evx(s, id, ev) {
+  if (!ev?.alt) return ev;
+  for (const a of arr(ev.alt)) { if (!a || !needOk(s, id, a.need)) continue; const { need, ...rest } = a; return { ...ev, ...rest, alt: null }; }
+  return ev;
+}
+const Q_LOVE = { 2: 5, 1: 2, 0: -1 }, Q_IGNORE = -3; // 연인 까톡 답의 호감(love.js LV.chat.q·ignore 와 같은 값)
 const BCACHE = {};
 export function beatsOf(id) { // 재회 장면(past.scene) → 장면들 → 갈림길 순서로 한 줄에 세운다
   if (BCACHE[id]) return BCACHE[id]; const d = DEF[id]; if (!d) return [];
@@ -64,11 +71,13 @@ export function ensure(s) {
       H.plan[ev.k] = ev.sync ? ev.at[1] : pickAt(s.seed, id + ":" + ev.k, ev.at[0], ev.at[1]); // sync: 구간 끝에 잡아 두고 그 일이 생긴 달로 당긴다(month)
       if (H.plan[ev.k] < s.t) fire(s, id, ev, null, null, true);
     }
+    const x = s.rel?.[id]; // 옛 저장: 헤어지고 18개월 뒤 이미 일어난 사건이 있으면 그 달을 재회가 열린 달로 적는다
+    if (x?.exT != null && H.exN == null) { const t = Object.values(H.L).filter((v) => v >= x.exT + HLV.exGap).sort((a, b) => a - b)[0]; if (t != null) H.exN = t; }
   }
 }
 function setAway(H, v, t0) { if (v == null) return; if (v === 0 || v === false) { delete H.away; return; } H.away = typeof v === "number" && v > 0 ? t0 + v : v; } // 달 수 · −1(기한 없음) · "L3"(그 사건이 날 때까지)
-function fire(s, id, ev, notes, scenes, silent) {
-  const d = DEF[id], H = s.hl[id], c = CHAR[id], x = s.rel?.[id];
+function fire(s, id, ev0, notes, scenes, silent) {
+  const d = DEF[id], H = s.hl[id], c = CHAR[id], x = s.rel?.[id], ev = evx(s, id, ev0);
   const t0 = (H.L[ev.k] = silent ? H.plan[ev.k] : s.t);
   if (H.away === ev.k || ev.back) delete H.away;
   if (ev.away != null) setAway(H, ev.away, t0);
@@ -77,18 +86,33 @@ function fire(s, id, ev, notes, scenes, silent) {
   if (silent) { if (H.sp) soloApply(s, id, null, true); return; }
   if (!x) return;
   (H.saw = H.saw || []).push(ev.k);
+  if (x.exT != null && !x.lover && !x.spouse && s.t - x.exT >= HLV.exGap) H.exN = s.t; // 헤어지고 18개월 뒤 처음 일어난 인생 사건: 소식이 먼저 가고, 그 뒤에 마주치면 재회 장면(exScene)
   if (beatsOf(id).some((b) => (b.need?.at === ev.k || b.needBy?.month?.at === ev.k) && H.B[b.k] === undefined && ok(s, id, b, "month"))) { H.due = { k: ev.k, until: s.t + HLV.within }; return; } // 같이 겪는 장면이 있다: 장면 고르기가 맡는다(석 달 안에 못 뜨면 까톡·소식으로 낮춘다)
   tell(s, id, ev, notes, scenes);
 }
-function tell(s, id, ev, notes, scenes) { // 까톡 한 통(호감 20부터) 또는 소식 한 줄
-  const x = s.rel?.[id], c = CHAR[id]; if (!x || !c) return;
+function tell(s, id, ev0, notes, scenes) { // 까톡 한 통(호감 20부터) 또는 소식 한 줄
+  const x = s.rel?.[id], c = CHAR[id]; if (!x || !c) return; const ev = evx(s, id, ev0);
   if (ev.chat?.msg?.length && ev.chat.opts?.length && x.aff >= HLV.chatAff && scenes && !scenes.some((q) => q.chat)) { scenes.push(chatScene(s, id, ev)); return; }
   const nw = txt(s, id, ev.news); if (nw) { if (notes) notes.push(nw); log(s, nw, "love"); }
 }
 function chatScene(s, id, ev) {
   const c = CHAR[id], ch = ev.chat, Q = { 2: 2, 1: 1, 0: -1 };
   return { kind: "event", who: id, expr: "neutral", tag: "까톡", chat: true, chatF: true, title: `${c.name} · ${ch.time || "밤 9:40"}`, onChoose: "hl_chat", hlK: ev.k, text: (ch.msg || []).join("\n"), best: [],
-    choices: [...(ch.opts || []).map((o) => ({ t: o.t, eff: { aff: Q[o.q] ?? 0 }, text: o.re })), { t: "답하지 않는다", eff: { aff: -1 }, text: ch.ignore || "읽고 답하지 않았다." }] };
+    choices: [...(ch.opts || []).map((o) => ({ t: o.t, eff: { aff: Q[o.q] ?? 0 }, text: o.re })), { t: "답하지 않는다", eff: { aff: -1 }, text: txt(s, id, ch.ignore) || "읽고 답하지 않았다." }] }; // ignore 도 [{ need, text }] 가 된다
+}
+/* 정해진 간격으로 오는 까톡(자료 chats[].every: 달 수). 조건(hl·when)이 맞기 시작한 달부터 세어 every 달마다 한 통, 여럿이면 가장 오래 안 본 것부터 차례로.
+   확률로 도는 까톡(love.js chatMonth)에서는 빠진다(chatOk). 조건이 끊기면 세던 달을 지운다 */
+function everyChat(s, id, H, x, scenes) {
+  const love = !!(x.lover || x.spouse);
+  const L = arr(DEF[id]?.chats).filter((ch) => ch && ch.every > 0 && ch.msg?.length && ch.opts?.length && (ch.when === "lover" ? love : ch.when === "crush" ? !love : true) && needOk(s, id, ch.hl));
+  if (!L.length) { delete H.evT; return; }
+  if (H.evT == null) { H.evT = s.t; return; }
+  const gap = Math.min(...L.map((ch) => ch.every)); if (s.t - H.evT < gap || scenes.some((q) => q.chat)) return; // 한 달에 까톡은 한 통(다음 달로 밀린다)
+  const seen = (ch) => x.chatSeen?.[ch.k] ?? -99, ch = L.reduce((a, b) => (seen(b) < seen(a) ? b : a));
+  (x.chatSeen = x.chatSeen || {})[ch.k] = s.t; H.evT = s.t;
+  const c = CHAR[id], f = !love;
+  scenes.push({ kind: "event", who: id, expr: "smile", tag: "까톡", chat: true, chatF: f, title: `${c.name} · ${chatTime(s, id, ch.time || "밤 10:30")}`, onChoose: "lv_chat", chatK: ch.k, text: (ch.msg || []).map((m) => fillMe(s, m)).join("\n"), best: [],
+    choices: [...ch.opts.map((o) => ({ t: fillMe(s, o.t), eff: { aff: (f ? { 2: 2, 1: 1, 0: -1 } : Q_LOVE)[o.q] ?? 0, mental: o.q === 2 && !f ? 1 : 0 }, text: fillMe(s, o.re), chatQ: o.q })), { t: "답하지 않는다", eff: { aff: f ? -1 : Q_IGNORE }, text: txt(s, id, ch.ignore) || "읽고 답하지 않았다. 며칠 동안 연락이 없었다.", chatQ: -1 }] });
 }
 function soloApply(s, id, notes, silent) { // 곁에 연인·배우자가 없으면 그 사람이 혼자 정한다
   const d = DEF[id], H = s.hl[id], ev = (d.life || []).find((e) => e.k === H.sp), So = ev?.solo; if (!So) { delete H.sp; return; }
@@ -105,7 +129,7 @@ function soloApply(s, id, notes, silent) { // 곁에 연인·배우자가 없으
 export function cur(s, id, f) {
   const d = DEF[id], H = s.hl?.[id]; if (!d || !H) return "";
   let v = "", t = -1e9;
-  for (const ev of d.life || []) if (H.L?.[ev.k] != null && ev[f] && H.L[ev.k] >= t && pick1(s, id, ev[f])) { v = ev[f]; t = H.L[ev.k]; }
+  for (const ev0 of d.life || []) { if (H.L?.[ev0.k] == null) continue; const ev = evx(s, id, ev0); if (ev[f] && H.L[ev.k] >= t && pick1(s, id, ev[f])) { v = ev[f]; t = H.L[ev.k]; } }
   const en = endOf(s, id), E = en ? d.ends?.[en] : null, ef = E && (H.solo && E.solo?.[f] !== undefined ? E.solo[f] : E[f]);
   if (ef && (H.endT ?? H.wedT ?? 0) >= t) v = ef;
   return pick1(s, id, v);
@@ -116,7 +140,7 @@ export const endOf = (s, id) => s.hl?.[id]?.end || (s.rel?.[id]?.spouse ? "toget
 export const jobOf = (s, id) => cur(s, id, "job") || CHAR[id]?.job || "";
 export const hangs = (s, id) => { const v = cur(s, id, "hang"); return Array.isArray(v) && v.length ? v : null; };
 export const nowOf = (s, id) => { const v = cur(s, id, "now"); return v || (isAway(s, id) ? "지금은 멀리 있다." : ""); };
-export function meetPre(s, id) { const d = DEF[id], H = s.hl?.[id]; if (!d || !H) return ""; let v = ""; for (const ev of d.life || []) if (H.L?.[ev.k] != null && ev.meet) v = ev.meet; return v ? v + " " : ""; }
+export function meetPre(s, id) { const d = DEF[id], H = s.hl?.[id]; if (!d || !H) return ""; let v = ""; for (const ev of d.life || []) if (H.L?.[ev.k] != null && evx(s, id, ev).meet) v = evx(s, id, ev).meet; return v ? v + " " : ""; }
 // 지금 자료의 글을 바꿔 쓸 한 벌(late.<열쇠>: { need, … } 또는 그 배열. 조건이 맞는 첫 줄)
 export function late(s, id, key) { const L = DEF[id]?.late?.[key]; if (!L || !s.hl?.[id]) return null; for (const e of arr(L)) if (needOk(s, id, e.need)) return e; return null; }
 export const arcText = (s, id, stage) => late(s, id, "arc" + stage)?.text || "";
@@ -131,7 +155,7 @@ export function wedOpts(s, id) { // 결혼 장면에 더 붙는 선택지(자료
   return arr(DEF[id]?.wed).filter((w) => needOk(s, id, w.need)).map((w) => ({ t: w.t, eff: { cash: -(w.cost || 0), family: w.family || 0, ...(w.mental ? { mental: w.mental } : {}) }, text: w.text, wed: true }));
 }
 export const lockMsg = (s, id, k) => { const H = s.hl?.[id]; return H?.lock?.[k] > s.t ? DEF[id]?.lockMsg?.[k] || "지금은 기다리기로 한 일이에요" : ""; };
-export const chatOk = (s, id, ch) => { const N = ch.hl || DEF[id]?.chatHl?.[ch.k]; return !N || (s.hl?.[id] && s.rel?.[id] ? needOk(s, id, N) : false); }; // 까톡의 인생 조건: 히로인 자료의 chats[].hl(새 까톡) · chatHl{까톡 열쇠: 조건}(chats.json 에 이미 있는 까톡)
+export const chatOk = (s, id, ch) => { if (ch.every) return false; /* 정해진 간격 까톡은 확률로 돌리지 않는다(everyChat) */ const N = ch.hl || DEF[id]?.chatHl?.[ch.k]; return !N || (s.hl?.[id] && s.rel?.[id] ? needOk(s, id, N) : false); }; // 까톡의 인생 조건: 히로인 자료의 chats[].hl(새 까톡) · chatHl{까톡 열쇠: 조건}(chats.json 에 이미 있는 까톡)
 
 // ── 조건
 const JOB_AL = { consult: "cs", partyroom: "pr" };
@@ -231,8 +255,11 @@ const EX_RE = [
   ["그때 얘기를 꺼낸다", [8, 2], "그때 못 한 말을 이제야 했다. 다 듣고 나서 한참 말이 없었다. 고개는 끄덕였다.", "그 얘기는 아직 이른 것 같았다. 말끝이 흐려졌고 대화는 거기서 끝났다."],
   ["인사만 하고 지나간다", [3, 1], "고개만 숙이고 지나쳤다. 몇 걸음 가다 돌아봤을 때 그쪽도 돌아보고 있었다.", "고개만 숙이고 지나쳤다. 돌아보지는 않았다."],
 ];
+/* 재회가 열렸는가(설계 3-1): 헤어지고 18개월이 지난 뒤 그 사람의 다음 인생 사건이 일어나 소식이 먼저 갔다(H.exN, fire 가 적는다).
+   남은 인생 사건이 없으면 18개월만 본다 */
+const exReady = (s, id, H, x) => (H.exN != null && H.exN >= x.exT + HLV.exGap && s.t >= H.exN) || !(DEF[id].life || []).some((ev) => H.L?.[ev.k] == null && H.plan?.[ev.k] != null);
 function exScene(s, id) {
-  const d = DEF[id], H = s.hl?.[id], x = s.rel?.[id], c = CHAR[id]; if (!d?.ex || !H || !x || x.exT == null || x.lover || x.spouse || H.exRe != null || s.t - x.exT < HLV.exGap || isAway(s, id)) return null;
+  const d = DEF[id], H = s.hl?.[id], x = s.rel?.[id], c = CHAR[id]; if (!d?.ex || !H || !x || x.exT == null || x.lover || x.spouse || H.exRe != null || s.t - x.exT < HLV.exGap || isAway(s, id) || !exReady(s, id, H, x)) return null;
   const cold = x.exKind === "left", say = cold ? d.ex.cold : d.ex.soft; if (!say) return null;
   return { kind: "event", who: id, expr: "neutral", tag: "재회", title: `${c.name} · 다시 마주친 날`, onChoose: "hl_ex", best: [], text: `${d.ex.place || "오랜만에 마주쳤다."} {${id}}${/^"/.test(say) ? say : `"${say}"`}`,
     choices: EX_RE.map(([t, a, soft, hard]) => ({ t, eff: { aff: a[cold ? 1 : 0], ...(t.startsWith("그때") && cold ? { mental: -2 } : {}) }, text: cold ? hard : soft })) };
@@ -290,6 +317,7 @@ export function month(s, notes, scenes) {
     for (const ev of d.life || []) if (H.L[ev.k] == null && H.plan?.[ev.k] != null && H.plan[ev.k] <= s.t) fire(s, id, ev, notes, scenes, false);
     if (H.sp && H.end == null) soloApply(s, id, notes, false);
     if (H.due && H.due.until < s.t) { const ev = (d.life || []).find((e) => e.k === H.due.k); delete H.due; if (ev) tell(s, id, ev, notes, scenes); }
+    if (x) everyChat(s, id, H, x, scenes);
   } catch (e) { console.warn("[히로인]", id, e); } }
   if (X.sT === s.t) return;
   const ids = Object.keys(s.hl).filter((id) => s.rel?.[id] && DEF[id]).sort((a, b) => { const p = s.rel[a], q = s.rel[b]; return ((q.lover || q.spouse) ? 1 : 0) - ((p.lover || p.spouse) ? 1 : 0) || q.aff - p.aff; });
@@ -332,9 +360,19 @@ export function epis(s) {
 // 여행: 멀리 있는 연인은 1년에 한 번·200만(ends.<결말>.trip: { cash, gap, lines[] }), 곁에 있을 때 글만 바꾸려면 late.trip: { need, lines[], cash }
 export function tripInfo(s, id) {
   const H = s.hl?.[id], d = DEF[id], x = s.rel?.[id]; if (!H || !d || !x) return null;
-  const far = isAway(s, id), T0 = far ? cur(s, id, "trip") : null, T = far ? (T0 ? { ...HLV.farTrip, ...T0 } : null) : late(s, id, "trip"); if (!T) return null; // 멀리 있어도 자료에 trip 이 없으면(나라 안) 보통 여행 그대로
+  const far = isAway(s, id), T0 = far ? cur(s, id, "trip") : null, T = far ? (T0 ? { ...HLV.farTrip, ...T0 } : null) : lateTrip(s, id, H, x); if (!T) return null; // 멀리 있어도 자료에 trip 이 없으면(나라 안) 보통 여행 그대로
   const gap = T.gap || 0, left = gap && x.tripT != null ? gap - (s.t - x.tripT) : 0;
   return { cash: T.cash ?? 80, lines: T.lines || [], gap, wait: Math.max(0, left), far };
+}
+/* 곁에 있을 때 여행 글(late.trip). once: true 인 줄은 다음 여행 한 번만 쓴다: 처음 맞는 달에 "몇 번째 여행에 쓸지"(H.tripOnce[줄 번호])를 적고, 그 여행이 끝나면 건너뛴다 */
+function lateTrip(s, id, H, x) {
+  const L = DEF[id]?.late?.trip; if (!L) return null;
+  for (const [i, e] of arr(L).entries()) {
+    if (!needOk(s, id, e.need)) continue;
+    if (e.once) { H.tripOnce = H.tripOnce || {}; const n = x.tripN || 0; if (H.tripOnce[i] == null) H.tripOnce[i] = n + 1; if (n >= H.tripOnce[i]) continue; }
+    return e;
+  }
+  return null;
 }
 // 시차: 멀리(나라 밖) 있는 동안 까톡 시각 옆에 그쪽 시각을 붙인다(자료의 tz = 한국보다 몇 시간 늦은가. life·ends 어디에나)
 const T12 = (h) => (h < 6 ? "새벽" : h < 9 ? "아침" : h < 12 ? "오전" : h === 12 ? "낮" : h < 18 ? "오후" : h < 21 ? "저녁" : "밤");
@@ -348,7 +386,7 @@ export function chatTime(s, id, time) {
 export function yearLine(s, t0) {
   let best = null, bv = -1; if (!s.hl) return "";
   for (const [id, H] of Object.entries(s.hl)) { const d = DEF[id], x = s.rel?.[id]; if (!d || !x) continue; let line = "", lt = -1;
-    for (const ev of d.life || []) { const t = H.L?.[ev.k]; if (t != null && t >= t0 && t <= s.t && t > lt) { const v = ev.year || txt(s, id, ev.news); if (v) { line = v; lt = t; } } }
+    for (const ev0 of d.life || []) { const t = H.L?.[ev0.k]; if (t != null && t >= t0 && t <= s.t && t > lt) { const ev = evx(s, id, ev0), v = ev.year || txt(s, id, ev.news); if (v) { line = v; lt = t; } } }
     if (H.end && H.endT != null && H.endT >= t0 && H.endT > lt && d.ends?.[H.end]?.year) { line = d.ends[H.end].year; lt = H.endT; }
     const v = (x.spouse || x.lover ? 200 : 0) + x.aff; if (line && v > bv) { bv = v; best = fillMe(s, line); } }
   return best || "";
@@ -357,7 +395,7 @@ export function yearLine(s, t0) {
 export function goneLine(s, actId) {
   if (!s.hl) return ""; const loc = Object.values(D.SPOTS || {}).find((sp) => (sp.acts || []).includes(actId))?.loc;
   for (const [id, H] of Object.entries(s.hl)) { const d = DEF[id], x = s.rel?.[id]; if (!d || !x || !isHidden(s, id) || H.goneT != null) continue;
-    let G = H.end ? d.ends?.[H.end]?.gone : null; if (!G) for (const ev of d.life || []) if (H.L?.[ev.k] != null && ev.gone) G = ev.gone;
+    let G = H.end ? d.ends?.[H.end]?.gone : null; if (!G) for (const ev of d.life || []) if (H.L?.[ev.k] != null && evx(s, id, ev).gone) G = evx(s, id, ev).gone;
     if (!G || !(arr(G.act).includes(actId) || (loc && arr(G.loc).includes(loc)))) continue;
     H.goneT = s.t; return fillMe(s, G.text); }
   return "";
@@ -403,10 +441,10 @@ export function demo(s, id, key) {
     if (N.chat) (x.chatSeen = x.chatSeen || {})[N.chat] = s.t - 1;
     if (N.or) need(arr(N.or)[0]);
   };
-  if (key === "EX" || key === "EXC") { x.lover = false; x.spouse = false; x.loverSince = s.t - 40; x.exT = s.t - 20; x.exKind = key === "EXC" ? "left" : "letgo"; x.aff = 30; delete H.exRe; delete H.away; return exScene(s, id); }
+  if (key === "EX" || key === "EXC") { x.lover = false; x.spouse = false; x.loverSince = s.t - 40; x.exT = s.t - 20; x.exKind = key === "EXC" ? "left" : "letgo"; x.aff = 30; delete H.exRe; delete H.away; H.exN = s.t - 1; return exScene(s, id); } // exN: 그 사이 인생 사건 소식이 먼저 갔다고 친다
   if (key === "visit") { x.lover = true; x.loverSince = s.t - 20; x.dateT = s.t; H.end = "far"; H.endT = s.t - 3; H.away = -1; delete x.visitT; return { visit: true }; }
   const ev = (d.life || []).find((e) => e.k === key || "LC" + e.k.slice(1) === key);
-  if (ev) { if (key.startsWith("LC") && ev.chat) return chatScene(s, id, ev); x.aff = 10; const notes = []; H.L[ev.k] = s.t; tell(s, id, ev, notes, null); return { note: notes[0] || ev.news || "" }; }
+  if (ev) { if (key.startsWith("LC") && evx(s, id, ev).chat) return chatScene(s, id, evx(s, id, ev)); x.aff = 10; const notes = []; H.L[ev.k] = s.t; tell(s, id, ev, notes, null); return { note: notes[0] || ev.news || "" }; }
   const fs = key === "FS", b = beatsOf(id).find((q) => q.k === (fs ? "F" : key)); if (!b) return null;
   delete H.B[b.k]; if (b.who === "lover" || fs) need({ lover: 14 }); need(b.need); need(b.needBy?.[(b.from || ["talk"])[0]]);
   if (fs) { x.lover = false; x.spouse = true; s.fam.spouse = id; s.fam.marriedT = s.t - 6; }

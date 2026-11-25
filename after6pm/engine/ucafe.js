@@ -3,6 +3,7 @@ import * as D from "./defs.js";
 import { addMoney, log, won, gainStat, creditRoom, addLoan, helperPower, mod } from "./core.js";
 import * as SYN from "./syn.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
+import * as SP from "./space.js"; // 11-25 지점 수 파손 배율·히든 길 켜짐 여부
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 // 11-21 밸런스(기획 unmanned.json: 월매출 330~450만, 순익 중위 140만). 원래: 하루 기본 88잔, 잔당 원가 0.055(스페셜티 0.075), 렌탈 45만
@@ -54,13 +55,14 @@ export function act(s, r, id, arg, boost = 1) {
 }
 
 export function month(s, r, notes, scenes) {
-  const U = s.uc, pi = SYN.pi(s); let total = 0; const n0 = scenes.length, NK = UC_F30.night, 스크 = stockOf(s);
+  const U = s.uc, pi = SYN.pi(s); let total = 0; const n0 = scenes.length, NK = UC_F30.night, 스크 = stockOf(s), dX = SP.dmgX(U.stores.length); // 11-25 지점 수 파손 배율
+  U.hidOn = SP.hidOn(s, "ucafe"); // 11-25 히든 길 '내 원두 브랜드': 저가 체인 영향 거의 없음(chainRef)
   if (U.beanUp > 0) U.beanUp--;
   for (const st of U.stores) {
     const A = D.UC_AREAS[st.ak], seas = D.UC_SEASON[s.cal - 1], q = U.agent ? 1 : clamp(st.ap / needAp(s, st), 0, 1);
     st.clean = clamp(st.clean * 0.4 + q * 60, 0, 100);
     const quality = 0.85 + st.bean * 0.15 + (st.machine === "buy" ? 0.08 : 0) + (SYN.on(s, "cook_uc") ? 0.08 : 0) + 스크.q;
-    let cups = UC_BAL.cups * weekendF(A) * st.traffic * seas * quality * Math.pow(0.2 * pi * chainRef(st) / st.price, 1.4) * (1 - 0.06 * st.comp) * (1 + (st.rating - 4.3) * 0.7) * (1 + (st.buzz || 0) / 300) * (st.months === 0 ? 0.6 : st.months < 3 ? 0.85 : 1);
+    let cups = UC_BAL.cups * weekendF(A) * st.traffic * seas * quality * Math.pow(0.2 * pi * chainRef(st, U) / st.price, 1.4) * (1 - 0.06 * st.comp) * (1 + (st.rating - 4.3) * 0.7) * (1 + (st.buzz || 0) / 300) * (st.months === 0 ? 0.6 : st.months < 3 ? 0.85 : 1);
     if (st.broken) cups *= 0.5;
     if (st.night === false) cups *= NK.keep; // v4.29 밤에 닫으면 새벽 손님만큼 빠진다
     cups *= SJ.ramp(s, "ucafe"); // 첫 매장 초반 고생(sj.js ENTRY)
@@ -70,7 +72,7 @@ export function month(s, r, notes, scenes) {
     const numF = clamp(1.03 - (s.st.num || 0) / 2000, 0.95, 1.03); // 숫자: 재고·원가·정산을 꼼꼼히 본다(숫자 60이면 1)
     const theft = Math.round(cups * (st.cctv ? 0.01 : 0.035) * (st.night === false ? NK.theft : 1) * mod(s, "ucTheft", 1) * numF), rev = Math.round((cups - theft) * st.price);
     const unit = (st.bean ? UC_BAL.unitSp : UC_BAL.unit) * pi * (U.beanUp ? 1.35 : 1) * 스크.unit * (0.85 + 0.15 * D.scaleF(U.stores.length)) * numF;
-    const util = (22 + ([6, 7, 8].includes(s.cal) ? 18 : [12, 1, 2].includes(s.cal) ? 8 : 0)) * pi * (st.night === false ? NK.util : 1);
+    const util = (22 + ([7, 8].includes(s.cal) ? 20 : s.cal === 6 ? 12 : [12, 1].includes(s.cal) ? 20 : s.cal === 2 ? 14 : [5, 9, 11].includes(s.cal) ? 5 : 0)) * pi /* 11-25 대표: 추울 때·더울 때 전기비가 오른다(겨울 난방도 여름 냉방만큼) */ * (st.night === false ? NK.util : 1);
     let cost = Math.round(st.rent + cups * unit + util + (st.machine === "rent" ? UC_BAL.rental * pi : 0) + rev * 0.025 + (U.agent ? 40 * pi : 0) + 8 * pi);
     // 별점: 청결·맛·고장
     const target = 4.1 + st.clean / 300 + st.bean * 0.15 - (st.broken ? 0.2 : 0) + 스크.star;
@@ -78,7 +80,7 @@ export function month(s, r, notes, scenes) {
     st.buzz = Math.max(0, (st.buzz || 0) * 0.85);
     st.months++; st.ap = 0;
     // 사건
-    const breakP = ((st.machine === "buy" ? 0.04 : 0.025) + ([7, 8].includes(s.cal) ? 0.03 : 0) - q * 0.02) * (st.night === false ? NK.brk : 1);
+    const breakP = ((st.machine === "buy" ? 0.04 : 0.025) + ([7, 8].includes(s.cal) ? 0.03 : 0) - q * 0.02) * (st.night === false ? NK.brk : 1) * dX; // 11-25 지점 하나 늘 때마다 고장 +30%
     if (r.chance(breakP)) { const fix = st.machine === "rent" ? 0 : Math.round(r.int(30, 120) * pi); cost += fix; st.broken = 1; notes.push(`${st.name}: 커피 머신 고장${fix ? `, 수리비 ${won(fix)}` : "(렌탈이라 수리는 무료, 대신 며칠 멈춤)"}`); }
     else if (st.night !== false && st.months >= 3 && scenes.length === n0 && r.chance(NK.p24)) scenes.push(nightScene(s, r, st)); // v4.29 24시간 매장의 새벽 사고
     else if (r.chance(0.06)) scenes.push(ucEvent(s, r, st, rev));
@@ -119,10 +121,10 @@ export const UC_F30 = {
     mid: { n: "보통", unit: 1, ap: 0, star: 0, q: 0, desc: "2주에 한 번 채워요" },
     bulk: { n: "한 번에 많이", unit: 0.88, ap: -0.5, star: -0.12, q: -0.05, damp: 0.25, desc: "원가가 싸고 덜 가도 되지만 맛이 떨어져요(여름엔 습기)" },
   },
-  chain: { p: 0.02, max: 2, ref: 0.08, spHalf: 0.5, cut: 0.03, buzz: 15 }, // 체인 1곳마다 손님 머릿속 '한 잔 값'이 14% 내려간다(스페셜티면 절반)
+  chain: { p: 0.02, max: 2, ref: 0.08, spHalf: 0.5, cut: 0.03, buzz: 15, hid: 0.1 }, // hid: 히든 길 '내 원두 브랜드'가 켜진 동안 체인 영향 배율(거의 없음) // 체인 1곳마다 손님 머릿속 '한 잔 값'이 14% 내려간다(스페셜티면 절반)
 };
 export const stockOf = (s) => UC_F30.stock[s.uc?.stock || "mid"] || UC_F30.stock.mid;
-export const chainRef = (st) => 1 - UC_F30.chain.ref * (st.chain || 0) * (st.bean ? UC_F30.chain.spHalf : 1);
+export const chainRef = (st, U) => 1 - UC_F30.chain.ref * (st.chain || 0) * (st.bean ? UC_F30.chain.spHalf : 1) * (U?.hidOn ? UC_F30.chain.hid : 1);
 export function setStock(s, k) { if (!UC_F30.stock[k]) return { ok: false }; s.uc.stock = k; return { ok: true, msg: `원두 재고: ${UC_F30.stock[k].n}` }; }
 export function setNight(s, id, open24) {
   const st = s.uc.stores.find((x) => x.id === id); if (!st) return { ok: false };

@@ -634,6 +634,7 @@ function pgHome() {
     <div><div class="v" style="color:var(--orange)">${S.co.quit || S.co.fired ? "-" : Math.round(S.co.eye)}</div><div class="k">회사 눈치</div>${meter(S.co.eye, 100, "var(--orange)")}</div>
     <div><div class="v" style="color:var(--purple)">${S.fam.spouse ? Math.round(S.fam.happy) : Object.keys(S.rel).length}</div><div class="k">${S.fam.spouse ? "가족" : "인맥"}</div>${meter(S.fam.spouse ? S.fam.happy : Object.keys(S.rel).length, S.fam.spouse ? 100 : 40, "var(--purple)")}</div>
   </div></div>
+  ${(() => { const ph = S.invPh; if (!(S.invest > 0) || !ph || ph.p === "n") return ""; const n = Math.max(1, S.t - (ph.t ?? S.t) + 1); return `<div class="a6mkt ${ph.p === "b" ? "bear" : "rec"}">${ph.p === "b" ? `📉 지금 시장: <b>하락장 ${n}개월째</b> · 계좌가 파래도 버티는 사람만 회복장을 탄다` : `📈 지금 시장: <b>회복장 ${n}개월째</b> · 천천히 돌아오는 중`}</div>`; })()}
   ${coachOn ? `<div class="coach"><b>${ic("info")}이렇게 하면 돼요</b><ol><li><b>바로 하기</b>나 <b>지도</b>에서 행동을 골라요. 행동마다 ${ic("bolt")}행동력이 줄어요.</li><li>그림 속 <b>사람을 누르면</b> 말을 걸어 인연이 돼요.</li><li>행동력을 다 쓰면 맨 아래 <b class="gold">다음 달</b>을 눌러요.</li></ol><button class="x" data-coach>알겠어요</button></div>` : ""}
   ${gd}
   ${td.length ? `<div class="sec">${ic("list")}이번 달 할 일 ${urgent.length ? `<span class="tjx-urg">급한 일 ${urgent.length}</span>` : ""}<span class="muted small">· 누르면 그곳으로 가요</span></div>${(() => { const tb = (t) => `<button class="l${t.lv}" data-todo="${esc(t.go || "")}"><span class="dot"></span><span class="grow">${esc(t.text)}</span>${t.go ? '<span class="arr">›</span>' : ""}</button>`; const n0 = Math.max(3, Math.min(urgent.length, 5)); return `<div class="todo">${td.slice(0, n0).map(tb).join("")}</div>${more(`더 보기 ${td.length - n0}`, td.length > n0 ? `<div class="todo">${td.slice(n0).map(tb).join("")}</div>` : "")}`; })()}` : ""}
@@ -860,18 +861,33 @@ function pgPR() {
     <div><div class="k">물가</div><div class="v">×${(S.pi || 1).toFixed(2)}</div></div>
     ${pr.sold ? `<div><div class="k">매각 ${pr.sold}곳</div><div class="v good">${won(pr.soldSum)}</div></div>` : ""}</div>`)}` : ""}
     ${pr.listings.length ? `<div style="margin-top:8px"><button class="btn sm" data-prflow="list:${pr.listings[0].dk}">보던 매물 ${pr.listings.length}개 보기</button></div>` : ""}</div>
-  ${(() => { const pn = SP.prPanels(spc()); return pr.rooms.length ? fold("pr-ops", `<span class="tjx-s1"><b>운영 설정</b><span class="tiny muted">가격표·후기·규모</span></span><span class="tjx-s2">${SP.prOpsSum(spc())}</span>`, `<div class="tjx-ops">${pn || peakCard()}${scalePanel()}</div>`, false, "tjx-opsbox") : ""; })()}
+  ${(() => { const pn = SP.prPanels(spc()); return pr.rooms.length ? fold("pr-ops", `<span class="tjx-s1"><b>운영 설정</b><span class="tiny muted">가격표·후기·규모</span></span><span class="tjx-s2">${SP.prOpsSum(spc())}</span>`, `<div class="tjx-ops">${adCard("pr")}${pn || peakCard()}${scalePanel()}</div>`, false, "tjx-opsbox") : ""; })()}
   ${pr.rooms.map(roomCard).join("")}
   <button class="card" style="border-style:dashed;text-align:center;padding:18px" data-prflow="district"><b class="gold" style="font-size:18px">+ ${pr.rooms.length ? "새 지점 열기" : "첫 파티룸 열기"}</b><div class="muted small">상권 고르기 → 매물 보기(행동 1) → 숨은 정보 확인 → 계약</div></button>
   ${pr.rooms.length ? "" : more("컨셉·입지 안내 자세히", prGuide(), "card")}
   ${knowPanel()}`;
 }
+// 11-25 대표: 마케팅비(지점·숙소마다 월 10~40만). 안 쓰면 손님이 줄고, 그달 홍보를 했으면 덜 준다
+// 11-25 대표: 컨설팅 마케팅 대행(표준 가격부터 꼭). 다섯 곳 · 취업/이직 등급 · 주 4회 발행
+function csAgencyCard(cs) {
+  if (!cs.open && !cs.agency) return "";
+  const A = CS.CS_AGENCY, cur = cs.agency, need = CS.agNeed(S), gc = (g) => (g === "S" ? "gold" : g === "A" ? "good" : g === "C" ? "bad" : "");
+  return `<div class="card"><h3>마케팅 대행 <small>SEO · 블로그·인별 주 ${A.per}회 ${need ? "· 표준 가격부터 꼭 필요" : "· 저가일 땐 없어도 돼요"}</small></h3>
+  ${!cur && need ? `<div class="small bad">대행이 없어 표준 가격 문의가 반쯤 줄고 있어요.</div>` : ""}
+  <div class="a6ag">${Object.entries(A.list).map(([k, a]) => `<button class="${cur === k ? "on" : ""}" data-csag="${k}"><b>${esc(a.n)}</b><span>월 ${won(Math.round(a.fee * SYN.pi(S)))} · 취업 <i class="${gc(cur === k ? CS.agGrade(S, "newgrad") : a.job)}">${cur === k ? CS.agGrade(S, "newgrad") : a.job}</i> · 이직 <i class="${gc(a.move)}">${a.move}</i></span><small>${esc(a.d)}</small></button>`).join("")}</div>
+  ${cur ? `<button class="btn sm" style="margin-top:6px" data-csag="">대행 해지</button>` : ""}
+  <div class="tiny muted" style="margin-top:6px">등급은 그 분야 문의에 곱해요: S +25% · A +12% · B 그대로 · C −15%. 취업 등급은 신입 자소서·면접·공기업, 이직 등급은 경력 이직.</div></div>`;
+}
+function adCard(job) {
+  const lv = (job === "pr" ? S.pr.ad : S.ab.ad) ?? 2, n = job === "pr" ? S.pr.rooms.length : S.ab.units.length, pi = SYN.pi(S), unit = job === "pr" ? "지점" : "숙소";
+  return `<div class="card"><h3>마케팅비 <small>${unit}마다 월 · 지금 ${won(Math.round(D.PR_AD[lv].fee * pi) * n)}</small></h3><div class="row wrap" style="gap:6px">${D.PR_AD.map((a, i) => `<button class="btn sm ${i === lv ? "gold" : ""}" data-ad="${job}:${i}">${esc(a.n)} ${a.fee ? won(Math.round(a.fee * pi)) : "0"}</button>`).join("")}</div><div class="tiny muted" style="margin-top:6px">${esc(D.PR_AD[lv].d)} · 손님 ${D.PR_AD[lv].occ >= 1 ? "+" : "−"}${Math.abs(Math.round((D.PR_AD[lv].occ - 1) * 100))}%${lv === 0 ? ` (그달 홍보를 하면 −${Math.round((1 - D.PR_AD_SELF) * 100)}%)` : ""}</div></div>`;
+}
 function peakCard() {
-  const pr = S.pr, p = pr.peak || 1, mx = Math.max(...D.PR_SEASON.map((x) => x.we * 24 + x.wk * 22));
+  const pr = S.pr, p = PR.peakSel(S), mx = Math.max(...D.PR_SEASON.map((x) => x.we * 24 + x.wk * 22));
   return `<div class="card"><h3>성수기 가격 <small>12월 극성수기 · 1·7·8·11월 성수기</small></h3>
     <div class="season">${D.PR_SEASON.map((x, i) => `<i class="${i + 1 === S.cal ? "now" : ""} ${PR.isPeak(i + 1) ? "pk" : ""}" style="height:${Math.round((x.we * 24 + x.wk * 22) / mx * 100)}%"></i>`).join("")}</div><div class="season-l">${D.PR_SEASON.map((_, i) => `<span>${i + 1}</span>`).join("")}</div>
     <div class="seg" style="margin-top:8px">${D.PR_PEAK.map((v) => `<button class="${p === v ? "on" : ""}" data-peak="${v}">${v === 1 ? "그대로" : `+${Math.round((v - 1) * 100)}%`}</button>`).join("")}</div>
-    ${more("성수기 가격 자세히", `<div class="tiny muted">12월엔 주말이 다 차고 평일도 차요. 비싸도 손님이 오니 이때 가격을 올리는 게 핵심이에요. 너무 올리면 공실이 생겨요. 1·7·8·11월에는 고른 인상폭의 절반이 붙고, 나머지 달은 지점별 기본 가격 그대로예요.${pr.rooms[0] ? ` 예) ${esc(pr.rooms[0].name)} 12월 1건 ${Math.round(pr.rooms[0].price * p)}만` : ""}</div>`)}</div>`;
+    ${more("성수기 가격 자세히", `<div class="tiny muted">12월엔 평일·주말 모두 값이 올라 동네가 평소의 1.5~2배를 받아요. 비싸도 손님이 오니 이때 가격을 올리는 게 핵심이에요(안 고르면 +50%). 2배까지는 거의 그대로 차요. 1·7·8·11월에는 고른 인상폭의 절반이 붙고, 나머지 달은 지점별 기본 가격 그대로예요.${pr.rooms[0] ? ` 예) ${esc(pr.rooms[0].name)} 12월 1건 ${Math.round(pr.rooms[0].price * p)}만` : ""}</div>`)}</div>`;
 }
 function prDecor(f) {
   const rm = S.pr.rooms.find((x) => x.id === f.id); if (!rm) { ui.prFlow = null; return pgPR(); }
@@ -948,7 +964,7 @@ function prList(dk) {
   return `<div class="row"><button class="btn sm" data-prflow="">‹ 파티룸</button><b>${D.DISTRICTS[dk].n} 매물 ${ls.length}개</b><span class="grow"></span><button class="btn sm" data-prflow="district">상권 바꾸기</button></div>
   ${other.length ? `<div class="row wrap">${other.map((k) => `<button class="btn sm" data-prflow="list:${k}">${D.DISTRICTS[k].n} 매물</button>`).join("")}</div>` : ""}
   ${ls.length ? "" : `<div class="card muted">매물이 없다. 부동산에서 다시 보자.</div>${actRow("pr_search", dk)}`}
-  ${ls.map((L) => `<div class="room"><div class="body"><div class="row"><div class="grow"><div class="nm">${esc(D.DISTRICTS[L.dk].n)} ${L.size}평 ${L.floor === -1 ? "지하" : L.floor + "층"}${L.by ? ` <span class="tag green">${esc(E.CHAR[L.by].name)} 건물</span>` : ""}</div><div class="small">보증금 ${won(L.dep)} · 월세 <b>${won(L.rent)}</b>(평당 ${r1(L.rent / L.size)}만) · 권리금 ${won(L.key)}</div><div class="tiny">최대 <b>${PR.capOf(L.size)}명</b> · ${prRuleTag(L)}</div>${L.cond ? `<div class="tiny"><span class="tag ${L.cond === "turnkey" ? "gold" : ""}">${D.PR_COND[L.cond].n}</span> <span class="muted">${esc(D.PR_COND[L.cond].desc)}</span></div>` : ""}${L.far ? `<div class="tiny muted">집에서 멀어 관리 행동력 +${L.far * 0.5}</div>` : ""}</div></div>
+  ${ls.map((L) => `<div class="room"><div class="body"><div class="row"><div class="grow"><div class="nm">${esc(D.DISTRICTS[L.dk].n)} ${L.size}평 ${L.floor === -1 ? "지하" : L.floor + "층"}${L.by ? ` <span class="tag green">${esc(E.CHAR[L.by].name)} 건물</span>` : ""}${L.bad ? ` <span class="tag">사장님이 먼저 보여 준 물건</span>` : L.want ? ` <span class="tag green">말해 둔 조건</span>` : ""}</div><div class="small">보증금 ${won(L.dep)} · 월세 <b>${won(L.rent)}</b>(평당 ${r1(L.rent / L.size)}만) · 권리금 ${won(L.key)}</div><div class="tiny">최대 <b>${PR.capOf(L.size)}명</b> · ${prRuleTag(L)}</div>${L.cond ? `<div class="tiny"><span class="tag ${L.cond === "turnkey" ? "gold" : ""}">${D.PR_COND[L.cond].n}</span> <span class="muted">${esc(D.PR_COND[L.cond].desc)}</span></div>` : ""}${L.far ? `<div class="tiny muted">집에서 멀어 관리 행동력 +${L.far * 0.5}</div>` : ""}</div></div>
     ${attrs(L)}
     <div class="row wrap">${L.seen.visit ? "" : `<button class="btn sm" data-act="pr_visit" data-arg="${L.id}">임장 ⚡1</button>`}${L.seen.meet ? "" : `<button class="btn sm" data-act="pr_landlord" data-arg="${L.id}">건물주 미팅 ⚡1</button>`}${L.seen.app ? "" : `<button class="btn sm" data-act="pr_appcheck" data-arg="${L.id}">앱으로 상권 조사 ⚡1</button>`}<span class="grow"></span><button class="btn sm gold" data-prflow="contract:${L.id}">계약 검토</button></div></div></div>`).join("")}`;
 }
@@ -1026,6 +1042,7 @@ function pgCS() {
     <div class="tiny muted" style="margin-top:6px">자소서 첨삭 ${D.CS_PRODUCTS.edit.price}만 · 면접 코칭 ${D.CS_PRODUCTS.coach.price}만 · 패키지 ${D.CS_PRODUCTS.pkg.price}만(후기 15개부터) × 포지션·가격·레벨 배수</div>
     <div class="acts" style="padding:8px 0 0">${actRows([["cs_template", undefined, `첨삭 템플릿 만들기 (${cs.template.toFixed(1)}/3)`], "cs_group", ["cs_vod", undefined, `VOD·전자책 제작 (${Math.round(cs.vod.prog)}%)`], "cs_seminar", cs.offers ? ["cs_lecture", undefined, `대학 강의 (섭외 ${cs.offers}건)`] : null])}</div>
     ${cs.vod.income ? `<div class="small good">VOD·전자책 자동 판매 월 ${won(cs.vod.income)}</div>` : ""}</div>
+    ${csAgencyCard(cs)}
   <div class="sec">포지션 추가 (Lv3부터)</div>${nicheCards}`;
 }
 function coEval() {
@@ -1150,6 +1167,7 @@ function pgAirbnb() {
     <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div><div><div class="k">외국어</div><div class="v">${Math.round(S.st.lang)}</div></div>${A.cohost || A.units.length >= 2 ? `<div><div class="k">코호스트</div><div class="v">${A.cohost ? "고용 중" : "없음"}</div></div>` : ""}${A.fx ? `<div><div class="k">환율 급등</div><div class="v good">${A.fx}개월</div></div>` : ""}</div>
     ${more("합법·미등록·슈퍼호스트 자세히", `<div class="tiny muted">파티룸이 '몇 시간'이라면 에어씨앤씨는 '1박'이에요. 서울에서 합법(외국인관광 도시민박업)으로 하면 외국인 위주라 <b class="gold">외국어</b>가 곧 매출이에요(내국인은 공유숙박 특례로 일부만). 합법 숙소는 등록번호가 있어 <b class="gold">노출 +8%</b>, 슈퍼호스트가 되면 5% 더. 미등록은 누구나 받지만 노출이 줄고, 이웃 신고·등록번호 점검으로 단속되면 과태료 400~1,200만과 영업정지. 별점 4.8 이상·숙박 10건이면 슈퍼호스트(노출 +12%, 요금 +8%).</div>`)}</div>
   <div class="acts" style="padding:0">${actRows(["ab_search", ...(A.cohost || A.units.length >= 2 ? [["ab_cohost", undefined, A.cohost ? "코호스트 해지" : "코호스트 고용(매출 20%, 투잡 칸 +1)"]] : []), ["study", "lang", "외국어 공부 (스터디카페)"]])}</div>
+  ${S.ab.units.length ? adCard("ab") : ""}
   ${SP.abLaw(spc())}
   ${(() => { const pn = SP.abPanels(spc()); return pn ? fold("ab-ops", `<span class="tjx-s1"><b>운영 설정</b><span class="tiny muted">가격표·후기·청소·한 달 살기</span></span><span class="tjx-s2">${SP.abOpsSum(spc())}</span>`, `<div class="tjx-ops">${pn}</div>`, false, "tjx-opsbox") : ""; })()}
   ${A.units.map(unit).join("")}
@@ -1769,6 +1787,8 @@ function bind() {
   q("[data-sjmemo]", (el) => sjMemoWin(el.dataset.sjmemo));
   q("[data-act]", (el) => { if (S.pending) return showScene(); if (el.dataset.why) return toast([], el.dataset.why); doAct(el.dataset.act, el.dataset.arg); });
   q("[data-end]", () => endMonthFlow(false));
+  q("[data-csag]", (el) => { const r = CS.setAgency(S, el.dataset.csag || null); toast([], r.msg); save(); render(); });
+  q("[data-ad]", (el) => { const [job, v] = el.dataset.ad.split(":"); (job === "pr" ? S.pr : S.ab).ad = +v; toast([], `마케팅: ${D.PR_AD[+v].n}`); save(); render(); });
   q("[data-cospot]", (el) => { ui.coSpot = el.dataset.cospot; render(); });
   q("[data-region]", (el) => { ui.region = el.dataset.region || null; ui.spot = el.dataset.spot || null; render(); window.scrollTo(0, 0); });
   q("[data-bang]", (el) => { const res = E.doBang(S, el.dataset.bang); if (!res.ok) return toast([], res.msg); afterRes(res); });
