@@ -572,7 +572,7 @@ export const PR_K = 0.62; // 11-25 월세를 내리면서 예약률을 낮췄다
 // offCap: 비수기(3~6·9~11월) 예약률 상한(아무리 잘해도) · rentUp: 재계약(2년)마다 월세 인상(건물주 환영이면 rentUpGood)
 // furn: 가구·소품 교체 주기(달) · furnCost: 처음 인테리어비 대비 교체비 · furnStar: 미루면 별점 목표 −
 // scaleDmg: 지점 하나 늘 때마다 파손 확률 +비율 · nightCall: 2호점부터 지점 하나당 새벽 전화 확률(매니저 없으면)
-export const PR_HARD = { priceInfl: 0.022, compIn: 0.004, compMax: 8, offCap: 0.68, peakCap: 0.85, decCap: 0.93 /* 11-25 성수기·12월 예약률 상한(전에는 0.95 하나) */, rentUp: 0.05, rentUpGood: 0.03, furn: [36, 48], furnCost: 0.45, furnStar: 0.35, scaleDmg: 0.3, nightCall: 0.1, effort: [0.5, 0.65] }; // effort: 예약 배율 = a + b × 관리 충족도(0~1). 예전 0.82 + 0.18
+export const PR_HARD = { priceInfl: 0.022, compIn: 0.004, compMax: 8, offCap: 0.68, peakCap: 0.85, decCap: 0.83 /* 11-25 성수기·12월 예약률 상한(전에는 0.95 하나). 12월 1.5배 가격과 함께 0.93 → 0.83(대표: 24평 12월 이익 600만 안팎) */, rentUp: 0.05, rentUpGood: 0.03, furn: [36, 48], furnCost: 0.45, furnStar: 0.35, scaleDmg: 0.3, nightCall: 0.1, effort: [0.5, 0.65] }; // effort: 예약 배율 = a + b × 관리 충족도(0~1). 예전 0.82 + 0.18
 export const PR_RENT_CAP = 1.05; // 재계약 때 월세 인상 상한(상가임대차보호법 5%)
 export const PR_PEAK = [1, 1.5, 1.75, 2.0]; // 성수기 가격 버튼(12월 배율. 1·7·8·11월은 절반만)
 // 11-25 대표: 12월은 평일·주말 모두 값이 올라 평소의 1.5~2배를 받아도 돌아간다. mkt = 12월 동네 시세 배율(경쟁사도 올림), def = 안 고르면 내 방 12월 배율
