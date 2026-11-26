@@ -1,6 +1,6 @@
 // After 6PM v4 · 인생 엔진 (턴 = 1달, 행동은 즉시 반영, 행동력은 체력에서 나온다)
 import { makeRng, hashStr } from "./rng.js";
-import * as RD from "./round.js"; // 11-23 회차 구조(1회차 34세 결산, 2회차부터 50세)
+import * as RD from "./round.js"; // 회차 구조(11-26: 만 5년 결산에서 갈림길)
 import * as D from "./defs.js";
 import { CHARS, SCENES, JOBEV } from "../gen/data.js";
 import * as GEN from "../gen/data.js";
@@ -101,6 +101,14 @@ export const investOpen = (s) => !!s.flags?.invOpen || s.invest > 0 || (!s.rd &&
 export const START_BOND = { army: 35, club: 30, univ: 32 }; // 시작 인맥의 첫 호감
 export const BOND_N = { army: "군대 동기", club: "동아리 친구", univ: "대학 친구" };
 export const SASU_AFF = 20; // 11-24 사수는 첫날부터 아는 사이(시작 인맥보다 낮게)
+// 11-26 갈림길: 이어 간다. 결산으로 멈춘 판을 다시 굴리고 잠긴 것을 연다(회차 수는 그대로)
+export function forkContinue(s) { if (!RD.atFork(s)) return false; s.r5 = { grade: s.grade, nw: Math.round(netWorth(s)), t: s.t }; delete s.grade; s.ended = null; s.rdCont = true; log(s, "이 인생을 이어 가기로 했다. 잠겨 있던 것들이 열렸다.", "good"); return true; }
+export function forkBack(s, pick) { if (!RD.atFork(s)) return false; s.forkBack = pick || {}; return true; } // 돌아간다: 고른 보상·기억을 적어 두고 결말 화면으로
+// 게임 도중에 특성 하나를 얻는다(이어 가기 보상). 시작 능력치 보너스도 지금 더한다
+export function addTrait(s, id) { const t = D.TRAITS.find((x) => x.id === id); if (!t || s.me.traits.includes(id)) return false; s.me.traits.push(id); for (const [k, v] of Object.entries(t.m?.stat || {})) if (s.st[k] != null) s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX); for (const h of t.hid || []) if (h.d === "co" || s.sj.active.includes(h.d)) s.me.revealed[h.d] = s.me.revealed[h.d] ?? s.t; log(s, `특성을 얻었다: ${t.n}`, "good"); return true; }
+// 고백하지 못한 사람(이어 간 직후 한 줄)
+export function forkCrush(s) { const L = Object.entries(s.rel || {}).filter(([id, x]) => x.aff >= 70 && !x.lover && !x.spouse && heartOpen(s, id)).sort((a, b) => b[1].aff - a[1].aff); return L[0] ? L[0][0] : null; }
+export const startMono = XR.startMono, nthLife = XR.nthLife; // 회차 시작 독백 · "두 번째" 같은 말
 export const sasuOf = (s) => s?.flags?.sasu || "c102"; // 이번 판의 사수. 옛 저장에는 칸이 없다 → 윤가람
 export function newGame(o) {
   const seed = String(o.seed || Date.now()); // 11-25 숫자 씨앗도 글자로 바꾼다(hashStr 는 글자 수만큼 도는데 숫자에는 길이가 없어 판이 전부 같게 나왔다)
@@ -163,6 +171,9 @@ export function newGame(o) {
   for (const j of ng.know || []) if (D.SIDEJOBS[j]) { SJ.found(s, j, "지난 인생의 기억"); s.sj.know[j] = (s.sj.know[j] || 0) + 10; }
   for (const id of ng.friends || []) if (inPlay(CHAR[id])) { if (!s.cast.includes(id)) s.cast.push(id); const x = ensureRel(s, id); x.aff = Math.max(x.aff, 30); x.deja = true; }
   if (ng.statUp) for (const k of Object.keys(s.st)) s.st[k] = Math.min(D.STAT_MAX, s.st[k] + ng.statUp);
+  if (ng.stat3) for (const k of ng.stat3.keys || []) if (s.st[k] != null) s.st[k] = Math.min(D.STAT_MAX, s.st[k] + (ng.stat3.v || 0)); // 11-26 갈림길 보상: 몸에 밴 능력치 셋
+  if (ng.trait && D.TRAITS.some((t) => t.id === ng.trait) && !s.me.traits.includes(ng.trait)) { s.me.traits.push(ng.trait); const tm = D.TRAITS.find((t) => t.id === ng.trait).m?.stat || {}; for (const [k, v] of Object.entries(tm)) if (s.st[k] != null) s.st[k] = Math.min(D.STAT_MAX, s.st[k] + v); s.me.r5Trait = ng.trait; } // 갈림길 보상: 특성 하나
+  if (ng.r5) s.ng.r5 = ng.r5; // 갈림길에서 들고 온 것(시작 연출에 씀)
   // 처음 관심: 커리어가 높으면 컨설팅, 숫자가 높으면 파티룸이 눈에 들어온다
   s.sj.int.cs = Math.round(s.st.career * 0.6); s.sj.int.pr = Math.round(s.st.num * 0.4);
   // 부모님(고정 인물 아님)
@@ -172,7 +183,7 @@ export function newGame(o) {
   const picks = r.shuffle(eras).slice(0, Math.min(eras.length, 7));
   let tt = r.int(10, 24);
   s.eraPlan = picks.map((e) => { const o2 = { t: tt, id: e.id }; tt += r.int(20, 40); return o2; });
-  if (s.ng.n > 1) log(s, `${s.ng.n}회차 인생. ${s.ng.hard ? "어려움 모드: 평가가 짜고 목표가 25% 높다. " : ""}어디선가 본 듯한 하루가 시작된다.`, "good");
+  if (s.ng.n > 1) log(s, `${s.ng.n}회차 인생. ${s.ng.hard ? "어려움 모드: 평가가 짜고 목표가 25% 높다. " : ""}${XR.startMono(s.ng.n)}`, "good");
   log(s, `${s.age}세 3월. ${s.co.name} ${D.JOBS[s.me.job].n} ${s.co.years}년 차. 오늘부터 퇴근 후 인생을 산다.`);
   s.moments = {}; fillState(s); // 버그 10: 불러오기와 같은 채우기(새 판은 '이미 지난 순간' 표시 없이 빈 기록으로 시작)
   monthStart(s);
@@ -756,7 +767,7 @@ export function confessType(c) {
 // 고백이 통했을 때 상대의 답. 돌려주는 값: null(그대로 연인) 또는 { text, eff }(연인이 되는 효과를 이 값으로 바꾼다)
 function confessAnswer(s, id, okText) {
   const c = CHAR[id], rel = s.rel[id], n = c.name;
-  if (!RD.loveOpen(s)) return { text: "말이 목까지 올라왔다가 내려갔다. 지금은 내 앞가림이 먼저다. (연애는 2회차부터 열려요)", eff: { aff: 2 } };
+  if (!RD.loveOpen(s)) return { text: "말이 목까지 올라왔다가 내려갔다. 지금은 내 앞가림이 먼저다. (연애는 만 5년 결산 뒤에 열려요)", eff: { aff: 2 } };
   if (rel.cfDone) return null;
   const tp = confessType(c); rel.cfDone = tp;
   if (tp === "yes") return null;
@@ -877,7 +888,7 @@ export function personAct(s, id, kind, arg) {
   if (kind === "confess") {
     if (!heartOpen(s, id) || rel.lover || rel.aff < 70) return { ok: false, msg: "호감 70 이상 연애 가능 인연에게만" }; // 11-24 ◆인 회사 사람(사수 포함)은 고백이 잠긴다
     if (s.fam.spouse) return { ok: false, msg: "배우자가 있어요" };
-    if (!RD.loveOpen(s)) return { ok: false, msg: "연애는 2회차부터 열려요. 1회차는 마음을 쌓는 데까지예요" };
+    if (!RD.loveOpen(s)) return { ok: false, msg: "연애는 만 5년 결산 뒤에 열려요. 지금은 마음을 쌓는 데까지예요" };
     if (rel.cfBack != null) return { ok: false, msg: "대답을 기다리는 중이에요" };
     if (rel.cfTry === s.t) return { ok: false, msg: "이번 달엔 이미 말을 꺼냈어요. 다음 달에 다시" };
     s.ap -= 1; rel.last = s.t;
@@ -934,7 +945,7 @@ export function dashInfo(s, id) { // 인물 창 버튼용. null = 해당 없음 
   else if (x.aff < st.aff) why = `호감 ${st.aff}부터 말을 꺼낼 수 있어요`;
   else if (n === 3 ? !split : (x.stage || 0) < (st.stage || 0)) why = n === 3 ? "아직 같은 팀이에요. 사수와 팀이 갈린 뒤에 말할 수 있어요" : "이 사람과의 이야기가 더 쌓여야 해요";
   else if (x.dashT != null && s.t - x.dashT < DASH_GAP) why = `지난번 말을 꺼낸 지 얼마 안 됐어요(${DASH_GAP}개월 뒤)`;
-  const lock = n === 3 && !RD.loveOpen(s) ? (st.lock || "세 번째 말은 아직 꺼내지 못했다. (연애는 2회차부터 열려요)") : "";
+  const lock = n === 3 && !RD.loveOpen(s) ? (st.lock || "세 번째 말은 아직 꺼내지 못했다. (연애는 만 5년 결산 뒤에 열려요)") : "";
   return { n, ok: !why && !lock, why: why || lock, lock, quit: out };
 }
 function dashAct(s, id) {
@@ -1166,6 +1177,7 @@ const SCENE_FN = {
   ab_raid(s, r, i, ok) { return AB.raidChoose(s, i, ok); },
   inv_ev(s, r, i) { const e = D.INV_EV.find((x) => x.id === s.pending.ev); const c = e?.choices[i]; return c ? invChoose(s, r, c) : []; },
   tax_ev(s, r, i, ok) { if (i === 0) { s.taxPro = true; log(s, "세무사에게 투잡 세금을 맡겼다.", "money"); return ["세무사 고용: 세금 −15%, 월 기장료 15만"]; } if (i === 1 && !ok) { s.taxPen = 0.1; return ["가산세 +10%"]; } if (i === 2) { s.taxDodge = s.year; return ["…"]; } return []; },
+  pr_bedcall(s, r, i) { return PR.bedCallChoose(s, i); }, // 11-26 구청 전화: 지금 침대를 버릴지
   pr_offer(s, r, i, ok) { const o = s._prOffer; if (!o) return []; if (i === 0) return PR.sellRoom(s, o.id, o.price, "권리금 받고 매각"); if (i === 2 && ok) return PR.sellRoom(s, o.id, Math.round(o.price * 1.2), "권리금 받고 매각(흥정 성공)"); return []; },
   pr_exit(s, r, i, ok) { const o = s._prExit; if (!o) return []; if (i === 0) return PR.sellAll(s, o.price); if (i === 2 && ok) return PR.sellAll(s, Math.round(o.price * 1.15)); return []; },
 };
@@ -1397,7 +1409,7 @@ export function endMonth(s) {
   // 9) 시간 흐름
   s.t++; s.cal = s.cal % 12 + 1; if (s.cal === 1) s.year++; s.age = s.startAge + s.t / 12;
   s.co.years += (s.co.quit || s.co.fired) ? 0 : 1 / 12;
-  if (s.age >= RD.endAgeOf(s) && !s.over) { s.ended = "age"; if (RD.isR1(s)) { s.grade = RD.gradeOf(Math.round(netWorth(s))); log(s, `${RD.endAgeOf(s)}세. 1회차 결산: ${s.grade}등급. 여기까지가 맛보기였다.`, "end"); } else log(s, `${RD.endAgeOf(s)}세. 인생 중간 결산.`, "end"); }
+  if (s.age >= RD.endAgeOf(s) && !s.over) { s.ended = "age"; if (RD.isR1(s)) { s.grade = RD.gradeOf(Math.round(netWorth(s))); log(s, `${RD.endAgeOf(s)}세. 첫 5년 결산: ${s.grade}등급. 갈림길에 섰다.`, "end"); } else log(s, `${RD.endAgeOf(s)}세. 인생 중간 결산.`, "end"); }
   checkPerks(s, scenes);
   if (yearSc && !s.over) scenes.push(yearSc);
   s.sceneQ = paceScenes(s, scenes.filter(Boolean), yearSc);

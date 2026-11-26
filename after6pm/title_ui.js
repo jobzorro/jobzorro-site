@@ -176,7 +176,7 @@ export function draw(root, c) {
     <div class="a6t-pb">
       <h1 class="a6t-logo">After <span>6</span>PM</h1>
       <div class="a6t-sub">파이어족을 꿈꾸는 퇴근 후 사장님</div>
-      <div class="a6t-tag2">회사 다니며 투잡으로 ${won(target0)} 모아 은퇴하기. 1회차는 7년 맛보기, 2회차부터 ${years}년짜리 인생 한 판.</div>
+      <div class="a6t-tag2">회사 다니며 투잡으로 ${won(target0)} 모아 은퇴하기. 5년 차에 갈림길이 오는 ${years}년짜리 인생 한 판.</div>
       <div class="a6t-marq" aria-label="투잡 ${jobs.length}개: ${jobs.map(esc).join(", ")}"><span aria-hidden="true">${marq}${marq}</span></div>
       ${ngLine}${contCard}${othCards}
       ${mode === "ng" ? ngBtn : mode === "first" ? `<button class="a6t-gold" data-new>새 인생 시작</button>` : ""}

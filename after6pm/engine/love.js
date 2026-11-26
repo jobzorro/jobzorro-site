@@ -83,7 +83,7 @@ export function act(s, r, id, kind, arg) {
     return { ok: true, lines: [`호감 +${g}`, x.lover ? "이번 달은 얼굴을 못 봐도 서운해하지 않아요" : ""].filter(Boolean), msg: `${c.name}에게 짧게 안부를 보냈다. 답장은 금방 왔다. "${HL.cur(s, id, "hello") || c.lines?.hello || "잘 지내요?"}"` };
   }
   if (kind === "walk" || kind === "showwork" || kind === "anniv") {
-    if (!RD.loveOpen(s)) return { ok: false, msg: "연애는 2회차부터 열려요" };
+    if (!RD.loveOpen(s)) return { ok: false, msg: "연애는 만 5년 결산 뒤에 열려요" };
     if (!x.lover && !x.spouse) return { ok: false, msg: "연인이 아니에요" };
   }
   if (kind === "walk") {

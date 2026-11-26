@@ -139,8 +139,35 @@ function burnMonth(s, scenes) {
   const sc = burnScene(s, job); if (!sc) return false;
   V.burn[job] = nt; V.burnT = nt; scenes.push(sc); return true;
 }
+// 11-26 N회차를 미리 암시하는 장면 여섯(대표 결정: 가볍게 스치는 톤). 첫 5년 안에 한 번씩. 회차가 쌓이면 글이 달라진다.
+// 꿈(여섯째)은 갈림길을 앞둔 첫 인생에만 나온다. 설명하지 않는다: 갈림길 화면에서 "아, 그게 이 얘기였구나" 하게.
+const NTH = ["", "첫", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
+export const nthLife = (n) => (NTH[n] ? `${NTH[n]} 번째` : `${n}번째`);
+// 회차 시작 독백
+export const startMono = (n) => n <= 1 ? "" : n === 2 ? "스물일곱. 첫 출근. …두 번째다." : n >= 5 ? `세는 걸 그만둘까 했는데, ${nthLife(n)}다.` : `이게 몇 번째지… ${nthLife(n)}. 이번엔 안 가 본 길로 간다.`;
+const NOTE5 = ["이번엔 미루지 말 것.", "사람을 먼저 챙길 것.", "돈보다 시간을 볼 것.", "안 가 본 길로 갈 것.", "세는 걸 그만둘 것."];
+const HINT5 = [
+  { k: "sub", t: 1, tag: "출근길", title: "처음 타는 칸", bg: "street", b: "그냥 익숙한 기분이겠지",
+    x: (n) => n <= 1 ? `출근길 지하철. 처음 타는 칸인데, 어디에 서야 편한지 몸이 먼저 안다. 세 번째 문 옆, 손잡이가 낮은 자리.\n\n…처음인데?` : `출근길 지하철. 세 번째 문 옆, 손잡이가 낮은 자리에 이미 서 있다. 몸이 먼저 왔다.\n\n처음이 아니다. ${nthLife(n)}다.` },
+  { k: "yr", t: 10, tag: "새해", title: "한 번 살아 본 해", bg: "home", b: "기분 탓이다",
+    x: (n) => n <= 1 ? `한 해가 갔다. 달력을 새것으로 바꿔 걸다가 손이 멈춘다.\n\n이상하게, 한 번 살아 본 해 같다.` : `한 해가 갔다. 달력을 새것으로 바꿔 건다.\n\n이 해는 지난번과 조금 달랐다. 달라지게 만든 건 나다.` },
+  { k: "tarot", t: 28, tag: "점집", title: "길을 아는 사람", bg: "alley", b: "웃고 넘긴다",
+    x: (n) => n <= 1 ? `회식 2차 가는 길, 누가 재미 삼아 들어가자고 한 타로 가게. 카드를 뒤집던 사람이 나를 한참 본다.\n\n"손님은 이 길을 처음 걷는 사람 같지가 않네요."` : n === 2 ? `그 타로 가게 앞을 또 지난다. 문을 열기도 전에 안에서 목소리가 난다.\n\n"또 오셨네요."` : `그 타로 가게. 주인은 카드를 뒤집지도 않는다.\n\n"이번엔 뭘 바꾸러 오셨어요?"` },
+  { k: "senior", t: 38, tag: "선배", title: "한 번 더 살 수 있으면", bg: "rooftop", b: "저는… 잘 모르겠어요",
+    x: (n) => n <= 1 ? `옥상에서 커피를 마시던 선배가 묻는다.\n\n"한 번 더 살 수 있으면 뭘 바꿀래요? 난 스물일곱으로 가면… 퇴근하고 뭐라도 하나 시작할 거예요."\n\n대답을 못 했다. 이미 하고 있다는 말이 이상하게 안 나왔다.` : `옥상에서 커피를 마시던 선배가 묻는다.\n\n"한 번 더 살 수 있으면 뭘 바꿀래요?"\n\n웃음이 먼저 나왔다. 그 질문, 전에도 들었다.` },
+  { k: "note", t: 48, tag: "집", title: "쓴 기억이 없는 수첩", bg: "home", b: "서랍에 다시 넣는다",
+    x: (n) => n <= 1 ? `서랍을 정리하다 수첩 하나가 나왔다. 쓴 기억이 없다. 첫 장에 내 글씨로 한 줄.\n\n"이번엔 미루지 말 것."` : `서랍 속 그 수첩. 줄이 늘어 있다.\n\n${NOTE5.slice(0, Math.min(NOTE5.length, n)).map((x) => `"${x}"`).join("\n")}\n\n맨 아래 줄은 잉크가 아직 새것이다.` },
+  { k: "dream", t: 58, tag: "꿈", title: "스물일곱의 문 앞", bg: "home", b: "…잠이 안 온다", r1: true,
+    x: () => `꿈을 꿨다. 스물일곱의 내가 첫 출근 날 문 앞에 서 있다. 넥타이가 삐뚤다. 문을 열기 전에 이쪽을 돌아본다.\n\n깨고 나서도 선명하다. 곧 만 5년이다.` },
+];
+function hintMonth(s, scenes) {
+  if (s.rdCont || s.t > 60) return false; const V = st(s), nt = s.t + 1; V.h5 = V.h5 || {};
+  const n = RD.roundOf(s), h = HINT5.find((x) => !V.h5[x.k] && nt >= x.t && nt <= x.t + 3 && (!x.r1 || RD.isR1(s))); if (!h) return false;
+  V.h5[h.k] = nt; scenes.push({ kind: "story", tag: h.tag, title: h.title, text: h.x(n), bg: h.bg, choices: [{ t: h.b, eff: {}, text: "" }] }); return true;
+}
 export function xMonth(s, r, notes, scenes) {
   if (s.over) return; const V = st(s), nt = s.t + 1;
+  if (hintMonth(s, scenes)) return;
   if (nagMonth(s, notes, scenes)) return;
   if (burnMonth(s, scenes)) return;
   // 닉네임 이야기: 유래 질문 → 작은 소동 → 본부장의 딸

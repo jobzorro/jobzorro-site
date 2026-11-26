@@ -1,4 +1,6 @@
 // 방 꾸미기 게임 연결(11-21): 파티룸 방·에어씨앤씨 숙소. deco/deco.js(약 100KB)는 꾸미기를 열 때만 받는다.
+// 11-26: 평면은 평수(파티룸)·유형(숙소)에 따라 고른다(DF.spaceOf). 예전 저장(옛 평면)은 열 때 새 평면으로 옮겨 싣는다.
+// 보기 전용: openDecoView(ctx, kind, x 또는 id) — 저장된 배치를 둘러보기만(안 꾸민 방은 업체 기본 배치 예시). [꾸미기] 단추로 편집 화면.
 // ctx = { S, save, render, toast, openWin, closeWin, meta, setMeta, esc, won }
 import * as DF from "./engine/decofx.js";
 
@@ -10,6 +12,7 @@ const target = (S, kind, id) => (kind === "pr" ? S.pr.rooms.find((x) => x.id ===
 const STYLE_OF = { party: "in", game: "in", mega: "in", home: "no", kids: "no", bridal: "vi", study: "mo", lecture: "mo", edu: "mo", work: "mo" };
 const autoStyle = (kind, x) => (kind === "pr" ? STYLE_OF[x.concept] || "mo" : x.ty === "hanok" ? "ha" : "no");
 const nameOf = (kind, x) => (kind === "pr" ? x.name : x.name);
+const sig = (lay) => { const p = DF.pack(lay); return JSON.stringify([p.f, p.w, p.it]); }; // 바뀌었나 견줄 때(예산 숫자는 빼고)
 
 // 보드 한 줄: 감성 점수 · 효과 · [방 꾸미기]
 export function decoRow(ctx, kind, x) {
@@ -48,7 +51,7 @@ export async function decoAutoQuiet(ctx, kind, id) {
   host.style.cssText = "position:fixed;left:-9999px;top:0;width:390px;height:760px;visibility:hidden";
   document.body.appendChild(host);
   try {
-    const api = M.openDeco(host, { space: sp, budget: DF.BUDGET[sp], sound: false });
+    const api = M.openDeco(host, { space: sp, budget: DF.BUDGET[sp], size: kind === "pr" ? x.size : null, sound: false });
     const { layout, result } = api.autoFill(autoStyle(kind, x)); api.close();
     const r = commit(ctx, kind, x, layout, result, true);
     ctx.toast(r.lines, "업체가 알아서 꾸며 줬어요");
@@ -78,23 +81,21 @@ export async function decoOpen(ctx, kind, id) {
   document.body.appendChild(layer);
   let M; try { M = await loadDeco(); } catch (e) { layer.remove(); return ctx.toast([], "꾸미기를 불러오지 못했어요. 인터넷 연결을 확인해 주세요"); }
   const host = layer.firstChild; host.innerHTML = "";
-  const sp = DF.spaceOf(kind, x);
-  let last = x.deco ? JSON.stringify(DF.pack(DF.unpack(x.deco, sp))) : null, api = null, autoLay = x.decoAuto ? last : null;
-  const capped = (sc) => (autoLay && api && JSON.stringify(DF.pack(api.getLayout())) === autoLay ? Math.min(sc, DF.autoScore(S)) : sc); // 알아서 꾸민 그대로면 상한
+  const sp = DF.spaceOf(kind, x), saved = DF.unpack(x.deco, DF.savedSpace(kind, x));
+  let last = saved ? sig(saved) : null, api = null, autoLay = x.decoAuto ? last : null;
+  const capped = (sc) => (autoLay && api && sig(api.getLayout()) === autoLay ? Math.min(sc, DF.autoScore(S)) : sc); // 알아서 꾸민 그대로면 상한
   const done = (res, lay) => {
-    if (lay && res && JSON.stringify(DF.pack(lay)) !== last && (lay.items || []).length) { const r = commit(ctx, kind, x, lay, res, false); ctx.toast(r.lines, "꾸민 대로 반영했어요"); }
+    if (lay && res && sig(lay) !== last && (lay.items || []).length) { const r = commit(ctx, kind, x, lay, res, false); ctx.toast(r.lines, "꾸민 대로 반영했어요"); }
     try { api && api.close(); } catch (e) {}
     layer.remove(); window.__dk = null; ctx.render();
   };
   api = M.openDeco(host, {
-    space: sp, budget: DF.BUDGET[sp], title: `${nameOf(kind, x)} 꾸미기`, sound: true,
-    layout: DF.unpack(x.deco, sp),
+    space: sp, budget: DF.BUDGET[sp], size: kind === "pr" ? x.size : null, title: `${nameOf(kind, x)} 꾸미기`, sound: true,
+    layout: saved,
     autoStyle: autoStyle(kind, x),
-    lines: (res) => { if (!res.spent && !x.deco) return [`아직 안 꾸밈 · 효과 없음`, `꾸미면 예약·별점 +`, false];
-      const e = DF.effect(S, x, kind, capped(res.score)); const sg = (v) => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v);
-      return kind === "pr" ? [`예약 ${sg(e.occ)}% · 별점 ${sg(e.star.toFixed(2))}`, `가격 여유 ${sg(e.price)}%`, e.occ < 0] : [`사진 클릭 ${sg(e.occ)}%`, `별점 ${sg(e.star.toFixed(2))}`, e.occ < 0]; },
-    onSave: (lay, res) => { if (!(lay.items || []).length) return; const r = commit(ctx, kind, x, lay, res, false); last = JSON.stringify(DF.pack(lay)); autoLay = null; ctx.toast(r.lines); },
-    onAuto: (fill) => { const { layout, result } = fill(); const r = commit(ctx, kind, x, layout, result, true); last = autoLay = JSON.stringify(DF.pack(layout)); ctx.toast(r.lines, `알아서 꾸밈(최대 ${DF.autoScore(S)}점) · 손보면 직접 점수로`); },
+    lines: (res) => fxLines(S, kind, x, res, capped),
+    onSave: (lay, res) => { if (!(lay.items || []).length) return; const r = commit(ctx, kind, x, lay, res, false); last = sig(lay); autoLay = null; ctx.toast(r.lines); },
+    onAuto: (fill) => { const { layout, result } = fill(); const r = commit(ctx, kind, x, layout, result, true); last = autoLay = sig(layout); ctx.toast(r.lines, `알아서 꾸밈(최대 ${DF.autoScore(S)}점) · 손보면 직접 점수로`); },
     onDone: (res, lay) => done(res, lay),
   });
   window.__dk = api; // 시험용
@@ -106,10 +107,43 @@ export async function decoOpen(ctx, kind, id) {
   return api;
 }
 
+// 효과 두 줄(꾸미기·보기 화면 위 카드)
+function fxLines(S, kind, x, res, capped) {
+  if (!res.spent && !x.deco) return [`아직 안 꾸밈 · 효과 없음`, `꾸미면 예약·별점 +`, false];
+  const e = DF.effect(S, x, kind, capped ? capped(res.score) : x.decoS ?? res.score); const sg = (v) => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v);
+  return kind === "pr" ? [`예약 ${sg(e.occ)}% · 별점 ${sg(e.star.toFixed(2))}`, `가격 여유 ${sg(e.price)}%`, e.occ < 0] : [`사진 클릭 ${sg(e.occ)}%`, `별점 ${sg(e.star.toFixed(2))}`, e.occ < 0];
+}
+
+// 보기 전용(보드 그림을 누르면): 저장된 배치·평면을 둘러본다. 사고팔기·옮기기 없음. [꾸미기] → 편집 화면
+// ctx = dctx() 와 같은 것, kind = "pr" | "ab", x = 방·숙소 객체 또는 id
+export async function openDecoView(ctx, kind, x) {
+  const S = ctx.S; if (typeof x === "string") x = target(S, kind, x); if (!x) return null;
+  if (!document.getElementById("dk-css")) { const st = document.createElement("style"); st.id = "dk-css"; st.textContent = CSS; document.head.appendChild(st); }
+  const layer = document.createElement("div"); layer.className = "dk-layer"; layer.innerHTML = `<div class="dk-in"><div style="color:#9ea3c0;text-align:center;padding-top:40vh;font-size:14px">방 불러오는 중…</div></div>`;
+  document.body.appendChild(layer);
+  let M; try { M = await loadDeco(); } catch (e) { layer.remove(); ctx.toast([], "방을 불러오지 못했어요. 인터넷 연결을 확인해 주세요"); return null; }
+  const host = layer.firstChild; host.innerHTML = "";
+  const sp = DF.spaceOf(kind, x), saved = DF.unpack(x.deco, DF.savedSpace(kind, x));
+  let api = null;
+  const shut = () => { try { api && api.close(); } catch (e) { console.warn("꾸미기 닫기", e); } layer.remove(); window.__dkv = null; };
+  api = M.openDeco(host, {
+    view: true, space: sp, budget: DF.BUDGET[sp], size: kind === "pr" ? x.size : null, title: nameOf(kind, x), sound: false,
+    layout: saved, autoStyle: autoStyle(kind, x),
+    viewNote: saved ? "보기만 하는 중 · 확대해서 둘러봐요" : "아직 안 꾸민 방 · 업체 기본 배치 예시",
+    lines: (res) => (x.deco ? fxLines(S, kind, x, res, null) : [`아직 안 꾸밈 · 효과 없음`, `꾸미기를 누르면 직접 꾸며요`, false]),
+    onDone: () => shut(),
+    onEdit: () => { shut(); decoOpen(ctx, kind, x.id); },
+  });
+  window.__dkv = api; // 시험용
+  return api;
+}
+
 // 시험 훅(#auto18-pr-rooms-dkpr-dkhand 등). 결과는 <pre id="dkops"> 에 적는다
 export async function decoTest(ctx, h) {
   if (!window.__errs) { window.__errs = []; addEventListener("error", (e) => window.__errs.push(e.message)); addEventListener("unhandledrejection", (e) => window.__errs.push(String(e.reason))); }
-  const kind = h.includes("-dkpr") ? "pr" : "ab", S = ctx.S, x = kind === "pr" ? S.pr.rooms[0] : S.ab.units[0];
+  const kind = h.includes("-dkpr") ? "pr" : "ab", S = ctx.S;
+  let x = kind === "pr" ? S.pr.rooms[0] : S.ab.units[0];
+  if (!x && kind === "ab" && h.includes("dkview")) x = { id: "Utest", name: "시험 숙소", ty: (h.match(/dkty_(\w+)/) || [])[1] || "detached" }; // 숙소가 없을 때 보기 시험용(저장 안 함)
   const out = [], log = (k, v) => out.push(k + "=" + v), wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const put = () => { let d = document.getElementById("dkops"); if (!d) { d = document.createElement("pre"); d.id = "dkops"; d.style.cssText = "position:fixed;left:0;bottom:0;z-index:9999;background:#000c;color:#0f0;font-size:11px;margin:0;max-width:100%;white-space:pre-wrap"; document.body.appendChild(d); } d.textContent = out.join("\n"); };
   if (!x) { log("err", "방 없음"); return put(); }
@@ -118,6 +152,7 @@ export async function decoTest(ctx, h) {
   if (h.includes("dkask")) return decoAsk(ctx, kind, x.id);
   if (h.includes("dkauto")) { const c0 = S.cash; await decoAutoQuiet(ctx, kind, x.id); log("auto", x.decoS + " cap=" + DF.autoScore(S) + " fee=" + Math.round(c0 - S.cash) + " items=" + (x.deco?.it.length || 0)); log("fx", DF.effectTxt(S, x, kind)); }
   if (h.includes("dkboard")) { log("ERR", (window.__errs || []).join(" | ")); put(); setTimeout(() => document.querySelector(".room .btn[data-deco]")?.scrollIntoView({ block: "center" }), 300); return; }
+  if (h.includes("dkview")) { const v = await openDecoView(ctx, kind, x); await wait(300); log("view", v ? v.dbg.items().length + " items sp=" + DF.spaceOf(kind, x) + " size=" + (x.size || x.ty) : "없음"); log("ERR", (window.__errs || []).join(" | ")); return put(); }
   const api = await decoOpen(ctx, kind, x.id);
   if (h.includes("dkhand") && api) {
     const st = autoStyle(kind, x), P = (id, i, j, r = 0) => api.dbg.place(id + "_" + st, i, j, r);

@@ -4,7 +4,7 @@
 export const STATS = { talk: "말빨", write: "글쓰기", sense: "감각", mkt: "마케팅", hands: "손재주", num: "숫자", career: "커리어", charm: "매력", body: "체력", lang: "외국어" };
 export const STAT_KEYS = Object.keys(STATS);
 export const STAT_MAX = 200;
-export const STAT_CAP0 = 200, STAT_CAP_NG = 0, NG_GROW_T = [1, 1.2, 2.6]; // 11-23 결정: 천장은 회차와 상관없이 200(1회차 190 없앰). 회차마다 달라지는 것은 성장 속도·월 상한뿐
+export const STAT_CAP0 = 200, STAT_CAP_NG = 0, NG_GROW_T = [1, 1, 1.1, 1.2, 1.3, 1.4, 1.5]; /* 11-26 대표 결정: 2회차는 1회차와 같게, 3회차 1.1배부터 0.1씩, 7회차 1.5배에서 멈춤(전에는 1 · 1.2 · 2.6) */ // 11-23 결정: 천장은 회차와 상관없이 200(1회차 190 없앰). 회차마다 달라지는 것은 성장 속도·월 상한뿐
 // ───────── 능력치 성장(v4.28 개편) ─────────
 // 세 갈래: 공부형은 공부 효과 100%, 경험형 30%, 생활형 0%(공부 목록에서 빠짐)
 export const STAT_KIND = { write: "study", num: "study", lang: "study", mkt: "study", talk: "exp", career: "exp", hands: "exp", sense: "exp", charm: "life", body: "life" };
@@ -20,6 +20,7 @@ export const STAT_CURVE = [
 ]; // v4.28b: 목표(집중해서 3년 100 · 8~10년 150 · 200 전설)에 맞춰 낮춤. study: 공부 행동(STUDY_ACTS)만 따로 곱함 — 높은 구간은 실전·돌파 계기가 열쇠
 export const STAT_BRK = { months: 6, jp: { cs: "talk", tarot: "talk", webnovel: "write" } }; // 돌파 계기: 6달 동안 벽이 낮아진다 · jp: 한방 대박 때 돌파하는 능력치
 export const STAT_MCAP = [6, 3, 1.5, 0.6, 0.5];
+if (typeof process !== "undefined" && process.env?.NGG) NG_GROW_T.splice(0, NG_GROW_T.length, ...JSON.parse(process.env.NGG)); // 봇 손잡이(11-26): 회차별 성장 속도 시험. 예) NGG='[1,1,1.1,1.2]'
 export const JOB_XP = 1.2; // v4.28d 실전 경험: 투잡을 하는 달마다 그 투잡 주력 능력치(MG_STAT.of) // v4.28c 능력치마다 한 달에 오를 수 있는 양(구간별: 60·100·150·180·200 미만). 돌파 중이면 2배. 아이템·카드 +N 은 따로
 export const STAT_REP = { months: 3, mult: 0.7 }; // 같은 길로 같은 능력치를 석 달 연속 올리면 ×0.7(다른 길 섞으면 회복)
 export const MG_STAT = { great: 1, good: 0.5, of: { pr: "hands", cs: "talk", airbnb: "talk", ucafe: "hands", insta: "sense", tarot: "talk", tutoring: "talk", chicken: "hands", vibe: "sense", webnovel: "sense", petsit: "sense" } }; // 미니게임 대성공·성공 → 그 투잡의 경험형 능력치
@@ -565,7 +566,7 @@ export const PR_SEASON = [
   { we: 1.25, wk: 0.8, el: 0.8 }, { we: 0.88, wk: 0.5, el: 1.3 } /* 11-25 2월: 성수기 → 비수기 */, { we: 0.8, wk: 0.46, el: 1.3 }, { we: 0.85, wk: 0.48, el: 1.3 }, { we: 0.88, wk: 0.48, el: 1.3 }, { we: 0.8, wk: 0.46, el: 1.3 },
   { we: 1.2, wk: 0.8, el: 0.8 }, { we: 1.25, wk: 0.85, el: 0.8 }, { we: 0.8, wk: 0.46, el: 1.3 }, { we: 0.88, wk: 0.48, el: 1.3 }, { we: 1.2, wk: 0.8, el: 0.8 } /* 11-25 11월: 비수기 → 성수기(송년 모임) */, { we: 1.7, wk: 1.5, el: 0.3 } /* 11-25 12월 가격 탄력 0.5 → 0.3: 비싸도 온다 */,
 ];
-export const PR_K = 0.62; // 11-25 월세를 내리면서 예약률을 낮췄다(0.82 → 0.62). 봇 2회차 파이어가 30% 안팎에 오게 맞춘 값(0.65면 38%, 0.72면 43%, 0.78이면 53%). 1회차는 pr.js PR_R1.occ 로 따로 맞춘다. 봇 손잡이: 환경변수 PRK
+export const PR_K = 0.36; // 11-26 60칸 조합(대표 결정): 한 달 60칸(하루 2타임) 기준 예약률 비수기 20~30% · 성수기 40~50% · 12월 60~70%. 봇 300판: 2회차 파이어 32% · 1회차 5년 순자산 가운데 0.87억 · 파산 9%(대표: 그대로 둔다). 전에는 46칸에 0.62 // 11-25 월세를 내리면서 예약률을 낮췄다(0.82 → 0.62). 봇 2회차 파이어가 30% 안팎에 오게 맞춘 값(0.65면 38%, 0.72면 43%, 0.78이면 53%). 1회차는 pr.js PR_R1.occ 로 따로 맞춘다. 봇 손잡이: 환경변수 PRK
 // v4.27 파티룸 업계 현실(과포화·가격 상한·계속 나가는 투자비). 계산은 engine/pr.js
 // priceInfl: 시세가 해마다 오르는 비율(물가 2.5%보다 훨씬 낮음 = 가격은 못 올리는데 비용만 오른다)
 // compIn: 새 파티룸이 생길 확률 추가(달마다) · compMax: 동네 경쟁 상한(기본 최대 + 이만큼)
@@ -577,7 +578,9 @@ export const PR_RENT_CAP = 1.05; // 재계약 때 월세 인상 상한(상가임
 export const PR_PEAK = [1, 1.5, 1.75, 2.0]; // 성수기 가격 버튼(12월 배율. 1·7·8·11월은 절반만)
 // 11-25 대표: 12월은 평일·주말 모두 값이 올라 평소의 1.5~2배를 받아도 돌아간다. mkt = 12월 동네 시세 배율(경쟁사도 올림), def = 안 고르면 내 방 12월 배율
 export const PR_DEC = { mkt: 1.55, def: 1.5 };
-export const PR_SLOTS = 46; // 한 달 예약 가능 블록(주말 24 + 평일 22)
+export const PR_PKMKT = { peak: 1.2, feb: 1.1 }; // 11-26 성수기(1·7·8·11월)·2월 동네 시세 배율: 다들 조금 올려 받는다(대표). 성수기 가격을 안 고르면 내 가격도 따라간다
+export const PR_YOUNG = { f: 2.0, mo: 24 }; // 11-26 새 방 가속: 개점 때 예약 2배에서 24달에 걸쳐 1배로(오픈 효과·신규 노출). 1회차 보정(PR_R1.occ 1.5)을 없앤 대신 모든 회차에 넣는다
+export const PR_SLOTS = 60; // 한 달 예약 가능 칸(하루 2타임). 11-26 46 → 60(대표 결정)
 export const PR_FEE = 0.033; // 결제 수수료
 export const PR_LEVELS = [
   { lv: 1, n: "첫 예약 알림" }, { lv: 2, n: "별점 4.5 클럽" }, { lv: 3, n: "토요일 7시 만석" }, { lv: 4, n: "컨셉 2호점" }, { lv: 5, n: "공간 사업가" },

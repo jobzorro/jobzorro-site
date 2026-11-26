@@ -26,6 +26,18 @@ export const seasonKind = (rk, cal) => { const R = D.AB_REGIONS[rk]; if (R.peak.
 export const elOf = (rk, cal) => D.PRICE_K.abEl[seasonKind(rk, cal)];
 export const adrNow = (s, u, cal = s.cal) => u.adr * (isPeakAb(u.rk, cal) ? (s.ab.peak || 1) : 1);
 export const refBase = (s, u) => D.AB_REGIONS[u.rk].adr * D.AB_TYPES[u.ty].adrF * SYN.pi(s);
+// 11-26 보드 성적표: 숙소마다 평생 기록(hist 는 24달 순익만 남아서 따로 센다). cum = 달마다 순익 합(쉬는 달 월세 포함), nightsT = 묵은 박 수 합,
+// bestM·worstM = 매출(rev)이 가장 높은·낮은 달 {t, v}, t0 = 계약한 달. 옛 저장은 처음 한 번 채운다(순익은 hist 24달, 박 수는 숙박 건수×평균 박, 매출은 지난달 것만)
+function fillStats(u, t) {
+  if (u.stV) return;
+  const h = u.hist || [], T = D.AB_TYPES[u.ty] || { len: 2.5 };
+  u.cum = u.cum ?? Math.round(h.reduce((a, x) => a + (+x || 0), 0));
+  u.nightsT = u.nightsT ?? Math.round((u.stays || 0) * T.len);
+  if (!u.bestM && u.last && u.last.rev != null && t != null) { u.bestM = { t: t - 1, v: u.last.rev }; u.worstM = { t: t - 1, v: u.last.rev }; }
+  u.stV = 1;
+}
+// 화면용(저장을 건드리지 않음). t = 지금 달 번호(s.t) — 옛 저장의 지난달 매출에 달을 붙일 때만 쓴다
+export function unitStats(u, t) { let c = u; if (!u.stV) { c = { hist: u.hist, last: u.last, stays: u.stays, ty: u.ty }; fillStats(c, t); } return { cum: c.cum || 0, nights: c.nightsT || 0, stays: u.stays || 0, bestM: c.bestM || null, worstM: c.worstM || null, t0: u.t0 ?? null }; }
 export function refNow(s, u) { const A = s.ab; return refBase(s, u) * RVW.compF(s.cal, isPeakAb(u.rk, s.cal)) * RVW.warF(A.war?.[u.rk], s.t); }
 export function compTable(s, u) { const A = s.ab, w = A.war?.[u.rk]; return RVW.compList("ab", u.rk + u.ty, refNow(s, u) / (RVW.warF(w, s.t) || 1), 4, s.t, w); }
 export function setPeak(s, v) { s.ab.peak = v; return { ok: true, msg: v === 1 ? "성수기에도 평소 1박 가격" : `성수기 1박 가격 +${Math.round((v - 1) * 100)}%` }; }
@@ -114,7 +126,7 @@ export function contract(s, id, reg) {
   if (lack > 0) { if (lack > creditRoom(s) * 0.6 + 2000) return { ok: false, msg: `돈이 ${won(lack)} 모자라요` }; addLoan(s, "사업자대출", lack + 100, 0.048); s.cash += lack + 100; }
   s.cash -= total; addMoney(s, "exp", "에어씨앤씨 오픈", total);
   const n = A.units.length + 1, R = D.AB_REGIONS[L.rk];
-  const u = { ...L, id: "U" + (++A.seq), name: `${n}호 ${R.n} ${D.AB_TYPES[L.ty].n}`, reg, adr: Math.round(R.adr * D.AB_TYPES[L.ty].adrF * SYN.pi(s)), rating: 4.5, stays: 0, reviews: 0, unrep: 0, buzz: 0, months: 0, photo: 30 + s.st.sense / 3, ap: 0, last: null, hist: [], invested: total, banned: 0 };
+  const u = { ...L, id: "U" + (++A.seq), name: `${n}호 ${R.n} ${D.AB_TYPES[L.ty].n}`, reg, adr: Math.round(R.adr * D.AB_TYPES[L.ty].adrF * SYN.pi(s)), rating: 4.5, stays: 0, reviews: 0, unrep: 0, buzz: 0, months: 0, photo: 30 + s.st.sense / 3, ap: 0, last: null, hist: [], invested: total, banned: 0, t0: s.t, stV: 1, cum: 0, nightsT: 0 };
   if (reg === "legal" && L.owner === true && L.trap !== undefined) { u.regT = s.t + AB_ENTRY.regWait; u.trapSeen = !!L.doc; if (!L.trap) delete u.trap; } else delete u.trap; // 11-24 전입·등록에 한 달
   A.units.push(u); A.listings = A.listings.filter((x) => x !== L);
   if (A.t0 == null) A.t0 = s.t;
@@ -163,13 +175,13 @@ export function month(s, r, notes, scenes) {
   const RK = D.PR_REVIEW, UK = D.UTIL_K.ab; let shortSum = 0;
   const hOn = SP.hidOn(s, "airbnb"), hPause = SP.hidPaused(s, "airbnb"), corp = hOn || hPause ? corpUnits(s) : [], dX = SP.dmgX(A.units.length); // 11-25 히든 길 · 지점 수 파손 배율
   for (const u of A.units) {
-    const R = D.AB_REGIONS[u.rk], T = D.AB_TYPES[u.ty];
+    const R = D.AB_REGIONS[u.rk], T = D.AB_TYPES[u.ty]; fillStats(u, s.t);
     if (u.regT != null) { // 11-24 전입·등록 대기
-      if (s.t >= u.regT && u.trap && !u.trapDone) { u.trapDone = true; scenes.push(trapScene(s, u)); s.cash -= u.rent; addMoney(s, "exp", "에어씨앤씨 비용", u.rent); total -= u.rent; continue; }
+      if (s.t >= u.regT && u.trap && !u.trapDone) { u.trapDone = true; scenes.push(trapScene(s, u)); s.cash -= u.rent; addMoney(s, "exp", "에어씨앤씨 비용", u.rent); total -= u.rent; u.cum -= u.rent; continue; }
       if (s.t >= u.regT) { delete u.regT; notes.push(`${u.name}: 숙박업 등록 완료. 오늘부터 손님을 받아요`); }
-      else { s.cash -= u.rent; addMoney(s, "exp", "에어씨앤씨 비용", u.rent); total -= u.rent; notes.push(`${u.name}: 전입·등록 기다리는 중(월세만 나감)`); continue; }
+      else { s.cash -= u.rent; addMoney(s, "exp", "에어씨앤씨 비용", u.rent); total -= u.rent; u.cum -= u.rent; notes.push(`${u.name}: 전입·등록 기다리는 중(월세만 나감)`); continue; }
     }
-    if (u.banned > 0) { u.banned--; s.cash -= u.rent; addMoney(s, "exp", "에어씨앤씨 비용", u.rent); total -= u.rent; notes.push(`${u.name}: 영업정지 중(월세는 나감)`); continue; }
+    if (u.banned > 0) { u.banned--; s.cash -= u.rent; addMoney(s, "exp", "에어씨앤씨 비용", u.rent); total -= u.rent; u.cum -= u.rent; notes.push(`${u.name}: 영업정지 중(월세는 나감)`); continue; }
     const seas = (R.peak.includes(s.cal) ? 1.35 : R.off ?? 1) * (D.AB_SEASON[s.cal - 1]);
     const fx = A.fx > 0 ? 1.3 : 1, intl = s.era.pandemic ? 0.15 : s.era.intl ? 0.5 : 1;
     const langF = clamp(0.45 + s.st.lang / 110, 0.4, 1.3) * mod(s, "abLang", 1);
@@ -203,6 +215,7 @@ export function month(s, r, notes, scenes) {
     u.stays += stays; u.months++; u.ap = 0; u.reviews += RM.add; u.unrep += RM.add; u.buzz = clamp(u.buzz * 0.9 + RM.photoBuzz * 0.3, 0, 100);
     u.last = { occ, nights, stays, rev, cost, util, pay: RM.pay, disc: RM.disc, newRev: RM.add, foreign: Math.round(foreignD / (foreignD + domesticD + 1e-9) * 100), q, longN: nL, shortStays };
     u.hist.push(rev - cost); if (u.hist.length > 24) u.hist.shift();
+    u.cum += rev - cost; u.nightsT += nights; if (!u.bestM || rev > u.bestM.v) u.bestM = { t: s.t, v: rev }; if (!u.worstM || rev < u.worstM.v) u.worstM = { t: s.t, v: rev }; // 11-26 성적표 평생 기록
     s.cash += rev - cost; addMoney(s, "inc", "에어씨앤씨 매출", rev); addMoney(s, "exp", "에어씨앤씨 비용", costOther); addMoney(s, "exp", "전기·난방비", util); if (RM.pay) addMoney(s, "exp", "후기 페이백", Math.round(RM.pay)); total += rev - cost;
     // 사건
     // 미등록 단속: 이웃 신고·플랫폼 등록번호 점검. 6개월에 한 번까지, 설득은 어렵다. v4.28 법 시행 뒤엔 배율
