@@ -1,7 +1,7 @@
 // 손님 이벤트(v4.25): 파티룸·에어씨앤씨·타로 등 투잡 손님과의 드문 이벤트.
 // core.js peopleMonth 에서 매달 guestMonth(s, r, scenes) 를 부른다. onChoose 는 "gs_" 로 시작.
 // 규칙: 월 4%, 손님 이벤트끼리 최소 6달 간격, 같은 이벤트는 한 판에 한 번(s.flags["gs_<id>"]), 이번 달 다른 event 장면이 있으면 쉰다.
-// 효과: eff 는 기존 키만(cash·mental·hp·stat·aff·tr_*·tu_*·wn_*·vb_*). 투잡별 별점·팔로워는 선택지 x 로 적고 gs_ev 에서 조금만 바꾼다.
+// 효과: eff 는 기존 키만(cash·mental·hp·stat·aff·tr_*·tu_*·wn_*·vb_*·ps_*). 투잡별 별점·팔로워는 선택지 x 로 적고 gs_ev 에서 조금만 바꾼다.
 //   x.star: 이 장면의 대상(파티룸 방·숙소·치킨 매장·무인카페 매장) 별점 ±, x.fol: 인별그램 팔로워 ±%
 import { CHAR, jo, ensureRel } from "./core.js";
 import * as SYN from "./syn.js";
@@ -25,6 +25,7 @@ const JOB = {
   ucafe: { list: (s) => s.uc?.stores || [], lo: 3.2, hi: 4.95 },
   tarot: { ready: (s) => !!s.tarot && ((s.tarot.lv || 0) >= 3 || (s.tarot.served || 0) >= 3) },
   tutoring: { ready: (s) => (s.tutoring?.studs?.length || 0) > 0 },
+  petsit: { ready: (s) => (s.petsit?.homes?.length || 0) > 0 },
   insta: { ready: (s) => (s.ins?.f || 0) >= 300 },
   webnovel: { ready: (s) => !!s.webnovel?.work && (s.webnovel.work.ep || 0) >= 5 },
   vibe: { ready: (s) => !!s.vibe && (((s.vibe.app?.live && s.vibe.app.users > 0)) || (s.vibe.delivered || 0) >= 1) },
@@ -104,6 +105,24 @@ const EVS = [
     C("\"오늘은 리딩이 어렵겠어요\" 정중히 사양", { mental: -4, tr_rep: -1 }, "선을 긋는 것도 일이다. 그런데 오늘은 그 선이 유난히 차갑다."),
   ] }) },
 
+  // ───── 방문 펫시팅(11-26) ─────
+  { id: "ps_gift", j: "petsit", g: true, mk: (s) => ({ title: "제주에서 온 귤 한 상자", text: `열흘 출장을 다녀온 보호자가 귤 한 상자를 문 앞에 두고 갔다. 쪽지가 붙어 있다. "보고서 매일 읽었어요. 밥 남긴 날 적어 주신 거, 그게 제일 고마웠어요."`, choices: [
+    C("감사 문자를 보내고 다음 예약을 잡는다", { mental: 5, ps_tr: 4, item: "m_letter" }, "\"다음 달 명절도 부탁드려요.\" 달력에 동그라미가 하나 늘었다."),
+    C("후기를 부탁드린다", { mental: 3, ps_rev: 2, ps_inq: 1 }, "후기 첫 줄: '모르는 건 모른다고 적어 주는 분이에요.' 문의가 바로 붙었다."),
+  ] }) },
+  { id: "ps_cam", j: "petsit", g: false, mk: (s) => ({ title: "홈캠 스피커가 말을 했다", text: `밥그릇을 채우는데 거실 홈캠에서 목소리가 났다. "아, 그거 너무 많아요! 반만요!" 보호자는 지금 회사 회의실에서 나를 보고 있다.`, choices: [
+    C("카메라를 보고 고개를 숙인 뒤 반을 덜어 낸다", { mental: -2, ps_tr: 2 }, "\"감사해요~\" 그 뒤로 방문 내내 누가 보는 느낌이다."),
+    K("\"양은 사전 만남 때 적은 대로예요\" 메모를 보여 준다", "talk", 40, O("\"아 맞다, 제가 그렇게 말했네요.\" 다음부터 홈캠이 조용해졌다.", { mental: 3, ps_tr: 3 }), O("\"그래도 반만요.\" 메모를 고쳐 적었다.", { mental: -3 })),
+  ] }) },
+  { id: "ps_lap", j: "petsit", g: true, mk: (s) => ({ title: "처음으로 무릎에", text: `석 달째 소파 밑에서만 보던 겁 많은 고양이가 오늘 처음 나왔다. 보고서를 쓰는데 무릎에 올라와 앉았다. 사진은 한 장만 찍었다. 손이 떨려서 흔들렸다.`, choices: [
+    C("흔들린 사진 그대로 보호자에게 보낸다", { mental: 6, ps_tr: 5 }, "\"우리 애가요?? 저한테도 안 올라와요!!\" 느낌표가 열한 개."),
+    C("보고서에는 '오늘 처음 다가옴'만 적는다", { mental: 4, ps_star: 0.03 }, "본 것만 썼다. 보호자는 그 한 줄을 캡처해 프로필에 걸었다."),
+  ] }) },
+  { id: "ps_extra", j: "petsit", g: false, mk: (s) => ({ title: "\"오는 김에 화분도요\"", text: `보호자 메시지. "오는 김에 베란다 화분 물도 좀 주시고, 택배 오면 들여놔 주실 수 있죠? 아, 분리수거도요." 방문 30분이 한 시간이 될 판이다.`, choices: [
+    C("이번만 다 해 준다", { hp: -4, mental: -2, ps_tr: 3 }, "화분 열두 개. 택배 세 개. 고양이는 그동안 나를 구경했다."),
+    K("돌봄 범위를 정중히 다시 안내한다", "talk", 40, O("\"아, 그렇죠. 제가 욕심을 냈네요.\" 화분은 이웃에게 부탁한다고 했다.", { mental: 3 }), O("\"그 정도는 해 주실 줄 알았는데…\" 답장이 짧아졌다.", { mental: -3, ps_tr: -6 })),
+    C("추가 요금을 안내한다", { cash: M(s, 3), mental: 1 }, "\"아 그럼 화분만요.\" 선이 생기니 마음이 편하다."),
+  ] }) },
   // ───── 화상과외 ─────
   { id: "tu_grade", j: "tutoring", g: true, mk: (s) => ({ title: "52점 → 81점", text: `학부모 메시지에 성적표 사진. "선생님!!! 수학 81점이요!!!" 느낌표가 아홉 개. 택배로 떡이 오고 있다고 한다.`, choices: [
     C("감사 전화를 드리고 다음 목표를 잡는다", { mental: 5, tu_par: 6, tu_rev: 1, item: "m_letter" }, "\"선생님 덕분에 애가 수학을 덜 미워해요.\" 최고의 칭찬."),

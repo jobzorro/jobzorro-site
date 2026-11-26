@@ -2270,6 +2270,7 @@ const END_JOB = {
   tutoring: { n: "화상과외", kv: () => `Lv${S.tutoring?.lv || 0} · 학생 ${(S.tutoring?.studs || []).length}`,
     epi: () => (endOn("tutoring") ? "화상과외는 한 반만 남겼다. 수능 날 아침이면 옛 학생들 연락이 온다." : "화상과외는 그만뒀다. 수능 날 아침이면 아직도 일찍 눈이 떠진다."),
     fin: () => "70세, 첫 학생이 자기 아이 과외를 부탁해 왔다." },
+  petsit: { n: "방문 펫시팅", kv: () => (S.petsit?.g?.staff ? `돌봄 회사 · 직원 ${S.petsit.staff || 0}명` : `단골 ${(S.petsit?.homes || []).filter((h) => h.trust >= 70).length}가구`), epi: () => (endOn("petsit") ? "펫시팅은 지금도 명절마다 바쁘다. 보고서에는 여전히 본 것만 쓴다." : "펫시팅은 그만뒀다. 남의 집 현관 앞에 서면 아직도 발소리부터 죽인다."), fin: () => "70세, 첫 단골 집 고양이의 손주 고양이가 내 무릎에서 잔다." }, // 11-26 펫시팅 결산 한 줄
   chicken: { n: "치킨집", kv: () => `매장 ${(S.chicken?.stores || []).length}곳`,
     epi: () => ((S.chicken?.stores || []).length ? `치킨집 ${S.chicken.stores.length}곳은 지금도 금요일 밤이 제일 바쁘다. 튀김기 앞에는 이제 점장이 선다.` : "치킨집은 넘겼다. 지금도 치킨을 시키면 기름 색부터 본다."),
     fin: () => "70세, 손주 생일상에는 내 가게 치킨이 올라갔다." },

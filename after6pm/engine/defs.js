@@ -22,7 +22,7 @@ export const STAT_BRK = { months: 6, jp: { cs: "talk", tarot: "talk", webnovel: 
 export const STAT_MCAP = [6, 3, 1.5, 0.6, 0.5];
 export const JOB_XP = 1.2; // v4.28d 실전 경험: 투잡을 하는 달마다 그 투잡 주력 능력치(MG_STAT.of) // v4.28c 능력치마다 한 달에 오를 수 있는 양(구간별: 60·100·150·180·200 미만). 돌파 중이면 2배. 아이템·카드 +N 은 따로
 export const STAT_REP = { months: 3, mult: 0.7 }; // 같은 길로 같은 능력치를 석 달 연속 올리면 ×0.7(다른 길 섞으면 회복)
-export const MG_STAT = { great: 1, good: 0.5, of: { pr: "hands", cs: "talk", airbnb: "talk", ucafe: "hands", insta: "sense", tarot: "talk", tutoring: "talk", chicken: "hands", vibe: "sense", webnovel: "sense" } }; // 미니게임 대성공·성공 → 그 투잡의 경험형 능력치
+export const MG_STAT = { great: 1, good: 0.5, of: { pr: "hands", cs: "talk", airbnb: "talk", ucafe: "hands", insta: "sense", tarot: "talk", tutoring: "talk", chicken: "hands", vibe: "sense", webnovel: "sense", petsit: "sense" } }; // 미니게임 대성공·성공 → 그 투잡의 경험형 능력치
 // 장소 장면에서 고른 뒤 오르는 능력치(장소마다 다르게) · 선택지 글에 이런 말이 있으면 그 능력치도 조금
 // 11-25 능력치 성장 개편 2-1: 장소 장면 뒤 두 번째 능력치(첫째의 절반). 헬스장 매력, 포차·카페 말빨, 부동산 감각, 성숲길 마케팅 등
 export const LOC_STAT2 = { gym: "charm", cafe: "talk", pub: "talk", realty: "sense", univ: "career", officest: "mkt", hotplace: "mkt", newtown: "sense", club: "talk", online: "write" };
@@ -639,7 +639,7 @@ export const FIRE_TARGET = { single: 300000, married: 400000 }; // 30억(집 12�
 // ───────── 투잡 탐색 (21개, 지금은 파티룸·취업컨설팅만 플레이 가능) ─────────
 // type: 투잡연구소 유형. fit: 궁합 계산에 쓰는 능력치. cap: 시작 자본(만원). hours: 주당 시간. inc: 문서에 적힌 수익.
 // 11-24 방문 펫시팅은 새 인물과 그림이 준비될 때까지 숨긴다(true 로 바꾸면 열린다). 봇 시험: 환경변수 PSON=1
-export const PETSIT_ON = typeof process !== "undefined" && !!process.env?.PSON;
+export const PETSIT_ON = true; // 11-26 인물·글·그림을 갖춰 연다(대표 "배포"). 끄려면 false
 export const SIDEJOBS = {
   pr: { n: "파티룸", type: "투자", ic: "door", play: true, fit: ["num", "sense", "hands"], cap: "3,000만~", hours: "주 6~10시간", inc: "월 순수익 약 200만", line: "입지가 전부. 청소·민원은 덤.", hint: "러닝크루·와인·보드게임 모임 뒤풀이에서" },
   cs: { n: "취업컨설팅", type: "전문성", ic: "pen", play: true, fit: ["career", "write", "talk"], cap: "거의 0", hours: "주 5~15시간", inc: "월 200~300만, 잘되면 연 1억+", line: "진입과 마케팅이 전부. 첫 후기는 지인에게서.", hint: "독서·글쓰기 모임, 멘토링 봉사에서" },
@@ -673,11 +673,11 @@ export const SJ_SLOTS = 2; // 매니저(파티룸 매니저·에어씨앤씨 코
 // ───────── 취미 (여기서 인연과 투잡을 발견한다) ─────────
 // like: 이 취미에 오는 인연의 취향, jobs: 발견할 수 있는 투잡, stat: 한 번 갈 때 오르는 능력치
 export const HOBBIES = {
-  run: { n: "한강 러닝크루", like: ["운동"], fee: 2, hp: 5, mental: 4, stat: { charm: 0.3 }, hpMax: 0.6, jobs: ["pr", "insta", "chicken"], desc: "토요일 아침 5km. 뒤풀이가 본게임" },
+  run: { n: "한강 러닝크루", like: ["운동"], fee: 2, hp: 5, mental: 4, stat: { charm: 0.3 }, hpMax: 0.6, jobs: ["pr", "insta", "chicken", "petsit"], desc: "토요일 아침 5km. 뒤풀이가 본게임" },
   climb: { n: "클라이밍", like: ["운동"], fee: 12, hp: 6, mental: 4, stat: { hands: 0.6, charm: 0.2 }, hpMax: 0.5, jobs: ["insta", "chicken"], desc: "벽에 매달리면 회사 생각이 안 난다" },
   book: { n: "독서모임", like: ["책"], fee: 3, hp: 3, mental: 3, stat: { write: 1.2 }, jobs: ["cs", "webnovel", "tutoring"], desc: "한 달에 한 권, 이야기는 열 권" },
   mentor: { n: "취준생 멘토링 봉사", like: ["책", "카페"], fee: 0, hp: 4, mental: 3, stat: { career: 1.0, talk: 0.6 }, jobs: ["cs", "tutoring"], desc: "후배 자소서를 봐 준다. 고맙다는 말이 남는다" },
-  photo: { n: "사진 동호회", like: ["전시"], fee: 5, hp: 4, mental: 4, stat: { sense: 1.2 }, jobs: ["insta", "pr", "airbnb"], desc: "출사 나가서 남의 공간을 찍는다" },
+  photo: { n: "사진 동호회", like: ["전시"], fee: 5, hp: 4, mental: 4, stat: { sense: 1.2 }, jobs: ["insta", "pr", "airbnb", "petsit"], desc: "출사 나가서 남의 공간을 찍는다" },
   wine: { n: "와인 모임", like: ["와인"], fee: 15, hp: 4, mental: 5, stat: { charm: 0.8, talk: 0.4 }, jobs: ["pr", "tarot"], desc: "모임 장소는 늘 파티룸" },
   board: { n: "보드게임 모임", like: ["게임"], fee: 3, hp: 3, mental: 5, stat: { num: 1.0 }, jobs: ["pr", "vibe"], desc: "한 판만 더가 새벽 2시" },
   cook: { n: "홈카페·쿠킹 클래스", like: ["카페", "맛집"], fee: 10, hp: 3, mental: 4, stat: { hands: 1.0, sense: 0.4 }, jobs: ["ucafe", "chicken", "insta"], desc: "라테 아트 하트가 아직 감자" },

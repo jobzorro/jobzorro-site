@@ -55,6 +55,7 @@ export const CARDS = [
   K("r_tr", "r", "타로 상담 노트", "타로 손님 +3%", { job: "tarot", m: { trMult: 1.03 } }),
   K("r_wn", "r", "연재 루틴", "웹소설 유료 수익 +3%", { job: "webnovel", m: { wnPay: 1.03 } }),
   K("r_tu", "r", "학부모 단톡방", "학부모 신뢰 +3, 소개 +5%", { job: "tutoring", m: { tuPar: 3, tuRefer: 1.05 } }),
+  K("r_ps", "r", "사진 세 장 규칙", "펫시팅 새 가구 신뢰 +3, 문의 +5%", { job: "petsit", m: { psTrust: 3, psInq: 1.05 } }),
   K("r_ch", "r", "비밀 염지 레시피", "치킨 별점 +0.015", { job: "chicken", m: { chStar: 0.015 } }),
   K("r_vb", "r", "코드 조각 모음", "개발 단가 +3%", { job: "vibe", m: { vbPrice: 1.03 } }),
   K("r_aff", "r", "호감 체질", "호감 오름 +10%", { m: { affMult: 1.1 } }),

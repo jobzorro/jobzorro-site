@@ -22,7 +22,7 @@ const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 // ───────── 상수(밸런스는 총괄이 최종 조정. 연 판 파이어율 40% 언저리 목표) ─────────
 export const H2_REW = {
   fail: { fix: 90, space: 1.6 }, // 폐업 컨설턴트·실패 강연. 망한 투잡이 공간형이면 단가 ×1.6
-  combo: { cut: 0.08, fix: { pr_insta: 120, tarot_webnovel: 80, tutoring_cs: 100, vibe_ucafe: 80, chicken_airbnb: 110 }, lump: { vibe_ucafe: 600 } }, // 두 투잡 모두 부대비용 −8%p
+  combo: { cut: 0.08, fix: { pr_insta: 120, tarot_webnovel: 80, tutoring_cs: 100, vibe_ucafe: 80, chicken_airbnb: 110, petsit_airbnb: 90 }, lump: { vibe_ucafe: 600 } }, // 두 투잡 모두 부대비용 −8%p
   rival: { fix: 80, cut: 0.15 }, // 라이벌과 동업: 지점 합치기(규모의 경제)
   mentee: { fix: 150 }, // 제자가 임원: 사내 강의 독점
   land: { cut: 0.12 }, // 건물주와 장기 고정 임대: 공간형 투잡 전부
@@ -56,7 +56,7 @@ export const H2_P = {
 };
 const SPACE = ["pr", "ucafe", "chicken", "airbnb"];
 const CRISIS = ["pandemic", "winter", "freeze", "slump", "rentup"];
-const ERA_JOB = { pandemic: ["pr", "airbnb", "ucafe", "chicken", "tarot"], winter: ["pr", "airbnb", "ucafe", "chicken", "insta", "tarot"], slump: ["pr", "ucafe", "chicken", "insta"], rentup: ["pr", "ucafe", "chicken", "tarot"], freeze: ["cs", "tutoring"] }; // 그 위기에 손님이 빠지는 투잡만 제안
+const ERA_JOB = { pandemic: ["pr", "airbnb", "ucafe", "chicken", "tarot", "petsit"], winter: ["pr", "airbnb", "ucafe", "chicken", "insta", "tarot"], slump: ["pr", "ucafe", "chicken", "insta"], rentup: ["pr", "ucafe", "chicken", "tarot"], freeze: ["cs", "tutoring"] }; // 그 위기에 손님이 빠지는 투잡만 제안
 const ERA_N = { pandemic: "전염병", winter: "경기 한파", freeze: "채용 한파", slump: "소비 침체", rentup: "임대료 급등" };
 // 회사 신사업과 맞는 투잡(회사 유형별)
 export const CO_MATCH = { big: ["insta", "vibe", "airbnb", "ucafe", "webnovel"], fin: ["cs", "vibe", "tutoring"], mid: ["chicken", "ucafe", "pr", "vibe"], startup: ["vibe", "insta", "webnovel", "cs", "tarot"], public: ["tutoring", "cs", "tarot", "airbnb"] };
@@ -79,6 +79,7 @@ const QUAL_ACH = { cs: (s) => (s.cs?.passes || 0) >= 150, webnovel: (s) => (s.we
 function qual(s, job) {
   if (SPACE.includes(job)) return r1(star(s, job) + (QUAL_ADJ[job] || 0));
   if (job === "tutoring") return r1(s.tutoring?.stars || 0);
+  if (job === "petsit") return r1(s.petsit?.rating || 0);
   if (job === "tarot") return r1(3 + (s.tarot?.rep || 0) / 50);
   if (job === "insta") return r1(3 + (s.ins?.fan || 0) / 50);
   const lv = job === "cs" ? s.cs?.lv : s[job]?.lv; return r1(3.1 + (lv || 0) * 0.3 + (QUAL_ACH[job]?.(s) ? 0.3 : 0)); // 등급만으론 4.6, 대표 실적까지 있어야 4.9
@@ -102,6 +103,7 @@ const pathName = (s, k) => HID[k]?.n || (P2[k] ? nameOf(s, k) : k);
 const COMBOS = { pr_insta: ["pr", "insta", "공간 크리에이터", ["팔로워 5천", (s) => s.ins?.f || 0, 5000], "partyroom", "공간 협찬·촬영 대관. 내 파티룸이 콘텐츠가 되고, 콘텐츠가 예약이 된다"],
   tarot_webnovel: ["tarot", "webnovel", "운명 로맨스 작가", ["웹소설 완결 1편", (s) => s.webnovel?.done || 0, 1], "library", "점괘 연재. 독자가 손님이 되고, 손님 사연이 다음 화가 된다"],
   tutoring_cs: ["tutoring", "cs", "입시부터 취업까지 원스톱", ["컨설팅 합격 30명", (s) => s.cs?.passes || 0, 30], "studyst", "과외 학생이 대학에 가고, 졸업하면 취업 컨설팅으로 돌아온다"],
+  petsit_airbnb: ["petsit", "airbnb", "반려동물 동반 숙소", ["펫시팅 단골 3가구", (s) => (s.petsit?.homes || []).filter((h) => h.trust >= 70).length, 3], "airbnb", "고양이와 함께 묵는 숙소. 체크인부터 돌봄까지 한 사람이 본다. 보호자는 여행지에서도 보고서를 받는다"],
   vibe_ucafe: ["vibe", "ucafe", "무인 매장 솔루션", ["바이브 Lv3", (s) => s.vibe?.lv || 0, 3], "cowork", "내 무인카페에 쓰던 프로그램을 다른 사장님들께 판다"],
   chicken_airbnb: ["chicken", "airbnb", "외국인 치맥 투어", ["외국어 100", (s) => s.st.lang || 0, 100], "pub", "숙소 게스트를 내 가게로. 치맥이 여행 코스가 됐다"] };
 
@@ -116,9 +118,9 @@ export const P2 = {
     R: (s, f) => ({ fix: Math.round(H2_REW.fail.fix * (SPACE.includes(f.fJob) ? H2_REW.fail.space : 1)) }), risk: "fail" },
   ...Object.fromEntries(Object.entries(COMBOS).map(([k, [a, b, n, c3, bg, line]]) => ["cb_" + k, { cat: "조합", n, bg, pair: [a, b],
     c: [[`${JN(a)} + ${JN(b)} 함께 2년`, (s, f) => Math.floor((f.bothM || 0) / 12 * 10) / 10, H2_P.comboM / 12], c3],
-    where: () => [a, b], live: (s) => act(s, a) && act(s, b),
+    where: () => [a, b], live: (s) => act(s, a) && act(s, b), ...(k === "petsit_airbnb" ? { who: () => "c128" } : {}), // 11-26 반려동물 동반 숙소는 라윤서(c128)의 소개로 시작
     hintOk: (s, f) => (f.bothM || 0) >= 6,
-    hint: { title: "두 일이 겹치는 자리", text: () => ({ pr_insta: "촬영팀이 DM을 보냈다. \"피드에 올린 그 파티룸, 저희 촬영 장소로 빌릴 수 있어요?\"", tarot_webnovel: "타로 손님이 말했다. \"선생님 웹소설 주인공 운명, 제 점괘랑 똑같던데요? 다음 화 미리 봐 주세요 ㅎㅎ\"", tutoring_cs: "과외 학생 어머니가 물었다. \"우리 애 대학 가면 취업도 선생님이 봐 주실 수 있어요?\"", vibe_ucafe: "옆 동네 무인카페 사장님이 내 관리 화면을 보고 말했다. \"그 프로그램 어디서 샀어요? 저도 쓰고 싶은데.\"", chicken_airbnb: "숙소 게스트가 물었다. \"Is there good chicken near here?\" 내 가게 위치를 알려 줬다. 다음 날 친구 넷을 데려왔다." })[k] },
+    hint: { title: "두 일이 겹치는 자리", text: () => ({ pr_insta: "촬영팀이 DM을 보냈다. \"피드에 올린 그 파티룸, 저희 촬영 장소로 빌릴 수 있어요?\"", tarot_webnovel: "타로 손님이 말했다. \"선생님 웹소설 주인공 운명, 제 점괘랑 똑같던데요? 다음 화 미리 봐 주세요 ㅎㅎ\"", tutoring_cs: "과외 학생 어머니가 물었다. \"우리 애 대학 가면 취업도 선생님이 봐 주실 수 있어요?\"", petsit_airbnb: `${CHAR.c128?.name || "승무원 보호자"}: "우리 승무원 동료들이 자꾸 물어요. 고양이 데리고 묵을 데 없냐고요. 그쪽 숙소면 믿고 맡길 텐데. 숙소에 돌봄까지 붙이면 제가 단톡방에 바로 올릴게요."`, vibe_ucafe: "옆 동네 무인카페 사장님이 내 관리 화면을 보고 말했다. \"그 프로그램 어디서 샀어요? 저도 쓰고 싶은데.\"", chicken_airbnb: "숙소 게스트가 물었다. \"Is there good chicken near here?\" 내 가게 위치를 알려 줬다. 다음 날 친구 넷을 데려왔다." })[k] },
     open: () => `${line}. 두 투잡이 따로 놀지 않고 하나의 일이 됐다.`,
     rew: () => `새 수입원(월 고정)·두 투잡 부대비용 −${Math.round(H2_REW.combo.cut * 100)}%p${H2_REW.combo.lump[k] ? ` · 첫 계약 ${H2_REW.combo.lump[k]}만` : ""} (둘 다 할 때만)`,
     R: () => ({ fix: H2_REW.combo.fix[k] || 80, cut: { [a]: H2_REW.combo.cut, [b]: H2_REW.combo.cut }, lump: H2_REW.combo.lump[k] || 0 }), risk: "combo" }])),

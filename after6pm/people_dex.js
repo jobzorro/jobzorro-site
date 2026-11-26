@@ -51,8 +51,9 @@ export const GROUPS = {
   town: { n: "동네·취미", s: "동네", c: "#f5c04e", ic: "🏠" },
   airbnb: { n: "에어씨앤씨 판", s: "에어", c: "#4fd1d9", ic: "🏠" }, ucafe: { n: "무인카페 판", s: "무인카페", c: "#c8a27a", ic: "☕" }, chicken: { n: "치킨 판", s: "치킨", c: "#ff9f5a", ic: "🍗" },
   tarot: { n: "타로 판", s: "타로", c: "#a98bff", ic: "🔮" }, webnovel: { n: "웹소설 판", s: "웹소설", c: "#7fb2ff", ic: "📚" }, tutoring: { n: "화상과외 판", s: "과외", c: "#a3e05f", ic: "🎧" }, vibe: { n: "바이브코딩 판", s: "바이브", c: "#6ee7b7", ic: "💻" },
+  petsit: { n: "펫시팅 판", s: "펫시팅", c: "#f2a97e", ic: "🐾" }, // 11-26 방문 펫시팅(c125~c129)
 };
-const ALIAS = { 에어씨앤씨: "airbnb", 무인카페: "ucafe", 치킨: "chicken", 타로: "tarot", 웹소설: "webnovel", 화상과외: "tutoring", 바이브코딩: "vibe", 인별: "insta", 인별그램: "insta", insta: "insta", 회사: "co", co: "co", 파티룸: "pr", partyroom: "pr", pr: "pr", 컨설팅: "cs", consult: "cs", cs: "cs", 동네: "town", 취미: "town", town: "town" };
+const ALIAS = { 에어씨앤씨: "airbnb", 무인카페: "ucafe", 치킨: "chicken", 타로: "tarot", 웹소설: "webnovel", 화상과외: "tutoring", 바이브코딩: "vibe", 펫시팅: "petsit", 방문펫시팅: "petsit", petsit: "petsit", 인별: "insta", 인별그램: "insta", insta: "insta", 회사: "co", co: "co", 파티룸: "pr", partyroom: "pr", pr: "pr", 컨설팅: "cs", consult: "cs", cs: "cs", 동네: "town", 취미: "town", town: "town" };
 const EXTRA_C = ["#ff9f5a", "#4fd1d9", "#ff6b7f", "#a3e05f", "#e0b35f"];
 export function groupOf(c) {
   const g = c?.group || c?.grp || c?.dex;
