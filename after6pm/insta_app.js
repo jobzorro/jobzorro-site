@@ -28,20 +28,45 @@ export function board(ctx) {
     ${INS.banned(s) ? `<div class="tiny" style="margin-top:6px;color:#e0245e;font-weight:700">⛔ 계정 정지 중(${i.ban.left}달 남음)${i.sub?.on ? ` · 부계정 ${i.sub.f.toLocaleString()}명` : ""}</div>` : ""}
     ${i.cc ? `<div class="tiny muted" style="margin-top:6px">컨셉 수명 '${st.n}' · 팬심 ${Math.round(i.fan)} · 논란 ${Math.round(i.ctrv)}${i.trend ? ` · 요즘 유행 ${esc(INS.TOPICS[i.trend.topic].n)} × ${esc(INS.FMTS[i.trend.fmt].n)}` : ""}</div>` : ""}
     ${b.inbox + b.dm + b.deal ? `<div class="igquick">${[["inbox", "💬 댓글함", b.inbox], ["dm", "✉ DM", b.dm], ["deal", "🤝 협찬함", b.deal]].filter((x) => x[2]).map(([k, t, c]) => `<button data-igopen="${k}">${t} <b>${c}</b></button>`).join("")}</div>` : ""}
-    <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">인별이 크는 법 자세히 ▾</summary><div class="tiny muted">인별은 매력이 아니라 컨셉·꾸준함·댓글 관리로 커요. 약속한 만큼 못 올리면 연속 기록이 끊기고, 한 달을 통째로 쉬면 두 달간 노출이 반토막 나요.</div></details></div>`;
+    <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">인별이 크는 법 자세히 ▾</summary><div class="tiny muted">인별은 매력이 아니라 컨셉·꾸준함·댓글 관리로 커요. 약속한 만큼 못 올리면 연속 기록이 끊기고, 한 달을 통째로 쉬면 두 달간 노출이 반토막 나요.</div></details></div>${chBoard()}`;
+}
+// 챌린지(11-26) 플랫폼 칸: 지금 대세 · 내가 있는 곳 · 협찬 단가 · 버티는 중이면 노출과 [갈아타기] · '진짜 사람' 신뢰도. 3년 차 예고부터 보인다
+function chInfo() {
+  const i = I(), s = S(), P = i.pf, C = INS.IG_CH; if (!i.cc || !P || (s.t < C.mv.warnT && !P.era)) return null;
+  return { P, C, hold: INS.holding(s), cut: Math.round((1 - INS.pfReach(s)) * 100), keep: Math.round(INS.moveKeep(s) * 100), pay: INS.payPct(s), on: INS.realOn(s), real: Math.round(i.real), era: INS.platOf(P.era).n, at: INS.platOf(P.at).n, hm: INS.holdM(s) };
+}
+const REAL_HOW = "오르는 것: 얼굴 공개·브이로그로 올리기, 현장 촬영, 팬 모임, 핫플·화보·콜라보 촬영, 팬 DM에 길게 답하기. 그런 것 없이 올리기만 한 달은 −1.5, 안 올린 달은 −3.";
+function chBoard() {
+  const c = chInfo(); if (!c) return ""; const esc = X.esc, s = S(), A = c.C.ai;
+  const state = c.hold ? `<span style="color:#e0245e;font-weight:700">버틴 지 ${c.hm}달 · 노출 −${c.cut}%</span> · 지금 갈아타면 팔로워 약 ${c.keep}%가 따라와요(1년 늦을 때마다 −${INS.mvShow().late}%p)` : c.P.newM > 0 ? `막 이사 왔어요. 새 문법을 익히는 ${c.P.newM}달 동안 올리기 ⚡+${c.C.mv.newAp}` : c.P.era ? "대세 안에 있어요. 대세는 4년쯤마다 또 바뀌어요." : "아직은 여기가 대세예요. 다만 요즘 애들은 다른 곳을 본다는 말이 들려요.";
+  return `<div class="card igboard" style="margin-top:8px"><div class="row"><div class="grow"><h3 style="margin:0">플랫폼</h3><div class="tiny muted">${state}</div></div>${c.hold ? `<button class="btn sm" data-igopen="move">갈아타기</button>` : ""}</div>
+    <div class="kv" style="margin-top:8px"><div><div class="k">지금 대세</div><div class="v" style="font-size:13px">${esc(c.era)}</div></div><div><div class="k">내가 있는 곳</div><div class="v ${c.hold ? "bad" : "good"}" style="font-size:13px">${esc(c.at)}</div></div><div><div class="k">협찬 단가</div><div class="v ${c.pay < 100 ? "bad" : ""}">${c.pay}%</div></div></div>
+    ${c.on ? `<div class="tiny" style="margin-top:8px">'진짜 사람' 신뢰도 <b>${c.real}</b> <span class="muted">· ${s.t >= A.t0 ? `AI 계정 탓에 단가가 해마다 ${INS.aiShow().perY}%씩(최대 ${INS.aiShow().max}%) 내려가요. 신뢰도가 높으면 절반만` : "곧 중요해져요"}</span></div><div class="meter" style="margin-top:4px"><i style="width:${c.real}%;background:${c.real >= 60 ? "#2e9e5b" : c.real >= 35 ? "#d9a520" : "#e0245e"}"></i></div>
+    <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">무엇으로 오르나 ▾</summary><div class="tiny muted">${REAL_HOW} 현장 촬영(⚡1, 한 달 1번)은 앱의 피드에 있어요.</div></details>` : ""}</div>`;
+}
+// 앱 피드의 플랫폼 카드: [갈아타기] · [현장 촬영]
+function chFeed() {
+  const c = chInfo(); if (!c) return ""; const esc = X.esc, s = S(), whyS = INS.canShoot(s);
+  if (!c.hold && !c.on && !(c.P.newM > 0)) return "";
+  return `<div class="igcard" style="margin:0 14px 8px${c.hold ? ";border-color:#f6c6d4;background:#fff7f8" : ""}"><b>${c.hold ? `대세는 ${esc(c.era)}` : `지금 대세: ${esc(c.era)}`}</b> <small>협찬 단가 ${c.pay}%</small>
+    ${c.hold ? `<div class="igsub" style="margin:2px 0 0">${esc(c.at)}에서 버틴 지 ${c.hm}달 · 노출 −${c.cut}% · 지금 옮기면 약 ${c.keep}%가 따라와요</div>` : c.P.newM > 0 ? `<div class="igsub" style="margin:2px 0 0">새 문법을 익히는 중: ${c.P.newM}달 동안 올리기 ⚡+${c.C.mv.newAp}</div>` : ""}
+    ${c.on ? `<div class="igmeter" style="margin:6px 0 0"><div class="row"><span>'진짜 사람' 신뢰도 <b>${c.real}</b></span><span>${s.t >= c.C.ai.t0 ? "높을수록 단가가 덜 깎여요" : "곧 중요해져요"}</span></div><div class="igmb"><i style="width:${c.real}%"></i></div></div>
+    <details style="margin-top:4px"><summary style="font-size:11px;color:#8e8e8e;cursor:pointer">무엇으로 오르나 ▾</summary><div class="igsub" style="margin:4px 0 0">${REAL_HOW}</div></details>` : ""}
+    <div class="igacts" style="padding:0;margin-top:6px">${c.hold ? `<button class="igbtn pri" data-igmove>갈아타기</button>` : ""}${c.on ? `<button class="igbtn" data-igfield ${whyS ? `data-why="${esc(whyS)}"` : ""}>현장 촬영 ⚡1</button>` : ""}</div></div>
+    ${sheet === "move" && c.hold ? `<div class="igsheet"><div class="igsh">대세로 갈아탈까요? → ${esc(c.era)}</div><button data-igmovego><b>갈아탄다</b><span>팔로워 ${I().f.toLocaleString()} → 약 ${Math.round(I().f * c.keep / 100).toLocaleString()}(${c.keep}%) · 석 달은 올리기 ⚡+${c.C.mv.newAp} · 되돌릴 수 없어요</span></button><button data-igmove><b>조금 더 버틴다</b><span>지금 노출 −${c.cut}%(해마다 ${Math.round(c.C.mv.decayY * 100)}%씩) · 1년 늦을 때마다 따라오는 비율 −${INS.mvShow().late}%p(최저 ${INS.mvShow().min}%)</span></button></div>` : ""}`;
 }
 function D_LV(ctx, f) { const L = ctx.D.INSTA_LV; let k = 0; L.forEach((x, j) => { if (f >= x.f) k = j; }); return L[k].n + " 계정"; }
 
 // ───────── 창 열고 닫기 ─────────
 export function openInsta(ctx, t = "feed", opt = {}) {
-  X = ctx; tab = TABS.some((x) => x[0] === t) ? t : t === "inboxplay" ? "inbox" : "feed"; sheet = null; edit = !I().cc ? {} : null;
+  X = ctx; tab = TABS.some((x) => x[0] === t) ? t : t === "inboxplay" ? "inbox" : "feed"; sheet = t === "move" ? "move" : null; edit = !I().cc ? {} : null;
   if (!el) { el = document.createElement("div"); el.className = "igapp"; document.body.appendChild(el); }
   draw();
   if (t === "inboxplay") startGame();
   clearInterval(poll); poll = setInterval(() => { if (!el || !el.isConnected) return clearInterval(poll); if (game) return; const s2 = sigOf(); if (s2 !== sig) draw(); }, 600);
 }
 export function closeInsta() { stopGame(); clearInterval(poll); el?.remove(); el = null; try { X?.render(); } catch (e) {} }
-function sigOf() { const s = S(), i = I(); return [s.t, s.ap, s.pending ? 1 : 0, i.f, i.upN, i.upT, (i.dm || []).filter((d) => !d.done).length, i.inbox?.done, (i.offers || []).length, i.cc && INS.ccKey(i.cc), i.plan, i.insT, Math.round(i.cons), i.ban?.left || 0, i.sub?.on ? 1 : 0, (i.hidAds || []).length, i.meetT].join("|"); }
+function sigOf() { const s = S(), i = I(); return [s.t, s.ap, s.pending ? 1 : 0, i.f, i.upN, i.upT, (i.dm || []).filter((d) => !d.done).length, i.inbox?.done, (i.offers || []).length, i.cc && INS.ccKey(i.cc), i.plan, i.insT, Math.round(i.cons), i.ban?.left || 0, i.sub?.on ? 1 : 0, (i.hidAds || []).length, i.meetT, i.pf?.at, i.pf?.era, i.pf?.newM, Math.round(i.real ?? 0), i.fsT].join("|"); }
 
 function draw() {
   if (!el) return; sig = sigOf();
@@ -68,6 +93,7 @@ function pgFeed() {
     <div class="igmeter"><div class="row"><span>컨셉 일관성 <b>${Math.round(i.cons)}</b></span><span>${esc(INS.PLANS[i.plan].n)} 약속 <b>${n}/${need}</b> · ${i.streak}달 연속${i.angry > 0 ? ' · <em class="igbad">노출 반토막</em>' : ""}</span></div><div class="igmb"><i style="width:${Math.round(i.cons)}%"></i></div></div>
     <div class="igchips"><span>수명 '${st.n}'</span>${i.trend ? `<span>유행 ${esc(INS.TOPICS[i.trend.topic].n)}×${esc(INS.FMTS[i.trend.fmt].n)}</span>` : ""}<span class="igfan">팬심 ${Math.round(i.fan)}</span><span class="igctv">논란 ${Math.round(i.ctrv)}</span></div>
     ${f30Feed()}
+    ${chFeed()}
     <div class="igacts"><button class="igbtn pri" data-igpost ${why ? `data-why="${esc(why)}"` : ""}>＋ 올리기 ⚡${ap}</button><button class="igbtn" data-igreel ${whyR ? `data-why="${esc(whyR)}"` : ""}>실험 릴스 ⚡2</button><button class="igbtn" data-igplan>약속</button>${i.f >= INS.F30.sub.minF || i.sub?.f ? `<button class="igbtn" data-igsub>부계정</button>` : ""}</div>
     ${sheet === "sub" ? `<div class="igsheet"><div class="igsh">부계정 키우기 · 지금 ${(i.sub?.f || 0).toLocaleString()}명</div><button class="${i.sub?.on ? "on" : ""}" data-igsetsub="1"><b>키운다</b><span>매달 멘탈 ${INS.F30.sub.mental}·피로 조금. 본계정의 ${Math.round(INS.F30.sub.share * 100)}%까지 천천히 따라 커요. 본계정이 막히면 이사 갈 곳</span></button><button class="${i.sub?.on ? "" : "on"}" data-igsetsub="0"><b>안 키운다</b><span>품이 안 들어요. 대신 계정이 막히면 0부터</span></button></div>` : ""}
     ${sheet === "post" ? `<div class="igsheet"><div class="igsh">이번 게시물은?</div>${Object.entries(INS.POSTS).map(([k, p]) => `<button data-igkind="${k}"><b>${esc(p.n)}</b><span>${esc(p.d)}</span></button>`).join("")}</div>` : ""}
@@ -211,6 +237,10 @@ function bind() {
   on("[data-igsub]", () => { sheet = sheet === "sub" ? null : "sub"; draw(); });
   on("[data-igsetsub]", (b) => { const r = INS.setSub(S(), b.dataset.igsetsub === "1"); X.toast([], r.msg); sheet = null; X.save(); draw(); });
   on("[data-igmeet]", () => openMeet());
+  // 챌린지(11-26): 갈아타기(시트에서 한 번 더 확인) · 현장 촬영
+  on("[data-igmove]", () => { sheet = sheet === "move" ? null : "move"; draw(); });
+  on("[data-igmovego]", () => { const r = INS.moveNow(S()); X.toast(r.lines || [], r.msg); sheet = null; X.save(); draw(); });
+  on("[data-igfield]", () => { const r = INS.fieldShoot(S()); X.toast(r.lines || [], r.msg); X.save(); draw(); });
   on("[data-igstart]", () => startGame());
   on("[data-igpick]", (b) => { if (!game) return; const [id, a] = b.dataset.igpick.split(":"); game.picks[id] = a; b.parentElement.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); const c = el.querySelector(".iggauge span"); if (c) c.textContent = `골랐다 ${Object.keys(game.picks).length}/${I().inbox.list.length}`; });
   on("[data-igdone]", () => finishGame());

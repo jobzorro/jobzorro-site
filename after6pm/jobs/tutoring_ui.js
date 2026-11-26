@@ -8,7 +8,7 @@ const pct = (x) => `${Math.round(x)}`;
 
 export default {
   key: "tutoring", ic: "video", bg: "online", fullBg: "online",
-  icons: { tu_class: "video", tu_find: "search", tu_trial: "msg", tu_report: "pen", tu_make: "cam" },
+  icons: { tu_class: "video", tu_find: "search", tu_trial: "msg", tu_report: "pen", tu_make: "cam", tu_study: "book" },
   tile: (S) => `학생 ${TU.heads(S)}명 · Lv${S.tutoring.lv}`,
   side: (S) => `화상과외 Lv${S.tutoring.lv}`,
   quick: (S) => (TU.needAp(S) > S.tutoring.ap ? "tu_class" : S.tutoring.leads.length ? "tu_trial" : "tu_find"),
@@ -58,6 +58,18 @@ export default {
     const lic = T.lic === 2 ? '<span class="tag red">미신고 · 적발 위험</span>' : "";
     const f30 = fl.length || T.lic === 2 ? `<div class="card"><div class="row wrap" style="gap:4px">${fl.join("")}${lic}<span class="grow"></span>${T.lic === 2 ? '<button class="btn sm" data-tulic="1">교습자 신고하기</button>' : ""}</div>
       <details style="margin-top:4px"><summary class="tiny muted" style="cursor:pointer;display:inline-block">자세히 ▾</summary><div class="tiny muted" style="margin-top:4px">시험 달(4·6·10·12월)에 성적이 ${F.judge.refD}점 넘게 오르면 소개가 오고, ${-F.judge.leaveD}점 넘게 떨어지면 ${Math.round(F.judge.leaveP * 100)}% 확률로 학원으로 떠나요. 시험 전 달에 보강을 고를 수 있어요. 고3 입시 결과는 2월에 나와 1년 소개를 좌우해요. 교습자 신고를 안 하면 학생이 많을수록 과태료 위험이 커요.</div></details></div>` : "";
+    // 2-2) 11-26 평가 방식: 지금 평가 방식 · 수업 적합도 · 개편 예고 · 학생 수요 추세
+    const EV = TU.evalInfo(S), CHC = TU.TU_CH, popPct = Math.round(EV.pop * 100), fitCol = EV.fit >= 90 ? "var(--green)" : EV.fit >= 60 ? "var(--gold)" : "var(--red)";
+    const canPrep = EV.fit >= 100 && EV.warn && EV.prep < CHC.prepMax;
+    const evTip = EV.fit < 100 ? `적합도가 낮으면 성적이 덜 오르고 학부모 만족·소개·시범수업 전환이 줄고 이탈이 늘어요. '새 평가 연구' 한 번에 +${CHC.study[0]}~${CHC.study[1]}, 그냥 두면 달마다 +${CHC.drift}.`
+      : EV.warn ? (canPrep ? `개편 전에 미리 연구해 두면 개편 때 적합도가 덜 떨어져요(한 번에 +${CHC.prep}, ${EV.prep}/${CHC.prepMax}).` : `미리 준비 ${EV.prep}/${CHC.prepMax} 완료. 개편이 오면 다시 연구하세요.`)
+      : "지금은 수업이 평가에 잘 맞아요. 평가는 몇 해마다 바뀌고, 바뀌면 적합도가 뚝 떨어져요.";
+    const evalCard = `<div class="card"><h3>평가 방식 <small>${esc(EV.name)}${EV.n ? ` · 개편 ${EV.n}번째` : ""}</small></h3>
+      <div class="row small" style="gap:6px"><span style="min-width:96px">수업 적합도</span><div class="grow">${meter(EV.fit, 100, fitCol)}</div><b class="${EV.fit < 60 ? "bad" : EV.fit >= 90 ? "good" : ""}" style="min-width:42px;text-align:right">${EV.fit}/100</b></div>
+      ${EV.warn ? `<div class="row wrap" style="margin-top:6px;gap:4px"><span class="tag red">개편 예고 · 약 ${EV.left}달 뒤</span><span class="tiny muted">다음: ${esc(EV.nextName)}</span></div>` : ""}
+      <div class="tiny muted" style="margin-top:6px">${evTip}</div>
+      ${EV.fit < 100 || canPrep ? `<div class="acts" style="padding:0;margin-top:6px">${actRow("tu_study", undefined, EV.fit < 100 ? `새 평가 연구 (적합도 ${EV.fit})` : `새 평가 연구 (미리 준비 ${EV.prep}/${CHC.prepMax})`)}</div>` : ""}
+      <div class="tiny muted" style="margin-top:6px">학생 수요: 처음의 ${popPct}% · 학령인구가 줄어 문의가 해마다 약 ${(TU.popRate() * 100).toFixed(1)}%씩 줄어요.${EV.fee < 0.995 ? ` 학생이 줄어 수업료 시세도 −${Math.round((1 - EV.fee) * 100)}%.` : ""}</div></div>`;
     // 3) 행동·운영
     const hasSt = T.studs.length > 0;
     const ops = `<div class="acts" style="padding:0">${n ? actRow("tu_class", undefined, `화상 수업 (${T.ap}/${n})`) : ""}${actRow("tu_find")}${hasSt ? actRow("tu_report", undefined, T.repT === S.t ? "학부모 리포트(이번 달 보냄, 효과 작음)" : "학부모 리포트") : ""}${actRow("tu_make", undefined, T.lv >= 4 ? `자료·숏폼 만들기 (자료집 ${Math.min(100, T.rec)}%)` : "자료·숏폼 만들기")}</div>
@@ -88,7 +100,7 @@ export default {
       <div><div class="k">수업료</div><div class="v">${won(L.rev)}</div></div><div><div class="k">자료 판매</div><div class="v">${won(L.mat)}</div></div>
       <div><div class="k">수수료·비용</div><div class="v bad">−${won(L.cost)}</div></div><div><div class="k">수업 진행</div><div class="v ${L.q >= 100 ? "good" : "bad"}">${L.q}%</div></div></div>
       <div class="tiny muted" style="margin-top:6px">수업을 다 못 하면 수업료 일부를 환불·보강으로 미뤄요. 회사 마감 주간엔 한 타임이 펑크 날 수 있어요.</div></div>` : "";
-    return `${boardHead("tutoring")}${head}${tt}${f30}${ops}${leads}${studs}${bill}`;
+    return `${boardHead("tutoring")}${head}${tt}${f30}${evalCard}${ops}${leads}${studs}${bill}`;
   },
 
   bind(c) {

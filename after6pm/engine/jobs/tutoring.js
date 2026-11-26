@@ -35,6 +35,24 @@ export const TU_F30 = {
   // 개인과외교습자 신고: minHeads 명부터 안내. 미신고면 달마다 학생 수 × p(상한 cap) 확률로 적발, 과태료 fine. 신고하면 수업료의 taxR 를 세금으로, 회사 눈치 eye, 시범수업 전환 +trust
   lic: { minHeads: 2, p: 0.004, cap: 0.05, fine: [150, 300], taxR: 0.03, eye: 4, trust: 0.04 },
 };
+// 11-26 챌린지 "시험의 종말": 평가 개편(수업 적합도) + 학령인구 감소. 효과 크기는 여기 숫자만 바꾸면 된다
+// k = 종합 세기(적합도 벌점과 인구 감소율에 같이 곱한다). 봇으로 맞출 때는 환경변수 TUK 로 덮어쓴다
+export const TU_CH = {
+  k: 1,
+  news: 24, // 첫 뉴스 장면(달)
+  first: 48, gap: 30, jit: 4, warn: 6, // 첫 개편 달 · 개편 간격(±jit) · 예고는 몇 달 전
+  drop: 45, dropEarly: 70, earlyT: 60, // 개편 때 적합도가 떨어지는 값(첫 5년 안이면 dropEarly 까지만)
+  study: [12, 15], drift: 1, prep: 10, prepMax: 2, // 새 평가 연구 한 번 · 그냥 둘 때 달마다 · 예고 뒤 미리 연구(개편 충격 완화, 최대 횟수)
+  // 적합도가 100에서 모자란 만큼(0~1)에 비례하는 벌점: 성적 진도 · 학부모 만족 목표 · 달 이탈 · 소개 · 시범수업 전환
+  pg: 0.5, par: 20, churn: 0.04, ref: 0.8, trial: 0.5,
+  pop: 0.025, popMin: 0.3, feePop: 0.5, // 문의가 해마다 줄어드는 비율 · 바닥 · 수업료 시세가 수요를 따라 내리는 정도(수요^feePop: 23년 뒤 수요 56%, 시세 75%)
+  mood: [34, 62, 96, 130, 170, 215], moodP: 0.5, // 분위기 장면 여섯 개가 열리는 달 · 열린 뒤 달마다 나올 확률
+};
+const TUK = (typeof process !== "undefined" && +process.env.TUK) || TU_CH.k;
+// 평가 방식 이름(0 = 처음). 7번째부터는 EVAL_MORE 를 돌려 쓴다
+const EVAL = ["지필 시험(내신·수능)", "서술형 내신", "구술 평가", "AI 감독 실기", "프로젝트 평가", "대학 자체 면접", "시험 없는 시범학교"];
+const EVAL_MORE = ["수시 개정 평가", "지역별 평가", "새 감독 AI 평가"];
+export const evalName = (n) => (n < EVAL.length ? EVAL[n] : EVAL_MORE[(n - EVAL.length) % EVAL_MORE.length]);
 const GRADES = ["초6", "중1", "중2", "중3", "고1", "고2", "고3"];
 const GRADE_F = { 초6: 0.8, 중1: 0.85, 중2: 0.85, 중3: 0.9, 고1: 1, 고2: 1, 고3: 1.1, 성인: 0.95 };
 // 시공간 파괴: 화상이라 어디 학생이든 받는다
@@ -60,7 +78,21 @@ export const used = (s) => (T_(s)?.studs || []).reduce((a, x) => a + (x.pause ? 
 export const usedAll = (s) => (T_(s)?.studs || []).reduce((a, x) => a + x.wk, 0); // 쉬는 학생 자리도 비워 둔다
 export const heads = (s) => (T_(s)?.studs || []).reduce((a, x) => a + (x.grp ? x.size : 1), 0);
 export const needAp = (s) => { const u = used(s); if (!u) return 0; const per = T_(s).agent ? 6 : 3; return Math.max(1, Math.ceil(u * (T_(s).ai ? 0.85 : 1) / per)); };
-export const hourFee = (s) => { const T = T_(s); let h = LV[T.lv].hr * (T.lv >= 4 ? TU_BAL.hrLate : 1) * (T.exam ? 1.1 : 1) * (T.wait ? 1.08 : 1) * (T.feeUp ? 1.1 : 1) * ((T.ipUp || -1) > s.t ? TU_F30.ipsi.upFee : 1); if (s.me?.traits?.includes("nightconsult")) h *= 1.15; return h * SYN.pi(s); };
+export const hourFee = (s) => { const T = T_(s); let h = LV[T.lv].hr * (T.lv >= 4 ? TU_BAL.hrLate : 1) * (T.exam ? 1.1 : 1) * (T.wait ? 1.08 : 1) * (T.feeUp ? 1.1 : 1) * ((T.ipUp || -1) > s.t ? TU_F30.ipsi.upFee : 1); if (s.me?.traits?.includes("nightconsult")) h *= 1.15; h *= feePop(s); return h * SYN.pi(s); };
+// 수업 적합도(0~100): 평가 개편이 오면 떨어진다. fitGap = 모자란 정도(0~1) × 세기, fitMul = 벌점 배율
+export const fitOf = (s) => T_(s)?.fit ?? 100;
+const fitGap = (s) => clamp((100 - fitOf(s)) / 100, 0, 1) * TUK;
+const fitMul = (s, c) => clamp(1 - c * fitGap(s), 0.2, 1);
+// 학령인구: 문의가 해마다 줄어든다(처음 = 1)
+export const popRate = () => Math.min(0.08, TU_CH.pop * TUK);
+export const popF = (s) => Math.max(TU_CH.popMin, Math.pow(1 - popRate(), (s.t || 0) / 12));
+// 학생이 줄면 선생끼리 값을 깎는다: 수업료 시세 = 수요^feePop (문의만 줄여서는 시간표가 계속 차서 봇 수입이 안 줄었다)
+export const feePop = (s) => Math.pow(popF(s), TU_CH.feePop);
+// 화면용: 지금 평가 방식 · 적합도 · 예고
+export function evalInfo(s) {
+  const T = T_(s), left = T.evNext == null ? null : T.evNext - s.t;
+  return { n: T.evN || 0, name: evalName(T.evN || 0), fit: Math.round(fitOf(s)), warn: !!T.evWarn && left != null && left > 0, left, nextName: evalName((T.evN || 0) + 1), prep: T.evPrep || 0, pop: popF(s), fee: feePop(s) };
+}
 // 학생 한 명(또는 그룹 한 반) 월 수업료(만원)
 export function feeOf(s, st) {
   const R = REGION.find((x) => x.k === st.reg) || REGION[0];
@@ -104,6 +136,7 @@ export function trialP(s, L) {
   if (T.lic === 1) p += TU_F30.lic.trust; // f30 교습자 신고증: 학부모 신뢰
   p += mod(s, "tuTrust", 0); // 회사형 인간(defs 성향 카드 tuTrust): 학부모 신뢰 +5%p
   if (L.mood === "까다로움") p -= 0.1;
+  if (L.g !== "성인") p *= fitMul(s, TU_CH.trial); // 11-26 평가 개편: 수업이 새 평가에 안 맞으면 전환이 준다
   return clamp(p, 0.15, 0.92);
 }
 // 학생 등록
@@ -313,6 +346,72 @@ function f30Scene(s, r, cal) {
   if (examOf(nx) && kids(s).length && ((T.seen.f30b || 0) < TU_F30.boost.first || r.chance(TU_F30.boost.p))) return boostScene(s, nx); // 처음 두 번은 꼭, 그 뒤엔 가끔
   return null;
 }
+// ───────── 11-26 챌린지 장면: 뉴스 · 평가 개편 · 분위기 ─────────
+const CH_REFORM = [
+  null,
+  { t: "객관식이 사라졌다", x: "교육청 공문이 학부모 단톡에 돌았다. 다음 학기부터 중간·기말고사에서 객관식이 빠진다. 답안은 전부 교실에서 손으로 쓴다. AI가 대신 쓴 답을 가려낼 방법이 없어서라고 한다. 기출 문제집 세 권이 책장에서 조용해졌다.", d: "시험은 한 번 바뀌면 다음에도 바뀐다." },
+  { t: "말로 푸는 시험", x: "서술형 답안도 통째로 외워 온다는 말이 나오자 학교가 방식을 또 바꿨다. 이제 학생은 교사 앞에서 풀이를 말로 설명한다. 5분, 질문 세 개. 문제를 맞히는 것과 설명하는 것은 다른 일이다.", d: "'시험 범위'라는 말이 점점 어색해진다." },
+  { t: "감독은 AI", x: "평가실에 카메라와 감독 AI가 들어왔다. 학생은 정해진 시간 안에 문제를 풀고, 화면과 시선과 손이 전부 기록된다. 점수는 답이 아니라 풀이 과정에 매겨진다. 사람 채점자는 이의 신청 때만 나온다.", d: "AI를 막으려고 AI를 세웠다. 그 사이에 선 사람이 나다." },
+  { t: "시험 날짜가 없다", x: "한 학기 성적이 프로젝트 하나로 정해진다. 주제를 정하고, 조사하고, 발표한다. 시험 날짜가 없으니 '시험 대비'라는 말을 팔 수가 없다. 학부모가 물었다. \"그럼 과외는 뭘 해 주는 거예요?\"", d: "대답을 준비하는 데 며칠이 걸렸다." },
+  { t: "점수를 안 믿는 대학", x: "대학들이 내신과 수능 점수를 더는 믿지 않겠다고 했다. 입학은 학교마다 따로 보는 면접과 과제로 정한다. 방식은 학교마다 다르고 해마다 바뀐다. 기출이라는 것이 사라졌다.", d: "모두가 처음 보는 시험을 모두가 처음 준비한다." },
+  { t: "시험 없는 학교", x: "시험을 아예 보지 않는 시범학교가 생겼다. 성적표 대신 교사가 쓴 기록이 나간다. 학생 어머니가 전화했다. \"우리 애 학교가 내년에 지정된대요. 그러면 과외는…\" 말끝이 흐려졌다.", d: "시험이 끝나 간다는 것을, 시험을 가르치는 사람이 제일 늦게 안다." },
+];
+const CH_REFORM_MORE = [
+  { t: "또 바뀐다", x: "평가 지침이 또 바뀌었다. 지난번 지침을 익히는 데 걸린 시간보다 그것이 쓰인 시간이 짧았다. 공문 제목은 이번에도 '공정한 평가를 위한 개선안'이다.", d: "익숙해질 만하면 바뀐다. 이제는 그게 규칙이다." },
+  { t: "지역마다 다른 평가", x: "올해부터 평가 방식을 지역이 따로 정한다. 화상이라 학생이 전국에 있으니, 준비할 것도 지역 수만큼이다. 섬마을 학생과 서울 학생이 서로 다른 것을 묻는다.", d: "어디 학생이든 받을 수 있다는 장점이 오늘은 짐이다." },
+  { t: "감독 AI가 바뀌었다", x: "평가를 맡던 AI가 다른 것으로 교체됐다. 새 AI는 다른 것을 본다. 무엇을 보는지는 아무도 정확히 모른다. 학부모 단톡에는 추측만 돈다.", d: "나도 추측으로 가르친다." },
+];
+function reformScene(s, n, to) {
+  const R = n < CH_REFORM.length ? CH_REFORM[n] : CH_REFORM_MORE[(n - CH_REFORM.length) % CH_REFORM_MORE.length];
+  return { kind: "event", tag: "화상과외", title: `평가 개편: ${R.t}`,
+    text: `${R.x} ${R.d} (평가 방식: ${evalName(n)} · 수업 적합도 ${Math.round(to)})`,
+    choices: [{ t: "주말 내내 새 요강을 읽는다 (스태미너 −5, 수업 적합도 +8)", eff: { hp: -5, tu_fit: 8 }, text: "요강 62쪽에 형광펜을 그었다. 반은 아직 '추후 안내'였다." },
+      { t: "일단 하던 대로 수업한다", eff: { mental: -1 }, text: "판서는 그대로인데 학생의 질문이 달라졌다. \"쌤, 이거 이제 안 나온대요.\"" }] };
+}
+function newsScene() {
+  return { kind: "event", tag: "화상과외", title: "답안의 절반",
+    text: "저녁 뉴스 자막. \"기말고사 답안 절반이 AI 작성 의심. 학교, 과제를 교실 안 평가로 전환.\" 수업 10분 전에 학부모 문자가 왔다. \"선생님, 이제 뭘 대비해야 돼요?\"",
+    choices: [{ t: "\"기본기는 안 바뀝니다\"라고 답한다", eff: {}, text: "보내 놓고 한참 화면을 봤다. 맞는 말인지는 나도 모른다." },
+      { t: "\"저도 지켜보고 있어요\"라고 답한다", eff: {}, text: "\"네, 선생님도 모르시는군요.\" 틀린 말은 아니었다." }] };
+}
+const CH_MOOD = [
+  { id: "m1", t: "숙제요? AI가요", x: "숙제 검사를 하다 물었다. \"이 풀이, 네가 쓴 거 맞아?\" 학생은 숨기지도 않았다. \"숙제요? AI가 다 써 줘요. 다들 그래요.\" 화면 너머 표정이 맑았다.",
+    c: [{ t: "수업 시간에 같이 다시 푼다", eff: { mental: -1 }, text: "40분이 걸렸다. 숙제를 낸다는 것이 무슨 뜻인지 잠깐 생각했다." }, { t: "웃고 넘긴다", eff: { mental: 1 }, text: "\"그래도 시험장엔 AI가 없어.\" 말하고 나서, 정말 그런지 자신이 없었다." }] },
+  { id: "m2", t: "간판을 내리는 학원", x: "퇴근길, 사거리 보습학원 앞에 사다리차가 서 있었다. 15년 걸려 있던 간판이 내려왔다. 유리문에는 '그동안 감사했습니다'. 올해 이 동네 초등학교 입학생은 한 반이라고 한다.",
+    c: [{ t: "잠깐 서서 본다", eff: { mental: -2 }, text: "간판 자리에 색이 덜 바랜 네모가 남았다." }, { t: "걸음을 재촉한다", eff: { mental: -1 }, text: "8시 수업이 있다. 오늘은 있다." }] },
+  { id: "m3", t: "수능 폐지 공청회", x: "뉴스 속보. 수능 폐지를 두고 공청회가 열렸다. 찬성 쪽은 \"AI 시대에 하루짜리 시험은 의미가 없다\"고 했고, 반대 쪽은 대안이 없다고 했다. 결론은 다음 회의로 넘어갔다.",
+    c: [{ t: "끝까지 본다", eff: { mental: -1 }, text: "발표자 누구도 과외 선생 얘기는 하지 않았다. 당연한 일이다." }, { t: "끄고 수업 준비를 한다", eff: { mental: 1 }, text: "오늘 가르칠 단원은 오늘도 시험에 나온다. 아직은." }] },
+  { id: "m4", t: "과외 무용론", x: "학부모 단톡방에 글 하나가 돈다고 학생 어머니가 캡처를 보냈다. \"평가가 이렇게 자주 바뀌는데 과외가 무슨 소용이냐.\" 공감이 스물세 개. 어머니는 덧붙였다. \"저는 그렇게 생각 안 해요, 선생님.\"",
+    c: [{ t: "\"감사합니다\" 하고 답한다", eff: { mental: -1 }, text: "굳이 보내 주신 이유를 밤새 생각했다." }, { t: "답하지 않고 수업 자료를 고친다", eff: { mental: -2 }, text: "공감 스물세 개 중에 내 학부모가 몇인지 세지 않기로 했다." }] },
+  { id: "m5", t: "십 년 뒤", x: "수업이 끝나고 노트북을 닫았다. 방이 조용하다. 내 일은 십 년 뒤에도 있을까. 시험이 없어지면 나는 무엇을 가르치는 사람일까. 답은 안 나오고 내일 수업은 8시다.",
+    c: [{ t: "불을 끄고 눕는다", eff: { mental: -2 }, text: "천장을 오래 봤다." }, { t: "내일 수업 프린트를 한 장 더 만든다", eff: { mental: -1 }, text: "십 년 뒤는 모르겠고, 내일 것은 만들 수 있다." }] },
+  { id: "m6", t: "예전 제자의 연락", x: "몇 해 전 가르친 학생에게서 메시지가 왔다. \"선생님, 저 취업했어요. 그때 배운 문제는 하나도 기억 안 나요. 근데 모르는 걸 모른다고 말하는 건 선생님한테 배웠어요. 선생님한테 배운 건 시험이 아니었어요.\"",
+    c: [{ t: "길게 답장을 쓴다", eff: { mental: 2 }, text: "썼다 지웠다 하다가 \"축하한다. 밥 사라.\"만 보냈다." }, { t: "메시지를 저장해 둔다", eff: { mental: 2 }, text: "힘든 날에 다시 읽으려고 맨 위에 고정했다." }] },
+];
+function moodScene(s, r) {
+  const T = T_(s), C = TU_CH;
+  const i = CH_MOOD.findIndex((m, k) => !T.seen[m.id] && s.t >= C.mood[k]);
+  if (i < 0 || !r.chance(C.moodP)) return null;
+  const m = CH_MOOD[i]; T.seen[m.id] = 1;
+  return { kind: "event", tag: "화상과외", title: m.t, text: m.x, choices: m.c };
+}
+// 달마다 한 번: 적합도 회복 · 예고 · 개편. 장면이 있으면 돌려준다(없으면 null)
+function evalTick(s, r, notes, room) {
+  const T = T_(s), C = TU_CH;
+  if (T.fit == null) T.fit = 100; if (T.evN == null) T.evN = 0;
+  if (T.evNext == null) T.evNext = Math.max(C.first + r.int(-2, 2), s.t + C.warn + 1); // 예전 저장·늦게 시작한 사람도 예고부터 받는다
+  if (T.fit < 100) T.fit = clamp(T.fit + C.drift, 0, 100);
+  if (s.t >= T.evNext) {
+    const n = ++T.evN, to = Math.min(T.fit, (s.t < C.earlyT ? C.dropEarly : C.drop) + (T.evPrep || 0) * C.prep);
+    T.fit = to; T.evPrep = 0; T.evWarn = false; T.evNext = s.t + C.gap + r.int(-C.jit, C.jit);
+    notes.push(`화상과외: 평가 개편 '${evalName(n)}'. 수업 적합도 ${Math.round(to)} · '새 평가 연구'로 올리세요`);
+    log(s, `화상과외 평가 개편 ${n}차 '${evalName(n)}'`, "work");
+    return reformScene(s, n, to);
+  }
+  if (!T.evWarn && s.t >= T.evNext - C.warn) { T.evWarn = true; notes.push(`화상과외: 교육청 예고. 약 ${T.evNext - s.t}달 뒤 평가 방식이 '${evalName(T.evN + 1)}'(으)로 바뀐다. 미리 '새 평가 연구'를 해 두면 충격이 준다`); }
+  if (room && !T.seen.x01 && s.t >= C.news) { T.seen.x01 = 1; return newsScene(); } // 장면 자리가 없으면 다음 달로 미룬다
+  return null;
+}
 const F30_CHOOSE = {
   tu_boost(s, r, i) {
     const T = T_(s), B = TU_F30.boost, o = s._tuF30 || {}; s._tuF30 = null;
@@ -355,7 +454,8 @@ export default {
   key: K, prefix: "tu_", hubName: "화상과외",
   init: () => ({ v: 1, lv: 1, lvT: 0, studs: [], leads: [], seq: 0, open: 4, ap: 0, mgb: 1, prof: 20, conv: 0, stars: 4.3, reviews: 0, wins: 0, trials: 0, lost: 0, ups: 0, refN: 0,
     msgs: 0, prep: 0, cut: 0.2, expo: 1, buzz: 0, ad: false, agent: false, ai: false, autoRep: false, series: false, mid: false, adult: false, exam: false, wait: false, feeUp: false,
-    rec: 0, mats: 0, matT: [], gtot: 0, bst: null, grads: [], ipUp: -1, ipDown: -1, lic: 0, licT: -99, classes: 0, rep: 0, repT: -99, taxed: 0, yr: 0, hist: [], last: null, seen: {}, evT: -99, mon: 0, streak: 0, low: 0, everMax: 0, far: 0, gm: [], started: false, rest: 0 }),
+    rec: 0, mats: 0, matT: [], gtot: 0, bst: null, grads: [], ipUp: -1, ipDown: -1, lic: 0, licT: -99, classes: 0, rep: 0, repT: -99, taxed: 0, yr: 0, hist: [], last: null, seen: {}, evT: -99, mon: 0, streak: 0, low: 0, everMax: 0, far: 0, gm: [], started: false, rest: 0,
+    fit: 100, evN: 0, evNext: null, evWarn: false, evPrep: 0, studyN: 0 }), // 11-26 평가 개편(TU_CH)
 
   actions: {
     tu_class: { n: "화상 수업", ap: 1, hp: 4, desc: "이번 달 수업을 한다. 빠지면 펑크 · 학생 만족·성적 ↑" },
@@ -363,6 +463,7 @@ export default {
     tu_trial: { n: "시범수업", ap: 1, hp: 3, desc: "문의 온 학생과 1회 시범수업 · 말빨이 전환을 가른다" },
     tu_report: { n: "학부모 리포트", ap: 1, hp: 2, desc: "잘한 것·약한 단원·다음 달 계획 문자 · 학부모 만족·후기 ↑", stat: { write: 0.4 } },
     tu_make: { n: "자료·숏폼 만들기", ap: 1, hp: 4, desc: "출제경향 숏폼(문의 ↑) · 4단계부터 자료집 제작", stat: { write: 0.3 } },
+    tu_study: { n: "새 평가 연구", ap: 1, hp: 2, desc: `바뀐 평가 방식을 공부해 수업을 고친다 · 수업 적합도 +${TU_CH.study[0]}~${TU_CH.study[1]}` },
   },
   mg: { tu_class: "career" }, // 건너뛰기 결과는 커리어(교과 지식) 기준. 미니게임 tutoring1~3: 졸지 마 학생아 · 풀이 순서 판서 · 학부모 상담 전화
   money: { inc: ["화상과외 수업료", "화상과외 자료 판매"], exp: ["화상과외 비용"] },
@@ -379,6 +480,10 @@ export default {
     }
     if (id === "tu_report") return T.studs.length ? null : "리포트를 보낼 학부모가 없어요";
     if (id === "tu_find" && T.leads.length >= 5) return "문의가 5건 쌓였어요. 시범수업부터";
+    if (id === "tu_study" && fitOf(s) >= 100) {
+      if (!T.evWarn) return "지금 평가 방식엔 수업이 잘 맞아요";
+      if ((T.evPrep || 0) >= TU_CH.prepMax) return "미리 할 수 있는 준비는 다 했어요";
+    }
     return null;
   },
 
@@ -420,6 +525,15 @@ export default {
       lvCheck(s, out);
       return { lines: out, msg: r.pick(["\"이번 달 잘한 것: 숙제 100%. 약한 단원: 도형. 다음 달: 기출 3회.\" 전송.", "답장에 하트가 세 개. 학부모는 숫자보다 '관심'을 산다.", "보내고 보니 밤 11시 반. 예약 전송을 배워야겠다."]) };
     }
+    if (id === "tu_study") {
+      T.studyN = (T.studyN || 0) + 1;
+      if (fitOf(s) >= 100) { // 예고가 뜬 뒤 미리 연구: 개편 충격을 줄인다
+        T.evPrep = (T.evPrep || 0) + 1;
+        return { lines: [`다가올 개편 미리 준비 ${T.evPrep}/${TU_CH.prepMax}`, `개편 때 수업 적합도 +${TU_CH.prep}`], msg: r.pick(["교육청 설명회 자료를 내려받았다. 87쪽. 확정된 것은 날짜뿐이다.", "시범 운영 학교의 후기를 찾아 읽었다. 선생님들도 헤매고 있었다."]) };
+      }
+      const g = r.int(TU_CH.study[0], TU_CH.study[1]), b = Math.round(fitOf(s)); T.fit = clamp(fitOf(s) + g, 0, 100);
+      return { lines: [`수업 적합도 ${b} → ${Math.round(T.fit)}`, T.fit >= 100 ? "새 평가에 수업을 다 맞췄다" : "아직 덜 맞는다"], msg: r.pick(["새 채점 기준표를 세 번 읽었다. 작년 프린트 절반을 지웠다.", "바뀐 방식으로 모의 평가를 직접 풀어 봤다. 나도 시간이 모자랐다.", "다른 선생님들이 올린 후기를 모았다. 다들 같은 데서 막혀 있다.", "수업 계획표를 처음부터 다시 짰다. 지난번에 다시 짠 지 얼마 안 됐다."]) };
+    }
     if (id === "tu_make") {
       T.buzz = clamp(T.buzz + 12 * (SYN.on(s, "tu_insta") ? 1.3 : 1), 0, 60);
       out.push("영상·자료 입소문 +");
@@ -446,29 +560,29 @@ export default {
     if (T.rest) { q *= 0.7; T.rest = 0; }
     // 야근과 수업 겹침: 마감 주간이면 한 타임 펑크
     if (employed(s) && s.co.crunchM && u >= 2) { const st = r.pick(T.studs.filter((x) => !x.pause)); if (st) { st.par = clamp(st.par - 12, 0, 100); notes.push(`화상과외: 회사 마감 주간이라 ${studLabel(st)} 수업 펑크(학부모 만족 −12)`); } }
-    const talk = s.st.talk || 0, mgb = T.mgb || 1;
+    const talk = s.st.talk || 0, mgb = T.mgb || 1, gap = fitGap(s), pop = popF(s);
     // 3) 학생마다 정산
     let rev = 0, cutAmt = 0, grpRev = 0;
     for (const st of [...T.studs]) {
       st.months++;
       if (st.pause) continue;
-      const fee = feeOf(s, st); st.fee = fee;
+      const fee = feeOf(s, st); st.fee = fee; const kid = st.g !== "성인"; // 11-26 평가 개편 벌점은 시험을 보는 학생에게만
       const got = Math.round(fee * (0.5 + 0.5 * q) * 10) / 10; // 못 한 수업은 환불·보강 미룸
       rev += got; if (st.how === "app") cutAmt += got * T.cut; if (st.grp) grpRev += got;
       // 학생 만족(수업 품질) · 학부모 만족(성적·소통)
       const satT = 35 + 45 * q + (mgb - 1) * 40 - (st.grp ? 10 : 0) + T.prep / 2;
       st.sat = clamp(st.sat + (satT - st.sat) * 0.4, 0, 100);
-      const parT = 25 + 40 * q + (st.sat - 50) * 0.25 + (T.autoRep ? 6 : 0) + (st.how === "ref" ? 4 : 0) + mod(s, "tuPar", 0) + (s.me?.traits?.includes("companyman") ? 4 : 0);
+      const parT = 25 + 40 * q + (st.sat - 50) * 0.25 + (T.autoRep ? 6 : 0) + (st.how === "ref" ? 4 : 0) + mod(s, "tuPar", 0) + (s.me?.traits?.includes("companyman") ? 4 : 0) - (kid ? TU_CH.par * gap : 0);
       st.par = clamp(st.par + (parT - st.par) * 0.25, 0, 100);
       // 성적 진도
-      st.pg += q * (0.8 + T.prep / 100 + talk / 200) * (st.grp ? 0.85 : 1) * (0.9 + 0.1 * mgb); st.pm++;
+      st.pg += q * (0.8 + T.prep / 100 + talk / 200) * (st.grp ? 0.85 : 1) * (0.9 + 0.1 * mgb) * (kid ? fitMul(s, TU_CH.pg) : 1); st.pm++;
       // 이탈: 학부모 만족이 낮을수록
-      let churn = 0.015 + Math.max(0, 60 - st.par) / 120 + (1 - q) * 0.12 + (isVac(cal) ? 0.025 : 0) + (T.feeUp && T.feeUpT === s.t ? 0.06 : 0);
+      let churn = 0.015 + Math.max(0, 60 - st.par) / 120 + (1 - q) * 0.12 + (isVac(cal) ? 0.025 : 0) + (T.feeUp && T.feeUpT === s.t ? 0.06 : 0) + (kid ? TU_CH.churn * gap : 0);
       if (s.me?.traits?.includes("lecturer")) churn *= 0.75; // 명강사: 재등록 +
       if (st.months >= 2 && r.chance(churn)) { lose(s, st, st.par < 50 ? "학부모가 그만두기로 했다(만족 낮음)" : r.pick(["학원으로 옮긴다고 한다", "이사·전학으로 그만둔다"]), notes); continue; }
       // 후기·소개
       if (st.par >= 70 && r.chance(T.autoRep ? 0.1 : 0.06)) { T.reviews++; T.stars = clamp(T.stars + 0.01, 2.5, 5); }
-      if (T.lv >= 3 && st.par >= 75 && r.chance(0.05 * (st.grp ? 1.5 : 1) * mod(s, "tuRefer", 1) * ((T.ipDown || -1) > s.t ? TU_F30.ipsi.downRef : 1))) { newLead(s, r, "ref"); notes.push(`화상과외: ${studLabel(st)} 학부모가 친구 엄마를 소개해 줬다`); }
+      if (T.lv >= 3 && st.par >= 75 && r.chance(0.05 * (st.grp ? 1.5 : 1) * mod(s, "tuRefer", 1) * ((T.ipDown || -1) > s.t ? TU_F30.ipsi.downRef : 1) * (kid ? fitMul(s, TU_CH.ref) : 1))) { newLead(s, r, "ref"); notes.push(`화상과외: ${studLabel(st)} 학부모가 친구 엄마를 소개해 줬다`); }
     }
     // 4) 시험 결과
     const ex = examOf(cal);
@@ -481,7 +595,7 @@ export default {
         const d = clamp(Math.round((avg - 0.95) * 14 + r.normal() * 4), -15, 15), from = st.sc;
         st.sc = clamp(st.sc + d, 30, 100); st.last = d;
         evd.add(st); if (d >= TU_F30.judge.refD) nUp++; if (d <= TU_F30.judge.leaveD) nDn++;
-        if (d >= 7) { T.ups++; st.par = clamp(st.par + 15, 0, 100); if (r.chance(0.4)) T.reviews++; if (!best || d > best.d) best = { st, d }; if (T.lv >= 3 && r.chance(0.35)) newLead(s, r, "ref"); }
+        if (d >= 7) { T.ups++; st.par = clamp(st.par + 15, 0, 100); if (r.chance(0.4)) T.reviews++; if (!best || d > best.d) best = { st, d }; if (T.lv >= 3 && r.chance(0.35 * fitMul(s, TU_CH.ref))) newLead(s, r, "ref"); }
         else if (d <= -7) { st.par = clamp(st.par - 15, 0, 100); if (!drop || d < drop.d) drop = { st, d, from }; }
       }
       if (best && best.d >= 7) notes.push(`화상과외 ${ex}: ${studLabel(best.st)} ${best.d > 0 ? "+" : ""}${best.d}점! 학부모 단톡에 캡처가 돌았다`);
@@ -499,7 +613,7 @@ export default {
     if (cal === 12) for (const st of [...T.studs]) if (st.g === "고3" && !st.grp) { (T.grads = T.grads || []).push({ sc: st.sc, par: st.par }); lose(s, st, st.par >= 70 ? "수능 끝! 졸업. \"동생도 부탁드려요\"" : "수능이 끝나 졸업했다", notes); T.lost--; if (st.par >= 70 && T.lv >= 2) newLead(s, r, "ref"); }
     if (cal === 3) for (const st of T.studs) if (!st.grp) { const i = GRADES.indexOf(st.g); if (i >= 0 && i < GRADES.length - 1) st.g = GRADES[i + 1]; }
     // 6) 그룹반 채우기(4단계): 빈자리는 소개·문의로 차오른다
-    for (const st of T.studs) if (st.grp) { if (st.size >= 3 && r.chance(0.08)) st.size--; if (st.size < 4 && r.chance(0.35 * SEASON[cal - 1])) { st.size++; T.gtot++; } }
+    for (const st of T.studs) if (st.grp) { if (st.size >= 3 && r.chance(0.08)) st.size--; if (st.size < 4 && r.chance(0.35 * SEASON[cal - 1] * pop)) { st.size++; T.gtot++; } }
     // 7) 자료집 판매(포화 곡선: 권수가 늘수록 한 권당 덜 팔린다)
     let mat = 0;
     if (T.mats) {
@@ -524,7 +638,7 @@ export default {
     T.leads = T.leads.filter((L) => s.t - L.t < 2);
     const IP = TU_F30.ipsi, up = (T.ipUp || -1) > s.t, dn = (T.ipDown || -1) > s.t;
     const lam = (0.15 + (up ? IP.upLam : 0) - (dn ? IP.downLam : 0) + Math.min(1, T.reviews / 20) + (T.stars - 4.2) * 0.6 + T.buzz / 50 + (T.ad ? 0.8 : 0) + (T.lv >= 3 ? 0.3 : 0) + (T.series && [3, 5, 9, 11].includes(cal) ? 0.6 : 0))
-      * SEASON[cal - 1] * T.expo * (SYN.on(s, "tu_insta") ? 1.2 : 1) * (T.exam ? 0.9 : 1);
+      * SEASON[cal - 1] * T.expo * (SYN.on(s, "tu_insta") ? 1.2 : 1) * (T.exam ? 0.9 : 1) * pop; // 11-26 학령인구 감소
     let nIn = Math.floor(Math.max(0, lam)) + (r.chance(Math.max(0, lam) % 1) ? 1 : 0); nIn = Math.min(nIn, 3);
     for (let i = 0; i < nIn; i++) newLead(s, r, T.buzz > 15 && r.chance(0.4) ? "sns" : "app");
     if (nIn) notes.push(`화상과외: 시범수업 문의 ${nIn}건${SEASON[cal - 1] >= 1.2 ? "(시험 대비 시즌)" : ""}`);
@@ -542,7 +656,9 @@ export default {
     T.low = h < 2 ? T.low + 1 : 0;
     T.ap = 0; T.mgb = 1;
     lvCheck(s, notes);
-    // 12) 장면: 위기 → 단계 이벤트
+    // 12) 장면: 평가 개편(11-26) → 위기 → 단계 이벤트 → 분위기
+    const rf = evalTick(s, r, notes, scenes.length < 3);
+    if (rf && scenes.length < 3) scenes.push(rf);
     if (scenes.length < 3) {
       let sc = f30Scene(s, r, cal);
       if (!sc && T.studs.length && r.chance(0.35)) sc = crisisEvent(s, r, rev, "e14") || crisisEvent(s, r, rev, "e15");
@@ -550,6 +666,7 @@ export default {
       if (!sc && employed(s) && s.co.crunchM && !T.seen.e05) sc = crisisEvent(s, r, rev, "e05");
       if (!sc && s.t - T.evT >= 2 && r.chance(T.mon <= 3 ? 0.4 : 0.16)) sc = tuEvent(s, r, rev);
       if (sc) { T.evT = s.t; scenes.push(sc); }
+      else if (!rf) { const md = moodScene(s, r); if (md) scenes.push(md); }
     }
     return net;
   },
@@ -564,6 +681,8 @@ export default {
     if (T.leads.length) t.push({ lv: 1, text: `시범수업 문의 ${T.leads.length}건` });
     if (!T.studs.length && !T.leads.length) t.push({ lv: 1, text: "과외온에서 학생 모집" });
     if (T.studs.length && avgPar(s) < 55 && T.repT !== s.t) t.push({ lv: 1, text: "학부모 만족이 낮아요: 리포트 보내기" });
+    if (fitOf(s) < 90) t.push({ lv: fitOf(s) < 60 ? 2 : 1, text: `수업 적합도 ${Math.round(fitOf(s))}: 새 평가 연구` });
+    else if (T.evWarn && (T.evPrep || 0) < TU_CH.prepMax) t.push({ lv: 0, text: `평가 개편 예고(약 ${Math.max(0, (T.evNext ?? s.t) - s.t)}달 뒤): 미리 연구` });
     if (T.bst && examOf(T.bst.cal)) t.push({ lv: 0, text: `${examOf(T.bst.cal)} 대비 ${T.bst.k === "free" ? "무료 보강" : "유료 대비반"} 중` });
     return t;
   },
@@ -587,6 +706,7 @@ export default {
     if (e.tu_par) { for (const st of T.studs) st.par = clamp(st.par + e.tu_par, 0, 100); if (T.studs.length) out.push(`학부모 만족 ${e.tu_par > 0 ? "+" : ""}${e.tu_par}`); }
     if (e.tu_rev) { T.reviews += e.tu_rev; out.push(`학부모 후기 +${e.tu_rev}`); }
     if (e.tu_stars) { T.stars = clamp(T.stars + e.tu_stars, 2.5, 5); out.push(`과외온 별점 ${e.tu_stars > 0 ? "+" : ""}${e.tu_stars}`); }
+    if (e.tu_fit) { T.fit = clamp(fitOf(s) + e.tu_fit, 0, 100); out.push(`수업 적합도 ${e.tu_fit > 0 ? "+" : ""}${e.tu_fit}`); }
     if (e.tu_prep) { T.prep = clamp(T.prep + e.tu_prep, 0, 30); out.push(`수업 준비도 +${e.tu_prep}`); }
     if (e.tu_mid) { T.mid = true; out.push("중등 전문: 중학생 문의가 늘어요"); }
     if (e.tu_direct) { let k = 0; for (const st of T.studs) if (st.how === "app") { st.how = "dir"; k++; } T.expo = 0.7; out.push(`직거래 전환 ${k}명(수수료 0)`, "과외온 노출 −30%"); }
@@ -614,7 +734,8 @@ export default {
       lose(s, st, null, null); return [`${studLabel(st)} 그만둠`];
     },
   },
-  migrate(s, T) { if (!T.v) T.v = 1; if (!Array.isArray(T.grads)) T.grads = []; for (const k of ["gm", "matT", "hist", "studs", "leads"]) if (!Array.isArray(T[k])) T[k] = []; if (!T.seen) T.seen = {}; },
+  migrate(s, T) { if (!T.v) T.v = 1; if (!Array.isArray(T.grads)) T.grads = []; for (const k of ["gm", "matT", "hist", "studs", "leads"]) if (!Array.isArray(T[k])) T[k] = []; if (!T.seen) T.seen = {};
+    if (T.fit == null) T.fit = 100; if (T.evN == null) T.evN = 0; if (T.evNext === undefined) T.evNext = null; if (T.evPrep == null) T.evPrep = 0; if (T.evWarn == null) T.evWarn = false; }, // 11-26 평가 개편: 예전 저장은 적합도 100에서 시작, 개편 날짜는 다음 달 마감에 잡힌다
 
   // 단계 화보(성장 마일스톤) + 엔딩 3개
   milestones: [

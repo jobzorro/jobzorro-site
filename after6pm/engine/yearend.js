@@ -8,6 +8,7 @@ import * as HL from "./heroine.js"; // 11-25 올해 그 사람 한 줄
 import { yearOffer } from "./cards.js"; // 연말 성장 카드(v4.25)
 
 export const FULL_STEPS = [1, 1.5, 2, 3];
+const YE_CAPK = (typeof process !== "undefined" && process.env?.YECAP !== undefined) ? +process.env.YECAP : 1; // 봇 손잡이: 개업 투자금을 얼마나 반영할지(0 = 예전 방식)
 
 // 그해를 정리하는 한 줄(머리말, 덧붙임). 위에서부터 맞는 상황 하나를 고른다. 같은 문구는 최근 15개 안에서 다시 안 나온다
 const LINES = {
@@ -62,7 +63,8 @@ export function yearData(s) {
   const work = !(s.co.quit || s.co.fired), annual = work ? salary(s) * 12 : 0;
   const side = Math.round(sum(H, (h) => h.side)), salSum = Math.round(sum(H, (h) => h.sal)), inv = Math.round(sum(H, (h) => h.inv)), bon = Math.round(sum(H, (h) => h.bon));
   const fi = fireInfo(s), nw = Math.round(netWorth(s));
-  const x = annual > 0 ? side / annual : 0;
+  const capNet = Math.max(0, Math.round((s.capY || 0) * YE_CAPK)); // 11-27 올해 가게를 여는 데 들어간 돈(넘기고 돌려받은 돈은 뺌)
+  const x = annual > 0 ? (side - capNet) / annual : 0; // 본잡 전환 신호는 개업에 들어간 돈을 빼고 본다(파티룸을 옮겨 다니는 사람이 운영 이익만 보고 퇴사했다가 무너졌다)
   const prevSide = sum(s.hist.filter((h) => h.t < y0.t), (h) => h.side);
   const yt = (t) => t != null && t >= y0.t && t <= s.t; // 11-24 null(결혼한 적 없음)이 첫해(y0.t = 0)에 "올해 있었던 일"로 잡히던 버그: null >= 0 이 참이라 '둘이 된 해'가 떴다
   const mon = (t) => ((s.cal - 1 - (s.t - t)) % 12 + 12) % 12 + 1; // t 가 몇 월이었나
@@ -124,7 +126,7 @@ export function yearScene(s, r) {
   const line = pickLine(s, r, lineKey(d, s));
   const tip = YEAR_TIPS[Math.floor(r.next() * YEAR_TIPS.length)];
   const f = fullSignal(s, d);
-  s.yearX = d.work && d.hasJob ? d.x : 0; s.yearXT = s.t;
+  s.yearX = d.work && d.hasJob ? d.x : 0; s.yearXT = s.t; s.capY = 0; // 해가 바뀌면 개업 투자금 집계를 비운다
   (s.yearLog = s.yearLog || []).push({ y: d.year, x: d.work ? d.x : 0, q: !d.work ? 1 : 0, side: d.side, nw: d.nw, line: line.head }); if (s.yearLog.length > 40) s.yearLog.shift();
   const sc = { kind: "year", tag: "연말 결산", title: `${d.year}년 결산`, year: d, line, tip,
     text: `${d.year}년 결산. 「${line.head}」 투잡 이익 ${won(d.side)}${d.work && d.annual ? `(연봉의 ${d.x.toFixed(1)}배)` : ""}, 순자산 ${won(d.nw0)} → ${won(d.nw)}.`,

@@ -24,7 +24,8 @@ const fillA = (A) => { A.peak = A.peak || 1; A.revEv = A.revEv || "none"; if (A.
 export const isPeakAb = (rk, cal) => D.AB_REGIONS[rk].peak.includes(cal);
 export const seasonKind = (rk, cal) => { const R = D.AB_REGIONS[rk]; if (R.peak.includes(cal)) return "peak"; return (R.off && R.off < 0.8) || D.AB_SEASON[cal - 1] < 0.95 ? "off" : "mid"; };
 export const elOf = (rk, cal) => D.PRICE_K.abEl[seasonKind(rk, cal)];
-export const adrNow = (s, u, cal = s.cal) => u.adr * (isPeakAb(u.rk, cal) ? (s.ab.peak || 1) : 1);
+export const peakAuto = (s) => !s.ab.peakSet; // 성수기 가격을 직접 고른 적이 없으면 동네 시세를 따라간다(11-26)
+export const adrNow = (s, u, cal = s.cal) => u.adr * (isPeakAb(u.rk, cal) ? (peakAuto(s) ? D.PRICE_K.abPkMkt : s.ab.peak || 1) : 1);
 export const refBase = (s, u) => D.AB_REGIONS[u.rk].adr * D.AB_TYPES[u.ty].adrF * SYN.pi(s);
 // 11-26 보드 성적표: 숙소마다 평생 기록(hist 는 24달 순익만 남아서 따로 센다). cum = 달마다 순익 합(쉬는 달 월세 포함), nightsT = 묵은 박 수 합,
 // bestM·worstM = 매출(rev)이 가장 높은·낮은 달 {t, v}, t0 = 계약한 달. 옛 저장은 처음 한 번 채운다(순익은 hist 24달, 박 수는 숙박 건수×평균 박, 매출은 지난달 것만)
@@ -38,9 +39,9 @@ function fillStats(u, t) {
 }
 // 화면용(저장을 건드리지 않음). t = 지금 달 번호(s.t) — 옛 저장의 지난달 매출에 달을 붙일 때만 쓴다
 export function unitStats(u, t) { let c = u; if (!u.stV) { c = { hist: u.hist, last: u.last, stays: u.stays, ty: u.ty }; fillStats(c, t); } return { cum: c.cum || 0, nights: c.nightsT || 0, stays: u.stays || 0, bestM: c.bestM || null, worstM: c.worstM || null, t0: u.t0 ?? null }; }
-export function refNow(s, u) { const A = s.ab; return refBase(s, u) * RVW.compF(s.cal, isPeakAb(u.rk, s.cal)) * RVW.warF(A.war?.[u.rk], s.t); }
+export function refNow(s, u) { const A = s.ab; return refBase(s, u) * RVW.compF(s.cal, isPeakAb(u.rk, s.cal)) * (isPeakAb(u.rk, s.cal) ? D.PRICE_K.abPkMkt : 1) /* 11-26 성수기 동네 시세 */ * RVW.warF(A.war?.[u.rk], s.t); }
 export function compTable(s, u) { const A = s.ab, w = A.war?.[u.rk]; return RVW.compList("ab", u.rk + u.ty, refNow(s, u) / (RVW.warF(w, s.t) || 1), 4, s.t, w); }
-export function setPeak(s, v) { s.ab.peak = v; return { ok: true, msg: v === 1 ? "성수기에도 평소 1박 가격" : `성수기 1박 가격 +${Math.round((v - 1) * 100)}%` }; }
+export function setPeak(s, v) { s.ab.peak = v; s.ab.peakSet = true; return { ok: true, msg: v === 1 ? "성수기에도 평소 1박 가격" : `성수기 1박 가격 +${Math.round((v - 1) * 100)}%` }; }
 export function setRevEv(s, k) { if (!D.PR_REVIEW.ev[k]) return { ok: false }; s.ab.revEv = k; return { ok: true, msg: `후기 이벤트: ${D.PR_REVIEW.ev[k].n}` }; }
 
 // ── 진입 다시 설계(11-24): 합법 매물은 발품 → 집주인 설득 → 서류 확인 → 전입·등록(한 달) 네 단계. 서류를 안 보면 숨은 함정을 모른 채 계약한다.

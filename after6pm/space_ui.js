@@ -78,9 +78,9 @@ export function abPanels(c) {
   }).join("");
   const RK = D.PR_REVIEW, sumRev = U.reduce((a, u) => a + (u.reviews || 0), 0), minStar = Math.min(...U.map((u) => u.rating));
   const rev0 = U.map((u) => `<div class="row" style="background:var(--panel2);border-radius:10px;padding:6px 10px;margin-top:6px"><div class="grow"><div class="small"><b>${c.esc(u.name)}</b></div><div class="tiny">후기 ${u.reviews || 0} · ★${u.rating.toFixed(2)}${u.last?.newRev != null ? ` · 지난달 +${u.last.newRev}${u.last.pay ? ` · 페이백 ${c.won(u.last.pay)}` : ""}` : ""} · <span class="${(u.unrep || 0) > RK.unrep.max ? "bad" : "muted"}">밀린 답글 ${Math.round(u.unrep || 0)}</span></div></div><button class="btn sm" data-act="ab_reply" data-arg="${u.id}" ${(u.unrep || 0) >= 1 ? "" : "disabled"}>답글 ⚡1</button></div>`).join("");
-  return `<div class="card"><h3>주변 숙소 가격표 <small>성수기 1박 ${p === 1 ? "그대로" : `+${Math.round((p - 1) * 100)}%`}</small></h3>${calendar(S, kind)}
-    <div class="seg" style="margin-top:8px">${D.PRICE_K.abPeak.map((v) => `<button class="${p === v ? "on" : ""}" data-abpeak="${v}">${v === 1 ? "그대로" : `+${Math.round((v - 1) * 100)}%`}</button>`).join("")}</div>
-    ${more("성수기 버튼은 각 숙소 지역의 성수기 달에만 붙어요(홍대 4·10·12월, 해운대 7·8월…).")}${market}</div>
+  return `<div class="card"><h3>주변 숙소 가격표 <small>성수기 1박 ${AB.peakAuto(S) ? `동네 시세 따라감(+${Math.round((D.PRICE_K.abPkMkt - 1) * 100)}%)` : p === 1 ? "그대로" : `+${Math.round((p - 1) * 100)}%`}</small></h3>${calendar(S, kind)}
+    <div class="seg" style="margin-top:8px">${D.PRICE_K.abPeak.map((v) => `<button class="${!AB.peakAuto(S) && p === v ? "on" : ""}" data-abpeak="${v}">${v === 1 ? "그대로" : `+${Math.round((v - 1) * 100)}%`}</button>`).join("")}</div>
+    ${more(`성수기에는 동네 숙소가 다 ${Math.round((D.PRICE_K.abPkMkt - 1) * 100)}%쯤 올려 받아요. 버튼을 안 고르면 내 가격도 동네를 따라가요. 버튼은 각 숙소 지역의 성수기 달에만 붙어요(홍대 4·10·12월, 해운대 7·8월…). 동네보다 더 받으면 손님이 조금 빠지고, 덜 받으면 더 차요.`)}${market}</div>
   <div class="card"><h3>후기 관리 <small>${A.super ? "★ 슈퍼호스트" : `슈퍼호스트: 모든 숙소 ★4.8 + 후기 ${RK.abSuperN}개`}</small></h3>
     <div class="tiny">후기 합계 <b>${sumRev}</b>/${RK.abSuperN} · 가장 낮은 별점 <b class="${minStar >= 4.8 ? "good" : "bad"}">${minStar.toFixed(2)}</b>/4.8 · 숙소마다 후기 ${RK.top.n}개+★${RK.top.star}면 상위 노출</div>
     <div style="margin-top:6px">${revSeg(S, "ab")}</div></div>

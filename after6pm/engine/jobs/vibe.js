@@ -3,7 +3,7 @@
 // 현실 고생: 매달 바뀌는 도구·구독료, 끝없는 수정 요청, 새벽 장애, 보안 사고, 해외 반값 견적, 회사 겸직 눈치.
 // 규약: engine/jobs/README.md
 import * as D from "../defs.js";
-import { addMoney, log, won, gainStat, mod, applyEff, R, jo } from "../core.js";
+import { addMoney, log, won, gainStat, mod, applyEff, R, jo, CHAR } from "../core.js";
 import * as SYN from "../syn.js";
 import * as SJ from "../sj.js"; // 초반 고생 배율(ramp)
 
@@ -77,6 +77,124 @@ export const VB_F30 = {
   model: { p: 0.04, gap: 14, debtM: 6, debtFix: 1, debtOut: 0.04, debtQuit: 0.01, pay: 20, tq: 1.1 }, // 모델 업데이트: 달마다 4%(14달 간격). 버전 고정 = 기술 부채 6달(유지보수 +1칸, 장애 +4%p, 계약 해지 +1%p)
   store: { rejectP: 0.5, holdM: 2, webCap: 0.85, noPayChurn: 0.015, updRej: 0.08 }, // 첫 심사 거절 50%. 재심사 2달, 웹으로 돌리면 사용자 한도 ×0.85, 바깥 결제는 해지율 +1.5%p, 앱 업데이트 심사 거절 8%
 };
+// 11-26 투잡 챌린지(바이브코딩): 처음부터 있는 어려움 + 도메인의 시대. 수치는 여기만 고친다.
+// 세기 손잡이: 환경변수 VBK(기본값 = VB_CH.k). 오류 확률·문의 0건 확률·도메인 밖 문의 감소폭·단가 하한·재능마켓 단가 바닥에 곱해진다. 첫 5년(s.t < 60)에는 1을 넘지 않는다.
+export const VB_CH = {
+  k: 1, // 11-26 봇(2회차 400판): 1.0 → 파이어 33.5%, 1.4 → 32.8%, 1.8 → 32.0%. 세게 해도 거의 안 내려가서 기획 수치 그대로인 1로 둔다
+  err: { redoHi: 0.25, redoLo: 0.12, fail: 0.05, redoNeed: 0.3, redoPay: 0.7, redoRep: 2, failRep: 6 }, // 납품 오류: 재작업 12~25%(기술 이해·정의서로 내려간다, 작업 +30%·한 달 밀림·잔금 70%), 실패 약 5%(착수금 환불·평판 −6)
+  dry: { zero: 0.15, start: 0.03, len: [2, 3], sell: 0.6 }, // 문의 0건인 달 15%, 달마다 3%로 2~3달 가뭄(가뭄 중 영업 답장 ×0.6)
+  comp: { cut: 0.04, floor: 0.6, leadT: 36, leadCut: 0.03, leadFloor: 0.7 }, // 재능마켓 단가 해마다 −4%(바닥 60%), 3년 차부터 문의 해마다 −3%(바닥 70%)
+  dom: { preT: 36, onT: 72, max: 2, outCut: 0.7, lead: 0.35, lo: 0.45, co: 1.2, meet: [3, 4], meetGap: 3, pal: 0.5, palMax: 2, palAff: 60, mate: 0.6, job: 0.8, deliver: 2 },
+  // 도메인 시대: 밖 문의 −70%, 고른 도메인마다 문의 ×0.35, 단가 = 기본 × (0.45 + 0.55 × 이해도/100)
+  // 이해도(달): 회사 +1.2, 친한 업계 사람 한 명 +0.5(두 명까지), 배우자·연인 +0.6, 내 다른 투잡 +0.8 / 업계 모임 한 번 +3~4(도메인마다 석 달에 한 번) / 납품 건마다 +2
+};
+// 11-26 도메인 확장: 도메인 시대(본 사건 뒤)부터 유지보수 계약과 내 앱에도 "그 분야를 아는 사람만 찾는다"가 걸린다. 첫 5년에는 아무것도 없다.
+VB_CH.x = {
+  retOut: 0.15, // 도메인 밖 건을 납품했을 때 유지보수로 이어질 확률 배율
+  renew: 12, // 유지보수 재계약 주기(달): 그때의 이해도로 월 유지보수비를 다시 정한다
+  outQuitYr: 0.01, outQuitMax: 0.05, // 도메인 밖 계약: 달마다 해지 확률이 도메인 시대 1년마다 +1%p씩(최대 +5%p)
+  retPer: [1, 2], // 한 도메인에서 맺을 수 있는 유지보수 계약 수: 이해도 80 미만 1건, 80 이상 2건(그 업계에서 이름이 알려져야 소개가 돈다)
+  hiU: 80, hiQuit: 0.004, // 이해도 80 이상인 도메인 계약: 해지 확률 −0.4%p
+  appOutCap: 0.4, appOutGrow: 0.7, appOutChurn: 0.02, // 범용 앱: 사용자 한도 ×0.4, 성장 ×0.7, 해지 +2%p
+  spN: 3, spLose: 0.06, // 도메인 특화: 기능 업데이트 3번, 한 번마다 사용자 6% 이탈
+  appLo: 0.4, appHi: 1.0, // 특화한 앱의 한도 배율 = 0.4 + 0.6 × 이해도/100. 봇 800판: appHi 1.0 → 2회차 파이어 31.1%, 1.05 → 34.5%, 1.1 → 35.9%, 1.15 → 37%(한도 보상이 파이어율을 크게 올린다)
+  priceMax: 5, priceUp: 2, // 구독료 상한 5만(특화한 앱은 이해도 100에서 7만)
+};
+if (typeof process !== "undefined" && process.env.VBX) Object.assign(VB_CH.x, JSON.parse(process.env.VBX)); // 봇 맞춤용: VBX='{"appOutCap":0.5}'
+const K = (typeof process !== "undefined" && +process.env.VBK) || VB_CH.k;
+const Kt = (s) => (s.t < 60 ? Math.min(1, K) : K); // 첫 5년에는 1보다 세지지 않는다(처음부터 있는 어려움은 기획 수치 그대로)
+export const DOMS = {
+  mfg: { n: "제조", jobs: ["설비 점검 기록 앱", "불량 집계 대시보드", "작업 지시서 자동화"] },
+  fin: { n: "금융", jobs: ["상담 예약 페이지", "실적 보고 자동화 툴", "고객 안내 챗봇"] },
+  retail: { n: "유통", jobs: ["재고·발주 알림 봇", "매장 매출 대시보드", "행사 상품 등록 툴"] },
+  edu: { n: "교육", jobs: ["수강 관리 시스템", "과제 채점 보조 툴", "학습 진도 대시보드"] },
+  med: { n: "의료", jobs: ["진료 예약 페이지", "문진표 태블릿 앱", "재진 안내 알림 봇"] },
+  realty: { n: "부동산", jobs: ["매물 관리 대장", "임대료 정산 툴", "계약 만기 알림 봇"] },
+  content: { n: "콘텐츠", jobs: ["원고 일정 관리 보드", "구독자 통계 대시보드", "협찬 견적 자동화"] },
+  public: { n: "공공", jobs: ["민원 접수 페이지", "행사 신청·추첨 시스템", "보고 양식 자동화"] },
+  food: { n: "외식", jobs: ["주방 발주 앱", "예약·웨이팅 페이지", "매장 원가 계산 툴"] },
+  logi: { n: "물류", jobs: ["배차 일정 보드", "입출고 기록 앱", "배송 조회 페이지"] },
+};
+export const DOM_KEYS = Object.keys(DOMS);
+// 회사(게임 안 이름) → 업계. 표에 없는 회사는 회사 종류로 본다.
+const CO_DOM = {
+  "사성전자": ["mfg"], "현재자동차": ["mfg"], "엘쥐전자": ["mfg"], "스크하이닉스": ["mfg"], "포스크": ["mfg"], "한와솔루션": ["mfg"], "CZ제일제당": ["mfg", "food"], "롯대쇼핑": ["retail"],
+  "코웨어": ["mfg", "retail"], "오뚝이": ["mfg", "food"], "한셈": ["mfg", "realty"], "농신": ["mfg", "food"], "동완F&B": ["mfg", "food"], "대승": ["retail", "logi"],
+  "토쓰": ["fin"], "홍당무": ["retail"], "유신사": ["retail", "content"], "야놀까": ["realty", "content"], "마켓걸리": ["retail", "logi"], "직빵": ["realty"],
+  "대한전력공사": ["public"], "대한철도공사": ["public", "logi"], "대한토지주택공사": ["public", "realty"], "국민튼튼보험공단": ["public", "med"], "인청국제공항공사": ["public", "logi"],
+};
+const TYPE_DOM = { big: ["mfg"], fin: ["fin"], mid: ["mfg", "retail"], startup: ["content", "retail"], public: ["public"] };
+// 직무 → 업계
+const JOB_DOM = { buy: ["logi", "retail"], ovs: ["logi"], sales: ["retail"], md: ["retail"], mkt: ["content"], prj: ["content"], dsgn: ["content"], rnd: ["mfg"], prod: ["mfg"], tech: ["mfg"], hr: ["edu"], admin: ["public"],
+  acct: ["fin"], rm: ["fin"], pb: ["fin"], risk: ["fin"], am: ["fin"], ib: ["fin"], ins: ["fin"], dfin: ["fin"] };
+// 내 다른 투잡 → 업계
+const SJ_DOM = { food: ["chicken", "coffee"], realty: ["pr", "airbnb", "shortstay", "realtyblog"], edu: ["tutoring", "cs", "thesis"], content: ["insta", "webnovel", "tistory", "aivideo", "press"], retail: ["ucafe", "popup", "goods"] };
+// 인물의 업계: 직업 글에서 판정한다. 학생·취준생·같은 회사 사람(회사 항목과 겹친다)처럼 판정이 어려운 인물은 뺀다.
+const CHAR_SKIP = /준비생|취준생|학년|학생|지망생|우리 팀|우리 회사|옆 팀|인턴|신입|휴학/;
+const CHAR_DOM = [
+  ["med", /간호사|전문의|의사|한의|약사|물리치료|병원|동물보건/], ["fin", /은행|증권|회계|세무|핀테크|보험|PB/], ["edu", /교사|학원|교수|취업지원|직업상담|영어 강사|첨삭/],
+  ["realty", /공인중개사|건물주|경매|인테리어|호스트|파티룸|도배|건축/], ["food", /셰프|바리스타|쌀국수|포차|바텐더|요리|고양이 카페/], ["content", /웹툰|PD|너튜버|작가|인플루언서|크리에이터|카피라이터|편집|일러스트|마케터|포토|배우/],
+  ["public", /공사|구청|주무관|소방관|경찰|고용센터|대한전력/], ["retail", /쇼호스트|편의점|꽃집|영업/], ["mfg", /전자|자동차|공방|목수|전기기사/], ["logi", /이삿짐|승무원|물류/],
+];
+export function charDoms(c) { const j = c?.job || ""; if (!j || CHAR_SKIP.test(j)) return []; return CHAR_DOM.filter(([, re]) => re.test(j)).map(([k]) => k); }
+export const domOf = (V) => (V.dom = V.dom || { pre: 0, on: 0, picks: [], u: {}, meetT: {} });
+export const domOn = (s) => !!s.vibe?.dom?.on;
+export const domU = (s, k) => s.vibe?.dom?.u?.[k] || 0;
+const domLo = () => clamp(1 - (1 - VB_CH.dom.lo) * K, 0.15, 1);
+export const domPriceMul = (s, k) => domLo() + (1 - domLo()) * domU(s, k) / 100; // 도메인 건 단가 배율
+const domOutMul = () => 1 - Math.min(0.95, VB_CH.dom.outCut * K); // 도메인 밖 문의 배율
+export const domReach = (s) => (domOn(s) ? Math.min(1, domOutMul() + s.vibe.dom.picks.length * VB_CH.dom.lead) : 1); // 손님 풀(영업 답장에도 곱한다)
+export const marketMul = (s) => Math.max(clamp(1 - (1 - VB_CH.comp.floor) * Kt(s), 0.3, 1), Math.pow(1 - VB_CH.comp.cut, Math.floor(s.t / 12))); // 재능마켓 단가(해마다 −4%)
+const leadComp = (s) => (s.t < VB_CH.comp.leadT ? 1 : Math.max(VB_CH.comp.leadFloor, 1 - VB_CH.comp.leadCut * (Math.floor((s.t - VB_CH.comp.leadT) / 12) + 1)));
+function coDoms(s) { if (!employed(s) || !s.co) return []; return [...new Set([...(CO_DOM[s.co.name] || TYPE_DOM[s.co.type] || []), ...(JOB_DOM[s.me?.job] || [])])]; }
+// 이해도가 무엇으로 오르는지(달마다). 화면과 달 마감이 같이 쓴다.
+export function domSources(s, k) {
+  const C = VB_CH.dom, rel = s.rel || {}, mates = new Set([s.fam?.spouse, ...Object.keys(rel).filter((id) => rel[id]?.lover || rel[id]?.spouse)].filter(Boolean));
+  const co = coDoms(s).includes(k);
+  const pals = Object.keys(rel).filter((id) => !mates.has(id) && (rel[id]?.aff || 0) >= C.palAff && charDoms(CHAR[id]).includes(k)).length, pn = Math.min(C.palMax, pals);
+  const mate = [...mates].some((id) => charDoms(CHAR[id]).includes(k));
+  const job = (SJ_DOM[k] || []).filter((j) => s.sj?.active?.includes(j));
+  return [
+    { id: "co", n: `다니는 회사·직무가 ${DOMS[k].n} 쪽`, v: C.co, on: co },
+    { id: "pal", n: `친한 업계 사람(호감 ${C.palAff} 이상) ${pn}/${C.palMax}명`, v: C.pal * Math.max(1, pn), on: pn > 0 },
+    { id: "mate", n: "배우자·연인이 업계 사람", v: C.mate, on: mate },
+    { id: "job", n: `내 다른 투잡${job.length ? `(${job.map((j) => D.SIDEJOBS[j]?.n || j).join("·")})` : ""}`, v: C.job, on: job.length > 0 },
+  ];
+}
+export const domGain = (s, k) => domSources(s, k).reduce((a, x) => a + (x.on ? x.v : 0), 0);
+// 추천 순서: 달마다 저절로 오르는 양이 큰 도메인부터
+export function domSuggest(s) { return DOM_KEYS.filter((k) => !domOf(s.vibe).picks.includes(k)).map((k, i) => [k, domGain(s, k), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map((x) => x[0]); }
+export function pickDom(s, k) {
+  const dm = domOf(s.vibe);
+  if (!dm.on) return { ok: false, msg: "아직 고를 때가 아니에요" };
+  if (!DOMS[k] || dm.picks.includes(k)) return { ok: false, msg: "고를 수 없어요" };
+  if (dm.picks.length >= VB_CH.dom.max) return { ok: false, msg: `도메인은 ${VB_CH.dom.max}개까지예요` };
+  dm.picks.push(k); dm.u[k] = dm.u[k] || 0;
+  log(s, `바이브코딩: 내 도메인 ${DOMS[k].n}`, "work");
+  return { ok: true, msg: `내 도메인: ${DOMS[k].n}. 이해도 0에서 시작해요` };
+}
+// 도메인 바꾸기: 쌓은 이해도는 사라진다(새 도메인은 0부터)
+export function swapDom(s, from, to) {
+  const dm = domOf(s.vibe), i = dm.picks.indexOf(from);
+  if (!dm.on || i < 0 || !DOMS[to] || dm.picks.includes(to)) return { ok: false, msg: "바꿀 수 없어요" };
+  const lost = Math.round(dm.u[from] || 0); delete dm.u[from]; if (dm.meetT) delete dm.meetT[from]; dm.picks[i] = to; dm.u[to] = 0;
+  log(s, `바이브코딩: 도메인 ${DOMS[from].n} → ${DOMS[to].n}`, "work");
+  return { ok: true, msg: `${DOMS[from].n} 이해도 ${lost}을 내려놓고 ${DOMS[to].n}에서 0부터 다시 시작해요` };
+}
+// ── 도메인 확장: 유지보수 계약·내 앱 ──
+export const retIsDom = (s, t) => domOn(s) && !!t.dom && s.vibe.dom.picks.includes(t.dom);
+export const retDomMax = (s, k) => VB_CH.x.retPer[domU(s, k) >= VB_CH.x.hiU ? 1 : 0];
+export const retFee = (s, t) => (t.base && retIsDom(s, t) ? r5(t.base * domPriceMul(s, t.dom)) : t.fee); // 지금 재계약하면 받을 월 유지보수비
+// 도메인 밖 계약이 달마다 더 끊기는 확률(도메인 시대 햇수에 따라 서서히)
+export const retOutQuit = (s) => (domOn(s) ? Math.min(VB_CH.x.outQuitMax, VB_CH.x.outQuitYr * (Math.floor((s.t - s.vibe.dom.on) / 12) + 1)) : 0);
+export const appIsDom = (s) => { const A = s.vibe?.app; return domOn(s) && !!A?.dom && s.vibe.dom.picks.includes(A.dom); };
+export const appDomMul = (s) => (!domOn(s) || !s.vibe.app ? 1 : appIsDom(s) ? VB_CH.x.appLo + (VB_CH.x.appHi - VB_CH.x.appLo) * domU(s, s.vibe.app.dom) / 100 : VB_CH.x.appOutCap); // 사용자 한도 배율
+export const appPriceMax = (s) => VB_CH.x.priceMax + (appIsDom(s) ? Math.round(VB_CH.x.priceUp * domU(s, s.vibe.app.dom) / 100 * 2) / 2 : 0);
+const domBest = (s) => domOf(s.vibe).picks.slice().sort((a, b) => domU(s, b) - domU(s, a))[0];
+export const canSpecApp = (s) => { const A = s.vibe?.app; return !!A?.live && domOn(s) && s.vibe.dom.picks.length > 0 && !appIsDom(s); };
+function domAdd(s, k, v, notes) { const dm = domOf(s.vibe); if (!dm.picks.includes(k)) return 0; const a = dm.u[k] || 0, b = clamp(a + v, 0, 100); dm.u[k] = Math.round(b * 10) / 10; if (a < 100 && b >= 100 && notes) notes.push(`${DOMS[k].n} 이해도 100: 이제 이 업계 일은 제값을 받는다`); return b - a; }
+const meetReady = (s, k) => s.t - (domOf(s.vibe).meetT?.[k] ?? -99) >= VB_CH.dom.meetGap;
+const meetPick = (s, arg) => { const dm = domOf(s.vibe), L = dm.picks.filter((k) => meetReady(s, k) && (dm.u[k] || 0) < 100); return dm.picks.includes(arg) ? (L.includes(arg) ? arg : undefined) : L.slice().sort((a, b) => (dm.u[a] || 0) - (dm.u[b] || 0))[0]; }; // 도메인을 짚으면 그 모임만, 안 짚으면 이해도가 낮은 쪽
 export const scopeOf = (s) => VB_F30.scope[s.vibe?.scope] || VB_F30.scope.std;
 export function setScope(s, k) { if (VB_F30.scope[k]) s.vibe.scope = k; return { ok: true, msg: `계약서 범위: ${VB_F30.scope[s.vibe.scope].n}` }; }
 export const maxRets = (s) => Math.min(VB_BAL.retMax + (s.vibe.lv >= 5 ? 1 : 0), s.vibe.lv);
@@ -88,26 +206,31 @@ export function fixNeed(s) {
 export const toolCost = (s) => Math.round(TOOL[s.vibe.tool].c * (s.vibe.tp || 1) * SYN.pi(s));
 export function appCap(s) {
   const V = s.vibe, A = V.app; if (!A) return 0;
-  return Math.round((VB_BAL.appBase + VB_BAL.appLv * V.lv + V.rep * VB_BAL.appRep) * Math.pow(2 / A.price, 0.9) * (A.focus ? 1.2 : 1) * (V.bigFree > 0 ? 0.7 : 1) * (A.web ? VB_F30.store.webCap : 1));
+  return Math.round((VB_BAL.appBase + VB_BAL.appLv * V.lv + V.rep * VB_BAL.appRep) * Math.pow(2 / A.price, 0.9) * (A.focus ? 1.2 : 1) * (V.bigFree > 0 ? 0.7 : 1) * (A.web ? VB_F30.store.webCap : 1) * appDomMul(s));
 }
 export const appServer = (s) => (s.vibe.app?.live ? Math.round((3 + s.vibe.app.users * 0.03) * SYN.pi(s)) : 0);
 export const mrr = (s) => (s.vibe.app?.live ? Math.round(s.vibe.app.users * s.vibe.app.price * SYN.pi(s)) : 0);
-const curProj = (V, id) => V.projects.find((p) => p.id === id) || V.projects.find((p) => p.own) || V.projects.slice().sort((a, b) => (a.due ?? 99) - (b.due ?? 99))[0];
+const openProj = (V) => V.projects.filter((p) => !p.lock); // 검수 답을 기다리는 건(lock)은 이번 달에 못 만진다
+const curProj = (V, id) => { const L = openProj(V); return L.find((p) => p.id === id) || L.find((p) => p.own) || L.slice().sort((a, b) => (a.due ?? 99) - (b.due ?? 99))[0]; };
 const newestPaid = (V) => V.projects.filter((p) => !p.own).at(-1);
 function income(s, name, v) { if (!v) return; s.cash += v; addMoney(s, "inc", name, v); }
 function expense(s, name, v) { if (!v) return; s.cash -= v; addMoney(s, "exp", name, v); }
 
 // 의뢰 만들기
-export function makeOffer(s, r, ch) {
+// dom: 도메인 시대(6년 차~)에만 쓴다. 키 = 그 도메인 건, null = 도메인 밖, 안 주면 손님 풀 비율대로 정한다
+export function makeOffer(s, r, ch, dom) {
   const V = s.vibe, pi = SYN.pi(s);
+  if (domOn(s) && dom === undefined) { const pk = V.dom.picks, a = domOutMul(), b = pk.length * VB_CH.dom.lead; dom = pk.length && r.chance(b / Math.max(0.01, a + b)) ? r.pick(pk) : null; }
+  if (!domOn(s) || !DOMS[dom]) dom = null;
   const ind = ch === "pkg" && V.niche ? V.niche : r.pick(IND_KEYS);
   let price, need;
   if (ch === "friend") { price = r.pick([0, 20, 30, 40]); need = r.int(2, 3); }
-  else if (ch === "market") { price = r.range(50, 90) * (V.lv >= 3 ? 1.25 : 1); need = r.int(3, 4); }
+  else if (ch === "market") { price = r.range(50, 90) * (V.lv >= 3 ? 1.25 : 1) * marketMul(s); need = r.int(3, 4); }
   else if (ch === "post") { price = r.range(100, 220); need = r.int(5, 7); }
   else { price = r.range(200, 400); need = Math.max(5, r.int(6, 9) - Math.min(2, Math.floor((V.cases[ind] || 0) / 4))); }
   price = r5(price * pi * (1 + V.rep / 400) * mod(s, "vbPrice", 1) * ((SYN.on(s, "vb_uc") || SYN.on(s, "vb_space")) && ch !== "pkg" ? 1.1 : 1));
-  const o = { id: "O" + (++V.seq), ch, ind, nm: `${INDS[ind].n} ${r.pick(INDS[ind].jobs)}`, price, need, due: Math.ceil(need / 1.2) + 2, exp: 2 };
+  if (dom) price = r5(price * domPriceMul(s, dom));
+  const o = { id: "O" + (++V.seq), ch, ind, nm: dom ? `${DOMS[dom].n} ${r.pick(DOMS[dom].jobs)}` : `${INDS[ind].n} ${r.pick(INDS[ind].jobs)}`, price, need, due: Math.ceil(need / 1.2) + 2, exp: 2, ...(dom ? { dom } : {}) };
   V.offers.push(o); if (V.offers.length > 5) V.offers.shift();
   return o;
 }
@@ -123,13 +246,14 @@ export function take(s, id) {
 }
 export function drop(s, id) { const V = s.vibe; V.offers = V.offers.filter((x) => x.id !== id); return { ok: true, msg: "정중히 거절했다" }; }
 export function setTool(s, t) { const V = s.vibe; V.tool = clamp(t | 0, 0, 2); return { ok: true, msg: `${TOOL[V.tool].n}로 바꿨다(월 ${won(toolCost(s))})` }; }
-export function setAppPrice(s, v) { const A = s.vibe.app; if (A) A.price = clamp(Math.round(v * 10) / 10, 1, 5); }
+export function setAppPrice(s, v) { const A = s.vibe.app; if (A) A.price = clamp(Math.round(v * 10) / 10, 1, appPriceMax(s)); }
 // 내 앱 만들기 시작(Lv3~): 만들기 6번 분량
 export function startApp(s) {
   const V = s.vibe; if (V.lv < 3) return { ok: false, msg: "Lv3 리테이너 보유자부터" };
   if (V.app || V.projects.some((p) => p.own === "app")) return { ok: false, msg: "이미 만들고 있어요" };
   const ind = bestCase(V)[0] || "shop";
-  V.projects.push({ id: "P" + (++V.seq), own: "app", ind, nm: `내 앱: ${INDS[ind].n} 사장님용 관리 앱`, need: 6, done: 0, price: 0 });
+  const dk = domOn(s) ? domBest(s) : null;
+  V.projects.push({ id: "P" + (++V.seq), own: "app", ind, nm: dk ? `내 앱: ${DOMS[dk].n} 실무자용 업무 앱` : `내 앱: ${INDS[ind].n} 사장님용 관리 앱`, need: 6, done: 0, price: 0, ...(dk ? { dom: dk } : {}) });
   return { ok: true, msg: "내 앱 만들기 시작. '코디로 만들기'로 완성해요" };
 }
 // 내 앱 문 닫기
@@ -153,21 +277,45 @@ function deliver(s, r, p, lines) {
   }
   if (p.own === "site") { V.site = true; V.rep = clamp(V.rep + 5, 0, 100); lines.push("내 소개 사이트 오픈!", "지인·동네 의뢰가 늘어요"); return; }
   if (p.own === "app") {
-    V.app = { live: true, ind: p.ind, users: r.int(4, 9), price: 2, buzz: 10, t0: s.t, focus: false, best: 0 };
+    V.app = { live: true, ind: p.ind, users: r.int(4, 9), price: 2, buzz: 10, t0: s.t, focus: false, best: 0, ...(p.dom ? { dom: p.dom } : {}) };
     if (r.chance(VB_F30.store.rejectP)) { V.app.live = false; V.app.hold = 99; V.storeAsk = 1; lines.push("내 앱 완성! 그런데 앱 장터 심사에서 거절됐다"); return; }
     lines.push("앱 장터 심사 통과! 내 앱 출시, 첫 유료 사용자"); return;
   }
-  const fee = CH[p.ch].fee, rest = Math.max(0, p.price - p.dep);
+  // 11-26 납품 오류 판정(한 건에 한 번): 기술 이해가 높고 요구사항 정의서가 있으면 덜 난다
+  if (!p.redo) {
+    const E = VB_CH.err, tq = clamp(V.tech / 100, 0, 1);
+    const failP = Math.min(0.12, Math.max(0.01, E.fail * (1.3 - 0.6 * tq) - (p.spec ? 0.01 : 0)) * Kt(s));
+    const redoP = Math.min(0.4, clamp(E.redoHi - (E.redoHi - E.redoLo) * (0.7 * tq + (p.spec ? 0.3 : 0)) + (p.vague ? 0.03 : 0), E.redoLo, E.redoHi) * Kt(s));
+    const x = r.range(0, 1);
+    if (x < failP) {
+      V.fails = (V.fails || 0) + 1; V.rep = clamp(V.rep - E.failRep, 0, 100);
+      if (p.dep) expense(s, "바이브코딩 환불", p.dep);
+      lines.push(`${p.nm} 납품 실패: 실서버에서 돌지 않았다`, `${p.dep ? `착수금 ${won(p.dep)} 환불 · ` : ""}개발 평판 −${E.failRep}`);
+      return;
+    }
+    if (x < failP + redoP) {
+      const add = Math.max(1, Math.round(p.need * E.redoNeed));
+      p.redo = 1; p.lock = 1; p.need = Math.round((p.need + add) * 10) / 10; p.due = (p.due ?? 0) + 1; V.redos = (V.redos || 0) + 1;
+      V.projects.push(p);
+      lines.push(`${p.nm} 검수에서 오류: 재작업 +${add}칸`, `다음 달부터 다시 만든다 · 잔금은 ${Math.round(E.redoPay * 100)}%만`);
+      return;
+    }
+  }
+  const fee = CH[p.ch].fee, rest = Math.round(Math.max(0, p.price - p.dep) * (p.redo ? VB_CH.err.redoPay : 1));
   if (rest) { income(s, "바이브코딩 외주", rest); if (fee) expense(s, "바이브코딩 수수료", Math.round(rest * fee)); }
   V.delivered++; V.refs++; V.cases[p.ind] = (V.cases[p.ind] || 0) + 1;
   const onTime = p.due >= 0;
-  V.rep = clamp(V.rep + (onTime ? 4 : 1) + (p.logo ? 4 : 0), 0, 100);
+  V.rep = clamp(V.rep + (p.redo ? Math.min(VB_CH.err.redoRep, onTime ? 4 : 1) : onTime ? 4 : 1) + (p.logo ? 4 : 0), 0, 100);
+  if (p.dom && domAdd(s, p.dom, VB_CH.dom.deliver) > 0) lines.push(`${DOMS[p.dom].n} 이해도 +${VB_CH.dom.deliver}`);
   V.as += 1; // 무상 AS 30일
-  lines.push(`${p.nm} 납품${rest ? ` · 잔금 ${won(rest)}` : ""}`, onTime ? "후기 ★★★★★" : "늦었지만 납품");
-  if (V.lv >= 2 && p.price > 0 && V.rets.length < maxRets(s) && r.chance(0.35 + (onTime ? 0.1 : 0))) {
-    const fee2 = r5((V.lv >= 4 ? r.range(35, 60) : V.lv >= 3 ? r.range(25, 45) : r.range(20, 35)) * SYN.pi(s));
-    V.rets.push({ id: "R" + (++V.seq), nm: p.nm, ind: p.ind, fee: fee2, t: s.t });
-    lines.push(`유지보수 계약 월 ${won(fee2)}`);
+  lines.push(`${p.nm} 납품${rest ? ` · 잔금 ${won(rest)}` : ""}`, p.redo ? "재작업 끝에 납품(후기 ★★★)" : onTime ? "후기 ★★★★★" : "늦었지만 납품");
+  // 도메인 시대: 유지보수는 내 도메인 건에서만 제대로 이어지고, 월 유지보수비도 이해도를 따라간다
+  const era = domOn(s), pd = era && p.dom && V.dom.picks.includes(p.dom) ? p.dom : null;
+  if (V.lv >= 2 && p.price > 0 && V.rets.length < maxRets(s) && (!pd || V.rets.filter((t) => t.dom === pd).length < retDomMax(s, pd)) && r.chance((0.35 + (onTime ? 0.1 : 0)) * (era && !pd ? VB_CH.x.retOut : 1))) {
+    const base = r5((V.lv >= 4 ? r.range(35, 60) : V.lv >= 3 ? r.range(25, 45) : r.range(20, 35)) * SYN.pi(s));
+    const fee2 = pd ? r5(base * domPriceMul(s, pd)) : base;
+    V.rets.push({ id: "R" + (++V.seq), nm: p.nm, ind: p.ind, fee: fee2, t: s.t, ...(pd ? { dom: pd, base, rt: s.t } : {}) });
+    lines.push(`유지보수 계약 월 ${won(fee2)}${pd && fee2 < base ? ` (이해도가 차면 재계약 때 ${won(base)}까지)` : ""}`);
   }
 }
 
@@ -298,6 +446,16 @@ export function f30Scene(s, r, what) {
   const p = { id: "P" + (++V.seq), ch: "market", ind: "shop", nm: "식당·카페 예약·주문 페이지", price: 80, dep: 24, need: 5, done: 2, due: 3, mood: 0, spec: false, vague: false, creep: VB_F30.fight };
   V.projects.push(p); return scopeScene(s, p);
 }
+// 11-26 도메인의 시대 본 사건(6년 차). 고르기는 장면 첫 선택지(추천 하나) 또는 바이브코딩 화면에서
+function domScene(s) {
+  const k = domSuggest(s)[0], g = domGain(s, k); s._vbDom = { k };
+  return { kind: "event", tag: "바이브코딩", title: "도메인의 시대", onChoose: "vb_dom",
+    text: `바이브코딩이 흔해졌다. 발주 공고의 첫 줄이 바뀌었다. "우리 업계 경험자만." 만들 줄 아는 사람은 넘치고, 업계를 아는 사람이 모자란다. 내 분야를 정할 때다(최대 ${VB_CH.dom.max}개). 분야 밖 문의는 크게 줄고, 분야 안의 일은 이해도가 찰수록 제값을 받는다. 유지보수 계약과 내 앱도 같은 길을 간다.`,
+    choices: [
+      { t: `${DOMS[k].n}부터 판다${g > 0 ? "(지금 내 회사·주변과 맞는 분야)" : ""}`, eff: {}, text: `소개 글 첫 줄을 고쳤다. "${DOMS[k].n} 업무를 아는 개발자." 아직은 이름뿐이다. 나머지 한 자리는 바이브코딩 화면에서 고른다.` },
+      { t: "바이브코딩 화면에서 천천히 고른다", eff: {}, text: "분야 열 개를 적어 놓고 하나씩 지워 본다. 고르기 전까지는 문의가 눈에 띄게 준다." },
+    ] };
+}
 // 첫 사이트를 만들 때 바로 뜨는 장면(e01)
 function firstSite() {
   return { kind: "event", tag: "바이브코딩", title: "10분 만의 첫 사이트", text: "말로 시켰을 뿐인데 사이트가 10분 만에 떴다. 소름이 돋는다. 그런데 로그인 버튼을 누르자 하얀 화면만 나온다.",
@@ -306,10 +464,10 @@ function firstSite() {
 }
 
 // ───────── 플러그인 ─────────
-const MONEY = { inc: ["바이브코딩 외주", "바이브코딩 유지보수", "바이브코딩 구독 매출", "바이브코딩 강의"], exp: ["바이브코딩 도구·서버", "바이브코딩 수수료", "바이브코딩 하청"] };
+const MONEY = { inc: ["바이브코딩 외주", "바이브코딩 유지보수", "바이브코딩 구독 매출", "바이브코딩 강의"], exp: ["바이브코딩 도구·서버", "바이브코딩 수수료", "바이브코딩 하청", "바이브코딩 환불"] };
 export default {
   key: "vibe", prefix: "vb_", hubName: "바이브코딩",
-  init: () => ({ v: 2, scope: "std", debt: 0, lv: 1, m: 0, tool: 0, tp: 1, tq: 1, tqT: 0, tech: 10, rep: 0, refs: 0, site: false, delivered: 0, builds: 0, fixes: 0, fx: 0, as: 0,
+  init: () => ({ v: 3, dom: { pre: 0, on: 0, picks: [], u: {}, meetT: {} }, dry: 0, scope: "std", debt: 0, lv: 1, m: 0, tool: 0, tp: 1, tq: 1, tqT: 0, tech: 10, rep: 0, refs: 0, site: false, delivered: 0, builds: 0, fixes: 0, fx: 0, as: 0,
     projects: [{ id: "P0", own: "auto", ind: "shop", nm: "사내 보고서 자동화(내 업무)", need: 2, done: 0, price: 0 }],
     offers: [], rets: [], app: null, cases: { academy: 0, fit: 0, shop: 0, salon: 0 }, niche: null, agent: false, seq: 1,
     hist: [], revH: [], recH: [], recStreak: 0, goodM: 0, sold: 0, soldAmt: 0, closed: 0, outages: 0, bigFree: 0, ban: 0, bomb: 0, coRisk: 0, ok: 0, hide: 0, seen: [], seenT: {}, last: null }),
@@ -318,13 +476,15 @@ export default {
     vb_fix: { n: "버그 잡기·유지보수", ap: 1, hp: 2, desc: "고객 문의·장애·무상 AS를 처리한다. 밀리면 계약이 끊긴다" },
     vb_sell: { n: "영업·견적 보내기", ap: 1, hp: 2, desc: "지인·재능마켓·개발 일지로 의뢰를 받아 온다" },
     vb_study: { n: "DB·API·보안 공부", ap: 1, hp: 2, desc: "코디가 만든 걸 이해한다. 기술 이해 +, 사고 −", stat: { num: 0.5 } },
+    vb_meet: { n: "업계 모임", ap: 1, hp: 2, desc: "내 도메인 사람들을 만난다. 도메인 이해도 +3~4(도메인마다 석 달에 한 번)", stat: { talk: 0.3 } },
     vb_agent: { n: "하청 개발자 계약/해지", ap: 0, hp: 0, desc: "유지보수와 작업 일부를 맡긴다(반복 수입 30% + 월 50만, 투잡 칸 +1)" },
   },
   mg: { vb_build: "num" },
   money: MONEY,
   can(s, id, arg) {
     const V = s.vibe;
-    if (id === "vb_build") { if (arg === "app") return V.app?.live ? null : "앱이 없어요"; if (!V.projects.length && !V.app?.live) return "만들 게 없어요. 의뢰를 먼저 받으세요"; return null; }
+    if (id === "vb_build") { if (arg === "appdom") return !V.app?.live ? "앱이 없어요" : !domOn(s) ? "아직은 범용 앱으로 충분해요" : !V.dom.picks.length ? "도메인을 먼저 고르세요" : appIsDom(s) ? "이미 내 도메인 앱이에요" : null; if (arg === "app") return V.app?.live ? null : "앱이 없어요"; if (!V.projects.length && !V.app?.live) return "만들 게 없어요. 의뢰를 먼저 받으세요"; if (!openProj(V).length && !V.app?.live) return "검수 답을 기다리는 중이에요. 재작업은 다음 달부터"; return null; }
+    if (id === "vb_meet") { const dm = domOf(V); if (!dm.on) return "아직은 만들 줄만 알면 돼요"; if (!dm.picks.length) return "도메인을 먼저 고르세요"; if (dm.picks.includes(arg) ? (dm.u[arg] || 0) >= 100 : dm.picks.every((k) => (dm.u[k] || 0) >= 100)) return "이해도가 꽉 찼어요"; if (!meetPick(s, arg)) return `이번 분기 모임은 다녀왔어요(도메인마다 ${VB_CH.dom.meetGap}달에 한 번)`; return null; }
     if (id === "vb_sell") { const ch = arg && CH[arg] ? arg : "friend"; if (V.lv < CH[ch].lv) return `${jo(CH[ch].n, "은", "는")} Lv${CH[ch].lv}부터`; if (ch === "pkg" && !V.niche) return "업종을 먼저 정하세요(한 업종 사례 3건)"; if (V.offers.length >= 5) return "의뢰함이 꽉 찼어요"; return null; }
     if (id === "vb_fix") return fixNeed(s) > 0 || V.as > 0 ? null : "고칠 게 없어요(유지보수 계약·내 앱이 생기면)";
     if (id === "vb_agent") { if (V.agent) return SJ.slotLock(s, () => { V.agent = false; return () => { V.agent = true; }; }); return V.lv >= 4 ? null : "Lv4 업종 전문가부터"; }
@@ -336,7 +496,13 @@ export default {
       V.builds++;
       const u = Math.round(boost * speed(s) * 10) / 10;
       gainStat(s, "num", 0.3);
-      if (arg === "app" || (!V.projects.length && V.app?.live)) {
+      if (arg === "appdom" && canSpecApp(s)) {
+        const A = V.app, X = VB_CH.x; if (!A.spTo || !V.dom.picks.includes(A.spTo)) { A.spTo = domBest(s); A.sp = 0; }
+        A.sp = (A.sp || 0) + 1; const lost = Math.round(A.users * X.spLose); A.users = Math.max(0, A.users - lost);
+        if (A.sp >= X.spN) { A.dom = A.spTo; A.sp = 0; delete A.spTo; A.buzz = Math.min(60, A.buzz + 10); log(s, `바이브코딩: 내 앱을 ${DOMS[A.dom].n} 특화로 바꿨다`, "work"); return { lines: [`내 앱: ${DOMS[A.dom].n} 특화 완료`, `사용자 한도 ×${appDomMul(s).toFixed(2)} (이해도를 따라 오른다)`], msg: `첫 화면에서 '누구나'를 지웠다. 이제 ${DOMS[A.dom].n} 실무자만 아는 메뉴가 맨 위에 있다.` }; }
+        return { lines: [`내 앱 ${DOMS[A.spTo].n} 특화 ${A.sp}/${X.spN}`, ...(lost ? [`안 맞는 사용자 ${lost}명 이탈`] : [])], msg: r.pick([`범용 기능 세 개를 내리고 ${DOMS[A.spTo].n} 업무 흐름을 넣었다. "예전이 편했는데요" 메일이 왔다.`, `${DOMS[A.spTo].n} 용어로 메뉴 이름을 전부 바꿨다. 떠나는 사람도 있고, 반기는 사람도 있다.`]) };
+      }
+      if (arg === "app" || arg === "appdom" || (!openProj(V).length && V.app?.live)) {
         const A = V.app;
         if (!A.web && r.chance(VB_F30.store.updRej)) return { lines: ["업데이트 심사 거절: 이번 기능은 다음에"], msg: "\"최소 기능 요건 미달.\" 같은 기능을 지난달엔 통과시켜 줬다." };
         A.buzz = Math.min(60, A.buzz + 10 * u);
@@ -361,7 +527,7 @@ export default {
     if (id === "vb_sell") {
       const ch = arg && CH[arg] ? arg : "friend";
       const rf = SJ.ramp(s, "vibe"); // 레퍼런스 없는 초반: 답장이 잘 안 오고 단가도 깎인다
-      if (!r.chance(Math.min(0.97, (0.3 + 0.7 * rf) * scopeOf(s).win))) { if (ch === "friend") gainStat(s, "talk", 0.3); else gainStat(s, "mkt", 0.3); return { lines: ["답장 없음", "레퍼런스가 쌓이면 나아져요"], msg: r.pick(["견적 세 군데. 읽음 표시만 떴다.", "\"포트폴리오 있으세요?\" 그 한 줄에 말문이 막혔다.", "해외 팀이 반값을 불렀다. 이번에도 밀렸다."]) }; }
+      if (!r.chance(Math.min(0.97, (0.3 + 0.7 * rf) * scopeOf(s).win) * domReach(s) * (V.dry > 0 ? VB_CH.dry.sell : 1))) { if (ch === "friend") gainStat(s, "talk", 0.3); else gainStat(s, "mkt", 0.3); return { lines: ["답장 없음", "레퍼런스가 쌓이면 나아져요"], msg: r.pick(["견적 세 군데. 읽음 표시만 떴다.", "\"포트폴리오 있으세요?\" 그 한 줄에 말문이 막혔다.", "해외 팀이 반값을 불렀다. 이번에도 밀렸다."]) }; }
       const o = makeOffer(s, r, ch);
       if (rf < 1 && o.price) o.price = Math.max(5, Math.round(o.price * (0.7 + 0.3 * rf) / 5) * 5);
       { const sk = SJ.skillRamp(s, "vibe"); if (sk < 1 && o.price) o.price = Math.max(5, Math.round(o.price * sk / 5) * 5); } // v4.25b 배우는 기간: 실력이 쌓이기 전엔 단가가 낮다
@@ -371,6 +537,12 @@ export default {
       return { lines: [`새 의뢰: ${o.nm} ${o.price ? won(o.price) : "(파일럿·무료)"}`, ...(extra ? [`하나 더: ${extra.nm}`] : [])], msg: { friend: "동네 단골 가게 사장님께 \"홈페이지 하나 만들어 드릴까요?\" 말을 꺼냈다.", market: "재능마켓 견적 요청 세 건에 답을 달았다. 해외 팀 견적이 늘 반값이다.", post: "'퇴근 후 개발 일지 #' 글을 올렸다. 댓글이 달리기 시작했다.", pkg: `${INDS[V.niche || "shop"].n} 사장님 모임에 패키지 소개서를 돌렸다.` }[ch] };
     }
     if (id === "vb_study") { V.tech = clamp(V.tech + 5 * (1 - V.tech / 110), 0, 100); const dz = V.debt > 0 ? (V.debt = Math.max(0, V.debt - 3), true) : false; return { lines: [`기술 이해 ${Math.round(V.tech)}`, ...(dz ? [V.debt ? `기술 부채 ${V.debt}달 남음` : "기술 부채 정리 끝"] : [])], msg: r.pick(["DB 인덱스가 뭔지 드디어 알았다. 코디가 왜 그렇게 짰는지 보인다.", "로그인·권한 점검표를 만들었다. 다음 납품부터 이걸 체크한다.", "API 요금표를 읽었다. 무료가 무료가 아니었다."]) }; }
+    if (id === "vb_meet") {
+      const k = meetPick(s, arg), dm = domOf(V); if (!k) return { lines: ["이번 분기 모임은 이미 다녀왔다"], msg: "단체방이 조용하다." };
+      dm.meetT = dm.meetT || {}; dm.meetT[k] = s.t; dm.meets = (dm.meets || 0) + 1;
+      const g = domAdd(s, k, Math.round(r.range(VB_CH.dom.meet[0], VB_CH.dom.meet[1]) * boost * 10) / 10);
+      return { lines: [`${DOMS[k].n} 이해도 +${Math.round(g * 10) / 10} (${Math.round(dm.u[k])}/100)`], msg: r.pick([`${DOMS[k].n} 실무자 모임 뒷자리에 앉았다. 반은 못 알아들었다. 모르는 말을 적어 왔다.`, `"그건 현장에선 그렇게 안 해요." ${DOMS[k].n} 10년 차의 한마디에 화면 설계를 다시 그렸다.`, `명함 다섯 장을 받았다. 다들 엑셀로 버티는 일이 하나씩 있었다.`]) };
+    }
     if (id === "vb_agent") { V.agent = !V.agent; return { lines: [V.agent ? "하청 개발자 계약: 유지보수 전부 + 월 2칸 작업" : "하청 계약 해지"], msg: V.agent ? "\"코드 리뷰는 매주 금요일에 같이 봐요.\"" : "다시 새벽 알림은 내 휴대폰으로 온다." }; }
     return null;
   },
@@ -385,11 +557,12 @@ export default {
     // 11-22 앱 재심사 대기
     if (V.app && !V.app.live && V.app.hold > 0) { if (V.app.hold >= 99) V.app.hold = VB_F30.store.holdM; V.app.hold--; if (V.app.hold <= 0) { V.app.live = true; V.app.hold = 0; notes.push("재심사 통과! 내 앱이 앱 장터에 올라갔다"); } else notes.push(`내 앱 재심사 대기(${V.app.hold}달)`); }
     // 0) 하청 개발자: 진행 중 일 2칸
-    if (V.agent) { let left = 2 * speed(s); for (const p of V.projects.slice()) { if (left <= 0) break; const u = Math.min(left, p.need - p.done); p.done += u; left -= u; if (p.done >= p.need - 0.01) { const ls = []; deliver(s, r, p, ls); notes.push(`하청 개발자: ${ls.join(" · ")}`); if (V.storeAsk) { V.storeAsk = 0; scenes.push(storeScene(s)); } } } if (left > 0 && V.app?.live) V.app.buzz = Math.min(60, V.app.buzz + 5 * left); }
+    if (V.agent) { let left = 2 * speed(s); for (const p of V.projects.slice()) { if (left <= 0) break; if (p.lock) continue; const u = Math.min(left, p.need - p.done); p.done += u; left -= u; if (p.done >= p.need - 0.01) { const ls = []; deliver(s, r, p, ls); notes.push(`하청 개발자: ${ls.join(" · ")}`); if (V.storeAsk) { V.storeAsk = 0; scenes.push(storeScene(s)); } } } if (left > 0 && V.app?.live) V.app.buzz = Math.min(60, V.app.buzz + 5 * left); }
     const need = fixNeed(s), q = V.agent || need <= 0 ? 1 : clamp(V.fx / need, 0, 1);
     // 1) 진행 중 외주: 마감·수정 요청
     for (const p of V.projects.slice()) {
       if (p.own) continue;
+      if (p.lock) p.lock = 0; // 검수 답이 왔다: 재작업 시작
       p.due--;
       if (r.chance(((p.spec ? 0.05 : 0.14) + (p.vague ? 0.2 : 0)) * scopeOf(s).creep)) {
         p.need += 1; p.creep = (p.creep || 0) + 1; const sp = scopeOf(s);
@@ -405,7 +578,10 @@ export default {
     // 2) 유지보수 리테이너
     let ret = 0;
     for (const t of V.rets.slice()) {
-      if (r.chance(0.015 + (1 - q) * 0.25 + (V.debt > 0 ? VB_F30.model.debtQuit : 0))) { V.rets = V.rets.filter((x) => x !== t); V.rep = clamp(V.rep - 3, 0, 100); notes.push(q < 1 ? `${t.nm}: 문의 답장이 늦어 유지보수 계약 해지` : `${t.nm}: 가게가 문을 닫아 유지보수 종료`); continue; }
+      const tIn = retIsDom(s, t), outQ = tIn ? 0 : retOutQuit(s), hiQ = tIn && domU(s, t.dom) >= VB_CH.x.hiU ? VB_CH.x.hiQuit : 0;
+      const baseQ = 0.015 + (1 - q) * 0.25 + (V.debt > 0 ? VB_F30.model.debtQuit : 0), xq = r.range(0, 1);
+      if (xq < Math.max(0.004, baseQ - hiQ) + outQ) { V.rets = V.rets.filter((x) => x !== t); const byDom = xq >= baseQ; V.rep = clamp(V.rep - (byDom ? 0 : 3), 0, 100); notes.push(byDom ? `${t.nm}: "업계를 아는 업체로 바꾸기로 했어요." 유지보수 계약 종료` : q < 1 ? `${t.nm}: 문의 답장이 늦어 유지보수 계약 해지` : `${t.nm}: 가게가 문을 닫아 유지보수 종료`); continue; }
+      if (tIn && t.base && s.t - (t.rt ?? t.t) >= VB_CH.x.renew) { const nf = retFee(s, t); t.rt = s.t; if (nf !== t.fee) { notes.push(`${t.nm}: 재계약 · 월 ${won(t.fee)} → ${won(nf)}`); t.fee = nf; } } // 재계약: 오른 이해도 반영
       ret += t.fee;
     }
     income(s, "바이브코딩 유지보수", ret);
@@ -414,9 +590,11 @@ export default {
     const A = V.app;
     if (A?.live) {
       const cap = appCap(s);
-      const grow = Math.max(0, cap - A.users) * (0.1 + A.buzz / 300) * (0.6 + 0.4 * q);
+      const gen = domOn(s) && !appIsDom(s); // 도메인 시대의 범용 앱: 대형 솔루션·무료 기능에 밀린다
+      const grow = Math.max(0, cap - A.users) * (0.1 + A.buzz / 300) * (0.6 + 0.4 * q) * (gen ? VB_CH.x.appOutGrow : 1);
       let churn = 0.06 - (SYN.on(s, "vb_num") ? 0.015 : 0) - V.tech / 2500 + (1 - q) * 0.05 + (V.bigFree > 0 ? 0.05 : 0) - (A.focus ? 0.01 : 0);
-      churn += A.noPay ? VB_F30.store.noPayChurn : 0;
+      churn += (A.noPay ? VB_F30.store.noPayChurn : 0) + (gen ? VB_CH.x.appOutChurn : 0);
+      if (A.price > appPriceMax(s)) A.price = appPriceMax(s);
       churn = clamp(churn * (A.users > cap ? 1.5 : 1), 0.015, 0.25);
       A.users = Math.max(0, Math.round(A.users + grow - A.users * churn + r.normal() * Math.sqrt(A.users + 1) * 0.5));
       A.buzz = A.buzz * 0.6; A.best = Math.max(A.best || 0, A.users); A.churn = +churn.toFixed(3);
@@ -443,11 +621,24 @@ export default {
     const gone = V.offers.filter((o) => o.exp <= 0).length; V.offers = V.offers.filter((o) => o.exp > 0);
     if (gone) notes.push(`답장이 늦어 의뢰 ${gone}건이 다른 개발자에게 갔다`);
     const lead = SEASON[s.cal - 1] * (s.era?.winter ? 0.85 : 1) * (V.site ? 1 : 0.4) * (0.25 + V.rep / 60 + Math.min(20, V.refs) * 0.03) * ((SYN.on(s, "vb_uc") || SYN.on(s, "vb_space")) ? 1.15 : 1);
-    const nLead = Math.min(3, Math.floor(lead) + (r.chance(lead % 1) ? 1 : 0));
-    for (let i = 0; i < nLead && V.offers.length < 5; i++) {
-      const w = V.lv >= 4 ? (V.niche ? ["pkg", "pkg", "post", "post", "market"] : ["post", "post", "market"]) : V.lv === 3 ? ["post", "market", "market", "friend"] : V.lv === 2 ? ["market", "market", "friend"] : ["friend"];
-      makeOffer(s, r, r.pick(w));
+    // 11-26 수주가 들쭉날쭉: 0건인 달, 2~3달 가뭄. 3년 차부터는 경쟁자가 늘어 문의가 서서히 준다
+    const dm = domOf(V), CD = VB_CH.dry, lead2 = lead * leadComp(s);
+    let dryNow = false;
+    if (V.dry > 0) { V.dry--; dryNow = true; notes.push(V.dry > 0 ? "문의 가뭄이 이어진다. 메일함이 조용하다" : "문의 가뭄 끝자락. 이번 달도 새 문의는 없다"); }
+    else if (V.lv >= 2 && r.chance(Math.min(0.2, CD.start * Kt(s)))) { V.dry = r.int(CD.len[0], CD.len[1]) - 1; dryNow = true; notes.push("문의가 뚝 끊겼다. 몇 달 갈지 모른다"); }
+    else if (r.chance(Math.min(0.5, CD.zero * Kt(s)))) { dryNow = true; if (lead2 >= 0.8) notes.push("이번 달은 새 문의가 한 건도 없다"); }
+    const roll = (x) => Math.floor(x) + (r.chance(x % 1) ? 1 : 0);
+    const w = V.lv >= 4 ? (V.niche ? ["pkg", "pkg", "post", "post", "market"] : ["post", "post", "market"]) : V.lv === 3 ? ["post", "market", "market", "friend"] : V.lv === 2 ? ["market", "market", "friend"] : ["friend"];
+    if (!dryNow) {
+      if (!dm.on) { const nLead = Math.min(3, roll(lead2)); for (let i = 0; i < nLead && V.offers.length < 5; i++) makeOffer(s, r, r.pick(w)); }
+      else { // 도메인 시대: 밖 문의는 줄고, 고른 도메인마다 문의가 따로 들어온다
+        const L = []; for (let i = roll(lead2 * domOutMul()); i > 0; i--) L.push(null);
+        for (const k of dm.picks) for (let i = roll(lead2 * VB_CH.dom.lead); i > 0; i--) L.push(k);
+        for (const k of r.shuffle(L).slice(0, 3)) if (V.offers.length < 5) makeOffer(s, r, r.pick(w), k);
+      }
     }
+    // 11-26 도메인 이해도: 회사·인맥·배우자·다른 투잡으로 달마다 오른다
+    if (dm.on) for (const k of dm.picks) { const g = domGain(s, k); if (g > 0) domAdd(s, k, g, notes); }
     // 6) 겸직 눈치
     if (employed(s) && V.rets.length + (A?.live ? 2 : 0) >= 3 && r.chance(V.ok ? 0.03 : 0.07)) { applyEff(s, { eye: 2 }); notes.push("점심시간마다 노트북을 여는 걸 팀장이 봤다(회사 눈치 +)"); }
     if (SYN.on(s, "vb_night")) s.hp = clamp(s.hp - 2, 0, s.hpMax);
@@ -471,6 +662,9 @@ export default {
       notes.push(`바이브코딩 Lv${V.lv} ${LV[V.lv].n}! 풀린 것: ${LV[V.lv].unlock}`); log(s, `바이브코딩 Lv${V.lv} ${LV[V.lv].n}`, "work");
     }
     // 9) 장면
+    // 11-26 도메인의 시대: 3년 차 예고(수치 그대로), 6년 차 본 사건
+    if (!dm.on && s.t >= VB_CH.dom.onT) { dm.pre = 1; dm.on = s.t; scenes.push(domScene(s)); }
+    else if (!dm.pre && s.t >= VB_CH.dom.preT) { dm.pre = 1; scenes.push({ kind: "story", tag: "바이브코딩", title: "\"만드는 건 이제 다 하잖아요\"", text: "견적 상담 끝에 발주처 담당자가 말했다. \"만드는 건 이제 다 하잖아요. 저희 업계를 아시는 분을 찾고 있어요.\" 이번 건은 그대로 계약했다. 그 말이 며칠 귀에 남았다.", choices: [{ t: "계속", eff: {}, text: "" }] }); }
     if (!scenes.some((x) => x?.tag === "바이브코딩")) {
       if (V.site && V.lv <= 2 && !V.seen.includes("e02")) scenes.push(vbEvent(s, r, "e02"));
       else if (V.m === 2 && !V.seen.includes("e03")) scenes.push(vbEvent(s, r, "e03"));
@@ -489,6 +683,7 @@ export default {
     if (n > 0 && V.fx < n) t.push({ lv: V.fx < n * 0.5 ? 2 : 1, text: `바이브코딩 유지보수 ${V.fx}/${n}` });
     for (const p of V.projects) { if (p.own) { if (p.own !== "app") t.push({ lv: 1, text: `${p.nm} 만들기 ${p.done}/${p.need}` }); } else if (p.due <= 0) t.push({ lv: 2, text: `${p.nm} 마감 ${p.due < 0 ? "지남" : "이번 달"} ${p.done}/${p.need}` }); }
     if (V.offers.length) t.push({ lv: 0, text: `바이브코딩 의뢰 ${V.offers.length}건 답장 대기` });
+    if (V.dom?.on && !V.dom.picks.length) t.push({ lv: 1, text: "바이브코딩 도메인 고르기(화면의 '도메인' 칸)" });
     return t;
   },
   stopWhy: (s) => (s.vibe.agent ? "하청 계약을 먼저 해지하세요" : null),
@@ -530,11 +725,12 @@ export default {
         else if (i === 1) { p.due += 1; p.need += 1; out.push("마감 +1달", "작업 +1"); }
         else { V.projects = V.projects.filter((x) => x !== p); V.rep = clamp(V.rep - 1, 0, 100); out.push(`${p.nm} 정리(착수금은 그대로)`, "개발 평판 −1"); }
       }
-      if (ev === "e10" && i === 0) { V.app = { live: true, web: true, ind: "biz", users: r.int(3, 6), price: 2, buzz: 20, t0: s.t, focus: false, best: 0 }; out.push("내 앱 출시: 보고서 자동화 구독"); }
+      if (ev === "e10" && i === 0) { V.app = { live: true, web: true, ind: "biz", users: r.int(3, 6), price: 2, buzz: 20, t0: s.t, focus: false, best: 0, ...(domOn(s) && domBest(s) ? { dom: domBest(s) } : {}) }; out.push("내 앱 출시: 보고서 자동화 구독"); }
       if (ev === "e11" && i === 0 && V.app) { const amt = Math.max(100, Math.round((mrr(s) - appServer(s)) * 20)); s.cash += amt; addMoney(s, "inc", "바이브코딩 앱 매각", amt); V.sold++; V.soldAmt += amt; log(s, `바이브코딩: 내 앱 매각 ${won(amt)}`, "work"); V.app = null; out.push(`매각 대금 +${won(amt)}`); }
       if (ev === "e15" && V.app) { if (i === 0) { V.app.focus = true; V.bigFree = 4; V.app.users = Math.round(V.app.users * 0.9); out.push("업종 특화: 한동안 이탈, 이후 사용자 한도 +20%"); } else { V.app.price = Math.max(1, Math.round(V.app.price / 2 * 10) / 10); V.app.users = Math.round(V.app.users * 0.97); out.push(`구독료 월 ${V.app.price}만으로`); } }
       return out;
     },
+    vb_dom(s, r, i) { const k = s._vbDom?.k; s._vbDom = null; if (i !== 0 || !k) return ["바이브코딩 화면의 '도메인' 칸에서 고른다"]; const x = pickDom(s, k); return x.ok ? [`내 도메인: ${DOMS[k].n}`, `지금 단가 ${Math.round(domPriceMul(s, k) * 100)}%`] : []; },
     vb_scope(s, r, i, ok) {
       const V = s.vibe, p = V.projects.find((x) => x.id === s._vbScope?.id), pi = SYN.pi(s); s._vbScope = null; if (!p) return [];
       p.fight = 1;
@@ -556,7 +752,7 @@ export default {
       A.hold = 1; A.noPay = true; return ["1달 뒤 출시", `바깥 결제: 해지율 +${(S3.noPayChurn * 100).toFixed(1)}%p`];
     },
   },
-  migrate(s, V) { if (!V.v) V.v = 1; if (V.v < 2) { V.v = 2; V.scope = V.scope || "std"; V.debt = V.debt || 0; } V.seen = V.seen || []; V.seenT = V.seenT || {}; },
+  migrate(s, V) { if (!V.v) V.v = 1; if (V.v < 2) { V.v = 2; V.scope = V.scope || "std"; V.debt = V.debt || 0; } if (V.v < 3) { V.v = 3; V.dry = V.dry || 0; } const dm = domOf(V); dm.picks = dm.picks || []; dm.u = dm.u || {}; dm.meetT = dm.meetT || {}; V.seen = V.seen || []; V.seenT = V.seenT || {}; },
   milestones: [
     { key: "vb_auto", title: "회사 일을 코디가 했다", test: (s) => (s.vibe?.builds || 0) >= 1 && !(s.vibe.projects || []).some((p) => p.own === "auto"), lines: ["월요일마다 세 시간 걸리던 보고서 정리가 버튼 하나로 끝났다.", "\"이거 어떻게 했어?\" 옆자리가 물었다. 웃기만 했다."] },
     { key: "vb_lv2", title: "첫 외주", test: (s) => (s.vibe?.lv || 0) >= 2, lines: ["동네 가게 예약 버튼에 내가 만든 화면이 떴다.", "후기 세 줄. 포트폴리오 첫 페이지가 찼다."] },

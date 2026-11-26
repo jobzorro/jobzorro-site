@@ -105,13 +105,49 @@ export const F30 = {
   meet: { minFan: 70, minF: 3000, gap: 8, k: 0.22, loyalK: 0.04, faceK: 1.15, promise: 1.6, small: { seats: 20, cost: 10 }, big: { seats: 80, cost: 80, ticket: 2, minF: 8000 }, ok: 0.85, mid: 0.5, loyalEng: 0.0004 },
 };
 
+// ───────── 챌린지(11-26): 플랫폼 이사 · AI 계정 홍수 · 광고 표시 단속 ─────────
+// 세기 손잡이 IGK(환경변수): 이사 때 잃는 팔로워 비율과 협찬 단가 하락폭에 곱한다. 기본 0.7 = 봇 400판에서 2회차 파이어율 약 32%(1.0 이면 약 25%)
+const IGK = (typeof process !== "undefined" && +process.env.IGK) || 0.7;
+const IGMV = typeof process !== "undefined" && process.env?.IGMV !== undefined ? +process.env.IGMV : 6; // 봇: 이사가 오면 이만큼(달) 버티다 갈아탄다(0 = 바로)
+export const IG_CH = {
+  k: IGK,
+  // 플랫폼 이사: warnT 예고, firstT(+0~firstJit) 첫 이사, 그 뒤 gap±gapJit 달마다. 갈아타면 팔로워의 keepLo~keepHi 만 따라온다(감각·팬심이 높으면 위쪽)
+  // 버티면 노출이 해마다 decayY 씩(달마다 나눠서, 최대 decayMax) 빠지고, 1년 늦을 때마다 따라오는 비율 −lateStep(최저 keepMin). 갈아탄 뒤 newM 달은 올리기 ⚡+newAp
+  mv: { warnT: 36, firstT: 60, firstJit: 6, gap: 48, gapJit: 6, keepLo: 0.35, keepHi: 0.5, prep: 0.03, lateStep: 0.05, keepMin: 0.25, newM: 3, newAp: 1, decayY: 0.1, decayMax: 0.6, smallF: 500 },
+  // AI 계정 홍수: t0 부터 협찬 단가가 해마다 perY, 최대 max 내려간다. '진짜 사람' 신뢰도 100 이면 하락폭 ×hi, 0 이면 ×lo. 팔로워 이탈은 신뢰도 100 → ×churnHi, 0 → ×churnLo
+  ai: { t0: 72, perY: 0.05, max: 0.35, hi: 0.5, lo: 1.2, cap: 0.6, churnHi: 0.8, churnLo: 1.2 },
+  // '진짜 사람' 신뢰도(0~100): onT 부터 움직인다. 얼굴·현장이 나온 달은 +(한 달 capM 까지), 올리기만 한 달 idle, 안 올린 달 none
+  real: { init: 60, onT: 60, face: 2, vlog: 2, field: 5, meet: 10, meetBig: 14, meetNg: 3, dm: 1, capM: 12, idle: -1.5, none: -3, ban: -1, shootHp: 3 },
+  // 광고 표시 단속: t0 부터 숨긴 광고가 들킬 확률 ×mul
+  law: { t0: 48, mul: 1.5 },
+};
+// 대세(게임 안 가상의 이름). 0 = 지금의 사진 피드
+export const PLATS = [
+  { n: "사진 피드", d: "정사각형 사진과 캡션" },
+  { n: "짧은 영상 '쇼릴'", d: "15초짜리 세로 영상" },
+  { n: "라이브 '온에어'", d: "편집 없는 실시간 방송" },
+  { n: "음성 방 '소곤'", d: "얼굴 없이 목소리로 모이는 방" },
+  { n: "3D 공간 '룸인'", d: "내 방을 통째로 올리는 공간" },
+  { n: "구독 편지 '레터함'", d: "아는 사람끼리만 받아 보는 글" },
+];
+export const platOf = (i) => PLATS[i] || { n: `새 물결 ${i - PLATS.length + 1}호`, d: "또 새로운 것" };
+
 // ───────── 상태 ─────────
 export function init() {
   return { v: 2, f: 0, posts: 0, reels: 0, eng: 0.06, niche: null, face: false, lv: 1, deals: 0, monthRev: 0, postT: -1, gongT: -99, hist: [], dealsDone: 0,
     cc: null, cons: 50, plan: 3, streak: 0, bestStreak: 0, angry: 0, miss: 0, ccAge: 0, rbT: -99, fan: 40, ctrv: 5, tired: 0,
     feed: [], inbox: null, pile: 0, inbN: 0, dm: [], dmSeq: 0, offers: [], offSeq: 0, reveal: 0, hints: [], insT: -1,
     trend: null, seed: 0, rh: [], mo: null, ev: { seen: {}, t: -99 }, met: {}, hot: [], eraT: -99, brand: null, algoHit: null, fade: 0, scamClick: 0,
-    hidAds: [], adHeat: 0, adPend: 0, ban: null, hackRisk: 0, sub: { f: 0, on: false }, meetT: -99, meetN: 0, loyal: 0 };
+    hidAds: [], adHeat: 0, adPend: 0, ban: null, hackRisk: 0, sub: { f: 0, on: false }, meetT: -99, meetN: 0, loyal: 0,
+    pf: null, real: IG_CH.real.init, rmV: 0, rmAct: 0, fsT: -99 }; // 챌린지(11-26): pf 는 ens 에서 판 시드로 채운다
+}
+// 챌린지 칸(예전 저장에도 채운다). pf: era 지금 대세 번호 · at 내가 있는 곳 · next 다음 이사 달 · holdT 버티기 시작한 달 · newM 갈아탄 뒤 고생 남은 달
+function ensCh(s, I) {
+  const M = IG_CH.mv, t = s.t || 0;
+  if (!I.pf) { const first = M.firstT + hashStr((I.seed || 7) + ":pf") % (M.firstJit + 1); I.pf = { era: 0, at: 0, next: Math.max(first, t + 6), warn: t > M.firstT ? 1 : 0, holdT: null, newM: 0, prep: 0, n: 0 }; }
+  if (I.real === undefined) I.real = IG_CH.real.init;
+  if (I.rmV === undefined) I.rmV = 0;
+  if (I.fsT === undefined) I.fsT = -99;
 }
 // 특이 요소 칸(예전 저장에도 채운다)
 function ensF30(I) {
@@ -139,7 +175,67 @@ export function ens(s) {
   if (!I.ev) I.ev = { seen: {}, t: -99 };
   if (!I.met) I.met = {};
   ensF30(I);
+  ensCh(s, I);
   return I;
+}
+// ───────── 챌린지 계산(화면·봇도 쓴다) ─────────
+export const holding = (s) => { const P = s.ins?.pf; return !!(P && P.at < P.era && P.holdT != null); };
+export const holdM = (s) => (holding(s) ? Math.max(0, s.t - s.ins.pf.holdT) : 0);
+// 버티는 동안의 노출 배수(해마다 10%씩, 달마다 나눠서)
+export function pfReach(s) { const M = IG_CH.mv; return holding(s) ? Math.max(1 - M.decayMax, 1 - M.decayY * (holdM(s) + 1) / 12) : 1; }
+// 지금 갈아타면 따라오는 팔로워 비율
+export function moveKeep(s) {
+  const I = s.ins, M = IG_CH.mv, P = I.pf || {};
+  const q = clamp(0.5 * ((s.st?.sense || 0) - 30) / 60 + 0.5 * ((I.fan || 0) - 40) / 45, 0, 1);
+  const keep = Math.max(M.keepMin, M.keepLo + (M.keepHi - M.keepLo) * q + (P.prep ? M.prep : 0) - M.lateStep * Math.floor(holdM(s) / 12));
+  return 1 - clamp((1 - keep) * IGK, 0.05, 0.9);
+}
+export const realOn = (s) => s.t >= IG_CH.real.onT;
+// 협찬 단가 하락폭(0~cap). 신뢰도가 방패
+export function aiDrop(s) {
+  const A = IG_CH.ai; if (s.t < A.t0) return 0;
+  const raw = Math.min(A.max, A.perY * (s.t - A.t0 + 1) / 12), tf = A.lo - (A.lo - A.hi) * clamp(s.ins?.real ?? IG_CH.real.init, 0, 100) / 100;
+  return clamp(raw * tf * IGK, 0, A.cap);
+}
+export const mvShow = () => ({ late: +(IG_CH.mv.lateStep * IGK * 100).toFixed(1), min: Math.round((1 - (1 - IG_CH.mv.keepMin) * IGK) * 100) }); // 글에 쓰는 실제 값: 1년 늦을 때마다 줄어드는 %p, 따라오는 비율의 바닥
+export const aiShow = () => ({ perY: +(IG_CH.ai.perY * IGK * 100).toFixed(1), max: Math.round(IG_CH.ai.max * IGK * 100) }); // 글에 쓰는 실제 하락폭(손잡이를 곱한 값, %)
+export const payPct = (s) => Math.round((1 - aiDrop(s)) * 100);
+// 신뢰도 올리기·내리기(한 달에 capM 까지만 오른다). onT 전에는 움직이지 않는다
+function realAdd(s, v) {
+  const I = s.ins, R = IG_CH.real; if (!v || !realOn(s)) return [];
+  if (v > 0) { const room = Math.max(0, R.capM - (I.rmV || 0)); v = Math.min(v, room); I.rmAct = 1; if (v <= 0) return []; I.rmV = (I.rmV || 0) + v; }
+  const b = I.real; I.real = clamp(I.real + v, 0, 100); const d = Math.round(I.real - b); if (!d) return [];
+  return [`진짜 사람 신뢰도 ${d > 0 ? "+" : "−"}${Math.abs(d)} → ${Math.round(I.real)}`];
+}
+// 갈아타기(이사 장면의 선택, 또는 화면의 [갈아타기])
+export function moveNow(s) {
+  const I = ens(s), P = I?.pf, M = IG_CH.mv; if (!I?.cc) return { ok: false, msg: "컨셉부터", lines: [] };
+  if (P.at >= P.era) return { ok: false, msg: "이미 대세에 있어요", lines: [] };
+  if (banned(s)) return { ok: false, msg: "계정 정지 중에는 못 옮겨요", lines: [] };
+  const keep = moveKeep(s), from = I.f, late = holdM(s);
+  I.f = Math.round(from * keep); if (I.sub?.f) I.sub.f = Math.round(I.sub.f * keep);
+  P.at = P.era; P.holdT = null; P.newM = M.newM; P.prep = 0; P.n = (P.n || 0) + 1; P.mvT = s.t;
+  const nm = platOf(P.at).n, lines = [`${jo(nm, "으로")} 갈아탔다: 팔로워 ${fmt(from)} → ${fmt(I.f)}(${Math.round(keep * 100)}%가 따라왔다)`, `석 달은 올리기 ⚡+${M.newAp}(새 문법 익히기)`];
+  log(s, `인별: 대세를 따라 ${jo(nm, "으로")} 옮겼다(팔로워 ${fmt(from)} → ${fmt(I.f)}${late >= 12 ? `, ${Math.floor(late / 12)}년 버틴 뒤` : ""})`, "work");
+  return { ok: true, lines, msg: `${jo(nm, "으로")} 이사했다. 따라온 사람 ${Math.round(keep * 100)}%.` };
+}
+// 현장 촬영(⚡1, 한 달에 한 번): 얼굴·현장이 안 나오는 컨셉도 '진짜 사람' 신뢰도를 올릴 길
+export function canShoot(s) {
+  const I = ens(s); if (!I?.cc) return "컨셉부터";
+  if (!realOn(s)) return "아직은 필요 없어요";
+  if (banned(s)) return "계정 정지 중이에요";
+  if (I.fsT === s.t) return "현장 촬영은 한 달에 한 번";
+  if (s.pending) return "먼저 열린 장면을 끝내요";
+  if ((s.ap || 0) < 1) return "행동력이 모자라요";
+  if ((s.hp || 0) <= IG_CH.real.shootHp) return "스태미너가 모자라요";
+  return null;
+}
+export function fieldShoot(s) {
+  const why = canShoot(s); if (why) return { ok: false, msg: why, lines: [] };
+  const I = s.ins, R = IG_CH.real; s.ap -= 1; s.hp = clamp(s.hp - R.shootHp, 0, s.hpMax); I.fsT = s.t;
+  const lines = realAdd(s, R.field); I.fan = clamp(I.fan + 1, 0, 100); lines.push("팬심 +1", `스태미너 −${R.shootHp}`);
+  const where = { food: "가게 주방 앞", daily: "동네 골목", fit: "새벽 운동장", space: "공사 중인 방", travel: "기차역 승강장", pet: "산책길", fashion: "원단 시장", career: "퇴근길 지하철역" }[I.cc.topic] || "동네 골목";
+  return { ok: true, lines, msg: `${where}에서 찍었다. 흔들린 화면, 바람 소리, 지나가는 사람. 꾸민 데가 없어서 사람 같다.` };
 }
 export function lvOf(f) { let i = 0; D.INSTA_LV.forEach((x, k) => { if (f >= x.f) i = k; }); return i + 1; }
 
@@ -167,7 +263,7 @@ export function topicFit(s) {
   const T = TOPICS[s.ins?.cc?.topic]; if (!T) return false;
   return !!((T.hobby && (s.hb?.joined || []).some((h) => T.hobby.includes(h))) || (T.job && s.sj?.active?.includes(T.job)));
 }
-export function postAp(s) { const I = s.ins, F = FMTS[I?.cc?.fmt] || FMTS.photo; return Math.max(1, F.ap - (topicFit(s) ? 1 : 0)); }
+export function postAp(s) { const I = s.ins, F = FMTS[I?.cc?.fmt] || FMTS.photo; return Math.max(1, F.ap - (topicFit(s) ? 1 : 0)) + (I?.pf?.newM > 0 ? IG_CH.mv.newAp : 0); } // 갈아탄 뒤 석 달은 품 +1
 export function postHp(s) { const I = s.ins, F = FMTS[I?.cc?.fmt] || FMTS.photo; return Math.max(1, F.hp - (topicFit(s) ? 2 : 0)); }
 
 // 노출 배수(올리기 한 번)
@@ -182,13 +278,13 @@ export function reach(s) {
   const faceF = cc.face === "face" ? clamp(1 + ((s.st.charm || 0) - 30) / 400, 1, 1.15) : FACES[cc.face].g;
   const algoF = (s.era?.algo ? 0.55 : 1) * (I.algoHit && I.algoHit.fmt === cc.fmt && I.algoHit.until > s.t ? 0.5 : 1);
   const langF = clamp(1 + ((s.st.lang || 0) - 40) / 500, 0.95, 1.2);
-  return REACH_K.v * consF * st.m * hotF * rhythm * temp * faceF * (topicFit(s) ? 1.1 : 1) * algoF * spF(m) * langF * mod(s, "instaMult", 1) * (SYN.on(s, "insta_hobby") ? 1.2 : 1) * BIG.fullGrow(s);
+  return REACH_K.v * consF * st.m * hotF * rhythm * temp * faceF * (topicFit(s) ? 1.1 : 1) * algoF * spF(m) * langF * mod(s, "instaMult", 1) * (SYN.on(s, "insta_hobby") ? 1.2 : 1) * BIG.fullGrow(s) * pfReach(s);
 }
 // 예전 이름 호환(다른 파일이 부를 수 있다)
 export function grow(s) { ens(s); return reach(s); }
 // 협찬비: 팔로워의 제곱근 × 참여율 × 물가
 // 브랜드는 컨셉이 분명한 계정에 더 준다(일관성 0 → ×0.55, 50 → ×1, 90 → ×1.36)
-export function dealPay(s) { const I = s.ins; return Math.round(Math.max(5, Math.sqrt(I.f) * 0.2) * Math.sqrt(I.eng / 0.06) * clamp(0.55 + (I.cons ?? 50) * 0.009, 0.55, 1.45) * SYN.pi(s) * (1 + (s.fame || 0) / 250)); }
+export function dealPay(s) { const I = s.ins; return Math.round(Math.max(5, Math.sqrt(I.f) * 0.2) * Math.sqrt(I.eng / 0.06) * clamp(0.55 + (I.cons ?? 50) * 0.009, 0.55, 1.45) * SYN.pi(s) * (1 + (s.fame || 0) / 250) * (1 - aiDrop(s))); } // 11-26: AI 계정 홍수(6년 차부터 단가 하락)
 // 포화 곡선(천장은 계정 체질 kx × 컨셉 수요 d)
 export const SAT_K = 30000;
 export function sat(f, kx = 1) { const K = SAT_K * (kx || 1); return K / (K + Math.max(0, f)); }
@@ -372,7 +468,7 @@ export function dmAnswer(s, r, id, i) {
   const I = ens(s); const d = (I.dm || []).find((x) => x.id === +id && !x.done); if (!d) return { ok: false, msg: "없는 DM" };
   d.done = true; d.pick = i; const lines = []; let msg = "";
   if (d.k === "fan") {
-    if (i === 0) { s.hp = clamp(s.hp - 2, 0, s.hpMax); I.fan = clamp(I.fan + 4, 0, 100); I.loyal = (I.loyal || 0) + 1; lines.push("팬심 +4", "충성 팬 +1", "스태미너 −2"); msg = "답장을 길게 썼다. 다음 날 그 사람이 내 글을 저장해 두었다고 했다."; }
+    if (i === 0) { s.hp = clamp(s.hp - 2, 0, s.hpMax); I.fan = clamp(I.fan + 4, 0, 100); I.loyal = (I.loyal || 0) + 1; lines.push("팬심 +4", "충성 팬 +1", "스태미너 −2", ...realAdd(s, IG_CH.real.dm)); msg = "답장을 길게 썼다. 다음 날 그 사람이 내 글을 저장해 두었다고 했다."; }
     else if (i === 1) { I.fan = clamp(I.fan + 1, 0, 100); lines.push("팬심 +1"); msg = "\"고마워요! 힘내요\" 하트가 돌아왔다."; }
     else { I.fan = clamp(I.fan - 1, 0, 100); lines.push("팬심 −1"); msg = "읽음 표시만 남았다."; }
   } else if (d.k === "scam") {
@@ -446,6 +542,9 @@ export function act(s, r, id, arg, boost = 1) {
     const M = mo(s); M.n++; M.g += g; M.sv += Math.round(g * (F.save ? 0.5 : 0.25) * (I.cons / 60)); M.sh += Math.round(g * (fk === "reels" ? 0.3 : 0.12)); if (!M.best || g > M.best.g) M.best = { g, kind, fk };
     if (F.save) I.eng = clamp(I.eng + 0.002, 0.02, 0.16);
     if (F.fan) I.fan = clamp(I.fan + 1, 0, 100);
+    // '진짜 사람': 얼굴 공개 컨셉·브이로그(현장)는 올리기만 해도 달마다 한 번씩 오른다
+    if (I.cc.face === "face" && I.rmFaceT !== s.t) { I.rmFaceT = s.t; lines.push(...realAdd(s, IG_CH.real.face)); }
+    if (fk === "vlog" && I.rmVlogT !== s.t) { I.rmVlogT = s.t; lines.push(...realAdd(s, IG_CH.real.vlog)); }
     feedPush(s, kind, g, hit, fk);
     if (FACES[I.cc.face].eye && company(s)) lines.push(...applyEff(s, { eye: fk === "reels" || fk === "vlog" ? 1.5 : 0.7 }));
     if (SYN.on(s, "insta_pr")) { for (const rm of s.pr.rooms) if (rm.status === "open") rm.buzz = Math.min(100, (rm.buzz || 0) + 2 + I.f / 4000); lines.push("파티룸 입소문 +"); }
@@ -515,6 +614,11 @@ function applyIg(s, r, ig, sc, out) {
   if (ig.cine) s.sceneQ.unshift(cineStory(s, ig.cine, ig.cineTitle || sc.title, ig.cineText || "", ig.meet || sc.who));
   if (ig.fade) I.fade = ig.fade;
   if (ig.hackRisk) I.hackRisk = (I.hackRisk || 0) + ig.hackRisk;
+  // 챌린지(11-26): 진짜 사람 신뢰도 · 새 앱 미리 보기 · 갈아타기 · 버티기
+  if (ig.real) out.push(...realAdd(s, ig.real));
+  if (ig.pfPrep) { I.pf.prep = 1; out.push(`새 앱 감 잡기: 이사 때 따라오는 팔로워 +${Math.round(IG_CH.mv.prep * 100)}%p`); }
+  if (ig.mvGo) out.push(...moveNow(s).lines);
+  if (ig.mvStay) out.push(`버티는 중: 노출이 해마다 ${Math.round(IG_CH.mv.decayY * 100)}%씩 빠져요`, "인별 화면에서 언제든 갈아탈 수 있어요");
   // 뒷광고 적발: 과징금(모든 선택 공통) + 환불
   if (ig.adFine) { const v = Math.round(ig.adFine); s.cash -= v; addMoney(s, "exp", "인별 비용", v); out.push(`과징금 −${won(v)}`); I.hidAds = []; I.adHeat = 0; I.adPend = 0; I.adCaught = (I.adCaught || 0) + 1; }
   // 계정 정지
@@ -548,16 +652,16 @@ function fanMeet(s, r, size, sc) {
   if (ratio >= M.ok) {
     const lo = big ? 8 : 3; I.loyal += lo; I.fan = clamp(I.fan + (big ? 15 : 12), 0, 100); I.ctrv = clamp(I.ctrv - 5, 0, 100);
     const g = addF(s, fGain(s, big ? 6 : 3, big ? 8000 : 2500, big ? 200 : 50));
-    out.push(`충성 팬 +${lo}`, `팬심 +${big ? 15 : 12}`, `팔로워 +${fmt(g)}`);
+    out.push(`충성 팬 +${lo}`, `팬심 +${big ? 15 : 12}`, `팔로워 +${fmt(g)}`, ...realAdd(s, big ? IG_CH.real.meetBig : IG_CH.real.meet));
     s.sceneQ.unshift(cineStory(s, "in_fanmeet", big ? "꽉 찬 홀" : "첫 팬 모임", big ? `${seats}석이 다 찼다. 맨 앞줄 사람이 내 첫 게시물을 출력해 왔다.` : `작은 카페에 ${Math.min(att, seats)}명. 화면 속 아이디들이 얼굴이 됐다.`));
     sc && (sc._res = "ok");
   } else if (ratio >= M.mid) {
-    I.loyal += 1; I.fan = clamp(I.fan + 5, 0, 100); out.push("충성 팬 +1", "팬심 +5");
+    I.loyal += 1; I.fan = clamp(I.fan + 5, 0, 100); out.push("충성 팬 +1", "팬심 +5", ...realAdd(s, IG_CH.real.meet));
     s.sceneQ.unshift(cineStory(s, null, "팬 모임 그날", `${seats}석에 ${Math.min(att, seats)}명. 빈자리가 조금 보였지만, 온 사람들은 끝까지 남아 사진을 찍고 갔다.`));
     sc && (sc._res = "mid");
   } else {
     I.fan = clamp(I.fan - 6, 0, 100); I.ctrv = clamp(I.ctrv + (big ? 20 : 12), 0, 100); s.mental = clamp(s.mental - 8, 0, 100);
-    const d = fLoss(s, big ? 6 : 3); out.push("팬심 −6", `논란 +${big ? 20 : 12}`, "멘탈 −8", `팔로워 −${fmt(d)}`, "빈 의자 사진이 박제됐다");
+    const d = fLoss(s, big ? 6 : 3); out.push("팬심 −6", `논란 +${big ? 20 : 12}`, "멘탈 −8", `팔로워 −${fmt(d)}`, "빈 의자 사진이 박제됐다", ...realAdd(s, IG_CH.real.meetNg));
     s.sceneQ.unshift(cineStory(s, null, "팬 모임 그날", `${seats}석에 ${Math.min(att, seats)}명. '갈게요!'라던 DM은 다 어디 갔을까. 누군가 찍은 빈 의자 사진이 "팬 모임 레전드"로 돌기 시작했다.`));
     sc && (sc._res = "ng");
   }
@@ -584,8 +688,8 @@ function collabScene(s, r, who) {
   const c = CHAR[who], I = s.ins, u = Math.round(dealPay(s) * 0.4);
   const big = (CELEBS[who]?.minF || 0) >= 20000;
   return EV("collab", `콜라보 · ${c?.name || "유명인"}`, `${CELEBS[who]?.role ? CELEBS[who].role + " " : ""}${c ? jo(c.name, "과", "와") : "유명인과"} 촬영 날. 카메라가 돌기 전에 그가 내 피드를 넘겨 보며 말했다. "이 계정은 색이 분명해서 좋아요. 그거 지켜요."`, [
-    C("내 컨셉 톤으로 같이 찍자고 제안한다", { meet: who, aff: 10, fp: big ? 14 : 10, fcap: big ? 12000 : 7000, fadd: 300, cons: 3, cine: "in_collab", cineTitle: `${c ? jo(c.name, "과", "와") : "유명인과"} 한 컷`, cineText: "같은 프레임에 선 순간, 알림이 멈추지 않았다." }, "둘 다 만족한 컷이 나왔다."),
-    C("상대 스타일에 맞춰 찍는다", { meet: who, aff: 12, fp: big ? 16 : 12, fcap: big ? 14000 : 8000, fadd: 300, cons: -8, cine: "in_collab", cineTitle: `${c ? jo(c.name, "과", "와") : "유명인과"} 한 컷`, cineText: "그의 팬들이 내 계정으로 몰려왔다. 다만 피드가 조금 낯설다." }, "조회수는 컸다. 내 피드 같지는 않다."),
+    C("내 컨셉 톤으로 같이 찍자고 제안한다", { meet: who, aff: 10, fp: big ? 14 : 10, fcap: big ? 12000 : 7000, fadd: 300, cons: 3, real: 6, cine: "in_collab", cineTitle: `${c ? jo(c.name, "과", "와") : "유명인과"} 한 컷`, cineText: "같은 프레임에 선 순간, 알림이 멈추지 않았다." }, "둘 다 만족한 컷이 나왔다."),
+    C("상대 스타일에 맞춰 찍는다", { meet: who, aff: 12, fp: big ? 16 : 12, fcap: big ? 14000 : 8000, fadd: 300, cons: -8, real: 6, cine: "in_collab", cineTitle: `${c ? jo(c.name, "과", "와") : "유명인과"} 한 컷`, cineText: "그의 팬들이 내 계정으로 몰려왔다. 다만 피드가 조금 낯설다." }, "조회수는 컸다. 내 피드 같지는 않다."),
     C("사진 한 장만 남기고 사적인 대화를 나눈다", { meet: who, aff: 16, fp: 3, fcap: 2000, cash: 0 }, `"다음엔 일 얘기 말고 밥 먹어요." 연락처가 생겼다.`),
   ], { who, rec: 0 });
 }
@@ -605,7 +709,7 @@ export function fanMeetScene(s) {
   const ch = [
     C(`작은 카페를 빌린다(${M.small.seats}석, −${won(Math.round(M.small.cost * pi))}, 스태미너 −6)`, { hp: -6, meetup: "small" }, "그날이 왔다."),
     ...(bigOk ? [C(`대관 홀을 잡는다(${M.big.seats}석, −${won(Math.round(M.big.cost * pi))}, 티켓 ${won(Math.round(M.big.ticket * pi))}, 스태미너 −10)`, { hp: -10, meetup: "big" }, "그날이 왔다.")] : []),
-    C("온라인 Q&A로 대신한다", { fan: 5, eng: 0.4 }, "질문이 300개 달렸다. 박제될 일은 없다."),
+    C("온라인 Q&A로 대신한다", { fan: 5, eng: 0.4, real: 2 }, "질문이 300개 달렸다. 박제될 일은 없다."),
   ];
   // 무난한 선택: 기대 인원이 좌석을 넉넉히 채우면 그 크기, 아니면 온라인
   const rec = bigOk && E >= M.big.seats * 1.05 ? 1 : E >= M.small.seats * 1.05 ? 0 : ch.length - 1;
@@ -630,6 +734,57 @@ export function adCaughtScene(s) {
     CK(`"표시 규정을 몰랐다"고 해명한다`, "talk", 55 + Math.round((I.adHeat || 0) * 5), ["어설프지만 받아들여졌다. 다음부턴 꼭 표시하기로.", { adFine: fine, ctrv: 15, fan: -6 }], [`"몰랐다는 사람이 '광고 아님'이라고 답했어요?" 2차 캡처가 돌았다.`, { adFine: fine, ctrv: 35, fan: -12, fp: -10 }]),
     C("잠수 탄다(한 달 쉼)", { adFine: fine, ctrv: 20, fp: -6, streak0: 1, mental: 4 }, "알림을 껐다. 돌아왔을 땐 다들 조금 잊은 듯했다. 다만 '그 사람'으로 기억된다."),
   ], { rec: 0, f30: "ad" });
+}
+
+// ───────── 챌린지 장면(11-26) ─────────
+// 예고(3년 차): 가볍게. 미리 구경해 두면 이사 때 조금 더 따라온다
+export function pfWarnScene(s) {
+  const nx = platOf((s.ins.pf?.era || 0) + 1);
+  return EV("pf_warn", "요즘 애들은 거기 안 본대요", `회사 막내가 내 계정을 보더니 말했다. "아, 인별 하세요? 요즘 애들은 거기 잘 안 봐요. 다들 ${nx.n} 봐요." ${nx.d}. 아직은 내 피드에 사람이 많다. 그래도 한두 해 뒤는 모른다.`, [
+    C("새 앱을 깔아 구경해 둔다(스태미너 −2)", { hp: -2, pfPrep: 1 }, "한 시간 넘겨 봤다. 문법이 다르다. 그래도 뭐가 먹히는지는 조금 알겠다."),
+    C("아직은 여기가 대세다", {}, `"유행은 돌고 돌아요." 막내는 어깨만 으쓱했다.`),
+  ], { rec: 0, ch: "warn" });
+}
+// 이사(5년 차 끝~6년 차, 그 뒤 약 4년마다): 지금 갈아탈까, 버틸까
+export function pfMoveScene(s) {
+  const I = s.ins, P = I.pf, M = IG_CH.mv, nw = platOf(P.era), old = platOf(P.at), keep = Math.round(moveKeep(s) * 100), again = P.era - P.at >= 2;
+  return EV("pf_move", `대세가 바뀌었다 · ${nw.n}`, `${again ? `내가 ${old.n}에서 버티는 사이 대세가 또 바뀌었다. 이번엔 ${nw.n}.` : `탐색 탭이 조용하다. 사람들이 ${jo(nw.n, "으로")} 옮겨 갔다.`} ${nw.d}. 브랜드 담당자도 "그쪽 계정은 없으세요?"라고 묻는다. 팔로워 ${fmt(I.f)}명 가운데 지금 옮기면 ${keep}%쯤 따라온다(감각과 팬심이 높을수록 많이).`, [
+    C(`지금 갈아탄다(팔로워 약 ${keep}%만 따라옴 · 석 달은 올리기 ⚡+${M.newAp})`, { mvGo: 1 }, `프로필 맨 위에 "이사 갑니다"를 고정했다. 따라온 사람도, 인사만 남긴 사람도 있다.`),
+    C(`조금 더 버틴다(노출이 해마다 ${Math.round(M.decayY * 100)}%씩 빠짐 · 늦을수록 따라오는 비율 −${mvShow().late}%p)`, { mvStay: 1 }, "여기 남은 사람들도 있다. 다만 새로 오는 사람이 눈에 띄게 줄었다."),
+  ], { rec: IGMV <= 0 ? 0 : 1, ch: "move" });
+}
+// AI 계정 홍수(6년 차): 협찬 단가가 해마다 내려간다. '진짜 사람' 신뢰도가 방패
+export function aiFloodScene(s) {
+  const I = s.ins, A = IG_CH.ai;
+  return EV("ai_flood", "AI 계정 홍수", `협찬 메일의 단가가 조금 낮아졌다. 담당자가 덧붙였다. "요즘은 AI로 만든 가상 계정이 반값에 해 줘서요." 사진도, 캡션도, 댓글 답도 사람이 아니다. 아직은 단가를 깎는 정도다. 앞으로 협찬 단가는 해마다 ${aiShow().perY}%쯤, 많게는 ${aiShow().max}%까지 내려간다. 얼굴과 현장이 보이는 '진짜 사람' 계정은 절반만 깎인다(지금 신뢰도 ${Math.round(I.real)}).`, [
+    C("얼굴과 현장을 더 보여 주기로 한다", { real: 4 }, "찍는 손, 걸어가는 뒷모습, 가게 사장님과 나눈 말. 꾸미지 않은 것부터 올렸다."),
+    C("일단 지켜본다", {}, "피드는 평소대로. 협찬함 숫자만 조금 달라졌다."),
+  ], { rec: 0, ch: "ai" });
+}
+// 한 달에 하나: 이사 → 예고 → AI 홍수 순으로 때가 된 것을 낸다(다른 장면과 겹치면 다음 달로)
+function chScene(s, r, notes) {
+  const I = s.ins, P = I.pf, M = IG_CH.mv;
+  if (s.t >= P.next) {
+    const h = hashStr(I.seed + ":pf" + (P.era + 1));
+    P.era++; if (P.holdT == null) P.holdT = s.t; P.next = s.t + M.gap - M.gapJit + h % (2 * M.gapJit + 1); P.warn = 1;
+    if (I.f < M.smallF) { P.at = P.era; P.holdT = null; notes.push(`인별: 대세가 ${jo(platOf(P.era).n, "으로")} 바뀌었다. 계정이 아직 작아 가볍게 옮겼다`); return null; }
+    log(s, `인별: 대세가 ${jo(platOf(P.era).n, "으로")} 바뀌었다`, "work");
+    return pfMoveScene(s);
+  }
+  if (!P.warn && s.t >= M.warnT && P.era === 0) { P.warn = 1; return I.f >= 100 ? pfWarnScene(s) : null; }
+  if (!I.aiT && s.t >= IG_CH.ai.t0) { I.aiT = s.t; if (I.f >= 1000) return aiFloodScene(s); notes.push("인별: AI 가상 계정이 협찬을 싸게 받아 간다. 협찬 단가가 해마다 조금씩 내려간다"); }
+  return null;
+}
+// 달 마감: 신뢰도 오르내림 · 갈아탄 뒤 고생 달 · 단속 알림 · 버티는 중 알림
+function chMonth(s, notes, posted) {
+  const I = s.ins, P = I.pf, R = IG_CH.real, L = IG_CH.law;
+  if (realOn(s)) {
+    if (!I.rmAct) { const d = posted ? R.idle : R.none, b = I.real; I.real = clamp(I.real + d, 0, 100); if (Math.floor(b / 10) !== Math.floor(I.real / 10) && I.real < 50 && s.t >= IG_CH.ai.t0) notes.push(`인별: '진짜 사람' 신뢰도 ${Math.round(I.real)}. 얼굴·현장이 안 보여 AI 계정과 구분이 안 간다는 말이 나온다`); }
+    I.rmV = 0; I.rmAct = 0;
+  }
+  if (P.newM > 0) { P.newM--; if (!P.newM) notes.push(`인별: ${platOf(P.at).n}의 문법이 손에 익었다(올리기 품이 원래대로)`); }
+  if (!I.lawT && s.t >= L.t0) { I.lawT = s.t; notes.push(`인별: 광고 표시 단속이 세졌다. 숨긴 광고가 들킬 확률 ×${L.mul}`); }
+  if (holding(s)) { const m = holdM(s); if (m > 0 && m % 12 === 0) notes.push(`인별: ${platOf(P.at).n}에서 버틴 지 ${m / 12}년. 노출 −${Math.round((1 - pfReach(s)) * 100)}%, 지금 갈아타면 ${Math.round(moveKeep(s) * 100)}%가 따라온다`); }
 }
 
 // 트렌드가 바뀔 때(6~12달마다)
@@ -677,24 +832,24 @@ function evList(s, r) {
     ], { rec: s.mental < 45 ? 0 : 1 }) },
     // 11-23: '팀장이 내 릴스를 봤다'(cv_boss)는 뺐다. 회사에 들키는 장면은 engine/caught.js 가 투잡별로 맡는다. 그 자리에 인별만의 골치를 넣었다
     { id: "cv_rude", w: 0.8, ok: () => f >= 2000, mk: () => EV("cv_rude", "촬영 민폐 논란", `동네 커뮤니티에 사진이 올라왔다. ${spot} 통로에 삼각대를 펴고 조명까지 켠 내 뒷모습. 제목은 "요즘 인별 하는 사람들 왜 이래요". 댓글이 80개를 넘었다.`, [
-      C("찾아가 사과하고, 앞으로 촬영은 허락받고 한다고 올린다(스태미너 −3)", { hp: -3, ctrv: -8, fan: 3 }, "사장님이 사과 글에 직접 댓글을 달았다. \"다음엔 한가한 시간에 오세요.\""),
+      C("찾아가 사과하고, 앞으로 촬영은 허락받고 한다고 올린다(스태미너 −3)", { hp: -3, ctrv: -8, fan: 3, real: 2 }, "사장님이 사과 글에 직접 댓글을 달았다. \"다음엔 한가한 시간에 오세요.\""),
       CK("다른 손님은 안 찍혔다고 해명한다", "talk", 50, ["원본 영상을 올리자 분위기가 돌아섰다.", { ctrv: -4, fan: 2 }], ["\"통로 막은 건 맞잖아요.\" 해명 글까지 캡처돼 퍼졌다.", { ctrv: 15, fp: -5, fan: -4 }]),
       C("글이 묻히길 기다린다", { ctrv: 8, fp: -2 }, `글은 일주일 만에 묻혔다. 그 ${spot}에는 다시 못 간다.`),
     ], { rec: 0 }) },
     // ── 인별 전용 ──
     { id: "hot", w: 1.4, ok: () => f >= 300, mk: () => { const k = r.pick(Object.keys(HOTS).filter((x) => HOTS[x].tp.includes(cc.topic)).concat([hotK])); const H = HOTS[k], fitH = H.tp.includes(cc.topic), cost = Math.round(H.cost * pi); const meet = celeb && r.chance(0.35) ? celeb : null;
       return EV("hot", `핫플 오픈 · ${H.n}`, `${jo(H.n, "이", "가")} 요즘 난리다. 오픈 시간 전부터 줄이 섰다고 한다. ${fitH ? "내 컨셉이랑 딱 맞는 곳." : "내 컨셉이랑은 조금 결이 다르다."}`, [
-        C(`촬영하러 간다(−${won(cost)}, 스태미너 −4)`, { cost, hp: -4, fp: fitH ? 6 : 3, fcap: 3500, fadd: 80, cons: fitH ? 3 : -3, cine: H.cine, cineTitle: H.n, cineText: fitH ? "줄 서서 찍은 한 장이 오늘의 저장 1위가 됐다." : "예쁜 곳이었다. 내 피드에선 조금 튀었다.", ...(meet ? { meet, aff: 8 } : {}) }, meet ? `줄 앞쪽에 ${jo(CHAR[meet].name, "이", "가")} 있었다. 눈이 마주쳐 인사를 나눴다.` : "사람에 치였지만 사진은 건졌다."),
+        C(`촬영하러 간다(−${won(cost)}, 스태미너 −4)`, { cost, hp: -4, fp: fitH ? 6 : 3, fcap: 3500, fadd: 80, cons: fitH ? 3 : -3, real: 5, cine: H.cine, cineTitle: H.n, cineText: fitH ? "줄 서서 찍은 한 장이 오늘의 저장 1위가 됐다." : "예쁜 곳이었다. 내 피드에선 조금 튀었다.", ...(meet ? { meet, aff: 8 } : {}) }, meet ? `줄 앞쪽에 ${jo(CHAR[meet].name, "이", "가")} 있었다. 눈이 마주쳐 인사를 나눴다.` : "사람에 치였지만 사진은 건졌다."),
         C("사람 빠지면 평일에 간다", { cons: 1 }, "한 주 늦게 갔다. 조용해서 좋았다."),
       ], { rec: 0, hot: k }); } },
     { id: "celeb", w: 1.2, ok: () => !!celeb, mk: () => { addDm(s, r, "celeb", { who: celeb, tx: CELEB_TX[celeb] }); return null; } },
     { id: "shoot", w: 0.7, ok: () => f >= 3000 && CHAR.s004 && s.t - (I.met.s004 ?? -99) >= 12 && ["fashion", "space", "travel", "daily", "pet", "food"].includes(cc.topic), mk: () => EV("shoot", "화보 촬영 제안", `화보 사진가 ${CHAR.s004.name}에게서 연락이 왔다. "피드 톤 그대로, 한 컷만 같이 만들어 봐요."`, [
-      C("스튜디오에 간다(스태미너 −5)", { hp: -5, meet: "s004", aff: 10, fp: 7, fcap: 5000, fadd: 150, cons: 5, cine: "in_shoot", cineTitle: "화보 한 컷", cineText: "셔터 소리 사이로 내 컨셉이 처음으로 '작품'이 됐다." }, "조명 아래 세 시간. 한 컷이 나왔다."),
+      C("스튜디오에 간다(스태미너 −5)", { hp: -5, meet: "s004", aff: 10, fp: 7, fcap: 5000, fadd: 150, cons: 5, real: 5, cine: "in_shoot", cineTitle: "화보 한 컷", cineText: "셔터 소리 사이로 내 컨셉이 처음으로 '작품'이 됐다." }, "조명 아래 세 시간. 한 컷이 나왔다."),
       C("일정이 안 맞아 사양한다", { meet: "s004", aff: 2 }, "\"다음에 꼭 해요.\""),
     ], { who: "s004", rec: 0 }) },
     { id: "give", w: 0.8, ok: () => f >= 2000, mk: () => { const cost = Math.round(15 * pi); return EV("give", "팔로워 이벤트를 열까", `"팔로우 + 댓글 + 친구 태그" 선물 이벤트. 숫자는 확 늘겠지만, 선물만 받고 떠나는 사람도 많다.`, [
       C(`연다(−${won(cost)})`, { cost, fp: 6, fcap: 4000, fadd: 100, eng: -0.8, cons: -2 }, "팔로워는 늘었다. 참여율은 조금 묽어졌다."),
-      C("기존 팬에게 손편지 추첨으로 대신한다", { cost: Math.round(cost / 3), fan: 6, eng: 0.5 }, "\"이 계정은 진짜 사람이 하는구나.\""),
+      C("기존 팬에게 손편지 추첨으로 대신한다", { cost: Math.round(cost / 3), fan: 6, eng: 0.5, real: 3 }, "\"이 계정은 진짜 사람이 하는구나.\""),
       C("안 한다", {}, "평소처럼 올렸다."),
     ], { rec: 1 }); } },
     { id: "chal", w: 1, ok: () => f >= 500, mk: () => EV("chal", "챌린지 유행", `요즘 다들 같은 음악에 같은 동작을 올린다. 참여하면 노출은 좋겠지만 내 컨셉과는 상관없다.`, [
@@ -713,9 +868,9 @@ function evList(s, r) {
       C("귀찮아서 넘긴다", { fp: -10, ctrv: 5, hackRisk: 1 }, "다음 날 내 계정에 코인 광고가 올라갔다. 그 기기는 아직 로그인돼 있다."),
     ], { rec: 0 }); } },
     { id: "aicap", w: 0.6, ok: () => f >= 1500, mk: () => EV("aicap", "\"AI가 쓴 캡션 같아요\"", "요즘 캡션을 도구로 빨리 뽑았더니 댓글이 달렸다. \"말투가 사람 같지 않음.\"", [
-      C("다시 직접 쓴다(스태미너 −3)", { hp: -3, cons: 3, fan: 2 }, "느리지만 내 말투가 돌아왔다."),
+      C("다시 직접 쓴다(스태미너 −3)", { hp: -3, cons: 3, fan: 2, real: 3 }, "느리지만 내 말투가 돌아왔다."),
       C("도구는 쓰되 마지막 문장은 내가 쓴다", { cons: 1 }, "티가 덜 났다."),
-      C("신경 안 쓴다", { ctrv: 4, eng: -0.4 }, "\"이 계정 영혼 없음\" 캡처가 돌았다."),
+      C("신경 안 쓴다", { ctrv: 4, eng: -0.4, real: -5 }, "\"이 계정 영혼 없음\" 캡처가 돌았다."),
     ], { rec: 1 }) },
     { id: "dry", w: 0.8, ok: () => I.posts + I.reels >= 12 && st.i >= 1, mk: () => EV("dry", "소재가 바닥났다", "올릴 게 없다. 같은 구도, 같은 메뉴, 같은 하늘. 메모장의 아이디어 목록이 비었다.", [
       CK("취미·다른 투잡에서 소재를 찾는다", "sense", 40 - (topicFit(s) ? 15 : 0), ["새 시리즈를 찾았다. '이 사람은 소재가 끝이 없네.'", { cons: 4, fan: 2 }], ["억지로 짜낸 티가 났다.", { cons: -3 }]),
@@ -768,13 +923,15 @@ export function month(s, r, notes, scenes = []) {
   else { notes.push(`인별: 약속(${P.n}) 못 지킴 ${n}/${need} · 연속 기록 끊김`); I.streak = 0; I.miss = 1; I.tired = Math.max(0, I.tired - 1); }
   // 2) 팔로워 자연 변화(큰 계정일수록 이탈도 크다)
   const posted = I.postT === s.t;
-  I.f = Math.round(I.f * (posted ? 0.995 - 0.01 * I.f / (I.f + 60000) : 0.97));
+  const AIc = IG_CH.ai, churnK = s.t >= AIc.t0 ? AIc.churnLo - (AIc.churnLo - AIc.churnHi) * clamp(I.real, 0, 100) / 100 : 1; // AI 홍수 뒤: 신뢰도가 높으면 덜 떠난다(50 = 그대로)
+  I.f = Math.round(I.f * (posted ? 1 - (0.005 + 0.01 * I.f / (I.f + 60000)) * churnK : 0.97));
   if (I.fade > 0) { I.fade--; fLoss(s, 4); }
   if (!posted && before > 300) notes.push(`인별: 이번 달 게시물이 없어 팔로워 −${fmt(before - I.f)}`);
   // 3) 컨셉 수명·팬심·논란
   I.ccAge++;
   I.fan = clamp(I.fan + (I.cons >= 70 ? 1 : I.cons < 35 ? -2 : 0) + (posted ? 0 : -2) + (50 - I.fan) * 0.1, 0, 100); // 팬심은 50 쪽으로 돌아온다
   I.ctrv = clamp(I.ctrv * 0.85 - 1, 0, 100);
+  chMonth(s, notes, posted); // 챌린지(11-26)
   // 4) 댓글함: 안 열면 쌓인다
   if (I.inbox && I.inbox.t === s.t && !I.inbox.done) { I.pile = Math.min(4, (I.pile || 0) + 1); I.fan = clamp(I.fan - 2, 0, 100); notes.push(`인별: 댓글 ${I.inbox.total}개가 답 없이 쌓였다(참여율 −)`); }
   I.inbox = I.f >= 30 ? makeInbox(s, r, s.t + 1) : null;
@@ -783,7 +940,7 @@ export function month(s, r, notes, scenes = []) {
   I.eng = clamp(I.eng + (engBase - I.eng) * 0.12, 0.02, 0.16);
   // 6) 협찬 제안·DM
   syncOffers(s, r);
-  if (I.f >= 1000) { const lam = Math.min(2.5, I.f / 7000 * (I.eng / 0.06) * clamp(0.3 + I.cons / 80, 0.4, 1.3) * (s.era.winter ? 0.6 : 1)); /* 컨셉이 흐린 계정엔 브랜드가 덜 온다 */ const k = r.poisson(lam); let a = 0; for (let i = 0; i < k; i++) if (addOffer(s, r)) a++; if (a) notes.push(`인별 협찬 제안 ${a}건(협찬함 ${I.offers.length})`); }
+  if (I.f >= 1000) { const lam = Math.min(2.5, I.f / 7000 * (I.eng / 0.06) * clamp(0.3 + I.cons / 80, 0.4, 1.3) * (s.era.winter ? 0.6 : 1) * pfReach(s)); /* 컨셉이 흐린 계정엔 브랜드가 덜 온다. 대세를 떠난 곳엔 브랜드도 덜 온다 */ const k = r.poisson(lam); let a = 0; for (let i = 0; i < k; i++) if (addOffer(s, r)) a++; if (a) notes.push(`인별 협찬 제안 ${a}건(협찬함 ${I.offers.length})`); }
   I.dm = (I.dm || []).filter((d) => !d.done ? s.t - d.t <= 3 : s.t - d.t <= 1);
   if (I.f >= 300 && r.chance(0.35)) addDm(s, r, "fan");
   if (I.f >= 1500 && r.chance(0.22)) addDm(s, r, "scam");
@@ -799,6 +956,7 @@ export function month(s, r, notes, scenes = []) {
   if (I.brand) { const rev = Math.round(Math.sqrt(I.f) * 0.55 * (I.eng / 0.06) * clamp(I.fan / 60, 0.5, 1.5) * SYN.pi(s) * r.range(0.7, 1.3)); s.cash += rev; addMoney(s, "inc", "인별 수익", rev); I.monthRev += rev; }
   // 8) 트렌드: 6~12달마다 바뀐다
   let mine = caught ? adCaughtScene(s) : null; if (mine) { I.ev.t = s.t; I.adPend = 2; }
+  if (!mine && !scenes.some((x) => x?.kind === "event")) { mine = chScene(s, r, notes); if (mine) I.ev.t = s.t; } // 챌린지: 예고·이사·AI 홍수
   if (!I.trend) I.trend = { topic: r.pick(Object.keys(TOPICS)), fmt: r.pick(Object.keys(FMTS)), next: s.t + r.int(6, 12), n: 0 };
   else if (!mine && s.t >= I.trend.next && !scenes.some((x) => x?.kind === "event")) {
     const T = I.trend; let tp = r.pick(Object.keys(TOPICS).filter((k) => k !== T.topic)); if (r.chance(0.25)) tp = I.cc.topic; // 가끔 내 주제에 물이 들어온다
@@ -830,7 +988,7 @@ function adCheck(s, r) {
   if (!I.hidAds.length) { I.adHeat = 0; I.adPend = 0; return false; }
   if (I.adPend === 1) return true;
   if (I.adPend === 2) return false; // 장면이 이미 나갔다(고르면 비워진다)
-  let q = 1; for (const x of I.hidAds) q *= 1 - Math.min(0.9, x.p * (1 + I.f / A.fBig) * (1 + (I.adHeat || 0) * A.heat));
+  let q = 1; for (const x of I.hidAds) q *= 1 - Math.min(0.9, x.p * (s.t >= IG_CH.law.t0 ? IG_CH.law.mul : 1) * (1 + I.f / A.fBig) * (1 + (I.adHeat || 0) * A.heat)); // 11-26: 4년 차부터 단속 강화
   if (r.chance(1 - q)) { I.adPend = 1; return true; }
   return false;
 }
@@ -838,6 +996,7 @@ function banMonth(s, r, notes) {
   const I = s.ins, B = F30.ban; I.ban.left--;
   const subOn = I.sub?.on && I.sub.f > 0;
   I.fan = clamp(I.fan + (subOn ? Math.round(B.fanPerM / 3) : B.fanPerM), 0, 100); I.streak = 0; I.inbox = null; I.angry = 0; I.miss = 0;
+  if (realOn(s)) { I.real = clamp(I.real + IG_CH.real.ban, 0, 100); I.rmV = 0; I.rmAct = 0; }
   if (I.sub?.on) subMonth(s, notes);
   notes.push(I.ban.left > 0 ? `인별: 계정 정지 중(${I.ban.left}달 남음)${subOn ? " · 부계정에서 근황을 올려 팬심이 덜 식었다" : " · 팬심이 식는다"}` : "인별: 계정이 복구됐다! 이번 달부터 다시 올릴 수 있어요");
   if (I.ban.left <= 0) I.ban = null;
@@ -861,6 +1020,8 @@ export function todos(s) {
     if (I.inbox && I.inbox.t === s.t && !I.inbox.done) t.push({ lv: 1, text: `인별 댓글함 ${I.inbox.total}개`, go: "insta" });
     if ((I.dm || []).some((d) => !d.done)) t.push({ lv: 0, text: `인별 DM ${(I.dm || []).filter((d) => !d.done).length}개`, go: "insta" });
     if (I.offers?.length) t.push({ lv: 0, text: `인별 협찬함 ${I.offers.length}건`, go: "insta" });
+    if (holding(s)) t.push({ lv: holdM(s) >= 12 ? 1 : 0, text: `인별 대세 이사: 버티는 중(노출 −${Math.round((1 - pfReach(s)) * 100)}%)`, go: "insta" });
+    if (s.t >= IG_CH.ai.t0 && I.real < 40) t.push({ lv: 0, text: `인별 '진짜 사람' 신뢰도 ${Math.round(I.real)}(현장 촬영·팬 모임)`, go: "insta" });
   }
   return t;
 }
@@ -893,8 +1054,12 @@ export function autoPlay(s, r, opt = {}) {
     else if (I.sub.on && s.mental < 35) setSub(s, false);
   }
   if (banned(s)) return null;
+  // 챌린지(11-26): 이사가 오면 IGMV 달(기본 6) 버티다 갈아탄다. 막 하는 봇은 1년 반 버틴다
+  if (holding(s) && holdM(s) >= (opt.mvWait ?? (smart ? IGMV : 18))) moveNow(s);
   if (!can(s, "in_engage")) return { id: "in_engage", arg: smart ? autoPicks(s, rr, true) : undefined };
   if (upsThisMonth(s) < needOf(s) && !(smart === false && rr.chance(0.25))) return { id: "in_post", arg: smart || I.cons > 40 ? "on" : rr.pick(["on", "drift", "off"]) };
+  // 챌린지: 신뢰도가 낮으면 두 달에 한 번쯤 현장 촬영(약속을 채운 뒤, 행동력이 남을 때)
+  if (smart && realOn(s) && I.real < 65 && s.t % 2 === 0 && upsThisMonth(s) >= needOf(s) && !canShoot(s)) fieldShoot(s);
   const fitO = (I.offers || []).find((o) => o.fit);
   if (fitO) return { id: "in_deal", arg: fitO.id };
   if ((I.offers || []).length && (!smart || I.cons >= 78)) return { id: "in_deal", arg: I.offers[0].id };
@@ -931,7 +1096,7 @@ export function testScenes(s, r) {
   const I = ens(s); const keep = JSON.stringify({ ev: I.ev, scamClick: I.scamClick, tired: I.tired });
   I.tired = 20; I.scamClick = 1; if (!I.trend) I.trend = { topic: I.cc.topic, fmt: I.cc.fmt, next: s.t + 6, n: 0 };
   const out = evList(s, r).map((e) => { try { return e.mk(); } catch (x) { console.warn("[인별 시험]", e.id, x); return null; } }).filter(Boolean);
-  out.push(trendScene(s), collabScene(s, r, "s003"), brandScene(s), adCaughtScene(s));
+  out.push(trendScene(s), collabScene(s, r, "s003"), brandScene(s), adCaughtScene(s), pfWarnScene(s), pfMoveScene(s), aiFloodScene(s));
   const sv = { cons: I.cons, cc: { ...I.cc }, eraT: I.eraT }; I.cons = 90; I.cc.topic = I.trend.topic; I.ccAge = 6; I.eraT = -99; I.f = Math.max(I.f, 5000);
   let era = null; for (let g = 0; g < 200 && !era; g++) era = eraJackpot(s, r);
   Object.assign(I, { cons: sv.cons, cc: sv.cc }); sync(I); if (era) out.push(era);
