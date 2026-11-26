@@ -17,7 +17,7 @@ export const isR1 = (s) => roundOf(s) <= 1 && !!s?.rd && !s?.rdCont && !(typeof 
 export const isR3 = (s) => roundOf(s) >= 3;
 export const endAgeOf = (s) => (isR1(s) ? RD.r1End : RD.end);
 export const loveOpen = (s) => !isR1(s); // 연애·결혼은 첫 5년이 지나면(이어 가기·2회차부터)
-export const atFork = (s) => !!s && s.ended === "age" && isR1(s) && !s.forkBack; // 갈림길에 서 있다(고르기 전)
+export const atFork = (s) => !!s && s.ended === "age" && isR1(s) && !s.forkBack && !s.recorded; // recorded: 예전(7년 결산)에 이미 끝내고 기록한 판은 예전 결말 화면 그대로 // 갈림길에 서 있다(고르기 전)
 export function pickOf(grade) { const g = grade === "C" || !RD.pick[grade] ? "B" : grade; return { ...RD.pick[g], as: g, rescued: grade === "C" }; }
 export function gradeOf(nw) { for (const [g, v] of RD.grades) if (nw >= v) return g; return "C"; }
 // 2회차 시작 보상: C는 구원의 손길로 B 보상

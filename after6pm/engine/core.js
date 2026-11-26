@@ -102,10 +102,12 @@ export const START_BOND = { army: 35, club: 30, univ: 32 }; // 시작 인맥의 
 export const BOND_N = { army: "군대 동기", club: "동아리 친구", univ: "대학 친구" };
 export const SASU_AFF = 20; // 11-24 사수는 첫날부터 아는 사이(시작 인맥보다 낮게)
 // 11-26 갈림길: 이어 간다. 결산으로 멈춘 판을 다시 굴리고 잠긴 것을 연다(회차 수는 그대로)
-export function forkContinue(s) { if (!RD.atFork(s)) return false; s.r5 = { grade: s.grade, nw: Math.round(netWorth(s)), t: s.t }; delete s.grade; s.ended = null; s.rdCont = true; log(s, "이 인생을 이어 가기로 했다. 잠겨 있던 것들이 열렸다.", "good"); return true; }
+export function forkContinue(s, traitId) { if (!RD.atFork(s)) return false; s.r5 = { grade: s.grade, nw: Math.round(netWorth(s)), t: s.t }; delete s.grade; s.ended = null; s.rdCont = true; delete s.fkT; log(s, "이 인생을 이어 가기로 했다. 잠겨 있던 것들이 열렸다.", "good"); if (traitId) addTrait(s, traitId); monthStart(s); /* 11-26 버그: 결산 달에는 달 시작을 건너뛰어, 이어 간 첫 달이 지난달 행동력·장부 그대로였다 */ return true; }
 export function forkBack(s, pick) { if (!RD.atFork(s)) return false; s.forkBack = pick || {}; return true; } // 돌아간다: 고른 보상·기억을 적어 두고 결말 화면으로
 // 게임 도중에 특성 하나를 얻는다(이어 가기 보상). 시작 능력치 보너스도 지금 더한다
-export function addTrait(s, id) { const t = D.TRAITS.find((x) => x.id === id); if (!t || s.me.traits.includes(id)) return false; s.me.traits.push(id); for (const [k, v] of Object.entries(t.m?.stat || {})) if (s.st[k] != null) s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX); for (const h of t.hid || []) if (h.d === "co" || s.sj.active.includes(h.d)) s.me.revealed[h.d] = s.me.revealed[h.d] ?? s.t; log(s, `특성을 얻었다: ${t.n}`, "good"); return true; }
+export function addTrait(s, id) { const t = D.TRAITS.find((x) => x.id === id); if (!t || s.me.traits.includes(id)) return false; s.me.traits.push(id); for (const [k, v] of Object.entries(t.m?.stat || {})) if (s.st[k] != null) s.st[k] = clamp(s.st[k] + v, 0, D.STAT_MAX); for (const h of t.hid || []) if (h.d === "co" || s.sj.active.includes(h.d)) s.me.revealed[h.d] = s.me.revealed[h.d] ?? s.t; traitLate(s, t); log(s, `특성을 얻었다: ${t.n}`, "good"); return true; }
+// 새 게임을 만들 때 한 번만 읽는 특성 값(오픈채팅 시작 인원)을, 특성을 나중에 얻었을 때도 넣는다
+function traitLate(s, t) { const k = (t.hid || []).reduce((a, h) => Math.max(a, h.m?.kakaoStart || 0), t.m?.kakaoStart || 0); if (k && s.cs?.ch?.kakao) s.cs.ch.kakao.m = Math.max(s.cs.ch.kakao.m || 0, k); }
 // 고백하지 못한 사람(이어 간 직후 한 줄)
 export function forkCrush(s) { const L = Object.entries(s.rel || {}).filter(([id, x]) => x.aff >= 70 && !x.lover && !x.spouse && heartOpen(s, id)).sort((a, b) => b[1].aff - a[1].aff); return L[0] ? L[0][0] : null; }
 export const startMono = XR.startMono, nthLife = XR.nthLife; // 회차 시작 독백 · "두 번째" 같은 말
@@ -172,7 +174,7 @@ export function newGame(o) {
   for (const id of ng.friends || []) if (inPlay(CHAR[id])) { if (!s.cast.includes(id)) s.cast.push(id); const x = ensureRel(s, id); x.aff = Math.max(x.aff, 30); x.deja = true; }
   if (ng.statUp) for (const k of Object.keys(s.st)) s.st[k] = Math.min(D.STAT_MAX, s.st[k] + ng.statUp);
   if (ng.stat3) for (const k of ng.stat3.keys || []) if (s.st[k] != null) s.st[k] = Math.min(D.STAT_MAX, s.st[k] + (ng.stat3.v || 0)); // 11-26 갈림길 보상: 몸에 밴 능력치 셋
-  if (ng.trait && D.TRAITS.some((t) => t.id === ng.trait) && !s.me.traits.includes(ng.trait)) { s.me.traits.push(ng.trait); const tm = D.TRAITS.find((t) => t.id === ng.trait).m?.stat || {}; for (const [k, v] of Object.entries(tm)) if (s.st[k] != null) s.st[k] = Math.min(D.STAT_MAX, s.st[k] + v); s.me.r5Trait = ng.trait; } // 갈림길 보상: 특성 하나
+  if (ng.trait && D.TRAITS.some((t) => t.id === ng.trait) && !s.me.traits.includes(ng.trait)) { s.me.traits.push(ng.trait); const tm = D.TRAITS.find((t) => t.id === ng.trait).m?.stat || {}; for (const [k, v] of Object.entries(tm)) if (s.st[k] != null) s.st[k] = Math.min(D.STAT_MAX, s.st[k] + v); s.me.r5Trait = ng.trait; traitLate(s, D.TRAITS.find((t) => t.id === ng.trait)); } // 갈림길 보상: 특성 하나
   if (ng.r5) s.ng.r5 = ng.r5; // 갈림길에서 들고 온 것(시작 연출에 씀)
   // 처음 관심: 커리어가 높으면 컨설팅, 숫자가 높으면 파티룸이 눈에 들어온다
   s.sj.int.cs = Math.round(s.st.career * 0.6); s.sj.int.pr = Math.round(s.st.num * 0.4);

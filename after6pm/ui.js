@@ -239,7 +239,7 @@ function myExpr() { if (S.hp < 30 || S.mental < 25) return "sad"; if (S.mental >
 
 // ───────── 저장 ─────────
 // 저장은 store.js가 맡는다(로그인하면 서버 3칸, 아니면 브라우저 3칸)
-function summary() { return { name: S.me.name, gender: S.me.gender, age: E.ageNow(S), ym: E.ymLabel(S), nw: Math.round(E.netWorth(S)), job: S.co.quit || S.co.fired ? "전업" : `${S.co.name} ${D.RANKS[S.co.rank].n}`, side: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·"), end: S.over || S.ended || null }; }
+function summary() { return { name: S.me.name, gender: S.me.gender, age: E.ageNow(S), ym: E.ymLabel(S), nw: Math.round(E.netWorth(S)), job: S.co.quit || S.co.fired ? "전업" : `${S.co.name} ${D.RANKS[S.co.rank].n}`, side: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·"), end: RD.atFork(S) ? null : S.over || S.ended || null }; }
 function save(now) { if (S) { try { const m = meta(); if (PD.dexSync(S, m, E.CHAR)) setMeta(m); } catch (e) {} ST.save(SLOT, E.save(S), summary(), now); } }
 // 인물 도감·관계도(v4.27): people_ui.js 를 열 때 받는다. kind "dex" | "map" | "dex:<id>"
 function pplOpen(kind) { import("./people_ui.js").then((M) => M.open(kind, { S, E, D, esc, openWin, closeWin, charWin, meta, setMeta, toast, stage: (id) => stageWho(id, "smile", "half", bgUrl(PAGE_BG[{ pr: "pr", cs: "cs", co: "co" }[PD.groupOf(E.CHAR[id])]] || "cafe") || bgUrl("street")), face: (id) => faceSrc(id, "smile"), pix: (id) => pixFace(id, "neutral")(), meFace: () => meSrc("smile") })).catch((e) => toast([], "도감을 불러오지 못했어요")); }
@@ -892,10 +892,11 @@ function adCard(job) {
   return `<div class="card"><h3>마케팅비 <small>${unit}마다 월 · 지금 ${won(Math.round(D.PR_AD[lv].fee * pi) * n)}</small></h3><div class="row wrap" style="gap:6px">${D.PR_AD.map((a, i) => `<button class="btn sm ${i === lv ? "gold" : ""}" data-ad="${job}:${i}">${esc(a.n)} ${a.fee ? won(Math.round(a.fee * pi)) : "0"}</button>`).join("")}</div><div class="tiny muted" style="margin-top:6px">${esc(D.PR_AD[lv].d)} · 손님 ${D.PR_AD[lv].occ >= 1 ? "+" : "−"}${Math.abs(Math.round((D.PR_AD[lv].occ - 1) * 100))}%${lv === 0 ? ` (그달 홍보를 하면 −${Math.round((1 - D.PR_AD_SELF) * 100)}%)` : ""}</div></div>`;
 }
 function peakCard() {
-  const pr = S.pr, p = PR.peakSel(S), mx = Math.max(...D.PR_SEASON.map((x) => x.we * 24 + x.wk * 22));
+  const pr = S.pr, p = PR.peakSel(S), pAuto = S.pr.peak == null, mx = Math.max(...D.PR_SEASON.map((x) => x.we * 24 + x.wk * 22));
   return `<div class="card"><h3>성수기 가격 <small>12월 극성수기 · 1·7·8·11월 성수기</small></h3>
     <div class="season">${D.PR_SEASON.map((x, i) => `<i class="${i + 1 === S.cal ? "now" : ""} ${PR.isPeak(i + 1) ? "pk" : ""}" style="height:${Math.round((x.we * 24 + x.wk * 22) / mx * 100)}%"></i>`).join("")}</div><div class="season-l">${D.PR_SEASON.map((_, i) => `<span>${i + 1}</span>`).join("")}</div>
-    <div class="seg" style="margin-top:8px">${D.PR_PEAK.map((v) => `<button class="${p === v ? "on" : ""}" data-peak="${v}">${v === 1 ? "그대로" : `+${Math.round((v - 1) * 100)}%`}</button>`).join("")}</div>
+    <div class="tiny ${pAuto ? "gold" : "muted"}" style="margin-top:8px">${pAuto ? "지금: 동네 시세를 따라가요 (12월 +50% · 1·7·8·11월 +20% · 2월 +10%)" : `지금: 직접 고름 (12월 ${p === 1 ? "그대로" : `+${Math.round((p - 1) * 100)}%`} · 1·7·8·11월 +${Math.round((p - 1) * 50)}% · 2월 +10%)`}</div>
+    <div class="seg" style="margin-top:4px">${D.PR_PEAK.map((v) => `<button class="${!pAuto && p === v ? "on" : ""}" data-peak="${v}">${v === 1 ? "그대로" : `+${Math.round((v - 1) * 100)}%`}</button>`).join("")}</div>
     ${more("성수기 가격 자세히", `<div class="tiny muted">12월엔 평일·주말 모두 값이 올라 동네가 평소의 1.5~2배를 받아요. 비싸도 손님이 오니 이때 가격을 올리는 게 핵심이에요(안 고르면 +50%). 2배까지는 거의 그대로 차요. 1·7·8·11월에는 동네가 20%쯤, 2월에는 10%쯤 올려 받아요. 안 고르면 내 가격도 동네를 따라가고, 고르면 1·7·8·11월에 고른 인상폭의 절반이 붙어요. 나머지 달은 지점별 기본 가격 그대로예요.${pr.rooms[0] ? ` 예) ${esc(pr.rooms[0].name)} 12월 1건 ${Math.round(pr.rooms[0].price * p)}만` : ""}</div>`)}</div>`;
 }
 function prDecor(f) {
@@ -2023,7 +2024,7 @@ function renderGift() {
     ${ngCollection(m)}`;
 }
 function ngGiftsToStart(w) {
-  const g = w.gifts || {}, M0 = meta(), n0 = ngNext(M0), r5 = n0 === 2 && M0.r5?.reward ? M0.r5 : null, pk = r5 ? RD.pickOf(r5.grade) : null, rw = r5 ? { cash: r5.reward === "cash" ? pk.cash : 0, statUp: 0 } : n0 === 2 && M0.r1Grade ? RD.rewardOf(M0.r1Grade) : { cash: 0, statUp: 0 }; // 11-26 갈림길에서 고른 보상(예전 저장은 등급 보상) // 2회차: 1회차 등급 보상
+  const g = w.gifts || {}, M0 = meta(), n0 = ngNext(M0), r5 = M0.r5?.reward && !M0.r5.used ? M0.r5 : null, pk = r5 ? RD.pickOf(r5.grade) : null, rw = r5 ? { cash: r5.reward === "cash" ? pk.cash : 0, statUp: 0 } : n0 === 2 && M0.r1Grade && !M0.r5 ? RD.rewardOf(M0.r1Grade) : { cash: 0, statUp: 0 }; // 11-26 갈림길에서 고른 보상(예전 저장은 등급 보상) // 2회차: 1회차 등급 보상
   const fr = [...(g.friend || [])]; if (n0 >= 3 && !fr.length && (M0.pastFriends || []).length) fr.push(M0.pastFriends[0]); // 3회차 특전: 지난 판 인연 한 명
   if (r5?.memP && !fr.includes(r5.memP)) fr.push(r5.memP); // 갈림길 기억: 사람 한 명
   const kn = [...(g.know || [])]; if (r5?.memJ && !kn.includes(r5.memJ)) kn.push(r5.memJ); // 갈림길 기억: 투잡의 감
@@ -2181,6 +2182,7 @@ function renderWiz() {
     S = E.newGame({ quest: true, seed: String(Date.now()), gender: w.gender, name: u?.nick || w.name || "나", age: w.age, look: w.look, base: w.rolls[w.pick], major: w.major, company: w.company, companyName: w.companyName, job: w.job, traits: w.traits, carry: w.traits.includes(w.carry) ? null : w.carry || null, ng: ngGiftsToStart(w) });
     S.me.avatar = w.avatar || null; artPreload([S.me.avatar, ...(S.cast || [])].filter(Boolean));
     { const sp = ngSpent(w); if (sp) { m.ngPts = Math.max(0, (m.ngPts || 0) - sp); setMeta(m); } }
+    if (m.r5 && !m.r5.used) { m.r5.used = 1; setMeta(m); } // 갈림길 보상은 한 번만
     ui.page = "home"; save(true); render();
     showIntro(); titleSaveNote();
   });
@@ -2192,7 +2194,7 @@ function showIntro() {
     <p><b>다음 달</b> 행동력을 다 쓰면 맨 아래 <b>다음 달</b>을 눌러요. 월급이 들어오고 한 달이 지나가요.</p>
     <p><b class="gold">목표</b> ${r1 ? `${ea}세 결산에서 순자산 ${RD.RD.grades.map(([g, v]) => `${v / 10000}억이면 ${g}`).join(", ")}. 거기가 갈림길이에요. 이 인생을 50세까지 이어 갈지, 특전을 받고 다시 시작할지 골라요.` : `${ea}세까지 순자산 30억(결혼하면 40억).`} 파산하거나 번아웃이 세 번 오면 그 인생은 끝나요.</p>
     <p class="tiny muted" style="margin-top:10px">지도·회사·투잡 이야기는 그 화면에 처음 들어갈 때 한 줄씩 알려 드려요.</p></div>
-    <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-close>시작하기</button>`, (el) => el.querySelectorAll("[data-close]").forEach((b) => b.onclick = () => { closeWin(); if (S.ng?.n === 2 && !S.unlockSeen) { S.unlockSeen = 1; save(); return FK.unlock(fkCtx(), { btn: "시작한다", line: `2회차는 처음부터 전부 열려 있습니다.${S.ng.r5?.text ? `<br>들고 온 것: <b style="color:#f6cf6b">${S.ng.r5.text}</b>` : ""}`, done: sasuFirstGo }); } sasuFirstGo(); }), false, true);
+    <button class="btn gold" style="width:100%;margin-top:12px;padding:12px" data-close>시작하기</button>`, (el) => el.querySelectorAll("[data-close]").forEach((b) => b.onclick = () => { closeWin(); if ((S.ng?.n === 2 || S.ng?.r5) && !S.unlockSeen) { S.unlockSeen = 1; save(); return FK.unlock(fkCtx(), { btn: "시작한다", line: `${S.ng.n}회차는 처음부터 전부 열려 있습니다.${S.ng.r5?.text ? `<br>들고 온 것: <b style="color:#f6cf6b">${S.ng.r5.text}</b>` : ""}`, done: sasuFirstGo }); } sasuFirstGo(); }), false, true);
 }
 // 11-24 사수 첫 장면: 새 게임 첫 달 머리에 한 번(시작 안내를 닫은 뒤). 여기서 못 띄우면 엔진이 첫 달 마감 장면 줄 맨 앞에 넣는다
 function sasuFirstGo() { if (!S || S.pending || S.t !== 0) return; let sc = null; try { sc = E.sasuFirstScene(S); } catch (e) { console.warn(e); } if (!sc) return; E.openScene(S, sc); save(); showScene(); }
@@ -2229,7 +2231,7 @@ function gradeCard() {
   return `<div class="card"><div class="row"><div style="font-size:44px;font-weight:900;line-height:1;color:${col}">${g}</div><div class="grow" style="margin-left:12px"><b>첫 5년 결산</b><div class="tiny muted">순자산 ${won(nwv)} · ${RD.RD.grades.map(([k, v]) => `${k} ${v / 10000}억`).join(" · ")}${next ? ` · ${next[0]}까지 ${won(next[1] - nwv)}` : ""}</div></div></div>
     <div class="small" style="margin-top:8px">스물일곱으로 돌아갑니다. <b class="gold">2회차는 50세까지</b>, 연애와 결혼, 판이 바뀌는 큰 사건이 처음부터 열려 있어요.</div>
     <div class="small" style="margin-top:6px">${rw.rescued ? `<b class="gold">구원의 손길</b> · C등급이지만 B등급 보상으로 올려 드려요.<br>` : ""}2회차에 들고 가는 것: ${r5Text(S.forkBack, g)}</div>
-    ${g !== "S" ? (S.gradeUp ? `<div class="tiny gold" style="margin-top:6px">S등급 크기로 바꿨어요(종잣돈 ${won(RD.RD.pick.S.cash)} · 능력치 셋 +${RD.RD.pick.S.stat3})</div>` : BMX.bmOn() ? `<button class="btn" style="width:100%;margin-top:8px" data-bmgrade>고른 보상을 S등급 크기로 받기 (종잣돈 ${won(RD.RD.pick.S.cash)} · 능력치 셋 +${RD.RD.pick.S.stat3}) · ${BMX.priceText("gradeUp")}${BMX.qaOn() ? "" : " · 준비 중"}</button>` : "") : ""}</div>`;
+    ${g !== "S" && S.forkBack?.reward !== "trait" ? (S.gradeUp ? `<div class="tiny gold" style="margin-top:6px">S등급 크기로 바꿨어요(종잣돈 ${won(RD.RD.pick.S.cash)} · 능력치 셋 +${RD.RD.pick.S.stat3})</div>` : BMX.bmOn() ? `<button class="btn" style="width:100%;margin-top:8px" data-bmgrade>고른 보상을 S등급 크기로 받기 (종잣돈 ${won(RD.RD.pick.S.cash)} · 능력치 셋 +${RD.RD.pick.S.stat3}) · ${BMX.priceText("gradeUp")}${BMX.qaOn() ? "" : " · 준비 중"}</button>` : "") : ""}</div>`;
 }
 // ───────── 엔딩 ─────────
 function renderEnding() {

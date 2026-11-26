@@ -174,7 +174,7 @@ export function unlock(c, o = {}) {
 // ── 특성 하나 고르기 ── ok(id)
 function traitPick(c, o) {
   const S = c.S(), own = S.me.traits || [], all = c.D.TRAITS.map((t) => t.id).filter((x) => !own.includes(x));
-  const T = st.tp = st.tp || { hand: c.shuffle(all).slice(0, 4), prev: null, re: 1, un: 1, sel: null };
+  const K = o.key || "c"; S.fkT = S.fkT || {}; const fresh = !S.fkT[K]; const T = S.fkT[K] = S.fkT[K] || { hand: c.shuffle(all).slice(0, 4), prev: null, re: 1, un: 1, sel: null }; if (fresh) c.save(); // 뽑은 패는 저장에 남긴다(뒤로 갔다 와도 다시 돌리기 횟수가 늘지 않게)
   const mine = (d) => d === "co" || S.sj.active.includes(d);
   const card = (id) => { const t = c.D.TRAITS.find((x) => x.id === id); return `<button class="fk-c ${T.sel === id ? "on" : ""}" data-t="${id}"><b>${c.esc(t.n)}</b><i>“${c.esc(t.line)}”</i><span class="pro">＋ ${c.esc(t.pro)}</span>${t.con ? `<span class="con">− ${c.esc(t.con)}</span>` : ""}<span class="jobs">${(t.hid || []).slice().sort((a, b) => mine(b.d) - mine(a.d)).map((h) => `<span class="${mine(h.d) ? "mine" : ""} ${isNeg(h.t) ? "neg" : ""}">${mine(h.d) ? "★ " : ""}${c.esc(domN(c, h.d))} · ${c.esc(h.t)}</span>`).join("")}</span></button>`; };
   const jobs = S.sj.active.map((k) => c.D.SIDEJOBS[k]?.n).filter(Boolean).join(" · ") || "아직 없음";
@@ -186,8 +186,8 @@ function traitPick(c, o) {
   window.scrollTo(0, 0);
   const re = () => traitPick(c, o), $ = (q) => c.$app.querySelector(q);
   c.$app.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => { const y = window.scrollY; T.sel = b.dataset.t; re(); window.scrollTo(0, y); });
-  $("[data-re]").onclick = () => { if (!T.re) return; T.re--; T.prev = T.hand; const rest = all.filter((x) => !T.hand.includes(x)); T.hand = c.shuffle(rest.length >= 4 ? rest : all).slice(0, 4); T.sel = null; re(); };
-  $("[data-un]").onclick = () => { if (!T.un || !T.prev) return; T.un--; T.hand = T.prev; T.prev = null; T.sel = null; re(); };
+  $("[data-re]").onclick = () => { if (!T.re) return; T.re--; T.prev = T.hand; const rest = all.filter((x) => !T.hand.includes(x)); T.hand = c.shuffle(rest.length >= 4 ? rest : all).slice(0, 4); T.sel = null; c.save(); re(); };
+  $("[data-un]").onclick = () => { if (!T.un || !T.prev) return; T.un--; T.hand = T.prev; T.prev = null; T.sel = null; c.save(); re(); };
   $("[data-ok]").onclick = () => { if (T.sel) o.done(T.sel); };
   const bk = $("[data-bk]"); if (bk) bk.onclick = () => o.back();
 }
@@ -207,7 +207,7 @@ function backPick(c) {
     <div class="fk-note">${!B.r ? "보상과 기억을 하나씩 고르세요" : B.r === "trait" && !B.trait ? "특성 카드를 고르러 갑니다" : ""} <button data-bk>갈림길로 돌아가기</button></div></div>`;
   window.scrollTo(0, st.y || 0);
   const keep = (f) => () => { st.y = window.scrollY; f(); };
-  c.$app.querySelectorAll("[data-r]").forEach((b) => b.onclick = keep(() => { B.r = b.dataset.r; if (B.r === "trait" && !B.trait) { st.tp = null; return traitPick(c, { title: "들고 갈 특성 하나", sub: "2회차를 시작할 때 이 특성을 하나 더 갖고 시작해요.", ok: "이 특성을 들고 간다", done: (id) => { B.trait = id; backPick(c); }, back: () => { B.r = null; backPick(c); } }); } backPick(c); }));
+  c.$app.querySelectorAll("[data-r]").forEach((b) => b.onclick = keep(() => { B.r = b.dataset.r; if (B.r === "trait" && !B.trait) { return traitPick(c, { key: "b", title: "들고 갈 특성 하나", sub: "2회차를 시작할 때 이 특성을 하나 더 갖고 시작해요.", ok: "이 특성을 들고 간다", done: (id) => { B.trait = id; backPick(c); }, back: () => { B.r = null; backPick(c); } }); } backPick(c); }));
   c.$app.querySelectorAll("[data-m]").forEach((b) => b.onclick = keep(() => { B.m = b.dataset.m; backPick(c); }));
   c.$app.querySelector("[data-bk]").onclick = () => { st = { step: "ask" }; render(c); };
   c.$app.querySelector("[data-ok]").onclick = () => {
@@ -221,7 +221,7 @@ export function render(c) {
   css(); const S = c.S(); st = st || { step: "ask" };
   if (st.step === "back") return backPick(c);
   if (st.step === "trait") return traitPick(c, { title: "5년을 버틴 사람에게", sub: "특성 하나를 얻습니다.", ok: "이 특성으로 이어 간다", back: () => { st = { step: "ask" }; render(c); }, done: (id) => {
-    if (!c.E.forkContinue(S)) return; c.E.addTrait(S, id); const cr = c.E.forkCrush(S); st = null; c.save(true);
+    if (!c.E.forkContinue(S, id)) return; const cr = c.E.forkCrush(S); st = null; c.save(true);
     unlock(c, { btn: "이 인생을 이어 간다", line: `잠겨 있던 것들이 열렸습니다.${cr ? `<br><b style="color:#f6cf6b">${c.esc(c.E.CHAR[cr].name)}</b>에게 하지 못한 말이 있다.` : ""}`, done: () => c.render() });
     c.$app.innerHTML = `<div class="fk"></div>`;
   } });
@@ -240,10 +240,11 @@ export function render(c) {
 // 고르기 직전 상태를 다른 칸에 남긴다(대표 결정: 남김. 빈 칸이 없으면 묻는다)
 async function slotNote(c) {
   const S = c.S(), box = () => c.$app.querySelector("[data-slot]"), put = (h) => { const b = box(); if (b) b.innerHTML = h; };
+  if (S.forkCopy) return put("이 칸은 갈림길 시점을 남겨 둔 칸이에요. 여기서는 다른 길을 골라 볼 수 있어요.");
   if (S.forkSlot) return put(`고르기 전의 이 시점을 <b>저장 칸 ${S.forkSlot}</b>에 남겨 뒀어요. 나중에 다른 길도 해 볼 수 있어요.`);
   let L = []; try { L = await c.ST.list(); } catch (e) {}
   const cur = c.SLOT(), free = L.find((x) => x.empty && +x.slot !== cur), others = L.filter((x) => !x.empty && +x.slot !== cur);
-  const copy = (n) => { c.ST.save(n, c.E.save(S), c.summary(), true); S.forkSlot = n; c.save(true); slotNote(c); };
+  const copy = (n) => { S.forkCopy = 1; let data; try { data = c.E.save(S); } finally { delete S.forkCopy; } c.ST.save(n, data, c.summary(), true); S.forkSlot = n; c.save(true); slotNote(c); };
   if (free) return copy(+free.slot);
   if (!others.length) return put("남는 저장 칸이 없어 이 시점은 따로 남지 않아요.");
   put(`빈 저장 칸이 없어요. 이 시점을 남기려면 덮어쓸 칸을 고르세요: ${others.map((x) => `<button data-ow="${x.slot}">칸 ${x.slot}${x.summary?.name ? ` (${c.esc(x.summary.name)} ${c.esc(String(x.summary.age ?? ""))}세)` : ""}</button>`).join(" ")}<br>안 남겨도 고를 수 있어요.`);
