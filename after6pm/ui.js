@@ -249,12 +249,20 @@ function gcx() { return { ...dctx(), E, FX }; } // 성장 카드·가방(cards_u
 function dctx() { return { S, save, render, toast, openWin, closeWin, meta, setMeta, esc, won }; } // 방 꾸미기(deco_ui.js)에 넘기는 것
 
 // ───────── 알림 ─────────
+// 11-27 대표 결정: 가운데 조금 아래 카드. 글은 굵게 한 줄, 변화는 칩(오르면 초록 · 깎이면 빨강 · 돈은 금색). 누르면 바로 닫히고, 맨 위 상태 줄의 해당 숫자가 한 번 반짝인다
+const toastKind = (x) => { const dn = /[−-]\s?\d/.test(x), up = /\+\s?\d/.test(x), money = /(현금|돈|자금|만\b|억)/.test(x); return dn ? "dn" : up ? (money ? "g" : "up") : ""; };
+function toastHit(L) {
+  const hit = (q) => { const e = document.querySelector(q); if (e) { e.classList.remove("tjt-hit"); void e.offsetWidth; e.classList.add("tjt-hit"); } };
+  setTimeout(() => { const s = L.join(" "); if (/(현금|돈 [−+-]|자금)/.test(s)) hit(".top .assets > div:first-child .v"); if (/스태미너/.test(s)) hit(".top .apbar .hp b"); if (/행동력/.test(s)) hit(".top .apbar .num"); }, 40);
+}
 function toast(lines, msg) {
-  const d = document.createElement("div");
-  d.innerHTML = (msg ? `<div>${esc(msg)}</div>` : "") + (lines?.length ? `<b>${lines.filter(Boolean).map(esc).join(" · ")}</b>` : "");
-  if (!d.innerHTML) return;
-  $toast.appendChild(d); setTimeout(() => d.remove(), 2600);
-  while ($toast.children.length > 3) $toast.firstChild.remove();
+  const L = (lines || []).filter(Boolean).map(String); if (!msg && !L.length) return;
+  const d = document.createElement("div"); d.className = "tjt";
+  d.innerHTML = (msg ? `<div class="tjt-m">${esc(msg)}</div>` : "") + (L.length ? `<div class="tjt-c">${L.map((x) => `<span class="${toastKind(x)}">${esc(x)}</span>`).join("")}</div>` : "");
+  const close = () => { if (d.isConnected) { d.classList.add("out"); setTimeout(() => d.remove(), 300); } };
+  d.onclick = close; $toast.appendChild(d); setTimeout(close, L.length >= 3 ? 2600 : 1800);
+  while ($toast.children.length > 2) $toast.firstChild.remove(); // 최대 두 장
+  toastHit(L);
 }
 
 // ───────── 행동 실행 ─────────
@@ -1669,12 +1677,12 @@ function showScene() {
   let lead = sc.who; try { lead = XR.leadOf(S, sc, segs) || sc.who; } catch (e) {}
   const who = lead && XR.who(lead);
   const pf = ui.preFx; ui.preFx = null;
-  const pre = pf && (pf.msg || pf.lines.length) ? `<div class="prefx">${pf.msg ? `<span>${esc(pf.msg)}</span>` : ""}${pf.lines.filter(Boolean).map((l) => `<b>${esc(l)}</b>`).join("")}</div>` : "";
+  const pre = pf && (pf.msg || pf.lines.length) ? `<div class="prefx tjp">${pf.msg ? `<div class="tjt-m">${esc(pf.msg)}</div>` : ""}${pf.lines.filter(Boolean).length ? `<div class="tjt-c">${pf.lines.filter(Boolean).map((l) => `<span class="${toastKind(String(l))}">${esc(l)}</span>`).join("")}</div>` : ""}</div>` : ""; // 11-27 방금 한 행동의 결과: 알림 카드와 같은 모양으로, 그림 아래·선택지 위에 둔다
   const expr = sc.expr || (sc.kind === "meet" ? "neutral" : sc.kind === "wedding" ? "blush" : sc.kind === "arc" ? (sc.stage === 3 ? "blush" : "smile") : "neutral");
-  openWin(`<div class="scene">${pre}<h2>${esc(String(sc.title).replace(/^선배 찾아가기 · (.+?) (\d+\/\d+)(?: · (질문 \d+\/\d+))?$/,(m, j, a, b) => `${j} 선배 ${a}${b ? ` · ${b}` : ""}`))}${sc.tag ? ` <span class="tag gold">${esc(sc.tag)}</span>` : ""}</h2>
+  openWin(`<div class="scene"><h2>${esc(String(sc.title).replace(/^선배 찾아가기 · (.+?) (\d+\/\d+)(?: · (질문 \d+\/\d+))?$/,(m, j, a, b) => `${j} 선배 ${a}${b ? ` · ${b}` : ""}`))}${sc.tag ? ` <span class="tag gold">${esc(sc.tag)}</span>` : ""}</h2>
     ${who ? stageWho(lead, expr, "full", sceneBg(sc, lead), `<b>${esc(who.name)}</b><span>${esc(XR.EXTRA[lead] ? XR.EXTRA[lead].role || who.job : who.job)}</span>`) ?? `<div class="who${sc.mentor ? " big" : ""}"><div class="pic">${img(faceSrc(lead, expr))}</div><div><b>${esc(who.name)}</b><div class="tagline">${esc(who.job)} · ${esc(who.tagline || "")}</div></div></div>` : ""}
     ${talk ? dlgHtml(segs, expr) : `<div class="txt">${esc(XR.plain(sc.text))}</div>`}
-    <div class="choices">${((H) => sc.choices.map((c, i) => `<button data-ch="${i}" class="${H[i] ? "a6rec" : ""}"><span>${H[i] ? `<i class="a6rec-t ${/모 아니면 도/.test(H[i]) ? "g" : ""}">${H[i]}</i>` : ""}${esc(c.t)}</span>${c.pct != null ? `<span class="pct">${D.STATS[c.check.stat]} ${c.pct}%</span>` : ""}</button>`).join(""))((() => { try { return E.choiceHints(S, sc); } catch (e) { return []; } })())}</div>${S.t < E.HINT_T && (() => { try { return E.choiceHints(S, sc).some(Boolean); } catch (e) { return false; } })() ? `<div class="tiny muted" style="margin-top:4px;text-align:center">처음 2년 동안은 좋은 선택지에 추천 표시가 붙어요</div>` : ""}</div>`, (el) => el.querySelectorAll("[data-ch]").forEach((b) => b.onclick = () => {
+    ${pre}<div class="choices">${((H) => sc.choices.map((c, i) => `<button data-ch="${i}" class="${H[i] ? "a6rec" : ""}"><span>${H[i] ? `<i class="a6rec-t ${/모 아니면 도/.test(H[i]) ? "g" : ""}">${H[i]}</i>` : ""}${esc(c.t)}</span>${c.pct != null ? `<span class="pct">${D.STATS[c.check.stat]} ${c.pct}%</span>` : ""}</button>`).join(""))((() => { try { return E.choiceHints(S, sc); } catch (e) { return []; } })())}</div>${S.t < E.HINT_T && (() => { try { return E.choiceHints(S, sc).some(Boolean); } catch (e) { return false; } })() ? `<div class="tiny muted" style="margin-top:4px;text-align:center">처음 2년 동안은 좋은 선택지에 추천 표시가 붙어요</div>` : ""}</div>`, (el) => el.querySelectorAll("[data-ch]").forEach((b) => b.onclick = () => {
     const res = E.choose(S, +b.dataset.ch); save(); FX.play(res.ok === false ? "bad" : "ok");
     if (sc.kind === "story" && !res.lines.length && !res.text) { closeWin(); return continueChain(); }
     openWin(`<div class="scene"><h2>${esc(sc.title)}</h2>${who ? stageWho(lead, res.ok === false ? "sad" : sc.kind === "wedding" || sc.kind === "arc" ? "blush" : "smile", "half", sceneBg(sc, lead)) ?? `<div class="who"><div class="pic">${img(faceSrc(lead, res.ok === false ? "sad" : "smile"))}</div></div>` : ""}

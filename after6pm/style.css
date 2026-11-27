@@ -245,9 +245,31 @@ img.face{image-rendering:pixelated;display:block}
 .tcards button.on .trait{border:2px solid var(--gold)}
 .ending{padding:16px;display:flex;flex-direction:column;gap:12px}
 .ending .big{font-family:var(--disp);font-style:italic;font-weight:900;font-size:38px;line-height:1.2;letter-spacing:-.01em;padding:0 .06em 2px 0;width:fit-content;max-width:100%;background:linear-gradient(180deg,#fff1b8,#f5b83d 55%,#c9861a);-webkit-background-clip:text;background-clip:text;color:transparent}
-#toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(92vw,480px)}
-#toast div{background:rgba(25,28,52,.96);border:1px solid var(--gold);border-radius:12px;padding:8px 14px;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.4);animation:up .18s ease-out;max-width:100%}
-#toast div b{color:var(--gold)}
+/* 알림(11-27 대표 결정: 가운데 조금 아래에 늘 같은 자리, 잘 보이게). 사람이 서는 화면 위쪽 절반은 가리지 않는다. 장면 창이 떠도 같은 자리 */
+#toast{position:fixed;left:50%;top:62%;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(88vw,420px)}
+#toast .tjt{pointer-events:auto;cursor:pointer;width:100%;background:rgba(26,30,68,.97);border:1.5px solid var(--gold);border-radius:14px;padding:10px 13px;box-shadow:0 12px 30px rgba(0,0,0,.6),0 0 0 4px rgba(242,193,78,.13);animation:tjtIn .32s cubic-bezier(.2,1.4,.4,1);transition:opacity .3s,transform .3s}
+#toast .tjt.out{opacity:0;transform:translateY(-8px)}
+body:has(#modal:not(:empty)) #toast .tjt{pointer-events:none} /* 창이 떠 있을 때는 알림이 아래 버튼 누르기를 막지 않게(잠깐 떴다 사라진다) */
+#toast .tjt-m{font-size:14px;font-weight:700;line-height:1.45}
+#toast .tjt-c{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+#toast .tjt-m:empty+.tjt-c,#toast .tjt-c:first-child{margin-top:0}
+#toast .tjt-c span{font-size:12.5px;font-weight:700;border-radius:99px;padding:2px 9px;background:#2a3170;color:var(--fg)}
+#toast .tjt-c span.up{background:#12492f;color:#8ff0b5}
+#toast .tjt-c span.dn{background:#5a1c22;color:#ffb3b3}
+#toast .tjt-c span.g{background:#5a4410;color:#ffe08a}
+html.big #toast .tjt-m{font-size:16px}html.big #toast .tjt-c span{font-size:14px}
+@keyframes tjtIn{from{opacity:0;transform:translateY(14px) scale(.94)}to{opacity:1;transform:none}}
+.prefx.tjp{display:block;background:rgba(26,30,68,.97);border:1.5px solid var(--gold);border-radius:14px;padding:9px 12px;margin:10px 0;color:var(--fg);box-shadow:0 0 0 4px rgba(242,193,78,.1)}
+.prefx.tjp .tjt-m{font-size:13.5px;font-weight:700;line-height:1.45}
+.prefx.tjp .tjt-c{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.prefx.tjp .tjt-c:first-child{margin-top:0}
+.prefx.tjp .tjt-c span{width:auto;font-size:12.5px;font-weight:700;border-radius:99px;padding:2px 9px;background:#2a3170;color:var(--fg)}
+.prefx.tjp .tjt-c span.up{background:#12492f;color:#8ff0b5}
+.prefx.tjp .tjt-c span.dn{background:#5a1c22;color:#ffb3b3}
+.prefx.tjp .tjt-c span.g{background:#5a4410;color:#ffe08a}
+.tjt-hit{animation:tjtHit .45s ease-out}
+@keyframes tjtHit{0%{transform:scale(1)}40%{transform:scale(1.32);color:#fff}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){#toast .tjt,.tjt-hit{animation-duration:.01s}}
 #err{position:fixed;left:8px;right:8px;top:8px;z-index:99;background:#3a0d18;border:1px solid var(--red);color:#ffd5dc;border-radius:10px;padding:10px;font-size:12px;white-space:pre-wrap}
 .btn svg{width:18px;height:18px;flex:none}
 .next .btn{flex-direction:row;line-height:1.2}
@@ -440,7 +462,6 @@ html.big #app{zoom:1.12}
 .scene .sstage.half{height:min(240px,32vh)}
 .prefx{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin:0 0 10px;color:var(--muted)}
 .prefx span{color:var(--fg);width:100%}.prefx b{color:var(--gold);font-weight:700}
-body:has(#modal .bg) #toast{bottom:auto;top:calc(10px + env(safe-area-inset-top,0px))}
 
 /* v4.12 홈 상태 ↔ 능력치 밀기 */
 .swipe2{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:14px}

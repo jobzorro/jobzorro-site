@@ -65,7 +65,7 @@ const GUIDE = `<div class="dk-guide"><div class="dk-gcard"><b>방 꾸미기 하�
   <button class="dk-gok">알겠어요</button></div></div>`;
 const CSS = `.dk-layer{position:fixed;inset:0;z-index:9000;background:#12142a;display:flex;justify-content:center}
 .dk-in{width:100%;max-width:480px;height:100%;position:relative}
-body:has(.dk-layer) #toast{z-index:9500;bottom:auto;top:calc(118px + env(safe-area-inset-top,0px))}
+body:has(.dk-layer) #toast{z-index:9500}
 .dk-in .dc-l1{display:none}.dk-in .dc-l2{font-size:13px;font-weight:800;color:#f2f1fb}.dk-in .dc-card{justify-content:center}
 .dk-guide{position:absolute;inset:0;z-index:20;background:#0a0b18cc;display:flex;align-items:center;justify-content:center;padding:16px}
 .dk-gcard{background:#1b1f3b;border:1px solid #323862;border-radius:16px;padding:16px;color:#f2f1fb;font-size:13.5px;line-height:1.5;max-width:340px}

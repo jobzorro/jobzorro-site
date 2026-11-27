@@ -1,3 +1,4 @@
+import { VERSION, BUILD } from "./version.js"; // 11-27 시작 화면 아래 버전 표시
 // After 6PM · 시작 화면(B안, 11-23). 같은 화면이 사람에 따라 세 모습:
 //   first = 저장·끝낸 판 없음 / cont = 하던 인생 있음 / ng = 끝낸 판 있음(하던 인생도 있으면 이어 하기 카드가 먼저)
 // ui.js 의 renderTitle 이 재료(c)를 넘기고, 여기서 그리고 누르는 곳을 잇는다. 저장 형식·메타는 읽기만 한다.
@@ -66,6 +67,7 @@ html.app .title.a6t{min-height:calc(100dvh - env(safe-area-inset-top,0px) - env(
 .a6t .a6t-foot{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:0 4px;font-size:11.5px;color:#9ea3c0;min-height:26px;margin:-2px 0 -4px}
 .a6t .a6t-foot button{color:#c9c6e6;padding:6px 6px;font-size:11.5px;text-decoration:underline;text-underline-offset:3px}
 .a6t .a6t-foot .a6t-who{color:var(--gold)}
+.a6t .a6t-ver{text-align:center;font-size:10.5px;line-height:1.3;color:#7f84a3;letter-spacing:.03em;font-variant-numeric:tabular-nums;user-select:text}
 @media (max-height:720px){.title.a6t{--a6t-h:44vh;--a6t-h:44svh}.title.a6t:not(.a6t-is-first) .a6t-tag2{display:none}.a6t .a6t-pb{gap:7px;padding-top:60px}.a6t .a6t-gold{min-height:48px}.a6t .a6t-cont{padding:8px 11px}.a6t .a6t-face{width:46px;height:46px}.a6t .a6t-cont{grid-template-columns:46px 1fr}}
 @media (max-width:380px){.a6t .a6t-tag2{font-size:11.6px;letter-spacing:-.03em}}
 /* 여는 연출: 17:59 → 18:00. 버튼은 처음부터 보이고 누를 수 있다 */
@@ -182,6 +184,7 @@ export function draw(root, c) {
       ${mode === "ng" ? ngBtn : mode === "first" ? `<button class="a6t-gold" data-new>새 인생 시작</button>` : ""}
       ${mini}${row}
       ${foot ? `<div class="a6t-foot">${foot}</div>` : ""}
+      <div class="a6t-ver">${esc(VERSION)}${BUILD ? ` · ${esc(BUILD.replace(/^a6-/, ""))}` : ""}</div>
     </div></div>`;
   const el = root.querySelector(".a6t"), $ = (s) => el.querySelector(s), on = (s, fn) => el.querySelectorAll(s).forEach((b) => (b.onclick = () => fn(b)));
   el.querySelectorAll("[data-fig]").forEach((f) => figLoad(f, bodyUrl(c, f.dataset.fig)));

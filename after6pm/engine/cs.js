@@ -37,65 +37,158 @@ const employedCs = (s) => !(s.co?.quit || s.co?.fired);
 // 11-25 히든 길 '경력 이직 컨설턴트' 위기(hidden.js HID_RISK.cs: 현직 정보로 상담한다는 말이 회사에 돌았다) 동안: 헤드헌터 소개가 끊기고 경력 이직 단가 ×price
 export const CS_HID = { price: 0.7 };
 const csHidPause = (s) => s.hid?.j?.cs?.open !== undefined && s.hid.j.cs.pause > s.t;
-// ───────── 11-26 챌린지: 합격 실적의 유효기간 · 채용 한파 ─────────
-// 세기 손잡이(환경변수 CSK): 실적 벌점 폭(live.pen)과 한파 감소폭(cold.lead·pass·refund)에 함께 곱한다
-const CSK = (typeof process !== "undefined" && +process.env.CSK) || 1.4; // 11-27 대표 결정: 한파를 한 단계 약하게(1.8 → 1.4, 신입 문의 −56%), 파이어율 33.7%로 간다. 실적 기준을 바꾼 뒤 봇 2회차 300판: 1.4 → 파이어 33.7%, 1.8 → 31.3%, 2.2 → 29.7%(챌린지 전 35.0%)
+// ───────── 11-27 챌린지(대표 재설계): 합격 실적 기준 · 채용 한파(문의 ↑ 환불 ↑, 뒤에 문의 감소) · AI로 고가 문의 감소 · 전형 변화 ─────────
+// 세기 손잡이(환경변수 CSK): 고가 문의 감소폭(prem) · 자소서 수요 감소폭(form) · 한파 환불 증가폭(cold.refund·failRef·guarUp)에 곱한다
+const CSK = (typeof process !== "undefined" && +process.env.CSK) || 0.5; // 11-27 한파 뒤 벌점을 합격률 기준으로 바꾼 뒤 봇 2회차 600판: 0.5 → 파이어 32.5%(한파 없는 판 35.0%). 파이어율은 고가 감소보다 한파의 환불·합격률에 더 민감하다
 export const CS_CH = {
   k: CSK,
-  // 실적 유효기간(11-26 대표 결정: 꾸준한 사람은 오래 해도 손해 없음): from 달부터, '평소 속도 대비 최근 속도'로 본다
-  // 기준(평소 1년) = tol × max(최근 keep 달의 연평균, bestW × 가장 좋았던 12달(달마다 decay 로 조금씩 잊힘)). r = 최근 12달 합격 ÷ 기준(1 이상이면 벌점 0)
-  // 벌점 = (pen × (1 − r) + dryPen × 쉰 정도) × k. 쉰 정도: 합격 없는 달이 dryFrom 달째부터 dryRamp 달에 걸쳐 0→1(평소 1년 dryMin 명 이상일 때만)
-  // 채용 한파 중과 끝난 뒤 coldGrace 달은 벌점 × coldRelief. 배율 바닥 floor
-  live: { from: 36, win: 12, keep: 36, tol: 0.7, bestW: 0.6, decay: 0.995, pen: 0.12, dryPen: 0.08, dryFrom: 7, dryRamp: 3, dryMin: 8, min: 3, grace: 12, floor: 0.7, coldRelief: 0.5, coldGrace: 6 },
+  // 합격 실적 기준(11-26 대표 결정 그대로): from 달부터 '평소 속도 대비 최근 1년'. 꾸준하면 벌점 0, dryFrom 달째부터 쉬면 깎인다
+  // 기준(평소 1년) = tol × max(최근 keep 달의 연평균, bestW × 가장 좋았던 12달). r = 최근 12달 합격 ÷ 기준. 벌점 = pen × (1 − r) + dryPen × 쉰 정도. 바닥 floor
+  // 11-27 한파와의 관계(대표 결정: 합격률 기준): 한파 중에는 벌점 없음. 한파가 끝난 달부터 postLen 달 동안 r = 한파에 받은 고객의 합격률 ÷ 한파 직전 평소 합격률.
+  // 벌점 = postPen × (postTol − r)(0 밑이면 0, 최대 postMax) × 회복(끝난 뒤 낸 합격자가 평소 postRec 달 치에 이르면 0) × 풀림(마지막 postFade 달). 결과 난 고객이 postMinN 명 미만이면 절반. 평소 벌점과는 큰 것만
+  live: { from: 36, win: 12, keep: 36, tol: 0.7, bestW: 0.6, decay: 0.995, pen: 0.17, dryPen: 0.11, dryFrom: 7, dryRamp: 3, dryMin: 8, min: 3, grace: 12, floor: 0.7, postLen: 18, postFade: 6, postPen: 2.5, postTol: 0.99, postMax: 0.2, postMinN: 6, postRec: 10 },
   // 채용 한파: 첫 시작 first 달 사이, 그 뒤 시작 간격 gap 달, 길이 len 달, warn 달 전에 뉴스 예고
-  // lead 신입 문의 감소(w: 분야별 무게) · career 경력 이직 문의 + · pass 합격률 − · refund 환불 요구 확률 +
-  cold: { first: [66, 96], gap: [48, 72], len: [12, 18], warn: 6, lead: 0.4, w: { newgrad: 1, public: 1, interview: 0.5, career: 0 }, career: 0.1, pass: 0.05, refund: 0.5, maxCut: 0.8, freezePass: 0.08 },
+  // lead 신입 쪽 문의 +(w: 분야별 무게, 경력 이직은 그대로) · conv 결제 전환 + · pass 합격률 − · refund 환불 요구 확률 +(× k) · failRef 한파에 판 고객이 떨어졌을 때 환불 요구 확률(× k), failBack 그때 돌려주는 비율 · guarUp 합격 보장 환불 비율 +(× k)
+  cold: { first: [66, 96], gap: [48, 72], len: [12, 18], warn: 6, lead: 0.25, conv: 0.04, w: { newgrad: 1, public: 1, interview: 1, career: 0 }, pass: 0.05, refund: 0, failRef: 0.3, failBack: 0.5, guarUp: 0.3, freezePass: 0.08, monoGap: 4 },
+  // AI가 늘어 비싼 상품부터 안 팔린다: warn 달에 예고, from 달부터 가격대별로 해마다 perYear(× k)씩, 최대 max(× k). conv: 결제 전환에는 이만큼만
+  // 버티는 길: 실력이 가격 기준을 over 만큼 넘으면 shield 의 절반, 합격 실적이 살아 있으면(r) 나머지 절반까지 덜 맞는다
+  prem: { warn: 38, from: 72, perYear: { low: 0, mid: 0.012, high: 0.03, ultra: 0.048 }, max: { low: 0, mid: 0.09, high: 0.21, ultra: 0.3 }, cap: 0.8, conv: 0.3, shield: 0.5, over: 30 },
+  // 전형 변화: warn 달에 예고, from 달부터 자소서 수요가 해마다 perYear(× k)씩 최대 max(× k)까지 새 전형으로 옮겨 간다(w: 분야별 무게)
+  // 전형 대응도(0~100)만큼만 새 전형 수요를 받는다. 다 따라가면 bonus 만큼 더 번다. 새 전형 연구 +study~study+2, 새 전형 고객 합격 +passGain, shift 달마다 shiftCut 깎임
+  form: { warn: 42, from: 72, perYear: 0.04, max: 0.4, cap: 0.7, w: { newgrad: 1, public: 0.7, interview: 0, career: 0 }, bonus: 0.05, study: 8, passGain: 1.5, shift: [24, 36], shiftCut: 20, target: 80 },
 };
-// 살아 있는 실적: 최근 1년 합격을 평소 1년(기준)과 견준다. on 이 false 면 아직 벌점 없음(3년 차 전, 기준 3명 미만, 기록을 쌓기 시작한 뒤 12달)
+if (typeof process !== "undefined" && process.env?.CSCH) { const o = JSON.parse(process.env.CSCH); for (const k of Object.keys(o)) Object.assign(CS_CH[k], o[k]); } // 봇 시험용
+// 합격 실적: 최근 1년 합격을 평소 1년(기준)과 견준다. phase: ""(평소) · "cold"(한파 중, 벌점 없음) · "after"(한파 뒤, 한파 직전 기준과 견줌)
 export function liveStat(s) {
-  if (typeof process !== "undefined" && process.env?.CSLIVE) Object.assign(CS_CH.live, JSON.parse(process.env.CSLIVE)); // 봇 시험용
   const cs = s.cs, L = CS_CH.live, h = cs.passHist || [], sum = (a) => a.reduce((x, y) => x + y, 0);
-  const recent = sum(h.slice(-L.win)), avg = h.length ? sum(h) / h.length * 12 : 0, usual = L.tol * Math.max(avg, L.bestW * (cs.passBest || 0));
+  const recent = sum(h.slice(-L.win)), avg = h.length ? sum(h) / h.length * 12 : 0;
+  let usual = L.tol * Math.max(avg, L.bestW * (cs.passBest || 0));
   let z = 0; for (let i = h.length - 1; i >= 0 && !h[i]; i--) z++; // 합격자 없이 지나간 달 수
-  const on = s.t >= L.from && usual >= L.min && h.length >= L.grace, r = usual > 0 ? Math.min(1, recent / usual) : 1;
+  const on = s.t >= L.from && usual >= L.min && h.length >= L.grace;
+  let r = usual > 0 ? Math.min(1, recent / usual) : 1;
   const dry = on && usual >= L.dryMin && z >= L.dryFrom ? Math.min(1, (z - L.dryFrom + 1) / L.dryRamp) : 0;
-  const cd = cs.cold, relief = !!(cd && (cd.on || (cd.end != null && cd.n > 0 && s.t - cd.end < L.coldGrace && s.t >= cd.end)));
-  const pen = on ? (L.pen * (1 - r) + L.dryPen * dry) * CS_CH.k * (relief ? L.coldRelief : 1) : 0;
-  return { recent, usual: Math.round(usual), z, r, on, dry, relief, total: cs.passes || 0, mult: Math.max(L.floor, 1 - pen) };
+  let pen = on ? L.pen * (1 - r) + L.dryPen * dry : 0, phase = "";
+  const cd = cs.cold;
+  if (cd?.on) { pen = 0; phase = "cold"; }
+  const cr = coldRate(s);
+  if (cd && !cd.on && cd.n > 0 && cd.end != null && !cd.healed && cr.ok && s.t >= cd.end && s.t - cd.end < L.postLen) {
+    const fade = Math.min(1, (L.postLen - (s.t - cd.end)) / L.postFade), need = Math.max(L.postMinN, (cd.base || 0) * L.postRec / 12), rec = Math.min(1, (cd.pp || 0) / need);
+    const p2 = Math.min(L.postMax, L.postPen * Math.max(0, L.postTol - cr.r)) * (cr.n < L.postMinN ? 0.5 : 1) * (1 - rec) * fade;
+    if (p2 > pen && p2 >= 0.005) { pen = p2; phase = "after"; r = cr.r; }
+  }
+  return { recent, usual: Math.round(usual), z, r, on: on || phase === "after", dry, phase, total: cs.passes || 0, mult: Math.max(L.floor, 1 - pen), cold: cr };
 }
+// 이번(또는 지난) 한파에 받은 고객의 합격률과 한파 직전 평소 합격률. ok: 견줄 수 있음
+export function coldRate(s) {
+  const cd = s.cs?.cold, n = (cd?.cp || 0) + (cd?.cf || 0), rate = n ? (cd.cp || 0) / n : 0, base = cd?.rate0 || 0;
+  return { n, rate, base, r: base > 0 && n > 0 ? Math.min(1.2, rate / base) : 1, ok: base > 0 && n > 0 };
+}
+function coldCnt(s, p, f) { const cd = s.cs.cold; if (!cd) return; cd.cp = (cd.cp || 0) + p; cd.cf = (cd.cf || 0) + f; }
 export const coldOn = (s) => !!s.cs?.cold?.on;
-// 한파 동안 그 분야 문의 배수 · 합격률 감소 · 환불 요구 배수
-export function coldLead(s, k) { if (!coldOn(s)) return 1; const C = CS_CH.cold; return k === "career" ? 1 + C.career : 1 - Math.min(C.maxCut, C.lead * CS_CH.k * (C.w[k] ?? 1)); }
+const coldW = (k) => CS_CH.cold.w[k] ?? 1;
+// 한파 동안 그 분야 문의 배수(신입 쪽은 늘어난다) · 합격률 감소 · 환불 요구 배수
+function coldLeadRaw(k) { return 1 + CS_CH.cold.lead * coldW(k); }
+export function coldLead(s, k) { return coldOn(s) ? coldLeadRaw(k) : 1; }
 // 시대 사건 '한파(freeze)'가 이미 합격률을 깎고 있으면 둘 중 큰 것만 남게 한다
-function coldPass(s, niche) { if (!coldOn(s) || niche === "career") return 0; const C = CS_CH.cold; return Math.max(0, C.pass * CS_CH.k - (s.era?.freeze ? C.freezePass : 0)); }
+function coldPass(s, niche) { if (!coldOn(s) || niche === "career") return 0; const C = CS_CH.cold; return Math.max(0, C.pass - (s.era?.freeze ? C.freezePass : 0)); }
 const coldRefund = (s, niche) => (coldOn(s) && niche !== "career" ? 1 + CS_CH.cold.refund * CS_CH.k : 1);
-const chStory = (tag, title, text, bg) => ({ kind: "story", tag, title, text, bg, choices: [{ t: "계속", eff: {}, text: "" }] });
-// 달 마감(month)에서 부른다: 달마다 합격 수 기록, 3년 차 예고, 한파 예고·시작·끝
-function chMonth(s, r, pass, notes, scenes) {
-  const cs = s.cs, L = CS_CH.live, C = CS_CH.cold;
+// AI로 고가 문의 감소: 지금 내 가격대의 감소폭(cut)과 덜 맞는 이유(sk 실력 · lv 합격 실적, 각 0~1)
+export function premStat(s) {
+  const cs = s.cs, P = CS_CH.prem, k = cs.price || "low", K = CS_CH.k, yrs = Math.max(0, (s.t - P.from) / 12);
+  const max = Math.min(P.cap, (P.max[k] || 0) * K), raw = Math.min(max, (P.perYear[k] || 0) * K * yrs);
+  const sk = clamp((skill(s) - priceNeed(s)) / P.over, 0, 1), st = liveStat(s), lv = st.on ? clamp(st.r, 0, 1) : 0, sh = P.shield * (sk + lv) / 2;
+  return { k, raw, max, sk, lv, sh, cut: raw * (1 - sh), perYear: (P.perYear[k] || 0) * K };
+}
+// 전형 변화: f 자소서에서 빠진 수요 비율 · a 전형 대응도 · open 예고를 본 뒤(연구 가능)
+export function formStat(s) {
+  const cs = s.cs, F = CS_CH.form, K = CS_CH.k, yrs = Math.max(0, (s.t - F.from) / 12), max = Math.min(F.cap, F.max * K);
+  return { f: Math.min(max, F.perYear * K * yrs), max, a: clamp(cs.form?.a || 0, 0, 100), open: !!cs.formSeen, target: F.target };
+}
+function formX(s, k) { const F = CS_CH.form, st = formStat(s), fw = st.f * (F.w[k] || 0), a = st.a / 100; return fw ? 1 - fw * (1 - a) + F.bonus * (fw / st.max) * a : 1; }
+// 새로 온 고객이 새 전형(직무 과제·역량 검사·포트폴리오) 고객인지
+function formNew(s, r, k) { const F = CS_CH.form, st = formStat(s), fw = st.f * (F.w[k] || 0), a = st.a / 100; return fw > 0 && a > 0 && r.chance(fw * a / Math.max(0.05, formX(s, k))); }
+function formGain(s, v) { const cs = s.cs; cs.form = cs.form || { a: 0 }; cs.form.a = clamp((cs.form.a || 0) + v, 0, 100); }
+// 그 분야 문의 배수: AI 대세(신입 쪽 감소)와 고가 문의 감소는 둘 중 큰 것만, 거기에 전형 변화와 한파를 곱한다
+function nicheX(s, k) { return Math.min(aiCut(s, k), 1 - premStat(s).cut) * formX(s, k) * coldLead(s, k); }
+// 새 행동 '새 전형 연구'(행동력 1): 보드 버튼 data-cspol="f:study" → setPolicy 가 부른다
+export function studyForm(s) {
+  const cs = s.cs, F = CS_CH.form;
+  if (!cs.open) return { ok: false, msg: "개업 후 가능" };
+  if (!cs.formSeen) return { ok: false, msg: "아직 전형이 바뀌지 않았어요" };
+  if ((s.ap || 0) < 1) return { ok: false, msg: "행동력이 부족해요" };
+  if ((cs.form?.a || 0) >= 100) return { ok: false, msg: "지금 전형은 다 따라잡았어요" };
+  const g = F.study + (s.st.career >= 100 ? 2 : s.st.career >= 50 ? 1 : 0); s.ap -= 1; formGain(s, g); gainStat(s, "career", 0.2, "cs_form");
+  return { ok: true, msg: `새 전형 연구: 전형 대응도 +${g} (지금 ${Math.round(cs.form.a)})` };
+}
+// 독백 장면. note: [계속]을 누른 뒤 작은 줄로 보이는 숫자 안내(csEvChoose 의 ch_note)
+const chStory = (tag, title, text, bg, note) => ({ kind: "story", tag, title, text, bg, onChoose: "cs_ev", ev: "ch_note", chNote: note || [], choices: [{ t: "계속", eff: {}, text: "" }] });
+const COLD_MONO = {
+  guar: ["보장을 걸어 둔 값", "합격 보장 문구는 내가 썼다. 그때는 자신이 있었다.\n\n지금은 불합격 연락이 올 때마다 통장부터 연다. 약속은 약속이다. 다만 이 겨울이 얼마나 갈지 모르겠다."],
+  refund: ["환불 문자를 받은 밤", "밤 11시에 문자가 왔다. \"결국 떨어졌어요. 환불 되나요?\"\n\n답장을 쓰다 지웠다. 자리가 없었다는 말은 변명처럼 들릴 것이다. 내 첨삭이 모자랐던 건지, 자리가 모자랐던 건지 나도 모르겠다."],
+  nopass: ["합격 소식이 뜸한 주", "이번 주에는 합격 문자가 한 통도 없다. 일은 지난달보다 많이 했다.\n\n첨삭 파일은 쌓이는데 후기 칸은 그대로다. 열심히 한 것과 붙여 준 것은 다른 일이다."],
+  busy: ["문의함이 꽉 찼다", "문의 알림이 아침부터 울린다. 다들 급하다. 급한 사람은 값을 오래 묻지 않는다.\n\n돈은 들어온다. 그런데 이 사람들을 어디로 보내야 하나. 공고 목록은 여전히 짧다."],
+};
+const FORM_SHIFT = [
+  "작년에 정리해 둔 과제 유형이 올해는 안 나왔다. 역량 검사 방식도 바뀌었다고 한다.\n\n따라잡았다 싶으면 한 칸씩 달아난다. 다시 풀어 보는 수밖에 없다.",
+  "합격시킨 고객에게 물었더니 올해는 발표까지 시켰다고 한다. 내 자료에는 없는 얘기다.\n\n공부해 둔 것이 낡는 속도가 빨라졌다. 자소서만 보던 때가 편했다.",
+  "포트폴리오를 내라는 공고가 문과 직무에도 붙기 시작했다. 양식도 회사마다 다르다.\n\n작년 자료를 열어 봤다. 절반은 다시 써야 한다.",
+];
+// 달 마감(month)에서 부른다: 달마다 합격 수 기록, 예고 장면들, 한파 예고·시작·진행·끝·회복, 전형 변화
+function chMonth(s, r, pass, notes, scenes, fail = 0) {
+  const cs = s.cs, L = CS_CH.live, C = CS_CH.cold, P = CS_CH.prem, F = CS_CH.form, K = CS_CH.k;
   if (!cs.passHist) { cs.passHist = []; cs.passT0 = s.t; } // 예전 저장: 지금부터 쌓는다
   cs.passHist.push(pass); if (cs.passHist.length > L.keep) cs.passHist.shift();
-  cs.passBest = Math.max(cs.passHist.slice(-L.win).reduce((a, b) => a + b, 0), (cs.passBest || 0) * L.decay); // 가장 좋았던 12달(조금씩 잊힌다)
-  if (cs.open && s.t >= L.from && !cs.liveSeen) { cs.liveSeen = true; scenes.push(chStory("컨설팅", "\"작년 합격 사례는 없나요?\"", "상담을 문의하던 사람이 후기 목록을 한참 내리다 묻는다. \"작년 합격 사례는 없나요? 3년 전 건 좀…\" 답을 고르는 사이 채팅방에서 나갔다.\n\n이제부터 사람들은 최근 1년 합격 실적을 본다. 평소만큼 꾸준히 내면 깎이는 것은 없다. 쉬어서 최근 합격이 줄면 문의와 결제가 줄고, 다시 합격자를 내면 돌아온다.", "consult")); }
+  if (!cs.failHist) cs.failHist = []; cs.failHist.push(fail); if (cs.failHist.length > L.keep) cs.failHist.shift(); // 11-27 합격률용: 달마다 불합격 수
+  if (cs.cold && !cs.cold.on && cs.cold.end != null && s.t >= cs.cold.end) cs.cold.pp = (cs.cold.pp || 0) + pass; // 한파 뒤에 낸 합격자(회복)
+  cs.passBest = Math.max(cs.passHist.slice(-L.win).reduce((a, b) => a + b, 0), (cs.passBest || 0) * (cs.cold?.on ? 1 : L.decay)); // 가장 좋았던 12달(조금씩 잊힌다. 한파 중에는 멈춤)
+  if (cs.open && s.t >= L.from && !cs.liveSeen) { cs.liveSeen = true; scenes.push(chStory("컨설팅", "\"작년 합격 사례는 없나요?\"", "상담을 문의하던 사람이 후기 목록을 한참 내리다 묻는다. \"작년 합격 사례는 없나요? 3년 전 건 좀…\"\n\n답을 고르는 사이 채팅방에서 나갔다. 틀린 말은 아니다. 나라도 작년 것부터 찾아봤을 것이다.", "consult", ["이제부터 최근 1년 합격 실적을 평소와 견줘요", "꾸준히 내면 벌점이 없어요. 쉬면 문의와 결제가 줄어요"])); }
+  // ① AI로 고가 문의 감소: 예고 → 본 장면
+  if (cs.open && s.t >= P.warn && !cs.premSeen) { cs.premSeen = true; scenes.push(chStory("컨설팅", "\"AI한테 물어보니\"", "상담을 문의하던 사람이 묻는다. \"AI한테 물어보니 이 정도는 나오던데, 180만 원 값을 하나요?\"\n\n바로 답하지 못했다. 맞춤법과 구조라면 AI도 한다. 내가 주는 것이 그것뿐이라면 저 말이 맞다. 비싼 상품부터 설명이 길어지겠다.", "consult", ["6년 차부터 가격대가 높을수록 문의와 결제가 줄어요", "실력이 가격 기준을 넉넉히 넘거나 합격 실적이 살아 있으면 덜 맞아요"])); }
+  if (cs.open && s.t >= P.from && !cs.premOn && !scenes.length && premStat(s).perYear > 0) { cs.premOn = true; const ps = premStat(s); scenes.push(chStory("컨설팅", "비싼 것부터 안 팔린다", "견적을 보내면 답이 없다. 싼 상품 문의는 그대로인데 비싼 쪽만 조용하다.\n\n값을 내릴까. 아니면 AI가 못 주는 것을 더 분명히 보여 줘야 하나. 합격시킨 사람들 말고는 내세울 것이 없다.", "consult", [`${D.CS_PRICE[ps.k].n} 가격대: 문의 해마다 −${Math.round(ps.perYear * 100)}%, 최대 −${Math.round(ps.max * 100)}%`, "저가는 줄지 않아요", "실력과 합격 실적으로 절반까지 덜 맞아요"])); }
+  // ② 전형 변화: 예고 → 본 장면 → 2~3년마다 또 바뀜
+  if (!cs.form) cs.form = { a: 0, n: 0 };
+  const fm = cs.form;
+  if (cs.open && s.t >= F.warn && !cs.formSeen) { cs.formSeen = true; scenes.push(chStory("뉴스", "자소서가 없는 전형", "뉴스 자막이 지나간다. '대형 그룹, 자소서 폐지하고 직무 과제 전형 도입.'\n\n한 곳뿐이다. 아직은. 그런데 내가 파는 것은 자소서다. 과제 전형은 나도 풀어 본 적이 없다.", "home", ["6년 차부터 자소서 수요가 해마다 조금씩 새 전형으로 옮겨 가요", "컨설팅 화면의 [새 전형 연구]로 전형 대응도를 올려 두세요"])); }
+  if (cs.open && s.t >= F.from + 2 && cs.formSeen && !cs.formOn && !scenes.length) { cs.formOn = true; scenes.push(chStory("컨설팅", "묻는 것이 달라졌다", "이번 시즌 공고를 훑었다. 자소서 칸이 없는 공고가 눈에 띄게 늘었다. 과제, 역량 검사, 포트폴리오.\n\n문의하는 사람은 그대로 있다. 다만 묻는 것이 달라졌다. \"과제 전형도 봐 주시나요?\" 본 적이 없다고는 말하지 못했다.", "consult", [`자소서 수요 해마다 −${Math.round(F.perYear * K * 100)}%, 최대 −${Math.round(Math.min(F.cap, F.max * K) * 100)}%`, `전형 대응도 ${Math.round(fm.a)}: 대응도만큼만 새 전형 문의를 받아요`])); }
+  if (s.t >= F.from) {
+    if (fm.shiftT == null) fm.shiftT = Math.max(s.t, F.from) + r.int(F.shift[0], F.shift[1]);
+    else if (s.t >= fm.shiftT) { fm.shiftT = s.t + r.int(F.shift[0], F.shift[1]); fm.a = Math.max(0, (fm.a || 0) - F.shiftCut); fm.n = (fm.n || 0) + 1; if (cs.open) scenes.push(chStory("컨설팅", "전형이 또 바뀌었다", FORM_SHIFT[fm.n % FORM_SHIFT.length], "consult", [`전형 대응도 −${F.shiftCut} (지금 ${Math.round(fm.a)})`, "새 전형 연구로 다시 따라가야 해요"])); }
+  }
+  // 채용 한파
   if (!cs.cold) cs.cold = { at: Math.max(r.int(C.first[0], C.first[1]), s.t + r.int(C.warn + 2, 30)), len: r.int(C.len[0], C.len[1]), warned: false, on: false, n: 0 };
-  const cd = cs.cold, hasCareer = cs.niches.includes("career");
-  const cutPct = Math.round((1 - coldLeadRaw("newgrad")) * 100);
+  const cd = cs.cold, up = Math.round(C.lead * 100), pp = Math.round(C.pass * 100);
   if (!cd.on && !cd.warned && s.t >= cd.at - C.warn) {
     cd.warned = true;
-    if (cs.open) scenes.push(chStory("뉴스", "대기업 공채 축소", `저녁 뉴스 자막이 지나간다. '주요 대기업, 신입 공채 절반으로 줄인다.' 오픈채팅방이 조용해졌다가 한꺼번에 시끄러워진다. \"올해 못 붙으면 끝인가요?\"\n\n${Math.max(1, cd.at - s.t)}달쯤 뒤 채용 한파가 온다. 신입 자소서·공기업 문의가 ${cutPct}%쯤 줄고 합격률도 떨어진다. ${hasCareer ? "경력 이직 쪽은 줄지 않으니 그쪽이 버팀목이다." : "경력 이직은 줄지 않는다. 그 전에 분야를 넓혀 두면 버틸 수 있다."}`, "home"));
+    if (cs.open) scenes.push(chStory("뉴스", "대기업 공채 축소", "저녁 뉴스 자막이 지나간다. '주요 대기업, 신입 공채 절반으로 줄인다.'\n\n문의함이 바빠지겠다. 반가워야 하는데, 반갑지가 않다. 자리가 줄면 내가 붙여 줄 수 있는 사람도 준다.", "home", [`약 ${Math.max(1, cd.at - s.t)}달 뒤 채용 한파`, `신입 쪽 문의 +${up}% · 합격률 −${pp}%p`, "환불 요구가 늘어요. 합격 보장을 걸어 뒀다면 더 아파요"]));
   }
   if (!cd.on && s.t >= cd.at) {
-    cd.on = true; cd.end = s.t + cd.len; cd.n = (cd.n || 0) + 1;
-    if (cs.open) { scenes.push(chStory("뉴스", "채용 한파가 왔다", `이번 시즌 공고 목록이 작년의 절반이다. 공고가 없으니 자소서를 맡길 사람도 없다. 붙을 자리가 줄어 불합격 연락이 늘고, \"돈 돌려 달라\"는 말도 잦아진다.\n\n앞으로 ${cd.len}달쯤 이어진다. ${hasCareer ? "경력 이직 문의는 오히려 조금 는다." : "경력 이직 쪽은 영향이 없다."}`, "home")); log(s, "채용 한파가 시작됐다.", "work"); }
+    const h = cs.passHist; cd.on = true; cd.end = s.t + cd.len; cd.n = (cd.n || 0) + 1; cd.healed = false; cd.hurt = false; cd.monoT = s.t; cd.monoK = "";
+    cd.base = Math.max(h.length ? h.reduce((a, b) => a + b, 0) / h.length * 12 : 0, h.length >= L.win ? h.slice(-L.win).reduce((a, b) => a + b, 0) * 0.8 : 0); // 한파 직전의 평소 1년 합격자 수(회복 속도의 기준)
+    { const hp = h.reduce((a, b) => a + b, 0), hf = (cs.failHist || []).reduce((a, b) => a + b, 0); cd.rate0 = hp + hf >= 10 && (cs.failHist || []).length >= 6 ? hp / (hp + hf) : (cs.passes || 0) + (cs.fails || 0) >= 10 ? cs.passes / (cs.passes + cs.fails) : 0; cd.cp = 0; cd.cf = 0; cd.pp = 0; } // 한파 직전 평소 합격률(고정) · 한파 고객 합격·불합격 · 한파 뒤 합격자
+    if (cs.open) { scenes.push(chStory("컨설팅", "채용 한파가 왔다", "오히려 채용 한파다. 그래서 문의는 늘어나고 있다. 다들 돈을 주고서라도 붙어야 하니까.\n\n다만, 잘 보낼 자신이 조금 떨어진다. 일단 서류라도 붙여야 면접에서 승부를 볼 텐데…", "consult", [`채용 한파 약 ${cd.len}달`, `신입 쪽 문의 +${up}% · 합격률 −${pp}%p · 환불 요구 ↑`, "떨어지는 사람이 많으면 한파 뒤에 문의가 빠져요"])); log(s, "채용 한파가 시작됐다.", "work"); }
   } else if (cd.on && s.t >= cd.end) {
     cd.on = false; cd.warned = false; cd.at += r.int(C.gap[0], C.gap[1]); if (cd.at < s.t + C.warn + 2) cd.at = s.t + r.int(C.gap[0], C.gap[1]); cd.len = r.int(C.len[0], C.len[1]);
-    if (cs.open) { scenes.push(chStory("뉴스", "공채가 다시 열렸다", "'하반기 신입 채용, 3년 만에 최대.' 기사 링크가 오픈채팅방에 올라왔다. 한동안 조용하던 문의함에 알림이 다시 쌓인다. 한파 동안 떠나지 않은 고객들이 먼저 돌아왔다.", "home")); log(s, "채용 한파가 끝났다.", "work"); }
+    const st = liveStat(s), d = Math.round((1 - st.mult) * 100);
+    if (d >= 3) cd.hurt = true; else cd.healed = true;
+    if (cs.open) { scenes.push(cd.hurt
+      ? chStory("컨설팅", "한파가 지나갔다", "한파가 지나갔다. 문의함이 조용하다.\n\n그 겨울에 붙여 준 사람이 적었다. 후기를 못 모았으니 당연한 일이다. 다시 한 명씩 붙여 보내는 수밖에 없다.", "consult", [`한파 합격률 ${Math.round(st.cold.rate * 100)}% · 평소 ${Math.round(st.cold.base * 100)}%`, `문의와 신뢰 −${d}%`, "합격자를 내면 회복돼요"])
+      : chStory("컨설팅", "한파가 지나갔다", "버텼다. 붙은 사람보다 못 붙여 준 사람 이름이 더 오래 남는다.\n\n그래도 그 겨울에 붙여 보낸 사람들이 후기를 남겨 줬다. 문의함은 조용해지지 않았다.", "consult", [`한파 합격률 ${Math.round(st.cold.rate * 100)}% · 평소 ${Math.round(st.cold.base * 100)}%`, "한파에도 합격률을 지켜 내서 문의가 빠지지 않았어요"])); log(s, "채용 한파가 끝났다.", "work"); }
+  } else if (cd.on && cs.open && !scenes.length && s.t - (cd.monoT ?? (cd.monoT = s.t)) >= C.monoGap) {
+    // 한파 진행 중 독백(돌려 쓴다): 보장 환불 → 환불 요구 → 합격 뜸함 → 문의 몰림
+    const cand = [cs.guar && cs.gRefN ? "guar" : "", cs.refunds || cs.coldRefM ? "refund" : "", pass === 0 ? "nopass" : "", "busy", "nopass", "refund"].filter(Boolean), k = cand.find((x) => x !== cd.monoK) || "busy", m = COLD_MONO[k];
+    cd.monoT = s.t; cd.monoK = k; scenes.push(chStory("컨설팅", m[0], m[1], k === "busy" ? "consult" : "home", [`채용 한파 ${Math.max(0, cd.end - s.t)}달 남음`]));
   }
-  if (cs.open && s.cal === 1) { const st = liveStat(s), d = Math.round((1 - st.mult) * 100); if (d >= 5) notes.push(`컨설팅: 최근 1년 합격 ${st.recent}명 · 평소 1년 ${st.usual}명${st.z >= L.dryFrom ? ` · ${st.z}달째 합격자 없음` : ""}. 최근 실적이 평소만 못해 문의와 신뢰가 ${d}% 줄었어요. 다시 합격자를 내면 돌아와요.`); }
-  if (cs.open && cd.on && s.cal === 1) notes.push(`컨설팅: 채용 한파 ${Math.max(0, cd.end - s.t)}달 남았어요. ${hasCareer ? "경력 이직 쪽은 그대로예요." : "경력 이직은 한파를 타지 않아요."}`);
+  // 한파 뒤 회복(배율이 1로 돌아온 달)
+  if (!cd.on && cd.hurt && !cd.healed) { const st = liveStat(s); if (st.mult >= 0.995) { cd.healed = true; cd.hurt = false; if (cs.open && st.phase !== "after" && s.t - (cd.end ?? s.t) < L.postLen) scenes.push(chStory("컨설팅", "다시 합격 문자가 온다", "다시 합격 문자가 온다. 후기 칸이 채워진다.\n\n문의함도 따라서 시끄러워졌다. 겨울에 못 붙여 준 이름들은 지워지지 않는다. 그래도 다음 사람은 붙여 보냈다.", "consult", ["한파 뒤 문의 감소가 풀렸어요"])); } }
+  if (cs.open && s.cal === 1) {
+    const st = liveStat(s), d = Math.round((1 - st.mult) * 100);
+    if (d >= 5) notes.push(st.phase === "after" ? `컨설팅: 한파 때 합격률이 ${Math.round(st.cold.rate * 100)}%로 내려가 후기가 덜 모였어요. 문의와 신뢰 −${d}%. 합격자를 내면 회복돼요.` : `컨설팅: 최근 1년 합격 ${st.recent}명 · 평소 1년 ${st.usual}명${st.z >= L.dryFrom ? ` · ${st.z}달째 합격자 없음` : ""}. 최근 실적이 평소만 못해 문의와 신뢰가 ${d}% 줄었어요. 다시 합격자를 내면 돌아와요.`);
+    if (cd.on) notes.push(`컨설팅: 채용 한파 ${Math.max(0, cd.end - s.t)}달 남았어요. 문의는 몰리지만 떨어지는 사람이 많으면 한파 뒤에 문의가 빠져요.`);
+    const ps = premStat(s); if (ps.cut >= 0.05) notes.push(`컨설팅: AI가 늘어 ${D.CS_PRICE[ps.k].n} 가격대 문의가 ${Math.round(ps.cut * 100)}% 줄었어요. 저가는 줄지 않고, 실력과 합격 실적이 받쳐 주면 덜 맞아요.`);
+    const fs = formStat(s); if (fs.f >= 0.05 && fs.a < fs.target) notes.push(`컨설팅: 자소서 수요가 ${Math.round(fs.f * 100)}% 새 전형으로 옮겨 갔어요. 전형 대응도 ${Math.round(fs.a)}. 새 전형 연구로 따라가면 되찾아요.`);
+  }
+  cs.coldRefM = 0;
 }
-// 한파 상태와 상관없이 그 분야가 한파에 받는 문의 배수(예고 글·보드 표시용)
-function coldLeadRaw(k) { const C = CS_CH.cold; return k === "career" ? 1 + C.career : 1 - Math.min(C.maxCut, C.lead * CS_CH.k * (C.w[k] ?? 1)); }
 export function init() {
   return { open: false, niche: null, niches: [], nick: null, price: "low", reviews: 0, passes: 0, fails: 0, clients: 0, friends: 0,
     queue: [], outcomes: [], ch: { kmong: { on: false, q: 0 }, blog: { posts: 0, idx: 0, lastT: -99 }, insta: { f: 0 }, youtube: { subs: 0, videos: 0 }, kakao: { m: 0 } },
@@ -308,7 +401,7 @@ function addClient(s, r, src) {
   let who = null;
   if (r.chance(0.25)) { const c = s.cast.filter((id) => CHAR[id]?.customer?.board === "consult" && !s.rel[id]?.client); if (c.length) who = r.pick(c); }
   if (who) { if (!s.rel[who]) s.rel[who] = { aff: 8, stage: 0, met: s.t, last: s.t, lover: false, spouse: false, helper: null, helperOk: false, talks: {}, loverSince: null, client: true }; else s.rel[who].client = true; }
-  cs.queue.push({ id: ++cs.seq, prod, niche, left: D.CS_PRODUCTS[prod].unit, units: D.CS_PRODUCTS[prod].unit, price: priceOf(s, prod, niche), wait: 0, who, src, kmong: src === "크멍" });
+  cs.queue.push({ id: ++cs.seq, prod, niche, left: D.CS_PRODUCTS[prod].unit, units: D.CS_PRODUCTS[prod].unit, price: priceOf(s, prod, niche), wait: 0, who, src, kmong: src === "크멍", nf: formNew(s, r, niche) ? 1 : 0 });
   cs.newThisMonth++;
 }
 function passProb(s, prod) {
@@ -323,7 +416,7 @@ function finishClient(s, r, q) {
   if (q.kmong) { const fee = Math.round(pay * (s.era.fee ? 0.25 : 0.2) * 10) / 10; addMoney(s, "exp", "컨설팅 광고·수수료", fee); s.cash -= fee; }
   s.cash += pay; addMoney(s, "inc", "컨설팅", pay); cs.monthRev += pay; cs.clients++;
   const g = gap(s); if (g > 0 && r.chance(Math.min(0.45, g / 70) * (cs.focus > 0 ? 0.4 : 1) * coldRefund(s, q.niche))) { const back = Math.round(pay * r.range(0.5, 1)); s.cash -= back; addMoney(s, "exp", "환불", back); cs.monthRev -= back; cs.reviews = Math.max(0, cs.reviews - 0.6); s.mental = Math.max(0, s.mental - 3); cs.refunds = (cs.refunds || 0) + 1; cs.refundAll = (cs.refundAll || 0) + 1; }
-  cs.outcomes.push({ t: s.t + r.int(1, 3), p: Math.max(0.05, passProb(s, q.prod) - coldPass(s, q.niche)), who: q.who, price: q.price, prod: q.prod, g: q.prod === "vip" ? 0 : cs.guar || 0 }); // f30: 판매 당시 합격 보장
+  cs.outcomes.push({ t: s.t + r.int(1, 3), p: Math.max(0.05, passProb(s, q.prod) - coldPass(s, q.niche)), who: q.who, price: q.price, prod: q.prod, g: q.prod === "vip" ? 0 : cs.guar || 0, cold: coldOn(s) && q.niche !== "career" ? 1 : 0, nf: q.nf ? 1 : 0 }); // f30: 판매 당시 합격 보장
   if (q.who) s.rel[q.who].aff = clamp(s.rel[q.who].aff + 6, 0, 100);
   return pay;
 }
@@ -349,8 +442,8 @@ export function monthStart(s, r) {
     헤드헌터: cs.niches.includes("career") && !csHidPause(s) ? helperPower(s, "cs_headhunter") * 2.5 : 0,
   };
   const LV = liveStat(s);
-  const seas = cs.niches.reduce((a, k) => a + (s.era.rolling ? 1 : D.NICHES[k].season[s.cal - 1]) * D.NICHES[k].demand * aiCut(s, k) * coldLead(s, k) /* 11-26 채용 한파 */ * agMult(s, k) /* 11-25 마케팅 대행 등급 */, 0) / Math.max(1, cs.niches.length) * (1 + 0.35 * (cs.niches.length - 1));
-  let mult = 0.58 * BIG.fullLead(s) * seas * (s.era.winter && !coldOn(s) ? 0.9 : 1) /* 채용 한파와 겹치면 큰 것만 */ * LV.mult /* 11-26 살아 있는 실적 */ * mod(s, "leadMult", 1) * (s.era.ai && cs.niche === "newgrad" ? 0.85 : 1) * (s.era.freeze ? 1.2 : 1) * SJ.ramp(s, "cs") * SJ.skillRamp(s, "cs") * G.lead; // v4.25b 배우는 기간 · f30 합격 보장
+  const seas = cs.niches.reduce((a, k) => a + (s.era.rolling ? 1 : D.NICHES[k].season[s.cal - 1]) * D.NICHES[k].demand * nicheX(s, k) /* 11-27 AI 대세·고가 문의 감소(큰 것만) × 전형 변화 × 채용 한파 */ * agMult(s, k) /* 11-25 마케팅 대행 등급 */, 0) / Math.max(1, cs.niches.length) * (1 + 0.35 * (cs.niches.length - 1));
+  let mult = 0.58 * BIG.fullLead(s) * seas * (s.era.winter && !coldOn(s) ? 0.9 : 1) /* 채용 한파 중에는 문의가 몰린다 */ * LV.mult /* 11-26 살아 있는 실적 */ * mod(s, "leadMult", 1) * (s.era.ai && cs.niche === "newgrad" ? 0.85 : 1) * (s.era.freeze && !coldOn(s) ? 1.2 : 1) /* 채용 한파와 겹치면 한 번만 */ * SJ.ramp(s, "cs") * SJ.skillRamp(s, "cs") * G.lead; // v4.25b 배우는 기간 · f30 합격 보장
   cs.liveX = LV.mult;
   let leads = 0; cs.src = {};
   for (const [k, v] of Object.entries(src)) leads += v * mult;
@@ -363,6 +456,8 @@ export function monthStart(s, r) {
   const trust = D.COMPANY_TYPES[s.co.type].trust * (s.co.quit || s.co.fired ? 0.6 : 1) + (Math.min(0.35, cs.reviews / 80) + Math.min(0.2, cs.passes / 150)) * LV.mult + (cs.nick === "real" ? 0.06 : 0) + cs.lv * 0.02;
   cs.trust = trust;
   cs.conv = clamp(0.17 + trust * 0.35 + (s.st.talk - 40) / 250 + clamp(((s.st.charm || 0) - 40) / 800, -0.03, 0.06) + D.CS_PRICE[cs.price].conv + mod(s, "convBonus", 0) + (SYN.on(s, "grad_cs") ? 0.04 : 0) + G.conv, 0.05, 0.8);
+  cs.conv *= 1 - premStat(s).cut * CS_CH.prem.conv; // 11-27 AI: 비싼 상품은 결제 전환도 조금 준다
+  if (coldOn(s) && cs.niches.some((k) => k !== "career")) cs.conv = Math.min(0.85, cs.conv + CS_CH.cold.conv); // 11-27 채용 한파: 돈을 주고서라도 붙어야 하니 결제도 는다
   const n = r.poisson(leads * cs.conv);
   const kmShare = leads ? src.크멍 * mult / leads : 0;
   for (let i = 0; i < n; i++) addClient(s, r, r.chance(kmShare) ? "크멍" : "문의");
@@ -390,15 +485,16 @@ export function month(s, r, notes, scenes) {
   let pass = 0, fail = 0, posted = 0, leak = false;
   const MK = CS_F30.mask[cs.mask || "name"] || CS_F30.mask.name;
   for (const o of due) {
-    if (r.chance(o.p)) { pass++; cs.passes++; if (pass <= 3) gainStat(s, "career", 0.15, "cs_pass"); if (r.chance(0.7)) { cs.reviews += MK.rev; posted++; if (r.chance(MK.risk)) leak = true; } cs.refer = Math.min(CS_BAL.refMax, cs.refer + 0.25 * mod(s, "referMult", 1)); if (o.who) { s.rel[o.who].aff = clamp(s.rel[o.who].aff + 12, 0, 100); notes.push(`${CHAR[o.who].name}: "최종 합격했어요!!"`); } }
-    else if (o.g) { fail++; cs.fails++; cs.reviews += 0.15; const back = Math.round(o.price * (CS_F30.guar[o.g]?.back || 0) * 10) / 10; if (back > 0) { s.cash -= back; addMoney(s, "exp", "환불", back); cs.monthRev -= back; cs.gRef += back; cs.gRefN++; cs.gRefAll = (cs.gRefAll || 0) + back; } } // f30 합격 보장 환불
-    else { fail++; cs.fails++; cs.reviews += 0.15; if (o.prod === "pkg" && r.chance(0.2)) { s.cash -= Math.round(o.price * 0.5); addMoney(s, "exp", "환불", Math.round(o.price * 0.5)); notes.push("불합격 패키지 고객 50% 환불"); } }
+    if (r.chance(o.p)) { pass++; cs.passes++; if (o.cold) coldCnt(s, 1, 0); if (o.nf) formGain(s, CS_CH.form.passGain); if (pass <= 3) gainStat(s, "career", 0.15, "cs_pass"); if (r.chance(0.7)) { cs.reviews += MK.rev; posted++; if (r.chance(MK.risk)) leak = true; } cs.refer = Math.min(CS_BAL.refMax, cs.refer + 0.25 * mod(s, "referMult", 1)); if (o.who) { s.rel[o.who].aff = clamp(s.rel[o.who].aff + 12, 0, 100); notes.push(`${CHAR[o.who].name}: "최종 합격했어요!!"`); } }
+    else if (o.g) { fail++; cs.fails++; if (o.cold) coldCnt(s, 0, 1); cs.reviews += 0.15; const back = Math.round(o.price * Math.min(1, (CS_F30.guar[o.g]?.back || 0) * (o.cold ? 1 + CS_CH.cold.guarUp * CS_CH.k : 1)) * 10) / 10; /* 한파에 판 보장 상품: 약속보다 더 돌려 달라고 한다 */ if (back > 0) { s.cash -= back; addMoney(s, "exp", "환불", back); cs.monthRev -= back; cs.gRef += back; cs.gRefN++; cs.gRefAll = (cs.gRefAll || 0) + back; } } // f30 합격 보장 환불
+    else { fail++; cs.fails++; if (o.cold) coldCnt(s, 0, 1); cs.reviews += 0.15; if (o.cold && r.chance(Math.min(0.6, CS_CH.cold.failRef * CS_CH.k))) { const bk = Math.round(o.price * CS_CH.cold.failBack * 10) / 10; s.cash -= bk; addMoney(s, "exp", "환불", bk); cs.monthRev -= bk; cs.reviews = Math.max(0, cs.reviews - 0.3); cs.coldRefM = (cs.coldRefM || 0) + 1; cs.coldRefN = (cs.coldRefN || 0) + 1; cs.coldRefAll = (cs.coldRefAll || 0) + bk; } /* 한파: 떨어진 고객의 환불 요구 */ if (o.prod === "pkg" && r.chance(0.2)) { s.cash -= Math.round(o.price * 0.5); addMoney(s, "exp", "환불", Math.round(o.price * 0.5)); notes.push("불합격 패키지 고객 50% 환불"); } }
   }
   if (pass + fail) notes.push(`합격 발표: 합격 ${pass} · 불합격 ${fail}`);
+  if (cs.coldRefM) notes.push(`채용 한파: 불합격 고객 ${cs.coldRefM}명이 환불을 요구했어요`);
   if (cs.gRefN) notes.push(`합격 보장 환불 ${cs.gRefN}건 −${won(cs.gRef)}`);
   if (posted && MK.ap) { s.apNext -= MK.ap; notes.push(`합격 후기 ${posted}개 꼼꼼히 가리기: 다음 달 행동력 −${MK.ap}`); }
   cs.refer *= 0.85;
-  chMonth(s, r, pass, notes, scenes); // 11-26 챌린지: 실적 기록 · 한파
+  chMonth(s, r, pass, notes, scenes, fail); // 11-26 챌린지: 실적 기록 · 한파
   // 채널 감소
   if (ch.blog.lastT < s.t) ch.blog.idx = Math.max(0, ch.blog.idx - 1.5);
   ch.blog.idx *= 0.995; ch.insta.f = Math.round(ch.insta.f * 0.995); ch.kakao.m = Math.round(ch.kakao.m * 0.997);
@@ -497,6 +593,7 @@ function csEv(s, r, id) {
 }
 export function csEvChoose(s, i, ok) {
   const cs = s.cs, id = s.pending?.ev, out = [];
+  if (id === "ch_note") return [...(s.pending?.chNote || [])]; // 11-27 독백 장면 아래 작은 안내 줄
   const P = Math.round(D.CS_PRODUCTS.edit.price * D.CS_PRICE[cs.price].mult * (cs.lv >= 4 ? 1.3 : 1) * 10);
   const cash = (v, k) => { s.cash += v; addMoney(s, v > 0 ? "inc" : "exp", k, Math.abs(v)); out.push(`돈 ${v > 0 ? "+" : "−"}${won(Math.abs(v))}`); };
   const ment = (v) => { s.mental = clamp(s.mental + v, 0, 100); out.push(`멘탈 ${v > 0 ? "+" : ""}${v}`); };
@@ -554,7 +651,8 @@ export function todos(s) {
   if (cs.queue.length) { const units = cs.queue.reduce((a, q) => a + q.left, 0); const ap = Math.ceil(units / capacity(s, 1)); const late = cs.queue.filter((q) => q.wait >= 1).length; t.push({ lv: late ? 2 : 1, text: `컨설팅 대기 고객 ${cs.queue.length}명(행동 ${ap}번)${late ? ` · ${late}명은 이번 달 안 하면 취소` : ""}`, go: "cs" }); }
   if (cs.open && cs.ch.blog.posts && s.t - cs.ch.blog.lastT >= 2) t.push({ lv: 0, text: `블로그 ${s.t - cs.ch.blog.lastT}개월째 글 없음(검색 지수 하락 중)`, go: "cs" });
   if (cs.open && [2, 8].includes(s.cal)) t.push({ lv: 1, text: `다음 달 ${s.cal === 2 ? "상반기" : "하반기"} 공채: 문의 폭증 대비(템플릿·코치)`, go: "cs" });
-  if (cs.open && (cs.cold?.on || cs.cold?.warned)) t.push({ lv: 0, text: cs.cold.on ? `채용 한파 ${Math.max(0, cs.cold.end - s.t)}달 남음: 경력 이직·면접이 버팀목` : `채용 한파 예고: 약 ${Math.max(1, cs.cold.at - s.t)}달 뒤${cs.niches.includes("career") ? "" : " · 경력 이직으로 넓혀 두기"}`, go: "cs" });
+  if (cs.open && (cs.cold?.on || cs.cold?.warned)) t.push({ lv: 0, text: cs.cold.on ? `채용 한파 ${Math.max(0, cs.cold.end - s.t)}달 남음: 문의는 몰린다, 합격률과 환불을 챙기기` : `채용 한파 예고: 약 ${Math.max(1, cs.cold.at - s.t)}달 뒤${cs.guar ? " · 합격 보장을 다시 보기" : ""}`, go: "cs" });
+  { const fs = formStat(s); if (cs.open && fs.open && fs.a < fs.target && (fs.f > 0 || s.t >= CS_CH.form.from - 12)) t.push({ lv: fs.f >= 0.1 && fs.a < 40 ? 1 : 0, text: `전형 대응도 ${Math.round(fs.a)}: 새 전형 연구(행동 1번)`, go: "cs" }); }
   if (cs.offers) t.push({ lv: 1, text: `강의 섭외 ${cs.offers}건 대기`, go: "cs" });
   return t;
 }
@@ -573,24 +671,41 @@ export const passRate = (s) => passProb(s, "edit");
 export function setPolicy(s, key) {
   const cs = s.cs, [k, v] = String(key).split(":");
   if (k === "g" && CS_F30.guar[+v]) { cs.guar = +v; cs.guarSeen = true; return { ok: true, msg: `합격 보장: ${CS_F30.guar[+v].n}${+v ? " (이번 달부터 파는 상품에 적용)" : ""}` }; }
+  if (k === "f" && v === "study") return studyForm(s); // 11-27 새 전형 연구(행동력 1)
   if (k === "m" && CS_F30.mask[v]) { cs.mask = v; cs.maskSeen = true; return { ok: true, msg: `후기 가림: ${CS_F30.mask[v].n}` }; }
   return { ok: false, msg: "" };
 }
 // 컨설팅 보드 '운영 원칙' 칸(ui.js pgCS 가 부른다). 조건을 가질 때만 보인다
 // 11-26 챌린지 칸: 살아 있는 실적 · 채용 한파(f30Box 앞에 붙는다)
 function chBox(S) {
-  const cs = S.cs, L = CS_CH.live, C = CS_CH.cold, cd = cs.cold, st = liveStat(S);
+  const cs = S.cs, L = CS_CH.live, C = CS_CH.cold, P = CS_CH.prem, F = CS_CH.form, K = CS_CH.k, cd = cs.cold, st = liveStat(S);
   const stage = cd?.on ? "on" : cd?.warned ? "warn" : "";
   if (S.t < L.from - 6 && !stage) return "";
   const ks = cs.niches?.length ? cs.niches : ["newgrad"], coldX = stage === "on" ? ks.reduce((a, k) => a + coldLeadRaw(k), 0) / ks.length : 1, x = st.mult * coldX;
-  const cut = Math.round((1 - coldLeadRaw("newgrad")) * 100), pp = Math.round(C.pass * CS_CH.k * 100), rf = Math.round(C.refund * CS_CH.k * 100), hasCareer = ks.includes("career");
-  const d = Math.round((1 - st.mult) * 100), rl = st.relief ? " 채용 한파라 벌점은 절반만 쳐요." : "";
-  const why = S.t < L.from ? "3년 차부터 최근 1년 합격을 평소와 견줘요. 꾸준히 내면 벌점이 없어요. 쉬면 깎여요." : !st.on ? "아직 벌점이 없어요. 꾸준히 내면 벌점이 없어요. 쉬면 깎여요." : d < 1 ? "꾸준히 내면 벌점이 없어요. 쉬면 깎여요. 지금은 벌점 0이에요." : `${st.dry > 0 ? `${st.z}달째 합격자가 없어요. ` : ""}최근 1년 합격이 평소만 못해 문의와 신뢰가 ${d}% 줄었어요.${rl} 다시 합격자를 내면 돌아와요.`;
-  const cold = stage === "on" ? `<div class="tiny bad" style="margin-top:8px"><span class="tag">채용 한파</span> 진행 중 · 남은 ${Math.max(0, cd.end - S.t)}달 · 신입 문의 −${cut}% · 합격률 −${pp}%p · 환불 요구 +${rf}%</div>`
-    : stage === "warn" ? `<div class="tiny bad" style="margin-top:8px"><span class="tag">한파 예고</span> 약 ${Math.max(1, cd.at - S.t)}달 뒤 채용 한파 · 신입 문의 −${cut}% 예상</div>` : "";
-  const tip = stage ? `<div class="tiny muted" style="margin-top:4px">한파에는 경력 이직·면접이 버팀목이에요. 경력 이직은 줄지 않고(문의 +${Math.round(C.career * 100)}%), 면접 코칭은 절반만 줄어요.${hasCareer ? "" : " 지금 내 분야에는 경력 이직이 없어요."}</div>` : "";
-  return `<div class="card"><h3>살아 있는 실적 <small>문의 ×${x.toFixed(2)}</small></h3><div class="kv"><div><div class="k">최근 1년 합격</div><div class="v ${st.on && st.r < 1 ? "bad" : ""}">${st.recent}명</div></div><div><div class="k">평소 1년(기준)</div><div class="v">${st.usual}명</div></div><div><div class="k">지금 문의 배율</div><div class="v ${x < 0.95 ? "bad" : x > 1.02 ? "good" : ""}">×${x.toFixed(2)}</div></div></div>
+  const up = Math.round(C.lead * 100), pp = Math.round(C.pass * 100), rf = Math.round(C.refund * K * 100), d = Math.round((1 - st.mult) * 100);
+  const cr = st.cold, crTxt = cr.ok ? ` 이번 한파 합격률 ${Math.round(cr.rate * 100)}% (평소 ${Math.round(cr.base * 100)}%)` : cr.base > 0 ? ` 평소 합격률 ${Math.round(cr.base * 100)}%` : "";
+  const why = st.phase === "cold" ? `지금은 문의가 몰려요. 떨어지는 사람이 많으면 한파 뒤에 문의가 빠져요.${crTxt}`
+    : st.phase === "after" ? `한파 때 합격률이 ${Math.round(cr.rate * 100)}%로 내려가 후기가 덜 모였어요(평소 ${Math.round(cr.base * 100)}%). 문의 −${d}%. 합격자를 내면 회복돼요.`
+    : S.t < L.from ? "3년 차부터 최근 1년 합격을 평소와 견줘요. 꾸준히 내면 벌점이 없어요. 쉬면 깎여요." : !st.on ? "아직 벌점이 없어요. 꾸준히 내면 벌점이 없어요. 쉬면 깎여요." : d < 1 ? "꾸준히 내면 벌점이 없어요. 쉬면 깎여요. 지금은 벌점 0이에요." : `${st.dry > 0 ? `${st.z}달째 합격자가 없어요. ` : ""}최근 1년 합격이 평소만 못해 문의와 신뢰가 ${d}% 줄었어요. 다시 합격자를 내면 돌아와요.`;
+  const cold = stage === "on" ? `<div class="tiny bad" style="margin-top:8px"><span class="tag">채용 한파</span> 진행 중 · 남은 ${Math.max(0, cd.end - S.t)}달 · 신입 쪽 문의 +${up}% · 합격률 −${pp}%p · 떨어진 고객 ${Math.round(Math.min(0.6, C.failRef * K) * 100)}%가 환불 요구${rf ? ` · 실력 부족 환불 +${rf}%` : ""}</div>`
+    : stage === "warn" ? `<div class="tiny bad" style="margin-top:8px"><span class="tag">한파 예고</span> 약 ${Math.max(1, cd.at - S.t)}달 뒤 채용 한파 · 문의는 늘고 합격률은 내려가요</div>` : "";
+  const tip = stage ? `<div class="tiny muted" style="margin-top:4px">한파는 일은 많은데 뒤가 무서운 시기예요. 붙여 주지 못하면 환불 요구가 오고${cs.guar ? ", 걸어 둔 합격 보장은 약속보다 더 돌려 달라는 말까지 나와요" : ", 합격 보장을 걸면 더 아파요"}. 경력 이직은 한파를 타지 않아요.</div>` : "";
+  const liveCard = `<div class="card"><h3>살아 있는 실적 <small>문의 ×${x.toFixed(2)}</small></h3><div class="kv"><div><div class="k">최근 1년 합격</div><div class="v ${st.on && st.r < 1 && st.phase !== "cold" ? "bad" : ""}">${st.recent}명</div></div><div><div class="k">평소 1년(기준)</div><div class="v">${st.usual}명</div></div><div><div class="k">지금 문의 배율</div><div class="v ${x < 0.95 ? "bad" : x > 1.02 ? "good" : ""}">×${x.toFixed(2)}</div></div></div>
     <div class="tiny muted" style="margin-top:6px">${why}</div>${cold}${tip}</div>`;
+  // AI와 전형 변화
+  if (!cs.premSeen && !cs.formSeen) return liveCard;
+  const ps = premStat(S), fs = formStat(S), pc = Math.round(ps.cut * 100), fc = Math.round(fs.f * 100), a = Math.round(fs.a), pn = D.CS_PRICE[ps.k].n;
+  const lostPct = Math.round(ks.reduce((s0, k) => s0 + (1 - formX(S, k)), 0) / ks.length * 100);
+  const shWhy = [ps.sk >= 0.5 ? "실력이 가격 기준을 넉넉히 넘어요" : "", ps.lv >= 0.99 ? "합격 실적이 살아 있어요" : ""].filter(Boolean);
+  const premLine = S.t < P.from ? `6년 차부터 가격대가 높을수록 문의와 결제가 줄어요(저가는 그대로). 지금 가격대: ${pn}.`
+    : ps.perYear <= 0 ? `${pn} 가격대는 AI 때문에 줄지 않아요.`
+    : `${pn} 가격대 문의 −${pc}%(해마다 −${Math.round(ps.perYear * 100)}%, 최대 −${Math.round(ps.max * 100)}%). ${shWhy.length ? `${shWhy.join(", ")}: 원래 −${Math.round(ps.raw * 100)}%에서 덜 맞는 중이에요.` : "실력이 가격 기준을 넉넉히 넘거나 합격 실적이 살아 있으면 절반까지 덜 맞아요."}`;
+  const formLine = !cs.formSeen ? "" : S.t < F.from ? "6년 차부터 자소서 수요가 해마다 조금씩 새 전형(직무 과제·역량 검사·포트폴리오·직무 면접)으로 옮겨 가요. 미리 연구해 두면 그대로 받아요."
+    : `자소서 수요 −${fc}%가 새 전형으로 옮겨 갔어요. 대응도만큼만 받아요. 지금 내 문의 ${lostPct > 0 ? `−${lostPct}%` : lostPct < 0 ? `+${-lostPct}%` : "±0%"}. 전형은 2~3년마다 또 바뀌어 대응도가 ${F.shiftCut} 깎여요.`;
+  const bar = cs.formSeen ? `<div class="tiny muted" style="margin-top:8px">전형 대응도 ${a}/100</div><div class="meter"><i style="width:${a}%;background:${a >= fs.target ? "var(--green)" : "var(--blue)"}"></i></div>
+    <div class="pick" style="margin-top:6px"><button data-cspol="f:study"><b>새 전형 연구 ⚡1</b><span class="tiny muted">대응도 +${F.study}~${F.study + 2} · 새 전형 고객을 합격시켜도 올라요</span></button></div>` : "";
+  return liveCard + `<div class="card"><h3>AI와 전형 변화 <small>${pn}</small></h3><div class="kv"><div><div class="k">내 가격대 문의</div><div class="v ${pc >= 5 ? "bad" : ""}">${pc ? "−" + pc + "%" : "그대로"}</div></div><div><div class="k">자소서 수요</div><div class="v ${fc >= 5 ? "bad" : ""}">${fc ? "−" + fc + "%" : "그대로"}</div></div><div><div class="k">전형 대응도</div><div class="v ${a >= fs.target ? "good" : ""}">${a}</div></div></div>
+    <div class="tiny muted" style="margin-top:6px">${premLine}</div>${formLine ? `<div class="tiny muted" style="margin-top:4px">${formLine}</div>` : ""}${bar}</div>`;
 }
 export function f30Box(S, esc, won) { const cs = S.cs; if (!cs.open) return ""; return chBox(S) + f30Core(S, esc, won); }
 function f30Core(S, esc, won) {
