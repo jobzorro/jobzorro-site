@@ -435,7 +435,7 @@ export function applyEff(s, eff, who) {
 const sgn = (x) => (x > 0 ? "+" : "") + (Math.round(x * 10) / 10);
 export function eyeMult(s) { return D.COMPANY_TYPES[s.co.type].eye * mod(s, "eyeMult", 1) * (s.cs.nick === "real" ? 1.4 : 1) * (SYN.on(s, "real_face") ? 1.2 : 1); }
 // 11-27 가게를 열 때 들어간 돈과 넘길 때 돌려받은 돈을 그해 동안 따로 센다(연말 결산의 본잡 전환 신호가 '운영 이익만' 보고 성급하게 "나와라"를 외치지 않게)
-const CAP_OUT = new Set(["파티룸 개업 투자", "무인카페 오픈", "에어씨앤씨 오픈", "치킨 창업비"]), CAP_IN = new Set(["지점 양도·보증금", "권리금 매각", "무인카페 양도", "보증금 회수"]);
+const CAP_OUT = new Set(["파티룸 개업 투자", "무인카페 오픈", "에어씨앤씨 오픈", "치킨 창업비", "무인카페 기계 교체", "무인카페 출입 인증기"]), CAP_IN = new Set(["지점 양도·보증금", "권리금 매각", "무인카페 양도", "보증금 회수", "치킨 양수도", "파티룸 엑시트"]); // 11-27 QA: 낼 때와 받을 때의 짝을 맞췄다(펫시팅도 같은 이름을 쓰지만 연말에 0 밑으로는 안 내려가 영향이 작다)
 export function addMoney(s, side, k, v) { const m = s.month[side]; m[k] = (m[k] || 0) + v; if (side === "exp" && CAP_OUT.has(k)) s.capY = (s.capY || 0) + v; else if (side === "inc" && CAP_IN.has(k)) s.capY = (s.capY || 0) - v; }
 
 export const GAIN_MIN = { side: 0.1, etc: 0.3 }; if (typeof process !== "undefined" && process.env?.GFB) GAIN_MIN.side = +process.env.GFB; // 아무 역량도 안 오른 행동에 주는 최소 성장(투잡 행동은 작게: 밸런스)

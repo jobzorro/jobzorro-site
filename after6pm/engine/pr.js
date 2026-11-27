@@ -159,6 +159,7 @@ export const staleOf = (rm) => rm.stale || 0;
 export function moveInfo(s, rm) {
   const key = keyQuote(s, rm), tr = Math.round(trend(s, rm) * 100), a = avg12(rm), y = Math.floor(rm.months / 12) + 1;
   const txt = rm.months < 12 ? "아직 1년이 안 됐어요" : a < 0 ? "1년 평균 적자" : tr <= -5 ? `1년 평균 이익이 고점보다 ${-tr}% 줄었어요` : "1년 평균 이익은 고점 근처";
+  const why0 = transferWhy(s, rm); if (why0) return { y, tr, txt, avg: Math.round(a), dep: rm.dep, key: 0, total: rm.dep, due: moveDue(s, rm), stale: Math.round(staleOf(rm) * 100), bad: true, why: why0 }; // 11-27 QA: 넘길 수 없으면 권리금 없이 보증금만
   return { y, tr, txt, avg: Math.round(a), dep: rm.dep, key, total: rm.dep + key, due: moveDue(s, rm), stale: Math.round(staleOf(rm) * 100), bad: tr <= -PR_MV.move.drop * 100 || (rm.months >= 12 && a < 0), why: transferWhy(s, rm) };
 }
 // 11-25 히든 길 '시대보다 한발 빠른 컨셉'(hidden.js): 유행이 온 동안(36달) 그 컨셉 방은 예약 +40%(상한도 조금 위로)·권리금 2배. 위기로 멈춘 달엔 없다
@@ -505,8 +506,10 @@ export function cutAdvice(s, rm) {
 }
 export function closeRoom(s, roomId) {
   const pr = s.pr; const rm = pr.rooms.find((x) => x.id === roomId); if (!rm) return { ok: false };
-  const back = resale(s, rm), key = back - rm.dep, open = rm.status === "open";
+  const open = rm.status === "open", why = open ? transferWhy(s, rm) : null; // 11-27 QA: 넘길 수 없는 방은 폐업(보증금만). 전에는 카드의 [양도]로 권리금까지 다 받았다
+  const back = why ? rm.dep : resale(s, rm), key = back - rm.dep;
   s.cash += back; addMoney(s, "inc", "지점 양도·보증금", back); pr.sold++; pr.soldSum += back - rm.dep; leave(s, rm, key);
+  if (why) { pr.rooms = pr.rooms.filter((x) => x !== rm); pr.sys.smartlock = pr.sys.smartlock.filter((x) => x !== rm.id); log(s, `${rm.name} 폐업. 보증금 ${won(rm.dep)} 회수(권리금 없음: ${why})`, "work"); return { ok: true, key: 0, back, closed: true, msg: `폐업했어요. 보증금 ${won(rm.dep)}만 돌려받았어요(${why})` }; }
   pr.rooms = pr.rooms.filter((x) => x !== rm); pr.sys.smartlock = pr.sys.smartlock.filter((x) => x !== rm.id);
   log(s, `${rm.name} 양도. 보증금 ${won(rm.dep)} + 권리금 ${won(key)} = ${won(back)} 회수`, "work");
   return { ok: true, key, back, msg: `양도 완료, ${won(back)} 회수(보증금 ${won(rm.dep)} + 권리금 ${won(key)})${open ? ` · ${PR_MV.carry.mo}달 안에 다른 동네에 새 지점을 열면 가구·소품과 후기 일부를 들고 가요` : ""}` };

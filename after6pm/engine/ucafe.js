@@ -271,9 +271,9 @@ const ageUp = (st) => { const A = UC_CH.age, a = machAge(st); return a >= A.from
 const oldQ = (st) => { const A = UC_CH.age, a = machAge(st); return a >= A.swap ? Math.min(A.qMax, (Math.floor((a - A.swap) / 12) + 1) * A.qDown) : 0; }; // 교체 시기를 넘긴 기계의 맛 깎임
 export function breakOf(s, st, q = 1, dX = SP.dmgX(s.uc.stores.length)) { return ((st.machine === "buy" ? 0.04 : 0.025) + ([7, 8].includes(s.cal) ? 0.03 : 0) - q * 0.02 + ageUp(st)) * (st.night === false ? UC_F30.night.brk : 1) * dX; }
 function leaseApply(s, st, up) { const was = st.rent; st.rent = Math.round(st.rent * (1 + up)); st.rentAsk = null; st.leaseT = s.t; log(s, `${st.name} 월세 재계약 ${won(was)} → ${won(st.rent)}`, "work"); return `${st.name} 월세 ${won(was)} → ${won(st.rent)} (+${Math.round(up * 1000) / 10}%)`; }
-export const gateCost = (s) => Math.round(UC_CH.reg.gate * SYN.pi(s));
+export const gateCost = (s) => { const q = s.uc?.ch?.gq; return q && s.t - q.t <= 1 ? q.c : Math.round(UC_CH.reg.gate * SYN.pi(s)); }; // 11-27 QA: 장면에서 부른 값을 한 달 동안 그대로 받는다(선택지 348만 · 결과 349만으로 어긋났다)
 export function buyGate(s, id) { const st = s.uc.stores.find((x) => x.id === id); if (!st || st.gate) return { ok: false, msg: "이미 있어요" }; const c = gateCost(s); s.cash -= c; addMoney(s, "exp", "무인카페 출입 인증기", c); st.gate = true; return { ok: true, msg: `${st.name} 출입 인증기 설치(${won(c)}): 밤에도 열 수 있어요` }; }
-export const swapCost = (s, st, to) => ((to || st.machine) === "buy" ? Math.round(UC_CH.age.buy * SYN.pi(s)) : st.machine === "buy" ? Math.round(UC_CH.age.inst * SYN.pi(s)) : 0);
+export const swapCost = (s, st, to) => { const buy = (to || st.machine) === "buy", q = st.sq && s.t - st.sq.t <= 1 ? st.sq : null; return buy ? (q ? q.buy : Math.round(UC_CH.age.buy * SYN.pi(s))) : st.machine === "buy" ? (q ? q.inst : Math.round(UC_CH.age.inst * SYN.pi(s))) : 0; }; // 11-27 QA: 장면에서 부른 값을 한 달 동안 그대로
 // 기계 교체. to 를 주면 방식도 바꾼다("rent": 구매 기계를 렌탈로). 렌탈 재계약은 목돈 없이 월 렌탈비만 오른다
 export function swapMachine(s, id, to) {
   const st = s.uc.stores.find((x) => x.id === id), A = UC_CH.age; if (!st) return { ok: false, msg: "매장이 없어요" };
@@ -290,7 +290,7 @@ export function chRows(s, st) {
   const A = UC_CH.age, LS = UC_CH.lease, RG = UC_CH.reg, a = machAge(st), pi = SYN.pi(s), out = [];
   { const y = Math.floor(st.months / 12), tr = Math.round(trend(st) * 100), q = saleQuote(s, st);
     out.push({ k: "이 자리", v: `${y + 1}년 차 · 이익 추세 ${st.months < 12 ? "아직 1년이 안 됐어요" : avg12(st) < 0 ? "1년 평균 적자" : tr <= -5 ? `고점보다 ${-tr}% 줄었어요` : "고점 근처"}${st.moveAsk && moveDue(st) ? " · 옮길 때가 됐어요" : ""}`, bad: tr <= -UC_CH.move.drop * 100 || (st.months >= 12 && avg12(st) < 0) });
-    out.push({ k: "지금 팔면", v: q.key >= 0 ? `권리금 약 ${won(q.key)}(이익 ${q.mo}달 치) + 보증금 ${won(q.dep)}${q.mach ? ` + 머신 ${won(q.mach)}` : ""}` : `권리금 없음 · 철거비 ${won(-q.key)}, 보증금 ${won(q.dep)}에서 빠져요`, bad: q.key < 0, btn: ["ucclose", "양도"] }); }
+    out.push({ k: "지금 팔면", v: q.key >= 0 ? `권리금 약 ${won(q.key)}(이익 ${q.mo}달 치) + 보증금 ${won(q.dep)}${q.mach ? ` + 머신 ${won(q.mach)}` : ""}` : `권리금 없음 · 보증금 ${won(q.dep)}${q.mach ? ` + 머신 ${won(q.mach)}` : ""} − 철거비 ${won(-q.key)}`, bad: q.key < 0, btn: ["ucclose", "양도"] }); }
   out.push({ k: "주변 경쟁", v: `${st.comp}곳${rivalN(st) ? ` (문 연 뒤 +${rivalN(st)})` : ""} · 1곳마다 잔 수 −6% · 이번 달 또 생길 확률 ${rivalN(st) >= UC_CH.crowd.max ? 0 : Math.round(crowdP(st) * 1000) / 10}%`, bad: st.comp >= 4 });
   const bp = Math.max(0, Math.round(breakOf(s, st, 1) * 1000) / 10), old = a >= A.swap;
   out.push({ k: "기계", v: `${Math.floor(a / 12)}년 ${a % 12}달 · 고장 달 ${bp}%${old ? ` · 낡아서 맛 −${Math.round(oldQ(st) * 100)}%` : a >= A.from ? " · 해마다 고장 +" : ""}${st.machine === "rent" ? ` · 렌탈 월 ${won(Math.round(rentalOf(st) * pi))}` : ""}`, bad: old,
@@ -315,6 +315,7 @@ function leaseScene(s, st, up, hot) {
     ] };
 }
 function swapScene(s, st) {
+  st.sq = { t: s.t, buy: Math.round(UC_CH.age.buy * SYN.pi(s)), inst: Math.round(UC_CH.age.inst * SYN.pi(s)) }; // 부른 값을 적어 둔다
   const A = UC_CH.age, pi = SYN.pi(s), y = Math.floor(machAge(st) / 12), rent = st.machine === "rent", c = swapCost(s, st), again = !!st.mHold;
   const ch = rent ? [
     { t: `새 기계로 재계약한다 (월 렌탈 ${won(Math.round(rentalOf(st) * pi))} → ${won(Math.round(A.rental2 * pi))})`, eff: {}, text: "새 기계가 들어왔다. 추출 소리부터 다르다." },
@@ -328,7 +329,7 @@ function swapScene(s, st) {
     text: `${st.name} 커피 머신이 ${y}년 됐다. 추출이 느려지고 스팀 소리가 거칠다. 점검 기사가 말했다. "이제 바꾸실 때예요." 안 바꾸면 고장은 해마다 늘고, 커피 맛은 해마다 ${Math.round(A.qDown * 100)}%씩 떨어진다.`, choices: ch };
 }
 function regScene(s) {
-  const RG = UC_CH.reg, n = s.uc.stores.length, c = gateCost(s);
+  const RG = UC_CH.reg, n = s.uc.stores.length, c = Math.round(UC_CH.reg.gate * SYN.pi(s)); if (s.uc.ch) s.uc.ch.gq = { t: s.t, c }; // 부른 값을 적어 둔다
   return { kind: "event", tag: "무인카페", title: "무인 매장 규제가 시작됐다", onChoose: "uc_reg", best: [],
     text: `구청에서 공문이 왔다. 무인 매장은 밤에 청소년 출입을 관리하고 위생 점검을 받아야 한다. 출입 인증기를 달면 지금처럼 24시간 열 수 있다. 안 달면 밤 영업을 못 하고(잔 수 −${Math.round((1 - RG.keep) * 100)}%), 단속에 걸리면 과태료 ${RG.fine[0]}~${RG.fine[1]}만 원이다.`,
     choices: [

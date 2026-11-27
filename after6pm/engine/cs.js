@@ -170,9 +170,10 @@ function chMonth(s, r, pass, notes, scenes, fail = 0) {
     cd.on = false; cd.warned = false; cd.at += r.int(C.gap[0], C.gap[1]); if (cd.at < s.t + C.warn + 2) cd.at = s.t + r.int(C.gap[0], C.gap[1]); cd.len = r.int(C.len[0], C.len[1]);
     const st = liveStat(s), d = Math.round((1 - st.mult) * 100);
     if (d >= 3) cd.hurt = true; else cd.healed = true;
+    const rateChip = st.cold && st.cold.ok ? `한파 합격률 ${Math.round(st.cold.rate * 100)}% · 평소 ${Math.round(st.cold.base * 100)}%` : "한파 때 결과가 난 신입 고객이 적어 합격률을 따지지 않았어요"; // 11-27 QA: 고객 0명·기록 부족이면 '0% · 평소 0%'가 나왔다
     if (cs.open) { scenes.push(cd.hurt
-      ? chStory("컨설팅", "한파가 지나갔다", "한파가 지나갔다. 문의함이 조용하다.\n\n그 겨울에 붙여 준 사람이 적었다. 후기를 못 모았으니 당연한 일이다. 다시 한 명씩 붙여 보내는 수밖에 없다.", "consult", [`한파 합격률 ${Math.round(st.cold.rate * 100)}% · 평소 ${Math.round(st.cold.base * 100)}%`, `문의와 신뢰 −${d}%`, "합격자를 내면 회복돼요"])
-      : chStory("컨설팅", "한파가 지나갔다", "버텼다. 붙은 사람보다 못 붙여 준 사람 이름이 더 오래 남는다.\n\n그래도 그 겨울에 붙여 보낸 사람들이 후기를 남겨 줬다. 문의함은 조용해지지 않았다.", "consult", [`한파 합격률 ${Math.round(st.cold.rate * 100)}% · 평소 ${Math.round(st.cold.base * 100)}%`, "한파에도 합격률을 지켜 내서 문의가 빠지지 않았어요"])); log(s, "채용 한파가 끝났다.", "work"); }
+      ? chStory("컨설팅", "한파가 지나갔다", "한파가 지나갔다. 문의함이 조용하다.\n\n그 겨울에 붙여 준 사람이 적었다. 후기를 못 모았으니 당연한 일이다. 다시 한 명씩 붙여 보내는 수밖에 없다.", "consult", [rateChip, `문의와 신뢰 −${d}%`, "합격자를 내면 회복돼요"])
+      : chStory("컨설팅", "한파가 지나갔다", "버텼다. 붙은 사람보다 못 붙여 준 사람 이름이 더 오래 남는다.\n\n그래도 그 겨울에 붙여 보낸 사람들이 후기를 남겨 줬다. 문의함은 조용해지지 않았다.", "consult", [rateChip, (st.cold && st.cold.ok ? "한파에도 합격률을 지켜 내서 문의가 빠지지 않았어요" : "문의는 빠지지 않았어요")])); log(s, "채용 한파가 끝났다.", "work"); }
   } else if (cd.on && cs.open && !scenes.length && s.t - (cd.monoT ?? (cd.monoT = s.t)) >= C.monoGap) {
     // 한파 진행 중 독백(돌려 쓴다): 보장 환불 → 환불 요구 → 합격 뜸함 → 문의 몰림
     const cand = [cs.guar && cs.gRefN ? "guar" : "", cs.refunds || cs.coldRefM ? "refund" : "", pass === 0 ? "nopass" : "", "busy", "nopass", "refund"].filter(Boolean), k = cand.find((x) => x !== cd.monoK) || "busy", m = COLD_MONO[k];
