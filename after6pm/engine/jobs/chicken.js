@@ -8,6 +8,7 @@ import * as SYN from "../syn.js";
 import * as BR from "./chbrand.js"; // 11-23 브랜드 선택·브랜드 인기·갈아타기 제안
 import * as SJ from "../sj.js"; // 초반 고생 배율(ramp)
 import * as SP from "../space.js"; // 11-25 재계약 인상(건물주 성향)·지점 수 파손 배율·히든 길 켜짐 여부
+const CH_NWK = (typeof process !== "undefined" && +process.env.CHNWK) || 0.7; // 11-27 대표 결정: 순자산에는 가게 값(보증금을 뺀 영업양수도 값)의 70%만 넣는다. 팔 때는 전액. 봇 손잡이 CHNWK
 // 11-25 히든 길 '내 브랜드 독립'(hidden.js): 열린 뒤로는 가맹 본사가 없다. 재료 원가 −mat(매출 대비 %p), 본사 광고 분담금·리뉴얼 요구·본사 사건(근접 출점·영업지역·오너 논란) 없음.
 // 소스 납품 수입은 hidden.js HID_REW.chicken.fix. 간판을 바꾼 날 입소문은 0에서 다시(hidden.js openPath)
 export const CH_HID = { mat: 0.08 };
@@ -542,7 +543,7 @@ export default {
     else if (r.chance(0.13)) { const e = pickEvent(s, r); if (e) scenes.push(e); }
     return total;
   },
-  value(s) { const C = s.chicken; if (!C?.stores) return 0; return C.stores.reduce((a, st) => a + st.dep + Math.round(st.equip * Math.max(0, 1 - st.months / 60)), 0); },
+  value(s) { const C = s.chicken; if (!C?.stores) return 0; return C.stores.reduce((a, st) => a + Math.max(Math.round(st.dep + (sellPrice(s, st) - st.dep) * CH_NWK), st.dep + Math.round(st.equip * Math.max(0, 1 - st.months / 60))), 0); }, // 11-27 대표 결정: 순자산에 '지금 넘기면 받는 돈'(영업양수도 값)을 넣는다. 예전 값(보증금 + 설비 감가)보다 낮으면 예전 값
   passive(s) { const C = s.chicken; if (!C?.stores) return 0; return Math.round(C.stores.filter((st) => st.mgr).reduce((a, st) => a + Math.max(0, avgP(st)), 0)); },
   slot: (s) => !!s.chicken?.stores?.some((st) => st.mgr),
   todos(s) {

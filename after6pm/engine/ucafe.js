@@ -151,7 +151,8 @@ function ucEvent(s, r, st, rev) {
   const e = r.pick(L);
   return { kind: "event", tag: "무인카페", title: e.t, text: e.x, choices: e.c };
 }
-export function value(s) { return s.uc.stores.reduce((a, st) => a + st.dep + (st.machine === "buy" ? 700 : 0), 0); }
+// 11-27 대표 결정: 순자산에는 "지금 넘기면 받는 돈"(보증금 + 권리금 + 머신 중고값, 적자면 철거비를 뺌)을 넣는다. 전에는 보증금과 머신 700만만 넣어, 흑자 매장을 넘기는 순간 순자산이 뛰었다
+export function value(s) { return s.uc.stores.reduce((a, st) => a + saleQuote(s, st).total, 0); }
 export function passive(s) { if (!s.uc.agent) return 0; const h = s.uc.hist.slice(-6); return h.length ? Math.max(0, h.reduce((a, b) => a + b, 0) / h.length) : 0; }
 export function todos(s) { const t = []; for (const st of s.uc.stores) { const n = needAp(s, st); if (!s.uc.agent && st.ap < n) t.push({ lv: st.ap < n * 0.5 ? 2 : 1, text: `${st.name} 점검·재고 ${st.ap}/${n}`, go: "ucafe" }); if (st.broken) t.push({ lv: 2, text: `${st.name} 머신 고장: 점검하면 고쳐요`, go: "ucafe" }); if (st.mHold && machAge(st) >= UC_CH.age.swap) t.push({ lv: 1, text: `${st.name} 기계가 낡았어요(${Math.floor(machAge(st) / 12)}년): 보드에서 교체`, go: "ucafe" }); if (st.moveAsk && moveDue(st)) t.push({ lv: 1, text: `${st.name}: 옮길 때가 됐어요(${saleQuote(s, st).key > 0 ? `지금 팔면 권리금 약 ${won(saleQuote(s, st).key)}` : "적자라 권리금 없음"})`, go: "ucafe" }); } return t; }
 
