@@ -768,11 +768,16 @@ function c2NicheWhy(s, k) {
   if (!c2Std(s)) return `${c2NicheN(k)}은 종합컨설팅이 열린 뒤에 열 수 있어요(${c2Gate(s, "total", "std").why.join(" · ")})`;
   return "";
 }
+// 예전 저장의 컨설팅 달 수: 월별 기록(s.hist)에서 컨설팅 수입이 처음 잡힌 달부터. 기록이 없으면 합격 기록을 시작한 달 · 합격자 · 후기 수로 어림한다(합격 한 명 · 후기 하나를 한 달로 본다)
+function c2OpenMo(s) { const cs = s.cs, h = (s.hist || []).find((x) => (x.cs || 0) !== 0), a = h && h.t !== undefined ? s.t - h.t + 1 : 0, b = cs.passT0 !== undefined ? s.t - cs.passT0 : 0, c = Math.min(s.t || 0, Math.max(cs.passes || 0, Math.floor(cs.reviews || 0))); return Math.max(0, Math.round(a > 0 ? a : Math.max(b, c))); }
+// 넘어온 뒤 새 규칙으로 12달이 차기 전에는 예전 수입으로 본업 신호를 띄우지 않는다: 연말 신호(yearend.js)는 s.fullAsk 보다 높은 단계만 묻으므로 그동안만 올려 두었다가 돌려놓는다
+function c2MigTick(s) { const c2 = c2of(s); if (c2.migT === undefined) return; if (s.t < c2.migT + 11 && !BIG.isFull(s)) { if (c2.askHold === undefined) c2.askHold = s.fullAsk || 0; s.fullAsk = 9; } else if (c2.askHold !== undefined) { s.fullAsk = c2.askHold; delete c2.askHold; } }
 export function c2of(s) {
   const cs = s.cs;
   if (!cs.c2) {
     cs.c2 = { v: 1, cards: {}, notes: {}, cases: [], wait: [], seq: 0, open: {}, sell: {}, topP: { total: 2, public: 2, move: 2 }, sp: {}, spAll: 0, ui: {}, back: [], log: [], st: { n: 0, rev: 0, ref: 0, win: 0, lose: 0, left: 0 },
       und: cs.open ? (cs.passes || 0) * B2.und.light + Math.min(120, cs.reviews || 0) * (B2.und.k ?? 1) : 0, undBase: Math.max(0, Math.round((typeof process !== "undefined" && +process.env?.UNDBASE) || +s.ng?.und?.cs || 0)), stage: 1 }; // und: 이번 생에 쌓은 업의 이해도 · undBase: 전생에서 가져온 점수(회차 넘기기가 s.ng.und.cs 에 넣어 준다)
+    if (cs.open && (cs.passes || 0) >= 3) { cs.c2.migT = s.t; cs.c2.mo = c2OpenMo(s); } // 11-28 예전 저장(이미 합격자가 있는 채로 새 구조에 처음 들어옴): 넘어온 달을 적고, 컨설팅 햇수는 개업한 달부터 센다
     if (cs.open && ["high", "ultra"].includes(cs.price) && cs.niches.some((k) => k !== "interview" && k !== "career")) cs.c2.grant = 1; // 예전 저장: 자소서를 고가로 팔던 사람은 종합 표준이 열린 채로 넘어온다
     c2Cards(s);
   }
@@ -884,7 +889,7 @@ function c2ChanHtml(S, esc, W) { const ch = c2of(S).ch || {}, full = BIG.isFull(
 export function c2FullReady(s) {
   const Q = B2.fullReq, c2 = c2of(s), u = undV(s), nn = c2NoteN(c2), h = (s.hist || []).slice(-Q.mo), inc = h.reduce((a, x) => a + (x.cs || 0), 0), sal = h.reduce((a, x) => a + (x.sal || 0), 0);
   const list = [{ n: "최고가 상품이 열림", ok: C2D.STRAT.some((f) => c2.open[f + ":top"] !== undefined) }, { n: `업의 이해도 ${Q.und}`, ok: u >= Q.und, now: u }, { n: `합격 사례집 ${Q.notes}건`, ok: nn >= Q.notes, now: nn }, { n: `후기 ${Q.rev}개`, ok: s.cs.reviews >= Q.rev, now: Math.floor(s.cs.reviews) },
-    { n: `맡고 있는 전략 고객 ${Q.cases}명`, ok: c2.cases.length >= Q.cases, now: c2.cases.length }, { n: `새 채널 ${Q.chan}개 굴리는 중`, ok: c2ChanN(s) >= Q.chan, now: c2ChanN(s) }, { n: `최근 1년 컨설팅 수입이 월급의 ${Math.round((Q.pay ?? 1) * 100)}% 이상`, ok: h.length >= Q.mo && inc >= sal * (Q.pay ?? 1), pay: 1 }];
+    { n: `맡고 있는 전략 고객 ${Q.cases}명`, ok: c2.cases.length >= Q.cases, now: c2.cases.length }, { n: `새 채널 ${Q.chan}개 굴리는 중`, ok: c2ChanN(s) >= Q.chan, now: c2ChanN(s) }, { n: `최근 1년 컨설팅 수입이 월급의 ${Math.round((Q.pay ?? 1) * 100)}% 이상`, ok: h.length >= Q.mo && inc >= sal * (Q.pay ?? 1) && (c2.migT === undefined || s.t >= c2.migT + 11), pay: 1 }];
   return { ok: list.every((x) => x.ok), list };
 }
 const c2FullOk = (s) => c2of(s).fullOk !== 0;
@@ -1153,7 +1158,7 @@ function c2Coach(s, coach, notes) { const c2 = c2of(s); let n = 0; for (const c 
 function c2Month(s, r, notes, scenes, lightPass = 0) {
   const cs = s.cs, c2 = c2of(s); let pass = 0, fail = 0;
   if (!cs.open) return { pass, fail };
-  c2AutoTick(s); c2ChanTick(s, notes, scenes); c2FullTick(s); c2Cards(s, notes); c2Latch(s, notes, scenes); c2AiScene(s, notes, scenes); undMonth(s, lightPass, notes, scenes);
+  c2AutoTick(s); c2MigTick(s); c2ChanTick(s, notes, scenes); c2FullTick(s); c2Cards(s, notes); c2Latch(s, notes, scenes); c2AiScene(s, notes, scenes); undMonth(s, lightPass, notes, scenes);
   let auto = 0, miss = 0;
   for (const c of c2.cases) {
     if (!c.set && s.t - (c.retryT ?? c.t0) >= B2.auto) { c.auto = 1; c.diag = 1; c.set = 1; c.setT = s.t; c.per = null; auto++; }

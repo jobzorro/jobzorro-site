@@ -23,7 +23,7 @@ export const STAT_MCAP = [6, 3, 1.5, 0.6, 0.5];
 if (typeof process !== "undefined" && process.env?.NGG) NG_GROW_T.splice(0, NG_GROW_T.length, ...JSON.parse(process.env.NGG)); // 봇 손잡이(11-26): 회차별 성장 속도 시험. 예) NGG='[1,1,1.1,1.2]'
 export const JOB_XP = 1.2; // v4.28d 실전 경험: 투잡을 하는 달마다 그 투잡 주력 능력치(MG_STAT.of) // v4.28c 능력치마다 한 달에 오를 수 있는 양(구간별: 60·100·150·180·200 미만). 돌파 중이면 2배. 아이템·카드 +N 은 따로
 export const STAT_REP = { months: 3, mult: 0.7 }; // 같은 길로 같은 능력치를 석 달 연속 올리면 ×0.7(다른 길 섞으면 회복)
-export const MG_STAT = { great: 1, good: 0.5, of: { pr: "hands", cs: "talk", airbnb: "talk", ucafe: "hands", insta: "sense", tarot: "talk", tutoring: "talk", chicken: "hands", vibe: "sense", webnovel: "sense", petsit: "sense" } }; // 미니게임 대성공·성공 → 그 투잡의 경험형 능력치
+export const MG_STAT = { great: 1, good: 0.5, of: { pr: "hands", cs: "talk", airbnb: "talk", ucafe: "hands", insta: "sense", tarot: "talk", tutoring: "talk", chicken: "hands", vibe: "sense", webnovel: "sense", petsit: "sense", carwash: "hands", buying: "num" } }; // 미니게임 대성공·성공 → 그 투잡의 경험형 능력치
 // 장소 장면에서 고른 뒤 오르는 능력치(장소마다 다르게) · 선택지 글에 이런 말이 있으면 그 능력치도 조금
 // 11-25 능력치 성장 개편 2-1: 장소 장면 뒤 두 번째 능력치(첫째의 절반). 헬스장 매력, 포차·카페 말빨, 부동산 감각, 성숲길 마케팅 등
 export const LOC_STAT2 = { gym: "charm", cafe: "talk", pub: "talk", realty: "sense", univ: "career", officest: "mkt", hotplace: "mkt", newtown: "sense", club: "talk", online: "write" };
@@ -644,13 +644,15 @@ export const FIRE_TARGET = { single: 300000, married: 400000 }; // 30억(집 12�
 // 11-24 방문 펫시팅은 새 인물과 그림이 준비될 때까지 숨긴다(true 로 바꾸면 열린다). 봇 시험: 환경변수 PSON=1
 // 11-27 새 투잡 둘(출장 세차 · 해외 구매대행): 만드는 동안 숨겨 둔다. 봇은 환경변수 CWON=1 · BYON=1, 화면은 주소에 #…-cwon · #…-byon 을 붙이면 켜진다. 다 되면 true 로 바꾼다
 const _envOn = (k) => typeof process !== "undefined" && !!process.env?.[k], _hashOn = (k) => typeof location !== "undefined" && new RegExp(k, "i").test(location.hash || "");
-export const CARWASH_ON = _envOn("CWON") || _hashOn("cwon");
-export const BUYING_ON = _envOn("BYON") || _hashOn("byon");
+// 11-28 대표 "스위치 켜서 진행": 다섯 스위치를 기본으로 켠다. 끄는 길은 시험용으로만 남긴다(봇은 환경변수 CWON=0 처럼, 화면은 주소에 -cwoff · -byoff · -cs2off · -tu2off · -undoff)
+const _sw = (ek, hk) => !((typeof process !== "undefined" && process.env?.[ek] === "0") || _hashOn(hk + "off"));
+export const CARWASH_ON = _sw("CWON", "cw");
+export const BUYING_ON = _sw("BYON", "by");
 // 11-27 처방형 개편(컨설팅 합격 전략 · 과외 수업안): 만드는 동안 숨겨 둔다. 봇은 CS2ON=1 · TU2ON=1, 화면은 주소에 -cs2on · -tu2on
-export const CS2_ON = _envOn("CS2ON") || _hashOn("cs2on");
-export const TU2_ON = _envOn("TU2ON") || _hashOn("tu2on");
+export const CS2_ON = _sw("CS2ON", "cs2");
+export const TU2_ON = _sw("TU2ON", "tu2");
 // 11-28 업의 이해도를 모든 투잡으로(공통 카드 · 엔딩 · 홈 · 나 화면 · 명예의 전당): 만드는 동안 숨겨 둔다. 봇은 UNDON=1, 화면은 주소에 -undon. 꺼져 있으면 아무것도 쌓이지 않고 보이지 않는다
-export const UND_ON = _envOn("UNDON") || _hashOn("undon");
+export const UND_ON = _sw("UNDON", "und");
 export const PETSIT_ON = true; // 11-26 인물·글·그림을 갖춰 연다(대표 "배포"). 끄려면 false
 export const SIDEJOBS = {
   pr: { n: "파티룸", type: "투자", ic: "door", play: true, fit: ["num", "sense", "hands"], cap: "3,000만~", hours: "주 6~10시간", inc: "월 순수익 약 200만", line: "입지가 전부. 청소·민원은 덤.", hint: "러닝크루·와인·보드게임 모임 뒤풀이에서" },

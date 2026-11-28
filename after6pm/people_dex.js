@@ -52,8 +52,10 @@ export const GROUPS = {
   airbnb: { n: "에어씨앤씨 판", s: "에어", c: "#4fd1d9", ic: "🏠" }, ucafe: { n: "무인카페 판", s: "무인카페", c: "#c8a27a", ic: "☕" }, chicken: { n: "치킨 판", s: "치킨", c: "#ff9f5a", ic: "🍗" },
   tarot: { n: "타로 판", s: "타로", c: "#a98bff", ic: "🔮" }, webnovel: { n: "웹소설 판", s: "웹소설", c: "#7fb2ff", ic: "📚" }, tutoring: { n: "화상과외 판", s: "과외", c: "#a3e05f", ic: "🎧" }, vibe: { n: "바이브코딩 판", s: "바이브", c: "#6ee7b7", ic: "💻" },
   petsit: { n: "펫시팅 판", s: "펫시팅", c: "#f2a97e", ic: "🐾" }, // 11-26 방문 펫시팅(c125~c129)
+  carwash: { n: "세차 판", s: "세차", c: "#6fc3ff", ic: "🚗" }, // 11-28 출장 세차(c130~c134, 스위치 CARWASH_ON)
+  buying: { n: "구매대행 판", s: "구매대행", c: "#7fb4e6", ic: "📦" }, // 11-28 해외 구매대행(c136~c140, 스위치 BUYING_ON 이 꺼져 있으면 인물이 없어 칸도 안 생긴다)
 };
-const ALIAS = { 에어씨앤씨: "airbnb", 무인카페: "ucafe", 치킨: "chicken", 타로: "tarot", 웹소설: "webnovel", 화상과외: "tutoring", 바이브코딩: "vibe", 펫시팅: "petsit", 방문펫시팅: "petsit", petsit: "petsit", 인별: "insta", 인별그램: "insta", insta: "insta", 회사: "co", co: "co", 파티룸: "pr", partyroom: "pr", pr: "pr", 컨설팅: "cs", consult: "cs", cs: "cs", 동네: "town", 취미: "town", town: "town" };
+const ALIAS = { 구매대행: "buying", 해외구매대행: "buying", buying: "buying", 에어씨앤씨: "airbnb", 무인카페: "ucafe", 치킨: "chicken", 타로: "tarot", 웹소설: "webnovel", 화상과외: "tutoring", 바이브코딩: "vibe", 펫시팅: "petsit", 방문펫시팅: "petsit", petsit: "petsit", "출장 세차": "carwash", 세차: "carwash", carwash: "carwash", 인별: "insta", 인별그램: "insta", insta: "insta", 회사: "co", co: "co", 파티룸: "pr", partyroom: "pr", pr: "pr", 컨설팅: "cs", consult: "cs", cs: "cs", 동네: "town", 취미: "town", town: "town" };
 const EXTRA_C = ["#ff9f5a", "#4fd1d9", "#ff6b7f", "#a3e05f", "#e0b35f"];
 export function groupOf(c) {
   const g = c?.group || c?.grp || c?.dex;

@@ -76,15 +76,29 @@ export const perRun = (b) => (b.zone ? CW_BAL.perRunOut : CW_BAL.perRun);
 export const needWaste = (C) => C.bases.some((b) => !b.drain && b.cust > 0);
 export const insCut = (C) => CW_BAL.insCut[C.ins || 0];
 // 건물주·관리 쪽 사람과의 호감이 승인 확률을 올린다: 조력자 효과 cw_bld(2단계 새 인물) · 파티룸의 pr_landlord(건물주) · 아는 사이인 건물주·관리 쪽 인물의 호감
+// 2단계 인물의 조력(11-28): 펫시팅과 같은 꼴. 인물 자료의 helper.effect 는 공통 유형(health·tax·mental)이고, 세차 효과는 인물 id 로 건다.
+//   cw_bld 소병철(c132) 승인 확률 + · cw_waste 길나래(c133) 사업장 시설비 −20% · cw_club 진도윤(c134) 동호회 모임 거점에 새 차가 더 자주 온다
+export const CW_HELP = { cw_bld: "c132", cw_waste: "c133", cw_club: "c134" }, CW_CLUB = 0.3; // CW_CLUB: 동호회 거점 입소문 +30%(조력 1 기준)
+export const cwHelp = (s, eff) => Math.min(1.5, helperPower(s, eff) || (s.rel?.[CW_HELP[eff]]?.helper ? 1 : 0));
+// 히든 길 "거절 장부"(hidden2.js cw_refuse): 열리면 동호회 모임 · 하이엔드 단지의 이해도 조건이 REFUSE.und 배로 낮아지고, 그 두 등급 거점의 승인 판정이 REFUSE.talk 만큼 쉬워진다
+export const REFUSE = { n: 3, und: 0.7, talk: 0.1 };
+export const refuseOn = (s) => s?.h2?.p?.cw_refuse?.open !== undefined;
+export const tierUnd = (s, t) => Math.round((TIERS[t]?.need?.und || 0) * (t >= 2 && refuseOn(s) ? REFUSE.und : 1));
+// 아는 사람이 손님으로(11-28): 이미 아는 인물(호감 KNOWN_AFF 이상)이 일반 아파트 거점의 정기 고객이 된다. 한 사람에 한 번
+export const KNOWN = { c099: "차를 아끼는 증권 PB", c082: "영업 차를 달마다 맡기는 영업 대리", c128: "비행 간 동안 차를 맡기는 승무원" }, KNOWN_AFF = 30, KNOWN_P = 0.1;
+const KNOWN_T = {
+  c099: (n) => `지하 주차장에서 ${n}의 차를 봤다. "여기서 닦는 분이 그쪽이었어요? 제 차도 넣어 줘요. 저는 흠집에 예민해요. 고객 돈만큼요."`,
+  c082: (n) => `${n}에게서 연락이 왔다. "거래처 도는 차라 늘 먼지투성이예요. 달마다 맡길게요. 영수증만 꼭 끊어 줘요."`,
+  c128: (n) => `${n}의 메시지. "열흘 비행이에요. 주차장에 세워 둔 차, 돌아오는 날 맞춰 닦아 줄 수 있어요? 착륙해서 깨끗한 차를 타고 싶어서요."` };
 export function bldHelp(s) {
-  let v = (helperPower(s, "cw_bld") || 0) + 0.7 * (helperPower(s, "pr_landlord") || 0);
+  let v = (cwHelp(s, "cw_bld") || 0) + 0.7 * (helperPower(s, "pr_landlord") || 0);
   for (const [id, x] of Object.entries(s.rel || {})) { const c = CHAR[id]; if (c && /건물주|관리사무|관리소|빌딩 관리/.test(c.job || "") && (x.aff || 0) >= 40) v = Math.max(v, Math.min(0.6, x.aff / 150)); }
   return Math.min(1.5, v);
 }
-export const talkP = (s, L) => { const T = CW_BAL.talk; return clamp(T.base + ((s.st.talk || 0) - L.dc) / T.per + T.help * bldHelp(s) + T.retry * (L.tries || 0), 0.1, 0.95); };
+export const talkP = (s, L) => { const T = CW_BAL.talk; return clamp(T.base + ((s.st.talk || 0) - L.dc) / T.per + T.help * bldHelp(s) + T.retry * (L.tries || 0) + ((L.tier || 0) >= 2 && refuseOn(s) ? REFUSE.talk : 0), 0.1, 0.95); };
 export const bidP = (s) => clamp(0.4 + (out(s) ? 0 : CW_BAL.co.empBid) + (((s.st.talk || 0) + (s.st.num || 0)) / 2 - CW_BAL.gate.bidDc) / 80 + 0.08 * (s.carwash.bidN || 0), 0.12, 0.9);
 export const renewP = (s) => clamp(CW_BAL.co.renew[0] + CW_BAL.co.renew[1] * bidP(s), 0.4, 0.92);
-export function siteCost(s) { const G = CW_BAL.gate, cut = 1 - 0.2 * Math.min(1, helperPower(s, "cw_waste") || 0); return { dep: Math.round(G.dep * pi(s)), fit: Math.round(G.fit * pi(s) * cut) }; } // 처리업체 쪽 조력자(2단계): 시설비 −20%
+export function siteCost(s) { const G = CW_BAL.gate, cut = 1 - 0.2 * Math.min(1, cwHelp(s, "cw_waste") || 0); return { dep: Math.round(G.dep * pi(s)), fit: Math.round(G.fit * pi(s) * cut) }; } // 처리업체 쪽 조력자(2단계): 시설비 −20%
 const qual = (s) => (0.85 + Math.min(120, s.st.hands || 0) / 400) * mod(s, "cwMult", 1);
 // ── 2단계: 가방 · 차 도감 · 처방 · 노트(자료는 carwash_data.js) ──
 export const ITEM = Object.fromEntries(ITEMS.map((x) => [x.id, x])), MODEL = Object.fromEntries(MODELS.map((x) => [x.id, x]));
@@ -102,7 +116,7 @@ export const svcOpen = (s, i) => understanding(s).v >= SVC[i].und;
 export const noteKey = (v) => `${v.m}.${v.g}|${v.p}|${v.c}${svcI(v) === 1 ? "" : "|" + svcOf(v).id}`; // 꼼꼼 세차는 꼬리가 없다(예전 노트와 같은 꼴)
 export const noteN = (C) => Object.keys(C?.notes || {}).length;
 const noteK = (C) => Math.min(CW_BAL.rx.note.max, noteN(C));
-export const tierOpen = (s, t) => { const N = TIERS[t]?.need, C = s.carwash; return !!N && understanding(s).v >= N.und && (s.st?.hands || 0) >= N.hands && (C.washes || 0) >= N.washes; }; // 해금: 능력치(손재주) + 업의 이해도 + 누적 대수
+export const tierOpen = (s, t) => { const N = TIERS[t]?.need, C = s.carwash; return !!N && understanding(s).v >= tierUnd(s, t) && (s.st?.hands || 0) >= N.hands && (C.washes || 0) >= N.washes; }; // 해금: 능력치(손재주) + 업의 이해도 + 누적 대수
 // ── 업의 이해도(세 투잡 공통 꼴): 따로 올리는 행동이 없다. 맞춘 처방(노트)이 주, 일한 기간이 보조. 상한 없이 쌓이고 등급과 가상 순위로 보여 준다 ──
 export function notePts(key, N) { const [mg, p, c, sv] = key.split("|"), [m, g] = mg.split("."); if (!MODEL[m] || !CUSTS[c]) return 0; const S = specOf({ m, g: +g, p, c, s: sv }); return 10 + 6 * S.need.length + 4 * S.ban.length + 4 * S.fine.length + (N.gr === "S" ? 8 + 3 * S.want.length : 0) + Math.round(CLASSES[MODEL[m].cls].price * 1.5) + (sv === "prem" ? 6 : sv === "basic" ? -4 : 0); } // 어려운 조합일수록 크다
 export function understanding(s) { // { v 점수(상한 없음), base 전생에서 가져온 몫, stage 1 초반·2 중반·3 후반, sub, name, rank: { n 등급, i 번호, next 다음 등급까지, top 업계 상위 % } }
@@ -266,6 +280,7 @@ export function priceView(s, p, pct) { // 화면용: 시세 · 내 단가 · 시
     leave: loss <= 0 ? "" : loss < 0.04 ? "거의 없음" : loss < 0.15 ? "몇 명" : "여럿", skill: tol >= 0.3 ? "많이" : tol >= 0.15 ? "꽤" : tol >= 0.05 ? "조금" : "거의 없음", canSet: C.rateT[p] !== s.t };
 }
 function ensure2(C) { // 2단계 저장 항목(없으면 기본값): 입문 가방부터
+  if (!C.known) C.known = {}; // 11-28 손님이 된 아는 사람 { 인물 id: 달 }
   if (!C.own) { C.own = {}; for (const id of STARTERS) C.own[id] = 1; } if (!C.bag) C.bag = STARTERS.slice();
   C.vips = C.vips || []; C.notes = C.notes || {}; C.warn = C.warn || {}; C.dex = C.dex || {}; C.cdex = C.cdex || {}; C.gen = C.gen || {};
   for (const k of ["acc", "rxN", "rxS", "buzz", "studyN", "undBase"]) C[k] = C[k] || 0; C.undAt = C.undAt || {}; C.undSt = C.undSt || 1; if (C.packT == null) C.packT = -1; C.rate = (C.rate || [100, 100, 100]).slice(0, 3); C.rateT = (C.rateT || [-1, -1, -1]).slice(0, 3); C.pauto = (C.pauto || [1, 1, 1]).slice(0, 3); /* 가격 수준: 상품별(기본·꼼꼼·프리미엄). 예전 저장은 기준가 100%에 오토로 시작 */ if (C.genSceneT == null) C.genSceneT = -99;
@@ -333,6 +348,7 @@ export default {
   init: (s) => { const C0 = { v: 3, undBase: Math.max(0, Math.round(UNDBASE || s?.ng?.und?.carwash || 0)), bases: [], leads: [], corps: [], seq: 0, gear: 100, photo: false, waste: 0, ins: 0, dump: 0, fines: 0, lost: 0, closed: 0, lv: 0, runs: 0, cars: 0, promoN: 0, promoX: 1, care: 0, staff: 0, vans: 0, washes: 0, months: 0, cum: 0, hist: [], last: null, evT: -99, rainT: -99, mRev: 0, mCost: 0, mT: -1,
     g: { site: false, bid: false, crew: false, ins: false }, place: false, siteT: null, dep: 0, invest: 0, bidN: 0, bidT: -1, proT: null, strike: 0 }; ensure2(C0); return C0; },
   money: { inc: ["세차 수입"], exp: ["세차 비용"] },
+  mg: { cw_wash: "hands" }, // 미니게임 carwash1 '토요일 아침 세 대'(mg2/carwash1.js): 점수가 세차 돌기의 boost(×0.7~1.5, 거점 평판). 건너뛰기 결과는 손재주 기준
   actions: {
     cw_scout: { n: "거점 찾기", ap: 1, hp: 2, desc: "내 동선 안팎의 건물을 돌아봐요. 주차 규모·배수·관리사무소 분위기가 보여요", stat: { sense: 0.3 } },
     cw_talk: { n: "관리사무소 설득", ap: 1, hp: 2, desc: "승인을 받아야 그 건물에서 일할 수 있어요(말빨 판정). 관리 쪽에 아는 사람이 있으면 쉬워져요", stat: { talk: 0.4 } },
@@ -552,7 +568,7 @@ export default {
       if (b.hold) { b.owed = 0; continue; }
       const pxB = baseX(s, b), full = b.cust * B.per2, left = b.owed; b.back = Math.min(left, full); if (left > full) refundN += left - full;
       if (left > 0 && b.cust > 0) { const over = left / full, p = clamp((over - B.churn.free) * B.churn.k * (wet >= 2 ? B.churn.wet : 1) * clamp(pxB, 0.6, 1.4), 0, 0.6); let q = 0; for (let j = b.cust; j > 0; j--) if (r.chance(p)) q++; if (q) { b.cust -= q; gone += q; b.back = Math.min(b.back, b.cust * B.per2); } b.sat = clamp(b.sat - over * 12, 0, 100); }
-      else if (b.cust > 0 && roomOf(C, b) > 0 && r.chance((B.wom + b.sat / 400 + noteK(C) * R.note.wom + (b.tier && C.buzz > 0 ? 0.15 : 0)) * SJ.ramp(s, "carwash") * mod(s, "cwCust", 1) * baseDemand(s, b))) { if (b.tier) { const x = newVip(s, r, b); if (x) { came.push(x); if (C.buzz > 0) C.buzz--; } } else b.cust++; } // 입소문: 밀린 회차가 없는 건물에서만(고급 거점은 차가 온다)
+      else if (b.cust > 0 && roomOf(C, b) > 0 && r.chance((B.wom + b.sat / 400 + noteK(C) * R.note.wom + (b.tier && C.buzz > 0 ? 0.15 : 0)) * SJ.ramp(s, "carwash") * mod(s, "cwCust", 1) * baseDemand(s, b) * (b.tier === 2 ? 1 + CW_CLUB * cwHelp(s, "cw_club") : 1))) { if (b.tier) { const x = newVip(s, r, b); if (x) { came.push(x); if (C.buzz > 0) C.buzz--; } } else b.cust++; } // 입소문: 밀린 회차가 없는 건물에서만(고급 거점은 차가 온다)
       { const MC = MARKET.churn; // 값 때문에 끊는 고객: 시세보다 많이 비쌀 때만. 고급 거점은 고객마다 지불 의사가 다르다
         if (!b.tier) { const pc = clamp((pxB - MC.from) * MC.k, 0, MC.max); let q = 0; if (pc > 0) for (let j = b.cust; j > 0; j--) if (r.chance(pc)) q++; if (q) { b.cust -= q; goneP += q; b.back = Math.min(b.back || 0, b.cust * B.per2); } }
         else for (const v of vipsAt(C, b, "auto")) { const pc = clamp((priceX(s, svcI(v), b, CUSTS[v.c]?.px || 1, v.q || 1) - MC.from) * MC.k, 0, MC.max) * (v.stay ? 0.5 : 1); if (pc > 0 && r.chance(pc)) { C.vips = C.vips.filter((y) => y !== v); goneP++; } } }
@@ -561,6 +577,15 @@ export default {
     for (const b of C.bases) if (b.hold > 0) { b.hold--; if (!b.hold) notes.push(`출장 세차: ${b.n} 작업이 다시 풀렸어요.`); }
     const back = backAll(C); if (back || gone) notes.push(`출장 세차: 못 돈 회차 ${back}건이 다음 달로 밀렸어요${wet >= 2 ? `(비·결빙 ${wet}주)` : ""}.${gone ? ` 기다리다 지친 정기 고객 ${gone}명이 끊었어요.` : ""}`);
     if (goneP) notes.push(`출장 세차: 값이 부담스럽다며 정기 고객 ${goneP}명이 끊었어요. 지금 값이 시세보다 많이 높아요.`);
+    if (!C.gift && (s.sj?.rp?.carwash?.sen || 0) >= 3) { // 선배(봉하준)를 세 번 찾아가면 자기 거점의 한 층을 넘겨준다(한 번)
+      const gb = C.bases.find((q) => !q.tier && !q.hold && roomOf(C, q) > 0);
+      if (gb) { const n = Math.min(2, roomOf(C, gb)), sn = CHAR.c130?.name || "선배"; gb.cust += n; C.gift = s.t; notes.push(`출장 세차: ${sn}의 전화. "저 B2는 이제 못 돌아요. 그 층 두 대, 그쪽이 맡아 줘요. 차주한테는 말해 놨어요." ${gb.n} 정기 고객 +${n}명.`); log(s, `선배가 거점 한 층을 넘겨줬다(정기 +${n}).`, "work"); }
+    }
+    for (const id of Object.keys(KNOWN)) { // 아는 사람이 손님으로(한 사람에 한 번)
+      const x = s.rel?.[id], c = CHAR[id]; if (!c || !x || C.known[id] != null || (x.aff || 0) < KNOWN_AFF) continue;
+      const kb = C.bases.find((q) => !q.tier && !q.hold && q.cust > 0 && roomOf(C, q) > 0); if (!kb || !r.chance(KNOWN_P)) continue;
+      kb.cust++; C.known[id] = s.t; x.aff = Math.min(100, (x.aff || 0) + 2); notes.push(`출장 세차: ${KNOWN_T[id](c.name)} ${kb.n} 정기 고객 +1명.`); log(s, `${jo(c.name, "이", "가")} 세차 정기 고객이 됐다.`, "work");
+    }
     recon(C);
     if (came.length) notes.push(`출장 세차: 소문을 듣고 새 차 ${came.length}대가 왔어요(${came.map((x) => vipName(x.v)).join(", ")}).${came.some((x) => x.v.st === "wait") ? " 처방을 짜야 해요." : " 노트에 있는 차라 바로 돌아요."}`);
     // 세대 교체: 신형이 나오면 타던 고객이 차례로 갈아탄다. 예전 노트는 구형에만 통한다

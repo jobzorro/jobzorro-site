@@ -33,7 +33,10 @@ function css() {
 const pct = (v) => Math.round(v * 100);
 const rg = (a, f, unit = "") => { const x = f(a[0]), y = f(a[1]); return x === y ? `${x}${unit}` : `${x}~${y}${unit}`; }; // 흐리게 보이는 값은 범위로
 const UTAG = '<span class="tag gold" style="font-size:10.5px">업의 이해도 덕분</span>'; // 11-28 이해도 효과가 적용된 자리에 다는 꼬리표
-const stats = (S, it) => { const v = BY.seeOf(S, it); return `<div class="by-st"><span>마진 <b>×${rg(v.mg, (x) => x.toFixed(1))}</b></span><span>경쟁 <b>${rg(v.comp, pct, "%")}</b></span><span>반품률 <b>${rg(v.ret, pct, "%")}</b></span><span>인증 위험 <b>${rg(v.cert, pct, "%")}</b></span><span>유행 수명 <b>${rg(v.life, Math.round, "달")}</b></span></div>${v.und ? `<div class="tiny muted" style="margin-top:3px">${UTAG} 반품률 · 인증 위험이 정확히 보여요</div>` : ""}`; };
+const stats = (S, it) => { const v = BY.seeOf(S, it); return `<div class="by-st"><span>마진 <b>×${rg(v.mg, (x) => x.toFixed(1))}</b></span><span>경쟁 <b>${rg(v.comp, pct, "%")}</b></span><span>반품률 <b>${rg(v.ret, pct, "%")}</b></span><span>인증 위험 <b>${rg(v.cert, pct, "%")}</b></span><span>유행 수명 <b>${rg(v.life, Math.round, "달")}</b></span></div>${v.und ? `<div class="tiny muted" style="margin-top:3px">${UTAG} 반품률 · 인증 위험이 정확히 보여요</div>` : ""}${v.eye ? `<div class="tiny muted" style="margin-top:3px"><span class="tag" style="font-size:10.5px">${esc(BY.helpName("by_eye", "조력자"))} 덕분</span> 유행 수명이 정확히 보여요</div>` : ""}`; };
+// 11-28 2단계: 지금 켜진 조력(하세온·민도하·채지후)과 스승의 도움을 한 줄씩
+const HELP_T = { by_ship: "두 달 걸리는 입금이 줄어요 · 통관이 멈추면 전화할 수 있어요", by_fee: "주문 수수료 +4% · 광고 효과 +25%", by_eye: "유행 수명이 정확히 보여요 · 규격 설명이 더 빨리 쌓여요" };
+const helpBox = (S) => { const L = BY.helpers(S).map((k) => `<div class="tiny" style="margin-top:3px"><span class="tag" style="font-size:10.5px">조력 · ${esc(BY.helpName(k, "조력자"))}</span> ${HELP_T[k]}</div>`); if (BY.mentorMet(S)) L.push(`<div class="tiny" style="margin-top:3px"><span class="tag" style="font-size:10.5px">스승</span> 제품 인증 서류를 먼저 봐 줘요(판정 +15%p)</div>`); return L.length ? `<div style="margin-top:6px">${L.join("")}</div>` : ""; };
 
 export default {
   key: "buying",
@@ -87,7 +90,7 @@ export default {
     const specs = Object.entries(B.spec || {}).filter(([, v]) => v >= 1).map(([k, v]) => `<span class="by-tg">${esc(k)} 규격 설명 ${Math.round(v)}</span>`).join("");
     const items = `<div class="card"><h3>아이템 <small>${B.items.length}/${BY.slots(B)}개</small></h3>
       <div class="tiny muted">유행에는 수명이 있어요. 식기 전에 다음 아이템을 찾아 둬요. 한 분야로 좁히면 규격 설명이 쌓여 반품이 줄어요.</div>
-      ${B.items.map(item).join("") || `<div class="tiny muted" style="margin-top:6px">아직 고른 아이템이 없어요.</div>`}${specs ? `<div style="margin-top:6px">${specs}</div>` : ""}
+      ${B.items.map(item).join("") || `<div class="tiny muted" style="margin-top:6px">아직 고른 아이템이 없어요.</div>`}${specs ? `<div style="margin-top:6px">${specs}</div>` : ""}${helpBox(S)}
       ${B.cands.length ? `<div class="sec" style="margin-top:10px">후보 셋 <span class="muted small">· 숫자 ${Math.round(S.st.num || 0)}${(S.st.num || 0) < 90 ? " (높을수록 정확히 보여요)" : ""}</span></div>${B.cands.map(cand).join("")}${U.on && !U.see ? `<div class="tiny muted" style="margin-top:4px;opacity:.7">잠김 · 업의 이해도 숙련(300점)부터 반품률과 인증 위험이 정확히 보여요. 지금 ${Math.round(U.v).toLocaleString()}점</div>` : ""}${B.items.length >= BY.slots(B) ? `<div class="tiny muted" style="margin-top:4px">자리가 찼어요. 고르면 가장 식은 아이템과 바뀌어요.</div>` : ""}` : ""}
       <div class="acts" style="padding:0;margin-top:8px">${actRow("by_find")}${actRow("by_post", undefined, `비교 글 쓰기 (${B.postN}편)`)}</div></div>`;
     // 방식 네 단계

@@ -1865,11 +1865,27 @@ function makeNews(s) {
 export function save(s) { const c = JSON.parse(JSON.stringify(s)); c.toasts = []; return JSON.stringify(c); }
 export function load(str) {
   const s = JSON.parse(str); if (s.v !== 4) return null;
-  fillState(s); SJ.fixT0(s); // 버그 2: 굳어 버린 시작 달을 매장 개월 수에 맞춘다
+  const cw1 = !!s.carwash && s.carwash.bag === undefined && (s.carwash.months || 0) > 0; // 11-28 세차 1단계 때 저장(가방 항목이 생기기 전): 초반 고생을 다시 시작하지 않는다(sj.js fixOldRamp)
+  fillState(s); SJ.fixT0(s, { cw1 }); UND.backfill(s); // 11-28 이해도가 없던 때의 저장: 해 온 기간만큼 한 번 채운다(und.js) // 버그 2: 굳어 버린 시작 달을 매장 개월 수에 맞춘다
   return s;
+}
+// 11-28 목록에 없는 인물 정리: 숨김 스위치(주소 해시 포함)를 켜고 만든 저장을 끈 채 열면 CHAR 에 없는 인물 id 가 남아 달 넘기기가 멈춘다.
+//   그런 id 가 하나라도 있을 때만 움직인다(보통 저장은 그대로). 배우자였으면 미혼으로, 연인·조력자·아는 사람이었으면 모르는 사이로 돌린다. 스위치를 다시 켜면 처음 보는 사람으로 돌아온다
+function dropGone(s) {
+  const bad = (id) => typeof id === "string" && /^c\d+$/.test(id) && !CHAR[id];
+  const gone = new Set([...Object.keys(s.rel || {}), ...(s.cast || []), s.fam?.spouse, s.fam?.sp?.id, ...Object.keys(s.wed?.p || {}), ...Object.values(s.spot || {}).flatMap((a) => (Array.isArray(a) ? a : []))].filter(bad));
+  if (!gone.size) return;
+  for (const id of gone) { if (s.rel) delete s.rel[id]; if (s.wed?.p) delete s.wed.p[id]; }
+  if (s.cast) s.cast = s.cast.filter((id) => !gone.has(id));
+  for (const k of Object.keys(s.spot || {})) if (Array.isArray(s.spot[k])) s.spot[k] = s.spot[k].filter((id) => !gone.has(id));
+  if (s.fam) { if (gone.has(s.fam.spouse)) { s.fam.spouse = null; s.fam.spouseType = null; s.fam.marriedT = null; s.fam.lowHappy = 0; s.fam.pregnant = null; } if (s.fam.sp && gone.has(s.fam.sp.id)) delete s.fam.sp; }
+  const hit = (q) => { try { const t = JSON.stringify(q) || ""; for (const id of gone) if (t.includes(`"${id}"`)) return true; } catch (e) {} return false; }; // 그 사람이 나오는 대기 장면
+  for (const k of ["sceneQ", "sceneLater"]) if (Array.isArray(s[k])) s[k] = s[k].filter((q) => !hit(q));
+  if (s.pending && hit(s.pending)) s.pending = null;
 }
 // 없는 칸 기본값 채우기. 불러올 때와 새 판을 만들 때 같이 돈다(버그 10: '이어 한 판'과 '껐다 켠 판'이 같아지게)
 function fillState(s) {
+  try { dropGone(s); } catch (e) { console.warn(e); }
   { const RN = { "LC전자": "엘쥐전자", "SQ하이닉스": "스크하이닉스" }; if (s.co && RN[s.co.name]) s.co.name = RN[s.co.name]; }
   for (const x of Object.values(s.rel || {})) if (x && x.loverSince != null && !x.lover && !x.spouse && x.exT == null) { x.exT = s.t; x.exKind = "drift"; } // 11-25 옛 저장(이별 기록 전)의 헤어진 사이: 이별 달·이유를 채워 재회 장면이 뜨게 한다(히로인 설계 4-4) // 11-25 대표 결정: 게임 속 이름을 스크하이닉스·엘쥐전자로(옛 저장의 회사 이름도 바꾼다)
   if (!s.sj) { s.sj = SJ.init(); s.sj.open = true; for (const k of ["pr", "cs"]) if ((k === "pr" && s.pr.rooms.length) || (k === "cs" && s.cs.niche)) { s.sj.found[k] = 0; s.sj.int[k] = 100; s.sj.active.push(k); } }

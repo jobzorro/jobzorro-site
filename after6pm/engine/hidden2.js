@@ -209,6 +209,31 @@ export const P2 = {
     rew: (s, f) => `숨은 가게: 단가 2~3배(${JN(f.job)} 부대비용 −${Math.round(H2_REW.hide.cut * 100)}%p)·라이벌 영향 −${Math.round(H2_REW.hide.rival * 100)}%p · 매장을 늘리면 사라진다`,
     R: (s, f) => ({ cut: { [f.job]: H2_REW.hide.cut + H2_REW.hide.rival } }) },
 };
+// 11-28 출장 세차 "거절 장부": 스위치(CARWASH_ON)가 켜졌을 때만 길 목록에 든다(꺼진 판의 저장·난수는 그대로).
+// 타르 사건에서 세 번 거절(s.carwash.refuse) + 흠집 시비에서 한 번도 우기지 않기(s.carwash.deny 0) → 수입차 동호회가 "안 되는 건 안 된다고 하는 집"으로 소개한다.
+// 보상: 소개로 맡는 정기 관리비(월 고정) + 세차 엔진이 읽는 효과(jobs/carwash.js refuseOn: 동호회 모임·하이엔드 단지 이해도 조건 완화, 그 거점 승인 판정 +). '하이엔드 단지'·'임원 지정석' 자체를 주지는 않는다
+H2_REW.cwRefuse = { fix: 30 };
+if (D.CARWASH_ON) P2.cw_refuse = { cat: "인연", n: "거절 장부", bg: "apt",
+  c: [["타르 사건에서 세 번 거절하기", (s) => s.carwash?.refuse || 0, 3], ["흠집 시비에서 한 번도 우기지 않기", (s) => (s.carwash?.deny ? 0 : 1), 1], ["고급 주상복합 거점 1곳", (s) => (s.carwash?.bases || []).filter((b) => b.tier >= 1).length, 1]],
+  where: () => ["carwash"], live: (s) => act(s, "carwash"), who: () => "c134",
+  hintOk: (s) => act(s, "carwash") && (s.carwash?.refuse || 0) >= 1 && !s.carwash?.deny,
+  hint: { title: "안 된다고 하는 집", text: (s) => `${s.rel?.c134 && CHAR.c134 ? `${CHAR.c134.name}: ` : "수입차 동호회 총무라는 사람이 말했다. "}"우리 동호회에 장부가 하나 있어요. 잘하는 집 말고, 안 되는 걸 안 된다고 한 집을 적어요. 타르를 억지로 밀다 도장을 벗긴 집은 많은데, 못 한다고 한 집은 드물거든요."` },
+  open: (s) => `동호회 단체방에 글이 올라왔다. '타르를 세 번 거절한 집. 흠집 시비에서 한 번도 안 우긴 집.' 내 얘기다. 그날 저녁 모르는 번호로 전화가 왔다. "임원 차 석 대를 달마다 맡기고 싶은데요. 소개받았어요. 안 되는 건 안 된다고 해 주신다면서요."`,
+  rew: () => `소개로 맡는 임원 차 정기 관리(월 고정 수입) · 동호회 모임과 하이엔드 단지를 여는 업의 이해도 조건 −30% · 그 거점의 승인 판정이 쉬워짐`,
+  R: () => ({ fix: H2_REW.cwRefuse.fix }) };
+// 11-28 해외 구매대행 "단종품 사냥꾼": 스위치(BUYING_ON)가 켜졌을 때만 길 목록에 든다(꺼진 판의 저장·난수는 그대로).
+// 한 분야 규격 설명 100 + 등록을 잃은 적 없음(s.buying.revoked 0) + 늦은 환불 없음(s.buying.late 0, 구매대행 3년 이상) → 수집가들이 단종품·옛 판본을 찾아 달라고 맡긴다.
+// (3년 조건이 없으면 2년 차에 열려 첫 5년 순자산이 0.2억쯤 올라간다. 봇 300판)
+// 보상: 수집가 의뢰(달에 한두 건, 건당 수수료가 크다 → 월 고정 수입). 주문 대행 수수료가 줄어도(판 변화) 이 돈은 그대로다
+H2_REW.byHunt = { fix: 30 }; // 11-28 대표 결정: 월 60만 → 30만(부업만 길 파이어율을 12~15% 목표로 낮춘다)
+if (D.BUYING_ON) P2.by_hunt = { cat: "인연", n: "단종품 사냥꾼", bg: "home",
+  c: [["한 분야 규격 설명 100", (s) => Math.round(Math.max(0, ...Object.values(s.buying?.spec || {}))), 100], ["등록을 한 번도 잃지 않기", (s) => (s.buying && !s.buying.revoked && (s.buying.mode || 0) >= 2 ? 1 : 0), 1], ["3년 넘게 환불이 늦은 적 없기", (s) => (s.buying && !s.buying.late && (s.buying.months || 0) >= 36 ? 1 : 0), 1]],
+  where: () => ["buying"], live: (s) => act(s, "buying"), who: () => "c140",
+  hintOk: (s) => act(s, "buying") && (s.buying?.mode || 0) >= 2 && Math.max(0, ...Object.values(s.buying?.spec || {})) >= 50 && !s.buying.revoked && !s.buying.late,
+  hint: { title: "8년 전에 나온 공책", text: (s) => `${s.rel?.c140 && CHAR.c140 ? `${CHAR.c140.name}: ` : "단골 하나가 긴 메시지를 보냈다. "}"찾는 사람이 있어요. 8년 전에 나온 공책인데, 줄 간격이 지금 것과 달라요. 큰 서비스에는 지금 판본만 있어요. 그분들은 값은 안 물어요. 틀린 걸 받은 적이 있는지만 물어요."` },
+  open: (s) => `모르는 번호로 메시지가 왔다. 사진이 한 장 붙어 있다. 뚜껑 옆면에 숫자가 찍힌 잉크 병이다. "이 판본을 찾습니다. 소개받았어요. 규격 설명을 끝까지 쓰는 분이고, 환불이 늦은 적이 없다고요." 단종된 지 6년 된 물건이다. 해외 중고 상점 네 곳을 뒤져 옆면 숫자가 같은 병을 찾았다. 수수료는 평소 주문의 열 배였다. 다음 주에 두 번째 의뢰가 왔다.`,
+  rew: () => `수집가 의뢰: 단종품·옛 판본을 찾아 주는 일(달에 한두 건, 월 고정 수입) · 주문 대행 수수료가 내려가도 줄지 않는다`,
+  R: () => ({ fix: H2_REW.byHunt.fix }) };
 export const KEYS = Object.keys(P2);
 function nameOf(s, k) { const d = P2[k], f = s.h2?.p?.[k]?.f || {}; if (k === "ng_regress" && f.pairN) return `회귀자의 길 · ${f.pairN}`; if (k === "long" && f.job) return `동네 장인 · ${JN(f.job)}`; if (k === "hide" && f.job) return `숨은 ${JN(f.job)}`; return d.n; }
 

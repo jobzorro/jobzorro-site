@@ -287,7 +287,7 @@ const MG_PER_YEAR = 2;
 const mgMonths = () => { const k = S.year * 7 + (String(S.seed).length || 3); return [2 + (k % 4), 7 + ((k >> 1) % 4)]; };
 const mgCnt = () => (S.mgYr === S.year ? S.mgN ?? 1 : 0); // 올해 한 판 수(옛 저장은 mgYr 만 있다 → 한 번 한 것으로 본다)
 const mgDue = () => S.mgForce || (mgCnt() < MG_PER_YEAR && S.cal >= (mgMonths()[mgCnt()] ?? 13) && !Object.values(S.mgT || {}).includes(S.t)); // 11-25 같은 달에는 한 판만(상반기 것을 늦게 하면 바로 하반기 것이 또 뜨던 것)
-const MG_EV = { pr: "올해 가장 큰 단체 예약이 들어왔다", cs: "공채 시즌, 의뢰가 한꺼번에 몰렸다", airbnb: "성수기 만실 주간이 시작됐다", ucafe: "1년에 한 번 하는 기계 전체 점검 날", insta: "올해의 콜라보 촬영 제안이 왔다" };
+const MG_EV = { pr: "올해 가장 큰 단체 예약이 들어왔다", cs: "공채 시즌, 의뢰가 한꺼번에 몰렸다", airbnb: "성수기 만실 주간이 시작됐다", ucafe: "1년에 한 번 하는 기계 전체 점검 날", insta: "올해의 콜라보 촬영 제안이 왔다", carwash: "토요일 아침, 같은 주차장에 세 대가 한꺼번에 잡혔다" };
 const MGJ = { pr_manage: ["pr", "hands"], cs_work: ["cs", "write"], ab_host: ["airbnb", "lang"], uc_check: ["ucafe", "sense"], in_post: ["insta", "sense"] };
 const MG_SKIP_AT = 3;
 // 이 투잡에서 다음에 나올 미니게임: 같은 투잡에 게임이 여럿이면 번갈아(1탄 → 2탄 → 1탄 …)
@@ -1470,7 +1470,7 @@ function mgRecord(key, r, practice = false) {
   } catch (e) {}
 }
 // 모든 미니게임(투잡 순서대로)
-function mgAll() { mg2Init(); const ks = Object.keys(MG), bs = [...new Set(ks.map((k) => MG[k].base || k))]; return bs.flatMap((b) => ks.filter((k) => (MG[k].base || k) === b)); }
+function mgAll() { mg2Init(); const ks = Object.keys(MG).filter((k) => !(["carwash", "buying"].includes(MG[k].base) && !D.SIDEJOBS[MG[k].base])) /* 11-28 숨겨 둔 투잡의 미니게임은 목록에서도 뺀다 */, bs = [...new Set(ks.map((k) => MG[k].base || k))]; return bs.flatMap((b) => ks.filter((k) => (MG[k].base || k) === b)); }
 function tjxCss() {
   if (document.getElementById("tjxcss")) return;
   const s = document.createElement("style"); s.id = "tjxcss";
@@ -2335,6 +2335,8 @@ const END_JOB = {
     epi: () => (endOn("tutoring") ? "화상과외는 한 반만 남겼다. 수능 날 아침이면 옛 학생들 연락이 온다." : "화상과외는 그만뒀다. 수능 날 아침이면 아직도 일찍 눈이 떠진다."),
     fin: () => "70세, 첫 학생이 자기 아이 과외를 부탁해 왔다." },
   petsit: { n: "방문 펫시팅", kv: () => (S.petsit?.g?.staff ? `돌봄 회사 · 직원 ${S.petsit.staff || 0}명` : `단골 ${(S.petsit?.homes || []).filter((h) => h.trust >= 70).length}가구`), epi: () => (endOn("petsit") ? "펫시팅은 지금도 명절마다 바쁘다. 보고서에는 여전히 본 것만 쓴다." : "펫시팅은 그만뒀다. 남의 집 현관 앞에 서면 아직도 발소리부터 죽인다."), fin: () => "70세, 첫 단골 집 고양이의 손주 고양이가 내 무릎에서 잔다." }, // 11-26 펫시팅 결산 한 줄
+  carwash: { n: "출장 세차", kv: () => (S.carwash?.g?.site && S.carwash.g.bid && S.carwash.g.crew && S.carwash.g.ins ? `세차 회사 · 거점 ${(S.carwash?.bases || []).length}곳` : `거점 ${(S.carwash?.bases || []).length}곳 · 정기 ${(S.carwash?.bases || []).reduce((a, b) => a + (b.cust || 0), 0)}명`), epi: () => (endOn("carwash") ? "출장 세차는 지금도 토요일 6시 반에 시작한다. 작업 전 사진은 여전히 네 면이다." : "출장 세차는 그만뒀다. 남의 차를 보면 아직도 타월 자국부터 보인다."), fin: () => "70세, 내 차는 손주가 닦는다. 휠은 맨 마지막에 닦으라고 일러 줬다." }, // 11-28 출장 세차 결산 한 줄
+  buying: { n: "해외 구매대행", kv: () => ((S.buying?.mode || 1) >= 4 ? `수입 유통사 · 거래처 ${S.buying.dl || 0}곳` : `${["", "소개형", "주문 대행형", "직접 매입형"][S.buying?.mode || 1]} · 누적 ${S.buying?.done || 0}건`), epi: () => (endOn("buying") ? "구매대행은 지금도 밤 11시에 주문을 넣는다. 통관 번호는 여전히 이름과 하나씩 맞춰 본다." : "구매대행은 접었다. 해외 상점의 반품 조건은 아직도 원문으로 읽는다."), fin: () => "70세, 첫 손님이 손주에게 줄 만년필을 찾아 달라고 연락했다." },
   chicken: { n: "치킨집", kv: () => `매장 ${(S.chicken?.stores || []).length}곳`,
     epi: () => ((S.chicken?.stores || []).length ? `치킨집 ${S.chicken.stores.length}곳은 지금도 금요일 밤이 제일 바쁘다. 튀김기 앞에는 이제 점장이 선다.` : "치킨집은 넘겼다. 지금도 치킨을 시키면 기름 색부터 본다."),
     fin: () => "70세, 손주 생일상에는 내 가게 치킨이 올라갔다." },

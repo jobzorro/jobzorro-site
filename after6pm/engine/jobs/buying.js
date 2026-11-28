@@ -6,7 +6,7 @@
 // - 돈의 흐름: 현금 ↔ 운전자금·준비금은 옮기기(장부에 안 적음). 주문을 넣으면 운전자금에서 상품값이 나가고, 입금되면 상품값은 운전자금으로, 수수료는 현금으로 돌아온다.
 // 돈 단위 만원. 규약: engine/jobs/README.md. 숫자는 BY_BAL 한곳에(봇 시험: 환경변수 BYK = 수입 전체 배율, BYB = JSON 덮어쓰기).
 import * as D from "../defs.js";
-import { addMoney, log, won, creditRoom, addLoan, helperPower } from "../core.js";
+import { addMoney, log, won, creditRoom, addLoan, helperPower, CHAR, ensureRel, addAff } from "../core.js";
 import * as SYN from "../syn.js";
 import * as SJ from "../sj.js";
 import * as UND from "../und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. 스위치 UND_ON 이 꺼져 있으면 늘 0 · false)
@@ -14,13 +14,13 @@ import * as UND from "../und.js"; // 11-28 업의 이해도 효과(함수 안에
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const ENV = typeof process !== "undefined" ? process.env || {} : {};
 export const BY_BAL = {
-  k: 0.75 * (+ENV.BYK || 1), // 수입 전체 배율: 봇으로 맞춘 값 0.75 × 세기 손잡이 BYK(기본 1)
+  k: 0.69 * (+ENV.BYK || 1), // 수입 전체 배율: 봇으로 맞춘 값 × 세기 손잡이 BYK(기본 1). 11-28 2단계(수수료 경쟁을 판 변화로 옮김 · 초반 고생 · 라이벌 · 히든 길 · 조력)를 넣고 0.75 → 0.69 로 다시 맞췄다(2회차 본업화 길 파이어율 28~33% 목표 · 부업만 길 12~15% 목표, 11-28 대표 결정). 0.05 차이에 파이어율이 8%p 안팎 움직이니 조심
   unit: 4.7, fee: 1.8, ovh: 0.35, retLoss: 2.6, leak: 0.05, // 건당 상품값 · 수수료 · 결제·포장 비용 · 반품 한 건 손실 · 장부를 안 맞춘 달에 새는 몫
   due: [0.3, 0.55], // 같은 달 입금 · 다음 달 입금(나머지는 두 달 뒤)
   click: [3, 8], ref: 0.2, postNeed: 10, postDecay: 0.97, regCost: 8, wc0: 100,
   slots: [1, 2, 3, 4], dem: [40, 80], life: [14, 36],
   capQ: 14, capO: 16, capCs: 40,
-  squeeze: { from: 60, perYear: 0.07, floor: 0.35 }, // 큰 서비스들이 해마다 수수료를 내린다: 주문 대행 수수료만 6년 차부터 해마다 7%씩(바닥 35%). 재고 판매·거래처에는 안 걸린다
+  squeeze: { from: 60, perYear: 0, floor: 0.35 }, // 큰 서비스들이 해마다 수수료를 내린다. 11-28 같은 이야기가 판 변화(wave.js WAVES.buying)로 옮겨 가서 여기는 0 으로 내렸다(예전 값: 6년 차부터 해마다 7%, 바닥 35%. 되돌리려면 perYear 0.07 + wave.js 의 buying 자료 빼기)
   fx: { sd: 0.025, back: 0.08, lo: 0.85, hi: 1.2 },
   ad: [0, 12, 30, 60], adX: [0, 0.15, 0.3, 0.5],
   staff: { wage: [0, 110, 160, 200], cover: 50, ship: 250, cap: [0, 1, 3, 8], hire: 60, quitP: 0.15, careEach: 2 }, // 한 명에 행동력 0.5(두 명에 1)
@@ -40,6 +40,17 @@ const NAMES = { 문구: ["만년필 잉크", "방안 노트", "황동 샤프", "
 const pi = (s) => SYN.pi(s);
 const emp = (s) => !(s.co?.quit || s.co?.fired);
 const taxHelp = (s) => (helperPower(s, "tax") || 0) > 0; // 세무사 조력자: 정산 대조를 대신 봐 준다
+// 11-28 2단계 조력자: 하세온(물류) · 민도하(마켓 수수료·광고) · 채지후(규격·판본). 그 사람이 조력자가 되면(rel.helper) 켜진다. 봇 시험용 BYHELP=1 은 셋 다 켠 상한
+export const BY_HELP = { by_ship: "c138", by_fee: "c139", by_eye: "c140" };
+export const BY_HFX = { ship: 0.5, fee: 1.04, ad: 1.25, spec: 1.3, cert: 0.15 }; // 두 달 걸리는 입금 몫 ×0.5 · 주문 수수료 ×1.04 · 광고 효과 ×1.25 · 규격 설명 쌓임 ×1.3 · 스승을 만났으면 제품 인증 판정 +15%p
+if (ENV.BYH) Object.assign(BY_HFX, JSON.parse(ENV.BYH)); /* 봇 시험용 */
+export const byHelp = (s, eff) => (ENV.BYHELP || s.rel?.[BY_HELP[eff]]?.helper ? 1 : 0);
+export const helpName = (eff, def) => CHAR[BY_HELP[eff]]?.name || def;
+export const helpers = (s) => Object.keys(BY_HELP).filter((k) => byHelp(s, k)); // 화면용: 지금 켜진 조력
+const eyeX = (s) => (byHelp(s, "by_eye") ? BY_HFX.spec : 1);
+export const mentorMet = (s) => !!s.ms?.met?.buying; // 스승 방영숙을 만났나
+// 첫 손님 후보(기존 인물 여섯): 첫 주문을 넣는 날, 아는 사람이 있으면 그중에서, 없으면 아무나 한 명이 첫 손님이 된다
+const FIRST = [["c055", "만년필 잉크와 방안 노트"], ["c123", "수업용 문구"], ["c105", "키보드 키캡"], ["c059", "필름과 캠핑 컵"], ["c124", "드립 주전자"], ["c072", "목공 끌"]];
 
 // ── 읽기 도우미(화면·봇도 쓴다) ──
 export const tied = (B) => (B.orders || []).reduce((a, o) => a + o.out, 0); // 묶인 돈
@@ -56,7 +67,7 @@ export const dealerCap = (s) => BY_BAL.m4.cap[emp(s) ? 0 : 1];
 export function trend(it) { const a = it.age, L = it.life; return a < 3 ? 0.5 + a / 6 : a <= L - 6 ? 1 : a <= L ? 1 - 0.8 * (a - (L - 6)) / 6 : 0.2 * 0.85 ** (a - L); }
 export const cats = (B) => [...new Set((B.items || []).map((it) => it.cat))];
 export const specOf = (B, cat) => B.spec?.[cat] || 0;
-export function reach(s) { const B = s.buying, A = BY_BAL; return clamp(0.3 + B.posts / 30 + (B.rating - 4.2) * 0.4 + A.adX[B.ad || 0] + (SYN.on(s, "by_insta") ? 0.05 : 0), 0.15, 1.4); }
+export function reach(s) { const B = s.buying, A = BY_BAL; return clamp(0.3 + B.posts / 30 + (B.rating - 4.2) * 0.4 + A.adX[B.ad || 0] * (byHelp(s, "by_fee") ? BY_HFX.ad : 1) + (SYN.on(s, "by_insta") ? 0.05 : 0), 0.15, 1.4); }
 export function conv(s, it) { const B = s.buying; return clamp(0.5 + specOf(B, it.cat) / 250 + (B.deep || 0) * 0.04 - it.comp * 0.25 + (B.cutT > s.t ? 0.2 : 0) + (B.rating - 4.3) * 0.2, 0.2, 0.9); }
 export function retRate(s, it) { const B = s.buying; return it.ret * (1 - 0.6 * specOf(B, it.cat) / 100) * (cats(B).length <= 1 ? 0.85 : 1) * (1 - 0.05 * (B.deep || 0)); }
 export const squeeze = (s) => { const Q = BY_BAL.squeeze; return clamp(1 - Math.max(0, s.t - Q.from) / 12 * Q.perYear, Q.floor, 1); };
@@ -76,7 +87,8 @@ export const undFx = (s) => ({ on: UND.jobs().includes("buying"), v: UND.score(s
 // 화면에 보여 줄 숫자(범위). it.see(흐리게 본 값)는 그대로 두고, 숙련부터 반품률·인증 위험만 정확한 값으로 바꿔 돌려준다
 export function seeOf(s, it) {
   const v = it.see || { mg: [it.mg, it.mg], comp: [it.comp, it.comp], ret: [it.ret, it.ret], cert: [it.cert, it.cert], life: [it.life, it.life] };
-  return it.see && UND.at(s, "buying", UND.TH.숙련) ? { ...v, ret: [it.ret, it.ret], cert: [it.cert, it.cert], und: true } : v;
+  const und = !!it.see && UND.at(s, "buying", UND.TH.숙련), eye = !!it.see && !!byHelp(s, "by_eye"); // 11-28 채지후가 조력자면 유행 수명이 정확히 보인다(이해도 효과와 겹치지 않는 칸)
+  return und || eye ? { ...v, ...(und ? { ret: [it.ret, it.ret], cert: [it.cert, it.cert], und: true } : {}), ...(eye ? { life: [it.life, it.life], eye: true } : {}) } : v;
 }
 export const newCat = (s, it) => !cats(s.buying).includes(it.cat) && (s.buying.spec?.[it.cat] || 0) < BY_UND.spec0; // 처음 들어가는 분야인가(장인 효과가 붙는 자리)
 function mkItem(s, r, cat) {
@@ -110,7 +122,8 @@ function ev(s, r) {
     { id: "hold", ok: () => B.mode >= 2 && fl.length > 0, t: "통관이 멈췄다", x: `고객이 적어 준 통관 번호와 이름이 맞지 않는다. 물건 ${n}건이 세관에 서 있다. 고객은 답이 느리다. 배송 문의가 쌓인다.`,
       c: [{ t: "고객에게 번호를 다시 받는다", eff: {}, text: "까톡을 세 번 보냈다. 나흘 뒤에 답이 왔다. 배송은 2주 밀렸다." },
         { t: "내 통관 번호로 넣는다", eff: {}, text: "내 이름으로 넣자 그날 풀렸다. 남의 물건을 내 이름으로 들여온 셈이다." },
-        { t: "반송한다", eff: {}, text: "물건은 돌아갔다. 반송비는 내가 냈다. 고객에게는 전액 돌려줬다." }] },
+        { t: "반송한다", eff: {}, text: "물건은 돌아갔다. 반송비는 내가 냈다. 고객에게는 전액 돌려줬다." },
+        ...(byHelp(s, "by_ship") ? [{ t: `${helpName("by_ship", "물류센터 담당")}에게 전화한다`, eff: {}, text: `새벽 2시에 전화를 받았다. "번호 끝 네 자리요." 상자는 선반에서 사흘을 기다렸고, 그사이 고객의 본인 번호가 왔다. 반송도 지연도 없었다.` }] : [])] },
     { id: "ret", ok: () => B.mode >= 2 && B.done >= 10, t: "반품이 왔다", x: `구멍 간격이 다른 판본이었다. ${n}건이 한꺼번에 돌아온다. 해외 판매자는 환불에 3주가 걸린다고 한다. 고객에게 돌려줄 돈은 ${won(amt)}.`,
       c: [{ t: "내 돈으로 사흘 안에 환불한다", eff: {}, text: "준비금에서 먼저 돌려줬다. 판매자 돈은 다음 달에 들어온다." },
         { t: "판매자 돈을 기다린다", eff: {}, text: "3주를 기다리게 했다. 기한을 넘겼고, 고객 둘이 신고를 넣었다." },
@@ -140,6 +153,7 @@ export default {
     up: { imp: false, wh: false, cert: false }, upT: null, dep: 0, m3T: null, g: { corp: false, cert: false, wh: false, deal: false }, corpN: 0, corpT: null, dealT: 0, flt: 0, dl: 0, bh: 1, proT: null, renewT: null,
     cutT: 0, zeroT: 0, narrowT: 0, haltT: 0, pauseT: 0, fast: false, evT: -99, months: 0, cum: 0, hist: [], last: null, mRev: 0, mCost: 0, shipLast: 0 }),
   money: { inc: ["구매대행 수입"], exp: ["구매대행 비용"] },
+  mg: { by_order: "num" }, // 미니게임 buying1 '통관 번호 맞추기'(mg2/buying1.js): 점수가 주문 넣기의 boost(×0.7~1.5 → 한 번에 넣는 건수). 건너뛰기 결과는 숫자 기준
   actions: {
     by_find: { n: "아이템 찾기·규격 확인", ap: 1, hp: 2, desc: "후보 셋이 나와요. 숫자가 높을수록 마진·반품률이 정확히 보여요", stat: { num: 0.4 } },
     by_pick: { n: "후보를 아이템으로 고르기", ap: 0, hp: 0, desc: "자리가 차 있으면 가장 식은 아이템과 바꿔요" },
@@ -196,7 +210,7 @@ export default {
   act(s, r, id, arg, boost = 1) {
     const B = s.buying, A = BY_BAL, P = pi(s), G = A.gate;
     const spend = (v) => { v = Math.round(v); s.cash -= v; addMoney(s, "exp", "구매대행 비용", v); B.mCost += v; return v; };
-    if (id === "by_find") { genCands(s, r); addSpec(B, 4 * boost); return { lines: ["후보 셋을 찾았어요", cats(B).length ? "규격 설명 +" : "보드에서 하나를 골라요"], msg: r.pick(["샘플을 받아 자로 쟀다. 상세 설명의 치수와 2mm가 달랐다.", "해외 후기 삼백 개를 읽었다. 별 하나짜리부터 읽는다.", "같은 이름인데 판본이 셋이다. 구멍 간격이 다 다르다."]) }; }
+    if (id === "by_find") { genCands(s, r); addSpec(B, 4 * boost * eyeX(s)); return { lines: ["후보 셋을 찾았어요", cats(B).length ? "규격 설명 +" : "보드에서 하나를 골라요"], msg: r.pick(["샘플을 받아 자로 쟀다. 상세 설명의 치수와 2mm가 달랐다.", "해외 후기 삼백 개를 읽었다. 별 하나짜리부터 읽는다.", "같은 이름인데 판본이 셋이다. 구멍 간격이 다 다르다."]) }; }
     if (id === "by_pick") {
       const it = B.cands[+(arg ?? 0)]; B.cands = []; let out = null;
       if (B.items.length >= slots(B)) { out = B.items.slice().sort((a, b) => trend(a) - trend(b) || (a.stock || 0) - (b.stock || 0))[0]; B.items = B.items.filter((x) => x !== out); }
@@ -214,13 +228,15 @@ export default {
       return { lines: [`견적 ${sent}건 → 주문 확정 ${got}건`, "이번 달 안에 주문을 넣어야 지금 환율이에요"], msg: r.pick(["상품값, 해외 배송비, 세금, 수수료. 네 줄로 나눠 적었다.", "견적서 끝에 유효기한을 적었다. 환율은 기다려 주지 않는다."]) };
     }
     if (id === "by_order") {
-      let cap = Math.round((A.capO + (s.st.num || 0) / 10) * boost * (B.pauseT > s.t ? 0.5 : 1)), put = 0, fee = 0, out = 0; const each = orderCost(s);
-      for (const q of B.q.slice()) { if (cap <= 0) break; const it = B.items.find((x) => x.id === q.it), n = Math.min(q.n, cap, Math.floor(B.wc / each)); if (n <= 0) { B.dry = true; break; } const f = A.fee * (it?.mg || 1) * P * A.k * squeeze(s) * (B.cutT > s.t ? 0.55 : 1) * (B.fast ? 0.92 : 1) - A.unit * P * Math.max(-0.05, B.fx - q.fxq); q.n -= n; cap -= n; put += n; fee += n * f; out += n * each; B.wc -= n * each; if (q.n <= 0) B.q = B.q.filter((x) => x !== q); else if (B.wc < each) B.dry = true;
-        const u = r.range(0, 1), d = B.fast ? (u < 0.6 ? 0 : 1) : u < A.due[0] ? 0 : u < A.due[0] + A.due[1] ? 1 : 2; B.orders.push({ id: "O" + (++B.oseq), it: q.it, nm: it?.n || "주문", n, out: n * each, fee: n * f, t: s.t, due: s.t + d, ret: it ? retRate(s, it) : 0.08, cat: it?.cat }); }
+      let cap = Math.round((A.capO + (s.st.num || 0) / 10) * boost * (B.pauseT > s.t ? 0.5 : 1)), put = 0, fee = 0, out = 0; const each = orderCost(s), hf = byHelp(s, "by_fee") ? BY_HFX.fee : 1, two = (1 - A.due[0] - A.due[1]) * (byHelp(s, "by_ship") ? BY_HFX.ship : 1); // 11-28 조력: 수수료 조건 · 두 달 걸리는 입금 몫
+      for (const q of B.q.slice()) { if (cap <= 0) break; const it = B.items.find((x) => x.id === q.it), n = Math.min(q.n, cap, Math.floor(B.wc / each)); if (n <= 0) { B.dry = true; break; } const f = A.fee * (it?.mg || 1) * P * A.k * squeeze(s) * (B.cutT > s.t ? 0.55 : 1) * (B.fast ? 0.92 : 1) * hf - A.unit * P * Math.max(-0.05, B.fx - q.fxq); q.n -= n; cap -= n; put += n; fee += n * f; out += n * each; B.wc -= n * each; if (q.n <= 0) B.q = B.q.filter((x) => x !== q); else if (B.wc < each) B.dry = true;
+        const u = r.range(0, 1), d = B.fast ? (u < 0.6 ? 0 : 1) : u < A.due[0] ? 0 : u < 1 - two ? 1 : 2; B.orders.push({ id: "O" + (++B.oseq), it: q.it, nm: it?.n || "주문", n, out: n * each, fee: n * f, t: s.t, due: s.t + d, ret: it ? retRate(s, it) : 0.08, cat: it?.cat }); }
       B.mOrd += put; B.done += put; if (put && SYN.on(s, "by_night")) s.hp = Math.max(0, s.hp - 1); // 밤 11시 주문
-      return { lines: [`주문 ${put}건 · 상품값 ${won(Math.round(out))}이 묶였어요`, `받을 수수료 ${won(Math.round(fee))}`, ...(B.dry ? ["운전자금이 모자라 남은 견적은 못 넣었어요"] : [])], msg: r.pick(["밤 11시, 통관 번호 열두 개를 이름과 하나씩 맞춰 봤다.", "결제 버튼을 누를 때마다 통장 숫자가 줄었다. 내 돈이 먼저 간다.", "주문 번호를 표에 옮겼다. 주문일, 도착 예정일, 입금 예정일."]) };
+      let fl = []; if (put && !B.first) { const L = FIRST.filter(([c]) => CHAR[c] && !s.rel?.[c]?.spouse && !s.rel?.[c]?.lover), kn = L.filter(([c]) => s.rel?.[c]), f = L.length ? r.pick(kn.length ? kn : L) : null; B.first = f ? f[0] : "-"; /* 11-28 첫 손님: 기존 인물 여섯 가운데 한 명 */
+        if (f) { const nm = CHAR[f[0]].name; if (!s.cast.includes(f[0])) s.cast.push(f[0]); ensureRel(s, f[0]); addAff(s, f[0], 5); fl = [`첫 손님: ${nm} · ${f[1]}`, `${nm} 호감 +`]; log(s, `구매대행 첫 주문: ${nm}`, "work"); } }
+      return { lines: [...fl, `주문 ${put}건 · 상품값 ${won(Math.round(out))}이 묶였어요`, `받을 수수료 ${won(Math.round(fee))}`, ...(B.dry ? ["운전자금이 모자라 남은 견적은 못 넣었어요"] : [])], msg: r.pick(["밤 11시, 통관 번호 열두 개를 이름과 하나씩 맞춰 봤다.", "결제 버튼을 누를 때마다 통장 숫자가 줄었다. 내 돈이 먼저 간다.", "주문 번호를 표에 옮겼다. 주문일, 도착 예정일, 입금 예정일."]) };
     }
-    if (id === "by_cs") { B.csN++; addSpec(B, 2 * boost); star(B, 0.005 * boost); return { lines: [`응대 ${B.csN}/${Math.max(1, csNeed(B))}`, "규격 설명 +"], msg: r.pick(["\"지금 어디쯤인가요?\" 서른 번 받은 질문에 서른 번 답했다.", "배송 조회 화면을 캡처해 먼저 보냈다. 묻기 전에 알려 주면 문의가 준다.", "반품 조건을 원문으로 다시 읽었다. '개봉 전'이라는 말이 있었다."]) }; }
+    if (id === "by_cs") { B.csN++; addSpec(B, 2 * boost * eyeX(s)); star(B, 0.005 * boost); return { lines: [`응대 ${B.csN}/${Math.max(1, csNeed(B))}`, "규격 설명 +"], msg: r.pick(["\"지금 어디쯤인가요?\" 서른 번 받은 질문에 서른 번 답했다.", "배송 조회 화면을 캡처해 먼저 보냈다. 묻기 전에 알려 주면 문의가 준다.", "반품 조건을 원문으로 다시 읽었다. '개봉 전'이라는 말이 있었다."]) }; }
     if (id === "by_book") { B.bk = true; B.unbk = 0; return { lines: ["이번 달 정산을 맞췄어요"], msg: r.pick(["주문 표와 카드 내역, 정산 내역을 나란히 놓았다. 한 건이 빠져 있었다.", "수수료가 두 번 빠진 건을 찾았다. 문의를 넣었다."]) }; }
     if (id === "by_ad") { B.ad = arg != null && arg !== "" ? clamp(+arg || 0, 0, 3) : ((B.ad || 0) + 1) % 4; return { lines: [`광고 ${B.ad}단계 · 월 ${won(A.ad[B.ad] * P)}`], msg: "" }; }
     if (id === "by_hire") { if (arg === "-") { spend(A.staff.wage[B.mode - 1] * P); B.staff--; B.care = Math.min(B.care, careNeed(B)); return { lines: [`직원 ${B.staff}명`, `한 달 치 월급 −${won(A.staff.wage[B.mode - 1] * P)}`], msg: "한 달 치 월급을 더 주고 보냈다." }; } spend(A.staff.hire * P); B.staff++; B.hired++; return { lines: [`직원 ${B.staff}/${staffCap(B)}명`, `월급 ${won(A.staff.wage[B.mode - 1] * P)} · 사람 챙기기 ${careNeed(B)}번 필요`], msg: "첫 주는 답변을 같이 썼다. \"모르면 모른다고 쓰세요.\"" }; }
@@ -236,7 +252,7 @@ export default {
     if (id === "by_gate") {
       const k = GATES[gateStep(B)][0];
       if (k === "corp") { spend(G.corpCost * P); B.corpN++; if (B.corpN < G.corpN) return { lines: [`법인 등록 ${B.corpN}/${G.corpN}`], msg: "개인 이름으로 했던 등록을 법인 이름으로 하나씩 다시 넣는다." }; B.corpT = s.t + G.corpMo; return { lines: [`법인 등록 ${G.corpN}/${G.corpN} · 처리에 ${G.corpMo}달쯤`, "명의를 옮기는 동안 판매가 줄어요"], msg: "상점 이름 옆에 '주식회사'가 붙을 예정이다." }; }
-      if (k === "cert") { const ok = r.chance(clamp(0.5 + ((s.st.num || 0) - G.certDc) / 50, 0.2, 0.95)); spend(G.cert * P * (ok ? 1 : 0.35)); if (!ok) return { lines: ["서류 보완 요청", "시험 성적서의 숫자가 안 맞았어요"], msg: "단위가 인치와 밀리미터로 섞여 있었다. 다시 넣는다." }; B.g.cert = true; return { lines: ["관문 2/4 · 제품 인증"], msg: "이제 이 물건에 문제가 생기면 내 책임이다. 그래서 값을 받을 수 있다." }; }
+      if (k === "cert") { const ok = r.chance(clamp(0.5 + ((s.st.num || 0) - G.certDc) / 50 + (mentorMet(s) ? BY_HFX.cert : 0), 0.2, 0.95)); /* 11-28 스승 방영숙: 서류를 먼저 봐 준다 */ spend(G.cert * P * (ok ? 1 : 0.35)); if (!ok) return { lines: ["서류 보완 요청", "시험 성적서의 숫자가 안 맞았어요"], msg: "단위가 인치와 밀리미터로 섞여 있었다. 다시 넣는다." }; B.g.cert = true; return { lines: ["관문 2/4 · 제품 인증", ...(mentorMet(s) ? [`${CHAR.c137?.name || "스승"}이 서류를 먼저 봐 줬어요`] : [])], msg: "이제 이 물건에 문제가 생기면 내 책임이다. 그래서 값을 받을 수 있다." }; }
       if (k === "wh") { const dep = Math.round((G.dep - A.m3.dep) * P), flt = Math.round(G.flt * P), tot = dep + flt, lack = tot - s.cash; if (lack > 0) { addLoan(s, "사업자대출", lack + 100, 0.048); s.cash += lack + 100; } s.cash -= tot; B.dep += dep; B.flt += flt; B.g.wh = true; log(s, `구매대행: 큰 창고와 첫 물량 ${won(tot)}`, "work"); return { lines: ["관문 3/4 · 창고·재고 자금", `보증금 ${won(B.dep)} · 첫 물량 ${won(flt)}`, `월세 ${won(G.rent * P)}`], msg: "지게차가 들어오는 창고다. 보증금 숫자를 세 번 읽었다." }; }
       if (k === "deal") { spend(G.trip * P); const v = (s.st.lang || 0) * 0.6 + (s.st.talk || 0) * 0.4, ok = r.chance(clamp(0.5 + (v - G.dealDc) / 50, 0.15, 0.95)); if (!ok) { B.dealT = s.t + G.retry; return { lines: ["계약 불발", `${G.retry}달 뒤 다시 만나요`], msg: "\"반품 책임\" 조항을 내가 잘못 읽었다. 그쪽은 웃으며 다음에 보자고 했다." }; }
         B.g.deal = true; B.mode = 4; B.proT = s.t; B.renewT = s.t + A.m4.renew; B.dl = Math.max(B.dl, 2); log(s, "해외 브랜드와 국내 공급 계약을 맺었다. 수입 유통사가 됐다.", "work"); return { lines: ["관문 4/4 · 공급 계약", "수입 유통사가 됐어요", "거래처 늘리기가 열려요"], msg: "계약서 서른 장을 원문으로 읽었다. 서명은 맨 마지막 장에 했다." }; }
@@ -252,6 +268,7 @@ export default {
       if (E.id === "hold") { const o = B.orders.filter((x) => !x.kind && x.due >= s.t).sort((a, b) => b.n - a.n)[0];
         if (i === 0) { if (o) { o.due += 1; o.hold = true; } st(-0.05); out.push("입금이 한 달 밀려요"); }
         else if (i === 1) { B.shady++; if (r.chance(0.25)) { const f = Math.round(150 * P); s.cash -= f; addMoney(s, "exp", "구매대행 비용", f); B.mCost += f; const lost = punish(s, "남의 물건을 내 통관 번호로 넣은 것이 문제가 됐다."); out.push(`문제가 됐어요 · 물어낸 돈 −${won(f)}`, lost ? "등록을 잃었어요. 등록 세 가지를 처음부터 다시 해요" : "석 달 동안 판매가 멈춰요(방식과 관문은 그대로예요)"); } else out.push("이번에는 넘어갔어요"); }
+        else if (i === 3) { st(0.02); out.push("배송이 밀리지 않았어요"); }
         else { if (o) { const k = Math.min(o.n, E.n || 3), per = o.out / o.n; o.fee -= k * (o.fee / o.n); o.out -= k * per; o.n -= k; B.wc += k * per; if (o.n <= 0) B.orders = B.orders.filter((x) => x !== o); } loss((E.n || 3) * 1.2 * P); } }
       else if (E.id === "ret") { const amt = E.amt || 20;
         if (i === 0) { const late = payLoss(s, amt); B.orders.push({ id: "O" + (++B.oseq), kind: "rf", nm: "판매자 환불", n: E.n || 3, out: amt * 0.8, fee: 0, t: s.t, due: s.t + 1, ret: 0 }); addMoney(s, "exp", "구매대행 비용", Math.round(amt * 0.2)); B.mCost += Math.round(amt * 0.2); out.push(`먼저 환불 −${won(amt)}`, "판매자 돈은 다음 달에 80%가 돌아와요"); if (late) { out.push("준비금·운전자금이 모자라 현금에서 나갔어요"); } st(0.03); }
@@ -320,6 +337,10 @@ export default {
       if (B.mode >= 2 && B.mode < 3 && it.cert > 0.05 && r.chance(it.cert * 0.08)) { const f = Math.round(80 * P); cost += f; B.items = B.items.filter((x) => x !== it); star(B, -0.1); notes.push(`구매대행: ${it.n}이 인증 문제로 판매가 막혔어요. ${won(f)}을 물어냈어요.`); } }
     if (B.mode >= 2 && B.q.length && B.dry) { B.dryM++; notes.push(`구매대행: 운전자금이 바닥나 견적 ${quoted(B)}건의 주문을 못 넣었어요. 다음 달에는 환율이 달라져요.`); }
     if (B.expired) notes.push(`구매대행: 기한이 지난 견적 ${B.expired}건이 취소됐어요.`);
+    if (!B.gift && B.mode >= 2 && (s.sj?.rp?.buying?.sen || 0) >= 2 && B.items.length < slots(B)) { // 11-28 선배가 넘겨준 아이템: 경쟁·반품·인증 위험이 낮고 숫자를 다 적어 준다
+      const cat = cats(B)[0] || "문구"; let it = mkItem(s, r, cat), g = 0; while (B.items.some((x) => x.n === it.n) && g++ < 6) it = mkItem(s, r, cat);
+      it.mg = Math.max(it.mg, 1); it.comp = Math.min(it.comp, 0.3); it.ret = Math.min(it.ret, 0.05); it.cert = 0; it.life = Math.max(it.life, 30); delete it.see; it.from = "c136"; B.items.push(it); B.spec[it.cat] = B.spec[it.cat] || 0; B.gift = s.t + 1;
+      const nm = CHAR.c136?.name || "선배"; notes.push(`구매대행: ${nm} 선배가 단골 아이템 하나를 넘겨줬어요. ${it.cat} · ${it.n}. "제 단골이 찾던 물건인데 저는 문구만 해서요. 숫자는 다 적어 놨어요."`); log(s, `선배가 넘겨준 아이템: ${it.n}`, "work"); }
     // 8) 사건
     if (s.t - B.evT >= A.ev.gap && r.chance(A.ev.p) && !scenes.some((x) => x.kind === "event")) { const sc = ev(s, r); if (sc) { B.evT = s.t; scenes.push(sc); } }
     // 9) 정산
@@ -350,7 +371,8 @@ export default {
     const fltBack = Math.round((B.flt || 0) * M.back), fltLoss = Math.round(B.flt || 0) - fltBack; s.cash += fltBack; if (fltLoss > 0) addMoney(s, "exp", "구매대행 비용", fltLoss);
     const sv = Math.round(B.items.reduce((a, it) => a + (it.stock || 0) * (it.cost || 0), 0)), sGet = Math.round(stockVal(B) * M.stockBack); if (sv > 0) { s.cash += sGet; addMoney(s, "inc", "구매대행 수입", sGet); addMoney(s, "exp", "구매대행 비용", sv); }
     Object.assign(B, { wc: 0, rsv: 0, orders: [], q: [], dep: 0, flt: 0, staff: 0, dl: 0, ad: 0, mode: 1, up: { imp: false, wh: false, cert: false }, upT: null, g: { corp: false, cert: false, wh: false, deal: false }, corpN: 0, corpT: null, proT: null, renewT: null }); for (const it of B.items) { it.stock = 0; it.gray = false; it.inq = 0; } },
-  migrate(s, T) { if (!T.v) T.v = 1; T.items = T.items || []; T.cands = T.cands || []; T.orders = T.orders || []; T.q = T.q || []; T.hist = T.hist || []; T.spec = T.spec || {}; T.up = T.up || { imp: false, wh: false, cert: false }; T.g = T.g || { corp: false, cert: false, wh: false, deal: false }; if (!(T.fx > 0)) T.fx = 1; if (!(T.rating > 0)) T.rating = 4.4; if (!T.mode) T.mode = 1; },
+  migrate(s, T) { for (const k of ["posts", "postN", "regN", "wc", "rsv", "seq", "deep", "oseq", "done", "sold", "best", "best3", "mOrd", "csN", "unbk", "ad", "staff", "hired", "care", "late", "dryM", "revoked", "shady", "dep", "corpN", "dealT", "flt", "dl", "cutT", "zeroT", "narrowT", "haltT", "pauseT", "months", "cum", "mRev", "mCost", "shipLast"]) if (!Number.isFinite(T[k])) T[k] = 0; if (!(T.bh > 0)) T.bh = 1; if (!(T.fx0 > 0)) T.fx0 = T.fx > 0 ? T.fx : 1; if (!Number.isFinite(T.evT)) T.evT = -99; /* 11-28 예전 저장에 없는 숫자 항목 */
+    if (!T.v) T.v = 1; T.items = T.items || []; T.cands = T.cands || []; T.orders = T.orders || []; T.q = T.q || []; T.hist = T.hist || []; T.spec = T.spec || {}; T.up = T.up || { imp: false, wh: false, cert: false }; T.g = T.g || { corp: false, cert: false, wh: false, deal: false }; if (!(T.fx > 0)) T.fx = 1; if (!(T.rating > 0)) T.rating = 4.4; if (!T.mode) T.mode = 1; },
   milestones: [
     { key: "by_first", title: "첫 다섯 건", test: (s) => (s.buying?.done || 0) >= 5, lines: ["주문 다섯 건을 넣었다. 통장에서 내 돈이 먼저 나갔다.", "3주 뒤, 수수료 다섯 건이 한꺼번에 들어왔다."] },
     { key: "by_m40", title: "월 40건", test: (s) => (s.buying?.best || 0) >= 40, lines: ["한 달에 마흔 건을 넣었다.", "주문이 늘수록 통장이 먼저 비었다. 표에 입금 예정일 칸을 하나 더 만들었다."] },

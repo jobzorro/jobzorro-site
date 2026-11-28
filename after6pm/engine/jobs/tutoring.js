@@ -467,12 +467,28 @@ function detR(seed) { let x = (Math.imul(seed | 0, 2654435761) >>> 0) || 1; cons
 const allNotes = (X) => X.base.length + X.notes.length;
 const freshN = (T, X) => X.base.filter((e) => e === (T.evN || 0)).length + X.notes.filter((n) => n.ev === (T.evN || 0)).length;
 function syncFit(T, X) { T.fit = clamp(Math.round(100 * freshN(T, X) / Math.max(1, allNotes(X))), 0, 100); }
+// 예전 저장(개편 전에 하던 과외)의 업의 이해도 어림. 한 수업 · 성적 상승 · 기간으로 채우고, 같은 기간을 새 규칙으로 한 선생의 가운데 값(봇 300판)을 넘지 않게 자른다. 막 시작한 판은 0
+const UND_OLD = [[0, 0], [12, 1], [24, 21], [36, 170], [60, 494], [84, 736], [120, 1028], [180, 1368], [240, 1615]]; // [한 달 수, 그때 봇 가운데 값]
+function undOld(T) {
+  const m = T.mon || 0, lv = T.lv || 1; if (!(m > 0)) return 0;
+  const lk = lv >= 4 ? 1 : lv === 3 ? 0.6 : 0.15; // 싼 단계만 한 선생은 덜 쌓였다
+  const R = U2.month * m + lk * (U2.up * (T.ups || 0) + 3.2 * (T.classes || 0)), u = U2.soft * (Math.sqrt(1 + 2 * R / U2.soft) - 1); // addUnd 의 체감(soft)을 그대로 적용
+  let cap = UND_OLD.at(-1)[1] + (m - 240) * 4; for (let i = 1; i < UND_OLD.length; i++) if (m <= UND_OLD[i][0]) { const [m0, v0] = UND_OLD[i - 1], [m1, v1] = UND_OLD[i]; cap = v0 + (v1 - v0) * (m - m0) / (m1 - m0); break; }
+  return Math.max(0, Math.min(u, cap));
+}
 // 가방·노트 상태(없으면 만든다). 스위치를 끈 채 하던 저장은 적합도 숫자만큼 기본 노트를 맞춰 놓는다
+// 예전 저장의 수업 도구 어림. 새 규칙 봇은 2년 차부터 도구 5개(가운데 값)를 들고 있다 → 그 0.8배인 4개까지, 싼 것부터. 돈은 빼지 않는다(예전 규칙으로 이미 번 것). 1년 안 된 판 · 새 판은 0개
+function toolsOld(T) {
+  const m = T.mon || 0, lv = T.lv || 1, n = Math.min(lv >= 3 ? 4 : 2, Math.floor(0.8 * 5 * clamp((m - 12) / 12, 0, 1)));
+  return n > 0 ? TD.CARDS.filter((c) => c.kind === "tool" && (!c.ev || (T.evN || 0) >= c.ev)).sort((x, y) => x.cost - y.cost).slice(0, n).map((c) => c.id) : [];
+}
 function ensureX(T) {
   let X = T.x2;
   if (!X || !Array.isArray(X.cards) || !Array.isArray(X.notes) || !Array.isArray(X.base)) {
     const ev = T.evN || 0, n = TD.BASE_NOTES.length, ok = Math.round(clamp((T.fit ?? 100) / 100, 0, 1) * n);
     X = T.x2 = { v: 1, cards: TD.CARDS.filter((c) => c.start).map((c) => c.id), lp: {}, notes: [], base: TD.BASE_NOTES.map((_, i) => (i < ok ? ev : ev - 1)), tabu: {}, solved: 0, shutN: 0, dr: 0, grad3: 0 };
+    const u0 = undOld(T); if (u0 > 0) X.und = Math.round(u0 * 10) / 10; // 예전 저장이면 한 만큼 채운다(새 판은 0 이라 그대로)
+    for (const id of toolsOld(T)) if (!X.cards.includes(id)) X.cards.push(id);
   }
   if (!X.lp) X.lp = {}; if (!X.tabu) X.tabu = {};
   if (T.ai && !X.cards.includes("h_ai")) X.cards.push("h_ai"); // 예전부터 있던 'AI 채점 도입'은 AI 조교 숙제 확인 카드와 같은 것

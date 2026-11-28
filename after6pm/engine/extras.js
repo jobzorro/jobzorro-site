@@ -108,7 +108,8 @@ function jobLive(s, job) {
 }
 const fill = (s, t) => String(t || "").replace(/\{자식\}/g, s.me.gender === "F" ? "딸" : "아들").replace(/\{nick\}/g, CS.nickName(s) || "").replace(/\{이에요\}/g, jo(CS.nickName(s) || "가", "이에요", "예요").slice((CS.nickName(s) || "가").length));
 const fillCh = (s, ch) => ({ ...ch, t: fill(s, ch.t), text: fill(s, ch.text), ...(ch.ok ? { ok: { ...ch.ok, text: fill(s, ch.ok.text) } } : {}), ...(ch.ng ? { ng: { ...ch.ng, text: fill(s, ch.ng.text) } } : {}), eff: ch.eff || {} });
-const JOB_BG = { pr: "partyroom", cs: "consult", airbnb: "airbnb", ucafe: "ucafe", tarot: "tarot", chicken: "pub", webnovel: "home", insta: "home", vibe: "home", tutoring: "home", club: "cafe", petsit: "apt" };
+const JOB_BG = { pr: "partyroom", cs: "consult", airbnb: "airbnb", ucafe: "ucafe", tarot: "tarot", chicken: "pub", webnovel: "home", insta: "home", vibe: "home", tutoring: "home", club: "cafe", petsit: "apt", carwash: "apt" };
+JOB_BG.buying = "home"; // 11-28 해외 구매대행
 export function crossScene(s, c) { return { kind: "event", tag: "뜻밖의 얼굴", title: c.title, text: fill(s, c.text), spk: c.x, bg: c.bg || JOB_BG[c.job] || "street", expr: c.expr, onChoose: "x_cross", xk: c.x + c.job, choices: c.choices.map((ch) => fillCh(s, ch)) }; }
 export function nickScene(s, kind) {
   const N = CS.nickOf(s); if (!N) return null; const E = X.nickEv || {};

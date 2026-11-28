@@ -93,6 +93,41 @@ export function tick(s) {
   }
 }
 
+// ── 예전 저장 채우기(11-28 QA) ── 이해도가 없던 때(s.undx 없음)의 저장을 열면 오래 한 투잡도 0점 "입문"에서 시작한다.
+// 불러올 때 한 번만(core.load), 그 투잡을 한 기간과 지금 상태로 "새 규칙으로 같은 기간을 했다면 쌓였을 양"을 어림해 s.undx 에 채운다. 후하지 않게 BF 배.
+// 한 달 몫은 지금 상태로 tick 을 한 번 돌려 본 값(없으면 1). 처음에는 규모가 작았을 것이라 BF_RAMP 로 한 번 더 깎는다(봇으로 실제 쌓인 값과 견줘 맞춘 값).
+// 문턱 알림(fxNote)이 불러오자마자 쏟아지지 않게 그 투잡 상태의 undFx 도 채운 점수까지 본 것으로 맞춘다.
+export const BF = 0.8;
+const BF_RAMP = { pr: 0.95, airbnb: 0.85, ucafe: 0.92, buying: 0.93 }; // 봇 80판: 어림 ÷ 실제의 가운데 값이 1 근처가 되게(안 적힌 투잡은 1)
+const since = (s, k) => { const t0 = s.sj?.rp?.[k]?.t0; return typeof t0 === "number" ? Math.max(0, (s.t || 0) - t0) : 0; };
+const bfMonths = (s, k) => { const st = s[KEYS[k] || k] || {}, m = +st.months || 0; // 그 투잡을 한 달 수: 상태에 적힌 달 수가 있으면 그것, 없으면 시작한 달부터
+  if (k === "chicken") return Math.max(0, ...(st.stores || []).map((x) => +x.months || 0), 0);
+  if (k === "insta") return st.cc ? since(s, k) : 0;
+  if (k === "pr") return (st.rooms || []).length || st.sold ? since(s, k) : 0;
+  if (k === "airbnb") return (st.units || []).length ? since(s, k) : 0;
+  if (k === "ucafe") return (st.stores || []).length || st.moves ? since(s, k) : 0;
+  if (k === "webnovel") return st.ups ? since(s, k) : 0;
+  return m || 0; };
+export function bfRaw(s, k) { // 어림한 raw(BF 를 곱하기 전)
+  const N = NEW[k], st = s[KEYS[k] || k]; if (!N?.tick || !st) return 0;
+  const m = bfMonths(s, k); if (!(m > 0)) return 0;
+  if (k === "tarot") return m + (+st.reads || 0) / 13; // 누적 상담 수 가운데 손님으로 센 몫(봇: 13건에 1)
+  if (k === "webnovel") return m + (+st.ups || 0) / 4;
+  let g = 0; try { g = +N.tick(s) || 0; } catch (e) { g = 0; }
+  return m * Math.max(1, g) * (BF_RAMP[k] || 1);
+}
+export function backfill(s) {
+  if (!D.UND_ON || !s || s.undx) return false;
+  const out = {};
+  for (const k of Object.keys(NEW)) { if (!NEW[k].tick || !DEF[k].on()) continue; let x = 0; try { x = bfRaw(s, k) * BF; } catch (e) { x = 0; } if (x >= 1) out[k] = Math.round(x * 1000) / 1000; }
+  if (Object.keys(out).length) s.undx = out;
+  // 문턱 알림 맞추기: 아직 한 번도 알린 적 없는(undFx 없음) 투잡만. 누적 값으로 점수가 나오는 바이브코딩 · 인별도 여기서 맞춘다
+  let fx = false;
+  for (const k of Object.keys(NEW)) { if (!DEF[k].on()) continue; const st = s[KEYS[k] || k]; if (!st || st.undFx != null) continue; const v = score(s, k), th = Math.max(0, ...Object.values(TH).filter((t) => t <= v)); if (th > 0) { st.undFx = th; fx = true; } }
+  if (fx && !s.undx) s.undx = {}; // 한 번만
+  return !!s.undx;
+}
+
 // 한 투잡의 지금 모습: { k, n, sub, note 부제 옆 한 줄, v 점수, base 전생에서 가져온 몫, has 이번 판에 했는지, on 지금 하는 중인지, rank(공통 사다리), how 어떻게 오르나, doms(바이브코딩만) }
 // 스위치가 꺼져 있거나 모르는 키면 null
 export function info(s, k) {
