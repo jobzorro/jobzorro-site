@@ -133,7 +133,7 @@ function abF30(c) {
   const nbCls = nb >= 55 ? "good" : nb < K.nb.low ? "bad" : "";
   return `<div class="card"><h3>청소·손님·이웃</h3>
     ${A.cohost ? '<div class="tiny muted">코호스트가 청소까지 맡고 있어요.</div>' : segRow("청소", [["self", "내가"], ["gig", "건당 대행"], ["team", "청소팀"]], cur, "ab:clean") + `<div class="tiny muted" style="margin-top:2px">${K.clean[cur].desc}${cur === "team" ? ` · 월 ${c.won(AB.teamFee(S))}` : cur === "gig" ? ` · 1건 ${K.clean.gig.per}만` : ""}</div>`}
-    <div class="sec" style="margin-top:8px">한 달 살기</div>${units}
+    <div class="sec" style="margin-top:8px">한 달 살기${AB.undPro(S) ? ` <span class="tag gold">업의 이해도 덕분 · 채움률 +${Math.round(AB.AB_UND.longOcc * 100)}%p</span>` : "" /* 11-28 전문(600)부터 */}</div>${units}
     <div class="row" style="margin-top:8px"><span class="small">이웃 인심 <b class="${nbCls}">${nb}</b></span><span class="grow"></span><button class="btn sm" data-sp="ab:gift" ${A.giftT === S.t ? "disabled" : ""}>관리실에 음료 ${c.won(Math.round(K.nb.gift * (S.pi || 1)))}</button></div>
     ${c.meter(nb, 100, nb < K.nb.low ? "var(--red)" : "var(--green)")}
     ${more(`체크아웃 11시~체크인 3시 사이에 청소를 끝내야 해요. 건당 대행은 손님 1팀마다 ${Math.round(K.clean.gig.punk * 100)}% 확률로 펑크가 나요. 청소팀은 숙소 ${K.clean.team.per3}채마다 월 ${K.clean.team.fix}만, 분리수거까지 해서 이웃 인심이 올라요.<br>한 달 살기는 1박 값이 ${Math.round(K.long.price * 100)}%쯤이지만 계절과 상관없이 차고, 손님이 덜 바뀌어 청소·후기·민원이 줄어요. 미등록 숙소 단속 위험도 줄어요.<br>이웃 인심은 단기 손님이 많을수록 내려가요. 낮으면 관리사무소 호출이 오고, 미등록 숙소는 이웃 신고로 단속될 확률이 최대 ${Math.round((AB.nbF({ sx: null, ab: { nb: 0 } }) - 1) * 100)}% 올라가요.`)}</div>`;

@@ -6,6 +6,7 @@ import * as D from "../defs.js";
 import { addMoney, log, won, gainStat, mod } from "../core.js";
 import * as SYN from "../syn.js";
 import * as SJ from "../sj.js"; // 초반 고생 배율(ramp)
+import * as UND from "../und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. 스위치 UND_ON 이 꺼져 있으면 늘 0 · false)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const r1 = (x) => Math.round(x * 10) / 10;
@@ -31,6 +32,12 @@ export const PRICES = [
   { n: "표준", m: 1, d: "" },
   { n: "프리미엄", m: 1.5, d: "후기·평판이 받쳐야 함" },
 ];
+// 11-28 업의 이해도 효과(스위치 UND_ON). 전문(600): 손님이 단골로 남을 확률 ×reg · 단골의 재문의 ×rep. 장인(1,000): 가격 넷째 단계 '심층 리딩'이 열린다(평판이 받쳐야 문의가 남는다)
+export const TR_UND = { reg: 1.1, rep: 1.05, deep: { n: "심층 리딩", m: 2, d: "평판이 높아야 문의가 남아요", lo: 0.3, hi: 0.7, per: 250 } };
+if (typeof process !== "undefined" && process.env?.TRU) Object.assign(TR_UND, JSON.parse(process.env.TRU)); // 봇 시험용
+export const undFx = (s) => ({ on: UND.jobs().includes("tarot"), v: UND.score(s, "tarot"), pro: UND.at(s, "tarot", UND.TH.전문), deep: UND.at(s, "tarot", UND.TH.장인) });
+export const priceList = (s) => (UND.at(s, "tarot", UND.TH.장인) ? [...PRICES, TR_UND.deep] : PRICES);
+export const priceIx = (s) => clamp(s.tarot.price | 0, 0, priceList(s).length - 1); // 장인에서 고른 넷째 단계는 스위치가 꺼지면 프리미엄으로 읽는다
 // 달별 문의 배수: 연말·연초 몰림, 2월 정적
 export const SEASON = [1.7, 0.65, 0.9, 0.95, 0.95, 0.9, 0.85, 0.9, 1.0, 1.05, 1.2, 1.8];
 // 11-21 밸런스(10개 투잡 공통 비교, 기획 tarot.json: 중위 월 40만·p75 80만·p95 300만).
@@ -70,7 +77,7 @@ export const callsOn = (T) => T.lv >= 4;
 export function unitPrice(s) {
   const T = s.tarot; if (T.lv < 3) return 0;
   const base = callsOn(T) ? TR_BAL.unitCall : TR_BAL.unitText; // 텍스트 1장 0.5·3장 1.0 → 통화 30분 3만이 섞이면 평균(TR_BAL)
-  return r1(base * PRICES[T.price].m * (T.niche ? NICHES[T.niche].unit : 1) * (T.room === "lease" ? 1.3 : T.room === "hourly" ? 1.1 : 1) * (T.brand ? 1.25 : 1) * (pkOn(s) ? TR_F30.peak.unit : 1) * SYN.pi(s));
+  return r1(base * priceList(s)[priceIx(s)].m * (T.niche ? NICHES[T.niche].unit : 1) * (T.room === "lease" ? 1.3 : T.room === "hourly" ? 1.1 : 1) * (T.brand ? 1.25 : 1) * (pkOn(s) ? TR_F30.peak.unit : 1) * SYN.pi(s));
 }
 export function capPerRead(s, boost = 1) {
   const T = s.tarot;
@@ -81,7 +88,7 @@ export function drainPer(s) {
   return (callsOn(T) ? 0.5 : 0.32) * (T.boundary ? 0.65 : 1) * (T.tail ? 1.15 : 1) * (T.niche === "love" ? 1.15 : 1) * mod(s, "trDrain", 1);
 }
 const feeRate = (T) => (T.brand ? 0.1 : 0.18) * (T.room === "lease" ? 0.5 : 1); // 재능마켓 수수료(대면 상담은 수수료 없음)
-function priceDemand(T) { return T.price === 0 ? 1.3 : T.price === 2 ? clamp(0.45 + T.rep / 180, 0.45, 1) : 1; }
+function priceDemand(s, T) { const p = priceIx(s), X = TR_UND.deep; return p === 0 ? 1.3 : p === 2 ? clamp(0.45 + T.rep / 180, 0.45, 1) : p === 3 ? clamp(X.lo + T.rep / X.per, X.lo, X.hi) : 1; }
 
 // 다음 단계 조건 목록
 export function nextNeed(s) {
@@ -196,8 +203,8 @@ function makeLeads(s, r) {
     T.queue = T.leads; T.repeatLeads = 0; T.wait = 0; return;
   }
   const base = [0, 0, 7, 11, 16][T.lv - 1] + T.follow / 300 + Math.min(14, T.reviews * 0.12);
-  const rep = T.regulars * 0.7;
-  const mult = seas * priceDemand(T) * (0.7 + T.rep / 100 * 0.6) * (T.niche ? NICHES[T.niche].lead : 1) * (SYN.on(s, "tr_insta") ? 1.12 : 1)
+  const rep = T.regulars * 0.7 * (UND.at(s, "tarot", UND.TH.전문) ? TR_UND.rep : 1); // 11-28 이해도 전문: 단골이 조금 더 자주 다시 찾는다
+  const mult = seas * priceDemand(s, T) * (0.7 + T.rep / 100 * 0.6) * (T.niche ? NICHES[T.niche].lead : 1) * (SYN.on(s, "tr_insta") ? 1.12 : 1)
     * mod(s, "trLead", 1) * (T.seen.includes("e12") ? (T.empathy ? 1.03 : T.bot ? 0.95 : 0.92) : 1) * (T.room === "lease" ? 1.15 : 1) * (T.boundary ? 0.92 : 1) * (s.era?.winter ? 0.95 : 1) * SJ.ramp(s, "tarot") * SJ.skillRamp(s, "tarot") * (1 + (T.buzzH || 0) / 100) * (TR_F30.style[T.style ?? 1]?.lead || 1) * (pkOn(s) ? TR_F30.peak.lead * (s.cal === 11 && T.pk.k === 2 ? TR_F30.peak.suneung : 1) : 1); // 유료 첫 달부터 초반 고생 · v4.25b 배우는 기간
   const cap = LEAD_CAP[T.lv - 1] * (T.brand ? 1.4 : 1) * (s.fullJob === "tarot" ? 1.25 : 1);
   const raw = (base + rep) * mult;
@@ -226,7 +233,7 @@ function doRead(s, r, boost) {
     s.cash += rev - fee; addMoney(s, "inc", "타로 상담료", rev); if (fee) addMoney(s, "exp", "타로 수수료", fee);
     T.paid += n; T.reads += n; T.gross += rev; T.reviews += n * 0.2 * (boost > 1.1 ? 1.2 : 1);
     T.rep = clamp(T.rep + n * 0.1 * (boost - 0.9), 0, 100);
-    const p = clamp(0.03 + T.rep / 1500 + Math.max(0, boost - 1) * 0.08, 0.02, 0.15);
+    const p = clamp(0.03 + T.rep / 1500 + Math.max(0, boost - 1) * 0.08, 0.02, 0.15) * (UND.at(s, "tarot", UND.TH.전문) ? TR_UND.reg : 1); // 11-28 이해도 전문: 단골 전환 +10%
     let nr = 0; for (let i = 0; i < n; i++) if (r.chance(p)) nr++; T.regulars += nr;
     lines.push(`리딩 ${n}건 +${won(rev)}`, ...(fee ? [`재능마켓 수수료 −${won(fee)}`] : []), ...(tip ? ["팁·후기 보너스"] : []), ...(nr ? [`단골 +${nr}`] : []));
   }
@@ -453,6 +460,7 @@ export default {
     // 번아웃(멘탈 0) 기록: 타로 하는 동안 생긴 것만
     const b = s.burnouts || 0; if (b > T.bSeen) { T.witch += b - T.bSeen; T.bSeen = b; }
     checkLv(s, notes);
+    UND.fxNote(s, "tarot", T, notes, UND_NOTE); // 11-28 이해도 문턱을 넘은 달에 한 줄(스위치가 꺼져 있으면 아무 일도 안 한다)
     // 시즌 안내
     if (s.cal === 11 && T.lv >= 3) notes.push("타로: 다음 달부터 신년운세 시즌. 문의가 두 배 가까이 몰려요");
     const ev = f30Event(s, r) || (T.lv >= 1 ? pickEvent(s, r) : null); if (ev) scenes.push(ev);
@@ -540,7 +548,8 @@ export default {
   spots: { cafe: ["tr_practice"], market: ["tr_read"] },
 };
 // 화면에서 쓰는 조작
-export function setPrice(s, v) { s.tarot.price = clamp(+v | 0, 0, 2); }
+export function setPrice(s, v) { s.tarot.price = clamp(+v | 0, 0, priceList(s).length - 1); }
+const UND_NOTE = [[600, "손님이 단골로 더 잘 남고, 단골이 더 자주 다시 찾아요."], [1000, "가격에 '심층 리딩'이 열렸어요(가격과 운영에서 골라요)."]];
 export function setNiche(s, k) { const T = s.tarot; if (T.lv < 4) return { ok: false, msg: "전문 분야는 Lv4부터" }; if (!NICHES[k]) return { ok: false }; T.niche = k; return { ok: true, msg: `전문 분야: ${NICHES[k].n}` }; }
 export function toggle(s, k) { const T = s.tarot; if (k === "tail") { if (T.lv < 4) return { ok: false, msg: "꼬리 질문은 Lv4부터" }; T.tail = !T.tail; return { ok: true, msg: T.tail ? "꼬리 질문 3,000원 켬" : "꼬리 질문 끔" }; } if (k === "boundary") { T.boundary = !T.boundary; return { ok: true, msg: T.boundary ? "상담 범위 안내문: 멘탈 소모 −35%, 문의 −8%" : "안내문 내림" }; } if (k === "sub") { if (T.lv < 4 && !T.subOn) return { ok: false, msg: "월 구독은 Lv4부터" }; T.subOn = !T.subOn; if (!T.subOn) T.subs = 0; return { ok: true, msg: T.subOn ? "월 구독 리딩 모집" : "구독 종료" }; } return { ok: false }; }
 export function setRoom(s, k) {

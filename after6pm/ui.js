@@ -32,6 +32,8 @@ import * as LVX from "./engine/love.js"; // 두근두근·연애 행동·까톡(
 import * as SPO from "./engine/spouse.js"; // 배우자의 일과 수입(11-25, 시험 주소용)
 import * as WED from "./engine/wed.js"; // 결혼 성향·먼저 꺼내는 결혼 얘기(11-25)
 import * as BMX from "./bm.js"; // 돈 버는 자리(11-24, 아직 꺼짐)
+import * as UND from "./engine/und.js"; // 업의 이해도 회차 이월(11-28)
+import * as UNDU from "./und_ui.js"; // 업의 이해도 공통 카드 · 엔딩 · 홈 · 나 화면 · 명예의 전당(11-28, 스위치 UND_ON)
 import * as RD from "./engine/round.js"; // 회차 구조(11-23) // 파티룸 컨셉 위기(11-23) // 판이 바뀐다(11-23)
 import { UI_PLUGINS } from "./jobs/index.js";
 import * as DK from "./deco_ui.js"; // 방 꾸미기(deco/deco.js 는 열 때 받기)
@@ -633,7 +635,7 @@ function pgHome() {
   return `<div class="stage" style="background-image:url(${bg})">
     ${heroB ? img(heroB, "body hero2", "나") : img(meSrc(myExpr()), "face hero", "나")}
     <div class="when"><b>${S.year}년 ${S.cal}월</b><span>${E.ageNow(S)}세 · ${esc(job)}</span></div>
-    <div class="side">${[!S.sj.active.length ? `<span>투잡 없음 · 회사원</span>` : "", SJ.isActive(S, "pr") ? `<span>파티룸 ${S.pr.rooms.length}곳 · Lv${S.pr.lv}</span>` : "", SJ.isActive(S, "cs") ? `<span>컨설팅 Lv${S.cs.lv}${S.cs.open ? "" : " 준비 중"}</span>` : "", ...REG.JOBS.filter((P) => UJ[P.key]?.side && SJ.isActive(S, P.key)).map((P) => { try { return `<span>${esc(UJ[P.key].side(S))}</span>`; } catch (e) { return ""; } }), S.fam.kids.length ? `<span>아이 ${S.fam.kids.length}명</span>` : "", ...S.hb.joined.map((h) => `<span>${esc(D.HOBBIES[h].n)}</span>`)].filter(Boolean).slice(0, 2).join("")}</div>
+    <div class="side">${[!S.sj.active.length ? `<span>투잡 없음 · 회사원</span>` : "", SJ.isActive(S, "pr") ? `<span>파티룸 ${S.pr.rooms.length}곳 · Lv${S.pr.lv}${UNDU.homeTag(S, "pr")}</span>` : "", SJ.isActive(S, "cs") ? `<span>컨설팅 Lv${S.cs.lv}${S.cs.open ? "" : " 준비 중"}${UNDU.homeTag(S, "cs")}</span>` : "", ...REG.JOBS.filter((P) => UJ[P.key]?.side && SJ.isActive(S, P.key)).map((P) => { try { return `<span>${esc(UJ[P.key].side(S))}${UNDU.homeTag(S, P.key)}</span>`; } catch (e) { return ""; } }), S.fam.kids.length ? `<span>아이 ${S.fam.kids.length}명</span>` : "", ...S.hb.joined.map((h) => `<span>${esc(D.HOBBIES[h].n)}</span>`), ...(D.UND_ON ? ["insta", "airbnb", "ucafe"].filter((k) => SJ.isActive(S, k)).map((k) => `<span>${esc(D.SIDEJOBS[k].n.split(" ")[0])}${UNDU.homeTag(S, k)}</span>`) : [])].filter(Boolean).slice(0, 2).join("")}</div>
     <div class="lovers">${ring.map((id) => `<button data-char="${id}">${img(faceSrc(id, "blush"))}</button>`).join("")}</div>
     <button class="a6hx" data-go="me" aria-label="능력치">${hexStats()}</button>
     <div class="news"><div class="src">투잡일보 · ${S.year}.${String(S.cal).padStart(2, "0")}</div><div class="h">${esc(S.news)}</div></div>
@@ -835,7 +837,8 @@ function pgRegion(rg) {
 const SJ_BG = { pr: "partyroom", cs: "consult", insta: "online", ucafe: "ucafe", airbnb: "airbnb", coffee: "cafe", popup: "popup", shortstay: "airbnb", tutoring: "online", tistory: "home", realtyblog: "realty", chicken: "pub", bouquet: "wedding", goods: "popup", aivideo: "cowork", vibe: "cowork", webnovel: "library", thesis: "library", press: "cowork", tarot: "gallery", saju: "gallery" };
 const bool = (b, y, n) => (b ? y : n);
 function attrs(L, full, compact) {
-  const sh = (k) => L.seen?.[k] || full;
+  const undK = full ? [] : PR.PR_UND.see.filter((k) => !L.seen?.[k] && PR.undSeen(S, L, k)), sh = (k) => L.seen?.[k] || full || undK.includes(k); // 11-28 업의 이해도 숙련부터: 방음·건물주 성향이 미리 보인다
+  const undT = undK.length ? `<div class="tiny gold" style="margin-top:3px"><span class="tag gold">업의 이해도 덕분</span> ${undK.map((k) => ({ sound: "방음", landlord: "건물주 성향" }[k])).join("·")}이 미리 보여요</div>` : "";
   const parts = [
     [`${L.size}평`], [L.floor === -1 ? "지하" : `${L.floor}층`], [`최대 ${PR.capOf(L.size)}명`], [L.floor >= 2 ? bool(L.elevator, "엘리베이터 O", "엘리베이터 X") : "엘리베이터 -", L.floor >= 3 && !L.elevator ? "bad" : ""],
     [["주차 불가", "주차 1대", "주차 넉넉"][L.parking], L.parking === 0 ? "bad" : L.parking === 2 ? "good" : ""], [L.toilet === "in" ? "화장실 내부" : "화장실 외부(공용)", L.toilet === "out" ? "bad" : "good"], [L.heating, L.heating === "냉난방기만" ? "bad" : ""], [`역 도보 ${L.walk}분`, L.walk <= 5 ? "good" : L.walk > 10 ? "bad" : ""],
@@ -846,8 +849,8 @@ function attrs(L, full, compact) {
     sh("comp") ? [`경쟁 ${L.hid.comp}곳`, L.hid.comp >= 6 ? "bad" : L.hid.comp <= 2 ? "good" : ""] : ["경쟁 ?", "q"],
   ];
   const sp = ([t, c]) => `<span class="${c || ""}">${esc(t)}</span>`;
-  if (compact) { const hot = parts.filter(([, c]) => c === "bad" || c === "q"), rest = parts.filter(([, c]) => c !== "bad" && c !== "q"); return `${hot.length ? `<div class="attrs">${hot.map(sp).join("")}</div>` : ""}${more(`매물 정보 ${rest.length}개`, `<div class="attrs">${rest.map(sp).join("")}</div>`)}`; } // 정리(v4.27)
-  return `<div class="attrs">${parts.map(sp).join("")}</div>`;
+  if (compact) { const hot = parts.filter(([, c]) => c === "bad" || c === "q"), rest = parts.filter(([, c]) => c !== "bad" && c !== "q"); return `${hot.length ? `<div class="attrs">${hot.map(sp).join("")}</div>` : ""}${more(`매물 정보 ${rest.length}개`, `<div class="attrs">${rest.map(sp).join("")}</div>`)}${undT}`; } // 정리(v4.27)
+  return `<div class="attrs">${parts.map(sp).join("")}</div>${undT}`;
 }
 function pgPR() {
   const pr = S.pr, f = ui.prFlow;
@@ -994,11 +997,11 @@ function prContract(f) {
   if (PR.conceptOk(L, f.concept, S)) f.concept = Object.keys(D.CONCEPTS).filter((k) => !PR.conceptOk(L, k, S)).sort((a, b) => (d.fit[b] || 0) - (d.fit[a] || 0))[0];
   const it = D.INTERIORS[f.interior], scale = L.size / 22;
   const qt = PR.quote(S, L, f), interior = qt.interior, ondol = qt.ondol, total = qt.total;
-  const fitKnown = L.seen.app || (S.pr.known[L.dk === "univ" ? "univ" : "x"] || 0) > 0;
-  const unseen = ["sound", "access24", "landlord", "comp", "ondolOk"].filter((k) => !L.seen[k]).length;
+  const fitOwn = L.seen.app || (S.pr.known[L.dk === "univ" ? "univ" : "x"] || 0) > 0, fitUnd = !fitOwn && PR.undSee(S), fitKnown = fitOwn || fitUnd; // 11-28 업의 이해도 숙련부터: 상권 궁합이 조사 없이 보인다
+  const unseen = ["sound", "access24", "landlord", "comp", "ondolOk"].filter((k) => !PR.undSeen(S, L, k)).length;
   return `<div class="row"><button class="btn sm" data-prflow="list:${L.dk}">‹ 매물</button><b>계약 검토</b></div>
   <div class="card"><div class="nm"><b>${esc(d.n)} ${L.size}평 ${L.floor === -1 ? "지하" : L.floor + "층"}</b></div><div class="small">월세 <b>${won(L.rent)}</b>(평당 ${r1(L.rent / L.size)}만) · 최대 <b>${PR.capOf(L.size)}명</b> · ${prRuleTag(L)}</div>${attrs(L)}</div>
-  <div class="sec">컨셉 <span class="muted small">· 매물과 내 능력치에 따라 열려요</span></div><div class="pick">${Object.entries(D.CONCEPTS).map(([k, c]) => { const no = PR.conceptOk(L, k, S); return `<button class="${f.concept === k ? "on" : ""}" data-cc="${k}" ${no ? "disabled" : ""}><b>${c.n}${PW.sunk(S, k) ? ' <span class="tiny bad">침몰</span>' : ""}</b>${no ? `<span class="tiny bad">${esc(no)}</span>` : `<span class="tiny muted">상권 궁합 ${fitKnown ? "●".repeat(Math.round((d.fit[k] || 0.8) * 3.5)) : "? (앱 조사)"}</span><span class="tiny muted">${esc((c.seg || []).slice(0, 2).join("·"))}${c.kit ? ` · 장비 ${won(Math.round(c.kit * qt.pi * qt.sf))}` : ""}</span><span class="tiny muted">평일 ${"●".repeat(Math.round((c.wk ?? 1) * 3))} 주말 ${"●".repeat(Math.round((c.we ?? 1) * 3))} · 후기 ${"●".repeat(Math.round((c.sns ?? 1) * 3))}</span>`}</button>`; }).join("")}</div>
+  <div class="sec">컨셉 <span class="muted small">· 매물과 내 능력치에 따라 열려요</span></div>${fitUnd ? `<div class="tiny gold" style="margin-bottom:4px"><span class="tag gold">업의 이해도 덕분</span> 상권 궁합이 조사 없이 보여요</div>` : ""}<div class="pick">${Object.entries(D.CONCEPTS).map(([k, c]) => { const no = PR.conceptOk(L, k, S); return `<button class="${f.concept === k ? "on" : ""}" data-cc="${k}" ${no ? "disabled" : ""}><b>${c.n}${PW.sunk(S, k) ? ' <span class="tiny bad">침몰</span>' : ""}</b>${no ? `<span class="tiny bad">${esc(no)}</span>` : `<span class="tiny muted">상권 궁합 ${fitKnown ? "●".repeat(Math.round((d.fit[k] || 0.8) * 3.5)) : "? (앱 조사)"}</span><span class="tiny muted">${esc((c.seg || []).slice(0, 2).join("·"))}${c.kit ? ` · 장비 ${won(Math.round(c.kit * qt.pi * qt.sf))}` : ""}</span><span class="tiny muted">평일 ${"●".repeat(Math.round((c.wk ?? 1) * 3))} 주말 ${"●".repeat(Math.round((c.we ?? 1) * 3))} · 후기 ${"●".repeat(Math.round((c.sns ?? 1) * 3))}</span>`}</button>`; }).join("")}</div>
   <div class="sec">인테리어</div><div class="pick">${D.INTERIORS.map((x, i) => `<button class="${f.interior === i ? "on" : ""}" data-it="${i}"><b>${x.n}</b><span class="tiny muted">${won(Math.round(x.cost * scale))} · 첫 별점 ${x.star}</span></button>`).join("")}</div>
   <div class="pick"><button class="${f.self ? "on" : ""}" data-self><b>셀프 공사 ${f.self ? "O" : "X"}</b><span class="tiny muted">비용 −35%, 대신 공사 행동 3번(감각·손재주가 별점에 영향)</span></button>
   <button class="${f.ondol ? "on" : ""}" data-ondol ${L.seen.ondolOk && !L.hid.ondolOk ? "disabled" : ""}><b>온돌 시공 ${f.ondol ? "O" : "X"}</b><span class="tiny muted">${won(Math.round(250 * scale))} · 겨울 예약 +, 난방비 −${L.seen.ondolOk ? "" : " · 가능 여부 ? (임장)"}</span></button></div>
@@ -1014,16 +1017,16 @@ function prContract(f) {
 // 11-25 권리금 흥정(대표 요청): 계약 전에 한 번은 꼭 깎아 본다. 흥정을 끝내야 '계약하기'가 열린다
 function prNego(L) {
   const N = D.PR_NEGO, onKey = L.nego ? L.nego.on === "key" : L.key > 0, what = onKey ? "권리금" : "월세";
-  if (L.nego) { const g = L.nego; return `<div class="card" style="margin-top:8px"><div class="small"><b>흥정 결과</b> · ${esc(N.ways[g.way].n)}</div><div class="small">${g.saved > 0 ? `${what} ${won(g.before)} → <b class="good">${won(g.after)}</b> (${won(g.saved)} 깎음)` : `${what} ${won(g.before)} 그대로. 이번엔 안 통했다`}</div></div>
+  if (L.nego) { const g = L.nego; return `<div class="card" style="margin-top:8px"><div class="small"><b>흥정 결과</b> · ${esc(N.ways[g.way].n)}</div><div class="small">${g.saved > 0 ? `${what} ${won(g.before)} → <b class="good">${won(g.after)}</b> (${won(g.saved)} 깎음)` : `${what} ${won(g.before)} 그대로. 이번엔 안 통했다`}${g.und ? ` <span class="tag gold">업의 이해도 덕분 · 확률 +</span>` : ""}</div></div>
     <button class="btn gold" style="width:100%;margin-top:8px;padding:12px" data-sign="${L.id}">계약하기</button>`; }
-  return `<div class="sec">${what} 흥정 <span class="muted small">· 깎는 것도 기술이에요. 계약 전에 한 번은 꼭 해 봐요${onKey ? "" : " (권리금이 없는 자리라 월세를 조금 깎아 봐요)"}</span></div>
+  return `<div class="sec">${what} 흥정 <span class="muted small">· 깎는 것도 기술이에요. 계약 전에 한 번은 꼭 해 봐요${onKey ? "" : " (권리금이 없는 자리라 월세를 조금 깎아 봐요)"}</span></div>${PR.undNego(S) ? `<div class="tiny gold" style="margin-bottom:4px"><span class="tag gold">업의 이해도 덕분</span> 장인의 흥정: 통할 확률 +${Math.round(PR.undNego(S) * 100)}%p</div>` : "" /* 11-28 장인(1,000)부터 */}
   <div class="pick">${Object.entries(N.ways).map(([k, w]) => `<button data-nego="${L.id}:${k}"><b>${esc(w.n)}</b><span class="tiny muted">${esc(w.d)}</span><span class="tiny">${D.STATS[w.st]} ${Math.round(S.st[w.st] || 0)}</span></button>`).join("")}</div>
   <button class="btn" style="width:100%;margin-top:8px;padding:12px" disabled>흥정부터 해 봐요</button>`;
 }
 
 function pgCS() {
   const cs = S.cs, steps = CS.entrySteps(S);
-  const nicheCards = `<div class="pick">${Object.entries(D.NICHES).map(([k, n]) => { const on = cs.niches.includes(k); const req = `커리어 ${n.req.career}${n.req.years ? ` · 경력 ${n.req.years}년` : ""}`; return `<button class="${on ? "on" : ""}" data-niche="${k}"><b>${n.n}</b><span class="tiny muted">핵심 능력 ${D.STATS[n.stat]} · 단가 ×${n.priceF}</span><span class="tiny muted">조건 ${req}</span></button>`; }).join("")}</div>`;
+  const nicheCards = D.CS2_ON && CS.c2NicheCards ? CS.c2NicheCards(S, esc) /* 11-27 처방형 개편(스위치 CS2_ON): 분야 다섯 구조의 포지션 칸 */ : `<div class="pick">${Object.entries(D.NICHES).map(([k, n]) => { const on = cs.niches.includes(k); const req = `커리어 ${n.req.career}${n.req.years ? ` · 경력 ${n.req.years}년` : ""}`; return `<button class="${on ? "on" : ""}" data-niche="${k}"><b>${n.n}</b><span class="tiny muted">핵심 능력 ${D.STATS[n.stat]} · 단가 ×${n.priceF}</span><span class="tiny muted">조건 ${req}</span></button>`; }).join("")}</div>`;
   if (!cs.open) {
     return `${boardHead("cs")}<div class="card"><h3>취업컨설팅 개업 준비 <small>진입이 제일 어렵다</small></h3><div class="small muted" style="margin-bottom:8px">회사 경력과 직무 지식이 곧 신뢰예요. 첫 후기는 지인에게서, 첫 손님은 크멍이나 블로그에서 와요.</div>
       <div class="steps">${steps.map((x) => `<div class="${x.done ? "done" : ""}"><span class="ck">${x.done ? "✓" : ""}</span><span class="grow">${esc(x.n)}<div class="tiny muted">${esc(x.hint)}</div></span></div>`).join("")}</div></div>
@@ -1040,7 +1043,7 @@ function pgCS() {
     <div class="funnel" style="margin-top:8px"><div><div class="v">${r1(cs.leads)}</div><div class="k">이번 달 문의</div></div><div><div class="v">${cs.newThisMonth}</div><div class="k">새 고객</div></div><div><div class="v ${cs.queue.length ? "gold" : ""}">${cs.queue.length}</div><div class="k">대기</div></div><div><div class="v good">${won(cs.monthRev)}</div><div class="k">이번 달 매출</div></div></div>
     ${more(`전환 ${Math.round(cs.conv * 100)}% · 합격 ${cs.passes} · 지표 더 보기`, `<div class="row wrap small">${Object.entries(cs.src).filter(([, v]) => v > 0.05).map(([k, v]) => `<span class="tag">${k} ${r1(v)}</span>`).join("") || `<span class="muted">유입 채널을 키우자</span>`}</div>
     <div class="kv" style="margin-top:8px"><div><div class="k">결제 전환</div><div class="v">${Math.round(cs.conv * 100)}%</div></div><div><div class="k">합격 누적</div><div class="v good">${cs.passes}</div></div><div><div class="k">후기</div><div class="v">${Math.floor(cs.reviews)}개</div></div><div><div class="k">신뢰</div><div class="v">${Math.round((cs.trust || 0) * 100)}</div></div><div><div class="k">처리 용량</div><div class="v">${cap}명/행동</div></div></div>`)}</div>
-  ${cs.queue.length ? `<div class="card"><h3>대기 고객 ${cs.queue.length}명 <small>행동 ${Math.ceil(units / cap)}번 필요</small></h3><div style="display:flex;flex-direction:column;gap:4px">${cs.queue.slice(0, 8).map((q) => `<div class="row small" style="background:var(--panel2);border-radius:8px;padding:5px 8px">${q.who ? img(faceSrc(q.who, "smile"), "face mini", "") : ""}<span class="grow">${q.who ? esc(E.CHAR[q.who].name) : "고객 #" + q.id} · ${D.CS_PRODUCTS[q.prod].n} · ${D.NICHES[q.niche].n}</span><span>${q.price}만</span>${q.wait ? `<span class="tag red">취소 임박</span>` : ""}</div>`).join("")}</div><div style="margin-top:8px">${actRow("cs_focus")}${actRow("cs_work")}</div></div>` : ""}
+  ${D.CS2_ON && CS.c2UndHow ? UNDU.undCard(S, "cs", { foot: CS.c2UndFoot(S), how: CS.c2UndHow() }) : "" /* 11-28 업의 이해도 공통 카드 */}${D.CS2_ON && CS.c2Top ? CS.c2Top(S, esc, won) : "" /* 11-27 처방형 개편(스위치 CS2_ON): 전략 고객·상품·방법론 카드 */}${cs.queue.length ? `<div class="card"><h3>대기 고객 ${cs.queue.length}명 <small>행동 ${Math.ceil(units / cap)}번 필요</small></h3><div style="display:flex;flex-direction:column;gap:4px">${cs.queue.slice(0, 8).map((q) => `<div class="row small" style="background:var(--panel2);border-radius:8px;padding:5px 8px">${q.who ? img(faceSrc(q.who, "smile"), "face mini", "") : ""}<span class="grow">${q.who ? esc(E.CHAR[q.who].name) : "고객 #" + q.id} · ${D.CS_PRODUCTS[q.prod].n} · ${D.NICHES[q.niche].n}</span><span>${q.price}만</span>${q.wait ? `<span class="tag red">취소 임박</span>` : ""}</div>`).join("")}</div><div style="margin-top:8px">${actRow("cs_focus")}${actRow("cs_work")}</div></div>` : ""}
   <div class="card" style="padding:8px 12px">${more(`<b>시즌</b> · 지금 ${S.cal}월 · 성수기 ${niche.season.indexOf(maxS) + 1}월 · ${esc(niche.n)}`, `<div class="season">${niche.season.map((v, i) => `<i class="${i + 1 === S.cal ? "now" : ""}" style="height:${Math.round(v / maxS * 100)}%"></i>`).join("")}</div><div class="season-l">${niche.season.map((_, i) => `<span>${i + 1}</span>`).join("")}</div>`)}</div>
   <div class="sec">마케팅 채널</div>
   <div class="chs">
@@ -1093,7 +1096,7 @@ function pgCo() {
 }
 
 // 투잡 보드 머리
-function boardHead(k) { const j = D.SIDEJOBS[k] || { type: "", inc: "" }; const ri = SJ.rampInfo(S, k), tip = ri && !ri.done && !S.sj.coachOff ? (S.sj.rp[k].tip || "첫 달은 손님이 적어요. 홍보·후기 행동을 해야 올라가요.") : ""; return `<div class="row" style="margin-bottom:6px"><button class="btn sm" data-go="sj">‹ 투잡 탐색</button><span class="tag">${esc(j.type)}</span><span class="grow"></span><span class="tiny muted">${esc(j.inc)}</span></div>${ri && !ri.done ? `<div class="card" style="padding:8px 10px;margin-bottom:8px"><div class="tiny"><b class="gold">초반 고생 중</b> · 손님 기대치의 ${ri.pct}%</div>${meter(ri.pct, 100, "var(--gold)")}${skillLine(S, k, true)}${tip ? `<div class="tiny muted" style="margin-top:4px">코치: ${esc(tip)}</div>` : ""}</div>${marketBox(S, k, true)}` : marketBox(S, k)}${rivalBox(S, k)}${HU.hidBox(S, k)}${H2U.box(S, k)}`; }
+function boardHead(k) { const j = D.SIDEJOBS[k] || { type: "", inc: "" }; const ri = SJ.rampInfo(S, k), tip = ri && !ri.done && !S.sj.coachOff ? (S.sj.rp[k].tip || "첫 달은 손님이 적어요. 홍보·후기 행동을 해야 올라가요.") : ""; return `<div class="row" style="margin-bottom:6px"><button class="btn sm" data-go="sj">‹ 투잡 탐색</button><span class="tag">${esc(j.type)}</span><span class="grow"></span><span class="tiny muted">${esc(j.inc)}</span></div>${ri && !ri.done ? `<div class="card" style="padding:8px 10px;margin-bottom:8px"><div class="tiny"><b class="gold">초반 고생 중</b> · 손님 기대치의 ${ri.pct}%</div>${meter(ri.pct, 100, "var(--gold)")}${skillLine(S, k, true)}${tip ? `<div class="tiny muted" style="margin-top:4px">코치: ${esc(tip)}</div>` : ""}</div>${marketBox(S, k, true)}` : marketBox(S, k)}${rivalBox(S, k)}${HU.hidBox(S, k)}${H2U.box(S, k)}${UNDU.boardCard(S, k)}`; }
 
 // 투잡 탐색
 function pgSJ() {
@@ -1181,7 +1184,7 @@ function pgAirbnb() {
     ${u.regT != null ? `<div class="tiny bad">전입·등록 기다리는 중 · ${Math.max(1, u.regT - S.t)}개월 남음(월세만 나가요)</div>` : AB.booming(u) ? `<div class="row wrap"><span class="tiny bad">후기 ${Math.round(u.reviews || 0)}/${AB.AB_ENTRY.boom.n} · 검색 노출 ${Math.round(AB.boomF(u) * 100)}%</span><span class="grow"></span><button class="btn sm ${u.half ? "gold" : ""}" data-abhalf="${u.id}:${u.half ? 0 : 1}">${u.half ? "반값 행사 중(끄기)" : "반값에 내놓기"}</button><button class="btn sm" data-abfriend="${u.id}" ${AB.friendCands(S).length && u.friendT !== S.t ? "" : "disabled"}>지인에게 묵어 달라고 ⚡1</button></div>` : ""}
     ${DK.decoRow(dctx(), "ab", u)}
     <div class="row"><span class="small">관리 <b class="${A.cohost || u.ap >= n ? "good" : "bad"}">${A.cohost ? "코호스트" : `${Math.round(u.ap * 10) / 10}/${n}`}</b></span><span class="grow"></span>${A.cohost ? "" : `<button class="btn sm" data-act="ab_clean" data-arg="${u.id}">청소 ⚡1</button>`}<button class="btn sm" data-act="ab_host" data-arg="${u.id}">응대 ⚡1</button><button class="btn sm" data-act="ab_photo" data-arg="${u.id}">사진 ⚡1</button></div>
-    <div class="row"><span class="tiny ${(u.unrep || 0) > D.PR_REVIEW.unrep.max ? "bad" : "muted"}">밀린 답글 ${Math.round(u.unrep || 0)}${u.last?.newRev != null ? ` · 지난달 후기 +${u.last.newRev}` : ""}</span><span class="grow"></span><button class="btn sm" data-act="ab_reply" data-arg="${u.id}" ${(u.unrep || 0) >= 1 ? "" : "disabled"}>답글 ⚡1</button></div>${more("숙소 정리 · 더 보기", `<div class="row"><span class="grow tiny muted">정리하면 보증금 ${won(u.dep)}을 돌려받아요.</span><button class="btn sm danger" data-abclose="${u.id}">숙소 정리</button></div>`)}</div>`, true, "room", lowAp ? `<button class="btn sm" data-act="ab_clean" data-arg="${u.id}">청소 ⚡1</button>` : ""); };
+    <div class="row"><span class="tiny ${(u.unrep || 0) > D.PR_REVIEW.unrep.max ? "bad" : "muted"}">밀린 답글 ${Math.round(u.unrep || 0)}${u.last?.newRev != null ? ` · 지난달 후기 +${u.last.newRev}` : ""}${AB.undPro(S) ? ` <span class="tag gold">업의 이해도 덕분 · 답글 별점 +${AB.AB_UND.reply.toFixed(2)}</span>` : "" /* 11-28 전문(600)부터 */}</span><span class="grow"></span><button class="btn sm" data-act="ab_reply" data-arg="${u.id}" ${(u.unrep || 0) >= 1 ? "" : "disabled"}>답글 ⚡1</button></div>${more("숙소 정리 · 더 보기", `<div class="row"><span class="grow tiny muted">정리하면 보증금 ${won(u.dep)}을 돌려받아요.</span><button class="btn sm danger" data-abclose="${u.id}">숙소 정리</button></div>`)}</div>`, true, "room", lowAp ? `<button class="btn sm" data-act="ab_clean" data-arg="${u.id}">청소 ⚡1</button>` : ""); };
   // 11-26 보드 외관: 숙소 탭(운영 설정 밑) ↔ 위 거리 장면. 고른 숙소 카드만 보인다(ui.abSel)
   const pickSel = () => A.units.find((x) => x.id === ui.abSel) || A.units[0];
   let sel = pickSel(); ui.abSel = sel ? sel.id : null;
@@ -1219,7 +1222,7 @@ function pgUcafe() {
   <div class="acts" style="padding:0">${actRows(["uc_search", ...(U.agent || U.stores.length >= 2 ? [["uc_agent", undefined, U.agent ? "관리 대행 해지" : "관리 대행 계약(매장당 월 40만, 투잡 칸 +1)"]] : [])])}</div>
   ${(() => { const pn = SP.ucPanels(spc()); return pn ? fold("uc-ops", `<span class="tjx-s1"><b>운영 설정</b><span class="tiny muted">영업 시간·원두 재고</span></span><span class="tjx-s2">${SP.ucOpsSum(spc())}</span>`, `<div class="tjx-ops">${pn}</div>`, false, "tjx-opsbox") : ""; })()}
   ${U.stores.map(store).join("")}
-  ${U.listings.length ? `<div class="sec">보던 자리 <span class="muted small">${U.listings.length}개</span></div>${((f) => U.listings.slice(0, 2).map(f).join("") + more(`보던 자리 더 보기 ${U.listings.length - 2}`, U.listings.length > 2 ? U.listings.slice(2).map(f).join("") : ""))((l) => { const A = D.UC_AREAS[l.ak], qr = UC.quote(S, l, { machine: "rent" }), qb = UC.quote(S, l, { machine: "buy" }); return `<div class="room"><div class="body"><div class="nm">${esc(A.n)} ${l.size}평</div>${A.risk ? `<div class="tiny bad">⚠ ${esc(A.risk)}</div>` : ""}<div class="small">보증금 ${won(l.dep)} · 월세 <b>${won(l.rent)}</b> · 권리금 ${won(l.key)} · 유동인구 ${"●".repeat(Math.round(l.traffic * 3))} · 경쟁 ${l.comp}곳</div>
+  ${U.listings.length ? `<div class="sec">보던 자리 <span class="muted small">${U.listings.length}개</span></div>${((f) => U.listings.slice(0, 2).map(f).join("") + more(`보던 자리 더 보기 ${U.listings.length - 2}`, U.listings.length > 2 ? U.listings.slice(2).map(f).join("") : ""))((l) => { const A = D.UC_AREAS[l.ak], qr = UC.quote(S, l, { machine: "rent" }), qb = UC.quote(S, l, { machine: "buy" }); return `<div class="room"><div class="body"><div class="nm">${esc(A.n)} ${l.size}평</div>${A.risk ? `<div class="tiny bad">⚠ ${esc(A.risk)}</div>` : ""}<div class="small">보증금 ${won(l.dep)} · 월세 <b>${won(l.rent)}</b> · 권리금 ${won(l.key)} · 유동인구 ${"●".repeat(Math.round(l.traffic * 3))} · 경쟁 ${l.comp}곳</div>${((sv) => (sv ? `<div class="tiny gold"><span class="tag gold">업의 이해도 덕분</span> 유동 지수 <b>${sv.traffic.toFixed(2)}</b>(이 상권 평균 ${sv.vs >= 0 ? "+" : "−"}${Math.abs(sv.vs)}%) · 경쟁을 넣은 예상 약 <b>${sv.cups.toLocaleString()}잔</b>/월</div>` : ""))(UC.undSurvey(S, l)) /* 11-28 숙련(300)부터 입지 조사가 숫자로 */}
       <div class="row wrap" style="margin-top:6px"><button class="btn sm" data-uccon="${l.id}:rent">머신 렌탈로 열기 (${won(qr.total)})</button><button class="btn sm gold" data-uccon="${l.id}:buy">머신 사서 열기 (${won(qb.total)})</button></div></div></div>`; })}` : ""}`;
 }
 // 대학원
@@ -1290,7 +1293,7 @@ function pgMe() {
     <div class="tiny muted" style="margin-top:4px">월 평균 +0.55%, 흔들림 큼.${S.loans.length ? ` 대출: ${S.loans.map((l) => `${l.n} ${won(l.amt)}(${(l.rate * 100).toFixed(1)}%)`).join(", ")}` : ""}</div></div>
   <div class="card"><h3>능력치 <small>최대 200 · ${esc(D.MAJORS[S.me.major]?.n || "")} · ${esc(D.JOBS[S.me.job]?.n || "")}</small></h3><div class="radarbox">${radar([{ v: S.st, c: "#f5c04e" }])}</div>${more("능력치 막대·구간 자세히", D.STAT_KEYS.map((k) => { const zi = D.STAT_CURVE.indexOf(E.statZone(S.st[k])), bk = E.brkOn(S, k); return `<div class="statrow stz"><span>${D.STATS[k]}</span>${meter(S.st[k], D.STAT_MAX, k === "body" ? "var(--green)" : "var(--blue)")}<b>${Math.round(S.st[k])}</b><i class="zb z${zi}${bk ? " bk" : ""}">${D.STAT_CURVE[zi].n}${bk ? "·돌파" : ""}</i></div>`; }).join(""))}<details class="stwhere"><summary>오르는 곳 자세히 ▾</summary>${D.STAT_KEYS.map((k) => `<div><b>${D.STATS[k]}</b> <span class="kindtag ${D.STAT_KIND[k]}">${D.STAT_KIND_N[D.STAT_KIND[k]].n}</span> ${D.STAT_WHERE[k]}${E.brkOn(S, k) ? ` <span class="gold">돌파 중(~${S.brk[k] - S.t + 1}달)</span>` : ""}</div>`).join("")}<div class="muted">100부터 더디고 150부터는 스승·큰 성공·아이템 같은 돌파 계기가 있어야 잘 올라요. 같은 방법만 석 달 하면 덜 올라요.</div></details>
     ${more("스태미너·행동력 계산 자세히", `<div class="tiny muted">스태미너는 매달 쓰는 기력이에요. 최대 스태미너 = 60 + 체력×0.6(지금 ${S.hpMax}). 행동력 = 4 + 스태미너÷13 + 체력÷50${D.RANKS[S.co.rank].ap ? ` ${D.RANKS[S.co.rank].ap}(직급)` : ""}${E.kidsAp(S) ? ` −${E.kidsAp(S)}(육아)` : ""}${E.spouseAp(S) ? ` ${E.spouseAp(S) > 0 ? "+" : "−"}${Math.abs(E.spouseAp(S))}(${E.spouseAp(S) > 0 ? "배우자 도움" : "배우자 반대"})` : ""}${E.kidMotiveAp(S) ? ` +${E.kidMotiveAp(S)}(아이 보며 힘내기)` : ""}${S.co.remote ? " −1(지방 근무)" : ""}. 체력과 감각은 30대 중반부터 조금씩 떨어지니 운동과 구경으로 챙겨 주세요.</div>`)}</div>
-  ${CU.bagCard(S, esc)}
+  ${UNDU.meCard(S)}${CU.bagCard(S, esc)}
   <div class="card"><h3>성향 카드 <small>숨은 특성은 그 일을 시작하면 공개</small></h3><div style="display:flex;flex-direction:column;gap:6px">${S.me.traits.map((id) => traitCard(D.TRAITS.find((t) => t.id === id), true)).join("")}</div></div>
   <div class="card"><h3>특전 카드 <small>큰 일을 해내면 받아요 · 다음 인생에 1장 가져가기</small></h3>${(S.me.perks || []).length ? `<div style="display:flex;flex-direction:column;gap:6px">${S.me.perks.map((id) => traitCard(D.CARD(id), true)).join("")}</div>` : ""}${(() => { const L = D.PERKS.filter((p) => p.test && !(S.me.perks || []).includes(p.id)).map((p) => `<span class="chip">🔒 ${esc(p.got)}</span>`); return `<div class="chips" style="margin-top:6px">${L.slice(0, 3).join("")}</div>${more(`전체 보기 ${L.length - 3}`, L.length > 3 ? `<div class="chips">${L.slice(3).join("")}</div>` : "")}`; })()}</div>
   <div class="card"><h3>삶 <small>${esc(D.HOUSING[S.house.type]?.n || "")}${S.house.value ? " · " + won(S.house.value) : ""}</small></h3>
@@ -1861,7 +1864,7 @@ function bind() {
   q("[data-uccctv]", (el) => { const r = UC.buyCctv(S, el.dataset.uccctv); toast([], r.msg); save(); render(); });
   q("[data-ucgate]", (el) => { const r = UC.buyGate(S, el.dataset.ucgate); toast([], r.msg); save(); render(); }); // 11-26 챌린지: 출입 인증기 설치
   q("[data-ucswap]", (el) => { const r = UC.swapMachine(S, el.dataset.ucswap); toast([], r.msg); save(); render(); }); // 11-26 챌린지: 낡은 기계 교체
-  q("[data-ucclose]", (el) => openWin(`<h2>매장을 넘길까요? <button class="x" data-close>✕</button></h2><div class="small">${((st) => { if (!st) return ""; const q = UC.saleQuote(S, st); return `<b>${esc(st.name)}</b> · 보증금 ${won(q.dep)}${q.mach ? ` + 머신 중고값 ${won(q.mach)}` : ""} ${q.key >= 0 ? `+ 권리금 ${won(q.key)}(최근 6달 평균 이익 ${won(q.avg)} × ${q.mo}달 치)` : `− 철거비 ${won(-q.key)}(적자 매장은 권리금이 없어요)`} = <b>${won(q.total)}</b><div class="tiny muted" style="margin-top:6px">권리금은 장사가 잘될 때 높고, 주변 경쟁이 늘고 기계가 낡을수록 깎여요. 넘긴 상권에는 ${UC.UC_CH.sale.block}달 동안 다시 못 열어요.</div>`; })(S.uc.stores.find((x) => x.id === el.dataset.ucclose)) /* 11-26 양도: 받는 돈을 먼저 보여 준다 */}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>양도</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = UC.close(S, el.dataset.ucclose); closeWin(); toast([], r.msg); save(); render(); }));
+  q("[data-ucclose]", (el) => openWin(`<h2>매장을 넘길까요? <button class="x" data-close>✕</button></h2><div class="small">${((st) => { if (!st) return ""; const q = UC.saleQuote(S, st); return `<b>${esc(st.name)}</b> · 보증금 ${won(q.dep)}${q.mach ? ` + 머신 중고값 ${won(q.mach)}` : ""} ${q.key >= 0 ? `+ 권리금 ${won(q.key)}(최근 6달 평균 이익 ${won(q.avg)} × ${q.mo}달 치${q.und ? ` + 협상 ${won(q.und)}` : ""})${q.und ? ` <span class="tag gold">업의 이해도 덕분</span>` : ""}` : `− 철거비 ${won(-q.key)}(적자 매장은 권리금이 없어요)`} = <b>${won(q.total)}</b><div class="tiny muted" style="margin-top:6px">권리금은 장사가 잘될 때 높고, 주변 경쟁이 늘고 기계가 낡을수록 깎여요. 넘긴 상권에는 ${UC.UC_CH.sale.block}달 동안 다시 못 열어요.</div>`; })(S.uc.stores.find((x) => x.id === el.dataset.ucclose)) /* 11-26 양도: 받는 돈을 먼저 보여 준다 */}</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>취소</button><button class="btn danger grow" data-yes>양도</button></div>`, (w) => w.querySelector("[data-yes]").onclick = () => { const r = UC.close(S, el.dataset.ucclose); closeWin(); toast([], r.msg); save(); render(); }));
   q("[data-abstep]", (el) => { const [id, k] = el.dataset.abstep.split(":"); const r = k === "doc" ? AB.docs(S, E.R(S), id) : AB.persuade(S, E.R(S), id, k === "askp"); toast(r.lines || [], r.msg); save(); render(); });
   q("[data-abhalf]", (el) => { const [id, v] = el.dataset.abhalf.split(":"); const r = AB.setHalf(S, id, v === "1"); toast([], r.msg); save(); render(); });
   q("[data-abfriend]", (el) => { const r = AB.friendStay(S, E.R(S), el.dataset.abfriend); toast(r.lines || [], r.msg); save(); render(); });
@@ -1935,7 +1938,7 @@ async function renderTitle() {
     const f = E.fireInfo(s), pw = () => { try { return portraitDataURL(s.me.look, s.me.gender, "smile", 5); } catch (e) { return ""; } };
     return { nw: f.nw, target: f.target, avatar: s.me.avatar || null, gender: s.me.gender, face: img(bodyOr(s.me.avatar, "smile", "face", pw) ?? artOr(s.me.avatar, "smile", pw)) };
   };
-  const hallWin = () => { const h = hallBox(hall, m, "순위표"); openWin(`<h2>명예의 전당 <button class="x" data-close>✕</button></h2>${h || `<div class="card small muted" style="margin-top:10px">아직 기록이 없어요. 인생을 하나 끝내면 여기에 올라요.</div>`}${m.runs?.length ? `<div class="card" style="margin-top:10px;text-align:center"><div class="small">다음 인생은 <b class="gold">${ngNext(m)}회차</b> · 기억 포인트 <b class="gold">${ngPoints(m)}</b> · 최고 파이어 ${m.best ? m.best + "세" : "아직"}</div>${ngCollection(m)}</div>` : ""}`, (w) => hallTabs(w)); };
+  const hallWin = () => { const h = hallBox(hall, m, "순위표"); openWin(`<h2>명예의 전당 <button class="x" data-close>✕</button></h2>${h || `<div class="card small muted" style="margin-top:10px">아직 기록이 없어요. 인생을 하나 끝내면 여기에 올라요.</div>`}${UNDU.hallCard(m)}${m.runs?.length ? `<div class="card" style="margin-top:10px;text-align:center"><div class="small">다음 인생은 <b class="gold">${ngNext(m)}회차</b> · 기억 포인트 <b class="gold">${ngPoints(m)}</b> · 최고 파이어 ${m.best ? m.best + "세" : "아직"}</div>${ngCollection(m)}</div>` : ""}`, (w) => hallTabs(w)); };
   TU.draw($app, { slots, u, m, hall, D, CHAR: E.CHAR, BODY, IMG_OF: PD.IMG_OF, esc, won, openWin, closeWin, toast, app: APP, peek, endings: ENDINGS, collection: ngCollection(m),
     n: { album: (m.album || []).length, mg: all.filter((k) => done[k]).length, mgAll: all.length, dex: PD.dexCount(m, E.CHAR), dexAll: Object.keys(E.CHAR).length, end: (m.endings || []).length, endAll: ENDINGS.length, next: ngNext(m), pts: ngPoints(m) },
     act: { set: () => settingsWin(slots), album: () => albumWin(), mg: () => mgReplayWin(), dex: () => pplOpen("dex"), hall: hallWin, load: loadSlot, remove: async (n) => { await ST.remove(n); renderTitle(); }, wizard: (n) => startWizard(n), quick: (n, o) => quickStart(n, o) } });
@@ -2034,14 +2037,23 @@ function renderGift() {
     <div class="card" style="text-align:center"><div class="tiny muted">남은 기억 포인트</div><div class="gold" style="font-size:26px;font-weight:900">${left} / ${pts}</div>${BMX.bmOn() ? `<button class="btn sm" style="margin-top:6px" data-bmpts>기억 포인트 +${BMX.BM.slots.giftSlot.pts} · ${esc(BMX.label("giftSlot"))}</button>` : ""}</div>
     ${GIFTS.map(row).join("")}
     <div class="card gift ${hardOk ? "" : "lock"}"><div class="row"><div class="grow"><b>어려움 모드</b> <span class="tag red">3회차부터</span><div class="small muted">연말 평가가 더 짜고 파이어 목표가 25% 높아요. 대신 끝날 때 기억 포인트가 2배예요.</div></div><button class="btn sm ${w.hard ? "gold" : ""}" data-ghard ${hardOk ? "" : "disabled"}>${w.hard ? "켜짐" : "꺼짐"}</button></div></div>
+    ${undGiftCard(w, m, n)}
     ${ngCollection(m)}`;
+}
+function undPicked(w, m, n) { const L = UND.options(m.und, n); if (!L.length) return null; return L.find((o) => o.k === w.und) || (w.und === "none" ? null : L[0]); } // 안 고르면 가장 많이 남는 것
+function undGiftCard(w, m, n) {
+  const L = UND.options(m.und, n); if (!L.length) return "";
+  const cur = undPicked(w, m, n), pct = Math.round(UND.rateOf(n) * 100), same = L.filter((o) => !o.cross), cross = L.filter((o) => o.cross); // 11-28 같은 투잡 단추만 먼저, 옮기기(절반)는 펼침 안에
+  const chip = (o) => `<button class="chip ${cur && cur.k === o.k ? "on" : ""}" data-gund="${o.k}">${esc(UND.nameOf(o.k))} +${o.v.toLocaleString()}${o.cross ? " (옮김)" : ""}</button>`;
+  const line = cur ? (cur.cross ? `${esc(UND.nameOf(cur.from))}에서 쌓은 ${cur.src.toLocaleString()}점의 ${pct}%를 절반으로 줄여 ${esc(E.jo(UND.nameOf(cur.k), "으로", "로"))} 옮겨요.` : `${esc(UND.nameOf(cur.k))}에서 쌓은 ${cur.src.toLocaleString()}점의 ${pct}%를 그대로 가져가요.`) : "이번에는 가져가지 않아요.";
+  return `<div class="card gift"><div class="grow"><b>업의 이해도 이어 가기</b> <span class="tag gold">${n}회차 ${pct}%</span><div class="small muted">지난 인생에서 몸에 밴 감이에요. 투잡 하나만 골라요. 같은 투잡이면 그대로, 다른 투잡으로 옮기면 절반이에요. 포인트는 안 들어요.</div></div><div class="chips">${same.map(chip).join("")}<button class="chip ${cur ? "" : "on"}" data-gund="none">안 가져감</button></div>${cross.length ? `<details class="more" style="margin-top:6px"${cur?.cross || !same.length ? " open" : ""}><summary>다른 투잡으로 옮기기 (절반) <i class="tjx-arr" style="display:inline-block;vertical-align:-1px">▾</i></summary><div class="chips" style="margin-top:4px">${cross.map(chip).join("")}</div></details>` : ""}<div class="tiny muted" style="margin-top:4px">${line}</div></div>`;
 }
 function ngGiftsToStart(w) {
   const g = w.gifts || {}, M0 = meta(), n0 = ngNext(M0), r5 = M0.r5?.reward && !M0.r5.used ? M0.r5 : null, pk = r5 ? RD.pickOf(r5.grade) : null, rw = r5 ? { cash: r5.reward === "cash" ? pk.cash : 0, statUp: 0 } : n0 === 2 && M0.r1Grade && !M0.r5 ? RD.rewardOf(M0.r1Grade) : { cash: 0, statUp: 0 }; // 11-26 갈림길에서 고른 보상(예전 저장은 등급 보상) // 2회차: 1회차 등급 보상
   const fr = [...(g.friend || [])]; if (n0 >= 3 && !fr.length && (M0.pastFriends || []).length) fr.push(M0.pastFriends[0]); // 3회차 특전: 지난 판 인연 한 명
   if (r5?.memP && !fr.includes(r5.memP)) fr.push(r5.memP); // 갈림길 기억: 사람 한 명
   const kn = [...(g.know || [])]; if (r5?.memJ && !kn.includes(r5.memJ)) kn.push(r5.memJ); // 갈림길 기억: 투잡의 감
-  return { stat3: r5?.reward === "stat" ? { keys: r5.statKeys || [], v: pk.stat3 } : null, trait: r5?.reward === "trait" ? r5.trait : null, r5: r5 ? { text: r5Text(r5) } : null, n: n0, hard: !!w.hard, cash: (g.cash || 0) * 300 + (rw.cash || 0), statUp: (g.stat || 0) * 3 + (rw.statUp || 0), know: kn, friends: fr, past: (meta().hidPast || []).slice(-2), hl: E.HL.ngIn(M0), wvGone: M0.wvGone || [], gifts: Object.keys(g).filter((k) => (Array.isArray(g[k]) ? g[k].length : g[k])) };
+  return { stat3: r5?.reward === "stat" ? { keys: r5.statKeys || [], v: pk.stat3 } : null, trait: r5?.reward === "trait" ? r5.trait : null, r5: r5 ? { text: r5Text(r5) } : null, n: n0, hard: !!w.hard, cash: (g.cash || 0) * 300 + (rw.cash || 0), statUp: (g.stat || 0) * 3 + (rw.statUp || 0), know: kn, friends: fr, past: (meta().hidPast || []).slice(-2), hl: E.HL.ngIn(M0), wvGone: M0.wvGone || [], und: (() => { const o = undPicked(w, M0, n0); return o ? { [o.k]: o.v } : {}; })(), gifts: Object.keys(g).filter((k) => (Array.isArray(g[k]) ? g[k].length : g[k])) };
 }
 function ngGiftsToStart_old(w) {
   const g = w.gifts || {};
@@ -2186,6 +2198,7 @@ function renderWiz() {
   const togg = (key, v, cost, max) => { const a = w.gifts[key] || []; if (a.includes(v)) w.gifts[key] = a.filter((x) => x !== v); else if (a.length < max && ngPoints(meta()) - ngSpent(w) >= cost) w.gifts[key] = a.concat(v); else toast([], "포인트가 모자라거나 최대 개수예요"); renderWiz(); };
   q("[data-gknow]", (el) => togg("know", el.dataset.gknow, 2, 2));
   q("[data-gfr]", (el) => togg("friend", el.dataset.gfr, 2, 2));
+  q("[data-gund]", (el) => { w.und = el.dataset.gund; renderWiz(); });
   q("[data-ghard]", () => { w.hard = !w.hard; renderWiz(); });
   q("[data-back]", () => { if (w.step === 0 || (w.step === 1 && !((meta().runs?.length || 0) > 0))) { ui.wiz = null; renderTitle(); } else { w.step--; renderWiz(); } });
   q("[data-nextw]", () => {
@@ -2259,6 +2272,8 @@ function renderEnding() {
     if (S.forkBack) m.r5 = { ...S.forkBack, grade: S.gradeUp ? "S" : S.grade }; // 11-26 갈림길에서 고른 보상·기억 → 2회차 시작
     if (S.grade) m.r1Grade = S.gradeUp ? "S" : S.grade; // 1회차 결산 등급 → 2회차 시작 보상
     m.hidPast = [...(m.hidPast || []), { ...H2U.runRec(S), wv: WV.tookList(S) }].slice(-5); // v4.30 회차의 길: 지난 인생에서 연 히든 길·한 투잡 · 11-25 판 변화에서 간 길
+    if (UND.jobs().length) m.und = UND.endRec(S); // 11-28 업의 이해도: 다음 회차에 투잡 하나를 골라 가져간다
+    UNDU.bestUpdate(m, S); // 11-28 투잡별 최고 이해도(이 기기 기록, 스위치 UND_ON)
     m.wvGone = [...new Set([...(m.wvGone || []), ...WV.goneOut(S)])]; // 11-25 다음 회차 특전: 안 가 본 길만 조건 −10
     const rec = { name: S.me.name, nw: Math.round(f.nw), fireAt: S.fireAt || null, fireM: S.fireAtM || (S.fireAt ? S.fireAt * 12 : null), age, path: S.sj.active.map((k) => D.SIDEJOBS[k].n).join("·") || "회사원", full: BIG.isFull(S), t: Date.now(), kind, hid: [...HU.hidNames(S), ...H2U.names(S)] };
     // 개인회생으로 끝난 판은 명예의 전당에 올리지 않는다
@@ -2269,10 +2284,10 @@ function renderEnding() {
   const title = kind === "fire" ? `${age}세 파이어` : kind === "age" ? (S.grade ? `${RD.endAgeOf(S)}세 결산 · ${S.grade}등급` : S.fireAt ? `${S.fireAt}세 파이어 · ${RD.endAgeOf(S)}세 결산` : `${RD.endAgeOf(S)}세 결산 · 파이어 실패`) : kind === "over" && S.over === "bankrupt" ? "개인회생" : "번아웃";
   $app.innerHTML = `<div class="ending"><div class="px gold">THE END · ${esc(S.me.name)}의 ${esc(E.nthLife(S.ng?.n || 1))} 인생</div><div class="big">${esc(title)}</div>
     <div class="card"><div class="kv tjx-endkv"><div><div class="k">순자산</div><div class="v gold">${won(f.nw)}</div></div>${endJobs().map((j) => `<div><div class="k">${esc(END_JOB[j].n)}</div><div class="v">${esc(END_JOB[j].kv())}</div></div>`).join("") || `<div><div class="k">투잡</div><div class="v">회사만 다님</div></div>`}<div><div class="k">인연</div><div class="v">${Object.keys(S.rel).length}명</div></div></div></div>
-    ${S.grade ? gradeCard() : ""}${jobEndCard()}
+    ${S.grade ? gradeCard() : ""}${jobEndCard()}${UNDU.endCard(S, ngNext(m))}
     ${(() => { const L = WV.tookList(S); return L.length ? `<div class="card"><h3>이번 판에 간 길</h3><div class="small" style="line-height:1.8">${L.map(esc).join("<br>")}</div></div>` : ""; })()}
     <div class="card"><h3>그 뒤의 이야기</h3><div class="small" style="line-height:1.8">${epilogue().map(esc).join("<br>")}</div></div>
-    ${S.hallRank ? hallBox(null, m, `명예의 전당 ${S.hallRank}위 등록!${S.hallFireRank ? ` · 파이어 나이 ${S.hallFireRank}위` : ""}`) : ""}
+    ${S.hallRank ? hallBox(null, m, `명예의 전당 ${S.hallRank}위 등록!${S.hallFireRank ? ` · 파이어 나이 ${S.hallFireRank}위` : ""}`) : ""}${UNDU.hallCard(m)}
     <div class="card"><h3>기억 포인트 +${S.ngGot?.pts || 0} <small>다음은 ${ngNext(m)}회차 · 모은 포인트 ${ngPoints(m)}</small></h3><div class="small">${(S.ngGot?.got || []).map(([p, why]) => `+${p} ${esc(why)}`).join("<br>")}</div>${S.ngGot?.newEnds?.length ? `<div class="small gold" style="margin-top:6px">새 엔딩을 도감에 올렸어요!</div>` : ""}${ngCollection(m)}<div class="tiny muted" style="margin-top:6px">지금까지 ${(m.runs || []).length}판 · 최고 파이어 ${m.best ? m.best + "세" : "아직 없음"}</div></div>
     <button class="btn gold" style="padding:14px" data-again>이 칸에서 ${ngNext(m)}회차 인생</button><button class="btn" style="padding:12px" data-slots>저장 칸으로</button></div>`;
   hallTabs($app);
@@ -2368,7 +2383,7 @@ function autoTest(n) {
     E.endMonth(S); while (S.pending || S.sceneQ.length) { if (!S.pending) E.nextQueuedScene(S); if (S.pending) { if (holdW && `${S.pending.title || ""} ${S.pending.tag || ""} ${S.pending.onChoose || ""}`.includes(holdW)) { held = true; break; } E.choose(S, 0); } }
   }
   if (held) { ui.page = "home"; render(); showScene(); return; }
-  const h = location.hash; ui.page = ["map", "people", "sj", "hobby", "co", "pr", "cs", "insta", "airbnb", "ucafe", "grad", "family", "me", ...REG.JOBS.map((P) => P.key)].find((k) => h.includes("-" + k)) || "home";
+  const h = location.hash; ui.page = ["map", "people", "sj", "hobby", "co", "pr", "cs", "insta", "airbnb", "ucafe", "grad", "family", "me", ...REG.JOBS.map((P) => P.key)].find((k) => h.replace(/-(cs2on|tu2on|cwon|byon|undon)(?=-|$)/gi, "").includes("-" + k)) || "home"; // 11-28 스위치 낱말(-cs2on 등)은 화면 이름으로 읽지 않는다(-cs2on 이 -cs 로 읽혀 …-cs2on-…-me 가 나 화면을 못 열던 것)
   if (h.includes("region")) ui.region = "town";
   if (h.includes("coquit")) E.quitCompany(S); if (h.includes("-partyspot") && E.partyOn(S)) { ui.page = "map"; ui.region = "party"; } // 11-25 지도 시안 시험: 퇴사 뒤 지도 · 회식 자리(회식 달: #auto18-map-partyspot)
   { const av = h.match(/av=(p[FM][0-9])/); if (av) { S.me.avatar = av[1]; S.me.gender = av[1][1]; } const wh = h.match(/who=(c[0-9]+)/); if (wh) { S.cast.unshift(wh[1]); E.talkTo(S, wh[1]); while (S.pending) E.choose(S, 0); S.rel[wh[1]] = S.rel[wh[1]] || {}; const o = S.rel; S.rel = { [wh[1]]: o[wh[1]], ...o }; } const sp = h.match(/spot=([a-z]+)/); if (sp) ui.lastSpot = sp[1]; }
@@ -2568,7 +2583,7 @@ function regUiPlugins() {
   for (const U of UI_PLUGINS) { if (U?.key && REG.get(U.key)) UJ[U.key] = U; else console.warn("[투잡 등록표] 화면 플러그인 건너뜀(엔진 플러그인 없음)", U?.key); }
   for (const P of REG.JOBS) {
     const k = P.key, U = UJ[k] || {}, j = D.SIDEJOBS[k], bgk = U.bg || SJ_BG[k] || "alley";
-    PLUG_PAGES[k] = () => { try { return U.page ? U.page(jctx()) : plugPageBasic(P); } catch (e) { showErr(e.stack || String(e)); return plugPageBasic(P); } };
+    PLUG_PAGES[k] = () => { try { const h = U.page ? U.page(jctx()) : plugPageBasic(P), uc = UNDU.boardCard(S, k); return uc && !h.includes(`data-a6und="${k}"`) ? uc + h : h; /* 11-28 보드 머리(boardHead)를 안 쓰는 보드(펫시팅)에도 업의 이해도 카드 */ } catch (e) { showErr(e.stack || String(e)); return plugPageBasic(P); } };
     TILE[k] = { ic: U.ic || j.ic || "spark", bg: BG.has(bgk) ? `img/bg/${bgk}.webp` : "img/bg_office.webp", lock: U.lock || `투잡 탐색에서 ${j.n} 시작` };
     PAGE_BG[k] = bgk; SJ_BG[k] = U.sjBg || bgk;
     Object.assign(ACT_IC, U.icons || {});
@@ -2601,6 +2616,6 @@ ST.init().then(async () => {
   else if (location.hash.startsWith("#wiz")) { startWizard(1); const w = ui.wiz; const n = +(location.hash.match(/\d/) || [1])[0]; if (n >= 2) { w.step = 2; w.rolls.push(E.rollStats(Math.random)); w.pick = 0; } if (n >= 3) { w.step = 3; w.major = "elec"; } if (n >= 4) { w.step = 4; w.company = "fin"; w.companyName = "신안은행"; w.job = "dfin"; } if (n >= 5) { w.step = 5; w.traits = w.pool.slice(0, 2); } renderWiz(); }
   else if (location.hash.startsWith("#intro")) { autoTest(1); showIntro(); }
   else if (location.hash.startsWith("#dexsample")) { const ids = Object.keys(E.CHAR); META_C = Object.assign({}, META_C, { dexInit: 1, album: [], dex: Object.fromEntries(ids.filter((k, i) => i % 3 === 0).map((k, i) => [k, [1 + (i % 3), (i * 23) % 100, i % 4, [0, 1, 3, 5, 17, 33, 65][i % 7]]])) }); renderTitle(); if (location.hash.includes("open")) setTimeout(() => pplOpen(location.hash.includes("det") ? "dex:" + ids[0] : location.hash.includes("lock") ? "dex:" + ids[1] : "dex"), 300); } // 시작 화면·도감 시험
-  else if (location.hash.startsWith("#gift")) { META_C = Object.assign({}, META_C, { runs: [{}, {}], ngPts: 9, knownJobs: ["pr", "cs", "airbnb"], pastFriends: ["c001", "c005", "c064"], endings: ["fire", "agefail"], metAll: ["c001", "c002", "c005"] }); startWizard(1); ui.wiz.gifts = { cash: 1, know: ["pr"], friend: ["c001"] }; renderWiz(); }
+  else if (location.hash.startsWith("#gift")) { META_C = Object.assign({}, META_C, { runs: [{}, {}], ngPts: 9, knownJobs: ["pr", "cs", "airbnb"], pastFriends: ["c001", "c005", "c064"], endings: ["fire", "agefail"], metAll: ["c001", "c002", "c005"] }, /-und/.test(location.hash) ? { und: { carwash: 2000, cs: 900 } } : {}); startWizard(1); ui.wiz.gifts = { cash: 1, know: ["pr"], friend: ["c001"] }; renderWiz(); }
   else renderTitle();
 });

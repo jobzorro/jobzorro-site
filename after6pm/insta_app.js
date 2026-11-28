@@ -1,6 +1,7 @@
 // 인별 앱(v4.27): 게임 화면 위에 따로 뜨는 폰 모양 SNS 창. 흰 바탕·자체 글꼴·탭 5개(피드·댓글함·DM·인사이트·협찬함).
 // ui.js 가 ctx(jctx + faceSrc·meSrc·bodySrc)를 넘겨 openInsta(ctx, 탭) 으로 연다. 행동은 ctx.doAct 로(행동력·미니게임·장면 흐름 그대로).
 import * as INS from "./engine/insta.js";
+const UTAG = '<span style="display:inline-block;border-radius:999px;padding:1px 7px;font-size:10.5px;font-weight:700;background:#fff1cc;color:#8a5a00;white-space:nowrap">업의 이해도 덕분</span>'; // 11-28 이해도 효과가 적용된 자리에 다는 꼬리표(흰 바탕용)
 
 // 화보(ui.js CINE_BG·CINE_TAG 에 합친다). 그림 파일이 없으면 이 배경 + 사람 그림 겹치기
 export const CINE_BG = { in_hot_roof: "rooftop", in_hot_river: "street", in_hot_popup: "popup", in_hot_gallery: "gallery", in_collab: "cafe", in_shoot: "gallery", in_era: "rooftop", in_brand: "popup", in_fanmeet: "cafe" };
@@ -174,7 +175,7 @@ function pgDm() {
 
 // ───────── 인사이트 ─────────
 function pgIns() {
-  const i = I(), s = S(), esc = X.esc, H = (i.rh || []).slice(-12), cc = i.cc, m = INS.market(s, cc), rv = i.reveal || 0;
+  const i = I(), s = S(), esc = X.esc, H = (i.rh || []).slice(-12), cc = i.cc, m = INS.market(s, cc), rv = i.reveal || 0, UF = INS.undFx(s); // UF: 11-28 업의 이해도 효과(스위치가 꺼져 있으면 모두 false)
   const fs = (i.hist || []).slice(-24), mx = Math.max(10, ...fs), W = 300, Hh = 80;
   const pts = fs.map((v, k) => `${Math.round(k / Math.max(1, fs.length - 1) * W)},${Math.round(Hh - v / mx * (Hh - 6) - 3)}`).join(" ");
   const bm = Math.max(1, ...H.map((h) => h.g || 0));
@@ -190,15 +191,16 @@ function pgIns() {
       <div>경쟁 ${rv >= 2 ? `${dots(m.c, 0, 1)} ${m.c >= 0.7 ? "꽉 참" : m.c <= 0.35 ? "비어 있음" : "보통"}` : "?????"}</div>
       <div>판정 ${rv >= 3 ? `<b>${esc(INS.grade(m))}</b>` : "???"}</div>
       <div class="igsub">수요가 크면 천장이 높고, 경쟁이 적으면 빨리 커요.</div></div>
-    ${(i.hints || []).length ? `<div class="igcard"><b>숨은 수요 힌트</b>${i.hints.map((h) => `<div>${esc(INS.TOPICS[h.cc.topic].n)}×${esc(INS.TONES[h.cc.tone].n)}×${esc(INS.FMTS[h.cc.fmt].n)} → <b>${esc(h.g)}</b></div>`).join("")}</div>` : ""}
+    ${(i.hints || []).length ? `<div class="igcard"><b>숨은 수요 힌트</b>${i.hints.map((h) => `<div>${esc(INS.TOPICS[h.cc.topic].n)}×${esc(INS.TONES[h.cc.tone].n)}×${esc(INS.FMTS[h.cc.fmt].n)} → <b>${esc(h.g)}</b>${h.u ? ` ${UTAG}` : ""}</div>`).join("")}${UF.on && !UF.see ? `<div class="igsub">업의 이해도 숙련(300점)부터 볼 때마다 힌트가 한 줄 더 나와요. 지금 ${Math.round(UF.v).toLocaleString()}점</div>` : ""}</div>` : UF.on ? `<div class="igsub" style="padding:0 2px 6px">${UF.see ? `${UTAG} 인사이트를 볼 때마다 숨은 수요 힌트가 두 줄씩 나와요.` : `업의 이해도 숙련(300점)부터 숨은 수요 힌트가 한 줄 더 나와요. 지금 ${Math.round(UF.v).toLocaleString()}점`}</div>` : ""}
     <button class="igbtn pri wide" data-iginsight ${i.insT === s.t ? "disabled" : ""}>${i.insT === s.t ? "이번 달 인사이트는 다 봤어요" : "인사이트 꼼꼼히 보기(한 달 1번)"}</button></div>`;
 }
 
 // ───────── 협찬함 ─────────
 function pgDeal() {
-  const i = I(), s = S(), esc = X.esc, O = i.offers || [], why = X.E.canAct(s, "in_gong");
+  const i = I(), s = S(), esc = X.esc, O = i.offers || [], why = X.E.canAct(s, "in_gong"), UF = INS.undFx(s);
   return `<div class="igpad"><div class="igtt">협찬함 <small>${O.length}건</small></div>
     <div class="igsub">컨셉과 맞는 브랜드는 단가가 높고 일관성을 거의 안 깎아요. 안 맞으면 돈은 되지만 '광고충' 소리와 함께 일관성 −12.</div>
+    ${UF.pro ? `<div class="igsub" data-igund="pay">${UTAG} 단가 협상: 협찬비 +${Math.round((INS.IG_UND.pay - 1) * 100)}%(아래 예상 금액에 들어 있어요)</div>` : UF.on ? `<div class="igsub" style="opacity:.7">업의 이해도 전문(600점)부터 협찬 단가를 조금 더 받아 내요. 지금 ${Math.round(UF.v).toLocaleString()}점</div>` : ""}
     ${hidCard()}
     ${O.length ? O.map((o) => { const w = X.E.canAct(s, "in_deal", o.id); const base = o.hid ? { ...o, mul: o.mul / (o.hid === 1 ? INS.F30.ad.mul : INS.F30.ad.softMul) } : o;
       return `<div class="igdeal ${o.fit ? "fit" : "nofit"}"><div><b>${esc(o.nm)}</b><span class="igtag">${o.fit ? "컨셉과 맞음" : o.cat === "any_bad" ? "평판 위험" : "컨셉과 안 맞음"}</span>${o.hid ? `<span class="igtag" style="color:#e0245e">· ${o.hid === 1 ? "광고 표시 빼기로 함" : "'제품 제공'만 작게"}</span>` : ""}</div><div class="igsub">${o.cat === "any_bad" ? "아무 계정에나 오는 광고" : esc(INS.TOPICS[o.cat]?.n || "")} · 예상 ${X.won(INS.offerPay(s, o))}</div>${o.hid ? `<div class="igacts" style="padding:0"><button class="igbtn" style="border-color:#f6c6d4" data-igdeal="${o.id}:hide" ${w ? `data-why="${esc(w)}"` : ""}>표시 없이 ⚡1<br><small style="font-size:11px;font-weight:600">${X.won(INS.offerPay(s, o))}</small></button><button class="igbtn pri" data-igdeal="${o.id}:lab" ${w ? `data-why="${esc(w)}"` : ""}>표시하고 ⚡1<br><small style="font-size:11px;font-weight:600">${X.won(INS.offerPay(s, base))}</small></button></div>` : `<button class="igbtn ${o.fit ? "pri" : ""}" data-igdeal="${o.id}" ${w ? `data-why="${esc(w)}"` : ""}>콘텐츠 만들기 ⚡1</button>`}</div>`; }).join("") : `<div class="igsub">아직 제안이 없어요. 팔로워 1천 명부터, 컨셉이 분명할수록 자주 와요.</div>`}

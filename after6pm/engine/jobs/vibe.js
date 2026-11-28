@@ -6,6 +6,7 @@ import * as D from "../defs.js";
 import { addMoney, log, won, gainStat, mod, applyEff, R, jo, CHAR } from "../core.js";
 import * as SYN from "../syn.js";
 import * as SJ from "../sj.js"; // 초반 고생 배율(ramp)
+import * as UND from "../und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. und.js 도 이 파일의 DOMS 를 읽으므로 맨 위에서 값을 꺼내 쓰지 않는다. 스위치 UND_ON 이 꺼져 있으면 늘 0 · false)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const r5 = (x) => Math.max(0, Math.round(x / 5) * 5);
@@ -142,8 +143,22 @@ export const domOn = (s) => !!s.vibe?.dom?.on;
 export const domU = (s, k) => s.vibe?.dom?.u?.[k] || 0;
 const domLo = () => clamp(1 - (1 - VB_CH.dom.lo) * K, 0.15, 1);
 export const domPriceMul = (s, k) => domLo() + (1 - domLo()) * domU(s, k) / 100; // 도메인 건 단가 배율
-const domOutMul = () => 1 - Math.min(0.95, VB_CH.dom.outCut * K); // 도메인 밖 문의 배율
-export const domReach = (s) => (domOn(s) ? Math.min(1, domOutMul() + s.vibe.dom.picks.length * VB_CH.dom.lead) : 1); // 손님 풀(영업 답장에도 곱한다)
+// ───────── 11-28 업의 이해도 효과(스위치 UND_ON) ─────────
+// 전문(600): 견적이 정확해진다 = 의뢰마다 범위가 늘 위험 · 재작업 위험이 보이고, 수정 요청(범위 늘어남)과 재작업 확률이 조금 준다.
+// 장인(1,000): 도메인 밖 문의 감소폭이 조금 누그러진다(−70% → −69%).
+export const VB_UND = { creep: 0.9, redo: 0.9, out: 0.98 }; // creep · redo: 확률 배율(전문) · out: 도메인 밖 문의 감소폭 배율(장인)
+// 봇(2회차, 끔 300판 32.3% · 900판 31.8%): creep · redo 만 → 300판 32.0% · 900판 32.4%. out 은 문의 수를 바꿔 난수 길이 갈리므로 300판으로는 ±3%p 가 흔들린다(0.93 → 36.7% · 0.95 → 28.7% · 0.96 → 31.7% · 0.97 → 34.7%).
+// 900판: out 0.96 → 36.0% · 0.98 → 34.3%. 위로 기우는 쪽이라 폭을 가장 작게(0.98 = −70% → −69%) 둔다. 더 키우려면 판 수를 늘려 다시 잰다
+if (typeof process !== "undefined" && process.env?.VBUND) Object.assign(VB_UND, JSON.parse(process.env.VBUND)); // 봇 시험용 손잡이(예: VBUND='{"out":1}')
+export const undFx = (s) => ({ on: UND.jobs().includes("vibe"), v: UND.score(s, "vibe"), pro: UND.at(s, "vibe", UND.TH.전문), top: UND.at(s, "vibe", UND.TH.장인) });
+const undCreep = (s) => (UND.at(s, "vibe", UND.TH.전문) ? VB_UND.creep : 1), undRedo = (s) => (UND.at(s, "vibe", UND.TH.전문) ? VB_UND.redo : 1);
+// 한 의뢰(받기 전 · 만드는 중)의 달마다 범위가 늘 확률과 납품 때 재작업 확률. 엔진이 쓰는 식과 같다(화면의 견적 꼬리표용)
+export const creepP = (s, p) => ((p?.spec ? 0.05 : 0.14) + (p?.vague ? 0.2 : 0)) * scopeOf(s).creep * undCreep(s);
+export function redoP(s, p) { const E = VB_CH.err, tq = clamp(s.vibe.tech / 100, 0, 1); return Math.min(0.4, clamp(E.redoHi - (E.redoHi - E.redoLo) * (0.7 * tq + (p?.spec ? 0.3 : 0)) + (p?.vague ? 0.03 : 0), E.redoLo, E.redoHi) * Kt(s)) * undRedo(s); }
+export const domOutCut = (s) => Math.min(0.95, VB_CH.dom.outCut * K * (s && UND.at(s, "vibe", UND.TH.장인) ? VB_UND.out : 1)); // 도메인 밖 문의 감소폭(장인부터 조금 누그러진다)
+const UND_NOTE = [[600, "견적이 정확해졌어요. 의뢰마다 범위가 늘 위험이 보이고, 수정 요청과 재작업이 조금 줄어요."], [1000, "도메인 밖 문의가 덜 줄어요."]];
+const domOutMul = (s) => 1 - domOutCut(s); // 도메인 밖 문의 배율
+export const domReach = (s) => (domOn(s) ? Math.min(1, domOutMul(s) + s.vibe.dom.picks.length * VB_CH.dom.lead) : 1); // 손님 풀(영업 답장에도 곱한다)
 export const marketMul = (s) => Math.max(clamp(1 - (1 - VB_CH.comp.floor) * Kt(s), 0.3, 1), Math.pow(1 - VB_CH.comp.cut, Math.floor(s.t / 12))); // 재능마켓 단가(해마다 −4%)
 const leadComp = (s) => (s.t < VB_CH.comp.leadT ? 1 : Math.max(VB_CH.comp.leadFloor, 1 - VB_CH.comp.leadCut * (Math.floor((s.t - VB_CH.comp.leadT) / 12) + 1)));
 function coDoms(s) { if (!employed(s) || !s.co) return []; return [...new Set([...(CO_DOM[s.co.name] || TYPE_DOM[s.co.type] || []), ...(JOB_DOM[s.me?.job] || [])])]; }
@@ -220,7 +235,7 @@ function expense(s, name, v) { if (!v) return; s.cash -= v; addMoney(s, "exp", n
 // dom: 도메인 시대(6년 차~)에만 쓴다. 키 = 그 도메인 건, null = 도메인 밖, 안 주면 손님 풀 비율대로 정한다
 export function makeOffer(s, r, ch, dom) {
   const V = s.vibe, pi = SYN.pi(s);
-  if (domOn(s) && dom === undefined) { const pk = V.dom.picks, a = domOutMul(), b = pk.length * VB_CH.dom.lead; dom = pk.length && r.chance(b / Math.max(0.01, a + b)) ? r.pick(pk) : null; }
+  if (domOn(s) && dom === undefined) { const pk = V.dom.picks, a = domOutMul(s), b = pk.length * VB_CH.dom.lead; dom = pk.length && r.chance(b / Math.max(0.01, a + b)) ? r.pick(pk) : null; }
   if (!domOn(s) || !DOMS[dom]) dom = null;
   const ind = ch === "pkg" && V.niche ? V.niche : r.pick(IND_KEYS);
   let price, need;
@@ -285,7 +300,7 @@ function deliver(s, r, p, lines) {
   if (!p.redo) {
     const E = VB_CH.err, tq = clamp(V.tech / 100, 0, 1);
     const failP = Math.min(0.12, Math.max(0.01, E.fail * (1.3 - 0.6 * tq) - (p.spec ? 0.01 : 0)) * Kt(s));
-    const redoP = Math.min(0.4, clamp(E.redoHi - (E.redoHi - E.redoLo) * (0.7 * tq + (p.spec ? 0.3 : 0)) + (p.vague ? 0.03 : 0), E.redoLo, E.redoHi) * Kt(s));
+    const redoP = Math.min(0.4, clamp(E.redoHi - (E.redoHi - E.redoLo) * (0.7 * tq + (p.spec ? 0.3 : 0)) + (p.vague ? 0.03 : 0), E.redoLo, E.redoHi) * Kt(s)) * undRedo(s); // 11-28 이해도 전문: 재작업 확률 ×0.9
     const x = r.range(0, 1);
     if (x < failP) {
       V.fails = (V.fails || 0) + 1; V.rep = clamp(V.rep - E.failRep, 0, 100);
@@ -554,6 +569,7 @@ export default {
   month(s, r, notes, scenes) {
     const V = s.vibe, pi = SYN.pi(s), M = s.month;
     V.m++;
+    UND.fxNote(s, "vibe", V, notes, UND_NOTE); // 11-28 이해도 문턱을 넘은 달에 한 줄(스위치가 꺼져 있으면 아무 일도 안 한다)
     // 11-22 앱 재심사 대기
     if (V.app && !V.app.live && V.app.hold > 0) { if (V.app.hold >= 99) V.app.hold = VB_F30.store.holdM; V.app.hold--; if (V.app.hold <= 0) { V.app.live = true; V.app.hold = 0; notes.push("재심사 통과! 내 앱이 앱 장터에 올라갔다"); } else notes.push(`내 앱 재심사 대기(${V.app.hold}달)`); }
     // 0) 하청 개발자: 진행 중 일 2칸
@@ -564,7 +580,7 @@ export default {
       if (p.own) continue;
       if (p.lock) p.lock = 0; // 검수 답이 왔다: 재작업 시작
       p.due--;
-      if (r.chance(((p.spec ? 0.05 : 0.14) + (p.vague ? 0.2 : 0)) * scopeOf(s).creep)) {
+      if (r.chance(((p.spec ? 0.05 : 0.14) + (p.vague ? 0.2 : 0)) * scopeOf(s).creep * undCreep(s))) { // 11-28 이해도 전문: 범위 늘어남 확률 ×0.9
         p.need += 1; p.creep = (p.creep || 0) + 1; const sp = scopeOf(s);
         if (sp.paid && p.price > 0) { const add = r5(Math.max(5 * pi, (p.price - (p.dep || 0)) * sp.paid)); p.price += add; notes.push(`${p.nm}: 범위 밖 요청 → 추가 견적 +${won(add)}(작업 +1)`); }
         else notes.push(`${p.nm}: "버튼 하나만 더…" 수정 요청(작업 +1)`);
@@ -632,7 +648,7 @@ export default {
     if (!dryNow) {
       if (!dm.on) { const nLead = Math.min(3, roll(lead2)); for (let i = 0; i < nLead && V.offers.length < 5; i++) makeOffer(s, r, r.pick(w)); }
       else { // 도메인 시대: 밖 문의는 줄고, 고른 도메인마다 문의가 따로 들어온다
-        const L = []; for (let i = roll(lead2 * domOutMul()); i > 0; i--) L.push(null);
+        const L = []; for (let i = roll(lead2 * domOutMul(s)); i > 0; i--) L.push(null);
         for (const k of dm.picks) for (let i = roll(lead2 * VB_CH.dom.lead); i > 0; i--) L.push(k);
         for (const k of r.shuffle(L).slice(0, 3)) if (V.offers.length < 5) makeOffer(s, r, r.pick(w), k);
       }

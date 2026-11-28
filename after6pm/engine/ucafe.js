@@ -3,6 +3,7 @@ import * as D from "./defs.js";
 import { addMoney, log, won, gainStat, creditRoom, addLoan, helperPower, mod } from "./core.js";
 import * as SYN from "./syn.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
+import * as UND from "./und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. 스위치 UND_ON 이 꺼져 있으면 늘 false)
 import * as SP from "./space.js"; // 11-25 지점 수 파손 배율·히든 길 켜짐 여부
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -82,6 +83,7 @@ export function month(s, r, notes, scenes) {
   const U = s.uc, pi = SYN.pi(s); let total = 0; const n0 = scenes.length, NK = UC_F30.night, 스크 = stockOf(s), dX = SP.dmgX(U.stores.length); // 11-25 지점 수 파손 배율
   U.hidOn = SP.hidOn(s, "ucafe"); // 11-25 히든 길 '내 원두 브랜드': 저가 체인 영향 거의 없음(chainRef)
   if (U.beanUp > 0) U.beanUp--;
+  UND.fxNote(s, "ucafe", U, notes, [[UND.TH.숙련, "이제 자리를 보면 유동인구와 예상 잔 수가 숫자로 잡혀요(보던 자리에 표시)"], [UND.TH.장인, `매장을 넘길 때 권리금을 ${Math.round(UC_UND.key * 100)}% 더 받아 내요`]]);
   const CH = U.ch = U.ch || {}, ban = regOn(s); // 11-26 챌린지 상태(옛 저장엔 없다)
   for (const st of U.stores) {
     const A = D.UC_AREAS[st.ak], seas = D.UC_SEASON[s.cal - 1], q = U.agent ? 1 : clamp(st.ap / needAp(s, st), 0, 1);
@@ -247,12 +249,22 @@ export const trend = (st) => (st.peak > 0 && st.months >= 12 ? avg12(st) / st.pe
 export const moveDue = (st) => st.months >= UC_CH.move.at || (st.months >= UC_CH.move.minM && trend(st) <= -UC_CH.move.drop);
 export const leftWait = (s, ak) => { const t = s.uc?.left?.[ak]; return t == null ? 0 : Math.max(0, UC_CH.sale.block - (s.t - t)); }; // 넘긴 상권에 다시 열 수 있을 때까지 남은 달
 // 지금 넘기면 받는 돈. key 가 권리금(적자면 철거비라 음수), mo 는 권리금이 이익 몇 달 치인지
+// 11-28 업의 이해도 효과(스위치 UND_ON). 숙련(300)부터: 보던 자리의 유동인구가 점(●) 대신 지수 숫자로, 경쟁을 넣은 예상 잔 수까지 보인다(화면만). 장인(1,000)부터: 넘길 때 권리금 +key(협상)
+export const UC_UND = { key: 0.04 };
+export const undSee = (s) => UND.at(s, "ucafe", UND.TH.숙련);
+// 보던 자리(l)의 입지 조사: { traffic 유동 지수, vs 그 상권 평균 대비 %, cups 자리를 잡은 뒤 한 달 예상 잔 수(기본 가격 · 가성비 원두 · 렌탈 기계 · 평균 계절) }. 숙련이 안 됐으면 null
+export function undSurvey(s, l) {
+  if (!l || !undSee(s)) return null;
+  const A = D.UC_AREAS[l.ak]; if (!A) return null;
+  const cups = UC_BAL.cups * weekendF(A) * l.traffic * 0.85 * (1 - 0.06 * l.comp) * 30; // month() 의 잔 수 식에서 자리 몫만(하루 잔 × 30)
+  return { traffic: l.traffic, vs: Math.round((l.traffic / A.traffic - 1) * 100), cups: Math.round(cups / 10) * 10 };
+}
 export function saleQuote(s, st) {
   const S = UC_CH.sale, a = avg(st), yrs = machAge(st) / 12;
   const mo = Math.max(S.min, S.mo - S.perRival * rivalN(st) - S.perAge * Math.max(0, Math.floor(yrs) - S.ageFree)) * (st.months >= 6 ? 1 : S.young);
-  const key = a > 0 ? Math.round(a * mo) : -Math.round(S.clear * st.size * SYN.pi(s));
+  const key0 = a > 0 ? Math.round(a * mo) : -Math.round(S.clear * st.size * SYN.pi(s)), und = key0 > 0 && UND.at(s, "ucafe", UND.TH.장인) ? Math.round(key0 * UC_UND.key) : 0, key = key0 + und; // und: 업의 이해도 장인부터 권리금 협상 몫
   const mach = st.machine === "buy" ? Math.round(S.mach * Math.max(0.2, 1 - yrs / S.machLife)) : 0;
-  return { dep: st.dep, mach, key, mo: Math.round(mo * 10) / 10, avg: Math.round(a), total: Math.max(0, st.dep + mach + key) };
+  return { dep: st.dep, mach, key, mo: Math.round(mo * 10) / 10, avg: Math.round(a), total: Math.max(0, st.dep + mach + key), ...(und ? { und } : {}) };
 }
 export const crowdP = (st) => Math.min(UC_CH.crowd.pMax, (UC_CH.crowd.p0 + UC_CH.crowd.up * Math.floor((st?.months || 0) / 12)) * KC); // 그 매장 옆에 이번 달 새로 생길 확률(오래될수록 오른다)
 function moveScene(s, st) {
@@ -291,7 +303,7 @@ export function chRows(s, st) {
   const A = UC_CH.age, LS = UC_CH.lease, RG = UC_CH.reg, a = machAge(st), pi = SYN.pi(s), out = [];
   { const y = Math.floor(st.months / 12), tr = Math.round(trend(st) * 100), q = saleQuote(s, st);
     out.push({ k: "이 자리", v: `${y + 1}년 차 · 이익 추세 ${st.months < 12 ? "아직 1년이 안 됐어요" : avg12(st) < 0 ? "1년 평균 적자" : tr <= -5 ? `고점보다 ${-tr}% 줄었어요` : "고점 근처"}${st.moveAsk && moveDue(st) ? " · 옮길 때가 됐어요" : ""}`, bad: tr <= -UC_CH.move.drop * 100 || (st.months >= 12 && avg12(st) < 0) });
-    out.push({ k: "지금 팔면", v: q.key >= 0 ? `권리금 약 ${won(q.key)}(이익 ${q.mo}달 치) + 보증금 ${won(q.dep)}${q.mach ? ` + 머신 ${won(q.mach)}` : ""}` : `권리금 없음 · 보증금 ${won(q.dep)}${q.mach ? ` + 머신 ${won(q.mach)}` : ""} − 철거비 ${won(-q.key)}`, bad: q.key < 0, btn: ["ucclose", "양도"] }); }
+    out.push({ k: "지금 팔면", v: q.key >= 0 ? `권리금 약 ${won(q.key)}(이익 ${q.mo}달 치${q.und ? ` + 협상 ${won(q.und)} · 업의 이해도 덕분` : ""}) + 보증금 ${won(q.dep)}${q.mach ? ` + 머신 ${won(q.mach)}` : ""}` : `권리금 없음 · 보증금 ${won(q.dep)}${q.mach ? ` + 머신 ${won(q.mach)}` : ""} − 철거비 ${won(-q.key)}`, bad: q.key < 0, btn: ["ucclose", "양도"] }); }
   out.push({ k: "주변 경쟁", v: `${st.comp}곳${rivalN(st) ? ` (문 연 뒤 +${rivalN(st)})` : ""} · 1곳마다 잔 수 −6% · 이번 달 또 생길 확률 ${rivalN(st) >= UC_CH.crowd.max ? 0 : Math.round(crowdP(st) * 1000) / 10}%`, bad: st.comp >= 4 });
   const bp = Math.max(0, Math.round(breakOf(s, st, 1) * 1000) / 10), old = a >= A.swap;
   out.push({ k: "기계", v: `${Math.floor(a / 12)}년 ${a % 12}달 · 고장 달 ${bp}%${old ? ` · 낡아서 맛 −${Math.round(oldQ(st) * 100)}%` : a >= A.from ? " · 해마다 고장 +" : ""}${st.machine === "rent" ? ` · 렌탈 월 ${won(Math.round(rentalOf(st) * pi))}` : ""}`, bad: old,

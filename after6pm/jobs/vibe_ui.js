@@ -1,5 +1,6 @@
 // 바이브코딩 보드: 의뢰함 → 만드는 중 → 유지보수 → 내 앱. 도구 구독 고르기, 다음 단계 조건.
 import * as VB from "../engine/jobs/vibe.js";
+const UTAG = '<span class="tag gold" style="font-size:10.5px">업의 이해도 덕분</span>'; // 11-28 이해도 효과가 적용된 자리에 다는 꼬리표
 
 const ICH = { friend: "users", market: "coin", post: "pen", pkg: "brief" };
 
@@ -24,7 +25,7 @@ export default {
   auto(c) { const V = c.S.vibe; Object.assign(V, { tool: 1, tech: 30, lv: 3, site: true, refs: 5, rep: 30, delivered: 4, projects: [], cases: { academy: 2, fit: 1, shop: 1, salon: 0 } }); V.rets.push({ id: "R90", nm: "학원 출결 앱", ind: "academy", fee: 35, t: 0 }); V.app = { live: true, ind: "academy", users: 18, price: 2, buzz: 10, t0: 0, focus: false, best: 18 };
     const m = location.hash.match(/f30([a-z]+)/); if (m) setTimeout(() => { const sc = VB.f30Scene(c.S, c.E.R(c.S), m[1]); if (sc) { c.E.openScene(c.S, sc); const pk = location.hash.match(/pick([0-9])/); if (pk) { c.E.choose(c.S, +pk[1]); c.save(); c.render(); } else c.afterRes({}); } }, 900); }, // 11-22 특이 요소 장면 시험(#auto3-vibe-f30scope|f30model|f30store)
   page(c) {
-    const { S, esc, won, boardHead, actRow, meter } = c, V = S.vibe, L = V.last, lv = VB.LV[V.lv];
+    const { S, esc, won, boardHead, actRow, meter } = c, V = S.vibe, L = V.last, lv = VB.LV[V.lv], UF = VB.undFx(S); // UF: 11-28 업의 이해도 효과(스위치가 꺼져 있으면 on · pro · top 모두 false 라 예전 그대로)
     const [goal, prog] = VB.nextGoal(S), need = VB.fixNeed(S), sp = VB.speed(S);
     const toolBtns = VB.TOOL.map((t, i) => `<button class="btn sm ${V.tool === i ? "gold" : ""}" data-vbtool="${i}">${esc(t.n)}<br><span class="tiny">월 ${won(Math.round(t.c * (V.tp || 1) * (S.pi || 1)))} · 속도 ×${t.sp}</span></button>`).join("");
     const head = `${boardHead("vibe")}<div class="card"><h3>바이브코딩 <small>Lv${V.lv} ${esc(lv.n)}</small></h3>
@@ -40,12 +41,14 @@ export default {
       <div class="tiny muted" style="margin-top:4px">구독료는 수시로 바뀌어요${V.tp && V.tp !== 1 ? ` (지금 기본가의 ×${V.tp.toFixed(2)})` : ""}.${V.tqT > 0 ? ` 도구 상태 ×${V.tq} (${V.tqT}개월)` : ""} 무료는 느리고, 프로는 빠르지만 비싸요.</div></details></div>
     <div class="card"><div class="row"><b class="grow">계약서 범위</b><span class="tiny muted">답장 ×${VB.scopeOf(S).win} · 수정 요청 ×${VB.scopeOf(S).creep}</span></div>
       <div class="row wrap" style="margin-top:6px;gap:6px">${Object.entries(VB.VB_F30.scope).map(([k, o]) => `<button class="btn sm ${(V.scope || "std") === k ? "gold" : ""}" data-vbscope="${k}">${esc(o.n)}</button>`).join("")}</div>
-      <div class="tiny muted" style="margin-top:4px">${esc(VB.scopeOf(S).tip)}</div></div>`;
+      <div class="tiny muted" style="margin-top:4px">${esc(VB.scopeOf(S).tip)}</div>
+      ${UF.pro ? `<div class="tiny muted" style="margin-top:6px" data-vbund="scope">${UTAG} 견적이 정확해져 수정 요청 ×${VB.VB_UND.creep} · 재작업 ×${VB.VB_UND.redo}. 의뢰마다 위험이 보여요.</div>` : UF.on ? `<div class="tiny muted" style="margin-top:4px;opacity:.7">업의 이해도 전문(600점)부터 의뢰마다 범위가 늘 위험이 보이고 수정 요청 · 재작업이 조금 줄어요. 지금 ${Math.round(UF.v).toLocaleString()}점</div>` : ""}</div>`;
+    const risk = (p) => (UF.pro && !p.own ? `<div class="tiny muted" style="margin-top:4px" data-vbund="risk">${UTAG} 범위가 늘 위험 달마다 ${Math.round(VB.creepP(S, p) * 100)}%${p.redo ? "" : ` · 재작업 위험 ${Math.round(VB.redoP(S, p) * 100)}%`}</div>` : "");
     // 의뢰함
     const offers = V.offers.map((o) => { const ch = VB.CH[o.ch]; return `<div class="room"><div class="body"><div class="row"><div class="grow"><div class="nm">${esc(o.nm)}</div>
       <div class="tiny"><span class="tag">${esc(ch.n)}</span>${o.dom ? `<span class="tag gold">내 도메인 · ${esc(VB.DOMS[o.dom]?.n || "")}</span>` : `<span class="tag">${esc(VB.INDS[o.ind]?.n || "")}</span>${VB.domOn(S) ? '<span class="tag">도메인 밖</span>' : ""}`}${ch.fee ? `<span class="tag red">수수료 ${Math.round(ch.fee * 100)}%</span>` : ""}${o.exp <= 1 ? '<span class="tag red">답장 이번 달까지</span>' : ""}</div></div>
       <div style="text-align:right"><div class="gold" style="font-weight:900">${o.price ? won(o.price) : "무료"}</div><div class="tiny muted">작업 ${o.need}칸 · 마감 ${o.due}달</div></div></div>
-      <div class="row" style="margin-top:6px"><span class="tiny muted grow">${o.price ? `착수금 30% ${won(Math.round(o.price * 0.3))} 바로` : "후기·포트폴리오용 파일럿"}</span><button class="btn sm" data-vbdrop="${o.id}">거절</button><button class="btn sm gold" data-vbtake="${o.id}">맡기</button></div></div></div>`; }).join("");
+      <div class="row" style="margin-top:6px"><span class="tiny muted grow">${o.price ? `착수금 30% ${won(Math.round(o.price * 0.3))} 바로` : "후기·포트폴리오용 파일럿"}</span><button class="btn sm" data-vbdrop="${o.id}">거절</button><button class="btn sm gold" data-vbtake="${o.id}">맡기</button></div>${risk(o)}</div></div>`; }).join("");
     // 만드는 중
     const proj = V.projects.map((p) => `<div class="room"><div class="body"><div class="row"><div class="grow"><div class="nm">${esc(p.nm)}</div>
       <div class="tiny">${p.own ? `<span class="tag gold">${p.own === "app" ? "내 앱" : "내 일"}</span>` : `<span class="tag">${esc(VB.CH[p.ch]?.n || "")}</span><span class="tag ${p.due < 0 ? "red" : p.due <= 1 ? "gold" : ""}">${p.due < 0 ? `마감 ${-p.due}달 지남` : `마감 ${p.due}달`}</span>`}${p.dom ? `<span class="tag gold">${esc(VB.DOMS[p.dom]?.n || "")}</span>` : ""}${p.lock ? '<span class="tag red">검수 답 대기(다음 달 재작업)</span>' : p.redo ? '<span class="tag red">재작업 · 잔금 70%</span>' : ""}${p.spec ? '<span class="tag green">정의서 있음</span>' : ""}${p.vague ? '<span class="tag red">요구사항 모호</span>' : ""}${p.creep ? `<span class="tag">수정 요청 ${p.creep}번</span>` : ""}</div></div>
@@ -76,6 +79,7 @@ export default {
       <div class="tiny muted" style="margin-top:4px">발주처가 "업계를 아는 사람"을 찾기 시작했어요. 아직 수치는 그대로예요. 6년 차쯤 내 분야를 정해야 할 때가 와요.</div></div>`
       : `<div class="card"><div class="row"><b class="grow">도메인 <small>${dm.picks.length}/${DC.max}</small></b><span class="tiny muted">손님 풀 ${Math.round(VB.domReach(S) * 100)}%</span></div>
       <div class="tiny muted" style="margin-top:4px">분야 밖 문의는 크게 줄었어요. 고른 분야의 일은 이해도가 찰수록 제값을 받아요(이해도 100 = 단가 100%). 유지보수와 앱도 이해도를 따라가요.</div>
+      ${UF.top ? `<div class="tiny muted" style="margin-top:4px" data-vbund="out">${UTAG} 도메인 밖 문의가 덜 줄어요(−${Math.round(DC.outCut * 100)}% → −${Math.round(VB.domOutCut(S) * 100)}%)</div>` : UF.on ? `<div class="tiny muted" style="margin-top:4px;opacity:.7">업의 이해도 장인(1,000점)부터 도메인 밖 문의가 덜 줄어요. 지금 ${Math.round(UF.v).toLocaleString()}점</div>` : ""}
       ${dm.picks.map((k) => { const u = dm.u[k] || 0, src = VB.domSources(S, k), g = VB.domGain(S, k); return `<div class="room"><div class="body"><div class="row"><div class="grow"><div class="nm">${esc(VB.DOMS[k].n)}</div><div class="tiny">이해도 <b>${Math.round(u)}</b>/100 · 지금 단가 <b class="${u >= 100 ? "good" : "gold"}">${Math.round(VB.domPriceMul(S, k) * 100)}%</b> · 달마다 +${g.toFixed(1)}</div></div><button class="btn sm" data-vbdomswap="${k}">바꾸기</button></div>
         ${meter(u, 100, "var(--gold)")}
         <div class="tiny" style="margin-top:4px">${src.map((x) => `<div class="${x.on ? "" : "muted"}">${x.on ? "✓" : "·"} ${esc(x.n)} <span class="muted">달마다 +${x.v}</span></div>`).join("")}<div>· 업계 모임 <span class="muted">한 번에 +${DC.meet[0]}~${DC.meet[1]}(${DC.meetGap}달에 한 번)</span></div><div>· 이 분야 일 납품 <span class="muted">건마다 +${DC.deliver}</span></div></div>

@@ -5,6 +5,7 @@
 //   x.star: 이 장면의 대상(파티룸 방·숙소·치킨 매장·무인카페 매장) 별점 ±, x.fol: 인별그램 팔로워 ±%
 import { CHAR, jo, ensureRel } from "./core.js";
 import * as SYN from "./syn.js";
+import { undWarn as abUndWarn } from "./abnb.js"; // 11-28 업의 이해도(에어씨앤씨 숙련부터): 진상 손님 장면에 미리 손써 둔 선택지
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const GAP = 6, P = 0.04;
@@ -256,6 +257,7 @@ export function guestMonth(s, r, scenes) {
   if (e.who) { const pool = (s.cast || []).filter((id) => CHAR[id]?.customer?.board === "partyroom" && !s.rel[id]?.spouse); if (pool.length && r.chance(0.5)) { w = r.pick(pool); ensureRel(s, w); } }
   const sc = { kind: "event", tag: "손님", onChoose: "gs_ev", gs: e.id, gj: e.j, ...(T ? { gsT: T.id } : {}), ...e.mk(s, T || {}, w) };
   if (w) { sc.who = w; sc.expr = e.g ? "smile" : "neutral"; }
+  if (e.j === "airbnb" && !e.g) abUndWarn(s, sc, e.id);
   scenes.push(sc);
 }
 

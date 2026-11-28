@@ -2,6 +2,7 @@
 // 보드: 소문 줄 + 새 작품 기획(장르·소재·주인공·독자층 칩) → 기획 완성도 연출 → 내 작품 카드(조합·단계별 반응·고쳐 쓰기) + 공모전 + 서재(책등) + 작가 노트 + 엔딩 길
 import * as WN from "../engine/jobs/webnovel.js";
 import * as FX from "../fx.js"; // 읽기만: 소리 설정(get().sound)
+const UTAG = '<span class="tag gold" style="font-size:10.5px">업의 이해도 덕분</span>'; // 11-28 이해도 효과가 적용된 자리에 다는 꼬리표
 
 const pct = (x) => `${Math.round(x * 100)}%`;
 const n0 = (x) => Math.round(x || 0).toLocaleString();
@@ -200,9 +201,11 @@ export default {
         ${w.grow > 0 ? `<div class="tiny good">필력으로 만회 중 +${Math.round(w.grow * 100)}%</div>` : ""}${w.lazy ? `<div class="tiny bad">'연중 작가' 딱지: 첫 독자가 줄었어요</div>` : ""}
         ${(w.react || []).length ? `<details ${w.ep < 20 ? "open" : ""}><summary class="tiny muted" style="cursor:pointer">5화 첫 댓글 ▾</summary>${w.react.map((x) => `<div class="wn-cmt">${esc(x)}</div>`).join("")}</details>` : ""}
         <details><summary class="tiny muted" style="cursor:pointer">완성도 내역 ▾</summary><div class="wn-parts">${(w.parts || []).map((x) => `<span class="muted">${esc(x.n)}</span><span class="v ${x.v > 0 ? "good" : x.v < 0 ? "bad" : "muted"}">${sgn(x.v)}</span>`).join("")}</div></details>` : `<div class="tiny muted" style="margin-top:6px">예전 방식으로 시작한 작품이에요(평범 궁합). 다음 작품부터 조합 기획을 해요.</div>`;
-      const rwWhy = WN.canRework(S);
-      const rw = isNew && !w.rw ? `<details class="more" ${W.rwAsk && !rwWhy ? "open" : ""}><summary>고쳐 쓰기 · 소재 한 장 교체 ▾</summary><div class="more-b"><div class="tiny muted">소재를 바꿔 궁합을 다시 봐요(운과 독자층 결과는 그대로). 독자 60% 유지, 비축분 절반, 한 달 휴재. 작품에 한 번만.${rwWhy ? ` <b class="bad">${esc(rwWhy)}</b>` : ""}</div>
-        <div class="wn-chips">${[...hand.rand, ...hand.life.map((x) => x.k)].filter((k) => k !== w.sub).map((k) => subChip(k, false, "data-wnrw")).join("")}</div>
+      const rwWhy = WN.canRework(S), UF = WN.undFx(S), keepPct = Math.round(WN.reworkKeep(S) * 100); // 11-28 업의 이해도 효과(스위치가 꺼져 있으면 예전 그대로 60%)
+      const rwCards = [...hand.rand, ...hand.life.map((x) => x.k)].filter((k) => k !== w.sub), rwHint = (v, t, cls) => { const L = rwCards.filter((k) => WN.reworkHint(S, k) === v); return L.length ? `<span class="${cls}">${t} ${L.map((k) => `#${esc(WN.SUBS[k].n)}`).join(" ")}</span>` : ""; };
+      const rw = isNew && !w.rw ? `<details class="more" ${W.rwAsk && !rwWhy ? "open" : ""}><summary>고쳐 쓰기 · 소재 한 장 교체 ▾</summary><div class="more-b"><div class="tiny muted">소재를 바꿔 궁합을 다시 봐요(운과 독자층 결과는 그대로). 독자 ${keepPct}% 유지, 비축분 절반, 한 달 휴재. 작품에 한 번만.${rwWhy ? ` <b class="bad">${esc(rwWhy)}</b>` : ""}</div>
+        <div class="wn-chips">${rwCards.map((k) => subChip(k, false, "data-wnrw")).join("")}</div>
+        ${UF.pro && w.sc !== undefined && rwCards.length ? `<div class="tiny" style="margin-top:5px;line-height:1.7" data-wnund="rw">${UTAG} 독자 유지 ${Math.round(WN.WN_CH.rework.keep * 100)} → ${keepPct}% · 바꾸면 궁합이 ${[rwHint(1, "나아질 듯", "good"), rwHint(0, "비슷할 듯", "muted"), rwHint(-1, "나빠질 듯", "bad")].filter(Boolean).join(" · ")}</div>` : UF.on && !UF.pro ? `<div class="tiny muted" style="margin-top:5px;opacity:.7">업의 이해도 전문(600점)부터 어느 소재가 나을지 보여요. 지금 ${Math.round(UF.v).toLocaleString()}점</div>` : ""}
         <div class="row" style="margin-top:6px">${actBtn(c, "wn_scout", undefined, "취재 · 카드 다시 뽑기")}</div></div></details>` : "";
       body = `<div class="room"><div class="body">
         <div class="row"><div class="grow" style="min-width:0"><div class="nm">'${esc(w.n)}'</div>
@@ -248,6 +251,7 @@ export default {
         <div class="wn-lab"><b>제목</b><span>고쳐 써도 돼요</span></div>
         <div class="row" style="gap:6px"><input class="wn-title grow" data-wntitle maxlength="40" value="${esc(d.title)}"><button class="btn sm" data-wnti="${d.ti + 1}">다른 제목</button></div>
         <div class="wn-ed"><span class="tiny muted">편집자</span><br>"${esc(WN.editorHint(S, d))}"</div>
+        ${(() => { const U = WN.undFx(S), h = WN.readerHint(S, d); return h ? `<div class="wn-ed" data-wnund="plan"><span class="tiny muted">독자 반응 예고</span> ${UTAG}<br><b class="${h.lv === "bad" ? "bad" : h.lv === "good" ? "good" : ""}">${esc(h.text)}</b></div>` : U.on ? `<div class="tiny muted" style="margin-top:6px;opacity:.7">업의 이해도 숙련(300점)부터 확정하기 전에 독자 반응 예고가 보여요. 지금 ${Math.round(U.v).toLocaleString()}점</div>` : ""; })()}
         <div class="row" style="margin-top:10px"><button class="btn gold grow" data-act="wn_new" data-arg="plan"${lockWhy ? ` data-why="${esc(lockWhy)}" style="opacity:.5"` : ""}>기획 확정 ⚡1</button></div>
         <div class="tiny muted" style="margin-top:4px">확정하면 기획 완성도가 나와요. 조합 궁합이 절반, 그다음이 운, 그리고 필력·경험·유행·컨디션.</div></div>`;
     }
@@ -299,7 +303,7 @@ export default {
     if (typeof document !== "undefined") document.querySelectorAll("[data-wntitle]").forEach((el) => { el.onclick = (e) => e.stopPropagation(); el.onchange = () => { WN.setDraft(c.S, { title: el.value.trim().slice(0, 40) }); c.save(); }; });
     // 고쳐 쓰기
     c.q("[data-wnrw]", (el) => { const why = WN.canRework(c.S); if (why) return c.toast([], why); const k = el.dataset.wnrw;
-      c.openWin(`<h2>고쳐 쓸까요? <button class="x" data-close>✕</button></h2><div class="small">소재를 <b class="gold">#${c.esc(WN.SUBS[k].n)}</b>(으)로 바꿔요. 제목도 바뀌어요. 독자 60% 유지, 비축분 절반, 한 달 휴재. 이 작품에서는 한 번만 할 수 있어요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>그만둔다</button><button class="btn gold grow" data-wnyes>고쳐 쓴다</button></div>`, (w) => { w.querySelector("[data-wnyes]").onclick = () => { const r = WN.rework(c.S, k); c.closeWin(); if (r.ok) { c.S.webnovel.rwAsk = 0; fanfare(r.to >= r.from ? Math.max(60, r.to) : 30); } done(r.msg); }; }); });
+      c.openWin(`<h2>고쳐 쓸까요? <button class="x" data-close>✕</button></h2><div class="small">소재를 <b class="gold">#${c.esc(WN.SUBS[k].n)}</b>(으)로 바꿔요. 제목도 바뀌어요. 독자 ${Math.round(WN.reworkKeep(c.S) * 100)}% 유지, 비축분 절반, 한 달 휴재. 이 작품에서는 한 번만 할 수 있어요.</div><div class="row" style="margin-top:12px"><button class="btn grow" data-close>그만둔다</button><button class="btn gold grow" data-wnyes>고쳐 쓴다</button></div>`, (w) => { w.querySelector("[data-wnyes]").onclick = () => { const r = WN.rework(c.S, k); c.closeWin(); if (r.ok) { c.S.webnovel.rwAsk = 0; fanfare(r.to >= r.from ? Math.max(60, r.to) : 30); } done(r.msg); }; }); });
     // 서재 책등
     c.q("[data-wnbook]", (el) => { const x = c.S.webnovel.works[+el.dataset.wnbook]; if (!x) return;
       c.openWin(`<h2>'${c.esc(x.n)}' <button class="x" data-close>✕</button></h2>

@@ -7,6 +7,7 @@ import { addMoney, log, won, jo, gainStat, mod, applyEff, CHAR } from "../core.j
 import { hashStr } from "../rng.js";
 import * as SYN from "../syn.js";
 import * as SJ from "../sj.js";
+import * as UND from "../und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. 스위치 UND_ON 이 꺼져 있으면 늘 0 · false)
 
 const K = "webnovel";
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -439,6 +440,28 @@ export function editorHint(s, d) {
   if (isOpp(d)) return `${GENRES[d.g].n} 장르를 ${AUDS[d.aud].n} 쪽으로요? 역발상은 대부분 망하고, 가끔 판을 엎습니다.`;
   return pickH(ED_HINT, `${lifeKey(s)}:${d.g}:${d.sub}:${d.pro}:${d.aud}`);
 }
+// ───────── 11-28 업의 이해도 효과(스위치 UND_ON) ─────────
+// 숙련(300): 기획을 확정하기 전에 독자 반응 예고가 보인다(궁합 두 가지를 세 단계 어림으로. 운은 모른다). 정보만 보이고 숫자는 그대로다.
+// 전문(600): 고쳐 쓸 때 소재 카드마다 "나아질지"가 보이고, 독자를 조금 더 지킨다(60 → 66%).
+export const WN_UND = { keep: 0.66, warn: 9, good: 34, diff: 6 }; // warn: 궁합 점수 합이 이 밑이면 쪽박 경고 · good: 이 위면 반응이 올 조합 · diff: 고쳐 쓰기 예고에서 "달라진다"고 보는 차이
+export const undFx = (s) => ({ on: UND.jobs().includes(K), v: UND.score(s, K), see: UND.at(s, K, UND.TH.숙련), pro: UND.at(s, K, UND.TH.전문) });
+export const reworkKeep = (s) => (UND.at(s, K, UND.TH.전문) ? WN_UND.keep : WN_CH.rework.keep);
+const fitPts = (s, g, sub, pro) => { const a = fitTier(s, g, sub), b = fitTier(s, sub, pro); return { a, b, v: WN_CH.plan.g[a] + WN_CH.plan.p[b] }; };
+// 기획 화면(확정 전) 독자 반응 예고: { lv: "bad" | "mid" | "good", text }. 숙련이 아니면 null
+export function readerHint(s, d) {
+  if (!d || !UND.at(s, K, UND.TH.숙련)) return null;
+  const f = fitPts(s, d.g, d.sub, d.pro);
+  if (f.v <= WN_UND.warn) return { lv: "bad", text: `쪽박 경고. ${f.a >= 3 && f.b >= 3 ? "장르와 소재도, 소재와 주인공도 겉돌아요" : f.a >= f.b ? "장르와 소재가 겉돌아요" : "소재와 주인공이 겉돌아요"}. 이대로면 20화의 벽에서 막힐 가능성이 커요.` };
+  if (f.v >= WN_UND.good) return { lv: "good", text: "반응이 올 조합이에요. 독자가 기다리던 맛에 가까워요. 나머지는 운과 필력이에요." };
+  return { lv: "mid", text: "무난한 조합이에요. 크게 어긋난 곳은 없어요. 운이 따르면 올라가요." };
+}
+// 고쳐 쓰기 소재 카드별 예고: 1 나아진다 · 0 비슷하다 · −1 나빠진다. 전문이 아니면 null
+export function reworkHint(s, sub) {
+  const w = s.webnovel?.work; if (!w || w.sc === undefined || !SUBS[sub] || !UND.at(s, K, UND.TH.전문)) return null;
+  const d = fitPts(s, w.g, sub, w.pro).v - fitPts(s, w.g, w.sub, w.pro).v;
+  return d >= WN_UND.diff ? 1 : d <= -WN_UND.diff ? -1 : 0;
+}
+const UND_NOTE = [[300, "이제 기획을 확정하기 전에 독자 반응 예고(쪽박 경고)가 보여요."], [600, "고쳐 쓸 때 어느 소재가 나을지 보이고, 독자를 조금 더 지켜요."]];
 export function rumors(s) { const T = s.webnovel?.tr; if (!T?.rum) return []; return T.rum.map((x) => RUM[x.kind][x.i % RUM[x.kind].length].replace(/\{S\}/g, SUBS[x.k]?.n || "").replace(/\{G\}/g, GENRES[x.k]?.n || "")); }
 export const comboTag = (w) => (w?.sub ? `${GENRES[w.g]?.n || ""} × ${SUBS[w.sub]?.n || ""} × ${PROS[w.pro]?.n || ""} · ${AUDS[w.aud]?.n || ""}` : GENRES[w?.g]?.n || "");
 
@@ -510,7 +533,7 @@ function stageCheck(s, r, w, notes, scenes) {
     w.shape = flop ? "쪽박" : big ? "대박 조짐" : "중박";
     if (flop) {
       const c = [{ t: "꾸준히 쓴다 (40화·70화·완결 때 역주행을 노린다)", eff: { mental: 2 }, text: "조회수 창을 닫고 원고 창을 열었다. 쌓인 화수는 배신하지 않는다고들 한다." }];
-      if (!w.rw) c.push({ t: "고쳐 쓴다 (소재 한 장 교체 · 독자 60% 유지)", eff: {}, text: "작업실에서 바꿀 소재 카드를 고르자. 비축분 절반을 버리고 한 달 쉰다." });
+      if (!w.rw) c.push({ t: `고쳐 쓴다 (소재 한 장 교체 · 독자 ${Math.round(reworkKeep(s) * 100)}% 유지)`, eff: {}, text: "작업실에서 바꿀 소재 카드를 고르자. 비축분 절반을 버리고 한 달 쉰다." });
       c.push({ t: "접고 새로 쓴다 (독자 일부만 따라온다)", eff: { mental: -3 }, text: "연재 중단 공지를 올렸다. 댓글 하나. \"다음 작품에서 봬요.\"" });
       scenes.push({ kind: "event", tag: "웹소설", title: "20화의 벽 · 쪽박", onChoose: "wn_flop", text: `'${w.n}' 20화. 선호작 ${favs}. 같은 날 시작한 옆 작품은 네 자리다. ${GENRES[w.g].n}에 ${SUBS[w.sub].n}, 이 조합은 아니었던 걸까. 댓글창 맨 위: "${fill(pickH(CMT.bad, w.n + "20"), w)}"`, choices: c });
     } else scenes.push({ kind: "story", tag: "웹소설", title: big ? "20화의 벽 · 심상치 않다" : "20화의 벽 · 윤곽", text: big
@@ -560,7 +583,7 @@ export function rework(s, sub) {
   const old = { sc: w.sc, n: w.n, sub: w.sub }, p = planScore(s, null, { g: w.g, sub, pro: w.pro, aud: w.aud }, { luck: w.luck, god: w.god, aud: w.audV });
   w.hit = R2(clamp(w.hit * p.mult / Math.max(0.05, scoreMult(w.sc)), 0.2, 9)); w.hit0 = p.mult; w.sc = p.score; w.fx = p.fx; w.sub = sub; w.life = p.life; w.parts = p.parts;
   w.n = uniqTitle(W, autoTitle(w.g, sub, w.pro, W.drawN), { g: w.g, sub, pro: w.pro, ti: W.drawN });
-  w.fans *= WN_CH.rework.keep; W.bank = Math.floor(W.bank / 2); W.resume = W.sched || W.resume || 12; W.sched = 0; W.restT = s.t; W.rwBack = 1;
+  w.fans *= reworkKeep(s); W.bank = Math.floor(W.bank / 2); W.resume = W.sched || W.resume || 12; W.sched = 0; W.restT = s.t; W.rwBack = 1;
   w.rw = 1; w.s5 = 0; w.s20 = 0; w.shape = ""; W.drawN++; W.scouted = false;
   W.note.push({ n: w.n, g: w.g, sub, pro: w.pro, aud: w.aud, sc: p.score, gf: p.parts.find((x) => x.id === "gfit")?.v ?? 0, pf: p.parts.find((x) => x.id === "pfit")?.v ?? 0, av: p.audV, t: s.t, rw: 1 });
   log(s, `웹소설 '${old.n}' → '${w.n}' 고쳐 쓰기(완성도 ${old.sc} → ${p.score})`, "work");
@@ -780,6 +803,7 @@ export default {
     }
     awardCheck(s, scenes);
     lvCheck(s, notes, scenes);
+    UND.fxNote(s, K, W, notes, UND_NOTE); // 11-28 이해도 문턱을 넘은 달에 한 줄(스위치가 꺼져 있으면 아무 일도 안 한다)
     // 확정 장면: 첫 업로드 다음 달, 매니지먼트 쪽지, 첫 정산서, 펑크
     const wk = W.work, seen = W.seen;
     let ev = null;

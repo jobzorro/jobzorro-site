@@ -642,6 +642,15 @@ export const FIRE_TARGET = { single: 300000, married: 400000 }; // 30억(집 12�
 // ───────── 투잡 탐색 (21개, 지금은 파티룸·취업컨설팅만 플레이 가능) ─────────
 // type: 투잡연구소 유형. fit: 궁합 계산에 쓰는 능력치. cap: 시작 자본(만원). hours: 주당 시간. inc: 문서에 적힌 수익.
 // 11-24 방문 펫시팅은 새 인물과 그림이 준비될 때까지 숨긴다(true 로 바꾸면 열린다). 봇 시험: 환경변수 PSON=1
+// 11-27 새 투잡 둘(출장 세차 · 해외 구매대행): 만드는 동안 숨겨 둔다. 봇은 환경변수 CWON=1 · BYON=1, 화면은 주소에 #…-cwon · #…-byon 을 붙이면 켜진다. 다 되면 true 로 바꾼다
+const _envOn = (k) => typeof process !== "undefined" && !!process.env?.[k], _hashOn = (k) => typeof location !== "undefined" && new RegExp(k, "i").test(location.hash || "");
+export const CARWASH_ON = _envOn("CWON") || _hashOn("cwon");
+export const BUYING_ON = _envOn("BYON") || _hashOn("byon");
+// 11-27 처방형 개편(컨설팅 합격 전략 · 과외 수업안): 만드는 동안 숨겨 둔다. 봇은 CS2ON=1 · TU2ON=1, 화면은 주소에 -cs2on · -tu2on
+export const CS2_ON = _envOn("CS2ON") || _hashOn("cs2on");
+export const TU2_ON = _envOn("TU2ON") || _hashOn("tu2on");
+// 11-28 업의 이해도를 모든 투잡으로(공통 카드 · 엔딩 · 홈 · 나 화면 · 명예의 전당): 만드는 동안 숨겨 둔다. 봇은 UNDON=1, 화면은 주소에 -undon. 꺼져 있으면 아무것도 쌓이지 않고 보이지 않는다
+export const UND_ON = _envOn("UNDON") || _hashOn("undon");
 export const PETSIT_ON = true; // 11-26 인물·글·그림을 갖춰 연다(대표 "배포"). 끄려면 false
 export const SIDEJOBS = {
   pr: { n: "파티룸", type: "투자", ic: "door", play: true, fit: ["num", "sense", "hands"], cap: "3,000만~", hours: "주 6~10시간", inc: "월 순수익 약 200만", line: "입지가 전부. 청소·민원은 덤.", hint: "러닝크루·와인·보드게임 모임 뒤풀이에서" },
@@ -650,7 +659,7 @@ export const SIDEJOBS = {
   tistory: { n: "티스터리 애드센서", type: "네트워크", ic: "pen", fit: ["write", "mkt", "num"], cap: "0", hours: "주 5시간", inc: "다수가 월 10만 미만", line: "검색 유입 싸움. 오래 버티는 사람이 이긴다.", hint: "글쓰기·코딩 모임에서" },
   realtyblog: { n: "부동산 블로그", type: "네트워크", ic: "bld", fit: ["num", "write", "mkt"], cap: "0", hours: "주 5시간", inc: "월 방문 1만이면 5~20만", line: "임장 다닐 핑계가 생긴다.", hint: "여행·집 구경을 좋아한다면" },
   ucafe: { n: "무인카페", type: "노동", ic: "glass", play: true, fit: ["hands", "num", "sense"], cap: "5,000만~", hours: "주 7시간", inc: "월매출 330~450만, 이익률 30~40%", line: "기계가 일하고 나는 청소한다.", hint: "홈카페·캠핑·플라워 클래스에서" },
-  chicken: { n: "프랜차이즈 치킨", type: "투자", ic: "coin", fit: ["num", "talk", "hands"], cap: "1억~", hours: "주 20시간+", inc: "월 500~750만(영업이익 10~15%)", line: "알바가 그만두면 내가 튀긴다.", hint: "러닝·클라이밍 뒤풀이, 쿠킹 클래스에서" },
+  chicken: { n: "프랜차이즈 치킨", type: "투자", ic: "coin", fit: ["num", "talk", "hands"], cap: "1억~", hours: "주 20시간+", inc: "자리 잡으면 월 400~600만(첫 해는 0~300만)", line: "알바가 그만두면 내가 튀긴다.", hint: "러닝·클라이밍 뒤풀이, 쿠킹 클래스에서" },
   coffee: { n: "저가 프랜차이즈 커피", type: "투자", ic: "glass", fit: ["num", "talk", "hands"], cap: "1억~", hours: "주 15시간+", inc: "월 450~600만, BEP 약 3년", line: "최저임금이 오르면 내 월급이 내린다.", hint: "쿠킹·홈카페 클래스에서" },
   popup: { n: "팝업스토어", type: "투자", ic: "spark", fit: ["sense", "mkt", "talk"], cap: "1,000만~", hours: "몰아서 주 30시간", inc: "월 순이익 수백만(편차 큼)", line: "2주짜리 승부. 줄이 서면 대박.", hint: "와인·플라워·쿠킹 모임에서" },
   shortstay: { n: "단기공간·주택임대", type: "투자", ic: "bld", fit: ["num", "hands", "sense"], cap: "1,000만~", hours: "주 5시간", inc: "지역별 건 단위", line: "한 달 살기 손님을 받는다.", hint: "캠핑·여행 모임에서" },
@@ -664,6 +673,8 @@ export const SIDEJOBS = {
   bouquet: { n: "웨딩 부케", type: "전문성", ic: "heart", fit: ["sense", "hands", "mkt"], cap: "100만", hours: "주말 몰아서", inc: "월 60~100만(월 3~5건)", line: "결혼 시즌에만 바쁘다.", hint: "플라워 클래스에서" },
   goods: { n: "굿즈", type: "전문성", ic: "spark", fit: ["sense", "mkt", "hands"], cap: "100만~", hours: "주 6시간", inc: "월 순이익 약 50만", line: "재고가 쌓이면 방이 좁아진다.", hint: "보드게임·클라이밍 모임에서" },
   aivideo: { n: "AI 영상 제작", type: "전문성", ic: "video", fit: ["sense", "num", "mkt"], cap: "구독료", hours: "주 6시간", inc: "월 50~150만", line: "툴이 매달 바뀐다.", hint: "사진·밴드·코딩 모임에서" },
+  carwash: { n: "출장 세차", type: "노동", ic: "drop", fit: ["hands", "body", "talk"], cap: "장비 180만", hours: "주말 오전·평일 밤", inc: "부업 월 60~120만 · 거점과 사람을 늘리면 달라짐", line: "차를 닦는 게 아니라 거점을 따내는 일.", hint: "지하 주차장에서, 차를 아끼는 사람들에게서" },
+  buying: { n: "해외 구매대행", type: "유통", ic: "box", fit: ["num", "write", "lang"], cap: "운전자금 100만", hours: "밤 11시 이후", inc: "부업 월 40~70만 · 방식이 바뀌면 달라짐", line: "상품값이 아니라 대신 해결해 주는 값으로 번다.", hint: "해외 직구 후기에서, 구하기 어려운 물건을 찾는 사람들에게서" },
   petsit: { n: "방문 펫시팅", type: "돌봄", ic: "heart", fit: ["sense", "write", "charm"], cap: "거의 0", hours: "약속한 날 저녁", inc: "부업 월 30~60만 · 회사로 키우면 달라짐", line: "노는 시간보다 약속을 지키는 시간.", hint: "고양이·강아지를 키우는 사람들, 동네 게시판에서" },
   club: { n: "취미 모임", type: "네트워크", ic: "users", fit: ["charm", "talk", "mkt"], cap: "거의 0", hours: "주 1회 저녁", inc: "회원 20명이면 월 60~120만", line: "회원이 많을수록 잘된다. 내가 빠지면 흩어진다.", hint: "모이는 취미를 오래 다니면" },
   vibe: { n: "바이브코딩", type: "전문성", ic: "wrench", fit: ["num", "write", "sense"], cap: "구독료", hours: "주 6시간", inc: "월 100만 안팎", line: "AI에게 말로 시켜 만든다.", hint: "코딩 스터디, 보드게임·밴드 모임에서" },

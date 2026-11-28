@@ -2,6 +2,7 @@
 import * as TR from "../engine/jobs/tarot.js";
 
 const MON = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+const UTAG = '<span class="tag gold" style="font-size:10.5px">업의 이해도 덕분</span>'; // 11-28 이해도 효과가 적용된 자리에 다는 꼬리표
 
 export default {
   key: "tarot", ic: "spark", bg: "tarot", sjBg: "tarot", fullBg: "tarot",
@@ -24,7 +25,8 @@ export default {
     const dots = TR.LV.map((x, i) => `<span class="tag ${i < T.lv ? "gold" : ""}" style="font-size:11px">${i + 1}</span>`).join("");
     const steps = nx.length ? `<div class="steps">${nx.map((x) => { const ok = x.cur >= x.goal; return `<div class="${ok ? "done" : ""}"><span class="ck">${ok ? "✓" : ""}</span><span class="grow">${esc(x.n)} <b>${x.goal === 1 ? (ok ? "정함" : "아직") : `${Math.min(x.cur, x.goal).toLocaleString()}/${x.goal.toLocaleString()}`}</b></span></div>`; }).join("")}</div>` : '<div class="small good">모든 단계 완료. 이제 지키는 일만 남았다.</div>';
     const seas = TR.SEASON.map((v, i) => `<i class="${i === S.cal - 1 ? "now" : v >= 1.2 ? "pk" : ""}" style="height:${Math.round(v / 1.8 * 100)}%"></i>`).join("");
-    const pbtn = TR.PRICES.map((p, i) => `<button class="${T.price === i ? "on" : ""}" data-trprice="${i}"><b>${p.n}</b><span class="tiny muted">단가 ×${p.m}${p.d ? " · " + p.d : ""}</span></button>`).join("");
+    const U = TR.undFx(S), pix = TR.priceIx(S); // 11-28 업의 이해도 효과(스위치가 꺼져 있으면 U.on 이 false 라 예전 그대로)
+    const pbtn = TR.priceList(S).map((p, i) => `<button class="${pix === i ? "on" : ""}" data-trprice="${i}"><b>${p.n}</b>${i === 3 ? " " + UTAG : ""}<span class="tiny muted">단가 ×${p.m}${p.d ? " · " + p.d : ""}</span></button>`).join("");
     const nbtn = Object.entries(TR.NICHES).map(([k, n]) => `<button class="${T.niche === k ? "on" : ""}" data-trniche="${k}" ${T.lv < 4 ? "disabled" : ""}><b>${esc(n.n)}</b><span class="tiny muted">${esc(n.d)}</span></button>`).join("");
     const tog = (k, on, n, d, lock) => `<button class="${on ? "on" : ""}" data-trtog="${k}" ${lock ? "disabled" : ""}><b>${n} ${on ? "켬" : "끔"}</b><span class="tiny muted">${d}</span></button>`;
     // f30: 적중 기록부 · 매일 오는 손님 · 대목 패키지(조건이 있을 때만)
@@ -48,6 +50,7 @@ export default {
           <div><div class="k">평판</div><div class="v gold">${Math.round(T.rep)}</div></div>
           <div><div class="k">팔로워</div><div class="v">${Math.round(T.follow).toLocaleString()}</div></div>
           <div><div class="k">단골 · 재구매</div><div class="v">${T.regulars}명 · ${T.rebuy}%</div></div></div>
+        ${U.pro ? `<div class="tiny muted" style="margin-top:6px">${UTAG} 손님이 단골로 남을 확률 +${Math.round((TR.TR_UND.reg - 1) * 100)}% · 단골의 재문의 +${Math.round((TR.TR_UND.rep - 1) * 100)}%</div>` : ""}
         <div class="sec" style="margin-top:8px">${nextLv ? `다음 단계 Lv${T.lv + 1} ${esc(nextLv.n)}` : T.brand ? "타로 브랜드 완성" : "브랜드 완성 조건"}</div>
         ${steps}
         <details style="margin-top:4px"><summary class="tiny muted" style="cursor:pointer">${nextLv ? "열리는 것" : T.brand ? "엔딩 조건" : "열리는 것"} 자세히 ▾</summary><div class="tiny muted">${nextLv ? `${esc(nextLv.open)}` : T.brand ? "재구매 30%·월 매출 200만 1년 → '예약 대기 3주의 리더' / 키트·굿즈가 상담을 넘으면 '카드 굿즈 브랜드'" : "매출 +, 부스가 워크숍으로, 굿즈 단가 +, 구독 상한 +"}</div></details>
@@ -70,6 +73,7 @@ export default {
     ${f30}
     ${T.lv >= 3 ? `<div class="card"><h3>가격과 운영</h3>
       <div class="pick">${pbtn}</div>
+      ${U.on && !U.deep ? `<div class="tiny muted" style="margin-top:4px;opacity:.7">잠김 · 업의 이해도 장인(1,000점)부터 '${TR.TR_UND.deep.n}'(단가 ×${TR.TR_UND.deep.m})이 열려요. 지금 ${Math.round(U.v).toLocaleString()}점</div>` : ""}
       ${T.lv < 4 ? "" : `<div class="sec" style="margin-top:8px">전문 분야 ${T.niche ? "" : '<span class="bad small">· Lv5 조건</span>'}</div>
       <div class="pick">${nbtn}</div>`}
       <div class="sec" style="margin-top:8px">상담 방식</div>
@@ -85,7 +89,7 @@ export default {
   },
   bind(c) {
     const done = (res) => { if (res && res.msg) c.toast([], res.msg); c.save(); c.render(); };
-    c.q("[data-trprice]", (el) => { TR.setPrice(c.S, +el.dataset.trprice); done({ msg: `가격: ${TR.PRICES[+el.dataset.trprice].n}` }); });
+    c.q("[data-trprice]", (el) => { TR.setPrice(c.S, +el.dataset.trprice); done({ msg: `가격: ${TR.priceList(c.S)[TR.priceIx(c.S)].n}` }); });
     c.q("[data-trniche]", (el) => done(TR.setNiche(c.S, el.dataset.trniche)));
     c.q("[data-trtog]", (el) => done(TR.toggle(c.S, el.dataset.trtog)));
     c.q("[data-trstyle]", (el) => done(TR.setStyle(c.S, +el.dataset.trstyle)));

@@ -6,6 +6,7 @@ import * as SYN from "./syn.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 import * as DF from "./decofx.js"; // 방 꾸미기 감성 점수 효과(사진 클릭·별점)
 import * as RVW from "./review.js"; // v4.28 경쟁사 가격표·가격 전쟁·후기 사건
+import * as UND from "./und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. 스위치 UND_ON 이 꺼져 있으면 늘 false)
 import * as SP from "./space.js"; // 11-25 지점 수 파손 배율·히든 길 켜짐 여부
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -174,6 +175,8 @@ export function month(s, r, notes, scenes) {
   warMonth(s, r, notes, scenes); // v4.28 가격 전쟁
   const nAll = A.units.length + (s.pr?.rooms?.length || 0) * (SYN.on(s, "pr_ab") ? 1 : 0), sf = D.scaleF(Math.max(1, nAll));
   const RK = D.PR_REVIEW, UK = D.UTIL_K.ab; let shortSum = 0;
+  const uPro = undPro(s), uRep = uPro ? AB_UND.reply : 0, uLong = uPro ? AB_UND.longOcc : 0; // 11-28 업의 이해도 전문부터
+  UND.fxNote(s, "airbnb", A, notes, [[UND.TH.숙련, "예약 문의만 봐도 진상 손님이 짐작돼요. 그런 손님 사건에 미리 손써 둔 선택지가 생겨요"], [UND.TH.전문, `후기 답글이 별점에 조금 더 듣고(+${AB_UND.reply.toFixed(2)}), 한 달 살기 손님이 조금 더 잘 차요(채움률 +${Math.round(AB_UND.longOcc * 100)}%p)`]]);
   const hOn = SP.hidOn(s, "airbnb"), hPause = SP.hidPaused(s, "airbnb"), corp = hOn || hPause ? corpUnits(s) : [], dX = SP.dmgX(A.units.length); // 11-25 히든 길 · 지점 수 파손 배율
   for (const u of A.units) {
     const R = D.AB_REGIONS[u.rk], T = D.AB_TYPES[u.ty]; fillStats(u, s.t);
@@ -200,7 +203,7 @@ export function month(s, r, notes, scenes) {
     if (corp.includes(u)) occ = hOn ? Math.max(occ, AB_HID.occ) : occ * AB_HID.empty; // 11-25 히든 길: 출장자 장기 계약(가동률 고정) / 위기 달엔 한꺼번에 빔
     // v4.29 한 달 살기: 장기 비율 LR 만큼은 계절·외국인과 상관없이 꾸준히 차지만 1박 값이 싸다. 손님이 덜 바뀌니 청소·후기·민원도 적다
     const LR = u.longR || 0, 엘쥐 = AB_F30.long;
-    const nS = Math.round(occ * 30 * (1 - LR)), nL = LR ? Math.round(30 * LR * 엘쥐.occ * (0.85 + 0.15 * q) * (u.months === 0 ? 0.6 : 1)) : 0;
+    const nS = Math.round(occ * 30 * (1 - LR)), nL = LR ? Math.round(30 * LR * (엘쥐.occ + uLong) * (0.85 + 0.15 * q) * (u.months === 0 ? 0.6 : 1)) : 0;
     const nights = nS + nL, shortStays = Math.round(nS / T.len), stays = Math.max(0, shortStays + (nL ? Math.max(1, Math.round(nL / 엘쥐.len)) : 0));
     shortSum += u.ty === "detached" ? shortStays * 0.4 : shortStays;
     const gross = Math.round((nS * pEff + nL * pEff * 엘쥐.price) * (A.super ? 1.08 : 1)), RM = RVW.reviewMonth("ab", A, stays, gross, u), rev = gross - RM.disc;
@@ -211,7 +214,7 @@ export function month(s, r, notes, scenes) {
     const cost = costOther + util + Math.round(RM.pay);
     // 별점: 청결(관리)·응대(외국어)·사진 + v4.28 답글
     let target = 4.35 + q * 0.35 + (s.st.lang - 40) / 400 + (u.host === s.t ? 0.05 : 0) + mod(s, "abStar", 0) + (SYN.on(s, "travel_ab") ? 0.05 : 0) + dl * DF.DECO.abStar;
-    if ((u.unrep || 0) > RK.unrep.max) target -= RK.unrep.star; if (u.replyT === s.t) target += RK.reply.star;
+    if ((u.unrep || 0) > RK.unrep.max) target -= RK.unrep.star; if (u.replyT === s.t) target += RK.reply.star + uRep;
     u.rating = clamp(u.rating + (target - u.rating) * 0.25 + 0.03 * r.normal(), 3.4, 4.99);
     u.stays += stays; u.months++; u.ap = 0; u.reviews += RM.add; u.unrep += RM.add; u.buzz = clamp(u.buzz * 0.9 + RM.photoBuzz * 0.3, 0, 100);
     u.last = { occ, nights, stays, rev, cost, util, pay: RM.pay, disc: RM.disc, newRev: RM.add, foreign: Math.round(foreignD / (foreignD + domesticD + 1e-9) * 100), q, longN: nL, shortStays };
@@ -561,6 +564,20 @@ export const AB_CHOOSE = {
     return out;
   },
 };
+// 11-28 업의 이해도 효과(스위치 UND_ON). 숙련(300)부터: 진상 손님 장면(별점 인질극 · 인원 초과 파티)에 "예약 단계에서 낌새를 챘다" 줄과 미리 손써 둔 선택지가 붙는다(별점·돈 손해 없음).
+// 전문(600)부터: 답글을 단 달 별점 목표 +reply 더, 한 달 살기 채움률 +longOcc
+export const AB_UND = { reply: 0.01, longOcc: 0.03 };
+export const undPro = (s) => UND.at(s, "airbnb", UND.TH.전문);
+const UND_WARN = {
+  ab_threat: { hint: "환불 규정만 캐묻던 손님이라", t: "체크인 전에 찍어 둔 수압·비품 점검 사진을 보낸다", text: "사진 석 장에 날짜가 찍혀 있다. \"아… 확인했습니다.\" 환불 얘기는 더 나오지 않았다.", eff: { mental: 1 } },
+  ab_party: { hint: "친구들이 잠깐 들를 수도 있다던 손님이라", t: "미리 받아 둔 인원 초과 규정 동의와 현관 카메라 안내를 다시 보낸다", text: "\"규정 확인했습니다.\" 20분 뒤 옆집에서 문자가 왔다. \"다들 나갔어요.\"", eff: { mental: -1 } },
+};
+export function undWarn(s, sc, id) {
+  const W = UND_WARN[id]; if (!W || !sc?.choices || !UND.at(s, "airbnb", UND.TH.숙련)) return sc;
+  sc.text = `${sc.text}\n업의 이해도 덕분에 예약 문의 때부터 낌새를 챘다. ${W.hint} 미리 손써 둔 게 있다.`; // 따옴표를 쓰지 않는다(장면 화면이 따옴표 안 글을 말풍선으로 뽑는다)
+  sc.choices = [...sc.choices, { t: `${W.t} (업의 이해도 덕분)`, eff: W.eff, text: W.text }];
+  return sc;
+}
 function abEvent(s, r, u, dmgOnly) {
   s._abEv = { id: u.id };
   const L = [
@@ -570,7 +587,7 @@ function abEvent(s, r, u, dmgOnly) {
     { t: "고장 난 보일러", dmg: 1, x: `한겨울, ${u.name} 게스트가 사진을 보냈다. 온도계 12도.`, c: [{ t: "긴급 출장 수리", eff: { cash: -Math.round(15 * SYN.pi(s)) }, text: "한 시간 만에 해결했다." }, { t: "전기장판을 들고 달려간다", eff: { hp: -8, cash: -3 }, text: "게스트가 웃으며 사진을 찍었다." }] },
   ];
   const e = r.pick(dmgOnly ? L.filter((x) => x.dmg) : L);
-  return { kind: "event", tag: "에어씨앤씨", title: e.t, text: e.x, choices: e.c };
+  return undWarn(s, { kind: "event", tag: "에어씨앤씨", title: e.t, text: e.x, choices: e.c }, e.t === "파티 금지 위반" ? "ab_party" : "");
 }
 export function value(s) { return s.ab.units.reduce((a, u) => a + u.dep, 0); }
 export function passive(s) { if (!s.ab.cohost) return 0; const h = s.ab.hist.slice(-6); return h.length ? Math.max(0, h.reduce((a, b) => a + b, 0) / h.length) : 0; }

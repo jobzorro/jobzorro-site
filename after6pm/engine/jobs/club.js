@@ -6,6 +6,7 @@ import * as D from "../defs.js";
 import { addMoney, log, won, gainStat } from "../core.js";
 import * as SYN from "../syn.js";
 import * as SJ from "../sj.js";
+import * as UND from "../und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. 스위치 UND_ON 이 꺼져 있으면 늘 0 · false)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 // fee: 월 회비(1인) · per: 회원 1인당 드는 돈(다과·재료) · cap: 빌린 공간 정원 · keep: 잘 안 나가는 정도(이탈 배수) · venue: 대관이 필요한가 · sea: 붐비는 달(없으면 늘)
@@ -31,12 +32,33 @@ const pi = (s) => SYN.pi(s);
 export const myKinds = (s) => Object.keys(KINDS).filter((k) => (s.hb?.cnt?.[k] || 0) >= CL_BAL.need);
 export const eligible = (s) => myKinds(s).length > 0;
 const myRoom = (s) => (SJ.isActive(s, "pr") ? (s.pr?.rooms || []).filter((x) => x.status === "open").sort((a, b) => b.size - a.size)[0] : null);
-export function capOf(s) { const C = s.club, K = KINDS[C.kind]; if (!K) return 0; const rm = myRoom(s); return !K.venue ? K.cap : rm ? Math.max(K.cap, Math.round(rm.size * 1.1)) : K.cap; }
+// 11-28 업의 이해도 효과(스위치 UND_ON). 숙련(300): 다음 달에 나갈 것 같은 회원 수와 까닭이 미리 보인다(outlook) · 정원 ×cap. 봇이 없는 투잡이라 정원 폭을 작게 잡았다
+export const CL_UND = { cap: 1.1 };
+if (typeof process !== "undefined" && process.env?.CLU) Object.assign(CL_UND, JSON.parse(process.env.CLU)); // 봇 시험용
+export const undFx = (s) => ({ on: UND.jobs().includes("club"), v: UND.score(s, "club"), open: UND.at(s, "club", UND.TH.숙련) });
+export function capOf(s) { const C = s.club, K = KINDS[C.kind]; if (!K) return 0; const rm = myRoom(s), base = !K.venue ? K.cap : rm ? Math.max(K.cap, Math.round(rm.size * 1.1)) : K.cap; return UND.at(s, "club", UND.TH.숙련) ? Math.round(base * CL_UND.cap) : base; }
+// 탈퇴 조짐(숙련부터 화면에 보인다): 이번 달을 지금대로 마치면 나갈 것 같은 회원 수와 까닭. 아래 month() 의 만족도 · 이탈 식을 그대로 따른다(식을 고치면 여기도 같이). 값을 바꾸지 않는다
+export function outlook(s) {
+  const C = s.club, B = CL_BAL, K = KINDS[C.kind]; if (!K) return null;
+  const hosted = Math.min(B.weeks, C.run + (C.sub ? 2 : 0)), q = hosted / B.weeks, cap = capOf(s), nextCal = s.cal, off = !!(K.sea && !K.sea.includes(nextCal));
+  const sat = clamp(C.sat - (C.sat - 60) * 0.08 + (q - 0.75) * 16 - (C.fi >= 2 ? (C.fi - 1) * 2 : 0) - (C.members > cap * 0.95 ? 2 : 0), 0, 100), thin = C.members < B.thin;
+  const rate = (B.leave + (thin ? B.thinLeave : 0) + Math.max(0, 55 - sat) / 180 + (C.fi >= 2 ? (C.fi - 1) * 0.02 : 0)) * K.keep * (off ? 1.5 : 1);
+  const why = [];
+  if (hosted < B.weeks) why.push(`진행 ${hosted}/${B.weeks}번`);
+  if (sat < 55) why.push(`만족도 ${Math.round(sat)}(55 아래)`);
+  if (thin) why.push(`${B.thin}명이 안 돼 썰렁함`);
+  if (C.fi >= 2) why.push("회비가 높음");
+  if (off) why.push("비시즌");
+  if (C.members > cap * 0.95) why.push("자리가 비좁음");
+  const base = B.leave * K.keep;
+  return { n: Math.round(C.members * rate), rate, sat: Math.round(sat), why, lv: rate >= base * 2 ? 2 : rate > base * 1.2 ? 1 : 0 };
+}
 export const feeOf = (s) => { const C = s.club, K = KINDS[C.kind]; return K ? Math.round(K.fee * CL_BAL.fees[C.fi ?? 1] * pi(s) * 10) / 10 : 0; };
 export const venueOf = (s) => { const K = KINDS[s.club.kind]; return !K || !K.venue ? "none" : myRoom(s) ? "mine" : "rent"; };
 // 파티룸 2차 길 B: 유치한 모임 하나마다, 내 모임 회원 10명마다 감소의 4분의 1이 풀린다
 export function prFill(s) { const p = s.pr?.partners || 0, m = SJ.isActive(s, "club") && venueOf(s) === "mine" ? Math.floor((s.club?.members || 0) / 10) : 0; return clamp(0.25 * p + 0.25 * m, 0, 1); }
 
+const UND_NOTE = [[300, "다음 달에 나갈 것 같은 회원 수와 까닭이 미리 보이고, 정원을 10% 더 받을 수 있어요."]];
 function ev(s, r) {
   const C = s.club, P = pi(s), L = [
     { id: "villain", t: "분위기를 흐리는 회원", x: "한 회원이 모임마다 자기 얘기만 한다. 뒤풀이에서 다른 회원 둘이 조용히 말했다. \"그분 계속 나오면 저희는 좀…\"",
@@ -146,6 +168,7 @@ export default {
     else if (C.members >= B.thin && s.t - C.evT >= B.evGap && r.chance(B.evP) && !scenes.some((x) => x.kind === "event")) { C.evT = s.t; scenes.push(ev(s, r)); }
     C.run = 0; C.promo = 0; C.after = 0;
     C.hist.push(profit); if (C.hist.length > 24) C.hist.shift();
+    UND.fxNote(s, "club", C, notes, UND_NOTE); // 11-28 이해도 문턱을 넘은 달에 한 줄(스위치가 꺼져 있으면 아무 일도 안 한다)
     return profit;
   },
   todos(s) { const C = s.club, B = CL_BAL, t = []; if (!C.kind) t.push({ lv: 1, text: "취미 모임: 종목을 골라 모임 만들기" }); else if (C.run < B.weeks - (C.sub ? 2 : 0)) t.push({ lv: C.run === 0 ? 2 : 1, text: `취미 모임: 이번 달 진행 ${C.run}/${B.weeks}` }); return t; },

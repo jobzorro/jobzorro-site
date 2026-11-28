@@ -7,5 +7,7 @@ import chicken from "./chicken_ui.js";
 import vibe from "./vibe_ui.js";
 import club from "./club_ui.js"; // 11-23 취미 모임
 import petsit from "./petsit_ui.js"; // 11-24 방문 펫시팅
-import { PETSIT_ON } from "../engine/defs.js";
-export const UI_PLUGINS = [tarot, webnovel, tutoring, chicken, vibe, club, PETSIT_ON ? petsit : null].filter(Boolean);
+import carwash from "./carwash_ui.js"; // 11-27 출장 세차
+import buying from "./buying_ui.js"; // 11-27 해외 구매대행
+import { PETSIT_ON, CARWASH_ON, BUYING_ON } from "../engine/defs.js";
+export const UI_PLUGINS = [tarot, webnovel, tutoring, chicken, vibe, club, PETSIT_ON ? petsit : null, CARWASH_ON ? carwash : null, BUYING_ON ? buying : null].filter(Boolean);

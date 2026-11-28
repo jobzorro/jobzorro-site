@@ -5,7 +5,8 @@ import * as BIG from "./big.js";
 import { CHAR, addMoney, applyEff, helperPower, helpers, mod, won, log, eyeMult, ensureRel, isRomanceable, addAff, gainStat, giveBrk, R } from "./core.js";
 import { jobEvent } from "./pr.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
-import { EXTRAS } from "../gen/data.js"; // 닉네임 다섯 개와 그 이야기(data/extras.json, 11-24)
+import { EXTRAS } from "../gen/data.js";
+import * as C2D from "./cs_data.js"; // 11-27 처방형 개편 자료(스위치 CS2_ON 이 켜졌을 때만 쓴다) // 닉네임 다섯 개와 그 이야기(data/extras.json, 11-24)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 // 11-21 밸런스(10개 투잡 공통 비교, 기획 jobconsult.json: 중위 월 200만·p95 1,500만·1:1 한계 연 3억).
@@ -94,6 +95,7 @@ function coldPass(s, niche) { if (!coldOn(s) || niche === "career") return 0; co
 const coldRefund = (s, niche) => (coldOn(s) && niche !== "career" ? 1 + CS_CH.cold.refund * CS_CH.k : 1);
 // AI로 고가 문의 감소: 지금 내 가격대의 감소폭(cut)과 덜 맞는 이유(sk 실력 · lv 합격 실적, 각 0~1)
 export function premStat(s) {
+  if (D.CS2_ON) return { k: LP(s), raw: 0, max: 0, sk: 0, lv: 0, sh: 0, cut: 0, perYear: 0 }; // 새 구조: 자소서에는 고가가 없고, 비싼 값은 사람 손이 필요한 전략 상품에만 있다. 가격대로 깎이지 않는다
   const cs = s.cs, P = CS_CH.prem, k = cs.price || "low", K = CS_CH.k, yrs = Math.max(0, (s.t - P.from) / 12);
   const max = Math.min(P.cap, (P.max[k] || 0) * K), raw = Math.min(max, (P.perYear[k] || 0) * K * yrs);
   const sk = clamp((skill(s) - priceNeed(s)) / P.over, 0, 1), st = liveStat(s), lv = st.on ? clamp(st.r, 0, 1) : 0, sh = P.shield * (sk + lv) / 2;
@@ -143,6 +145,7 @@ function chMonth(s, r, pass, notes, scenes, fail = 0) {
   cs.passBest = Math.max(cs.passHist.slice(-L.win).reduce((a, b) => a + b, 0), (cs.passBest || 0) * (cs.cold?.on ? 1 : L.decay)); // 가장 좋았던 12달(조금씩 잊힌다. 한파 중에는 멈춤)
   if (cs.open && s.t >= L.from && !cs.liveSeen) { cs.liveSeen = true; scenes.push(chStory("컨설팅", "\"작년 합격 사례는 없나요?\"", "상담을 문의하던 사람이 후기 목록을 한참 내리다 묻는다. \"작년 합격 사례는 없나요? 3년 전 건 좀…\"\n\n답을 고르는 사이 채팅방에서 나갔다. 틀린 말은 아니다. 나라도 작년 것부터 찾아봤을 것이다.", "consult", ["이제부터 최근 1년 합격 실적을 평소와 견줘요", "꾸준히 내면 벌점이 없어요. 쉬면 문의와 결제가 줄어요"])); }
   // ① AI로 고가 문의 감소: 예고 → 본 장면
+  if (cs.open && s.t >= P.warn && !cs.premSeen && D.CS2_ON) { cs.premSeen = true; scenes.push(chStory("컨설팅", "\"AI한테 물어보니\"", "상담을 문의하던 사람이 묻는다. \"AI한테 물어보니 이 정도는 나오던데, 자소서 첨삭에 이 값을 내야 하나요?\"\n\n바로 답하지 못했다. 맞춤법과 구조라면 AI도 한다. 자소서를 비싸게 팔 수 없는 이유다. 비싼 값은 AI가 못 하는 일에만 붙는다. 그 사람이 어디에 넣어야 붙는지, 그걸 어떻게 납득시키는지.", "consult", ["자기소개서는 보통 가격까지만 팔아요", "종합·이직·공기업 같은 사람별 전략은 AI 때문에 줄지 않아요"])); }
   if (cs.open && s.t >= P.warn && !cs.premSeen) { cs.premSeen = true; scenes.push(chStory("컨설팅", "\"AI한테 물어보니\"", "상담을 문의하던 사람이 묻는다. \"AI한테 물어보니 이 정도는 나오던데, 180만 원 값을 하나요?\"\n\n바로 답하지 못했다. 맞춤법과 구조라면 AI도 한다. 내가 주는 것이 그것뿐이라면 저 말이 맞다. 비싼 상품부터 설명이 길어지겠다.", "consult", ["6년 차부터 가격대가 높을수록 문의와 결제가 줄어요", "실력이 가격 기준을 넉넉히 넘거나 합격 실적이 살아 있으면 덜 맞아요"])); }
   if (cs.open && s.t >= P.from && !cs.premOn && !scenes.length && premStat(s).perYear > 0) { cs.premOn = true; const ps = premStat(s); scenes.push(chStory("컨설팅", "비싼 것부터 안 팔린다", "견적을 보내면 답이 없다. 싼 상품 문의는 그대로인데 비싼 쪽만 조용하다.\n\n값을 내릴까. 아니면 AI가 못 주는 것을 더 분명히 보여 줘야 하나. 합격시킨 사람들 말고는 내세울 것이 없다.", "consult", [`${D.CS_PRICE[ps.k].n} 가격대: 문의 해마다 −${Math.round(ps.perYear * 100)}%, 최대 −${Math.round(ps.max * 100)}%`, "저가는 줄지 않아요", "실력과 합격 실적으로 절반까지 덜 맞아요"])); }
   // ② 전형 변화: 예고 → 본 장면 → 2~3년마다 또 바뀜
@@ -152,7 +155,7 @@ function chMonth(s, r, pass, notes, scenes, fail = 0) {
   if (cs.open && s.t >= F.from + 2 && cs.formSeen && !cs.formOn && !scenes.length) { cs.formOn = true; scenes.push(chStory("컨설팅", "묻는 것이 달라졌다", "이번 시즌 공고를 훑었다. 자소서 칸이 없는 공고가 눈에 띄게 늘었다. 과제, 역량 검사, 포트폴리오.\n\n문의하는 사람은 그대로 있다. 다만 묻는 것이 달라졌다. \"과제 전형도 봐 주시나요?\" 본 적이 없다고는 말하지 못했다.", "consult", [`자소서 수요 해마다 −${Math.round(F.perYear * K * 100)}%, 최대 −${Math.round(Math.min(F.cap, F.max * K) * 100)}%`, `전형 대응도 ${Math.round(fm.a)}: 대응도만큼만 새 전형 문의를 받아요`])); }
   if (s.t >= F.from) {
     if (fm.shiftT == null) fm.shiftT = Math.max(s.t, F.from) + r.int(F.shift[0], F.shift[1]);
-    else if (s.t >= fm.shiftT) { fm.shiftT = s.t + r.int(F.shift[0], F.shift[1]); fm.a = Math.max(0, (fm.a || 0) - F.shiftCut); fm.n = (fm.n || 0) + 1; if (cs.open) scenes.push(chStory("컨설팅", "전형이 또 바뀌었다", FORM_SHIFT[fm.n % FORM_SHIFT.length], "consult", [`전형 대응도 −${F.shiftCut} (지금 ${Math.round(fm.a)})`, "새 전형 연구로 다시 따라가야 해요"])); }
+    else if (s.t >= fm.shiftT) { fm.shiftT = s.t + r.int(F.shift[0], F.shift[1]); fm.a = Math.max(0, (fm.a || 0) - F.shiftCut); fm.n = (fm.n || 0) + 1; if (D.CS2_ON && cs.c2) cs.c2.und = Math.max(0, (cs.c2.und || 0) * (1 - B2.und.shift)); if (cs.open) scenes.push(chStory("컨설팅", "전형이 또 바뀌었다", FORM_SHIFT[fm.n % FORM_SHIFT.length], "consult", [`전형 대응도 −${F.shiftCut} (지금 ${Math.round(fm.a)})`, "새 전형 연구로 다시 따라가야 해요"])); }
   }
   // 채용 한파
   if (!cs.cold) cs.cold = { at: Math.max(r.int(C.first[0], C.first[1]), s.t + r.int(C.warn + 2, 30)), len: r.int(C.len[0], C.len[1]), warned: false, on: false, n: 0 };
@@ -207,11 +210,12 @@ export const entrySteps = (s) => {
   ];
 };
 export function setNiche(s, k) { const n = D.NICHES[k]; if (!n) return { ok: false }; if (n.req.career && s.st.career < n.req.career) return { ok: false, msg: `커리어 ${n.req.career} 필요` }; if (n.req.years && s.co.years < n.req.years) return { ok: false, msg: `회사 경력 ${n.req.years}년 필요` };
-  if (!s.cs.niche) { s.cs.niche = k; s.cs.niches = [k]; return { ok: true, msg: `포지션: ${n.n}` }; }
+  if (D.CS2_ON) { const why = c2NicheWhy(s, k); if (why) return { ok: false, msg: why }; }
+  if (!s.cs.niche) { s.cs.niche = k; s.cs.niches = [k]; return { ok: true, msg: `포지션: ${D.CS2_ON ? c2NicheN(k) : n.n}` }; }
   if (s.cs.niches.includes(k)) return { ok: false, msg: "이미 하고 있음" };
   if (s.cs.lv < 3) return { ok: false, msg: "포지션 추가는 Lv3부터" };
   if (k === "career" && (s.cs.passes || 0) < D.CS_CAREER_PASS) return { ok: false, msg: `경력 이직은 합격자 ${D.CS_CAREER_PASS}명부터(지금 ${s.cs.passes || 0}명)` }; // v4.28 히든 길
-  s.cs.niches.push(k); return { ok: true, msg: `포지션 추가: ${n.n}` };
+  s.cs.niches.push(k); return { ok: true, msg: `포지션 추가: ${D.CS2_ON ? c2NicheN(k) : n.n}` };
 }
 // 닉네임(11-24): 정해 둔 다섯 개 중에서 고른다(s.cs.nickK). 숫자 효과는 같고, 닉네임마다 작은 이야기가 따라온다(engine/extras.js)
 export const NICKS = (EXTRAS && EXTRAS.nicks) || [];
@@ -222,7 +226,8 @@ export function setNick(s, k, nk) {
   if (k === "nick") { if (nk && NICKS.some((n) => n.k === nk)) s.cs.nickK = nk; else if (!nickOf(s)) s.cs.nickK = NICKS[0]?.k; }
   return { ok: true, msg: k === "real" ? "실명으로 활동: 신뢰 +, 회사 눈치 ×1.4" : `닉네임 '${nickName(s)}'${((w) => { const ch = w.charCodeAt(w.length - 1), f = (ch - 0xac00) % 28; return f && f !== 8 ? "으로" : "로"; })(nickName(s) || "가")} 활동` };
 }
-export function setPrice(s, k) { const p = D.CS_PRICE[k]; if (p.req && s.cs.reviews < p.req) return { ok: false, msg: `후기 ${p.req}개부터` }; s.cs.price = k; return { ok: true, msg: `가격: ${p.n}` }; }
+export function setPrice(s, k) { const p = D.CS_PRICE[k];
+  if (D.CS2_ON) { if (!p) return { ok: false, msg: "" }; if (k === "ultra") return { ok: false, msg: "최고가는 종합·이직·공기업에만 있어요" }; if (k === "high" && !s.cs.niches.includes("interview")) return { ok: false, msg: "자기소개서는 보통까지만 팔아요. 프리미엄은 면접부터예요" }; if (p.req && s.cs.reviews < p.req) return { ok: false, msg: `후기 ${p.req}개부터` }; s.cs.price = k; return { ok: true, msg: k === "high" ? "가격: 면접 프리미엄(사람별 간이 전략) · 자기소개서는 보통" : `가격: ${C2D.TIER_N[k]}` }; } if (p.req && s.cs.reviews < p.req) return { ok: false, msg: `후기 ${p.req}개부터` }; s.cs.price = k; return { ok: true, msg: `가격: ${p.n}` }; }
 // ───────── 11-25 대표: 마케팅 대행 ─────────
 // 표준 가격부터는 마케팅 대행이 꼭 필요하다(SEO 최적화 + 블로그·인별 주 4회 발행). 저가일 땐 없어도 된다.
 // 대행사 다섯 곳, 월 60·80·100만(물가 반영). 취업(신입 자소서·면접·공기업)과 이직(경력 이직)을 얼마나 아는지 등급이 따로다.
@@ -239,7 +244,7 @@ export const CS_AGENCY = {
 };
 export const agOf = (s) => CS_AGENCY.list[s.cs?.agency] || null;
 export const agFee = (s) => { const a = agOf(s); return a ? Math.round(a.fee * SYN.pi(s)) : 0; };
-export const agNeed = (s) => s.cs.price !== "low"; // 표준부터
+export const agNeed = (s) => s.cs.price !== "low" || (D.CS2_ON && c2Any(s)); // 표준부터(새 구조: 전략 상품을 팔아도)
 export function agGrade(s, k) { const a = agOf(s); if (!a) return null; return s.cs.agency === "cn" && s.cs.agGone && k !== "career" ? "B" : k === "career" ? a.move : a.job; }
 export function agMult(s, k) { const a = agOf(s); if (!a) return agNeed(s) ? CS_AGENCY.none : 1; return CS_AGENCY.grade[agGrade(s, k)] * (s.cs.agOops === s.t ? 0.8 : 1) * (s.cs.agBoost && s.t <= s.cs.agBoost.until ? 1 + s.cs.agBoost.x : 1); }
 export function setAgency(s, id) {
@@ -270,10 +275,10 @@ export function can(s, id) {
   const cs = s.cs;
   if (id === "cs_friend") { if (!cs.niche) return "포지션을 먼저 정하세요"; if (cs.friends >= 8) return "지인은 이제 다 봐줬다"; return null; }
   if (["cs_blog", "cs_insta", "cs_kakao", "cs_kmong", "cs_youtube", "cs_flyer"].includes(id)) { if (!cs.niche) return "포지션을 먼저 정하세요"; return null; }
-  if (id === "cs_work") { if (!cs.queue.length) return "대기 고객이 없어요"; return null; }
+  if (id === "cs_work") { if (!cs.queue.length && !(D.CS2_ON && c2Due(s))) return "대기 고객이 없어요"; return null; }
   if (id === "cs_soomgo") return cs.open ? null : "개업 후 가능";
   if (id === "cs_seminar") { if (!cs.niche) return "포지션을 먼저 정하세요"; if (cs.reviews < 5) return "후기 5개부터"; if (cs.seminarT === s.t) return "이번 달엔 이미 했어요"; return null; }
-  if (id === "cs_lecture") return cs.offers > 0 ? null : `강의 섭외가 와야 해요(후기 ${D.CS_LECT.rev}개 또는 커리어센터 인연)`;
+  if (id === "cs_lecture") return D.CS2_ON && c2LectOn() ? "강의 제안은 컨설팅 화면에서 값을 보고 골라요" : cs.offers > 0 ? null : `강의 섭외가 와야 해요(후기 ${D.CS_LECT.rev}개 또는 커리어센터 인연)`;
   if (id === "cs_focus") return !cs.queue.length ? "대기 고객이 없어요" : cs.focusH === focusHalf(s) ? `집중 첨삭은 상·하반기에 한 번씩이에요. 지금 효과가 ${focusLeft(s)}달 남았어요` : null;
   if (id === "cs_template") return !cs.open ? "개업 후 가능" : cs.template >= 3 ? "템플릿 완성" : null;
   if (id === "cs_group") { if (!cs.niche) return "포지션을 먼저 정하세요"; if (!(cs.ch.kakao.m >= 150 || cs.reviews >= 25)) return "오픈채팅 150명 또는 후기 25개"; if (cs.groupT === s.t) return "이번 달 진행함"; return null; }
@@ -296,7 +301,7 @@ export function aiCut(s, k) { // 그 분야 문의 배수(1 = 그대로)
 export function aiFrom(s) { const m = s.wv?._at?.cs; return typeof m === "number" ? m / 12 : CS_AI.from; }
 export function aiDrop(s) { const ks = s.cs.niches || []; if (!ks.length) return 0; return Math.round((1 - ks.reduce((a, k) => a + aiCut(s, k), 0) / ks.length) * 100); }
 export function skill(s) { const k = D.NICHES[s.cs.niche || "newgrad"].stat; return Math.round(s.st[k] * 0.7 + s.st.career * 0.3); } // v4.25: 분야 능력치(대개 글쓰기) 비중을 높임
-export function priceNeed(s) { return D.CS_PRICE_NEED[s.cs.price] + (s.cs.lv >= 4 ? 20 : 0) + (s.cs.lv >= 5 ? 15 : 0); }
+export function priceNeed(s) { return D.CS_PRICE_NEED[D.CS2_ON ? c2ConvKey(s) : s.cs.price] + (s.cs.lv >= 4 ? 20 : 0) + (s.cs.lv >= 5 ? 15 : 0); }
 export const gap = (s) => priceNeed(s) - skill(s);
 function capacity(s, boost) { return (2 + Math.floor(s.st.write / 35) + Math.floor(s.cs.template)) * boost * BIG.fullCap(s); }
 
@@ -319,13 +324,14 @@ export function act(s, r, id, arg, boost = 1) {
   }
   if (id === "cs_work") {
     let cap = capacity(s, boost); let done = 0, earned = 0; const names = [];
+    let c2n = 0; if (D.CS2_ON) { const x = c2Upkeep(s, cap); cap = x.cap; c2n = x.n; } // 전략 고객 이번 달 상담부터
     while (cap > 0 && cs.queue.length) {
       const q = cs.queue[0]; const use = Math.min(cap, q.left); q.left -= use; cap -= use;
       if (q.left <= 0) { cs.queue.shift(); done++; earned += finishClient(s, r, q); if (q.who) names.push(CHAR[q.who].name); }
     }
     gainStat(s, D.NICHES[cs.niche].stat, 0.5 + mod(s, "workGrow", 0), "cs_work"); /* v4.28c 곡선·월 상한을 거친다 */
     s.mental = clamp(s.mental + mod(s, "csWorkMental", 0), 0, 100);
-    return { lines: [`고객 ${done}명 완료`, `+${won(earned)}`, cs.queue.length ? `남은 대기 ${cs.queue.length}명` : "대기 0명"], msg: names.length ? `${names.join(", ")}님 자료도 끝냈다.` : "밤 12시, 첨삭 파일 이름에 '_최종_진짜최종'." };
+    return { lines: [c2n ? `전략 고객 ${c2n}명 이번 달 상담` : "", `고객 ${done}명 완료`, `+${won(earned)}`, cs.queue.length ? `남은 대기 ${cs.queue.length}명` : "대기 0명"].filter(Boolean), msg: names.length ? `${names.join(", ")}님 자료도 끝냈다.` : "밤 12시, 첨삭 파일 이름에 '_최종_진짜최종'." };
   }
   if (id === "cs_blog") {
     ch.blog.posts++; ch.blog.lastT = s.t;
@@ -378,7 +384,7 @@ export function act(s, r, id, arg, boost = 1) {
   if (id === "cs_template") { cs.template = Math.min(3, cs.template + 0.5); return { lines: [`템플릿 ${cs.template.toFixed(1)}/3 · 고객 처리 용량 +${Math.floor(cs.template)}`], msg: "자주 쓰는 첨삭 코멘트 40개를 정리했다." }; }
   if (id === "cs_group") {
     const room = roomBoost(s); cs.groupT = s.t; const n = Math.round(Math.min(12, 3 + Math.floor(cs.ch.kakao.m / 60) + Math.floor(cs.reviews / 15)) * room);
-    const fee = Math.round(n * 20 * D.CS_PRICE[cs.price].mult); s.cash += fee; addMoney(s, "inc", "컨설팅", fee); cs.monthRev += fee; cs.clients += n;
+    const fee = Math.round(n * 20 * D.CS_PRICE[LP(s)].mult); s.cash += fee; addMoney(s, "inc", "컨설팅", fee); cs.monthRev += fee; cs.clients += n;
     for (let i = 0; i < n; i++) cs.outcomes.push({ t: s.t + r.int(1, 3), p: passProb(s, "edit") - 0.05 - coldPass(s, cs.niche), who: null, price: 20, prod: "group" });
     return { lines: [`그룹 스터디 ${n}명`, `+${won(fee)}`], msg: "한 명에게 하던 설명을 열 명에게. 시간은 그대로." };
   }
@@ -392,13 +398,14 @@ export function act(s, r, id, arg, boost = 1) {
 
 // 고객
 function prodPick(s, r, niche) {
-  const pk = D.CS_PRODUCTS.pkg.req(s.cs);
+  const pk = !D.CS2_ON && D.CS_PRODUCTS.pkg.req(s.cs); // 새 구조: 패키지는 종합컨설팅(전략 고객)으로 옮겨 갔다
   const w = { newgrad: [["edit", 0.65], ["coach", 0.2], ["pkg", 0.15]], public: [["edit", 0.65], ["coach", 0.2], ["pkg", 0.15]], interview: [["coach", 0.75], ["edit", 0.1], ["pkg", 0.15]], career: [["edit", 0.4], ["coach", 0.2], ["pkg", 0.4]] }[niche];
   let p = r.weighted(w); if (p === "pkg" && !pk) p = niche === "interview" ? "coach" : "edit"; return p;
 }
-function priceOf(s, prod, niche) { const b = D.CS_PRODUCTS[prod].price * D.NICHES[niche].priceF * (1 - (1 - aiCut(s, niche)) * CS_AI.priceW) * D.CS_PRICE[s.cs.price].mult * (s.cs.lv >= 4 ? 1.3 * mod(s, "csLv4Price", 1) : 1) * (s.cs.lv >= 5 ? 1.25 : 1) * (niche === "career" && csHidPause(s) ? CS_HID.price : 1); return Math.round(b * 10) / 10; }
+function priceOf(s, prod, niche) { const b = D.CS_PRODUCTS[prod].price * D.NICHES[niche].priceF * (1 - (1 - aiCut(s, niche)) * CS_AI.priceW) * D.CS_PRICE[D.CS2_ON ? c2LightKey(s, niche) : s.cs.price].mult * (D.CS2_ON ? c2Price(s, "essay", "light") : 1) * (s.cs.lv >= 4 ? 1.3 * mod(s, "csLv4Price", 1) : 1) * (s.cs.lv >= 5 ? 1.25 : 1) * (niche === "career" && csHidPause(s) ? CS_HID.price : 1); return Math.round(b * 10) / 10; }
 function addClient(s, r, src) {
   const cs = s.cs; const niche = r.pick(cs.niches); const prod = prodPick(s, r, niche);
+  if (D.CS2_ON && c2Client(s, r, niche, prod)) return; // 이직은 종합만 · 면접 프리미엄은 간이 전략 고객
   let who = null;
   if (r.chance(0.25)) { const c = s.cast.filter((id) => CHAR[id]?.customer?.board === "consult" && !s.rel[id]?.client); if (c.length) who = r.pick(c); }
   if (who) { if (!s.rel[who]) s.rel[who] = { aff: 8, stage: 0, met: s.t, last: s.t, lover: false, spouse: false, helper: null, helperOk: false, talks: {}, loverSince: null, client: true }; else s.rel[who].client = true; }
@@ -456,23 +463,25 @@ export function monthStart(s, r) {
   cs.leads = leads;
   const trust = D.COMPANY_TYPES[s.co.type].trust * (s.co.quit || s.co.fired ? 0.6 : 1) + (Math.min(0.35, cs.reviews / 80) + Math.min(0.2, cs.passes / 150)) * LV.mult + (cs.nick === "real" ? 0.06 : 0) + cs.lv * 0.02;
   cs.trust = trust;
-  cs.conv = clamp(0.17 + trust * 0.35 + (s.st.talk - 40) / 250 + clamp(((s.st.charm || 0) - 40) / 800, -0.03, 0.06) + D.CS_PRICE[cs.price].conv + mod(s, "convBonus", 0) + (SYN.on(s, "grad_cs") ? 0.04 : 0) + G.conv, 0.05, 0.8);
+  cs.conv = clamp(0.17 + trust * 0.35 + (s.st.talk - 40) / 250 + clamp(((s.st.charm || 0) - 40) / 800, -0.03, 0.06) + D.CS_PRICE[D.CS2_ON ? c2ConvKey(s) : cs.price].conv + mod(s, "convBonus", 0) + (SYN.on(s, "grad_cs") ? 0.04 : 0) + G.conv, 0.05, 0.8);
   cs.conv *= 1 - premStat(s).cut * CS_CH.prem.conv; // 11-27 AI: 비싼 상품은 결제 전환도 조금 준다
   if (coldOn(s) && cs.niches.some((k) => k !== "career")) cs.conv = Math.min(0.85, cs.conv + CS_CH.cold.conv); // 11-27 채용 한파: 돈을 주고서라도 붙어야 하니 결제도 는다
-  const n = r.poisson(leads * cs.conv);
+  const n = r.poisson(leads * cs.conv * (D.CS2_ON ? c2Dem(s, "essay", "light").d : 1)); // 처방형: 가벼운 상품도 내 값이 시세보다 비싸면 덜 온다
   const kmShare = leads ? src.크멍 * mult / leads : 0;
   for (let i = 0; i < n; i++) addClient(s, r, r.chance(kmShare) ? "크멍" : "문의");
-  if (s.big?.vip) { const v = r.poisson((s.fame || 0) / 45 * (BIG.isFull(s) ? 1 : 0.3)); for (let i = 0; i < v; i++) cs.queue.push({ id: ++cs.seq, prod: "vip", niche: cs.niches.includes("career") ? "career" : cs.niche, left: 6, units: 6, price: Math.round(450 * (1 + (s.fame || 0) / 100) * SYN.pi(s)), wait: 0, who: null, src: "VIP" }); }
+  if (s.big?.vip && !D.CS2_ON) { const v = r.poisson((s.fame || 0) / 45 * (BIG.isFull(s) ? 1 : 0.3)); for (let i = 0; i < v; i++) cs.queue.push({ id: ++cs.seq, prod: "vip", niche: cs.niches.includes("career") ? "career" : cs.niche, left: 6, units: 6, price: Math.round(450 * (1 + (s.fame || 0) / 100) * SYN.pi(s)), wait: 0, who: null, src: "VIP" }); }
   cs.newThisMonth = n;
+  if (D.CS2_ON) c2Leads(s, r, LV.mult, G); // 전략 상품 문의(값·평판에 따라)
 }
 
 export function month(s, r, notes, scenes) {
   const cs = s.cs, ch = cs.ch;
   checkOpen(s, notes);
   if (!cs.niche) return 0;
-  if (cs.open && s.cal === 1) { const d = aiDrop(s); if (d >= 5) notes.push(`컨설팅: AI 자소서가 대세라 신입 취업 쪽이 줄면서 내 문의가 예전보다 ${d}% 줄었어요. ${cs.niches.includes("career") ? "경력 이직 쪽은 그대로예요." : "경력 이직으로 넓히는 게 가장 확실해요. 강의는 버팀목이지만 강의료와 섭외도 같이 줄어요."}`); }
+  if (cs.open && s.cal === 1) { const d = aiDrop(s); if (d >= 5) notes.push(`컨설팅: AI 자소서가 대세라 신입 취업 쪽이 줄면서 내 문의가 예전보다 ${d}% 줄었어요. ${D.CS2_ON ? (c2Any(s) ? "종합·이직·공기업 같은 사람별 전략 문의는 그대로예요." : "사람별 전략(종합컨설팅)으로 올라가는 게 가장 확실해요. 강의는 버팀목이지만 강의료와 섭외도 같이 줄어요.") : cs.niches.includes("career") ? "경력 이직 쪽은 그대로예요." : "경력 이직으로 넓히는 게 가장 확실해요. 강의는 버팀목이지만 강의료와 섭외도 같이 줄어요."}`); }
   // 조력자 공동 코치: 자동 처리(수익 60%)
   let coach = helperPower(s, "cs_coach") * 3;
+  if (D.CS2_ON && coach > 0) coach = c2Coach(s, coach, notes); // 공동 코치: 합격 사례집에 있는 조합의 전략 고객만 대신 본다
   let auto = 0;
   while (coach > 0 && cs.queue.length) { const q = cs.queue[0]; const use = Math.min(coach, q.left); q.left -= use; coach -= use; if (q.left <= 0) { cs.queue.shift(); const p = finishClient(s, r, q); const share = Math.round(p * 0.4); s.cash -= share; addMoney(s, "exp", "공동 코치 몫", share); auto++; } }
   if (auto) notes.push(`공동 코치가 고객 ${auto}명 처리`);
@@ -490,6 +499,7 @@ export function month(s, r, notes, scenes) {
     else if (o.g) { fail++; cs.fails++; if (o.cold) coldCnt(s, 0, 1); cs.reviews += 0.15; const back = Math.round(o.price * Math.min(1, (CS_F30.guar[o.g]?.back || 0) * (o.cold ? 1 + CS_CH.cold.guarUp * CS_CH.k : 1)) * 10) / 10; /* 한파에 판 보장 상품: 약속보다 더 돌려 달라고 한다 */ if (back > 0) { s.cash -= back; addMoney(s, "exp", "환불", back); cs.monthRev -= back; cs.gRef += back; cs.gRefN++; cs.gRefAll = (cs.gRefAll || 0) + back; } } // f30 합격 보장 환불
     else { fail++; cs.fails++; if (o.cold) coldCnt(s, 0, 1); cs.reviews += 0.15; if (o.cold && r.chance(Math.min(0.6, CS_CH.cold.failRef * CS_CH.k))) { const bk = Math.round(o.price * CS_CH.cold.failBack * 10) / 10; s.cash -= bk; addMoney(s, "exp", "환불", bk); cs.monthRev -= bk; cs.reviews = Math.max(0, cs.reviews - 0.3); cs.coldRefM = (cs.coldRefM || 0) + 1; cs.coldRefN = (cs.coldRefN || 0) + 1; cs.coldRefAll = (cs.coldRefAll || 0) + bk; } /* 한파: 떨어진 고객의 환불 요구 */ if (o.prod === "pkg" && r.chance(0.2)) { s.cash -= Math.round(o.price * 0.5); addMoney(s, "exp", "환불", Math.round(o.price * 0.5)); notes.push("불합격 패키지 고객 50% 환불"); } }
   }
+  if (D.CS2_ON) { const x = c2Month(s, r, notes, scenes, pass); pass += x.pass; fail += x.fail; } // 전략 고객 결과(지원 깔때기)
   if (pass + fail) notes.push(`합격 발표: 합격 ${pass} · 불합격 ${fail}`);
   if (cs.coldRefM) notes.push(`채용 한파: 불합격 고객 ${cs.coldRefM}명이 환불을 요구했어요`);
   if (cs.gRefN) notes.push(`합격 보장 환불 ${cs.gRefN}건 −${won(cs.gRef)}`);
@@ -506,7 +516,8 @@ export function month(s, r, notes, scenes) {
   // 실명 활동 노출
   if (cs.open && cs.nick === "real") s.co.eye = clamp(s.co.eye + 1 * eyeMult(s) / 1.4, 0, 100);
   // 강의 섭외
-  if (cs.open && (cs.reviews >= D.CS_LECT.rev || helpers(s, "cs_lecture").length) && cs.offers < D.CS_LECT.maxOffers && r.chance((D.CS_LECT.p + helperPower(s, "cs_lecture") * 0.15) * (1 - aiDrop(s) / 100 * CS_AI.lectOfferW))) { cs.offers++; notes.push("대학 커리어센터에서 강의 섭외가 왔다"); }
+  if (D.CS2_ON && c2LectOn()) c2LectMonth(s, r, notes, scenes); // 11-28 강의 개편: 제안이 건별로 온다
+  else if (cs.open && (cs.reviews >= D.CS_LECT.rev || helpers(s, "cs_lecture").length) && cs.offers < D.CS_LECT.maxOffers && r.chance((D.CS_LECT.p + helperPower(s, "cs_lecture") * 0.15) * (1 - aiDrop(s) / 100 * CS_AI.lectOfferW))) { cs.offers++; notes.push("대학 커리어센터에서 강의 섭외가 왔다"); }
   // 레벨
   cs.revHist.push(Math.round(cs.monthRev)); if (cs.revHist.length > 24) cs.revHist.shift();
   const last3 = cs.revHist.slice(-3);
@@ -560,12 +571,12 @@ function csEvent(s, r, pass, fail) {
   return csEv(s, r, id);
 }
 function csEv(s, r, id) {
-  const cs = s.cs, P = Math.round(D.CS_PRODUCTS.edit.price * D.CS_PRICE[cs.price].mult * (cs.lv >= 4 ? 1.3 : 1) * 10);
+  const cs = s.cs, P = Math.round(D.CS_PRODUCTS.edit.price * D.CS_PRICE[LP(s)].mult * (cs.lv >= 4 ? 1.3 : 1) * 10);
   const E = (title, text, choices, extra = {}) => ({ kind: "event", tag: "컨설팅", title, text, onChoose: "cs_ev", ev: id, choices, ...extra });
   const c = (t, chk) => (chk ? { t, check: chk, ok: { text: "", eff: {} }, ng: { text: "", eff: {} } } : { t, eff: {}, text: "" });
   if (id === "jinsang") return E("진상 고객", "새벽 2시, 고객 까톡 47개. \"선생님 이거 내일 마감인데 전체 다 다시 써 주세요. 추가금은 없는 거죠?\"", [c("정중하게 선을 긋는다", { stat: "talk", dc: 45 }), c("밤새 다 해 준다 (스태미너 −15, 멘탈 −8)"), c(`환불하고 끝낸다 (−${won(P)})`)]);
   if (id === "refund") return E("불합격 환불 요구", "최종 불합격한 고객. \"돈 아까워요. 전액 환불 안 해 주면 크멍에 후기 쓸게요.\"", [c(`전액 환불한다 (−${won(P * 2)})`), c("규정대로 거절한다", { stat: "talk", dc: 50 }), c("다음 시즌 무료 재첨삭을 약속한다 (다음 달 행동력 −2)")]);
-  if (id === "overprice") return E("가격값 못 한다는 후기", `크멍 후기: "${D.CS_PRICE[cs.price].n} 가격 받고 맞춤법만 봐 줌. 비추." 지금 실력 ${skill(s)}, 이 가격이 요구하는 실력 ${priceNeed(s)}.`, [c("가격을 한 단계 내린다"), c("실력으로 메운다 (다음 달 행동력 −2, 핵심 능력 +5)"), c("그냥 둔다 (후기 −2)")]);
+  if (id === "overprice") return E("가격값 못 한다는 후기", `크멍 후기: "${D.CS_PRICE[LP(s)].n} 가격 받고 맞춤법만 봐 줌. 비추." 지금 실력 ${skill(s)}, 이 가격이 요구하는 실력 ${priceNeed(s)}.`, [c("가격을 한 단계 내린다"), c("실력으로 메운다 (다음 달 행동력 −2, 핵심 능력 +5)"), c("그냥 둔다 (후기 −2)")]);
   if (id === "stalker") return E("선 넘는 고객", `합격시켜 준 고객이 ${employedCs(s) ? "퇴근길에 회사 앞에" : "저녁마다 집 앞 골목에"} 서 있었다. DM 하루 50개. "선생님은 제 인생의 은인이에요. 우리 운명 아닐까요?"`, [c("단호하게 차단한다 (멘탈 −6, 다시 올 수 있음)"), c(employedCs(s) ? "경찰에 신고한다 (멘탈 −3, 회사에 소문)" : "경찰에 신고한다 (멘탈 −3)"), c("좋게 타이른다", { stat: "talk", dc: 55 })]);
   if (id === "stalker2") return E("또 나타났다", `차단했던 그 사람이 새 계정으로 크멍 상담을 신청했다. ${employedCs(s) ? "회사 로비에서" : "집 앞 편의점에서"} 내 이름을 부르는 소리가 들린다.`, [c("경찰에 신고하고 접근금지 신청 (돈 −50, 멘탈 −5)"), c("이사 가고 활동명을 바꾼다 (돈 −300, 오픈채팅 −30%)")]);
   if (id === "romance") { const who = r.pick(s.cast.filter((x) => isRomanceable(s, CHAR[x]) && !CHAR[x].rank && !s.rel[x]?.lover)); s._csWho = who; return E("고객에서 인연으로", `면접 코칭을 받던 ${CHAR[who].name}님이 합격 소식과 함께 물었다. "선생님, 축하 저녁 제가 사도 될까요?"`, [c("좋아요, 가요 (인연 시작, 호감 +25)"), c("고객과는 선을 긋는다 (신뢰 +)")], { who }); }
@@ -594,8 +605,9 @@ function csEv(s, r, id) {
 }
 export function csEvChoose(s, i, ok) {
   const cs = s.cs, id = s.pending?.ev, out = [];
+  if (id === "c2_lectbig") return c2LectBigChoose(s, i); // 11-28 대형 토크콘서트 제안(간다 / 거절)
   if (id === "ch_note") return [...(s.pending?.chNote || [])]; // 11-27 독백 장면 아래 작은 안내 줄
-  const P = Math.round(D.CS_PRODUCTS.edit.price * D.CS_PRICE[cs.price].mult * (cs.lv >= 4 ? 1.3 : 1) * 10);
+  const P = Math.round(D.CS_PRODUCTS.edit.price * D.CS_PRICE[LP(s)].mult * (cs.lv >= 4 ? 1.3 : 1) * 10);
   const cash = (v, k) => { s.cash += v; addMoney(s, v > 0 ? "inc" : "exp", k, Math.abs(v)); out.push(`돈 ${v > 0 ? "+" : "−"}${won(Math.abs(v))}`); };
   const ment = (v) => { s.mental = clamp(s.mental + v, 0, 100); out.push(`멘탈 ${v > 0 ? "+" : ""}${v}`); };
   const rev = (v) => { cs.reviews = Math.max(0, cs.reviews + v); out.push(`후기 ${v > 0 ? "+" : ""}${v}`); };
@@ -655,6 +667,8 @@ export function todos(s) {
   if (cs.open && (cs.cold?.on || cs.cold?.warned)) t.push({ lv: 0, text: cs.cold.on ? `채용 한파 ${Math.max(0, cs.cold.end - s.t)}달 남음: 문의는 몰린다, 합격률과 환불을 챙기기` : `채용 한파 예고: 약 ${Math.max(1, cs.cold.at - s.t)}달 뒤${cs.guar ? " · 합격 보장을 다시 보기" : ""}`, go: "cs" });
   { const fs = formStat(s); if (cs.open && fs.open && fs.a < fs.target && (fs.f > 0 || s.t >= CS_CH.form.from - 12)) t.push({ lv: fs.f >= 0.1 && fs.a < 40 ? 1 : 0, text: `전형 대응도 ${Math.round(fs.a)}: 새 전형 연구(행동 1번)`, go: "cs" }); }
   if (cs.offers) t.push({ lv: 1, text: `강의 섭외 ${cs.offers}건 대기`, go: "cs" });
+  if (D.CS2_ON) c2Todos(s, t);
+  if (D.CS2_ON && c2LectOn() && s.cs.c2?.lect?.length) t.push({ lv: 1, text: `강의 제안 ${s.cs.c2.lect.length}건(값 보고 고르기)`, go: "cs" });
   return t;
 }
 
@@ -664,13 +678,15 @@ function f30Pick(s, r, leak, pass) {
   if (leak && s.t - (cs.leakT ?? -99) >= CS_F30.leak.gap) return "f30_leak";
   if (!cs.guarSeen && cs.reviews >= CS_F30.guarRev && r.chance(0.5)) return "f30_guar";
   if (!cs.maskSeen && pass > 0) return "f30_mask";
-  if ((cs.lectN || 0) >= 1 && cs.reviews >= D.CS_LECT.rev && B.cal.includes(s.cal) && s.t - (cs.bidT ?? -99) >= B.gap && r.chance(B.p)) return "f30_bid";
+  if (!(D.CS2_ON && c2LectOn()) && (cs.lectN || 0) >= 1 && cs.reviews >= D.CS_LECT.rev && B.cal.includes(s.cal) && s.t - (cs.bidT ?? -99) >= B.gap && r.chance(B.p)) return "f30_bid";
   return null;
 }
 export const passRate = (s) => passProb(s, "edit");
 // 보드 버튼: "g:50"(합격 보장) · "m:full"(후기 가림)
 export function setPolicy(s, key) {
   const cs = s.cs, [k, v] = String(key).split(":");
+  if (D.CS2_ON && k === "c2") return c2Do(s, String(key).split(":").slice(1));
+  if (D.CS2_ON && k === "p") return setPrice(s, v);
   if (k === "g" && CS_F30.guar[+v]) { cs.guar = +v; cs.guarSeen = true; return { ok: true, msg: `합격 보장: ${CS_F30.guar[+v].n}${+v ? " (이번 달부터 파는 상품에 적용)" : ""}` }; }
   if (k === "f" && v === "study") return studyForm(s); // 11-27 새 전형 연구(행동력 1)
   if (k === "m" && CS_F30.mask[v]) { cs.mask = v; cs.maskSeen = true; return { ok: true, msg: `후기 가림: ${CS_F30.mask[v].n}` }; }
@@ -698,7 +714,7 @@ function chBox(S) {
   const ps = premStat(S), fs = formStat(S), pc = Math.round(ps.cut * 100), fc = Math.round(fs.f * 100), a = Math.round(fs.a), pn = D.CS_PRICE[ps.k].n;
   const lostPct = Math.round(ks.reduce((s0, k) => s0 + (1 - formX(S, k)), 0) / ks.length * 100);
   const shWhy = [ps.sk >= 0.5 ? "실력이 가격 기준을 넉넉히 넘어요" : "", ps.lv >= 0.99 ? "합격 실적이 살아 있어요" : ""].filter(Boolean);
-  const premLine = S.t < P.from ? `6년 차부터 가격대가 높을수록 문의와 결제가 줄어요(저가는 그대로). 지금 가격대: ${pn}.`
+  const premLine = D.CS2_ON ? "자기소개서는 AI 때문에 비싸게 못 팔아요(보통까지만). 종합·이직·공기업 같은 사람별 전략은 가격대로 깎이지 않아요." : S.t < P.from ? `6년 차부터 가격대가 높을수록 문의와 결제가 줄어요(저가는 그대로). 지금 가격대: ${pn}.`
     : ps.perYear <= 0 ? `${pn} 가격대는 AI 때문에 줄지 않아요.`
     : `${pn} 가격대 문의 −${pc}%(해마다 −${Math.round(ps.perYear * 100)}%, 최대 −${Math.round(ps.max * 100)}%). ${shWhy.length ? `${shWhy.join(", ")}: 원래 −${Math.round(ps.raw * 100)}%에서 덜 맞는 중이에요.` : "실력이 가격 기준을 넉넉히 넘거나 합격 실적이 살아 있으면 절반까지 덜 맞아요."}`;
   const formLine = !cs.formSeen ? "" : S.t < F.from ? "6년 차부터 자소서 수요가 해마다 조금씩 새 전형(직무 과제·역량 검사·포트폴리오·직무 면접)으로 옮겨 가요. 미리 연구해 두면 그대로 받아요."
@@ -712,7 +728,7 @@ export function f30Box(S, esc, won) { const cs = S.cs; if (!cs.open) return ""; 
 function f30Core(S, esc, won) {
   const cs = S.cs;
   const showG = cs.guarSeen || cs.reviews >= CS_F30.guarRev, showM = cs.maskSeen || cs.passes > 0, showL = (cs.lectN || 0) > 0;
-  const drop = aiDrop(S), a = drop >= 5 ? `<div class="tiny bad" style="margin-top:8px">AI 대세: 내 문의 −${drop}%(신입 취업 쪽이 해마다 더 줄어요). 경력 이직은 줄지 않아요. 강의는 버팀목이지만 강의료와 섭외도 같이 줄어요.</div>` : "";
+  const drop = aiDrop(S), a = drop >= 5 ? `<div class="tiny bad" style="margin-top:8px">AI 대세: 내 ${D.CS2_ON ? "가벼운 상품(자소서·면접) " : ""}문의 −${drop}%(신입 취업 쪽이 해마다 더 줄어요). ${D.CS2_ON ? "사람별 전략(종합·이직·공기업) 문의는 줄지 않아요" : "경력 이직은 줄지 않아요"}. 강의는 버팀목이지만 강의료와 섭외도 같이 줄어요.</div>` : "";
   if (!showG && !showM && !showL && !a) return "";
   const pp = Math.round(passProb(S, "edit") * 100), G = CS_F30.guar[cs.guar || 0];
   const btn = (attr, on, n, d) => `<button class="${on ? "on" : ""}" data-cspol="${attr}"><b>${esc(n)}</b><span class="tiny muted">${esc(d)}</span></button>`;
@@ -730,4 +746,605 @@ export function f30Scene(s, r, what) {
   const cs = s.cs; if (!cs.niche) setNiche(s, "newgrad"); cs.open = true; cs.lectN = Math.max(1, cs.lectN || 0); cs.reviews = Math.max(cs.reviews, 12);
   const id = { guar: "f30_guar", mask: "f30_mask", leak: "f30_leak", bid: "f30_bid" }[what];
   return id ? csEv(s, r, id) : null;
+}
+
+// ═════════ 11-27 처방형 개편: 가격대별 상품 + 사람별 합격 전략(스위치 defs.js CS2_ON) ═════════
+// 싼 상품(자기소개서 저가~보통 · 면접 저가~보통)은 위 흐름 그대로다. 비싼 상품(면접 프리미엄 · 종합 · 이직 · 공기업)은 고객 한 명 한 명이 "전략 고객"(s.cs.c2.cases)이 된다.
+// 전략 고객: 지원자 카드(막힌 곳 × 사람 × 성향, 일부 ???) × 목표(회사 유형 × 직무) → 방법론 카드로 칸을 채운다 → 눈높이 설득 → 결과 달에 지원 깔때기가 확률로 굴러간다 → 합격 사례집.
+// 자료는 cs_data.js 에만 있다. 상태는 s.cs.c2 하나에만 둔다(스위치가 꺼져 있으면 만들지도 읽지도 않는다).
+export { C2D };
+const B2 = C2D.C2_BAL;
+if (typeof process !== "undefined" && process.env?.CS2B) { const o = JSON.parse(process.env.CS2B); for (const k of Object.keys(o)) { if (o[k] && typeof o[k] === "object" && !Array.isArray(o[k]) && B2[k] && typeof B2[k] === "object" && !Array.isArray(B2[k])) Object.assign(B2[k], o[k]); else B2[k] = o[k]; } } // 봇 시험용
+const C2CARD = Object.fromEntries(C2D.CARDS.map((c) => [c.id, c]));
+const c2Interp = (tb, x) => { if (x <= tb[0][0]) return tb[0][1]; for (let i = 1; i < tb.length; i++) if (x <= tb[i][0]) { const [x0, y0] = tb[i - 1], [x1, y1] = tb[i]; return y0 + (y1 - y0) * (x - x0) / (x1 - x0); } return tb[tb.length - 1][1]; };
+// 가볍게 파는 상품의 가격대. 스위치가 꺼져 있으면 지금 가격대 그대로
+function LP(s) { if (!D.CS2_ON) return s.cs.price; const p = s.cs.price || "low", iv = s.cs.niches.includes("interview"); return p === "ultra" ? (iv ? "high" : "mid") : p === "high" && !iv ? "mid" : p; }
+function c2LightKey(s) { const p = LP(s); return p === "high" ? "mid" : p; } // 가벼운 상품은 보통까지(면접 프리미엄은 전략 고객으로 간다)
+function c2ConvKey(s) { const p = LP(s); return p === "high" && s.cs.niche !== "interview" ? "mid" : p; }
+const c2NicheN = (k) => ({ newgrad: "자기소개서", interview: "면접", public: "공기업컨설팅", career: "이직컨설팅" }[k] || k);
+function c2NicheWhy(s, k) {
+  const cs = s.cs; if (cs.niches.includes(k) || (k !== "public" && k !== "career")) return "";
+  if (!cs.niche) return `${c2NicheN(k)}은 종합만 있어요. 자기소개서나 면접으로 시작해 합격 실적을 쌓으면 열려요`;
+  if (!c2Std(s)) return `${c2NicheN(k)}은 종합컨설팅이 열린 뒤에 열 수 있어요(${c2Gate(s, "total", "std").why.join(" · ")})`;
+  return "";
+}
+export function c2of(s) {
+  const cs = s.cs;
+  if (!cs.c2) {
+    cs.c2 = { v: 1, cards: {}, notes: {}, cases: [], wait: [], seq: 0, open: {}, sell: {}, topP: { total: 2, public: 2, move: 2 }, sp: {}, spAll: 0, ui: {}, back: [], log: [], st: { n: 0, rev: 0, ref: 0, win: 0, lose: 0, left: 0 },
+      und: cs.open ? (cs.passes || 0) * B2.und.light + Math.min(120, cs.reviews || 0) * (B2.und.k ?? 1) : 0, undBase: Math.max(0, Math.round((typeof process !== "undefined" && +process.env?.UNDBASE) || +s.ng?.und?.cs || 0)), stage: 1 }; // und: 이번 생에 쌓은 업의 이해도 · undBase: 전생에서 가져온 점수(회차 넘기기가 s.ng.und.cs 에 넣어 준다)
+    if (cs.open && ["high", "ultra"].includes(cs.price) && cs.niches.some((k) => k !== "interview" && k !== "career")) cs.c2.grant = 1; // 예전 저장: 자소서를 고가로 팔던 사람은 종합 표준이 열린 채로 넘어온다
+    c2Cards(s);
+  }
+  return cs.c2;
+}
+const c2Key = (f, tier) => f + ":" + tier;
+const c2NoteN = (c2) => Object.values(c2.notes).filter((n) => n.win).length;
+// 관문: 그 분야·등급을 팔 수 있나. 능력치(글쓰기·말빨 가운데 높은 쪽)와 업의 이해도를 둘 다 채워야 한다. why: 모자란 것
+export function c2Gate(s, f, tier) {
+  const cs = s.cs, c2 = c2of(s), G = B2.gate[tier], why = [], st = Math.floor(Math.max(s.st.write || 0, s.st.talk || 0)), u = undV(s);
+  if (tier === "mini") { if (!cs.niches.includes("interview")) why.push("면접 포지션"); if (cs.reviews < G.rev) why.push(`후기 ${G.rev}개(지금 ${Math.floor(cs.reviews)})`); if ((s.st.talk || 0) < G.stat) why.push(`말빨 ${G.stat}(지금 ${Math.floor(s.st.talk || 0)})`); if (u < G.und) why.push(`업의 이해도 ${G.und}(지금 ${u})`); if (LP(s) !== "high") why.push("가격을 면접 프리미엄으로"); return { ok: !why.length, why }; }
+  const F = C2D.FIELDS[f];
+  if (F.niche && !cs.niches.includes(F.niche)) why.push(f === "move" ? `이직 포지션(커리어 ${D.NICHES.career.req.career} · 회사 ${D.NICHES.career.req.years}년 · 합격 ${D.CS_CAREER_PASS}명 · Lv3)` : `공기업 포지션(커리어 ${D.NICHES.public.req.career} · Lv3)`);
+  if (tier === "std" && c2.grant) return { ok: !why.length, why };
+  if (st < G.stat) why.push(`글쓰기나 말빨 ${G.stat}(지금 ${st})`); if (u < G.und) why.push(`업의 이해도 ${G.und}(지금 ${u})`);
+  if (G.yrs && (c2.mo || 0) < G.yrs * 12) why.push(`컨설팅 ${G.yrs}년 차부터(지금 ${Math.floor((c2.mo || 0) / 12) + 1}년 차)`);
+  return { ok: !why.length, why };
+}
+// ── 업의 이해도(세차·컨설팅·과외 공통 꼴). 상한 없이 쌓인다: 합격 사례가 주, 일한 기간은 보조. 전형이 바뀌면 조금 빠진다 ──
+const undV = (s) => Math.round((s.cs.c2?.und || 0) + (s.cs.c2?.undBase || 0));
+function undAdd(s, v) { const c2 = c2of(s), U = B2.und, g = v / (1 + (c2.und || 0) / U.slow); c2.und = (c2.und || 0) + g; return g; }
+// 11-28 공통 카드: 등급과 업계 상위 %는 engine/und.js 의 공통 사다리가 계산한다(여기 고유 등급은 없앴다). 아래 둘은 공통 카드에 넣는 컨설팅 글
+export function c2UndFoot(s) { const v = undV(s), G = B2.gate, L = [[G.std.und, "종합컨설팅 표준"], [G.mini.und, "면접 프리미엄"], [G.prem.und, "프리미엄"], [B2.fullReq.und, "본업 조건"], [G.top.und, "최고가"]].sort((x, y) => x[0] - y[0]), n = L.find((x) => v < x[0]); return n ? `다음 문턱: ${n[1]} ${n[0].toLocaleString("ko-KR")}점(${(n[0] - v).toLocaleString("ko-KR")}점 남음)` : "상품 문턱을 모두 넘었어요"; }
+export function c2UndHow() { const U = B2.und, W = U.win; return `고객이 합격할 때마다 쌓여요. 자기소개서·면접 +${U.light}, 면접 프리미엄 +${W.mini}, 표준 +${W.std}, 프리미엄 +${W.prem}, 최고가 +${W.top}(일한 달마다 +${U.month}). 눈높이 차이가 큰 고객, 채용 한파 때의 합격은 더 크게 오르고, 그 분야·등급의 첫 합격은 ${U.first}배예요. 점수가 쌓일수록 천천히 오르고, 전형이 바뀌면 ${Math.round(U.shift * 100)}% 빠져요.`; }
+export function understanding(s) {
+  if (!D.CS2_ON || !s.cs?.niche) return null;
+  const c2 = c2of(s), v = undV(s);
+  return { v, stage: c2.stage || 1, sub: `합격 사례집 ${c2NoteN(c2)}건`, name: "업의 이해도", base: c2.undBase || 0 };
+}
+const UND_MONO = {
+  3: ["이제는 사람이 어렵다", "지원자 서류를 받으면 어디가 막혔는지 금방 보인다. 어디에 넣어야 붙는지도 안다. 사례집을 넘기면 비슷한 사람이 꼭 있다.\n\n컨설팅 자체는 더 어렵지 않다. 어려운 것은 그다음이다. 눈높이를 못 내리는 사람, 연락이 끊기는 사람, 떨어지고 나서 돈 얘기를 꺼내는 사람. 일이 사람 관리로 넘어왔다."],
+};
+function undMonth(s, lightPass, notes, scenes) {
+  const c2 = c2of(s), U = B2.und;
+  undAdd(s, U.month + lightPass * U.light);
+  const st = c2.stage || 1, to = c2.open["total:std"] === undefined ? 1 : undV(s) >= U.stage3 ? 3 : 2;
+  if (to > st) { c2.stage = to; if (to === 3 && scenes) scenes.push(chStory("컨설팅", UND_MONO[3][0], UND_MONO[3][1], "consult", ["업의 이해도가 깊어졌어요", "합격 사례집에 있는 조합은 전략이 저절로 채워져요", "이제 승부는 설득과 고객 관리예요"])); }
+}
+const c2Std = (s) => !!c2of(s).open["total:std"] || c2Gate(s, "total", "std").ok;
+const c2Tiers = (f) => (f === "interview" ? ["mini"] : ["std", "prem", "top"]);
+const c2All = () => [["interview", "mini"], ...C2D.STRAT.flatMap((f) => c2Tiers(f).map((t) => [f, t]))];
+export function c2Sell(s, f, tier) { const c2 = c2of(s), k = c2Key(f, tier); if (c2.off || c2.sell[k] === 0) return false; return tier === "mini" ? c2Gate(s, f, tier).ok : !!c2.open[k] && (!C2D.FIELDS[f].niche || s.cs.niches.includes(C2D.FIELDS[f].niche)); }
+export const c2Any = (s) => !!s.cs.c2 && (s.cs.c2.cases.length > 0 || (!s.cs.c2.off && Object.keys(s.cs.c2.open).length > 0));
+// 관문이 열린 달을 적어 둔다(한 번 열리면 닫히지 않는다). 첫 관문에서는 "고민이 달라졌다" 장면
+function c2Latch(s, notes, scenes) {
+  const cs = s.cs, c2 = c2of(s);
+  for (const f of C2D.STRAT) for (const tier of c2Tiers(f)) {
+    const k = c2Key(f, tier); if (c2.open[k] !== undefined || !c2Gate(s, f, tier).ok) continue;
+    c2.open[k] = s.t;
+    if (k === "total:std" && scenes) scenes.push(chStory("컨설팅", "값이 달라지면 고민이 달라진다", "\"자소서만 봐 주지 말고, 붙을 때까지 같이 가 주시면 안 돼요?\"\n\n후기 목록 아래에 그런 문의가 달리기 시작했다. 값을 불러 봤다. 첨삭 열 번 값이다. 상대는 망설이지 않았다.\n\n가격이 비싸지니 고민해야 하는 게 달라졌다. 문장을 고치는 일이 아니다. 이 사람이 어디에 넣어야 붙는지, 그걸 본인이 받아들이게 하는 일이다.", "consult", ["종합컨설팅(표준)이 열렸어요", "고객마다 막힌 곳과 눈높이가 달라요. 방법론 카드로 합격 전략을 짜요", "자기소개서·면접은 지금처럼 가볍게 팔아요"]));
+    else if (notes) notes.push(`컨설팅: ${C2D.FIELDS[f].n} ${C2D.TIER_N[tier]} 등급을 팔 수 있어요${tier === "top" ? ". 값은 직접 정해요(비쌀수록 드물게 와요)" : ""}`);
+    if (scenes || notes) log(s, `${C2D.FIELDS[f].n} ${C2D.TIER_N[tier]} 등급이 열렸다.`, "work");
+  }
+}
+// 동시에 맡는 인원(등급마다 따로). full: 본업일 때 값을 보고 싶으면 true
+export function c2Cap(s, tier, full) { const fl = full ?? BIG.isFull(s), half = full === undefined && fl && !c2FullOk(s), E0 = B2.cap.emp[tier], F0 = B2.cap.full[tier]; return (fl ? (half ? Math.round(E0 + (F0 - E0) * B2.fullHalf) : F0) : E0) + (tier === "mini" && s.wv?.cs?.path === "b" ? B2.pathB : 0); }
+// 강의·출강(11-28): 제안이 건별로 온다(단건 · 연속 · 대형). 값과 드는 행동력을 보고 갈지 정한다. 거절해도 벌점은 없다
+const c2LectOn = () => !!B2.lect.on;
+const c2LectBigScene = (o) => ({ kind: "story", tag: "컨설팅", title: "대형 토크콘서트", text: `대형 토크콘서트 무대에 서 달라는 연락이 왔다. 강의료 ${won(o.fee)}에 인지도도 오른다. 준비에 더 힘을 들여야 해 행동력 2가 든다. 갈까요?`, bg: "consult", onChoose: "cs_ev", ev: "c2_lectbig", lid: o.t, choices: [{ t: "간다 (행동력 2)", eff: {}, text: "" }, { t: "거절", eff: {}, text: "" }] });
+function c2LectBigChoose(s, i) { const L0 = c2of(s).lect || [], k = L0.findIndex((o) => o.k === "big" && o.t === s.pending?.lid); if (k < 0) return ["제안 기한이 지났어요"];
+  if (i === 1) return [c2LectDo(s, k, false).msg]; if ((s.ap || 0) < L0[k].ap) return ["지금은 행동력이 모자라요", "제안은 컨설팅 화면 카드에 남겨 뒀어요(기한 안에 답하기)"]; return [c2LectDo(s, k, true).msg]; }
+function c2LectMonth(s, r, notes, scenes) {
+  const cs = s.cs, c2 = c2of(s), L = B2.lect; if (!cs.open) return; c2.lect = (c2.lect || []).filter((o) => s.t - o.t <= L.keep);
+  if (cs.offers > 0) { for (let i = 0; i < cs.offers && c2.lect.length < L.maxQ; i++) c2.lect.push(c2LectNew(s, r, "one")); cs.offers = 0; } // 예전 저장의 섭외 대기는 단건 제안으로 옮긴다
+  if (typeof location !== "undefined" && /-c2lecttest/.test(location.hash || "") && !c2.lect.length) { for (const k of ["one", "series", "big"]) c2.lect.push(c2LectNew(s, r, k)); if (scenes) scenes.push(c2LectBigScene(c2.lect[2])); return; } // 시험(#auto..-cs-cs2on-c2lecttest): 세 종류 제안과 대형 장면을 바로 만든다
+  const fame = s.fame || 0, full = BIG.isFull(s), aiX = 1 - aiDrop(s) / 100 * CS_AI.lectOfferW;
+  const p = Math.min(L.max, (cs.reviews < L.rev0 ? L.early : L.base + L.rev * Math.min(1, cs.reviews / L.revAt) + fame / L.fameDiv) + helperPower(s, "cs_lecture") * 0.1) * aiX;
+  for (const pp of [p, p * L.two]) { if (c2.lect.length >= L.maxQ || !r.chance(pp)) break;
+    const k = full && fame >= L.bigFame && r.chance(L.bigP) ? "big" : (cs.lectN || 0) >= L.seriesLect && cs.reviews >= L.seriesRev && r.chance(Math.min(L.seriesMax, L.seriesP + fame / L.seriesFame)) ? "series" : "one";
+    const o = c2LectNew(s, r, k); c2.lect.push(o); if (k === "big" && scenes) scenes.push(c2LectBigScene(o)); notes.push(`컨설팅: 강의 제안이 왔어요 - ${k === "big" ? "대형 토크콘서트" : k === "series" ? `${o.n}회 연속 강의` : "특강"} ${won(o.fee)}(행동력 ${o.ap})`); }
+}
+function c2LectNew(s, r, k) {
+  const L = B2.lect, cs = s.cs, fame = s.fame || 0, x = SYN.pi(s) * mod(s, "lectureMult", 1) * (1 - aiDrop(s) / 100 * CS_AI.lectFeeW);
+  const one = (r.range(L.lo, L.hi) + fame * L.fame + Math.min(cs.reviews, L.revCap) * L.revW) * (BIG.isFull(s) && fame >= L.fullFame ? L.fullX : 1), n = k === "series" ? r.int(4, 5) : 1;
+  const fee = k === "big" ? r.range(L.bigLo, L.bigHi) : k === "series" ? one * L.seriesX * n / 4.5 : one;
+  return { k, n, ap: k === "one" ? 1 : 2, fee: Math.max(1, Math.round(fee * x / 5) * 5), org: r.pick(C2D.LECT_ORGS), t: s.t };
+}
+function c2LectDo(s, i, yes) {
+  const c2 = c2of(s), cs = s.cs, o = (c2.lect || [])[+i]; if (!o) return { ok: false, msg: "" };
+  if (!yes) { c2.lect.splice(+i, 1); return { ok: true, msg: "이번 강의는 정중히 거절했어요." }; }
+  if ((s.ap || 0) < o.ap) return { ok: false, msg: `행동력 ${o.ap}이 필요해요` };
+  s.ap -= o.ap; c2.lect.splice(+i, 1); s.cash += o.fee; addMoney(s, "inc", "강의료", o.fee); cs.monthRev += o.fee; c2.lectSt = c2.lectSt || { n: 0, sum: 0 }; c2.lectSt.n++; c2.lectSt.sum += o.fee;
+  const before = cs.lectN || 0; cs.lectN = before + o.n;
+  if (o.k === "big") { s.fame = clamp((s.fame || 0) + B2.lect.bigFameUp, 0, 100); cs.refer += 2; applyEff(s, { eye: 4 }); return { ok: true, msg: `대형 토크콘서트 무대에 섰어요. 강의료 ${won(o.fee)} · 명성 +${B2.lect.bigFameUp} · 소개 +2` }; }
+  if (o.k === "series") { cs.refer += 2; cs.reviews += 1; applyEff(s, { eye: 4 }); return { ok: true, msg: `${o.n}회 연속 강의를 마쳤어요. 강의료 ${won(o.fee)} · 소개 +2 · 후기 +1` }; }
+  const rf = before % 2 === 0 ? 1 : 0; cs.refer += rf; applyEff(s, { eye: 2 }); return { ok: true, msg: `특강을 하고 왔어요. 강의료 ${won(o.fee)}${rf ? " · 소개 +1" : ""}` };
+}
+function c2LectHtml(S, esc, wonF) { const L0 = c2of(S).lect || []; if (!c2LectOn() || !L0.length) return "";
+  return `<div style="margin-top:8px"><b>강의 제안</b> <span class="tiny muted">값을 보고 골라요. 거절해도 불이익은 없어요.</span>${L0.map((o, i) => `<div class="tiny" style="margin-top:6px">${esc(o.k === "big" ? `대형 토크콘서트. ${wonF(o.fee)}에 인지도도 오른다. 준비에 더 힘을 들여야 해 행동력 2가 든다. 갈까요?` : o.k === "series" ? `${o.org}의 ${o.n}회 연속 강의. ${o.n}번이나 가야 해서 행동력이 2 든다. 강의료는 ${wonF(o.fee)}. 할까요?` : `${o.org}에서 특강 요청이 왔다. 강의료 ${wonF(o.fee)}. 갈까요?`)}<div class="row wrap" style="gap:4px;margin-top:3px"><button class="btn sm gold" data-cspol="c2:lect:${i}:1">${o.k === "series" ? "한다" : "간다"} ⚡${o.ap}</button><button class="btn sm" data-cspol="c2:lect:${i}:0">거절</button><span class="tag">${Math.max(1, B2.lect.keep + 1 - (S.t - o.t))}달 안에 답하기</span></div></div>`).join("")}</div>`; }
+// 채널 넓히기(11-28): 새 채널을 열고(돈·행동력·준비 달) 식지 않게 돌본다. 채널 수와 상태가 본업 문의의 천장을 정한다
+const c2Ch = (s) => { const c2 = c2of(s); return (c2.ch = c2.ch || {}); };
+const c2ChLive = (s, id) => { const x = c2of(s).ch?.[id]; return x && s.t >= x.on ? x.heat : 0; };
+export function c2ChanX(s, f, tier) { const K = B2.chan; let sum = 0; for (const [id, CH] of Object.entries(C2D.CHANNELS)) { const h = c2ChLive(s, id); if (h > 0) sum += CH.w * h * (CH.fit?.[f] ?? CH.fit?.[tier] ?? 1); } return BIG.isFull(s) ? clamp(K.base - K.ai * c2AiG(s) + sum, K.min, K.max) : 1 + K.emp * sum; }
+export const c2ChanN = (s) => Object.keys(C2D.CHANNELS).filter((id) => c2ChLive(s, id) >= B2.chan.live).length;
+const c2ChSee = (s, id) => !C2D.CHANNELS[id].at || (c2of(s).mo || 0) >= C2D.CHANNELS[id].at;
+function c2ChanTick(s, notes, scenes) { const c2 = c2of(s), ch = c2.ch || {}; for (const [id, x] of Object.entries(ch)) if (s.t >= x.on) x.heat = Math.max(0, Math.round((x.heat - (C2D.CHANNELS[id]?.decay ?? B2.chan.decay)) * 100) / 100);
+  for (const [id, CH] of Object.entries(C2D.CHANNELS)) if (CH.at && c2ChSee(s, id) && !(c2.chSeen || {})[id]) { c2.chSeen = c2.chSeen || {}; c2.chSeen[id] = 1; if ((c2.mo || 0) > CH.at + 1) continue; /* 예전 저장: 이미 나온 채널은 조용히 목록에 넣는다 */ notes.push(`컨설팅: 새 채널이 생겼어요 - ${CH.n}(상품과 가격 → 채널 넓히기)`); if (scenes) scenes.push(chStory("컨설팅", `새 채널: ${CH.n}`, CH.say, "consult", [`${CH.n}이 채널 목록에 생겼어요`, CH.d])); } }
+function c2ChanDo(s, op, id) {
+  const CH = C2D.CHANNELS[id], ch = c2Ch(s); if (!CH || !c2ChSee(s, id)) return { ok: false, msg: "" };
+  if (op === "chopen") { if (ch[id]) return { ok: false, msg: "" }; if (CH.need && !s.cs.niches.includes(CH.need)) return { ok: false, msg: "이직 포지션이 있어야 해요" }; const cost = Math.round(CH.cost * SYN.pi(s)); if (s.cash < cost) return { ok: false, msg: `준비 비용 ${won(cost)}이 모자라요` }; if ((s.ap || 0) < CH.ap) return { ok: false, msg: `행동력 ${CH.ap}이 필요해요` };
+    s.ap -= CH.ap; s.cash -= cost; addMoney(s, "exp", "채널 준비", cost); ch[id] = { on: s.t + CH.prep, heat: 1 }; return { ok: true, msg: `${CH.n} 준비를 시작했어요. ${CH.prep}달 뒤부터 문의가 와요.` }; }
+  const c0 = ch[id]; if (!c0 || s.t < c0.on) return { ok: false, msg: "" }; if ((s.ap || 0) < 1) return { ok: false, msg: "행동력 1이 필요해요" }; s.ap -= 1; c0.heat = 1; return { ok: true, msg: `${CH.n}을 다시 돌봤어요. 식었던 문의가 돌아와요.` };
+}
+function c2ChanHtml(S, esc, W) { const ch = c2of(S).ch || {}, full = BIG.isFull(S), x0 = c2ChanX(S, "total", "std"), K = B2.chan;
+  const rows = Object.entries(C2D.CHANNELS).filter(([id]) => c2ChSee(S, id)).map(([id, CH]) => { const c0 = ch[id], prep = c0 && S.t < c0.on, st = !c0 && CH.need && !S.cs.niches.includes(CH.need) ? `<span class="tag red">이직 포지션이 있어야 열 수 있어요</span>` : !c0 ? `<button class="btn sm" data-cspol="c2:chopen:${id}">열기 ${W(CH.cost)} · ⚡${CH.ap} · 준비 ${CH.prep}달</button>` : prep ? `<span class="tag">준비 중 · ${c0.on - S.t}달 남음</span>` : `<span class="tag ${c0.heat >= K.live ? "" : "red"}">${c0.heat >= 0.8 ? "잘 도는 중" : c0.heat >= K.live ? "식는 중" : "식었어요"} ${Math.round(c0.heat * 100)}%</span> <button class="btn sm" data-cspol="c2:chtend:${id}">돌보기 ⚡1</button>`;
+    return `<div style="margin-top:6px"><b>${esc(CH.n)}</b> ${st}<div class="tiny muted">${esc(CH.d)}</div></div>`; }).join("");
+  return `<div style="margin-top:10px"><b>채널 넓히기</b> <span class="tiny muted">새 채널 ${c2ChanN(S)}개 굴리는 중 · ${full ? `지금 문의는 본업 자리의 ${Math.round(x0 * 100)}%쯤` : `본업이 되면 지금 채널로는 자리의 ${Math.round(clamp(K.base - K.ai * c2AiG(S) + (x0 - 1) / K.emp, K.min, K.max) * 100)}%쯤만 차요`}</span><div class="tiny muted">부업 때 하던 마케팅(블로그·인별·후기·소개·강의)만으로는 본업 자리의 절반쯤만 차요. 새 채널을 두세 개 뚫어야 가득 차요. 채널은 내버려 두면 식어요.${c2AiG(S) > 0 ? " AI가 지어낸 후기와 저가 경쟁자 때문에 예전 채널의 힘이 줄고 있어요." : ""}</div>${rows}</div>`; }
+// 본업으로 가려면: 최고가가 열림 · 업의 이해도 · 합격 사례집 · 후기 · 맡고 있는 전략 고객 · 최근 1년 컨설팅 수입이 월급보다 많음
+export function c2FullReady(s) {
+  const Q = B2.fullReq, c2 = c2of(s), u = undV(s), nn = c2NoteN(c2), h = (s.hist || []).slice(-Q.mo), inc = h.reduce((a, x) => a + (x.cs || 0), 0), sal = h.reduce((a, x) => a + (x.sal || 0), 0);
+  const list = [{ n: "최고가 상품이 열림", ok: C2D.STRAT.some((f) => c2.open[f + ":top"] !== undefined) }, { n: `업의 이해도 ${Q.und}`, ok: u >= Q.und, now: u }, { n: `합격 사례집 ${Q.notes}건`, ok: nn >= Q.notes, now: nn }, { n: `후기 ${Q.rev}개`, ok: s.cs.reviews >= Q.rev, now: Math.floor(s.cs.reviews) },
+    { n: `맡고 있는 전략 고객 ${Q.cases}명`, ok: c2.cases.length >= Q.cases, now: c2.cases.length }, { n: `새 채널 ${Q.chan}개 굴리는 중`, ok: c2ChanN(s) >= Q.chan, now: c2ChanN(s) }, { n: `최근 1년 컨설팅 수입이 월급의 ${Math.round((Q.pay ?? 1) * 100)}% 이상`, ok: h.length >= Q.mo && inc >= sal * (Q.pay ?? 1), pay: 1 }];
+  return { ok: list.every((x) => x.ok), list };
+}
+const c2FullOk = (s) => c2of(s).fullOk !== 0;
+function c2FullTick(s) { const c2 = c2of(s); if (!BIG.isFull(s)) { delete c2.fullOk; return; } const R0 = c2FullReady(s); if (c2.fullOk === undefined) c2.fullOk = R0.ok ? 1 : 0; else if (c2.fullOk === 0 && R0.list.every((x) => x.ok || x.pay)) { c2.fullOk = 1; log(s, "컨설팅: 본업 준비가 다 찼다. 인원 상한이 다 열렸다.", "work"); } }
+function c2FullLine(S, esc) { const c2 = c2of(S), full = BIG.isFull(S), R0 = c2FullReady(S), mk = (x) => `<span class="${x.ok ? "good" : "muted"}">${x.ok ? "✔" : "✘"} ${esc(x.n)}${x.ok || x.now === undefined ? "" : `(지금 ${x.now})`}</span>`;
+  if (full) return c2.fullOk === 0 ? `<div class="tiny bad" style="margin-top:6px">준비가 덜 된 채 본업이 됐어요. 인원은 절반만 더 열리고 본업 문의도 덜 와요. 채우면 다 열려요: ${R0.list.filter((x) => !x.ok && !x.pay).map(mk).join(" · ")}</div>` : "";
+  if (!Object.keys(c2.open).length) return "";
+  return `<div class="tiny" style="margin-top:6px"><b>본업으로 가려면</b> ${R0.ok ? `<span class="good">준비가 됐어요</span>` : ""}<br>${R0.list.map(mk).join(" · ")}<br><span class="muted">다 채우기 전에 퇴사해도 막지는 않지만, 본업 인원이 절반만 더 열리고 문의가 모자라요.</span></div>`; }
+// 봇: 본업으로 가는 때. FULLAT=N 이면 컨설팅 N년 차에(준비가 덜 됐어도), 아니면 준비가 다 찼을 때
+export function c2FullGo(s) { if (!D.CS2_ON || !s.cs?.c2) return false; const at = typeof process !== "undefined" ? process.env?.FULLAT : undefined; return at !== undefined && at !== "" ? (s.cs.c2.mo || 0) >= +at * 12 : c2FullReady(s).ok; }
+const c2Cnt = (c2, tier) => c2.cases.filter((c) => c.tier === tier).length;
+const c2Free = (s, tier) => c2Cap(s, tier) - c2Cnt(c2of(s), tier);
+// 값(오늘 값, 만원)과 실제 받는 돈(물가 반영)
+// 내 가격: 오토(기본)와 직접 정하기. 직접이면 등급마다 다섯 칸에서 고른다(c2.topP: 최고가는 분야 이름, 표준·프리미엄은 "분야:등급", 자기소개서·면접은 "light"). 값은 오늘 값(물가는 받을 때 곱한다)
+const c2PKey = (f, tier) => (tier === "top" ? f : tier === "light" || tier === "mini" ? "light" : f + ":" + tier);
+const c2PIdx = (s, f, tier) => clamp(c2of(s).topP[c2PKey(f, tier)] ?? 2, 0, 4);
+export const c2IsAuto = (s) => c2of(s).pMan !== 1;
+const c2StepP = (f, tier, i) => (tier === "light" ? B2.pstep[i] : tier === "mini" ? Math.round(B2.miniFee * B2.pstep[i]) : C2D.FIELDS[f].price[tier][i]);
+// 오토가 잡는 값: 한두 달 늦은 시세 × 보수적인 배수. 실력 웃돈은 덜 받는다. 문의가 끊길 값은 부르지 않는다
+export function c2AutoP(s, f, tier) {
+  const A = B2.autoP, am = c2of(s).am?.[f + ":" + tier] ?? 1, sh = c2Shift(s), k = am * (1 + (sh - 1) * A.skill) * (BIG.isFull(s) ? A.fullLow ?? A.low : A.low); /* 본업이면 오토 값도 조금 더 받는다(11-28 마감) */
+  if (tier === "light") return Math.round(clamp(k, B2.pstep[0], B2.pstep[4]) * 100) / 100;
+  if (tier === "mini") return Math.round(B2.miniFee * clamp(k, B2.pstep[0], B2.pstep[4]));
+  const R = C2D.FIELDS[f].price[tier];
+  if (tier === "top") return Math.round(clamp((R[0] + (R[2] - R[0]) * Math.min(1, (sh - 1) / A.topAt)) * am, R[0], R[4]) / 5) * 5;
+  return Math.round(clamp(R[2] * k, R[0], R[4]) / 5) * 5;
+}
+function c2AutoTick(s) { const c2 = c2of(s), L = B2.autoP.lag; c2.am = c2.am || {}; c2.mo = (c2.mo ?? (s.cs.passT0 !== undefined ? Math.max(0, s.t - s.cs.passT0) : 0)) + 1; const each = (f, tr) => { const k = f + ":" + tr, x = c2Mkt(s, f, tr).x; c2.am[k] = Math.round(((c2.am[k] ?? x) * (1 - L) + x * L) * 1000) / 1000; }; each("essay", "light"); each("interview", "mini"); for (const f of C2D.STRAT) for (const tr of c2Tiers(f)) each(f, tr); }
+export function c2Price(s, f, tier, idx) { if (idx === undefined && c2IsAuto(s)) return c2AutoP(s, f, tier); return c2StepP(f, tier, clamp(idx ?? c2PIdx(s, f, tier), 0, 4)); }
+// AI 고비의 세기(0~1): 기존 AI 대세 시작보다 pre 년 앞서 조금씩, ramp 년에 걸쳐 다 찬다
+export function c2AiG(s) { const A = B2.ai; return clamp((s.t / 12 - (aiFrom(s) - A.pre)) / A.ramp, 0, 1); }
+const C2_AI_SC = [null,
+  ["AI가 문 앞까지 왔다", "상담 온 취준생이 노트북을 돌려 보였다. \"이거 AI가 써 준 건데 그냥 내면 안 돼요?\" 문장은 매끈한데 누구 이야기인지 알 수 없다. 옆자리 사람 것과 바꿔도 모를 글이다. 무료 AI 취업 코치 광고도 눈에 띄기 시작했다. 아직은 조짐이다.", ["AI 고비가 시작돼요(해마다 조금씩 세져요)", "AI로 써 온 서류는 통과율이 내려가요 → 서류 칸에 'AI 티 걷어내기'", "표준 등급 시세가 조금씩 내려가요. 프리미엄·최고가는 버텨요"]],
+  ["AI와 같이 살기", "기업이 AI 면접과 AI 서류 평가를 들였다. 고객은 상담 중에 \"AI는 이렇게 말하던데요\"라고 되묻는다. 후기 게시판에는 AI가 지어낸 합격 후기가 넘친다. 반대로 눈높이 설득, 멘탈 관리, 면접 실전, 이직 협상은 여전히 사람을 찾는다. 위로 올라가야 산다.", ["AI 면접·AI 서류 평가: 면접 칸에 'AI 면접 대비'가 없으면 효과가 줄어요(새 전형 연구로 얻어요)", "설득이 어려워져요. 같은 회사 유형 합격 사례집이 있으면 그대로예요", "후기의 힘이 줄고 표준 고객의 환불 시비가 늘어요", "프리미엄·최고가 시세는 올라요"]]];
+function c2AiScene(s, notes, scenes) { const c2 = c2of(s), to = s.t / 12 >= aiFrom(s) ? 2 : c2AiG(s) > 0 ? 1 : 0; if (to > (c2.aiSeen || 0)) { c2.aiSeen = to; const S0 = C2_AI_SC[to]; if (scenes) scenes.push(chStory("컨설팅", S0[0], S0[1], "consult", S0[2])); else notes.push("컨설팅: " + S0[2][0]); } }
+// 시세: 그 분야·등급의 요즘 시장 값(오늘 값). 시즌 · 채용 한파 · AI · 경쟁 컨설턴트로 움직인다. x: 평소 대비 배수 · why: 화면에 보일 까닭
+export function c2Mkt(s, f, tier) {
+  const M = B2.mkt, nk = f === "move" ? "career" : f === "public" ? "public" : f === "interview" ? "interview" : "newgrad", why = [], pc = (v) => (v > 0 ? "+" : "−") + Math.abs(Math.round(v * 100)) + "%"; let x = 1;
+  if (f !== "move" && !s.era?.rolling && M.seasonM.includes(s.cal)) { x += M.season; why.push(`공채 시즌 ${pc(M.season)}`); }
+  if (coldOn(s) && f !== "move") { x += M.cold; why.push(`채용 한파로 문의가 몰려요 ${pc(M.cold)}`); }
+  const ai = c2AiG(s) * (M.ai[tier] ?? 0); if (Math.abs(ai) > 0.005) { x -= ai; why.push(ai > 0 ? `무료 AI 취업 코치가 퍼졌어요 ${pc(-ai)}` : `사람 손이 필요한 일이라 값이 올라요 ${pc(-ai)}`); }
+  if (tier === "light") { const a2 = (1 - aiCut(s, "newgrad")) * CS_AI.priceW; if (a2 > 0.005) why.push(`AI로 자기소개서 시세가 ${Math.round(a2 * 100)}% 내려와 있어요`); }
+  const cp = M.comp * Math.sin((s.t / M.compT + Math.max(0, C2D.STRAT.indexOf(f)) * 0.23) * 2 * Math.PI); x += cp; if (Math.abs(cp) > 0.02) why.push(cp > 0 ? `경쟁 컨설턴트들이 값을 올렸어요 ${pc(cp)}` : `경쟁 컨설턴트 할인 경쟁 ${pc(cp)}`);
+  const b0 = tier === "light" ? 1 : tier === "mini" ? B2.miniFee : C2D.FIELDS[f].price[tier][2];
+  return { v: b0 * x, x, why };
+}
+export function c2Shift(s) { const H = B2.shift, g = (v, [dv, w]) => w * Math.min(1, v / dv); return 1 + g(undV(s), H.und) + g(s.cs.passes || 0, H.pass) + g(s.cs.reviews || 0, H.rev); }
+// 수요: q0 = 내 값 ÷ 시세 · q = 실력으로 민 뒤의 비율 · d = 문의 배수(최고가는 한 달 문의 명수 그 자체)
+export function c2Dem(s, f, tier, idx) {
+  const P = c2Price(s, f, tier, idx), M = c2Mkt(s, f, tier), sh = c2Shift(s), q0 = P / M.v, q = q0 / sh, Q = B2.dem;
+  if (q >= Q.cut) return { q0, q, d: 0 };
+  if (tier === "top") return { q0, q, d: B2.topA * Math.exp(-B2.topK * (P / (M.x * sh) - 300)) };
+  return { q0, q, d: Math.min(Q.max, Math.exp(-Q.e * (q - 1))) };
+}
+const c2Feel = (n) => (n >= 1 ? "많음" : n >= 0.45 ? "보통" : n >= 0.12 ? "드묾" : "거의 없음"), c2FeelD = (dd) => (dd >= 1.25 ? "많음" : dd >= 0.75 ? "보통" : dd >= 0.35 ? "드묾" : "거의 없음");
+function c2Fee(s, f, tier) { return Math.round(c2Price(s, f, tier) * SYN.pi(s) * (f === "move" && csHidPause(s) ? CS_HID.price : 1) * (tier === "mini" && s.cs.lv >= 4 ? 1.3 : 1)); }
+// 평판(0.3~1.3): 합격 사례집 · 후기 · 명성 · 전략 고객 합격
+export function c2Rep(s) { const R0 = B2.rep, cs = s.cs, c2 = c2of(s), f = (v, [d, w]) => w * Math.min(1, v / d); return Math.min(R0.max, R0.base + f(c2NoteN(c2), R0.notes) + f(cs.reviews, R0.rev) * (1 - B2.ai.rev * c2AiG(s)) + f(s.fame || 0, R0.fame) + f(undV(s), R0.und)); }
+// 한 달 문의(명). flat: 시즌·한파 같은 그달 사정을 빼고 본 평소 값(화면용)
+export function c2Rate(s, f, tier, o = {}) {
+  const cs = s.cs, F = C2D.FIELDS[f], nk = F.niche || (cs.niche && cs.niche !== "career" ? cs.niche : "newgrad");
+  const dm = c2Dem(s, f, tier, o.idx).d, base = tier === "top" ? dm : B2.rate[tier] * dm;
+  let x = base * F.dem * BIG.fullLead(s) * (BIG.isFull(s) && c2FullOk(s) ? B2.fullX : 1) * (f === "move" && tier === "top" && s.big?.vip ? B2.vipX : 1) * c2ChanX(s, f, tier) * c2Rep(s) * clamp(skill(s) / B2.need[tier], 0.5, 1.1) * (B2.mk[0] + (1 - B2.mk[0]) * Math.min(1, (cs.leads || 0) / B2.mk[1])) * agMult(s, nk);
+  if (!o.flat) x *= (0.6 + 0.4 * (s.era?.rolling ? 1 : D.NICHES[nk].season[s.cal - 1])) * coldLead(s, nk) * (o.lv ?? 1) * (o.g ?? 1);
+  return x;
+}
+function c2Leads(s, r, lvMult, G) {
+  const cs = s.cs, c2 = c2of(s); if (c2.off) { c2.wait = []; return; }
+  c2.wait = c2.wait.filter((w) => s.t - w.t < B2.waitMo);
+  for (const w of [...c2.wait]) if (c2Free(s, w.tier) > 0 && c2Sell(s, w.f, w.tier)) { c2.wait.splice(c2.wait.indexOf(w), 1); c2New(s, r, w.f, w.tier); cs.newThisMonth++; }
+  for (const b of [...c2.back]) if (b.t <= s.t) { // 예전에 붙여 보낸 사람이 이직하려고 돌아온다
+    c2.back.splice(c2.back.indexOf(b), 1); const tier = ["top", "prem", "std"].find((t) => c2Sell(s, "move", t) && c2Free(s, t) > 0);
+    if (tier) { const c = c2New(s, r, "move", tier, { back: 1 }); c.pk = "mv3"; cs.newThisMonth++; log(s, `몇 해 전 붙여 보낸 고객이 이직 상담으로 돌아왔다${b.side ? "(계열사에서 사내 이동에 성공했다고 한다)" : ""}.`, "work"); }
+  }
+  for (const f of C2D.STRAT) for (const tier of c2Tiers(f)) {
+    if (!c2Sell(s, f, tier)) continue;
+    const n = r.poisson(c2Rate(s, f, tier, { lv: lvMult, g: G.lead }));
+    for (let i = 0; i < n; i++) { if (c2Free(s, tier) > 0) { c2New(s, r, f, tier); cs.newThisMonth++; } else if (c2.wait.filter((w) => w.tier === tier).length < B2.waitMax) c2.wait.push({ f, tier, t: s.t }); else c2.lost = (c2.lost || 0) + 1; }
+  }
+}
+// 가벼운 고객 흐름에서 갈라지는 것: 이직 포지션은 종합만(가벼운 상품 없음) · 면접 프리미엄 가격이면 면접 고객은 간이 전략 고객
+function c2Client(s, r, niche, prod) {
+  if (niche === "career") return !c2of(s).off && c2of(s).open["move:std"] !== undefined; // 이직 전략 상품이 아직 안 열린 예전 저장은 가벼운 상품 그대로
+  if (niche === "interview" && prod === "coach" && LP(s) === "high" && c2Sell(s, "interview", "mini") && c2Free(s, "mini") > 0 && r.chance(B2.miniP)) { c2New(s, r, "interview", "mini"); s.cs.newThisMonth++; return true; }
+  return false;
+}
+const c2Gap = (co, job, spec) => C2D.COS[co].bar + (C2D.JOBS[job]?.comp || 0) - spec;
+function c2DueT(s, r, f, co, tier) {
+  const U = B2.dur; if (f === "interview") return s.t + r.int(U.mini[0], U.mini[1]); if (BIG.isFull(s)) return s.t + U.full; // 본업이면 한 사람을 두 달에 끝낸다(상시 지원으로 돌린다)
+  const ta = tier === "top" ? U.topAdd || 0 : 0; if (f === "move") return s.t + U.move + ta;
+  if (s.era?.rolling || (f !== "public" && C2D.COS[co]?.roll)) return s.t + U.roll + ta;
+  for (let d = U.min + ta; d < 14; d++) if ((tier === "std" ? U.calStd : U.cal).includes(((s.cal - 1 + d) % 12) + 1)) return s.t + d;
+  return s.t + 6;
+}
+function c2New(s, r, f, tier, opt = {}) {
+  const cs = s.cs, c2 = c2of(s), pub = f === "public", mini = tier === "mini";
+  const pool = Object.keys(C2D.PEOPLE).filter((k) => C2D.PEOPLE[k].f.includes(mini ? "mini" : f)), pk = r.pick(pool), P = C2D.PEOPLE[pk];
+  const spec = Math.round((r.range(P.spec[0], P.spec[1]) + (tier === "top" ? 0.3 : 0)) * 2) / 2;
+  const co = pub ? r.pick(Object.keys(C2D.ORGS)) : r.pick(P.co), job = pub ? null : r.pick(Object.keys(C2D.JOBS));
+  let cand = (pub ? C2D.PUB_BL : P.bl).filter((k) => !mini || ["int", "both"].includes(C2D.BLOCKS[k].at));
+  if (mini && cand.length < 2) cand = ["intent", "blank", "mute"];
+  const nb = tier === "std" || mini ? 2 : 3, ks = [];
+  while (ks.length < nb && cand.length) { const k = r.pick(cand); cand = cand.filter((x) => x !== k); ks.push(k); }
+  if (!pub && !mini && c2Gap(co, job, spec) >= 1 && r.chance(0.8)) { ks.pop(); ks.unshift("high"); }
+  const hp = (tier === "top" ? 0.65 : 0.5) * (1 - Math.min(B2.und.seeMax, (c2.undBase || 0) / B2.und.see)), bl = ks.map((k, i) => ({ k, h: i > 0 && k !== "high" && r.chance(hp) ? 1 : 0 })), st = formStat(s), fee = c2Fee(s, f, tier);
+  const c = { id: ++c2.seq, f, tier, fee, q: Math.round(c2Dem(s, f, tier).q0 * 100) / 100, t0: s.t, due: c2DueT(s, r, f, co, tier), pk, spec, co, job, bl, tmp: r.pick(Object.keys(C2D.TEMPERS)), tmpH: r.chance(0.55 * (1 - Math.min(B2.und.seeMax, (c2.undBase || 0) / B2.und.see))) ? 1 : 0, plan: {}, diag: 0, set: 0, per: null, miss: 0, up: 1, g: cs.guar || 0, cold: coldOn(s) && f !== "move" ? 1 : 0,
+    nf: !pub && f !== "move" && st.f > 0 && r.chance(Math.min(0.6, st.f * 2.5 + (co === "it" ? 0.2 : 0))) ? 1 : 0, retry: 0, nint: mini ? r.int(1, 3) : 0, back: opt.back ? 1 : 0 };
+  c2Known(s, c);
+  c2.cases.push(c); s.cash += fee; addMoney(s, "inc", "컨설팅", fee); cs.monthRev += fee; cs.clients++; c2.st.n++; c2.st.rev += fee;
+  return c;
+}
+// 후반(시기 3): 합격 사례집에 있는 조합이면 가려진 것이 보이고, 그때 쓴 카드로 칸이 채워진다. 남는 일은 설득과 관리다
+function c2Known(s, c) {
+  const c2 = c2of(s); if ((c2.stage || 1) < 3) return; const N = c2.notes[c2NoteKey(c, { co: c.co, job: c.job })]; if (!N?.win) return;
+  for (const b of c.bl) b.h = 0; c.tmpH = 0; c.diag = 1; c.pre = 1;
+  for (const sl of c2Slots(c)) { if (sl.id === "goal") continue; c.plan[sl.id] = (N.cards || []).filter((id) => C2CARD[id]?.slot === sl.id && c2.cards[id] && c2Usable(c, C2CARD[id])).slice(0, sl.cap[c.tier]); }
+}
+// 그 고객에게 쓰는 칸 · 그 칸에 쓸 수 있는 카드
+export const c2Slots = (c) => (c.f === "public" ? C2D.SLOTS_PUB : C2D.SLOTS).filter((sl) => (sl.cap[c.tier] || 0) > 0);
+export function c2Usable(c, cd) { if (cd.f === "pub" && c.f !== "public") return false; if (cd.f === "biz" && c.f === "public") return false; if (cd.f === "move" && c.f !== "move") return false; if (cd.only && c.co !== cd.only) return false; return true; }
+export const c2Hand = (s, c, slot) => C2D.CARDS.filter((cd) => cd.slot === slot && c2of(s).cards[cd.id] && c2Usable(c, cd));
+const c2Lv = (c2, id) => { const w = c2.cards[id]?.w || 0; return 1 + (w >= B2.lvAt[0] ? 1 : 0) + (w >= B2.lvAt[1] ? 1 : 0); };
+function c2PlanCards(c, assume) { const res = c.per ?? assume ?? "ok", out = []; for (const [slot, ids] of Object.entries(c.plan)) for (const id of ids || []) { const cd = C2CARD[id]; if (!cd) continue; if (slot === "goal" && cd.per !== undefined && res === "fail") continue; out.push(cd); } return out; }
+// 설득 결과에 따른 실제 목표(mix: 절반만 넘어왔다)
+export function c2Target(c, assume) {
+  const g = (c.plan.goal || []).map((id) => C2CARD[id]).find((x) => x && x.to), res = c.per ?? assume ?? "ok";
+  if (!g || res === "fail") return { co: c.co, job: c.job, mix: 0 };
+  let co = c.co, job = c.job;
+  if (g.to === "down") co = (c.f === "public" ? C2D.ORGS : C2D.COS)[c.co].down; else if (g.to === "aff") co = c.co === "hq" ? "aff" : c.co; else if (g.to === "job") job = C2D.JOBS[c.job].comp > 0 ? "buy" : "sales";
+  return { co, job, mix: res === "half" ? 1 : 0 };
+}
+const c2NoteKey = (c, T) => (c.f === "public" ? "org:" + T.co : c.tier === "mini" ? "mini:" + c.co : T.co + ":" + T.job);
+// 지원 깔때기 계산. known: 내가 아는 것만으로(가려진 막힌 곳은 뺀다, 화면 미리보기) · assume: 설득 결과를 이렇게 가정
+export function c2Eval(s, c, o = {}) {
+  const c2 = c2of(s), pub = c.f === "public", mini = c.tier === "mini", cards = c2PlanCards(c, o.assume), tags = new Set(cards.flatMap((x) => x.tags)), T = c2Target(c, o.assume), E = B2.eff;
+  const eff = clamp(E[0] + E[1] * skill(s) / B2.need[c.tier], E[2], E[3]) * (c2.notes[c2NoteKey(c, T)]?.win ? 1 + B2.note : 1);
+  const bls = c.bl.filter((b) => !(o.known && b.h)), has = (slot) => (c.plan[slot] || []).length > 0, left = [];
+  const resid = (k) => { const fx = cards.filter((cd) => cd.tags.some((t) => C2D.BLOCKS[k].fix.includes(t))); return fx.length ? 1 - B2.lvFix[Math.max(...fx.map((cd) => c2Lv(c2, cd.id))) - 1] : 1; };
+  const pen = (at) => bls.reduce((a, b) => { const BL = C2D.BLOCKS[b.k]; if (BL.at !== at && !(BL.at === "both" && (at === "doc" || at === "int"))) return a; const rs = resid(b.k); if (rs >= 1 && !left.includes(b.k)) left.push(b.k); return a * (1 - BL.pen * rs); }, 1);
+  const want = pub ? [C2D.ORGS[T.co].iv, "jdmatch", "blind"] : [...C2D.COS[T.co].want, C2D.JOBS[T.job]?.want].filter(Boolean);
+  const mOf = (slots) => Math.min(B2.matchMax, new Set(cards.filter((cd) => slots.includes(cd.slot)).flatMap((cd) => cd.tags).filter((t) => want.includes(t))).size);
+  const nfX = c.nf ? (tags.has("newform") ? 0.85 + 0.15 * Math.min(1, formStat(s).a / CS_CH.form.target) : B2.nf) : 1, coldX = c.cold ? B2.cold : 1, TB = B2.taboo, O = B2.ops;
+  const blank = c.bl.some((b) => b.k === "blank" && !(o.known && b.h)), tmp = o.known && c.tmpH ? null : C2D.TEMPERS[c.tmp];
+  let intP = (B2.intBase + B2.intSpec * (c.spec - 3)) * pen("int") * (1 + B2.match * eff * mOf(["int", "mind"])) * (has("int") ? 1 : B2.empty) * (tags.has("pressure") ? (blank ? TB.press : TB.pressOk) : 1) * (tmp?.weak && tags.has(tmp.weak) ? TB.script : 1) * (tags.has("calm") ? TB.calm : 1) * (c.nf && !mini ? (tags.has("aiint") ? 1.05 : 0.95) : 1) * (c.f !== "move" && !tags.has("aiint") ? 1 - B2.ai.int * c2AiG(s) : 1);
+  intP = clamp(intP, 0.02, 0.8);
+  const ghost = tmp?.need && !tags.has(tmp.need), missX = Math.max(0.4, 1 - O.miss * (c.miss || 0));
+  if (mini) { const apps = c.nint || 1, p = Math.min(B2.pMax, 1 - Math.pow(1 - intP, apps)); return { mini: 1, apps, docP: 1, wr: 1, intP, p, eff, left, T, exp: [apps, apps, apps * intP] }; }
+  let apps, docP, wr = 1;
+  if (pub) {
+    const OG = C2D.ORGS[T.co], pall = c.bl.some((b) => b.k === "pall" && !(o.known && b.h)) && resid("pall") >= 1;
+    apps = (B2.pubApps + (tags.has("orgpick") ? 1 : 0) + (pall ? 3 : 0)) * (ghost ? O.ghost : 1) * missX;
+    docP = clamp(B2.pubDoc * pen("doc") * (1 + B2.match * eff * mOf(["diag", "goal", "doc"])) * (has("doc") ? 1 : B2.empty), 0.03, 0.9);
+    const boost = eff * ((tags.has("ncs") ? 0.8 : 0) + (tags.has("ncs2") ? 0.6 : 0) + (tags.has("speed") ? (OG.w === "psat" ? 0.8 : 0.3) : 0) + (tags.has("major") && OG.w === "major" ? 0.9 : 0));
+    let base = c2Interp(B2.wrBase, OG.bar - c.spec - boost + (OG.w === "major" && !tags.has("major") ? 0.5 : 0));
+    if (T.mix) base = B2.per.mix * base + (1 - B2.per.mix) * c2Interp(B2.wrBase, C2D.ORGS[c.co].bar - c.spec - boost);
+    wr = clamp(base * pen("wr") * (has("ncs") ? 1 : B2.empty) * coldX, 0.01, 0.85);
+  } else {
+    const PP = C2D.PEOPLE[c.pk];
+    let base = c2Interp(B2.docBase, c2Gap(T.co, T.job, c.spec)); if (T.mix) base = B2.per.mix * base + (1 - B2.per.mix) * c2Interp(B2.docBase, c2Gap(c.co, c.job, c.spec));
+    docP = clamp(base * pen("doc") * (1 + B2.match * eff * mOf(["diag", "goal", "doc", "ops"])) * (has("doc") ? 1 : B2.empty) * nfX * coldX * (tags.has("volume") && !ghost ? O.volDoc : 1) * (tags.has("ref") ? O.refDoc : 1) * (c.f !== "move" && !tags.has("deai") ? 1 - B2.ai.doc * c2AiG(s) : 1), 0.005, 0.8);
+    apps = PP.apps * pen("apps") * (tags.has("volume") && !ghost ? O.volume : 1) * (tags.has("season") ? O.season : 1) * (tags.has("deadline") ? O.deadline : 1) * (ghost ? O.ghost : 1) + (tags.has("open") ? O.open : 0) + (tags.has("hunter") ? O.hunter : 0) + (tags.has("ref") ? O.ref : 0);
+    apps = Math.min(O.max, apps * missX);
+  }
+  apps = Math.max(1, apps);
+  const p = Math.min(B2.pMax, 1 - Math.pow(1 - docP * wr * intP, apps));
+  return { pub: pub ? 1 : 0, apps, docP, wr, intP, p, eff, left, T, exp: pub ? [apps, apps * docP, apps * docP * wr, apps * docP * wr * intP] : [apps, apps * docP, apps * docP * intP] };
+}
+// 설득 확률(목표를 바꾸는 카드를 넣었을 때만). null 이면 설득이 필요 없다
+export function c2PerP(s, c) {
+  const g = (c.plan.goal || []).map((id) => C2CARD[id]).find((x) => x && x.per !== undefined); if (!g) return null;
+  const P = B2.per, c2 = c2of(s), tags = new Set(Object.values(c.plan).flat().flatMap((id) => C2CARD[id]?.tags || [])), T = C2D.TEMPERS[c.tmp], tgt = c2Target(c, "ok");
+  const noteCo = Object.entries(c2.notes).some(([k, n]) => n.win && (k.startsWith(tgt.co + ":") || k === "org:" + tgt.co));
+  const p = P.base + (s.st.talk - P.talk[0]) / P.talk[1] + P.trust * Math.min(1, s.cs.trust || 0) - g.per + (tags.has("rate") ? P.rate : 0) + (noteCo ? P.note : 0) + (T.want && tags.has(T.want) ? 0 : T.per)
+    + (c.pk === "parent" ? (tags.has("family") ? P.family : P.parent) : 0) + (c.cold ? P.cold : 0) + (c.retry ? P.retry : 0) + (c.back ? 0.1 : 0) - (noteCo ? 0 : B2.ai.per * c2AiG(s));
+  return clamp(p, P.min, P.max);
+}
+function c2Drop(s, c) { const c2 = c2of(s); c2.cases = c2.cases.filter((x) => x !== c); if (c2.ui.id === c.id) c2.ui.id = 0; }
+function c2Refund(s, c, frac) { const cs = s.cs, c2 = c2of(s), back = Math.round(c.fee * frac); if (back <= 0) return 0; s.cash -= back; addMoney(s, "exp", "환불", back); cs.monthRev -= back; cs.refunds = (cs.refunds || 0) + 1; cs.refundAll = (cs.refundAll || 0) + 1; c2.st.ref += back; return back; }
+const c2Who = (c) => `${C2D.FIELDS[c.f].n} ${C2D.TIER_N[c.tier]} 고객(${C2D.PEOPLE[c.pk].n})`;
+// 진단: 진단 칸의 카드를 쓴다. 가려진 것이 드러난다. 직설 카드를 팩트를 못 견디는 사람에게 쓰면 떠난다
+function c2Diag(s, c) {
+  if (c.diag) return { ok: false, msg: "이미 진단했어요" };
+  const ids = c.plan.diag || [], cds = ids.map((id) => C2CARD[id]).filter(Boolean), ap = cds.reduce((a, x) => a + (x.ap || 0), 0);
+  if (!cds.length) return { ok: false, msg: "진단 칸에 카드를 넣어요" };
+  if ((s.ap || 0) < ap) return { ok: false, msg: "행동력이 부족해요" };
+  s.ap -= ap;
+  const T = C2D.TEMPERS[c.tmp], soft = (c.plan.mind || []).some((id) => C2CARD[id]?.tags.includes("soft"));
+  if (T.taboo && cds.some((x) => x.tags.includes(T.taboo)) && !soft) {
+    const back = c2Refund(s, c, B2.fail.leave); s.cs.reviews = Math.max(0, s.cs.reviews - B2.fail.rev); c2of(s).st.left++; c2Drop(s, c); s.mental = Math.max(0, s.mental - 3);
+    log(s, `${c2Who(c)}이 상담 도중 떠났다.`, "work");
+    return { ok: true, gone: 1, msg: `"그런 말 들으려고 온 게 아니에요." ${T.n}이었어요. 고객이 떠났어요. 환불 −${won(back)} · 후기 −${B2.fail.rev}` };
+  }
+  const out = []; let n = 0;
+  for (const cd of cds) for (const rv of cd.rev || []) {
+    if (rv === "tmp") { if (c.tmpH) { c.tmpH = 0; out.push(`성향: ${T.n}`); } continue; }
+    for (const b of c.bl) { if (!b.h) continue; const at = C2D.BLOCKS[b.k].at; if (rv === "bl" || (rv === "bl1" && n === 0) || (rv === "int" && ["int", "both"].includes(at)) || (rv === "doc" && ["doc", "both", "apps"].includes(at)) || (rv === "wr" && at === "wr")) { b.h = 0; n++; out.push(`막힌 곳: ${C2D.BLOCKS[b.k].n}`); } }
+  }
+  c.diag = 1;
+  return { ok: true, msg: out.length ? `진단: ${out.join(" · ")}` : "진단: 새로 드러난 것은 없어요" };
+}
+// 전략 확정: 진단(아직이면) → 눈높이 설득 판정 → 결과 달까지 그대로 간다
+function c2Go(s, c) {
+  if (c.set) return { ok: false, msg: "이미 전략을 정했어요. 결과가 나오거나 전형이 바뀌면 다시 짜요" };
+  const need = c2Slots(c).filter((sl) => sl.id !== "diag" && sl.id !== "mind" && !(c.plan[sl.id] || []).length);
+  if (need.length && !c.auto) return { ok: false, msg: `빈 칸이 있어요: ${need.map((x) => x.n).join(" · ")}` };
+  if (!c.diag) { if ((c.plan.diag || []).length) { const d = c2Diag(s, c); if (!d.ok || d.gone) return d; } else c.diag = 1; }
+  const p = c2PerP(s, c); let msg = "전략을 정했어요. 결과 달까지 달마다 상담만 챙기면 돼요";
+  if (p != null) {
+    const g = (c.plan.goal || []).map((id) => C2CARD[id]).find((x) => x && x.per !== undefined), u = R(s).next();
+    c.per = u < p ? "ok" : u < p + B2.per.half ? (g.to ? "half" : "ok") : "fail";
+    const T = c2Target(c), nm = c.f === "public" ? C2D.ORGS[T.co].n : `${C2D.COS[T.co].n} ${C2D.JOBS[T.job].n}`;
+    msg = c.per === "ok" ? `설득 성공: "${g.to ? nm + "부터 넣어 볼게요" : "해 볼게요"}." 전략대로 가요` : c.per === "half" ? `절반만 넘어왔어요: "원래 가려던 곳도 몇 곳은 넣을게요."` : `설득 실패: "그래도 저는 원래대로 할래요." 「${g.n}」 없이 가요. 떨어지면 환불 요구가 올 수 있어요`;
+    if (c.per === "fail") s.mental = Math.max(0, s.mental - 1);
+  }
+  c.set = 1; c.setT = s.t; c.replan = 0; c.auto = 0;
+  return { ok: true, msg };
+}
+// 화면 버튼(data-cspol="c2:…")
+function c2Do(s, a) {
+  const c2 = c2of(s), [op, x, y, z] = a, c = c2.cases.find((q) => q.id === +x);
+  if (op === "open") { c2.ui.id = c2.ui.id === +x ? 0 : +x; return { ok: true, msg: "" }; }
+  if (op === "chopen" || op === "chtend") return c2ChanDo(s, op, x);
+  if (op === "lect") return c2LectDo(s, x, y === "1");
+  if (op === "pm") { // 오토 ↔ 직접 정하기. 직접으로 바꾸는 순간에는 오토가 잡고 있던 값에 가장 가까운 칸에서 시작한다
+    const man = x === "1"; if (man === !c2IsAuto(s)) return { ok: true, msg: "" };
+    if (man) { const snap = (f, tr) => { const a0 = c2AutoP(s, f, tr); let bi = 0, bd = 1e9; for (let i = 0; i < 5; i++) { const dv = Math.abs(c2StepP(f, tr, i) - a0); if (dv < bd) { bd = dv; bi = i; } } c2.topP[c2PKey(f, tr)] = bi; }; snap("essay", "light"); for (const f of C2D.STRAT) for (const tr of c2Tiers(f)) snap(f, tr); c2.pMan = 1; }
+    else delete c2.pMan;
+    return { ok: true, msg: man ? "이제 값을 직접 정해요. 잘 맞추면 오토보다 더 벌고, 잘못 부르면 덜 벌어요." : "값을 오토에 맡겼어요. 시세보다 조금 낮게, 보수적으로 잡아요." };
+  }
+  if (op === "pr") { // 내 가격: 행동력 0, 한 달에 한 번
+    const tier = y, i = clamp(+z || 0, 0, 4), key = c2PKey(x, tier); if (c2IsAuto(s) || (tier !== "light" && !C2D.FIELDS[x]?.price?.[tier])) return { ok: false, msg: "" };
+    c2.pT = c2.pT || {}; if ((c2.topP[key] ?? 2) === i) return { ok: true, msg: "" }; if (c2.pT[key] === s.t) return { ok: false, msg: "값은 한 달에 한 번만 바꿀 수 있어요. 다음 달에 다시 정해요." };
+    c2.topP[key] = i; c2.pT[key] = s.t; const dm = c2Dem(s, x, tier);
+    return { ok: true, msg: `${tier === "light" ? "자기소개서·면접" : C2D.FIELDS[x].n + " " + C2D.TIER_N[tier]} 값을 시세의 ${Math.round(dm.q0 * 100)}%로 정했어요${dm.d <= 0 ? ". 이 값이면 문의가 끊겨요" : ""} (이번 달부터 들어오는 고객에게 적용)` };
+  }
+  if (op === "view") { c2.ui[x] = c2.ui[x] ? 0 : 1; return { ok: true, msg: "" }; }
+  if (op === "sell") { const k = c2Key(x, y); c2.sell[k] = c2.sell[k] === 0 ? 1 : 0; return { ok: true, msg: `${C2D.FIELDS[x]?.n || ""} ${C2D.TIER_N[y] || ""}: ${c2.sell[k] === 0 ? "받지 않음" : "받음"}` }; }
+  if (op === "top") { if (!C2D.FIELDS[x]?.price) return { ok: false, msg: "" }; c2.topP[x] = clamp(+y || 0, 0, 4); return { ok: true, msg: `${C2D.FIELDS[x].n} 최고가: ${won(Math.round(c2Price(s, x, "top") * SYN.pi(s)))} (이번 달부터 들어오는 고객에게 적용)` }; }
+  if (op === "off") { c2.off = c2.off ? 0 : 1; return { ok: true, msg: c2.off ? "사람별 전략 상품을 받지 않아요. 가벼운 상품만 팔아요" : "사람별 전략 상품을 다시 받아요" }; }
+  if (!c) return { ok: false, msg: "" };
+  if (op === "pick") {
+    if (c.set) return { ok: false, msg: "이미 정한 전략이에요" }; if (y === "diag" && c.diag) return { ok: false, msg: "진단은 이미 했어요" };
+    const sl = c2Slots(c).find((q) => q.id === y), cd = C2CARD[z]; if (!sl || !cd || cd.slot !== y || !c2.cards[z] || !c2Usable(c, cd)) return { ok: false, msg: "" };
+    const L = (c.plan[y] = c.plan[y] || []); if (L.includes(z)) L.splice(L.indexOf(z), 1); else { L.push(z); while (L.length > sl.cap[c.tier]) L.shift(); }
+    return { ok: true, msg: "" };
+  }
+  if (op === "diag") return c2Diag(s, c);
+  if (op === "go") return c2Go(s, c);
+  return { ok: false, msg: "" };
+}
+// 방법론 카드 얻기: 사는 것이 아니라 쌓는 것(합격·불합격 사례, 강의, 블로그, 템플릿, 새 전형 연구)
+function c2Cards(s, notes) {
+  const cs = s.cs, c2 = cs.c2, got = [];
+  for (const cd of C2D.CARDS) {
+    if (c2.cards[cd.id]) continue; const g = cd.get || {};
+    const ok = g.start || (g.pass && (cs.passes || 0) >= g.pass) || (g.sp && (c2.spAll || 0) >= g.sp) || (g.fail && (cs.fails || 0) >= g.fail) || (g.lect && (cs.lectN || 0) >= g.lect) || (g.blog && cs.ch.blog.posts >= g.blog) || (g.tmpl && cs.template >= g.tmpl) || (g.form && (cs.form?.a || 0) >= g.form) || (g.career && cs.niches.includes("career")) || (g.pub && cs.niches.includes("public")) || (g.rev && cs.reviews >= g.rev);
+    if (ok) { c2.cards[cd.id] = { w: 0, t: s.t }; if (!g.start) got.push(cd.n); }
+  }
+  if (notes && got.length) notes.push(got.length <= 3 ? `컨설팅: 방법론 카드 ${got.map((n) => `「${n}」`).join(" ")}${got.length > 1 ? "을" : ""} 얻었어요` : `컨설팅: 방법론 카드 ${got.length}장을 얻었어요(「${got[0]}」 등)`);
+}
+// 달마다 상담: 처리 용량에서 전략 고객 몫을 먼저 쓴다
+export const c2Due = (s) => D.CS2_ON && !!s.cs.c2 && s.cs.c2.cases.some((c) => !c.up);
+function c2Upkeep(s, cap) { let n = 0; for (const c of c2of(s).cases) { if (c.up) continue; const u = B2.units[c.tier]; if (cap >= u || (n === 0 && cap > 0)) { cap = Math.max(0, cap - u); c.up = 1; n++; } } return { cap, n }; }
+function c2Coach(s, coach, notes) { const c2 = c2of(s); let n = 0; for (const c of c2.cases) { if (c.up || !c.set) continue; const u = B2.units[c.tier]; if (coach >= u && c2.notes[c2NoteKey(c, c2Target(c))]?.win) { coach -= u; c.up = 1; n++; } } if (n) notes.push(`공동 코치가 전략 고객 ${n}명의 이번 달 상담을 맡았어요(합격 사례집에 있는 조합만)`); return coach; }
+// 달 마감: 카드 · 관문 · 못 챙긴 상담 · 결과 달이 된 고객의 지원 깔때기
+function c2Month(s, r, notes, scenes, lightPass = 0) {
+  const cs = s.cs, c2 = c2of(s); let pass = 0, fail = 0;
+  if (!cs.open) return { pass, fail };
+  c2AutoTick(s); c2ChanTick(s, notes, scenes); c2FullTick(s); c2Cards(s, notes); c2Latch(s, notes, scenes); c2AiScene(s, notes, scenes); undMonth(s, lightPass, notes, scenes);
+  let auto = 0, miss = 0;
+  for (const c of c2.cases) {
+    if (!c.set && s.t - (c.retryT ?? c.t0) >= B2.auto) { c.auto = 1; c.diag = 1; c.set = 1; c.setT = s.t; c.per = null; auto++; }
+    if (!c.up) { c.miss = (c.miss || 0) + 1; miss++; }
+    c.up = 0; if (c.tmpH && s.t - c.t0 >= 2) c.tmpH = 0; // 두 달 지내 보면 성향은 드러난다
+  }
+  if (auto) notes.push(`컨설팅: 전략을 못 짠 고객 ${auto}명은 기본 상담만으로 가요(합격 가능성이 낮아요)`);
+  if (miss) notes.push(`컨설팅: 이번 달 상담을 못 챙긴 전략 고객 ${miss}명(지원 수가 줄어요)`);
+  for (const c of c2.cases.filter((q) => q.due <= s.t && q.set)) { const w = c2Resolve(s, r, c, notes); if (w > 0) pass++; else if (w < 0) fail++; }
+  return { pass, fail };
+}
+function c2Resolve(s, r, c, notes) {
+  const cs = s.cs, c2 = c2of(s), ev = c2Eval(s, c), bin = (n, p) => { let k = 0; for (let i = 0; i < n; i++) if (r.chance(p)) k++; return k; }, F = B2.fail, W = B2.win, T = ev.T;
+  const apps = Math.max(1, Math.round(ev.apps)), d = ev.mini ? apps : bin(apps, ev.docP), w = ev.pub ? bin(d, ev.wr) : d, o = bin(w, ev.intP), key = c2NoteKey(c, T);
+  const fun = ev.mini ? `면접 ${apps}곳 → 합격 ${o}` : ev.pub ? `지원 ${apps} → 서류 ${d} → 필기 ${w} → 합격 ${o}` : `지원 ${apps} → 서류 ${d} → 합격 ${o}`;
+  const where = c.f === "public" ? C2D.ORGS[T.co].n : c.tier === "mini" ? C2D.COS[T.co].n : `${C2D.COS[T.co].n} ${C2D.JOBS[T.job].n}`, MK = CS_F30.mask[cs.mask || "name"] || CS_F30.mask.name;
+  const N = (c2.notes[key] = c2.notes[key] || { n: 0, win: 0, f: c.f }); N.n++;
+  c2.log.unshift({ t: s.t, f: c.f, tier: c.tier, pk: c.pk, where, fun, win: o >= 1 ? 1 : 0, per: c.per }); if (c2.log.length > 8) c2.log.pop();
+  if (o >= 1) {
+    cs.passes++; c2.st.win++; if (c.tier !== "mini") { c2.spAll = (c2.spAll || 0) + 1; c2.sp[c.f] = (c2.sp[c.f] || 0) + 1; }
+    N.win++; N.t = s.t; N.cards = Object.values(c.plan).flat().filter((id) => C2CARD[id]); for (const id of N.cards) if (c2.cards[id]) c2.cards[id].w = (c2.cards[id].w || 0) + 1;
+    if (c.cold) coldCnt(s, 1, 0); if (c.nf) formGain(s, CS_CH.form.passGain); gainStat(s, "career", 0.15, "cs_pass");
+    { const U = B2.und, hard = c.f === "public" || c.tier === "mini" ? 0 : Math.max(0, c2Gap(c.co, c.job, c.spec)); undAdd(s, U.win[c.tier] * (1 + U.gap * Math.min(3, hard)) * (c.cold ? U.cold : 1) * (N.win === 1 ? U.first : 1)); }
+    if (r.chance(0.8)) cs.reviews += MK.rev * W.rev[c.tier];
+    cs.refer = Math.min(CS_BAL.refMax, cs.refer + W.refer * mod(s, "referMult", 1)); if (W.fame[c.tier]) s.fame = clamp((s.fame || 0) + W.fame[c.tier], 0, 100);
+    if (c.f === "total" && r.chance(W.backP)) c2.back.push({ t: s.t + r.int(W.back[0], W.back[1]), side: (c.plan.goal || []).includes("g_side") && c.per === "ok" ? 1 : 0 });
+    notes.push(`${c2Who(c)} 합격! ${where} · ${fun}${N.win === 1 ? " · 합격 사례집에 새 장" : ""}${c.per === "ok" && c.bl.some((b) => b.k === "high") ? " · 눈높이를 옮긴 것이 통했어요" : ""}`);
+    c2Drop(s, c); return 1;
+  }
+  cs.fails++; c2.st.lose++; if (c.cold) coldCnt(s, 0, 1); cs.reviews += 0.15;
+  const quitLeft = c.bl.some((b) => b.k === "quitfirst") && ev.left.includes("quitfirst");
+  let line = `${c2Who(c)} 전부 탈락. ${where} · ${fun}`;
+  if (c.g && CS_F30.guar[c.g]?.back) { const back = c2Refund(s, c, Math.min(1, CS_F30.guar[c.g].back * (c.cold ? 1 + CS_CH.cold.guarUp * CS_CH.k : 1))); cs.gRef += back; cs.gRefN++; cs.gRefAll = (cs.gRefAll || 0) + back; line += ` · 합격 보장 환불 −${won(back)}`; c2Drop(s, c); notes.push(line); return -1; }
+  const pr = F.ref + (c.per === "fail" ? F.perFail : 0) + F.tier[c.tier] + (quitLeft ? F.quitRef : 0) + Math.max(0, (c.q || 1) - 1) * B2.dem.exp + (c.tier === "std" ? B2.ai.ref * c2AiG(s) : 0) + (c.cold ? Math.min(0.6, CS_CH.cold.failRef * CS_CH.k) : 0) + (c.auto ? 0.15 : 0);
+  if (r.chance(Math.min(0.9, pr))) {
+    const bk = F.back[c.tier], back = c2Refund(s, c, Array.isArray(bk) ? r.range(bk[0], bk[1]) : bk); cs.reviews = Math.max(0, cs.reviews - F.rev * (1 + Math.max(0, (c.q || 1) - 1) * B2.dem.expRev)); s.mental = Math.max(0, s.mental - (c.tier === "top" ? 5 : 3));
+    if (c.cold) { cs.coldRefN = (cs.coldRefN || 0) + 1; cs.coldRefAll = (cs.coldRefAll || 0) + back; }
+    line += ` · 환불 요구 −${won(back)}${c.per === "fail" ? "(원하는 대로만 넣고 떨어진 뒤예요)" : ""}`; c2Drop(s, c); notes.push(line); return -1;
+  }
+  if (!c.retry && c.tier !== "mini" && r.chance(F.retry)) { // 무료 재도전: 자리는 그대로 차지하고, 전략을 다시 짠다
+    c.retry = 1; c.retryT = s.t; c.set = 0; c.per = null; c.auto = 0; c.miss = 0; c.up = 1; c.cold = coldOn(s) && c.f !== "move" ? 1 : 0; c.due = c2DueT(s, r, c.f, c.co, c.tier); for (const b of c.bl) b.h = 0; c.tmpH = 0;
+    if (c.plan.goal) c.plan.goal = []; line += " · 다음 시즌에 다시 해 보기로 했어요(전략을 다시 짜요)"; notes.push(line); return -1;
+  }
+  c2Drop(s, c); notes.push(line); return -1;
+}
+function c2Todos(s, t) {
+  const c2 = s.cs.c2; if (!c2 || !s.cs.open) return;
+  const need = c2.cases.filter((c) => !c.set).length, up = c2.cases.filter((c) => !c.up && c.set).length;
+  if (need) t.push({ lv: 2, text: `합격 전략을 짜야 하는 고객 ${need}명(미루면 기본 상담만으로 가요)`, go: "cs" });
+  if (up) t.push({ lv: 1, text: `전략 고객 ${up}명 이번 달 상담(고객 첨삭·코칭 버튼)`, go: "cs" });
+}
+// 판 변화(wave.js)가 읽는 것: 길 A = 사람별 전략(종합·이직·공기업)으로 올라간 사람
+export const c2PathA = (s) => !!s.cs?.c2 && Object.keys(s.cs.c2.open).length > 0 && !s.cs.c2.off;
+export function c2Wave(s) {
+  const g = c2Gate(s, "total", "std"), on = c2PathA(s), G = B2.gate.std;
+  return { on, a: `(길 A 사람별 전략: 종합·이직·공기업 문의는 줄지 않아요. 종합컨설팅은 글쓰기나 말빨 ${G.stat}·업의 이해도 ${G.und}부터 열려요. ${on ? "이미 열었어요" : g.why.length ? `모자란 것: ${g.why.join(" · ")}` : "곧 열려요"})`,
+    b: "(길 B 면접 전문: 면접 문의가 줄지 않고, 면접 프리미엄(간이 전략)을 동시에 " + B2.pathB + "명 더 맡아요. 다만 면접에는 최고가가 없어요",
+    text: "취준생 열에 아홉이 AI로 자소서를 쓴다. 기업은 AI로 서류를 거른다. 커뮤니티에는 \"첨삭 받을 돈으로 구독료 낸다\"는 글이 돈다. 자소서 첨삭은 해마다 줄어들 판이다. 사람 손이 끝까지 남는 곳은 사람마다 전략을 짜 주는 일이다. 어디에 넣어야 붙는지, 그걸 어떻게 납득시키는지. 강의는 당분간 버팀목이 된다.",
+    ch0: ["사람별 전략 쪽으로 올라갈 준비를 한다", "합격 사례를 다시 정리했다. 누가 어디에 어떻게 붙었는지. 이건 AI가 대신 못 한다."], bDone: "면접 전문으로 자리 잡았어요. 면접 문의는 AI 대세에도 줄지 않고, 면접 프리미엄을 " + B2.pathB + "명 더 맡아요" };
+}
+// 봇·시험용: 성실하지만 완벽하지 않은 전략(err: 칸마다 엉뚱한 카드를 고를 확률). rnd: 0~1 난수 함수
+export function c2BotPlan(s, c, rnd, err = 0.15) {
+  if (c.set) return null; const c2 = c2of(s), pickBest = (slot, cap) => {
+    const hand = c2Hand(s, c, slot).filter((cd) => slot !== "goal" || cd.per === undefined || true); c.plan[slot] = [];
+    for (let i = 0; i < cap; i++) {
+      const rest = hand.filter((cd) => !c.plan[slot].includes(cd.id)); if (!rest.length) break;
+      let best = null, bv = -1;
+      if (rnd() < err) best = rest[Math.floor(rnd() * rest.length)];
+      else for (const cd of rest) { c.plan[slot].push(cd.id); let v = c2Eval(s, c, { known: true, assume: "ok" }).p; if (slot === "goal" && cd.per !== undefined) { const pp = c2PerP(s, c) ?? 1; v = pp * v + (1 - pp) * c2Eval(s, c, { known: true, assume: "fail" }).p - 0.02; } c.plan[slot].pop(); if (v > bv + 1e-9) { bv = v; best = cd; } }
+      if (!best) break; if (i > 0 && rnd() >= err) { const cur = c2Eval(s, c, { known: true, assume: "ok" }).p; if (bv <= cur + 0.002) break; } c.plan[slot].push(best.id);
+    }
+  };
+  if (!c.diag) { // 진단: 드러내 주는 카드를 먼저(행동력이 되면). 직설 카드는 성향을 알 때만 피한다
+    const T = C2D.TEMPERS[c.tmp], hand = c2Hand(s, c, "diag").filter((cd) => (cd.ap || 0) <= (s.ap || 0)), cap = c2Slots(c).find((x) => x.id === "diag")?.cap[c.tier] || 0;
+    const sc = (cd) => (cd.rev || []).length * 2 + (cd.tags.includes("rate") ? 1.5 : 0) - (cd.tags.includes("blunt") ? (!c.tmpH && T.taboo === "blunt" ? 99 : 1.2) : 0) + rnd() * 0.5;
+    c.plan.diag = hand.sort((a, b) => sc(b) - sc(a)).slice(0, cap).filter((cd) => sc(cd) > -50).map((cd) => cd.id);
+    if (!c.tmpH && T.taboo === "blunt" && c2.cards.m_soft) c.plan.mind = ["m_soft"];
+    const d = (c.plan.diag || []).length ? c2Diag(s, c) : (c.diag = 1, { ok: true }); if (d.gone) return d;
+  }
+  for (const sl of c2Slots(c)) { if (sl.id === "diag") continue; pickBest(sl.id, sl.cap[c.tier]); }
+  for (const sl of c2Slots(c)) if (sl.id !== "diag" && sl.id !== "mind" && !(c.plan[sl.id] || []).length) { const h = c2Hand(s, c, sl.id)[0]; if (h) c.plan[sl.id] = [h.id]; else c.auto = 1; }
+  return c2Go(s, c);
+}
+// ── 화면(ui.js pgCS 맨 위에 붙는다). 모든 버튼은 data-cspol="c2:…" → setPolicy ──
+export function c2Top(S, esc, wonF) {
+  if (!D.CS2_ON || !S.cs.open) return ""; const cs = S.cs, c2 = c2of(S), pi = SYN.pi(S), W = (v) => wonF(Math.round(v * pi)), full = BIG.isFull(S);
+  const b = (key, html, cls = "", dis = false) => `<button class="${cls}" data-cspol="c2:${key}"${dis ? " disabled" : ""}>${html}</button>`;
+  const tagN = (t) => `<span class="tag ${C2D.RISK.includes(t) ? "red" : ""}">${esc(C2D.TAGS[t] || t)}</span>`, pct = (x) => (x < 0.1 ? (x * 100).toFixed(1) : Math.round(x * 100)) + "%";
+  const stdG = c2Gate(S, "total", "std"), anyOpen = Object.keys(c2.open).length > 0, miniG = c2Gate(S, "interview", "mini");
+  const css = `<style>.row:has(> [data-cprice]),.row:has(> [data-cprice]) + .tiny{display:none}.c2s{display:flex;flex-direction:column;gap:6px}.c2s .sl{background:var(--panel2);border-radius:10px;padding:7px 8px}.c2s .sl>b{font-size:12.5px}.c2c{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:5px;margin-top:5px}.c2c button{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:6px 7px;text-align:left;font-size:12px;display:flex;flex-direction:column;gap:2px;min-width:0}.c2c button.on{border-color:var(--gold);background:rgba(245,192,78,.12)}.c2c button:disabled{opacity:.55}.c2l{display:flex;flex-direction:column;gap:4px}.c2l button{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 8px;text-align:left;font-size:12.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.c2l button.on{border-color:var(--gold)}.c2f{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center;margin-top:6px}.c2f div{background:var(--panel2);border-radius:10px;padding:6px 2px;min-width:0}.c2f .v{font-weight:900;font-size:15px}.c2f .k{font-size:11px;color:var(--muted)}.c2t{width:100%;border-collapse:collapse;font-size:12px}.c2t td{padding:4px 3px;border-top:1px solid var(--line);vertical-align:top}</style>`;
+  // ① 전략 고객
+  const capLine = (anyOpen ? ["std", "prem", "top"] : []).concat(miniG.ok || c2Cnt(c2, "mini") ? ["mini"] : []).map((t) => `<span class="tag">${C2D.TIER_N[t]} ${c2Cnt(c2, t)}/${c2Cap(S, t)}명${full ? "" : ` · 본업이면 ${c2Cap(S, t, true)}명까지`}</span>`).join(" ");
+  const left = (c) => Math.max(0, c.due - S.t), caseBtn = (c) => { const T = c2Target(c), want = c.f === "public" ? C2D.ORGS[c.co].n : c.tier === "mini" ? C2D.COS[c.co].n + " 면접" : `${C2D.COS[c.co].n} ${C2D.JOBS[c.job].n}`;
+    return b(`open:${c.id}`, `<b>${esc(C2D.FIELDS[c.f].n)} ${C2D.TIER_N[c.tier]}</b><span>${esc(C2D.PEOPLE[c.pk].n)} · ${esc(want)}</span><span class="tag ${!c.set ? "gold" : ""}">${!c.set ? (c.retry ? "재도전 · 전략 다시" : "전략 필요") : c.auto ? "기본 상담만" : `결과 ${left(c)}달 뒤`}</span>${c.set && !c.up ? `<span class="tag red">이번 달 상담 전</span>` : ""}`, c2.ui.id === c.id ? "on" : ""); };
+  const gateTxt = !anyOpen ? `<div class="tiny muted" style="margin-top:6px">종합컨설팅은 자기소개서·면접 합격 실적이 쌓이면 열려요. ${stdG.why.length ? `모자란 것: ${esc(stdG.why.join(" · "))}` : "다음 달에 열려요"}</div>` : "";
+  const waitN = c2.wait.length, lastLog = c2.log.slice(0, 3).map((L) => `<div class="tiny ${L.win ? "good" : "muted"}">${L.win ? "합격" : "탈락"} · ${esc(C2D.FIELDS[L.f].n)} ${C2D.TIER_N[L.tier]} · ${esc(L.where)} · ${esc(L.fun)}</div>`).join("");
+  const head = `<div class="card"><h3>사람별 합격 전략 <small>전략 고객 ${c2.cases.length}명${waitN ? ` · 대기 ${waitN}` : ""}</small></h3>
+    <div class="tiny muted">싼 상품은 지금처럼 가볍게 팔아요. 비싼 상품부터는 고객마다 막힌 곳과 눈높이를 읽고 전략을 짜요. 전략은 새 고객이 올 때와 떨어진 뒤에만 짜고, 평소 달은 [고객 첨삭·코칭] 한 번이면 돼요.</div>
+    ${capLine ? `<div class="row wrap" style="gap:4px;margin-top:6px">${capLine}</div>` : ""}${c2FullLine(S, esc)}${c2LectHtml(S, esc, wonF)}${gateTxt}
+    ${c2.cases.length ? `<div class="c2l" style="margin-top:8px">${c2.cases.map(caseBtn).join("")}</div>` : anyOpen ? `<div class="tiny muted" style="margin-top:6px">지금 맡은 전략 고객이 없어요. 문의는 값과 평판(합격 사례집·후기·명성)에 따라 와요.</div>` : ""}
+    ${lastLog ? `<div style="margin-top:6px">${lastLog}</div>` : ""}
+    <div class="row wrap" style="gap:6px;margin-top:8px">${b("view:shop", `상품과 가격 ${c2.ui.shop ? "▴" : "▾"}`, "btn sm")}${b("view:deck", `방법론 카드 ${Object.keys(c2.cards).length}/${C2D.CARDS.length} · 사례집 ${c2NoteN(c2)}장 ${c2.ui.deck ? "▴" : "▾"}`, "btn sm")}</div></div>`;
+  // ② 전략 짜기
+  let edit = ""; const c = c2.cases.find((q) => q.id === c2.ui.id);
+  if (c) {
+    const pub = c.f === "public", mini = c.tier === "mini", P = C2D.PEOPLE[c.pk], T = C2D.TEMPERS[c.tmp], CO = pub ? C2D.ORGS[c.co] : C2D.COS[c.co], tg = c2Target(c, "ok"), TC = pub ? C2D.ORGS[tg.co] : C2D.COS[tg.co];
+    const say = c.retry ? "\"이번에는 선생님 말대로 해 볼게요.\"" : pub ? `"${esc(CO.n)}만 준비하고 있어요."` : mini ? `"${esc(CO.n)} 면접이 ${c.nint}곳 잡혔어요."` : `"${esc(CO.n)} ${esc(C2D.JOBS[c.job].n)}만 넣을 거예요."`;
+    const chips = c.bl.map((x) => (x.h ? `<span class="tag">??? (아직 모름)</span>` : `<span class="tag ${x.k === "high" ? "red" : "gold"}">${esc(C2D.BLOCKS[x.k].n)}</span>`)).join(" ");
+    const ev = c2Eval(S, c, { known: true, assume: c.per ? undefined : "ok" }), evF = c.per ? null : c2Eval(S, c, { known: true, assume: "fail" }), pp = c.set ? null : c2PerP(S, c), note = c2.notes[c2NoteKey(c, tg)];
+    const wantTags = pub ? [CO.iv] : [...TC.want, C2D.JOBS[tg.job]?.want].filter(Boolean);
+    const slots = c2Slots(c).map((sl) => { const hand = c2Hand(S, c, sl.id), chosen = c.plan[sl.id] || [], lock = c.set || (sl.id === "diag" && c.diag);
+      const cardsH = lock ? (chosen.length ? chosen.map((id) => `<span class="tag gold">${esc(C2CARD[id].n)}</span>`).join(" ") : `<span class="tiny muted">비워 둠</span>`)
+        : `<div class="c2c">${hand.map((cd) => b(`pick:${c.id}:${sl.id}:${cd.id}`, `<b>${esc(cd.n)}${c2Lv(c2, cd.id) > 1 ? ` <span class="tiny gold">★${c2Lv(c2, cd.id)}</span>` : ""}</b><span class="tiny muted">${esc(cd.d)}</span><span>${cd.tags.map(tagN).join(" ")}${cd.ap ? ` <span class="tag">⚡${cd.ap}</span>` : ""}${cd.per !== undefined ? ` <span class="tag">설득 필요</span>` : ""}</span>`, chosen.includes(cd.id) ? "on" : "")).join("") || `<span class="tiny muted">이 칸에 쓸 카드가 아직 없어요</span>`}</div>`;
+      return `<div class="sl"><b>${esc(sl.n)}</b> <span class="tiny muted">카드 ${sl.cap[c.tier]}장까지${sl.id === "diag" && c.diag ? " · 진단함" : ""}</span>${lock ? `<div style="margin-top:4px">${cardsH}</div>` : cardsH}</div>`; }).join("");
+    const fn = ev.mini ? [["면접", ev.exp[0]], ["합격", ev.exp[2]]] : ev.pub ? [["지원", ev.exp[0]], ["서류", ev.exp[1]], ["필기", ev.exp[2]], ["면접 통과", ev.exp[3]]] : [["지원", ev.exp[0]], ["서류 통과", ev.exp[1]], ["면접 통과", ev.exp[2]]];
+    const funnel = `<div class="c2f" style="grid-template-columns:repeat(${fn.length + 1},1fr)">${fn.map(([k, v]) => `<div><div class="v">${v >= 10 ? Math.round(v) : v.toFixed(1)}</div><div class="k">${k}</div></div>`).join("")}<div><div class="v ${ev.p >= 0.5 ? "good" : ev.p < 0.2 ? "bad" : "gold"}">${pct(ev.p)}</div><div class="k">합격 가능성</div></div></div>`;
+    const hid = c.bl.some((x) => x.h) || c.tmpH;
+    const perLine = c.per ? `<div class="tiny ${c.per === "ok" ? "good" : c.per === "fail" ? "bad" : "gold"}" style="margin-top:4px">설득 ${c.per === "ok" ? "성공: 전략대로 가요" : c.per === "half" ? "절반: 원래 가려던 곳도 몇 곳 넣어요" : "실패: 본인이 원하는 대로만 넣어요"}</div>` : pp != null ? `<div class="tiny gold" style="margin-top:4px">설득이 필요해요 · 넘어올 확률 약 ${pct(pp)}${evF ? ` · 실패하면 합격 가능성 ${pct(evF.p)}` : ""}. 근거가 힘이 돼요: 통과율 숫자, 같은 회사 유형의 합격 사례, 쌓인 신뢰.</div>` : "";
+    edit = `<div class="card" style="border-color:var(--gold)"><h3>${esc(C2D.FIELDS[c.f].n)} ${C2D.TIER_N[c.tier]} <small>${wonF(c.fee)} · 결과 ${left(c)}달 뒤</small></h3>
+      <div class="small"><b>${esc(P.n)}</b> · 스펙 ${"★".repeat(Math.floor(c.spec))}${c.spec % 1 ? "☆" : ""} <span class="tiny muted">(${c.spec}/5)</span> · 성향 ${c.tmpH ? "???" : `<b>${esc(T.n)}</b>`}</div>
+      <div class="tiny muted" style="margin-top:2px">${say}${!c.tmpH ? ` · ${esc(T.d)}` : ""}</div>
+      <div class="row wrap" style="gap:4px;margin-top:6px">${chips}</div>
+      <div class="tiny muted" style="margin-top:6px">${pub ? `목표 기관: <b>${esc(TC.n)}</b> · 필기 ${esc(C2D.W_N[TC.w])} · 합격선 ${TC.bar}` : `목표: <b>${esc(TC.n)}${mini ? "" : " " + esc(C2D.JOBS[tg.job].n)}</b>${mini ? "" : ` · 요구 스펙 ${(TC.bar + C2D.JOBS[tg.job].comp).toFixed(1)}`}`} · ${esc(TC.tip)}</div>
+      ${wantTags.length ? `<div class="tiny muted" style="margin-top:2px">여기서 알아주는 것: ${wantTags.map(tagN).join(" ")}</div>` : ""}
+      ${c.nf ? `<div class="tiny bad" style="margin-top:2px">새 전형(과제·역량 검사·포트폴리오)이 낀 곳이에요. 새 전형 카드가 없으면 서류 통과율이 깎여요.</div>` : ""}${c.cold ? `<div class="tiny bad" style="margin-top:2px">채용 한파에 받은 고객이에요. 통과율이 내려가 있어요. 눈높이 설득은 조금 쉬워요.</div>` : ""}
+      ${note?.win ? `<div class="tiny good" style="margin-top:2px">합격 사례집: 이 조합 합격 ${note.win}번. 그때 쓴 카드: ${esc((note.cards || []).map((id) => C2CARD[id]?.n).filter(Boolean).join(" · "))}</div>` : ""}
+      <div class="c2s" style="margin-top:8px">${slots}</div>
+      ${funnel}<div class="tiny muted" style="margin-top:4px">${hid ? "가려진 것(???)이 있어 실제는 이보다 낮을 수 있어요. 진단 카드로 드러내요. " : ""}${ev.left.length ? `아직 못 푼 곳: ${esc(ev.left.map((k) => C2D.BLOCKS[k].n).join(" · "))}` : c.set ? "" : "드러난 막힌 곳은 다 풀었어요."}</div>${perLine}
+      ${c.set ? `<div class="tiny muted" style="margin-top:6px">${c.auto ? "전략 없이 기본 상담만으로 가고 있어요." : "전략을 정했어요."} 결과 달에 지원한 곳마다 서류·면접이 확률로 굴러가요.${c.miss ? ` 상담을 ${c.miss}달 못 챙겼어요.` : ""}</div>` : `<div class="row wrap" style="gap:6px;margin-top:8px">${!c.diag && (c.plan.diag || []).length ? b(`diag:${c.id}`, `진단하기${(c.plan.diag || []).reduce((a, id) => a + (C2CARD[id].ap || 0), 0) ? ` ⚡${(c.plan.diag || []).reduce((a, id) => a + (C2CARD[id].ap || 0), 0)}` : ""}`, "btn sm") : ""}${b(`go:${c.id}`, "전략 확정", "btn sm gold")}</div>`}</div>`;
+  }
+  // ③ 상품과 가격
+  let shop = "";
+  if (c2.ui.shop) {
+    const rep = c2Rep(S), lk = LP(S), lightBtn = (k, n) => `<button class="btn sm ${lk === k || (k === "mid" && lk === "mid") ? (lk === k ? "gold" : "") : ""}" data-cspol="p:${k}">${n}</button>`;
+    const row = (f) => { const F = C2D.FIELDS[f]; return `<tr><td><b>${esc(F.n)}</b></td><td>${c2Tiers(f).map((t) => { const g = c2Gate(S, f, t), open = c2.open[c2Key(f, t)] !== undefined, on = c2Sell(S, f, t);
+        if (!open) return `<div class="tiny muted">${C2D.TIER_N[t]} ${W(F.price[t][0])}~${W(F.price[t][4])} · 잠김: ${esc(g.why.join(" · ") || "다음 달에 열려요")}</div>`;
+        const M = c2Mkt(S, f, t), cur = c2PIdx(S, f, t), dm = c2Dem(S, f, t), lock = c2.pT?.[c2PKey(f, t)] === S.t, au = c2IsAuto(S);
+        return `<div style="margin-bottom:8px">${b(`sell:${f}:${t}`, `${C2D.TIER_N[t]} ${W(c2Price(S, f, t))} · ${on ? "받는 중" : "안 받음"}`, `btn sm ${on ? "gold" : ""}`)} <span class="tiny muted">시세 ${W(M.v)} · ${au ? `오토가 잡은 값 ${W(c2Price(S, f, t))}(시세의 ${Math.round(dm.q0 * 100)}%) · 보수적으로 잡아요` : `내 값은 시세의 ${Math.round(dm.q0 * 100)}% · 오토라면 ${W(c2AutoP(S, f, t))}`} · 문의 ${c2Feel(c2Rate(S, f, t, { flat: 1 }))}</span>${au ? "" : `<div class="row wrap" style="gap:4px;margin-top:4px">${F.price[t].map((p, i) => b(`pr:${f}:${t}:${i}`, `${W(p)}<span class="tiny muted"> ${c2Feel(c2Rate(S, f, t, { flat: 1, idx: i }))}</span>`, `btn sm ${cur === i ? "gold" : ""}`, lock && cur !== i)).join("")}</div>`}${M.why.length ? `<div class="tiny muted">시세: ${esc(M.why.join(" · "))}</div>` : ""}</div>`; }).join("")}</td></tr>`; };
+    shop = `<div class="card"><h3>상품과 가격 <small>평판 ×${rep.toFixed(2)}</small></h3>
+      <table class="c2t"><tr><td style="width:84px"><b>자기소개서</b></td><td><div class="row wrap" style="gap:4px"><button class="btn sm ${lk === "low" ? "gold" : ""}" data-cspol="p:low">저가</button><button class="btn sm ${lk !== "low" ? "gold" : ""}" data-cspol="p:mid">보통</button></div><div class="tiny muted">고가가 없어요. AI가 깎는 쪽이라 비싸게 못 팔아요.</div></td></tr>
+      <tr><td><b>면접</b></td><td><div class="row wrap" style="gap:4px"><span class="tag">저가·보통은 자기소개서와 같이 움직여요</span><button class="btn sm ${lk === "high" ? "gold" : ""}" data-cspol="p:high">프리미엄 ${W(c2Price(S, "interview", "mini"))}</button></div><div class="tiny muted">프리미엄부터 사람별 간이 전략(진단·면접·멘탈 칸). ${miniG.ok ? "" : `모자란 것: ${esc(miniG.why.join(" · "))}`}</div></td></tr>
+      <tr><td><b>값 정하기</b></td><td>${(() => { const au = c2IsAuto(S), M = c2Mkt(S, "essay", "light"), cur = c2PIdx(S, "essay", "light"), dm = c2Dem(S, "essay", "light"), lock = c2.pT?.light === S.t, pc = (x) => (Math.abs(x - 1) < 0.005 ? "평소 값" : (x > 1 ? "+" : "−") + Math.abs(Math.round((x - 1) * 100)) + "%");
+        return `<div class="row wrap" style="gap:4px">${b("pm:0", "오토", `btn sm ${au ? "gold" : ""}`)}${b("pm:1", "직접", `btn sm ${au ? "" : "gold"}`)}</div><div class="tiny muted">${au ? "오토는 시세보다 조금 낮게, 한두 달 늦게 따라가요. 문의가 끊길 일은 없지만 잘 맞춘 값보다 덜 벌어요." : "직접 정하면 잘 맞춘 만큼 더 벌고, 잘못 부르면 오토보다 못 벌어요. 값은 한 달에 한 번 바꿀 수 있어요."}</div>
+        <div class="tiny" style="margin-top:6px"><b>자기소개서·면접</b> <span class="muted">${au ? `오토가 잡은 값: 평소 값${Math.abs(c2Price(S, "essay", "light") - 1) < 0.005 ? " 그대로" : `보다 ${Math.abs(Math.round((c2Price(S, "essay", "light") - 1) * 100))}% ${c2Price(S, "essay", "light") > 1 ? "비싸게" : "싸게"}`} · 요즘 시세(${Math.round(M.x * 100)}%)와 견주면 ${Math.round(dm.q0 * 100)}%` : `내 값은 요즘 시세(평소의 ${Math.round(M.x * 100)}%)와 견주면 ${Math.round(dm.q0 * 100)}% · 오토라면 평소 값 대비 ${pc(c2AutoP(S, "essay", "light"))}`} · 문의 ${c2FeelD(dm.d)}</span></div>${au ? "" : `<div class="row wrap" style="gap:4px;margin-top:4px">${B2.pstep.map((x, i) => b(`pr:essay:light:${i}`, `${pc(x)}<span class="tiny muted"> ${c2FeelD(c2Dem(S, "essay", "light", i).d)}</span>`, `btn sm ${cur === i ? "gold" : ""}`, lock && cur !== i)).join("")}</div>`}${M.why.length ? `<div class="tiny muted">시세: ${esc(M.why.join(" · "))}</div>` : ""}`; })()}</td></tr>
+      ${C2D.STRAT.map(row).join("")}</table>${c2ChanHtml(S, esc, W)}
+      <div class="tiny muted" style="margin-top:6px">값은 오늘 값에 물가를 곱해 보여요. 같은 등급이면 이직 &gt; 종합 &gt; 공기업 순서로 비싸요. 등급은 값의 범위이고, 값은 시세를 보고 그 안에서 맞춰요. 시세보다 싸면 문의가 늘지만 남는 게 적고 자리가 금방 차요. 비싸면 줄고, 많이 비싸면 끊겨요. 업의 이해도·합격 실적·후기가 높으면 더 받아도 와요(지금은 시세의 ${Math.round(c2Shift(S) * 100)}%까지 평소만큼). 비싸게 받을수록 떨어졌을 때 환불 요구와 악평이 세요.</div>
+      <div class="tiny muted" style="margin-top:4px">동시에 맡는 인원은 등급마다 따로 세요. 회사를 다닐 때 표준 ${B2.cap.emp.std} · 프리미엄 ${B2.cap.emp.prem} · 최고가 ${B2.cap.emp.top}명, 본업이면 ${B2.cap.full.std} · ${B2.cap.full.prem} · ${B2.cap.full.top}명까지. 최고가 고객이 떨어지면 환불 요구가 크게 와요.</div>
+      <div style="margin-top:6px">${b("off", c2.off ? "사람별 전략 상품 다시 받기" : "사람별 전략 상품 받지 않기(가벼운 상품만)", "btn sm")}</div></div>`;
+  }
+  // ④ 방법론 카드와 합격 사례집
+  let deck = "";
+  if (c2.ui.deck) {
+    const SL = [...C2D.SLOTS, C2D.SLOTS_PUB[2]], getTxt = (g) => Object.entries(g || {}).map(([k, v]) => (k === "career" || k === "pub" ? C2D.GET_N[k] : `${C2D.GET_N[k] || k} ${v}`)).join(" · ");
+    const bySlot = SL.map((sl) => { const L = C2D.CARDS.filter((cd) => cd.slot === sl.id); return `<div class="sl"><b>${esc(sl.id === "ncs" ? "NCS 필기 계획(공기업)" : sl.n)}</b><div style="margin-top:4px">${L.map((cd) => (c2.cards[cd.id] ? `<div class="tiny"><b>${esc(cd.n)}</b>${c2Lv(c2, cd.id) > 1 ? ` <span class="gold">★${c2Lv(c2, cd.id)}</span>` : ""} <span class="muted">${esc(cd.d)}</span></div>` : `<div class="tiny muted">잠김 · ${esc(cd.n)} · ${esc(getTxt(cd.get))}</div>`)).join("")}</div></div>`; }).join("");
+    const notesH = Object.entries(c2.notes).filter(([, n]) => n.win).map(([k, n]) => { const [a, j] = k.split(":"), nm = a === "org" ? C2D.ORGS[j]?.n : a === "mini" ? (C2D.COS[j]?.n || "") + " 면접" : `${C2D.COS[a]?.n || a} ${C2D.JOBS[j]?.n || ""}`; return `<div class="tiny"><b>${esc(nm || k)}</b> 합격 ${n.win}/${n.n} <span class="muted">${esc((n.cards || []).map((id) => C2CARD[id]?.n).filter(Boolean).join(" · "))}</span></div>`; }).join("");
+    deck = `<div class="card"><h3>방법론 카드 <small>사는 것이 아니라 쌓는 것</small></h3><div class="tiny muted">합격·불합격 사례, 강의, 블로그 글, 첨삭 템플릿, 새 전형 연구로 얻어요. 합격시킨 전략에 쓴 카드는 단단해져요(★2는 3번, ★3은 10번).</div><div class="c2s" style="margin-top:6px">${bySlot}</div>
+      <div class="sec" style="margin-top:10px">합격 사례집 <span class="tiny muted">· 같은 조합이 다시 오면 카드가 더 잘 먹히고, 같은 회사 유형이면 설득 근거가 돼요</span></div>${notesH || `<div class="tiny muted">아직 없어요. 전략 고객을 한 명 붙이면 그 조합이 한 장 남아요.</div>`}</div>`;
+  }
+  return css + head + edit + shop + deck;
+}
+// 새 구조의 포지션 고르기(ui.js pgCS 의 포지션 칸을 갈아 끼운다)
+export function c2NicheCards(S, esc) {
+  const cs = S.cs, row = (k, sub) => { const n = D.NICHES[k], on = cs.niches.includes(k), why = on ? "" : c2NicheWhy(S, k); return `<button class="${on ? "on" : ""}" data-niche="${k}"><b>${esc(c2NicheN(k))}</b><span class="tiny muted">${esc(sub)}</span><span class="tiny muted">${why ? esc(why) : `조건 커리어 ${n.req.career}${n.req.years ? ` · 경력 ${n.req.years}년` : ""}`}</span></button>`; };
+  return `<div class="pick">${row("newgrad", "저가 ~ 보통 · 가볍게 · 핵심 능력 글쓰기")}${row("interview", "저가 ~ 프리미엄 · 핵심 능력 말빨")}${row("public", "종합만 · NCS 필기와 기관별 유형")}${row("career", "종합만 · 값이 가장 비싸요")}</div><div class="tiny muted" style="margin-top:4px">종합컨설팅은 포지션이 아니에요. 자기소개서·면접 합격 실적이 쌓이면 저절로 열려요.</div>`;
+}
+// 봇·점검용 요약
+export function c2Info(s) { const c2 = s.cs?.c2; if (!c2) return null; return { open: Object.keys(c2.open), cases: c2.cases.length, cards: Object.keys(c2.cards).length, notes: c2NoteN(c2), sp: c2.spAll || 0, st: c2.st, rep: +c2Rep(s).toFixed(2) }; }
+// 봇 정책(sim/balance_bot.mjs 가 달마다 한 번 부른다). 환경변수: CS2PATH=cheap(싼 상품만) · CS2ADD=public,career,interview(포지션 넓히기) · CS2TOP=0~4(최고가 칸 고정) · CS2ERR(전략을 틀릴 확률) · CS2OFF=std,prem(그 등급은 안 받음)
+export const c2TopOpen = (s) => D.CS2_ON && !!s.cs?.c2 && C2D.STRAT.some((f) => s.cs.c2.open[f + ":top"] !== undefined);
+export function c2Bot(s, rnd) {
+  if (!D.CS2_ON || !s.cs.open) return; const c2 = c2of(s), env = (typeof process !== "undefined" && process.env) || {};
+  if (env.CS2PATH === "cheap") { c2.off = 1; if (s.cs.price !== "low") s.cs.price = "low"; if (s.cs.agency) setAgency(s, null); return; } // 싼 상품만: 저가로, 대행 없이
+  if (env.CS2PATH === "mini") { if (!s.cs.niches.includes("interview")) setNiche(s, "interview"); for (const f of C2D.STRAT) for (const t of c2Tiers(f)) c2.sell[c2Key(f, t)] = 0; if (s.cs.niches.includes("interview") && s.cs.price !== "high") setPrice(s, "high"); } // 자소서 + 면접 프리미엄(간이 전략)까지만
+  for (const k of (env.CS2ADD || "").split(",").filter(Boolean)) if (!s.cs.niches.includes(k)) setNiche(s, k);
+  for (const t of (env.CS2OFF || "").split(",").filter(Boolean)) for (const f of C2D.STRAT) c2.sell[c2Key(f, t)] = 0;
+  if (c2LectOn() && c2.lect?.length) { const pi = SYN.pi(s), thr = (BIG.isFull(s) ? 60 : s.cs.lv >= 3 ? 30 : 15) * pi; // 강의 제안(보통 수준): 행동력 하나에 이만큼은 돼야 간다. 나머지는 거절
+    for (let i = c2.lect.length - 1; i >= 0; i--) { const o = c2.lect[i]; if (o.fee / o.ap >= thr) { if ((s.ap || 0) >= o.ap + 1) c2LectDo(s, i, true); } /* 행동력이 하나는 남을 때만 간다(초반에 남김없이 가면 컨설팅 일이 밀려 첫 5년이 더 나빠졌다) */ else c2LectDo(s, i, false); } }
+  if (env.CSMODE === "full" && env.CSCHAN !== "0" && c2TopOpen(s)) { // 본업 길(보통 수준): 최고가가 열리면 새 채널을 하나씩 뚫고, 식으면 돌본다. CSCHAN=0 이면 채널을 안 넓힌다
+    const ch = c2Ch(s), ids = ["chat", "thready", "linkon", "tube", "hunter", "univ", "news", "book"];
+    for (const id of ids) if (ch[id] && s.t >= ch[id].on && ch[id].heat < 0.6) c2ChanDo(s, "chtend", id);
+    if (!ids.some((id) => ch[id] && s.t < ch[id].on)) { const id = ids.find((k) => !ch[k] && c2ChSee(s, k) && !(C2D.CHANNELS[k].need && !s.cs.niches.includes(C2D.CHANNELS[k].need))); if (id && s.cash > C2D.CHANNELS[id].cost * SYN.pi(s) * 4) c2ChanDo(s, "chopen", id); }
+  }
+  if (env.CSPRICE === "best") { // 잘 맞추는 직접: 달마다 시세·시즌·실력 웃돈을 다 읽고, 자리가 도는 만큼만 받으면서 가장 많이 남는 칸을 고른다
+    c2.pMan = 1; const fullB = BIG.isFull(s), fsN = (tr) => Math.max(1, C2D.STRAT.filter((f) => c2Sell(s, f, tr)).length);
+    const pick = (f, tr) => { const thr = c2Cap(s, tr) / (fullB ? B2.dur.full : 4.5) / fsN(tr); let bi = 0, bv = -1; for (let i = 0; i < 5; i++) { const v = c2StepP(f, tr, i) * Math.min(thr, c2Rate(s, f, tr, { idx: i })); if (v > bv + 1e-9) { bv = v; bi = i; } } return bi; };
+    for (const f of C2D.STRAT) for (const tr of c2Tiers(f)) if (c2Sell(s, f, tr)) c2.topP[c2PKey(f, tr)] = pick(f, tr);
+    let bi = 2, bv = -1; for (let i = 0; i < 5; i++) { const v = B2.pstep[i] * c2Dem(s, "essay", "light", i).d; if (v > bv + 1e-9) { bv = v; bi = i; } } c2.topP.light = bi;
+  }
+  if (env.CSPRICE === "manual" && (s.cal === 1 || c2.botP !== BIG.isFull(s))) { // 직접 정하는 길(보통 수준): 해마다(그리고 본업이 된 달에) 평소 시세에 실력만큼 얹은 값에 가장 가까운 아래 칸으로. 기본은 오토라 아무것도 안 한다
+    c2.botP = BIG.isFull(s); c2.pMan = 1; const near = (f, tr) => { const tgt = c2StepP(f, tr, 2) * c2Shift(s) * 1.02; let bi = 0; for (let i = 0; i < 5; i++) if (c2StepP(f, tr, i) <= tgt) bi = i; return bi; };
+    c2.topP.light = near("essay", "light"); for (const f of C2D.STRAT) for (const tr of c2Tiers(f)) c2.topP[c2PKey(f, tr)] = tr === "top" && env.CS2TOP !== undefined ? +env.CS2TOP : near(f, tr);
+  }
+  for (const c of [...c2.cases]) if (!c.set) c2BotPlan(s, c, rnd, +(env.CS2ERR ?? 0.15));
 }

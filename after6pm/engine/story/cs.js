@@ -338,7 +338,8 @@ export default {
       }
       if (id === "p10" && i === 0) { X.bookT = s.t + 8; out.push("책 계약: 8달 뒤 출간"); }
       // p11 '단가를 올려 1:1만': 가격 단계는 플레이어가 컨설팅 화면에서 고른다(자동으로 프리미엄을 켜면 판 전체 수입이 30% 뛰어 밸런스가 깨짐)
-      if (id === "p11" && i === 1 && cs.price !== "high") out.push(cs.reviews >= (D.CS_PRICE.high.req || 30) ? "프리미엄 가격을 켤 수 있어요(컨설팅 화면 → 가격)" : `프리미엄 가격은 후기 ${D.CS_PRICE.high.req || 30}개부터`);
+      if (id === "p11" && i === 1 && D.CS2_ON) out.push("1:1 전략 상품은 표준 → 프리미엄 → 최고가 순으로 열려요. 업의 이해도가 쌓이면 컨설팅 화면에서 켤 수 있어요"); /* 11-28: 새 상품 구조 글 */
+      else if (id === "p11" && i === 1 && cs.price !== "high") out.push(cs.reviews >= (D.CS_PRICE.high.req || 30) ? "프리미엄 가격을 켤 수 있어요(컨설팅 화면 → 가격)" : `프리미엄 가격은 후기 ${D.CS_PRICE.high.req || 30}개부터`);
       if (id === "p12" && i === 0) {
         // 포지션 추가는 플레이어가 컨설팅 화면에서 직접 고른다(자동으로 넣으면 문의·단가가 한꺼번에 뛰어 밸런스가 깨짐)
         if (cs.niches.includes("career")) out.push("경력 이직 고객 사례를 블로그에 따로 묶었다");

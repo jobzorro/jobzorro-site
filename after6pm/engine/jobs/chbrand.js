@@ -4,6 +4,7 @@
 // chicken.js 가 f(s)·dem(s)·name(s) 를 읽고, month 에서 brandMonth 를 부른다. onChoose 는 "chb_ev"(CHB_CHOOSE, core.js 에 등록).
 import * as D from "../defs.js";
 import * as SYN from "../syn.js";
+import * as UND from "../und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다)
 import { addMoney, log, won, jo } from "../core.js";
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -20,6 +21,8 @@ export const BRANDS = {
     pro: "창업비 −35%, 재료비 44%, 광고 분담금 없음", con: "주문 −16%. 본사가 해 주는 게 없다", line: "만 원대 한 마리. 가맹점 600곳. 본사 직원이 스무 명이다." },
 };
 // 제안 간격(달)·첫 제안까지·전환비(매장당, 물가 전)·본사 지원 비율·위약금(매장당)·공사 달 주문 감소·단골 이탈(별점)·협상 성공 때 재료비 인하·말빨 기준
+// 11-28 업의 이해도 장인(1,000)부터 가맹 계약 갱신에 생기는 선택지: 판정 없이 재계약비 fee 배, 재료비 −mat(협상 성공 −2%의 절반)
+export const CHB_UND = { fee: 0.5, mat: 0.01 };
 export const CHB_BAL = { offer: [48, 72], first: 24, swap: { deliv: 1500, hall: 2400 }, support: 0.6, penalty: 500, lost: 0.15, star: 0.1, fresh: 18, nego: 0.02, dc: 55, bfCap: 0.25 };
 if (typeof process !== "undefined" && process.env?.CHBB) Object.assign(CHB_BAL, JSON.parse(process.env.CHBB)); // 봇 시험용
 
@@ -164,6 +167,7 @@ export function renewScene(s, r) {
   const avgFit = (k) => C.stores.reduce((a, st) => a + fitRaw(s, areaOf(st), k), 0) / n * demOf(s, k);
   const ch = [{ t: `${jo(name(s), "과", "와")} 재계약한다 (재계약비 ${won(fee)})`, eff: { cash: -fee }, text: "도장을 다시 찍었다. 간판은 그대로다.", chbA: "keep", fitV: avgFit(cur(s)) }];
   for (const k of others) { const c0 = swapCost(s, k); ch.push({ t: `${BRANDS[k].n}으로 바꾼다 (${won(c0)})`, eff: { cash: -c0, mental: -3, hp: -4 }, text: `간판을 내리던 날, ${name(s)} 슈퍼바이저가 말없이 서류를 받아 갔다. 새 간판에 불이 들어왔다.`, chbA: "swap", chbTo: k, fitV: avgFit(k) * 0.985 }); }
+  if (UND.at(s, "chicken", UND.TH.장인)) { const f2 = Math.round(fee * CHB_UND.fee / 10) * 10; ch.push({ t: `몇 해 치 장부를 펴 놓고 재계약 조건을 다시 쓴다 (재계약비 ${won(f2)} · 업의 이해도 덕분)`, eff: { cash: -f2 }, text: "발주 내역과 폐기 기록을 달마다 묶어 내밀었다. 슈퍼바이저가 한참 넘겨 보더니 본사에 전화를 걸었다. 재계약비가 절반이 됐고 물류 단가도 조금 내려갔다.", chbA: "und" }); }
   ch.push({ t: "다른 브랜드 제안서를 들고 본사와 협상한다 (말빨 판정)", check: { stat: "talk", dc: CHB_BAL.dc }, ok: { text: "\"다른 데서 제안이 왔다고요?\" 본사가 물류 단가를 내렸다. 재계약했다.", eff: { cash: -fee } }, ng: { text: "\"조건은 똑같습니다, 사장님.\" 얻은 것 없이 재계약했다.", eff: { cash: -fee, mental: -3 } }, chbA: "nego", fitV: avgFit(cur(s)) * 1.01 });
   return { kind: "event", tag: "가맹 계약", title: "가맹 계약 갱신", onChoose: "chb_ev", chb: "renew",
     text: `${jo(name(s), "과", "와")} 맺은 계약이 이번 달에 끝난다. ${BRANDS[others[0]].n}과 ${BRANDS[others[1]].n}에서 제안서가 와 있다. 다음 계약은 ${Math.round(B.term[0] / 12)}~${Math.round(B.term[1] / 12)}년이다.\n${[...new Set(C.stores.map(areaOf))].map((a) => `· ${AREAS[a].n}: ${fitLines(s, a)}`).join("\n")}\n(계약이 끝나서 위약금은 없어요. 바꾸면 공사하는 달 주문 −${Math.round(CHB_BAL.lost * 100)}%, 단골 일부가 떠나요. 안 맞는 브랜드도 입소문을 쌓으면 차이의 절반 남짓은 메워져요)`,
@@ -195,6 +199,7 @@ export const CHB_CHOOSE = {
       if (c.chbA === "swap" && BRANDS[sc.choices[i].chbTo]) { const to = sc.choices[i].chbTo, old = name(s); C.brand = to; C.scandal = 0; C.bSwaps = (C.bSwaps || 0) + 1;
         for (const st of C.stores) { st.name = st.name.replace(old, BRANDS[to].n); st.lost = (st.lost || 0) + B.lost; st.rating = clamp(st.rating - B.star, 3.4, 5); st.freshM = Math.max(st.freshM || 0, B.fresh); st.old = false; }
         log(s, `계약 갱신: 간판을 ${old}에서 ${BRANDS[to].n}(으)로 바꿨다.`, "work"); return [`간판 교체: ${old} → ${BRANDS[to].n}`, `다음 달 주문 −${Math.round(B.lost * 100)}% · 별점 −${B.star.toFixed(2)}`, `새 간판 효과 ${B.fresh}개월`]; }
+      if (c.chbA === "und") { C.cost = (C.cost || 0) - CHB_UND.mat; log(s, `${name(s)}와 장부를 펴 놓고 재계약했다.`, "work"); return [`재료비 −${Math.round(CHB_UND.mat * 100)}%`, "재계약비 절반", "재계약 · 업의 이해도 덕분"]; }
       if (c.chbA === "nego" && okv) { C.cost = (C.cost || 0) - B.nego; return [`재료비 −${Math.round(B.nego * 100)}%`, "재계약"]; }
       log(s, `${name(s)}와 재계약했다.`, "work"); return ["재계약"];
     }

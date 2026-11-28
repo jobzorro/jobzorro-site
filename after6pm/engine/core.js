@@ -18,6 +18,7 @@ import * as BIG from "./big.js";
 import * as AB from "./abnb.js";
 import * as UC from "./ucafe.js";
 import * as REG from "./reg.js"; // 새 투잡 플러그인 등록표(engine/jobs/)
+import * as UND from "./und.js"; // 11-28 업의 이해도 공통 틀(달마다 쌓기, 스위치 UND_ON)
 import { yearScene, yearMark } from "./yearend.js"; // 연말 결산(v4.24)
 import { famMonth, FAM_CHOOSE } from "./famev.js"; // 가족 이벤트(v4.25)
 import { affMonth, AFF_CHOOSE, affDate } from "./affair.js"; // 바람(v4.25)
@@ -168,7 +169,7 @@ export function newGame(o) {
     else { take(3, "army", START_BOND.army, (c) => c.gender === "M" && !isForeign(c)); take(left(2, "club"), "club", START_BOND.club, () => true); } }
   // N회차(회귀): 지난 인생의 선물
   const ng = o.ng || {};
-  s.ng = { n: Math.max(1, ng.n || 1), hard: !!ng.hard, gifts: ng.gifts || [], past: ng.past || [], hl: ng.hl || {}, wvGone: ng.wvGone || [] }; // 11-25 wvGone: 지난 판들에 간 판 변화 길(3회차 특전은 안 가 본 길에만) // hl: 지난 회차의 히로인 결말·본 사건(heroine.js ngIn) // past: 지난 인생 히든 길 기록(v4.30 회차의 길)
+  s.ng = { n: Math.max(1, ng.n || 1), hard: !!ng.hard, gifts: ng.gifts || [], past: ng.past || [], hl: ng.hl || {}, wvGone: ng.wvGone || [] }; if (ng.und && Object.keys(ng.und).length) s.ng.und = ng.und; // 11-25 wvGone: 지난 판들에 간 판 변화 길(3회차 특전은 안 가 본 길에만) // hl: 지난 회차의 히로인 결말·본 사건(heroine.js ngIn) // past: 지난 인생 히든 길 기록(v4.30 회차의 길)
   if (ng.cash) s.cash += ng.cash;
   for (const j of ng.know || []) if (D.SIDEJOBS[j]) { SJ.found(s, j, "지난 인생의 기억"); s.sj.know[j] = (s.sj.know[j] || 0) + 10; }
   for (const id of ng.friends || []) if (inPlay(CHAR[id])) { if (!s.cast.includes(id)) s.cast.push(id); const x = ensureRel(s, id); x.aff = Math.max(x.aff, 30); x.deja = true; }
@@ -1408,6 +1409,7 @@ export function endMonth(s) {
   if (sal && side >= sal) s.sideStreak++; else if (sal) s.sideStreak = 0; // (옛 기준, 기록용) 투잡 ≥ 월급 연속 달
   const invM = Math.round((M.inc["투자 손익"] || 0) - (M.exp["투자 손익"] || 0) + (M.inc["투자 판단 손익"] || 0) - (M.exp["투자 판단 손익"] || 0)), bonM = Math.round(M.inc["성과급"] || 0);
   s.hist.push({ t: s.t, age: s.age, cash: Math.round(s.cash), nw: Math.round(netWorth(s)), side: Math.round(side), sal, pr: Math.round(prProfit), cs: Math.round(csProfit), ...(Object.keys(px).length ? { px } : {}), ...(invM ? { inv: invM } : {}), ...(bonM ? { bon: bonM } : {}), hp: Math.round(s.hp), mental: Math.round(s.mental), fire: +fireInfo(s).ratio.toFixed(3) });
+  if (D.UND_ON) UND.tick(s); // 11-28 업의 이해도: 하고 있는 투잡의 이번 달 일한 양을 쌓는다(난수·돈에 닿지 않는다)
   const yearSc = s.cal === 12 && !s.over ? yearScene(s, r) : null; // 12월: 연말 결산(꼭). 그달 장면들 뒤에 띄운다
   const receipt = { inc: M.inc, exp: M.exp, notes: notes.slice(), cash: s.cash, side, ym: ymLabel(s) };
   // 9) 시간 흐름

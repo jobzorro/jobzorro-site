@@ -8,6 +8,7 @@ import * as D from "../defs.js";
 import { addMoney, log, won, gainStat, creditRoom, addLoan, CHAR, jo, helperPower, mod, ensureRel } from "../core.js";
 import * as SYN from "../syn.js";
 import * as SJ from "../sj.js";
+import * as UND from "../und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. 스위치 UND_ON 이 꺼져 있으면 늘 0 · false)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 export const PS_BAL = {
@@ -32,7 +33,17 @@ export const isPro = (s) => !!s.petsit?.g?.reg && !!s.petsit?.g?.place;
 export const gateStep = (C) => GATES.findIndex(([k]) => !C.g[k]); // 다음에 풀 관문(−1이면 다 품)
 export const gateOpen = (C) => C.lv >= PS_BAL.gate.lv || Object.values(C.g).some(Boolean);
 export const staffCap = (C) => PS_BAL.pro.staffCap[C.br || 0];
-export const careNeed = (C) => Math.ceil((C.staff || 0) / PS_BAL.pro.careEach);
+// 11-28 업의 이해도 효과(스위치 UND_ON). 숙련(300): 까다로운 집(노령·대형)을 한 곳 더 맡을 수 있다(extra. 보드의 따로 있는 단추로만 받는다) · 맡은 집 사고의 수습 판정 난이도 −dc. 전문(600): 직원 교육이 빨라져 사람 챙기기 한 번에 careEach 명까지
+// (봇으로 잰 것: 사고 "횟수"를 줄이면 잘 수습해 얻던 신뢰까지 줄어 오히려 손해라, 횟수는 그대로 두고 수습을 쉽게 했다)
+export const PS_UND = { extra: 1, dc: 8, careEach: 4 };
+if (typeof process !== "undefined" && process.env?.PSU) Object.assign(PS_UND, JSON.parse(process.env.PSU)); // 봇 시험용
+const HARD_N = ["노령견 한 마리 집", "대형견 한 마리 집", "약을 챙겨야 하는 노령묘 집", "대형견 두 마리 집", "눈이 어두운 노령견 집"];
+export const undFx = (s) => ({ on: UND.jobs().includes("petsit"), v: UND.score(s, "petsit"), skilled: UND.at(s, "petsit", UND.TH.숙련), pro: UND.at(s, "petsit", UND.TH.전문) });
+const baseCap = (C) => PS_BAL.homes[Math.min(3, C.lv)];
+export const homeCap = (s, hard) => baseCap(s.petsit) + (hard && UND.at(s, "petsit", UND.TH.숙련) ? PS_UND.extra : 0); // hard: 까다로운 집 자리까지 셀 때
+export const hardOpen = (s) => { const C = s.petsit; return UND.at(s, "petsit", UND.TH.숙련) && C.homes.length >= baseCap(C) && C.homes.length < homeCap(s, true); }; // 기본 정원이 찼고 까다로운 집 자리가 비었나
+export const careEach = (s) => (s && UND.at(s, "petsit", UND.TH.전문) ? PS_UND.careEach : PS_BAL.pro.careEach);
+export const careNeed = (C, s) => Math.ceil((C.staff || 0) / careEach(s)); // s 를 안 넘기면 기본(3명에 한 번)
 // 11-26 조력자: 옥서진(c127 동물보건사, ps_vet) 병·약 판정이 쉬워짐 · 라윤서(c128 승무원, ps_ref) 동료 소개로 단골 문의 + · 어동훈(c129 고양이 카페 사장, ps_biz) 영업장·등록 비용·기간 −
 //   인물 id 로 건다(인물 자료의 helper.effect 는 자리 표시라 무엇이든 된다): 그 인물이 조력 중이면 1, effect 가 이 키면 helperPower 값.
 export const PS_HELP = { ps_vet: "c127", ps_ref: "c128", ps_biz: "c129" };
@@ -40,7 +51,7 @@ export const psHelp = (s, eff) => Math.min(1.5, helperPower(s, eff) || (s.rel?.[
 const helpName = (eff, def) => CHAR[PS_HELP[eff]]?.name || def;
 export function placeCost(s) { const G = PS_BAL.gate, cut = 1 - 0.2 * Math.min(1, psHelp(s, "ps_biz")); return { dep: Math.round(G.dep * pi(s)), fit: Math.round(G.fit * pi(s) * cut) }; } // 어동훈: 시설 기준을 아는 사람이 있으면 시설비 −20%
 export const regMonths = (s) => Math.max(1, PS_BAL.gate.regMo - (psHelp(s, "ps_biz") >= 0.5 ? 1 : 0));
-function newHome(s, r, pre) { const C = s.petsit, T = PS_BAL.trust; const h = { id: "H" + (++C.seq), n: `${r.pick(AREA)} · ${r.pick(HOME_N)}`, trust: (pre ? T.meet : T.noMeet) + mod(s, "psTrust", 0), pre: !!pre, since: s.t, wk: 0, done: 0 }; C.homes.push(h); return h; }
+function newHome(s, r, pre) { const C = s.petsit, T = PS_BAL.trust, hard = C.homes.length >= baseCap(C); /* 11-28 기본 정원을 넘겨 받는 집은 이해도 숙련이 연 까다로운 집 */ const h = { id: "H" + (++C.seq), n: `${r.pick(AREA)} · ${r.pick(hard ? HARD_N : HOME_N)}`, ...(hard ? { hard: true } : {}), trust: (pre ? T.meet : T.noMeet) + mod(s, "psTrust", 0), pre: !!pre, since: s.t, wk: 0, done: 0 }; C.homes.push(h); return h; }
 function book(s, r) { // 이번 달 예약: 가구마다 0~2주
   const C = s.petsit, B = PS_BAL, pk = B.peak.includes(s.cal) ? B.peakX : 1;
   for (const h of C.homes) { const p = h.trust >= B.trust.regular ? 0.95 : h.trust >= 40 ? 0.6 : 0.35; let n = r.chance(Math.min(0.98, p * (pk > 1 ? 1.15 : 1))) ? 1 : 0; if (n && (h.trust >= B.trust.regular || pk > 1) && r.chance(0.3 * pk)) n = 2; h.wk = n; h.done = 0; }
@@ -48,15 +59,15 @@ function book(s, r) { // 이번 달 예약: 가구마다 0~2주
 }
 const insCut = (C) => [1, 0.5, 0.15][C.ins || 0]; // 보험이 사고 손실을 덮는 정도
 function ev(s, r, home) {
-  const C = s.petsit, P = pi(s), hn = home?.n || "단골 집", vet = psHelp(s, "ps_vet"), vd = Math.round(15 * Math.min(1, vet)), vn = helpName("ps_vet", "동물보건사"), L = [
+  const C = s.petsit, P = pi(s), hn = home?.n || "단골 집", vet = psHelp(s, "ps_vet"), vd = Math.round(15 * Math.min(1, vet)), vn = helpName("ps_vet", "동물보건사"), ud = home && UND.at(s, "petsit", UND.TH.숙련) ? PS_UND.dc : 0 /* 11-28 이해도 숙련: 맡은 집 사고의 수습 판정이 쉬워진다 */, L = [
     { id: "door", ok: () => true, t: "문이 안 열린다", x: `${hn}. 공동현관 번호가 바뀌어 있다. 보호자는 지금 비행기 안이다. 안에서 밥그릇 긁는 소리가 들린다.${home && !home.pre ? " 사전 만남에서 출입을 시험해 보지 않았다." : ""}`,
-      c: [{ t: "비상 연락처에 건다", check: { stat: "talk", dc: home?.pre ? 35 : 60 }, ok: { text: "보호자의 언니가 번호를 알려 줬다. 20분 늦게 들어갔다. 밥은 제때 줬다.", eff: {} }, ng: { text: "아무도 받지 않는다. 결국 그날 방문은 못 했다.", eff: { mental: -4 } } },
-        { t: "경비실에 사정을 설명한다", check: { stat: "charm", dc: 55 }, ok: { text: "경비 아저씨가 보호자와 통화한 뒤 문을 열어 줬다.", eff: {} }, ng: { text: "\"세입자 확인 없이는 안 됩니다.\" 맞는 말이라 더 할 말이 없었다.", eff: { mental: -3 } } },
+      c: [{ t: "비상 연락처에 건다", check: { stat: "talk", dc: (home?.pre ? 35 : 60) - ud }, ok: { text: "보호자의 언니가 번호를 알려 줬다. 20분 늦게 들어갔다. 밥은 제때 줬다.", eff: {} }, ng: { text: "아무도 받지 않는다. 결국 그날 방문은 못 했다.", eff: { mental: -4 } } },
+        { t: "경비실에 사정을 설명한다", check: { stat: "charm", dc: 55 - ud }, ok: { text: "경비 아저씨가 보호자와 통화한 뒤 문을 열어 줬다.", eff: {} }, ng: { text: "\"세입자 확인 없이는 안 됩니다.\" 맞는 말이라 더 할 말이 없었다.", eff: { mental: -3 } } },
         { t: "내일 다시 온다", eff: {}, text: "하루 굶긴 셈이 됐다. 보호자가 착륙하자마자 까톡이 왔다." }] },
     { id: "sick", ok: () => true, t: "밥을 안 먹었다", x: `${hn}. 어제 준 사료가 그대로다. 구석에서 나오지 않는다. 화장실 모래도 깨끗하다. 보호자는 사흘 뒤에 온다.`,
       c: [{ t: "본 대로 알리고 지시를 기다린다", eff: {}, text: "사진과 함께 본 것만 적어 보냈다. 한 시간 뒤 답이 왔다. 지정 병원으로 옮기기로 했다." },
         { t: "바로 병원에 데려간다", eff: { cash: -Math.round(18 * P) }, text: "진료비는 내 카드로 긁었다. 보호자는 고맙다고 했지만, 먼저 물어봤어야 한다는 말도 했다." },
-        { t: "하루 더 지켜본다", check: { stat: "sense", dc: 60 - vd }, ok: { text: "저녁에 다시 가 보니 반쯤 먹었다. 낯가림이었다.", eff: {} }, ng: { text: "다음 날 상태가 더 나빠졌다. 보호자가 일정을 접고 돌아왔다.", eff: { mental: -6 } } },
+        { t: "하루 더 지켜본다", check: { stat: "sense", dc: 60 - vd - ud }, ok: { text: "저녁에 다시 가 보니 반쯤 먹었다. 낯가림이었다.", eff: {} }, ng: { text: "다음 날 상태가 더 나빠졌다. 보호자가 일정을 접고 돌아왔다.", eff: { mental: -6 } } },
         ...(vet ? [{ t: `${vn}에게 전화한다`, eff: {}, text: `"사진 보내 봐요. 밥그릇이랑 화장실이요." ${jo(vn, "이", "가")} 5분 만에 답을 줬다. "오늘 밤까지 물은 마시는지 보고, 안 마시면 바로 병원이에요." 본 것과 들은 것을 그대로 보호자에게 보냈다.` }] : [])] },
     { id: "late", ok: () => !(s.co.quit || s.co.fired), t: "오늘 야근이다", x: `7시에 ${hn} 방문이 잡혀 있다. 5시 50분, 팀장이 회의실로 부른다. \"오늘 좀 늦을 거야.\"`,
       c: [{ t: "사정을 말하고 7시에 나간다", eff: {}, text: "약속은 지켰다. 다음 날 팀장의 눈길이 조금 달랐다." },
@@ -64,7 +75,7 @@ function ev(s, r, home) {
         { t: "친구에게 대신 가 달라고 한다", eff: {}, text: "친구가 문 앞에서 찍은 사진을 보호자가 알아봤다. \"이분은 누구세요?\"" }] },
     { id: "med", ok: () => true, t: "\"약도 먹여 주세요\"", x: `${hn} 보호자의 부탁. 하루 두 번 알약이다. 추가로 ${won(Math.round(2 * P))}을 주겠다고 한다. 나는 약을 먹여 본 적이 없다.`,
       c: [{ t: "범위 밖이라고 거절한다", eff: {}, text: "\"그건 병원에 맡기시는 게 안전해요.\" 보호자는 아쉬워했지만 이해했다." },
-        { t: vet ? `받는다(${vn}에게 먹이는 법을 묻고)` : "받는다", check: { stat: "hands", dc: 58 - vd }, ok: { text: "수건으로 감싸고 한 번에 넣었다. 닷새 동안 실수가 없었다.", eff: { cash: Math.round(10 * P) } }, ng: { text: "약을 뱉었는지 삼켰는지 모르겠다. 손등에 긴 상처가 났다.", eff: { hp: -5, mental: -4 } } }] },
+        { t: vet ? `받는다(${vn}에게 먹이는 법을 묻고)` : "받는다", check: { stat: "hands", dc: 58 - vd - ud }, ok: { text: "수건으로 감싸고 한 번에 넣었다. 닷새 동안 실수가 없었다.", eff: { cash: Math.round(10 * P) } }, ng: { text: "약을 뱉었는지 삼켰는지 모르겠다. 손등에 긴 상처가 났다.", eff: { hp: -5, mental: -4 } } }] },
     { id: "board", ok: () => !isPro(s), t: "\"선생님 집에 며칠만 맡기면 안 돼요?\"", x: `${hn} 보호자가 2주 출장을 간다. 방문 말고 아예 데려가 달라고 한다. ${won(Math.round(60 * P))}을 주겠다고 한다. 내 집에서 맡는 건 방문 돌봄과 다른 업종이다.`,
       c: [{ t: "거절한다", eff: {}, text: "\"그건 등록된 곳에서만 할 수 있어요.\" 대신 하루 두 번 방문으로 바꿨다." },
         { t: "이번만 받는다", eff: { cash: Math.round(60 * P) }, text: "2주 동안 집에서 잠을 못 잤다. 돈은 컸다." }] },
@@ -85,7 +96,7 @@ function ev(s, r, home) {
   ];
   const e = r.pick(L.filter((y) => y.ok()));
   s._psEv = { id: e.id, h: home?.id };
-  return { kind: "event", tag: "펫시팅", title: e.t, text: e.x, onChoose: "ps_ev", choices: e.c };
+  return { kind: "event", tag: "펫시팅", title: e.t, text: e.x + (ud && ["door", "sick", "med"].includes(e.id) ? " (업의 이해도 덕분: 수습 판정이 조금 쉬워요)" : ""), onChoose: "ps_ev", choices: e.c };
 }
 
 export default {
@@ -109,7 +120,7 @@ export default {
   },
   can(s, id, arg) {
     const C = s.petsit, B = PS_BAL, G = B.gate;
-    if (id === "ps_meet" || id === "ps_accept") return C.inq < 1 ? "지금은 문의가 없어요. 소개 글을 쓰거나 후기를 쌓아요" : C.homes.length >= B.homes[Math.min(3, C.lv)] ? `지금은 ${B.homes[Math.min(3, C.lv)]}가구까지 맡을 수 있어요` : null;
+    if (id === "ps_meet" || id === "ps_accept") return C.inq < 1 ? "지금은 문의가 없어요. 소개 글을 쓰거나 후기를 쌓아요" : C.homes.length >= homeCap(s, arg === "hard") ? `지금은 ${homeCap(s, arg === "hard")}가구까지 맡을 수 있어요` : null;
     if (id === "ps_visit") { const h = C.homes.find((x) => (arg ? x.id === arg : true) && x.done < x.wk); return h ? null : "이번 달 남은 방문 약속이 없어요"; }
     if (id === "ps_report") return C.homes.some((h) => h.done > 0) ? (C.rep >= 2 ? "이번 달 보고서는 충분해요" : null) : "이번 달에 다녀온 집이 있어야 해요";
     if (id === "ps_gate") {
@@ -120,7 +131,7 @@ export default {
       return null;
     }
     if (id === "ps_hire") return !isPro(s) ? "영업장과 등록이 끝나야 해요" : !C.g.ins ? "보험부터 들어야 해요(관문)" : C.staff >= staffCap(C) ? `지금 영업장으로는 ${staffCap(C)}명까지예요` : null;
-    if (id === "ps_care") return !C.staff ? "직원이 없어요" : C.care >= careNeed(C) ? "이번 달은 다 챙겼어요" : null;
+    if (id === "ps_care") return !C.staff ? "직원이 없어요" : C.care >= careNeed(C, s) ? "이번 달은 다 챙겼어요" : null;
     if (id === "ps_mpromo") return isPro(s) ? null : "돌봄 회사가 된 뒤에 열려요";
     if (id === "ps_branch") { if (!isPro(s)) return "돌봄 회사가 된 뒤에 열려요"; if ((C.br || 0) >= 2) return "더 늘릴 수 없어요"; if (C.staff < staffCap(C)) return `지금 영업장을 먼저 채워요(직원 ${C.staff}/${staffCap(C)})`; const need = Math.round(B.pro.branch[C.br + 1] * pi(s)); return s.cash + creditRoom(s) * 0.6 + 2000 < need ? `지점 하나에 ${won(need)}이 들어요` : null; }
     return null;
@@ -150,8 +161,8 @@ export default {
       if (k === "ins") { const lv = arg === "full" ? 2 : arg === "basic" ? 1 : 2; C.ins = lv; C.g.ins = true; return { lines: ["관문 4/5 · 보험", `${lv === 2 ? "넓은 보장" : "기본 보장"} · 월 ${won(Math.round(G.ins[lv] * P))}`], msg: "약관에서 '보장하지 않는 손해'부터 읽었다." }; }
       if (k === "staff") { const c = Math.round(G.hireCost * P); s.cash -= c; addMoney(s, "exp", "펫시팅 비용", c); C.staff = 1; C.care = 1; C.g.staff = true; C.proT = s.t; C.lv = 4; log(s, "첫 직원을 뽑았다. 이제 돌봄 회사다.", "work"); return { lines: ["관문 5/5 · 첫 직원", "돌봄 회사가 됐어요", "유치원 회원 모집·시터 채용·사람 챙기기가 열려요"], msg: "면접에서 \"고양이가 안 나오면 어떻게 하실 거예요?\"라고 물었다. \"기다릴게요\"라고 답한 사람을 뽑았다." }; }
     }
-    if (id === "ps_hire") { const c = Math.round(G.hireCost * P); s.cash -= c; addMoney(s, "exp", "펫시팅 비용", c); C.staff++; return { lines: [`직원 ${C.staff}/${staffCap(C)}명`, `월급 ${won(Math.round(B.pro.wage * P))} · 사람 챙기기 ${careNeed(C)}번 필요`], msg: "첫 주는 내가 같이 다녔다. 문 여는 법부터 가르쳤다." }; }
-    if (id === "ps_care") { C.care++; return { lines: [`사람 챙기기 ${C.care}/${careNeed(C)}`], msg: r.pick(["한 명씩 불러 밥을 먹었다. 힘든 집이 어디인지 들었다.", "지난달 사고를 같이 되짚었다. 탓하는 자리가 아니라고 먼저 말했다.", "새 직원의 첫 방문을 뒤에서 지켜봤다."]) }; }
+    if (id === "ps_hire") { const c = Math.round(G.hireCost * P); s.cash -= c; addMoney(s, "exp", "펫시팅 비용", c); C.staff++; return { lines: [`직원 ${C.staff}/${staffCap(C)}명`, `월급 ${won(Math.round(B.pro.wage * P))} · 사람 챙기기 ${careNeed(C, s)}번 필요`], msg: "첫 주는 내가 같이 다녔다. 문 여는 법부터 가르쳤다." }; }
+    if (id === "ps_care") { C.care++; return { lines: [`사람 챙기기 ${C.care}/${careNeed(C, s)}`], msg: r.pick(["한 명씩 불러 밥을 먹었다. 힘든 집이 어디인지 들었다.", "지난달 사고를 같이 되짚었다. 탓하는 자리가 아니라고 먼저 말했다.", "새 직원의 첫 방문을 뒤에서 지켜봤다."]) }; }
     if (id === "ps_mpromo") { C.mpromo += boost; return { lines: ["다음 달 유치원 회원 +"], msg: "산책길에 전단을 붙였다. 체험 하루를 무료로 걸었다." }; }
     if (id === "ps_branch") { const need = Math.round(B.pro.branch[C.br + 1] * P), lack = need - s.cash; if (lack > 0) { addLoan(s, "사업자대출", lack + 100, 0.048); s.cash += lack + 100; } s.cash -= need; addMoney(s, "exp", "펫시팅 비용", need); C.br++; C.invest = (C.invest || 0) + need; log(s, `돌봄 ${C.br + 1}호점을 냈다. ${won(need)}`, "work"); return { lines: [`${C.br + 1}호점`, `직원 ${staffCap(C)}명까지`], msg: "두 번째 문을 열었다. 이제 내가 없어도 도는 곳이 생겼다." }; }
     return { lines: [], msg: "" };
@@ -202,8 +213,8 @@ export default {
     // 돌봄 회사: 유치원 회원·호텔·직원 방문
     let pro = null;
     if (isPro(s) && C.g.staff) {
-      const K = B.pro, need = careNeed(C), lack = Math.max(0, need - C.care);
-      if (lack > 0) { let q = 0; for (let i = 0; i < Math.min(C.staff, lack * K.careEach); i++) if (r.chance(K.quitP)) q++; if (q) { C.staff = Math.max(0, C.staff - q); notes.push(`펫시팅: 못 챙긴 사이 직원 ${q}명이 그만뒀어요.`); } else notes.push("펫시팅: 이번 달 사람 챙기기가 모자랐어요. 그만둘 사람이 생길 수 있어요."); C.rating = clamp(C.rating - 0.03 * lack, 3.2, 5); }
+      const K = B.pro, need = careNeed(C, s), lack = Math.max(0, need - C.care);
+      if (lack > 0) { let q = 0; for (let i = 0; i < Math.min(C.staff, lack * careEach(s)); i++) if (r.chance(K.quitP)) q++; if (q) { C.staff = Math.max(0, C.staff - q); notes.push(`펫시팅: 못 챙긴 사이 직원 ${q}명이 그만뒀어요.`); } else notes.push("펫시팅: 이번 달 사람 챙기기가 모자랐어요. 그만둘 사람이 생길 수 있어요."); C.rating = clamp(C.rating - 0.03 * lack, 3.2, 5); }
       const brN = (C.br || 0) + 1, cap = Math.min(C.staff * K.per, K.dem * brN), season = B.peak.includes(s.cal) ? 1.12 : 1;
       const join = (0.6 + C.mpromo * K.promo * (1 + (s.st.mkt || 0) / 200) + C.mem * K.wom * (C.rating - 3.6) * 1.2 + C.reviews / 60) * (1 + 0.15 * r.normal()), leave = C.mem * (0.03 + Math.max(0, 4.5 - C.rating) * 0.08 + (lack ? 0.03 : 0));
       C.mem = clamp(Math.round(C.mem + Math.max(0, join) - leave), 0, cap); C.mpromo = 0;
@@ -219,6 +230,7 @@ export default {
     const reg = regulars(C); if (C.lv < 4) C.lv = reg >= B.lv[2] ? 3 : reg >= B.lv[1] ? 2 : reg >= B.lv[0] ? 1 : 0;
     C.months++; C.cum += profit; C.last = { profit, homes: C.homes.length, reg, inq: Math.round(C.inq * 10) / 10, fix, pro, rating: C.rating };
     C.hist.push(profit); if (C.hist.length > 24) C.hist.shift();
+    UND.fxNote(s, "petsit", C, notes, UND_NOTE); // 11-28 이해도 문턱을 넘은 달에 한 줄(스위치가 꺼져 있으면 아무 일도 안 한다)
     return profit;
   },
   value(s) { const C = s.petsit; return C?.g?.place ? Math.round((C.dep || 0) + ((C.invest || 0) - (C.dep || 0)) * 0.35 + (isPro(s) ? Math.max(0, (C.hist.slice(-6).reduce((a, b) => a + b, 0) / 6) * 18) : 0)) : 0; },
@@ -226,8 +238,8 @@ export default {
   todos(s) {
     const C = s.petsit, t = [], left = C.homes.reduce((a, h) => a + Math.max(0, h.wk - h.done), 0);
     if (left) t.push({ lv: 2, text: `펫시팅: 이번 달 방문 약속 ${left}주 남음(안 가면 신뢰가 크게 깎여요)` });
-    if (C.inq >= 1 && C.homes.length < PS_BAL.homes[Math.min(3, C.lv)]) t.push({ lv: 1, text: "펫시팅: 새 문의가 왔어요. 사전 만남을 잡아요" });
-    if (C.staff && C.care < careNeed(C)) t.push({ lv: 2, text: `펫시팅: 사람 챙기기 ${C.care}/${careNeed(C)}` });
+    if (C.inq >= 1 && C.homes.length < homeCap(s)) t.push({ lv: 1, text: "펫시팅: 새 문의가 왔어요. 사전 만남을 잡아요" });
+    if (C.staff && C.care < careNeed(C, s)) t.push({ lv: 2, text: `펫시팅: 사람 챙기기 ${C.care}/${careNeed(C, s)}` });
     if (gateOpen(C) && gateStep(C) >= 0 && C.regT == null) t.push({ lv: 0, text: `펫시팅: 본업화 관문 ${gateStep(C) + 1}/5 · ${GATES[gateStep(C)][1]}` });
     return t;
   },
@@ -256,6 +268,7 @@ export default {
   ],
   info: { inc: "부업으로는 월 30~60만. 돌봄 회사가 되면 달라져요", hours: "약속한 날 저녁" },
 };
+const UND_NOTE = [[300, "노령·대형 같은 까다로운 집을 한 곳 더 맡을 수 있고, 사고가 났을 때 수습 판정이 쉬워져요."], [600, "직원을 가르치는 속도가 붙었어요. 사람 챙기기 한 번에 네 명까지 챙겨요."]];
 function evOf(s, r, home, id) { // 지정한 사건(야근)을 연다
   const save = r.pick; r.pick = (L) => (Array.isArray(L) && L[0]?.id ? L.find((x) => x.id === id) || save.call(r, L) : save.call(r, L)); const sc = ev(s, r, home); r.pick = save; return sc;
 }

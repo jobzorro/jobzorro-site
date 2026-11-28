@@ -1,6 +1,7 @@
 // 화상과외 보드: 주간 시간표(평일 저녁 타임) · 시범수업 문의 카드 · 학생 카드(학생 만족 vs 학부모 만족, 성적) · 단계 진행.
 // 규약: engine/jobs/README.md
 import * as TU from "../engine/jobs/tutoring.js";
+import { undCard as undCardC } from "../und_ui.js"; // 11-28 업의 이해도 공통 카드
 
 const DAYS = ["월", "화", "수", "목", "금", "토"];
 const SEAS_TIP = (cal) => (TU.examOf(cal) ? `${TU.examOf(cal)} 달: 수업 빠지면 성적에 바로 보여요` : TU.isVac(cal) ? "방학: 문의가 줄고 쉬는 학생이 생겨요" : TU.SEASON[cal - 1] >= 1.2 ? "시험 대비 시즌: 문의가 몰려요" : "보통 시즌");
@@ -8,13 +9,13 @@ const pct = (x) => `${Math.round(x)}`;
 
 export default {
   key: "tutoring", ic: "video", bg: "online", fullBg: "online",
-  icons: { tu_class: "video", tu_find: "search", tu_trial: "msg", tu_report: "pen", tu_make: "cam", tu_study: "book" },
+  icons: { tu_class: "video", tu_find: "search", tu_trial: "msg", tu_report: "pen", tu_make: "cam", tu_study: "book", tu_chan: "msg", tu_learn: "book" },
   tile: (S) => `학생 ${TU.heads(S)}명 · Lv${S.tutoring.lv}`,
   side: (S) => `화상과외 Lv${S.tutoring.lv}`,
   quick: (S) => (TU.needAp(S) > S.tutoring.ap ? "tu_class" : S.tutoring.leads.length ? "tu_trial" : "tu_find"),
   defaultArg: (S, id) => (id === "tu_trial" ? S.tutoring.leads[0]?.id : undefined),
   cine: {
-    tu_first: ["home", "화상과외"], tu_far: ["online", "화상과외"], tu_lv3: ["apt", "화상과외"], tu_lv4: ["studyst", "화상과외"], tu_lv5: ["online", "화상과외"], tu_drop: ["home", "화상과외"],
+    tu_first: ["home", "화상과외"], tu_far: ["online", "화상과외"], tu_lv3: ["apt", "화상과외"], tu_lv4: ["studyst", "화상과외"], tu_lv5: ["online", "화상과외"], tu_drop: ["home", "화상과외"], tu2_note: ["studyst", "화상과외"], tu2_solve: ["online", "화상과외"],
     tu_end_star: ["online", "화상과외 엔딩"], tu_end_local: ["home", "화상과외 엔딩"], tu_end_cash: ["home", "화상과외 엔딩"],
   },
   auto(c) { TU.demoSetup(c.S); },
@@ -64,10 +65,14 @@ export default {
     const evTip = EV.fit < 100 ? `적합도가 낮으면 성적이 덜 오르고 학부모 만족·소개·시범수업 전환이 줄고 이탈이 늘어요. '새 평가 연구' 한 번에 +${CHC.study[0]}~${CHC.study[1]}, 그냥 두면 달마다 +${CHC.drift}.`
       : EV.warn ? (canPrep ? `개편 전에 미리 연구해 두면 개편 때 적합도가 덜 떨어져요(한 번에 +${CHC.prep}, ${EV.prep}/${CHC.prepMax}).` : `미리 준비 ${EV.prep}/${CHC.prepMax} 완료. 개편이 오면 다시 연구하세요.`)
       : "지금은 수업이 평가에 잘 맞아요. 평가는 몇 해마다 바뀌고, 바뀌면 적합도가 뚝 떨어져요.";
+    const I2 = TU.TU2 ? TU.tu2Info(S) : null; // 11-27 수업 적합도 = 지금 평가에 맞는 수업 노트 비율
+    const evTipX = !I2 ? evTip : EV.fit < 100 ? `노트 ${I2.total}장(기본 ${I2.base.length}장 + 내 수업 노트 ${I2.notes.length}장) 가운데 ${I2.fresh}장이 지금 평가에 맞아요. 안 맞는 노트가 많으면 성적이 덜 오르고 소개·시범수업 전환이 줄어요. '새 평가 연구' 한 번에 여러 장을 다시 맞추고, 새 평가용 카드도 익혀요. 수업안의 연습 칸은 평가가 바뀌면 효과가 뒤집혀요.`
+      : EV.warn ? (canPrep ? `개편 전에 미리 연구해 두면 개편 때 더 많은 노트가 이어져요(${EV.prep}/${CHC.prepMax}).` : `미리 준비 ${EV.prep}/${CHC.prepMax} 완료. 개편이 오면 노트를 다시 맞추세요.`)
+      : `노트 ${I2.total}장(기본 ${I2.base.length}장 + 내 수업 노트 ${I2.notes.length}장)이 모두 지금 평가에 맞아요. 평가가 바뀌면 노트 일부가 낡고, 연습 칸 카드의 효과가 뒤집혀요.`;
     const evalCard = `<div class="card"><h3>평가 방식 <small>${esc(EV.name)}${EV.n ? ` · 개편 ${EV.n}번째` : ""}</small></h3>
-      <div class="row small" style="gap:6px"><span style="min-width:96px">수업 적합도</span><div class="grow">${meter(EV.fit, 100, fitCol)}</div><b class="${EV.fit < 60 ? "bad" : EV.fit >= 90 ? "good" : ""}" style="min-width:42px;text-align:right">${EV.fit}/100</b></div>
+      <div class="row small" style="gap:6px"><span style="min-width:96px">수업 적합도</span><div class="grow">${meter(EV.fit, 100, fitCol)}</div><b class="${EV.fit < 60 ? "bad" : EV.fit >= 90 ? "good" : ""}" style="min-width:42px;text-align:right">${EV.fit}${TU.TU2 ? "%" : "/100"}</b></div>
       ${EV.warn ? `<div class="row wrap" style="margin-top:6px;gap:4px"><span class="tag red">개편 예고 · 약 ${EV.left}달 뒤</span><span class="tiny muted">다음: ${esc(EV.nextName)}</span></div>` : ""}
-      <div class="tiny muted" style="margin-top:6px">${evTip}</div>
+      <div class="tiny muted" style="margin-top:6px">${evTipX}</div>
       ${EV.fit < 100 || canPrep ? `<div class="acts" style="padding:0;margin-top:6px">${actRow("tu_study", undefined, EV.fit < 100 ? `새 평가 연구 (적합도 ${EV.fit})` : `새 평가 연구 (미리 준비 ${EV.prep}/${CHC.prepMax})`)}</div>` : ""}
       <div class="tiny muted" style="margin-top:6px">학생 수요: 처음의 ${popPct}% · 학령인구가 줄어 문의가 해마다 약 ${(TU.popRate() * 100).toFixed(1)}%씩 줄어요.${EV.fee < 0.995 ? ` 학생이 줄어 수업료 시세도 −${Math.round((1 - EV.fee) * 100)}%.` : ""}</div></div>`;
     // 3) 행동·운영
@@ -75,32 +80,32 @@ export default {
     const ops = `<div class="acts" style="padding:0">${n ? actRow("tu_class", undefined, `화상 수업 (${T.ap}/${n})`) : ""}${actRow("tu_find")}${hasSt ? actRow("tu_report", undefined, T.repT === S.t ? "학부모 리포트(이번 달 보냄, 효과 작음)" : "학부모 리포트") : ""}${actRow("tu_make", undefined, T.lv >= 4 ? `자료·숏폼 만들기 (자료집 ${Math.min(100, T.rec)}%)` : "자료·숏폼 만들기")}</div>
       <div class="card"><div class="row wrap" style="gap:6px">
         <button class="btn sm ${T.ad ? "gold" : ""}" data-tuad="1">${T.ad ? "유료 광고 끄기" : `유료 광고 월 ${won(Math.round(20 * c.SYN.pi(S)))}`}</button>
-        ${T.lv >= 4 ? `<button class="btn sm" data-tugrp="1" ${ua + 1 > T.open ? 'style="opacity:.5"' : ""}>4인 소그룹반 열기(1타임)</button>` : '<span class="tag" style="opacity:.6">소그룹반: 4단계부터</span>'}
-        ${T.lv >= 5 ? `<button class="btn sm ${T.agent ? "gold" : ""}" data-tuagent="1">${T.agent ? "조교 계약 끝내기" : `조교 채용 월 ${won(Math.round(45 * c.SYN.pi(S)))}`}</button>` : T.lv === 4 ? '<span class="tag" style="opacity:.6">조교: 5단계부터</span>' : ""}
+        ${T.lv >= 4 ? (I2 && I2.grpWhy ? `<span class="tag" style="opacity:.75">소그룹반: ${esc(I2.grpWhy)}</span>` : `<button class="btn sm" data-tugrp="1" ${ua + 1 > T.open ? 'style="opacity:.5"' : ""}>4인 소그룹반 열기(1타임)</button>`) : '<span class="tag" style="opacity:.6">소그룹반: 4단계부터</span>'}
+        ${T.lv >= (I2 && I2.full ? 4 : 5) ? `<button class="btn sm ${T.agent ? "gold" : ""}" data-tuagent="1">${T.agent ? "조교 계약 끝내기" : `조교 채용 월 ${won(Math.round(45 * c.SYN.pi(S)))}`}</button>` : T.lv === 4 ? '<span class="tag" style="opacity:.6">조교: 5단계부터</span>' : ""}
       </div><div class="tiny muted" style="margin-top:6px">프로필 ${Math.round(T.prof)}점 · 수업 준비도 ${T.prep} · 자료집 ${T.mats}권${T.autoRep ? " · 정기 리포트 중" : ""}${T.ai ? " · AI 채점" : ""}${T.series ? " · 출제경향 시리즈" : ""}</div></div>`;
     // 4) 시범수업 문의
     const leads = T.leads.length ? `<div class="sec">시범수업 문의 ${T.leads.length}건</div>${T.leads.map((l) => {
-      const fee = TU.feeOf(S, { ...l, grp: false }), p = TU.trialP(S, l), full = ua + l.wk > T.open;
+      const fee = TU.TU2 ? TU.leadFee(S, l) : TU.feeOf(S, { ...l, grp: false }), p = TU.trialP(S, l), full = ua + l.wk > T.open;
       return `<div class="room"><div class="body"><div class="row"><div class="grow" style="min-width:0"><div class="nm">${esc(TU.leadLabel(l))}</div>
         <div class="tiny"><span class="tag ${["isl", "ovs"].includes(l.reg) ? "purple" : ""}">${esc(TU.regName(l.reg))}</span> <span class="tag ${l.how === "ref" ? "green" : ""}">${esc(TU.howName(l.how))}</span> <span class="tag">주 ${l.wk}회</span> <span class="tag">${esc(l.mood)}</span></div></div>
         <div style="text-align:right"><div class="gold" style="font-weight:900">월 ${won(fee)}</div><div class="tiny muted">성공 ${Math.round(p * 100)}%</div></div></div>
         <div class="row"><span class="grow tiny muted">${full ? "시간표가 꽉 찼어요. 타임을 늘리세요" : l.how === "app" ? `과외온 수수료 ${Math.round(T.cut * 100)}%` : "수수료 없음"}</span><button class="btn sm gold" data-act="tu_trial" data-arg="${esc(l.id)}">시범수업 ⚡1</button></div></div></div>`;
     }).join("")}` : "";
     // 5) 학생 카드
-    const studs = T.studs.length ? `<div class="sec">정규 학생 ${TU.heads(S)}명</div>${T.studs.map((st) => `<div class="room"><div class="body">
+    const studs = T.studs.length ? `<div class="sec">정규 학생 ${TU.heads(S)}명${I2 && I2.open ? ` · 수업안 ${I2.n}/${I2.cap}명${I2.full ? "(본업)" : ` · 본업이면 ${I2.capFull}명까지`}` : ""}</div>${T.studs.map((st) => `<div class="room"><div class="body">
       <div class="row"><div class="grow" style="min-width:0"><div class="nm">${esc(TU.studLabel(st))}</div>
         <div class="tiny"><span class="tag ${["isl", "ovs"].includes(st.reg) ? "purple" : ""}">${esc(TU.regName(st.reg))}</span> <span class="tag ${st.how === "app" ? "" : "green"}">${esc(TU.howName(st.how))}</span> <span class="tag">${st.grp ? `${st.size}명 · 1타임` : `주 ${st.wk}회`}</span>${st.pause ? ' <span class="tag blue">방학 휴식</span>' : ""}</div></div>
-        <div style="text-align:right"><div class="gold" style="font-weight:900">월 ${won(st.fee)}</div><div class="tiny muted">${st.months}개월째</div></div></div>
+        <div style="text-align:right"><div class="gold" style="font-weight:900">월 ${won(st.fee)}</div><div class="tiny muted">${st.months}개월째${TU.TU2 && st.hr ? ` · 시간당 ${st.hr}만` : ""}</div></div></div>
       <div class="row small" style="gap:6px"><span style="min-width:64px">학생 만족</span><div class="grow">${meter(st.sat, 100, "var(--blue)")}</div><b style="min-width:26px;text-align:right">${pct(st.sat)}</b></div>
       <div class="row small" style="gap:6px"><span style="min-width:64px">학부모 만족</span><div class="grow">${meter(st.par, 100, st.par < 50 ? "var(--red)" : "var(--gold)")}</div><b class="${st.par < 50 ? "bad" : ""}" style="min-width:26px;text-align:right">${pct(st.par)}</b></div>
-      <div class="row small"><span class="muted">${st.g === "성인" ? "시험 없음(성인)" : `성적 ${st.sc}점${st.last ? ` <b class="${st.last > 0 ? "good" : "bad"}">(${st.last > 0 ? "+" : ""}${st.last})</b>` : ""}`}</span><span class="grow"></span><button class="btn sm danger" data-tudrop="${esc(st.id)}">수업 마무리</button></div>
+      <div class="row small"><span class="muted">${st.g === "성인" ? "시험 없음(성인)" : `성적 ${st.sc}점${st.last ? ` <b class="${st.last > 0 ? "good" : "bad"}">(${st.last > 0 ? "+" : ""}${st.last})</b>` : ""}`}</span><span class="grow"></span><button class="btn sm danger" data-tudrop="${esc(st.id)}">수업 마무리</button></div>${TU.TU2 ? planRow(c, st) : ""}
     </div></div>`).join("")}` : '<div class="card tiny muted">아직 정규 학생이 없어요. 과외온에서 학생을 모집하고, 문의가 오면 시범수업을 하세요. 처음엔 메시지 200통에 1건 성사라는 말도 있어요.</div>';
     // 6) 지난달 정산
     const bill = L && (L.rev || L.mat) ? `<div class="card"><h3>지난달 정산 <small>${L.ex ? esc(L.ex) : ""}</small></h3><div class="kv">
       <div><div class="k">수업료</div><div class="v">${won(L.rev)}</div></div><div><div class="k">자료 판매</div><div class="v">${won(L.mat)}</div></div>
       <div><div class="k">수수료·비용</div><div class="v bad">−${won(L.cost)}</div></div><div><div class="k">수업 진행</div><div class="v ${L.q >= 100 ? "good" : "bad"}">${L.q}%</div></div></div>
       <div class="tiny muted" style="margin-top:6px">수업을 다 못 하면 수업료 일부를 환불·보강으로 미뤄요. 회사 마감 주간엔 한 타임이 펑크 날 수 있어요.</div></div>` : "";
-    return `${boardHead("tutoring")}${head}${tt}${f30}${evalCard}${ops}${leads}${studs}${bill}`;
+    return `${boardHead("tutoring")}${head}${TU.TU2 ? undCard(c) : ""}${tt}${TU.TU2 ? priceCard(c) : ""}${f30}${evalCard}${TU.TU2 ? bagCard(c) : ""}${ops}${TU.TU2 ? fullCard(c) : ""}${leads}${studs}${bill}`;
   },
 
   bind(c) {
@@ -111,5 +116,141 @@ export default {
     c.q("[data-tugrp]", () => done(TU.openGroup(c.S) ? "4인 소그룹반을 열었어요. 빈자리는 소개로 차요" : "빈 타임이 없어요. 타임을 먼저 늘리세요"));
     c.q("[data-tulic]", () => done(TU.doLicense(c.S)));
     c.q("[data-tudrop]", (el) => done(TU.dropStud(c.S, el.dataset.tudrop)));
+    if (TU.TU2) bind2(c, done);
   },
 };
+
+// ───────── 11-27 처방형 개편: 수업안 화면(스위치 TU2_ON. 꺼져 있으면 아래는 불리지 않는다) ─────────
+const TD = TU.TU2_DATA, cardBy = (id) => TD.CARDS.find((x) => x.id === id) || null;
+const PB = { id: null, pick: {} }; // 지금 열어 둔 수업안 짜기(저장하지 않는 화면 상태)
+const RE_N = { new: "새 학생", term: "학기 초", slump: "슬럼프 신호", eval: "평가 개편", next: "다음 막힌 곳" };
+const EVK_N = { written: "지필", essay: "서술형", oral: "구술", proctor: "AI 감독 실기", project: "프로젝트", interview: "대학 면접", none: "시험 없음" };
+const num = (v) => Math.round(v).toLocaleString("ko-KR");
+const tagChip = (t, warn) => `<span class="tag ${warn ? "red" : TD.RISK.includes(t) ? "gold" : ""}" style="font-size:10px;padding:1px 5px">${TD.TAGS[t] || t}${warn ? " ✕" : ""}</span>`;
+// 업의 이해도 게이지(세차·컨설팅·과외 공통 꼴)
+function undCard(c) {
+  const { S } = c, U = TU.understanding(S), I = TU.tu2Info(S), K = TD.TU2_BAL.und, r1 = (v) => Math.round(v * 10) / 10;
+  const stN = ["", "초반: 수업 자체가 어려운 때(능력치가 가른다)", "중반: 학생마다 다른 수업안을 찾는 때(이해도가 가른다)", "후반: 수업안은 노트가 풀고, 사람 관리가 어려운 때"][U.stage];
+  const how = `맞춘 수업안이 수업 노트로 남으면 +${r1(K.note)}(어려운 조합은 +${r1(K.note * K.hard)}), 같은 유형을 한 번 더 맞추면 +${r1(K.again)}, 시험에서 성적을 올린 학생마다 +${r1(K.up)}, 막힌 곳을 풀면 +${r1(K.solve)}(어려운 것은 +${r1(K.solve * K.hard)}), 가르친 달마다 +${K.month}. 점수가 쌓일수록 같은 일로 오르는 양은 줄어요. 평가가 바뀌어 노트가 낡으면 그 노트 몫의 ${Math.round(K.stale * 100)}%가 빠지고, 다시 맞추면 돌아와요.`;
+  return undCardC(S, "tutoring", { foot: stN, how, extra: `<div class="tiny muted" style="margin-top:6px">내 수업 노트 ${I.notes.length}장 · 푼 막힌 곳 ${I.solved}개 · 수업 가방 카드 ${I.cards.length}장</div>` });
+}
+// 수업 가방: 가진 카드 · 익힐 교수법 · 살 도구 · 수업 노트
+function bagCard(c) {
+  const { S, esc, won, actRow } = c, I = TU.tu2Info(S), pi = c.SYN.pi(S);
+  if (!I.open) return `<div class="card"><h3>수업 가방 <small>${I.from}단계부터</small></h3><div class="tiny muted">지금은 누구에게나 같은 수업을 해요. ${I.from}단계(시간당 ${TU.LV[I.from].hr}만)부터 새로 받는 학생에게는 학생별 수업안을 짭니다. 수업료가 오르면 고민해야 하는 것이 달라져요.</div></div>`;
+  const bySlot = TD.SLOTS.map((sl) => `<div class="row wrap" style="gap:3px;margin-top:4px"><span class="tiny muted" style="min-width:30px">${sl.n}</span>${TD.CARDS.filter((x) => x.slot === sl.id && I.cards.includes(x.id)).map((x) => `<span class="tag ${x.kind === "tool" ? "purple" : ""}" style="font-size:11px">${esc(x.n)}</span>`).join("") || '<span class="tiny muted">없음</span>'}</div>`).join("");
+  const L = TU.learnable(S), tools = TD.CARDS.filter((x) => x.kind === "tool" && !I.cards.includes(x.id) && TU.cardOk(S, x));
+  const learn = L.length ? `<div class="sec" style="margin-top:8px">익힐 수 있는 교수법</div><div class="acts" style="padding:0">${L.slice(0, 4).map((x) => actRow("tu_learn", x.id, `${x.n} 연수 (${I.lp[x.id] || 0}/${x.lp || 1}) · ${TD.SLOTS.find((q) => q.id === x.slot).n} 칸`)).join("")}</div>${L.length > 4 ? `<div class="tiny muted">그 밖에 ${L.length - 4}장</div>` : ""}` : "";
+  const buy = tools.length ? `<div class="sec" style="margin-top:8px">살 수 있는 도구</div><div class="row wrap" style="gap:6px">${tools.map((x) => `<button class="btn sm" data-tubuy="${x.id}">${esc(x.n)} ${won(Math.round(x.cost * pi))}</button>`).join("")}</div>` : "";
+  const TR = (id) => TD.TRAITS.find((x) => x.id === id)?.n || id, BL = (id) => TD.BLOCKS.find((x) => x.id === id)?.n || id, PA = (id) => TD.PARENTS.find((x) => x.id === id)?.n || id;
+  const notes = I.notes.length ? I.notes.slice(-12).map((n) => `<div class="tiny" style="margin-top:2px">${n.ev === (S.tutoring.evN || 0) ? "" : '<span class="tag red" style="font-size:10px">낡음</span> '}${esc(BL(n.b))} × ${esc(TR(n.tr))}${n.n > 1 ? ` (${n.n}번 확인)` : ""}</div>`).join("") : '<div class="tiny muted">아직 없어요. 수업안이 맞아 시험에서 성적이 오르면 노트로 남아요.</div>';
+  const tabu = Object.keys(I.tabu).map((k) => { const [a, t] = k.split("|"), [kind, id] = a.split(":"); return `<div class="tiny" style="margin-top:2px"><span class="tag red" style="font-size:10px">금지</span> ${esc(kind === "tr" ? TR(id) : kind === "b" ? BL(id) : PA(id))} × ${esc(TD.TAGS[t] || t)}</div>`; }).join("");
+  return `<div class="card"><h3>수업 가방 <small>카드 ${I.cards.length}장 · 한 달 수업 시간 ${I.time}</small></h3>${bySlot}${learn}${buy}
+    <details style="margin-top:8px"><summary class="tiny muted" style="cursor:pointer;display:inline-block">수업 노트 ${I.notes.length}장 · 금지 기록 ${Object.keys(I.tabu).length}줄 ▾</summary>${notes}${tabu}</details></div>`;
+}
+// 학생 카드 아래에 붙는 수업안 요약
+function planRow(c, st) {
+  const { S, esc } = c, p = st.pl, T = S.tutoring, I = TU.tu2Info(S);
+  if (!p) {
+    if (st.grp) return `<div class="tiny muted">그룹반은 수업 노트를 묶은 반 공통 수업안으로 가요.</div>`;
+    if (st.g === "성인" || !I.open) return "";
+    return `<div class="row small"><span class="grow tiny muted">수업안 없는 수업 · 내 수업료의 ${I.cheapPct}%만 받아요</span><button class="btn sm" data-tuup="${esc(st.id)}" ${I.n >= I.cap ? 'style="opacity:.5"' : ""}>수업안 수업으로 올리기</button></div>`;
+  }
+  const BL = (id) => TD.BLOCKS.find((x) => x.id === id), tr = TD.TRAITS.find((x) => x.id === p.tr), pa = TD.PARENTS.find((x) => x.id === p.pa);
+  const blocks = p.b.length ? p.b.map((id, i) => (p.hb[i] ? '<span class="tag">??? (아직 모름)</span>' : `<span class="tag blue">${esc(BL(id).n)}</span>`)).join(" ") : '<span class="tag green">막힌 곳이 다 풀렸어요</span>';
+  const who = `<div class="tiny" style="margin-top:4px">${blocks}</div><div class="tiny" style="margin-top:3px"><span class="tag ${p.htr ? "" : "purple"}">${p.htr ? "성향 ???" : esc(tr.n)}</span> <span class="tag">${esc(pa.n)}</span></div>
+    <div class="tiny muted" style="margin-top:3px">학부모가 바라는 것: ${esc(pa.wantN)} · 싫어하는 것: ${p.hh ? "???" : esc(pa.hateN)}</div>`;
+  const plan = p.plan ? `<div class="tiny" style="margin-top:4px">${TD.SLOTS.map((sl) => `<span class="muted">${sl.n}</span> ${esc(cardBy(p.plan[sl.id])?.n || "비움")}`).join(" · ")}</div>` : '<div class="tiny bad" style="margin-top:4px">수업안이 아직 없어요. 짜기 전에는 싼 단계 수업료만 받아요.</div>';
+  const sig = p.plan ? (p.sig ? `<div class="row wrap tiny" style="gap:4px;margin-top:4px"><span class="tag ${p.sig.hw < 45 ? "red" : p.sig.hw >= 75 ? "green" : ""}">숙제율 ${p.sig.hw}%</span><span class="tag">질문 ${p.sig.q}개</span><span class="tag ${p.sig.face === "굳음" || p.sig.face === "어두움" ? "red" : p.sig.face === "밝음" ? "green" : ""}">표정 ${p.sig.face}</span>${p.adapt ? '<span class="tag blue">적응 중</span>' : ""}</div>` : '<div class="tiny muted" style="margin-top:4px">중간 신호는 다음 달부터 보여요. 결과는 시험 달에 나와요.</div>') : "";
+  const flag = p.shut ? '<span class="tag red">입을 닫음 · 걸린 칸을 바꾸세요</span>' : p.plan && p.re ? `<span class="tag gold">${RE_N[p.re] || ""}: 다시 짤 때</span>` : "";
+  const lab = !p.plan ? "수업안 짜기" : p.re ? "수업안 다시 짜기" : "한 칸 바꾸기";
+  return `<div style="min-width:0;max-width:100%;overflow-wrap:anywhere">${who}${plan}${sig}<div class="row wrap small" style="margin-top:4px">${flag}<span class="grow"></span><button class="btn sm ${!p.plan || p.shut ? "gold" : ""}" data-tuplan="${esc(st.id)}">${PB.id === st.id ? "닫기" : lab}</button></div>${PB.id === st.id ? builder(c, st) : ""}</div>`;
+}
+// 수업안 짜기: ① 진단(고르는 순간 가려진 칸이 열린다) → ② 개념 · 연습 · 숙제 · 소통 → 확정
+function builder(c, st) {
+  const { S, esc } = c, p = st.pl, I = TU.tu2Info(S), free = TU.freeWin(p);
+  const own = (slot) => TD.CARDS.filter((x) => x.slot === slot && I.cards.includes(x.id) && TU.cardOk(S, x));
+  if (free && !p.dxDone) {
+    const hid = (p.htr ? 1 : 0) + (p.hb[1] ? 1 : 0) + (p.hh ? 1 : 0);
+    return `<div style="margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:10px;min-width:0;max-width:100%;box-sizing:border-box"><div class="small"><b>① 진단</b> <span class="tiny muted">가려진 것 ${hid}개 · 깊이 볼수록 수업 시간을 써요</span></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:6px">${own("dx").map((x) => `<button class="btn sm" style="display:block;width:100%;text-align:left;white-space:normal;min-width:0" data-tudx="${esc(st.id)}:${x.id}">${esc(x.n)} <span class="tiny muted">시간 ${x.t} · 가려진 것 ${x.rev}개 열기</span></button>`).join("")}
+      <button class="btn sm" style="display:block;width:100%;text-align:left;white-space:normal;min-width:0" data-tudx="${esc(st.id)}:">진단 없이 바로 짠다 <span class="tiny muted">시간 0</span></button></div></div>`;
+  }
+  const tr = p.htr ? null : TD.TRAITS.find((x) => x.id === p.tr), b0 = TD.BLOCKS.find((x) => x.id === p.b[0]), pa = TD.PARENTS.find((x) => x.id === p.pa);
+  const draft = { ...(p.dx && free ? { dx: p.dx } : !free && p.plan?.dx ? { dx: p.plan.dx } : {}), ...PB.pick };
+  const warnOf = (t) => (tr && TU.tabuKnown(S, "tr", tr.id, t)) || (b0 && TU.tabuKnown(S, "b", b0.id, t)) || (!p.hh && pa.hate === t);
+  const slots = ["cp", "pr", "hw", "cm"].map((sid) => { const sl = TD.SLOTS.find((x) => x.id === sid);
+    return `<div style="margin-top:8px"><div class="small"><b>${sl.n}</b> <span class="tiny muted">${esc(sl.tip)}</span></div><div style="display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:4px">${own(sid).map((x) => {
+      const on = draft[sid] === x.id, ek = sid === "pr" ? (x.good.includes(I.evKind) ? '<span class="tag green" style="font-size:10px;padding:1px 5px">지금 평가에 맞음</span>' : x.bad.includes(I.evKind) ? '<span class="tag red" style="font-size:10px;padding:1px 5px">지금 평가엔 안 통함</span>' : "") : "";
+      return `<button class="btn sm" style="display:block;width:100%;text-align:left;white-space:normal;min-width:0;line-height:1.6;${on ? "border:2px solid var(--gold);" : ""}" data-tupick="${sid}:${x.id}">${on ? '<b class="gold">✓</b> ' : ""}${esc(x.n)} <span class="tiny muted">시간 ${x.t}</span><br>${x.tags.map((t) => tagChip(t, warnOf(t))).join(" ")} ${ek}</button>`; }).join("")}</div></div>`; }).join("");
+  const R = TU.matchOf(S, st, draft, true), used = TU.planT(draft), over = used > I.time;
+  const est = R.m >= 0.75 ? ["잘 맞음", "good", "+5~12점"] : R.m >= 0.5 ? ["보통", "", "−2~+6점"] : ["어긋남", "bad", "−8~+1점"];
+  const warn = [...R.shut.map((a) => `금기: ${TD.TAGS[a[2]]}`), ...(R.hate ? [`학부모가 싫어함: ${TD.TAGS[R.hate]}`] : [])];
+  const hint = tr ? `<div class="tiny muted" style="margin-top:4px">${esc(tr.n)}: ${esc(tr.hint)}</div>` : '<div class="tiny muted" style="margin-top:4px">성향을 아직 몰라요. 모르는 채로 짜면 금기를 건드릴 수 있어요.</div>';
+  const N = TU.noteOf(S, st), noteBtn = N && free ? `<button class="btn sm" data-tunote="${esc(st.id)}">노트대로 채우기${N.ev === (S.tutoring.evN || 0) ? "" : "(낡은 노트)"}</button>` : "";
+  return `<div style="margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:10px;min-width:0;max-width:100%;box-sizing:border-box">
+    <div class="small"><b>${free ? "② 수업안" : "한 칸 바꾸기"}</b> <span class="tiny muted">${free ? `진단: ${esc(cardBy(p.dx)?.n || "없음")}` : "평소에는 한 달에 한 칸만 바꿔요. 적응에 한 달 걸려요"}</span></div>${hint}
+    <div class="tiny muted" style="margin-top:2px">${esc(b0 ? `${b0.n}: ${b0.memo}` : "막힌 곳이 다 풀렸어요. 기본기만 지켜도 돼요")}</div>${slots}
+    <div class="row wrap small" style="gap:6px;margin-top:10px"><span class="${over ? "bad" : ""}">수업 시간 ${used}/${I.time}</span><span>예상 <b class="${est[1]}">${est[0]}</b> · 시험 ${est[2]}</span>${R.note ? '<span class="tag green">맞는 노트 있음</span>' : ""}</div>
+    ${warn.length ? `<div class="tiny bad" style="margin-top:4px">${warn.map(esc).join(" · ")}</div>` : ""}
+    <div class="tiny muted" style="margin-top:4px">가려진 것(???)은 예상에 들어 있지 않아요. 시험 날 운도 있어요.</div>
+    <div class="row wrap" style="gap:6px;margin-top:8px">${noteBtn}<span class="grow"></span><button class="btn sm gold" data-tuset="${esc(st.id)}" ${over ? 'style="opacity:.5"' : ""}>${free ? "이 수업안으로 간다" : "이 칸을 바꾼다"}</button></div></div>`;
+}
+// 본업으로 가려면(체크 목록) · 모집 채널
+function fullCard(c) {
+  const { S, esc, meter, actRow } = c, I = TU.tu2Info(S), T = S.tutoring; if (T.lv < 3) return "";
+  const L = TU.fullCheck(S), CHS = TU.chanInfo(S), okN = L.filter((x) => x.ok).length, live = CHS.filter((x) => x.live).length;
+  const rows = L.map((x) => `<div class="row small" style="gap:6px;margin-top:3px"><span class="${x.ok ? "good" : "muted"}" style="min-width:16px">${x.ok ? "✓" : "·"}</span><span class="grow" style="min-width:0">${esc(x.n)}</span><b class="${x.ok ? "good" : ""}">${num(x.now)} / ${num(x.need)}</b></div>`).join("");
+  const chans = CHS.map((x) => `<div style="margin-top:6px"><div class="row small" style="gap:6px"><span style="min-width:104px">${esc(x.n)}</span><div class="grow">${meter(x.heat, 100, x.live ? "var(--green)" : "var(--line)")}</div><b style="min-width:30px;text-align:right">${x.heat}</b></div>
+    ${x.why ? `<div class="tiny muted">${esc(x.why)} · ${esc(x.tip)}</div>` : `<div class="acts" style="padding:0;margin-top:3px">${actRow("tu_chan", x.id, `${x.n} 다지기${x.live ? "" : " (식어 있음)"}`)}</div>`}</div>`).join("");
+  return `<div class="card"><h3>${I.full ? "본업 운영" : "본업으로 가려면"} <small>${I.full ? `수업안 ${I.cap}/${I.capFull}명까지 열림` : `${okN}/${L.length} 채움`}</small></h3>${rows}
+    <div class="tiny muted" style="margin-top:6px">${I.full ? `본업 수업안 상한(${I.capFull}명)은 위 조건과 살아 있는 모집 채널(${live}/3)이 찬 만큼 열려요.` : `다 채우기 전에 퇴사하면 본업 수업안 상한(${I.capFull}명)이 다 안 열리고 문의가 모자라요. 본업은 낮 타임까지 채워야 해서 모집 채널을 넓혀야 차요.`}</div>
+    ${I.full ? `<div class="row wrap" style="gap:6px;margin-top:8px">${TU.dayWhy(S) ? `<span class="tag" style="opacity:.75">낮 타임 종합반: ${esc(TU.dayWhy(S))}</span>` : '<button class="btn sm" data-tuday="1">낮 타임 종합반 열기(1타임)</button>'}${T.studs.filter((x) => x.grp).map((x) => `<button class="btn sm ${x.ta ? "gold" : ""}" style="white-space:normal;min-width:0" data-tuta="${esc(x.id)}">${esc(TU.studLabel(x))} ${x.ta ? "· 조교 반(되찾기)" : "· 조교에게 넘기기"}</button>`).join("")}</div>` : ""}
+    <div class="sec" style="margin-top:8px">모집 채널 <small class="muted">살아 있음 ${live}곳 · 방치하면 달마다 식어요</small></div>${chans}</div>`;
+}
+// 수업료: 시세 · 오토 | 직접 · 인상 통보
+const PXD = { hr: null, t: -1 }; // 직접 정할 때 고르는 중인 값(저장하지 않는 화면 상태)
+function priceCard(c) {
+  const { S, esc } = c; if (PXD.t !== S.t) { PXD.hr = null; PXD.t = S.t; }
+  const I0 = TU.priceInfo(S), I = !I0.auto && PXD.hr != null ? TU.priceInfo(S, PXD.hr) : I0, f = I.mk.f, w = I.pw, one = (v) => (Math.round(v * 10) / 10).toFixed(1);
+  const sg = (v) => `${v >= 0 ? "+" : "−"}${Math.abs(Math.round(v * 100))}%`, chip = (t, v, cls) => `<span class="tag ${cls || (v > 0.004 ? "green" : v < -0.004 ? "red" : "")}" style="font-size:11px">${t} ${sg(v)}</span>`;
+  const chips = [`<span class="tag" style="font-size:11px">${S.tutoring.lv}단계 기준 ${one(I.mk.base)}만</span>`, chip("물가", f.pi - 1, " "), f.pop < 0.995 ? chip("학생 수 감소", f.pop - 1) : "", Math.abs(f.cmp) >= 0.005 ? chip("경쟁 선생·학원", f.cmp) : "", f.seas ? chip(f.seas > 0 ? "시험 대비 수요" : "방학·비수기", f.seas) : "", f.ref > 0.004 ? chip("평가 개편 불안", f.ref) : ""].join(" ");
+  const pwL = [["업의 이해도", w.und], ["성적 상승 실적", w.ups], ["학부모 후기", w.rev], ["입시 전문·대기 명단 같은 이름값", w.flags]].filter((x) => x[1] > 0.004).map((x) => `${x[0]} ${sg(x[1])}`).join(" · ");
+  const feelCls = I.feel === "많음" ? "green" : I.feel === "보통" ? "" : "red";
+  const mode = `<div class="row" style="gap:6px;margin-top:8px"><button class="btn sm" style="flex:1;min-width:0;${I.auto ? "border:2px solid var(--gold);" : ""}" data-tupxmode="auto">${I.auto ? '<b class="gold">✓</b> ' : ""}오토</button><button class="btn sm" style="flex:1;min-width:0;${I.auto ? "" : "border:2px solid var(--gold);"}" data-tupxmode="manual">${I.auto ? "" : '<b class="gold">✓</b> '}직접</button></div>`;
+  const body = I.auto ? `<div class="row wrap" style="gap:6px;align-items:baseline;margin-top:8px"><span class="small">오토가 잡은 값</span><b class="gold" style="font-size:20px">시간당 ${one(I.hr)}만</b><span class="tiny muted">(시세의 ${I.pct}%)</span><span class="grow"></span><span class="tag ${feelCls}">문의 ${I.feel}</span></div>
+      <div class="tiny muted" style="margin-top:4px">보수적으로 잡아요. 문의가 끊기지는 않지만 잘 맞춘 값보다 덜 벌어요. 시세가 급하게 움직이면(시험 달 · 방학 · 평가 개편) 한두 달 늦게 따라가요. 기존 학생 인상은 알아서 하지 않아요.</div>`
+    : `<div class="row wrap" style="gap:6px;align-items:baseline;margin-top:8px"><span class="small">${PXD.hr != null && PXD.hr !== I0.cur ? "이 값이라면" : "내 수업료"}</span><b class="gold" style="font-size:20px">시간당 ${one(I.hr)}만</b><span class="tiny muted">(시세의 ${I.pct}%)</span><span class="grow"></span><span class="tag ${feelCls}">문의 ${I.feel}</span></div>
+      <div class="tiny muted" style="margin-top:4px">시범수업 전환 ${I.conv >= 1 ? "+" : "−"}${Math.abs(Math.round((I.conv - 1) * 100))}% · 오토라면 ${one(I.autoHr)}만 · 지금 정해 둔 값 ${one(I0.cur)}만</div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px">${[-0.5, -0.1, 0.1, 0.5].map((d) => `<button class="btn sm" style="min-width:0;padding-left:0;padding-right:0" data-tupxd="${d}">${d > 0 ? "+" : "−"}${Math.abs(d)}만</button>`).join("")}</div>
+      <div class="row wrap" style="gap:6px;margin-top:6px"><span class="grow tiny muted">${I0.canSet ? "한 달에 한 번 · 새 학생부터 이 값" : "이번 달은 이미 바꿨어요"}</span><button class="btn sm gold" data-tupxset="1" ${!I0.canSet || PXD.hr == null || PXD.hr === I0.cur ? 'style="opacity:.5"' : ""}>이 값으로 정한다</button></div>`;
+  const N = I0.notice, note = N.pending ? '<div class="tiny" style="margin-top:8px"><span class="tag blue">인상을 알렸어요 · 다음 달 정산 때 답이 와요</span></div>'
+    : N.n ? `<div class="row wrap" style="gap:6px;margin-top:8px"><span class="grow tiny muted" style="min-width:0">지금 값보다 싸게 받는 기존 학생 ${N.n}명(평균 ${Math.round(N.g * 100)}% 낮음)${N.can ? ` · 알리면 한 명당 약 ${Math.round(N.risk * 100)}%가 그만둬요` : ` · 통보는 ${N.wait}달 뒤부터`}</span><button class="btn sm" data-tupxnote="1" ${N.can ? "" : 'style="opacity:.5"'}>인상 통보</button></div>` : "";
+  return `<div class="card"><h3>수업료 <small>시세 시간당 ${one(I.mk.v)}만 · 1:1 고등 기준</small></h3>
+    <div class="row wrap" style="gap:4px">${chips}</div>
+    <div class="tiny muted" style="margin-top:6px">내가 받을 만한 값 <b>${one(I.val)}만</b>${pwL ? ` (${esc(pwL)})` : " (아직 웃돈을 받을 실적이 없어요)"}</div>${mode}${body}${note}
+    <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer;display:inline-block">값을 어떻게 정하나 ▾</summary><div class="tiny muted" style="margin-top:4px">싸게 부르면 문의와 시범수업 전환이 늘지만 남는 것이 적고 타임이 금방 차요. 받을 만한 값보다 비싸게 부르면 문의가 줄고, 두 배 가까이 부르면 끊겨요. 업의 이해도 · 성적 상승 실적 · 후기가 쌓이면 더 불러도 문의가 줄지 않아요. 비싸게 받는 학생일수록 학부모 기대가 커서, 시험에서 성적이 안 오르면 항의와 환불이 세요. 학년 · 과목 · 지역에 따라 학생마다 값이 조금씩 달라요.</div></details></div>`;
+}
+function bind2(c, done) {
+  c.q("[data-tuday]", () => done(TU.openDay(c.S)));
+  c.q("[data-tuta]", (el) => done(TU.toggleTa(c.S, el.dataset.tuta)));
+  c.q("[data-tupxmode]", (el) => { PXD.hr = null; done(TU.setPriceMode(c.S, el.dataset.tupxmode)); });
+  c.q("[data-tupxd]", (el) => { const I = TU.priceInfo(c.S); PXD.t = c.S.t; PXD.hr = Math.round(Math.min(I.hi, Math.max(I.lo, (PXD.hr ?? I.cur) + +el.dataset.tupxd)) * 10) / 10; c.render(); });
+  c.q("[data-tupxset]", () => { if (PXD.hr == null) return; const msg = TU.setPrice(c.S, PXD.hr); PXD.hr = null; done(msg); });
+  c.q("[data-tupxnote]", () => done(TU.noticeRaise(c.S)));
+  const S = c.S, find = (id) => S.tutoring.studs.find((x) => x.id === id);
+  c.q("[data-tuplan]", (el) => { const id = el.dataset.tuplan, st = find(id); if (PB.id === id) { PB.id = null; PB.pick = {}; } else { PB.id = id; PB.pick = st?.pl?.plan ? Object.fromEntries(Object.entries(st.pl.plan).filter(([k]) => k !== "dx")) : {}; } c.render(); });
+  c.q("[data-tudx]", (el) => { const [id, card] = el.dataset.tudx.split(":"); done(TU.diagnose(S, id, card || null)); });
+  c.q("[data-tupick]", (el) => { const [slot, card] = el.dataset.tupick.split(":"); if (PB.pick[slot] === card) delete PB.pick[slot]; else PB.pick[slot] = card; c.render(); });
+  c.q("[data-tunote]", (el) => { const st = find(el.dataset.tunote), N = st && TU.noteOf(S, st); if (N) { PB.pick = {}; for (const k of ["cp", "pr", "hw", "cm"]) if (N.plan[k] && TU.hasCard(S, N.plan[k])) PB.pick[k] = N.plan[k]; } c.render(); });
+  c.q("[data-tuset]", (el) => {
+    const id = el.dataset.tuset, st = find(id), p = st?.pl; if (!p) return;
+    if (TU.freeWin(p)) { const had = p.plan, msg = TU.setPlan(S, id, PB.pick); if (p.plan !== had) { PB.id = null; PB.pick = {}; } return done(msg); }
+    const diff = ["cp", "pr", "hw", "cm"].filter((k) => (p.plan[k] || "") !== (PB.pick[k] || ""));
+    if (!diff.length) return done("바꾼 칸이 없어요");
+    if (diff.length > 1) return done("평소에는 한 달에 한 칸만 바꿀 수 있어요");
+    const before = p.chT, msg = TU.swapSlot(S, id, diff[0], PB.pick[diff[0]] || null); if (p.chT !== before) { PB.id = null; PB.pick = {}; } done(msg);
+  });
+  c.q("[data-tuup]", (el) => done(TU.upgrade(S, el.dataset.tuup)));
+  c.q("[data-tubuy]", (el) => done(TU.buyTool(S, el.dataset.tubuy)));
+}

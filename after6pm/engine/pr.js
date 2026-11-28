@@ -11,6 +11,7 @@ export const PR_R1 = { occ: 1 /* 11-26 대표 결정: 1회차 보정을 없앤�
 const PR_KOCC = (typeof process !== "undefined" && +process.env?.PRK) || D.PR_K; // 예약률 상수(봇 손잡이: 환경변수 PRK)
 import * as PW from "./prwave.js"; // 11-23 컨셉 위기·컨셉 잠금·관리 이득
 import * as RVW from "./review.js"; // v4.28 경쟁사 가격표·가격 전쟁·후기 사건
+import * as UND from "./und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. 스위치 UND_ON 이 꺼져 있으면 늘 false)
 import * as SP from "./space.js"; // 11-25 건물 장기 임대(월세 그대로)·히든 길 켜짐 여부
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -345,21 +346,26 @@ const fmt = (x) => Math.round(x * 10) / 10;
 // 계약 (UI에서 직접 부름, 행동력 0)
 // 11-25 권리금 흥정(대표 요청: "깎는 것도 기술이니 깎는 시도를 무조건 하게"). 매물마다 한 번. 고른 방법의 능력치가 높을수록 잘 깎인다.
 // 권리금이 없는 자리는 월세를 조금 깎아 본다. 화면은 계약 검토에서 흥정을 끝내야 '계약하기'가 열린다. 화면을 거치지 않는 계약(봇 등)은 가장 센 방법으로 저절로 한 번 한다
+// 11-28 업의 이해도 효과(스위치 UND_ON). 숙련(300)부터 매물의 방음·건물주 성향과 상권 궁합이 조사 없이 보인다(화면만. L.seen 은 그대로라 저장이 안 바뀐다). 장인(1,000)부터 흥정이 통할 확률 +nego
+export const PR_UND = { see: ["sound", "landlord"], nego: 0.08 };
+export const undSee = (s) => UND.at(s, "pr", UND.TH.숙련);
+export const undSeen = (s, L, k) => !!L?.seen?.[k] || (PR_UND.see.includes(k) && undSee(s)); // 이 숨은 항목이 지금 보이나(직접 확인했거나 업의 이해도 덕분)
+export const undNego = (s) => (UND.at(s, "pr", UND.TH.장인) ? PR_UND.nego : 0);
 export function negoBest(s) { return (s.st.num || 0) >= (s.st.talk || 0) ? "data" : "talk"; }
 export function nego(s, r, listingId, way) {
   const L = s.pr.listings.find((x) => x.id === listingId); if (!L) return { ok: false, msg: "매물이 없어요" };
   if (L.nego) return { ok: false, msg: "이 매물은 이미 흥정했어요" };
   const N = D.PR_NEGO, W = N.ways[way] || N.ways.talk; way = N.ways[way] ? way : "talk";
-  const st = s.st[W.st] || 0, p = clamp((st - 20) / 140, 0, 1) + Math.min(0.15, (s.pr.know || 0) / 400);
-  let cut = way === "bluff" ? (r.chance(N.bluff.hit[0] + N.bluff.hit[1] * p) ? r.range(N.bluff.cut[0], N.bluff.cut[1]) : 0)
-    : r.chance(N.hit[0] + N.hit[1] * p) ? r.range(N.base[0], N.base[1]) + N.up * Math.min(1, p) : 0; // 안 통하면 그대로(찔끔 깎인 것처럼 보이지 않게)
+  const st = s.st[W.st] || 0, p = clamp((st - 20) / 140, 0, 1) + Math.min(0.15, (s.pr.know || 0) / 400), ub = undNego(s);
+  let cut = way === "bluff" ? (r.chance(N.bluff.hit[0] + N.bluff.hit[1] * p + ub) ? r.range(N.bluff.cut[0], N.bluff.cut[1]) : 0)
+    : r.chance(N.hit[0] + N.hit[1] * p + ub) ? r.range(N.base[0], N.base[1]) + N.up * Math.min(1, p) : 0; // 안 통하면 그대로(찔끔 깎인 것처럼 보이지 않게)
   const onKey = L.key > 0;
   if (!onKey) cut = Math.min(cut * 0.25, N.rentMax);
   const before = onKey ? L.key : L.rent;
   const after = onKey ? Math.round(before * (1 - cut) / 10) * 10 : Math.max(5, Math.floor(before * (1 - cut) / 5) * 5);
   if (onKey) L.key = after; else { L.dep = Math.round(L.dep * after / before / 100) * 100; L.rent = after; }
   const saved = before - after;
-  L.nego = { way, on: onKey ? "key" : "rent", before, after, saved };
+  L.nego = { way, on: onKey ? "key" : "rent", before, after, saved, ...(ub ? { und: 1 } : {}) };
   gainStat(s, W.st, 0.4, "nego");
   const what = onKey ? "권리금" : "월세";
   const msg = saved > 0 ? `${W.n}: ${what} ${won(before)} → ${won(after)} (${won(saved)} 깎음)` : `${W.n}: ${way === "bluff" ? "\"그럼 그 매물 하세요.\" 안 통했다" : "꿈쩍도 안 한다"}. ${what} ${won(before)} 그대로`;
@@ -550,6 +556,7 @@ export function bedCallChoose(s, i) { // 구청 전화 선택: 0 = 지금 버린
 }
 export function month(s, r, notes, scenes) {
   const pr = s.pr; let total = 0; fill(s); mktMonth(s, r, notes, scenes);
+  UND.fxNote(s, "pr", pr, notes, [[UND.TH.숙련, "이제 매물만 봐도 방음과 건물주 성향이 짐작돼요. 상권 궁합도 조사 없이 보여요"], [UND.TH.장인, `권리금·월세 흥정이 통할 확률이 ${Math.round(PR_UND.nego * 100)}%p 올라요`]]);
   const open = pr.rooms.filter((x) => x.status === "open");
   pr.know = Math.min(40, pr.know + open.length * 0.15) > pr.know ? Math.min(40, pr.know + open.length * 0.15) : pr.know; // 운영하면서 조금씩 는다(40까지)
   const nAll = pr.rooms.length;

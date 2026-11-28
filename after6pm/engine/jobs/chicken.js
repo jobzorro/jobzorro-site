@@ -1,17 +1,66 @@
 // 프랜차이즈 치킨(투자형): "알바가 그만두면 내가 튀긴다."
 // 가맹 상담·정보공개서 → 점주 교육 → 1억+ 창업(대출) → 오픈 → 배달퉁 별점·플레이스 순위 → 점장·2호점 → 3형제.
-// 매출에서 재료 47%·배달수수료 15%·인건비 17%·임차료 10%를 빼면 11%가 남는다. 그 11%를 지키는 게임.
+// 매출에서 재료 47%(본사 물류 마진 포함)·배달 수수료와 배달비 15~17%·인건비 17%·임차료 10%를 빼면 11%가 남는다. 그 11%를 지키는 게임.
+// 11-27 첫 5년 현실화(CH_REAL): 오픈 효과 석 달 → 꺼짐 → 두 해에 걸쳐 회복 → 3년 차부터 단골. 첫 해는 대출 원리금을 내면 남는 게 거의 없다.
 // 돈 단위 만원. 규약: engine/jobs/README.md
 import * as D from "../defs.js";
 import { addMoney, log, won, gainStat, mod, creditRoom, addLoan, salary, spouseIncome, monthlySpend, quitCompany, debt } from "../core.js";
 import * as SYN from "../syn.js";
 import * as BR from "./chbrand.js"; // 11-23 브랜드 선택·브랜드 인기·갈아타기 제안
 import * as SJ from "../sj.js"; // 초반 고생 배율(ramp)
+import * as UND from "../und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. 스위치 UND_ON 이 꺼져 있으면 늘 false)
 import * as SP from "../space.js"; // 11-25 재계약 인상(건물주 성향)·지점 수 파손 배율·히든 길 켜짐 여부
 const CH_NWK = (typeof process !== "undefined" && +process.env.CHNWK) || 0.7; // 11-27 대표 결정: 순자산에는 가게 값(보증금을 뺀 영업양수도 값)의 70%만 넣는다. 팔 때는 전액. 봇 손잡이 CHNWK
 // 11-25 히든 길 '내 브랜드 독립'(hidden.js): 열린 뒤로는 가맹 본사가 없다. 재료 원가 −mat(매출 대비 %p), 본사 광고 분담금·리뉴얼 요구·본사 사건(근접 출점·영업지역·오너 논란) 없음.
 // 소스 납품 수입은 hidden.js HID_REW.chicken.fix. 간판을 바꾼 날 입소문은 0에서 다시(hidden.js openPath)
 export const CH_HID = { mat: 0.08 };
+// 11-28 업의 이해도 효과(스위치 UND_ON). 전문(600)부터: 초보 로스(폐기) ×waste · 숨은 인건비 7% → hidLab. 장인(1,000)부터: 가맹 계약 갱신에 "장부를 펴 놓고 조건을 다시 쓴다" 선택지(chbrand.js)
+export const CH_UND = { waste: 0.5, hidLab: 0.065 };
+export const undPro = (s) => UND.at(s, "chicken", UND.TH.전문);
+// 11-27 첫 5년 현실화(대표 지시 "치킨집 첫 5년을 좀 손봐 줘. 현실성 가미"). 숫자는 여기만 고친다. 세기 손잡이 CHRK(기본 1): 깎는 쪽(오픈 뒤 꺼짐·초보 로스·오픈 행사비·배달비·숨은 인건비·자리 운 폭)에만 곱한다
+// 고치기 전(봇 400판): 오픈 첫 달부터 흑자, 적자 달 0%, 투자금 회수 19달, 5년 순자산 가운데 2.55억. 현실은 오픈 효과가 석 달이면 빠지고, 첫 해는 대출 원리금을 내면 남는 게 없고, 회수에 3년 안팎이 걸린다
+// 고친 뒤 봇 값은 docs 가 아니라 이 줄에: 첫 5년 순자산 가운데 약 1.9억, 투자금 회수 가운데 33달 안팎, 넉 달째(오픈 효과가 빠진 달) 적자 가게 절반. 2회차 파이어율은 예전과 같게(단골·장기 가맹점 우대로 메운다)
+const CHRK = (typeof process !== "undefined" && process.env.CHRK !== undefined && process.env.CHRK !== "" ? +process.env.CHRK : 1);
+export const CH_REAL = {
+  open: { m: 3, mul: 1.08, promo: 0.03 },      // 오픈 효과: 첫 석 달 주문 ×1.08(본사 오픈 행사·배달앱 '신규' 딱지) · 오픈 행사(쿠폰·전단·시식)는 점주 부담, 매출의 3%
+  dip: { depth: 0.28, end: 30 },               // 오픈 효과가 빠진 넉 달째 주문 ×0.72 → 30달째까지 단골이 쌓이며 1로
+  rookie: { waste: 0.045, m: 12 },             // 초보 사장 로스(폐기·기름·실수): 재료비가 매출의 4.5%p 더 → 12달에 걸쳐 0
+  rider: { fresh: 0.04, old: 0.012, m: 42 },   // 배달비 점주 부담(중개 수수료와 따로): 배달 매출의 4% → 42달 뒤 1.2%(단골이 포장·전화 주문으로 넘어온다)
+  hidLab: 0.07,                                // 숨은 인건비(주휴수당·퇴직금·4대 보험): 알바 인건비 +7%
+  self: { save: 60, max: 3, hpFrom: 3, hp: 4 }, // 직접 튀기면 한 번에 인건비 −60만(예전 45만, 한 달 3번까지). 한 달 3번째부터는 몸이 상한다(체력 −4씩)
+  luck: { sd: 0.11, up: 1.35, lo: 0.78, hi: 1.3, sv: 0.5 }, // 자리 운(열어 봐야 아는 것: 골목 동선·경쟁점): 주문 ×(1 ± 11%), 좋은 쪽은 폭이 1.35배(대박 자리). 창업 전에 상권 분석을 했으면 아주 나쁜 자리(−5.5% 밑)는 피한다
+  young: 12,                                   // 문 연 지 12달이 안 된 가게: 적자가 석 달 이어져도 통장이 1년 넘게 버티면 '위험'이 아니라 '주의'
+  vet: 0.5,                                    // 2호점부터(재창업 포함): 겪어 본 사장이라 오픈 뒤 꺼짐이 절반, 초보 로스 없음
+  reg: { from: 42, to: 102, max: 0.07 },       // 늦게 나는 열매 1. 단골: 3년 반부터 8년 반까지 주문 +7%
+  loyal: { from: 60, mat: 0.01 },              // 늦게 나는 열매 2. 장기 가맹점: 5년을 넘기면 본사 물류 단가 −1%p(리뉴얼을 거부한 매장은 빼고)
+  hq: 0.09,                                    // 화면 표시용: 재료비 안에 든 본사 물류 마진(차액가맹금)이 매출의 9%쯤. 총액은 안 바뀐다
+};
+if (typeof process !== "undefined" && process.env?.CHRP) { const o = JSON.parse(process.env.CHRP); for (const k of Object.keys(o)) CH_REAL[k] = typeof o[k] === "object" ? { ...CH_REAL[k], ...o[k] } : o[k]; } // 봇 시험용
+// 매장 나이에 따른 주문 배수: 공사·오픈 반달 0.75 → 오픈 효과 석 달 → 꺼짐 → 회복 → 단골
+export function ageMul(st) {
+  const R = CH_REAL, m = st.months || 0, clamp01 = (x) => Math.max(0, Math.min(1, x));
+  if (m <= 0) return 0.75;
+  if (st.pre && m < R.dip.end) return Math.min(1, 0.8 + 0.035 * m); // 11-27 현실화 전에 문 연 매장(예전 저장): 예전 6개월 램프 그대로, 꺼짐 없음
+  if (m <= R.open.m) return R.open.mul;
+  const low = 1 - R.dip.depth * CHRK * (st.vet ? R.vet : 1);
+  if (m < R.dip.end) return low + (1 - low) * (m - R.open.m - 1) / Math.max(1, R.dip.end - R.open.m - 1);
+  return 1 + R.reg.max * clamp01((m - R.reg.from) / (R.reg.to - R.reg.from));
+}
+// 화면용: 지금 단계 이름과 설명
+export function ageInfo(st) {
+  const R = CH_REAL, m = st.months || 0, v = ageMul(st), pc = `${v >= 1 ? "+" : "−"}${Math.abs(Math.round((v - 1) * 100))}%`;
+  if (m <= 0) return { k: "build", n: "공사·오픈 준비", t: "첫 달은 반달 영업이에요" };
+  if (m <= R.open.m) return { k: "open", n: "오픈 효과", t: `본사 오픈 행사로 주문이 몰려요(${R.open.m - m + 1}달 남음). 행사비는 점주 몫이에요` };
+  if (st.pre && m < R.dip.end) return { k: "set", n: "자리 잡는 중", t: `주문 ${pc}. 문 연 지 ${m}달, 주문이 차오르는 중이에요` }; // 현실화 전에 문 연 매장은 꺼짐이 없다
+  if (m < R.dip.end) return { k: "dip", n: "오픈 효과 빠짐", t: `주문 ${pc}. 단골이 쌓이는 ${R.dip.end}달째까지 조금씩 돌아와요` };
+  if (m < R.reg.from || v <= 1) return { k: "set", n: "자리 잡는 중", t: `오픈 뒤 꺼졌던 주문이 다 돌아왔어요. ${Math.max(0, R.reg.from - m)}달 뒤부터 단골 주문이 붙어요` };
+  return { k: "reg", n: "자리 잡은 가게", t: `단골 주문 ${pc}${m < R.reg.to ? `(${Math.round(R.reg.to / 12)}년 차까지 +${Math.round(R.reg.max * 100)}%)` : ""}` };
+}
+// 화면용: 투자금 회수까지 남은 달(최근 여섯 달 평균 순익 기준). 다 찾았으면 0, 지금 흐름으로 안 되면 null
+export function payback(s, st) {
+  const left = st.invested - st.cum; if (left <= 0) return { left: 0, m: 0, avg: Math.round(avgP(st)) };
+  const a = avgP(st); return { left: Math.round(left), m: a > 0 && st.hist.length >= 3 ? Math.ceil(left / a) : null, avg: Math.round(a) };
+}
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const BRAND = "황금닭";
@@ -93,7 +142,7 @@ function newStore(s, type, disc, opts = {}) {
 
 // ───────── 이벤트 16개(+통장 경보) ─────────
 function scene(s, id, st, extra = {}) {
-  const C = s.chicken; s._chEv = { id, st: st?.id || null, ...extra };
+  const C = s.chicken, chEv = { id, st: st?.id || null, ...extra }; s._chEv = chEv; // 11-28 사건 정보는 장면이 직접 들고 간다(chEv). 한 달에 치킨 장면이 둘 겹치면 s._chEv 하나로는 뒤 장면이 앞 장면을 덮어썼다
   const nm = st?.name || `${BR.name(s)} 매장`, P = Math.round(pi(s) * 10) / 10, E2 = CH_EV2;
   const L = {
     e01: { t: "오늘 계약하시면", x: `가맹 상담실. 담당자가 웃는다. "오늘 사인하시면 가맹비 반값입니다." 정보공개서는 아직 받지도 않았다.`,
@@ -171,7 +220,7 @@ function scene(s, id, st, extra = {}) {
   };
   const e = L[id];
   const kind = "event";
-  return { kind, tag: "치킨", title: e.t, text: e.x, choices: e.c, onChoose: "ch_ev" };
+  return { kind, tag: "치킨", title: e.t, text: e.x, choices: e.c, onChoose: "ch_ev", chEv };
 }
 
 // ───────── 11-22 특이 요소 장면 ─────────
@@ -233,7 +282,7 @@ function f30Choose(s, r, i, ok, name) {
     C.renewN = (C.renewN || 0) + 1;
     if (i === 0) { payBig(s, st, o.cost, out); fresh(R3.boostM); }
     else if (i === 1) { payBig(s, st, ok ? o.cost * 0.5 : o.cost, out); fresh(R3.boostM); }
-    else { st.old = true; st.refuseT = st.months; out.push(`낡은 매장: 주문 −${Math.round(R3.old * 100)}%`, `${R3.wait}달 뒤 재계약 심사`); }
+    else { st.old = true; st.refuseT = st.months; out.push(`낡은 매장: 주문 −${Math.round(R3.old * 100)}%`, `${R3.wait}달 뒤 재계약 심사`, `장기 가맹점 물류 단가 우대(−${(CH_REAL.loyal.mat * 100).toFixed(1)}%p)에서 빠져요`); }
     return out;
   }
   if (name === "ch_revev") {
@@ -246,10 +295,11 @@ function f30Choose(s, r, i, ok, name) {
 }
 
 // 장면 선택 결과
-function evChoose(s, r, i, ok) {
-  const C = s.chicken, ev = s._chEv || {}, st = C.stores.find((x) => x.id === ev.st) || C.stores[0], out = [], P = pi(s);
+function evChoose(s, r, i, ok, sc) {
+  const C = s.chicken, ev = sc?.chEv || s._chEv || {}, st = C.stores.find((x) => x.id === ev.st) || C.stores[0], out = [], P = pi(s);
   const spend = (v, nm = "치킨 비용") => { v = Math.round(v); s.cash -= v; addMoney(s, "exp", nm, v); out.push(`돈 −${won(v)}`); };
   const rate = (v) => { if (st) { st.rating = clamp(st.rating + v, 3.4, 5); out.push(`${st.name} 별점 ${v > 0 ? "+" : ""}${v.toFixed(2)}`); } };
+  if (!ev.id) { s._chEv = null; return out; } // 사건 정보가 없는 장면(예전 저장에서 겹쳐 있던 뒤 장면): 아무것도 적지 않는다
   C.seen[ev.id] = s.t;
   switch (ev.id) {
     case "e01": C.step = Math.max(C.step, 1);
@@ -284,7 +334,8 @@ function evChoose(s, r, i, ok) {
       else if (i === 0) { s.cash += 1000; addMoney(s, "inc", "가족에게 빌린 돈", 1000); C.famDebt = (C.famDebt || 0) + 1000; out.push("현금 +1,000만(가족 빚)"); }
       break;
   }
-  s._chEv = null; return out;
+  if (!sc?.chEv || s._chEv?.id === ev.id) s._chEv = null;
+  return out;
 }
 
 // ───────── 오픈·양수도·폐점 ─────────
@@ -298,7 +349,9 @@ function openStore(s, r, type, opts = {}) {
   let loanAdd = 0;
   if (lack > 0) { const a = Math.min(lack, LOAN_MAX - C.loan); if (a > 0) { addLoan(s, "창업대출", a, 0.052); s.cash += a; C.loan += a; loanAdd = a; lack -= a; } if (lack > 0) { addLoan(s, "신용대출", lack, 0.065); s.cash += lack; out.push(`신용대출 ${won(lack)}`); } }
   s.cash -= q.total; addMoney(s, "exp", "치킨 창업비", q.total);
-  const st = newStore(s, type, C.stores.length ? 0 : C.disc || 0, opts); st.invested = q.total; st.loan = loanAdd; st.loan0 = loanAdd; C.stores.push(st); C.invested += q.total; C.opened++;
+  const st = newStore(s, type, C.stores.length ? 0 : C.disc || 0, opts); st.invested = q.total; st.loan = loanAdd; st.loan0 = loanAdd;
+  { const L = CH_REAL.luck; let z = r.normal(); if (C.sv?.[st.ai]) z = Math.max(z, -L.sv); st.luck = +clamp(1 + L.sd * CHRK * z * (z > 0 ? L.up || 1 : 1), L.lo, L.hi).toFixed(3); st.vet = (C.opened || 0) >= 1; } // 11-27 자리 운(열어 봐야 안다)·겪어 본 사장
+  C.stores.push(st); C.invested += q.total; C.opened++;
   if (C.lv < 1) C.lv = 1;
   log(s, `${st.name} 오픈(${TYPES[type].n}). 창업비 ${won(q.total)}${loanAdd ? `, 창업대출 ${won(loanAdd)}` : ""}`, "work");
   return [`${st.name} 계약·공사 시작`, `창업비 ${won(q.total)}`, ...(loanAdd ? [`창업대출 ${won(loanAdd)} (5년 원금 상환)`] : []), ...out];
@@ -339,7 +392,8 @@ export function danger(s) {
   const runway = burn > 0 ? buf / burn : 99;
   const late = s.debtLate || 0, loss = C.lossRun || 0;
   let lv = 0;
-  if (late > 0 || runway < 3 || (s.cash < 0 && room < 300)) lv = 3; else if (runway < 8 || loss >= 3) lv = 2; else if (runway < 18 || loss >= 1) lv = 1;
+  const young = C.stores.length > 0 && Math.max(...C.stores.map((x) => x.months)) < CH_REAL.young; // 11-27 첫 해 적자는 흔하다: 통장이 1년 넘게 버티면 적자가 이어져도 '주의'까지만(통장 경보 장면이 달마다 뜨지 않게)
+  if (late > 0 || runway < 3 || (s.cash < 0 && room < 300)) lv = 3; else if (runway < 8 || (loss >= 3 && !(young && runway >= 12))) lv = 2; else if (runway < 18 || loss >= 1) lv = 1;
   return { lv, n: ["안전", "주의", "위험", "매우 위험"][lv], runway, burn, flow, late, loss, room, debt: Math.round(debt(s)), loan: Math.round(C.loan), prin: Math.round(prin) };
 }
 
@@ -422,7 +476,7 @@ export default {
       if (st.crew < st.crewNeed && r.chance(0.5)) st.morale = clamp(st.morale + 3, 0, 100);
       st.morale = clamp(st.morale + 2 * boost, 0, 100);
       gainStat(s, "hands", 0.3); gainStat(s, "body", 0.3);
-      return { lines: [`${st.name} 근무 ${Math.round(st.ap * 10) / 10}/${needAp(s, st)}`, `튀김 품질 ${Math.round(st.fry * 100)}`, `인건비 −${won(Math.round(45 * P))}`], msg: r.pick(["180도 기름, 7분 30초. 바구니를 올리면 탁탁 소리가 난다.", "금요일 밤 9시, 주문 알림이 멈추질 않는다. 앞치마가 기름으로 반짝였다.", "알바가 그만둔 자리, 오늘은 내가 튀긴다.", "치킨무를 세 박스째 채웠다. 손목이 시큰하다."]) };
+      return { lines: [`${st.name} 근무 ${Math.round(st.ap * 10) / 10}/${needAp(s, st)}`, `튀김 품질 ${Math.round(st.fry * 100)}`, st.shifts > CH_REAL.self.max ? "인건비 절감 없음(한 달 " + CH_REAL.self.max + "번까지)" : `인건비 −${won(Math.round(CH_REAL.self.save * P))}`, ...(st.shifts >= CH_REAL.self.hpFrom ? [`이번 달 ${st.shifts}번째 근무: 몸이 상해요(월말 스태미너 −${(st.shifts - CH_REAL.self.hpFrom + 1) * CH_REAL.self.hp})`] : [])], msg: r.pick(["180도 기름, 7분 30초. 바구니를 올리면 탁탁 소리가 난다.", "금요일 밤 9시, 주문 알림이 멈추질 않는다. 앞치마가 기름으로 반짝였다.", "알바가 그만둔 자리, 오늘은 내가 튀긴다.", "치킨무를 세 박스째 채웠다. 손목이 시큰하다."]) };
     }
     if (id === "ch_market") {
       st.mk = (st.mk || 0) + 1; const eff = st.mk <= 2 ? 1 : 0.35; // 한 달 두 번까지 제대로, 그 뒤는 체감
@@ -455,8 +509,11 @@ export default {
     if (C.selfFill > 0) C.selfFill--;
     const syn = (SYN.on(s, "ch_insta") ? 1.04 : 1) * (SYN.on(s, "ch_ucafe") || C.barter ? 1.03 : 1);
     const indep = SP.hidOpen(s, "chicken"), matR = BR.f(s).mat - (indep ? CH_HID.mat : 0), adR = indep ? 0 : BR.f(s).ad; // 11-25 내 브랜드 독립
+    const RL = CH_REAL, uPro = undPro(s), uW = uPro ? CH_UND.waste : 1, uH = uPro ? CH_UND.hidLab : RL.hidLab; // 11-28 업의 이해도 전문부터: 폐기·숨은 인건비가 준다
+    UND.fxNote(s, "chicken", C, notes, [[UND.TH.전문, `발주량과 근무표가 손에 익었어요. 폐기(초보 로스)가 절반으로, 숨은 인건비가 ${+(RL.hidLab * 100).toFixed(1)}% → ${+(CH_UND.hidLab * 100).toFixed(1)}%로 줄어요`], [UND.TH.장인, "가맹 계약 갱신 때 '장부를 펴 놓고 조건을 다시 쓴다' 선택지가 생겨요"]]);
     for (const st of C.stores) {
-      const T = TYPES[st.type], need = needAp(s, st) + (C.selfFill && !st.mgr ? 1 : 0), q = st.mgr ? clamp(0.85 + 0.15 * st.ap / need, 0, 1) : clamp(st.ap / need, 0, 1), own = st.mgr ? 0 : Math.min(3, st.shifts);
+      const T = TYPES[st.type], need = needAp(s, st) + (C.selfFill && !st.mgr ? 1 : 0), q = st.mgr ? clamp(0.85 + 0.15 * st.ap / need, 0, 1) : clamp(st.ap / need, 0, 1), own = st.mgr ? 0 : Math.min(RL.self.max, st.shifts);
+      const age0 = st.months, ageK = ageMul(st); // 11-27 매장 나이(이번 달 정산 기준)
       // 알바: 사기·이탈·태업
       const short = Math.max(0, st.crewNeed - st.crew), cover = Math.min(short, Math.floor(st.shifts / 2)), unc = short - cover;
       st.morale = clamp(st.morale + (58 - st.morale) * 0.25 - (C.wage > 1.08 ? 2 : 0) + (st.inc ? 4 : 0) - unc * 4 + (q - 0.5) * 6, 0, 100);
@@ -468,7 +525,7 @@ export default {
       const mk = (30 - st.rank) / 29;
       // 주문 → 매출
       let dem = (0.9 + 0.25 * mk) * (1 + (st.rating - 4.6) * 0.35) * seas(s.cal) * st.loc * (st.zone || 1) * C.pop * syn * (0.75 + 0.25 * q) * Math.pow(st.price, -1.5);
-      if (st.months === 0) dem *= 0.75; else if (st.months < 6) dem *= 0.8 + 0.035 * st.months; // 첫 달은 공사·오픈 반달, 6개월 램프
+      dem *= ageK * (st.luck ?? 1); // 11-27 공사 반달 → 오픈 효과 석 달 → 꺼짐·회복 → 단골(ageMul) × 자리 운. 예전: 6개월 램프(0.8 + 0.035 × 달)
       dem *= SJ.ramp(s, "chicken"); // 첫 매장 초반 고생: 배달앱 순위·리뷰가 쌓일수록 1로(sj.js ENTRY)
       if (unc) dem *= 1 - 0.08 * unc;
       if (st.morale < 35) dem *= 0.95;
@@ -481,15 +538,21 @@ export default {
       dem *= flagMul(st) * (st.freshM > 0 ? 1 + CH_F30.renew.boost : 1) * (st.old ? 1 - CH_F30.renew.old : 1); // 11-22 깃발·리뉴얼
       dem = Math.max(0.2, dem * (1 + 0.05 * r.normal()));
       const orders = Math.round(T.base * dem / 2.4), rev = Math.round(orders * 2.4 * P * st.price);
-      const mat = rev / st.price * matR * (C.costUp ? 1.1 : 1) * (1 + C.cost) + (st.revEv ? rev * CH_F30.rev.cost : 0);
-      const fee = rev * T.dshare * C.fee * (st.app ? 0.8 : 1);
-      let lab = (T.lab + 0.1 * T.base * dem) * C.wage * P * (1 - 0.12 * short) - own * 45 * P - (st.fam ? 120 * P : 0) - (C.selfFill && !st.mgr ? 40 * P : 0);
+      const loyal = !indep && !st.old && age0 >= RL.loyal.from ? RL.loyal.mat : 0; // 장기 가맹점 물류 단가 인하
+      const waste0 = st.vet || st.pre ? 0 : rev / st.price * RL.rookie.waste * CHRK * clamp(1 - age0 / RL.rookie.m, 0, 1), waste = waste0 * uW; // 초보 사장 로스
+      const mat = rev / st.price * (matR - loyal) * (C.costUp ? 1.1 : 1) * (1 + C.cost) + (st.revEv ? rev * CH_F30.rev.cost : 0) + waste;
+      const hqM = indep ? 0 : Math.min(mat - waste, rev / st.price * RL.hq); // 재료비 안의 본사 물류 마진(표시용)
+      const rider = rev * T.dshare * (RL.rider.old + (RL.rider.fresh - RL.rider.old) * clamp(1 - age0 / RL.rider.m, 0, 1)) * CHRK * (st.app ? 0.8 : 1); // 배달비 점주 부담
+      const fee = rev * T.dshare * C.fee * (st.app ? 0.8 : 1) + rider;
+      const promo = age0 <= RL.open.m ? rev * RL.open.promo * CHRK : 0; // 오픈 행사비
+      const labB = (T.lab + 0.1 * T.base * dem) * C.wage * P * (1 - 0.12 * short);
+      let lab = labB * (1 + uH * CHRK) - own * RL.self.save * P - (st.fam ? 120 * P : 0) - (C.selfFill && !st.mgr ? 40 * P : 0);
       lab = Math.max(T.lab * 0.4 * P, lab) + (st.mgr ? (310 * C.wage - 140) * P : 0); // 점장 월급 − 점장이 대신하는 알바 시간
-      const other = rev * (C.corp ? 0.015 : 0.03) + (45 - CH_F30.flag.def * CH_F30.flag.cost + (st.flags ?? CH_F30.flag.def) * CH_F30.flag.cost) * P + (st.inc ? rev * 0.015 : 0) + rev * adR; // 본사 광고 분담금(독립하면 없음)
+      const other = rev * (C.corp ? 0.015 : 0.03) + (45 - CH_F30.flag.def * CH_F30.flag.cost + (st.flags ?? CH_F30.flag.def) * CH_F30.flag.cost) * P + (st.inc ? rev * 0.015 : 0) + rev * adR + promo; // 본사 광고 분담금(독립하면 없음) + 오픈 행사비
       const cost = Math.round(mat + fee + lab + st.rent + other);
       const profit = rev - cost;
       s.cash += rev - cost; addMoney(s, "inc", "치킨 매출", rev); addMoney(s, "exp", "치킨 비용", cost);
-      st.last = { orders, rev, cost, profit, mat: Math.round(mat), fee: Math.round(fee), lab: Math.round(lab), rent: st.rent, other: Math.round(other), q, unc };
+      st.last = { orders, rev, cost, profit, mat: Math.round(mat), fee: Math.round(fee), lab: Math.round(lab), rent: st.rent, other: Math.round(other), q, unc, hq: Math.round(hqM), rider: Math.round(rider), waste: Math.round(waste), promo: Math.round(promo), ad: Math.round(rev * adR), age: +ageK.toFixed(3), ...(uPro ? { und: Math.round(waste0 - waste + labB * (RL.hidLab - uH) * CHRK) } : {}) };
       st.hist.push(profit); if (st.hist.length > 24) st.hist.shift();
       st.cum += profit; total += profit; rev0 += rev;
       st.revOk = rev >= 4000 * P ? st.revOk + 1 : 0;
@@ -501,7 +564,11 @@ export default {
       if (st.mgr && st.shifts < 1 && !st.inc) st.mgrIdle++; else st.mgrIdle = 0;
       st.buzz = Math.max(0, st.buzz * 0.78 - (st.months > 18 ? 1 : 0)); st.fry = st.fry * 0.85 + 0.45 * 0.15;
       if (st.months > 0 && st.months % 24 === 0) { const up = SP.rentUpOf(s, "chicken", st); st.rent = Math.round(st.rent * (1 + up)); notes.push(up ? `${st.name}: 건물주가 월세를 ${Math.round(up * 100)}% 올렸다${up < SP.SPACE_RENT ? "(건물주 인연 덕에 덜 올림)" : ""} (${won(st.rent)})` : `${st.name}: 재계약, 월세 그대로 (건물 장기 임대 · ${won(st.rent)})`); } // 11-25 2년마다 5%, 건물주가 반기면 3%(space.js)
+      if (!st.mgr && st.shifts >= RL.self.hpFrom) { const d = (st.shifts - RL.self.hpFrom + 1) * RL.self.hp; s.hp = Math.max(0, s.hp - d); notes.push(`${st.name}: 이번 달 ${st.shifts}번을 직접 튀겼다. 손목과 허리가 먼저 안다(스태미너 −${d})`); } // 11-27 직접 하면 몸이 상한다
       st.months++; st.ap = 0; st.shifts = 0; st.mk = 0;
+      if (st.months === RL.open.m + 1 && ageMul(st) < RL.open.mul) notes.push(`${st.name}: 오픈 효과가 빠졌다. 배달앱 '신규' 딱지가 떨어지고 주문이 ×${ageMul(st).toFixed(2)}로 줄었다. 단골이 쌓이는 ${RL.dip.end}달째까지 조금씩 돌아온다`);
+      if (st.months === RL.reg.from) notes.push(`${st.name}: ${Math.floor(RL.reg.from / 12)}년을 넘게 버텼다. 이름 대신 "늘 먹던 걸로"라고 적는 단골이 생겼다(단골 주문이 ${Math.round(RL.reg.to / 12)}년 차까지 조금씩 늘어 +${Math.round(RL.reg.max * 100)}%)`);
+      if (st.months === RL.loyal.from + 1 && !indep) notes.push(st.old ? `${st.name}: 가맹 ${Math.round(RL.loyal.from / 12)}년. 리뉴얼을 거부한 매장은 장기 가맹점 우대에서 빠졌다` : `${st.name}: 가맹 ${Math.round(RL.loyal.from / 12)}년. 본사가 장기 가맹점 물류 단가를 내렸다(재료비 −${(RL.loyal.mat * 100).toFixed(1)}%p)`);
       // 11-22 깃발 경쟁·리뉴얼·리뷰 이벤트
       { const F3 = CH_F30.flag, R3 = CH_F30.renew; st.flags ??= F3.def; st.rv ??= F3.def;
         if (st.months >= 2) { if (st.rv < F3.max && ((st.flags > st.rv && r.chance(F3.rvUp)) || r.chance(F3.rvRand))) { st.rv++; if (s.t - (C.flagT ?? -99) >= F3.gap) { C.flagT = s.t; fsc = fsc || flagScene(s, st); } else notes.push(`${st.name}: 옆 치킨집 깃발이 ${st.rv}개로 늘었다`); } else if (st.rv > F3.def && st.flags <= st.rv && r.chance(F3.rvDown)) st.rv--; }
@@ -511,7 +578,7 @@ export default {
         else if (st.months % R3.every === 0 && st.renewAt !== st.months) { st.renewAt = st.months; fsc = renewScene(s, st, "ask"); }
         else if (st.old && st.refuseT !== undefined && st.months - st.refuseT === R3.wait) { if (r.chance(R3.refuseP)) fsc = renewScene(s, st, "deny"); else { st.refuseT = undefined; notes.push(`${st.name}: 본사가 이번 재계약은 넘어갔다. 낡은 매장은 그대로`); } } }
       // 창업대출 원금: 5년 분할(이자는 대출 이자로 따로 나간다)
-      if (st.loan > 0) { const p = Math.min(st.loan, Math.round((st.loan0 || st.loan) / 60)); st.loan -= p; C.loan = Math.max(0, C.loan - p); s.cash -= p; addMoney(s, "exp", "창업대출 원금", p); const l = s.loans.find((x) => x.n === "창업대출"); if (l) { l.amt -= p; if (l.amt <= 1) s.loans = s.loans.filter((x) => x !== l); } }
+      if (st.loan > 0) { const p = Math.min(st.loan, Math.round((st.loan0 || st.loan) / 60)); st.loan -= p; C.loan = Math.max(0, C.loan - p); s.cash -= p; addMoney(s, "exp", "창업대출 원금", p); if (st.last) st.last.prin = p; const l = s.loans.find((x) => x.n === "창업대출"); if (l) { l.amt -= p; if (l.amt <= 1) s.loans = s.loans.filter((x) => x !== l); } }
       if (st.months === 1) scenes.push(scene(s, "e04", st));
       if (st.mgr && st.mgrIdle >= 3 && !C.seen.e16) scenes.push(scene(s, "e16", st));
     }
@@ -559,7 +626,7 @@ export default {
   },
   stopWhy: (s) => (s.chicken.stores.length ? "매장을 모두 양도하거나 폐점해야 접을 수 있어요" : null),
   choose: { ch_ev: evChoose, ch_flag: (s, r, i, ok) => f30Choose(s, r, i, ok, "ch_flag"), ch_renew: (s, r, i, ok) => f30Choose(s, r, i, ok, "ch_renew"), ch_revev: (s, r, i, ok) => f30Choose(s, r, i, ok, "ch_revev") },
-  migrate(s, T) { if (!T.v) T.v = 1; T.seen = T.seen || {}; T.stores = T.stores || []; if (T.v < 2) { T.v = 2; for (const st of T.stores) { st.flags ??= CH_F30.flag.def; st.rv ??= CH_F30.flag.def; st.revEv = !!st.revEv; st.revM = st.revM || 0; st.revOff = st.revOff || 0; st.renewAt ??= Math.floor(st.months / CH_F30.renew.every) * CH_F30.renew.every; } } },
+  migrate(s, T) { if (!T.v) T.v = 1; T.seen = T.seen || {}; delete T.seen.undefined; /* 11-28 장면이 겹치던 버그가 남긴 찌꺼기 */ T.stores = T.stores || []; if (T.v < 2) { T.v = 2; for (const st of T.stores) { st.flags ??= CH_F30.flag.def; st.rv ??= CH_F30.flag.def; st.revEv = !!st.revEv; st.revM = st.revM || 0; st.revOff = st.revOff || 0; st.renewAt ??= Math.floor(st.months / CH_F30.renew.every) * CH_F30.renew.every; } } if (T.v < 3) { T.v = 3; for (const st of T.stores) if (st.luck == null) { st.pre = true; st.luck = 1; } } }, // 11-28 QA: 표시 이름을 pre 로(old 는 '리뉴얼 거부' 표시라 겹치면 주문 −3%·우대 제외·꼬리표가 붙었다) // v3(11-27): 현실화 전에 문 연 매장은 예전 규칙(꺼짐·초보 로스 없음, 자리 운 1)
   milestones: [
     { key: "ch_sign", title: "가맹 계약서에 서명", test: (s) => (s.chicken?.lv || 0) >= 1, lines: ["두꺼운 계약서 마지막 장에 이름을 썼다. 손에 땀이 났다.", "\"축하드립니다, 점주님.\" 점주님. 처음 듣는 호칭이다."] },
     { key: "ch_lv2", title: "별점 관리 사장님", test: (s) => (s.chicken?.lv || 0) >= 2, lines: ["배달퉁 별점 4.8. 리뷰 알림이 울릴 때마다 심장이 먼저 뛴다.", "\"사장님 답글 보고 시켰어요.\" 답글도 장사다."] },

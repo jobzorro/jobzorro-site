@@ -98,7 +98,7 @@ export function startLock(s) {
     : `아직 이르다. 입사 ${PICK.t}개월까지는 회사 적응과 탐색 기간. 그동안 후보를 ${NEED_CANDS}개 이상 알아 두자(지금 ${n}개 · ${left}달 남음)`;
 }
 function pickCands(s, fillTo) { // 발견한 후보(궁합 높은 순) + 모자라면 이해도 높은 순으로 채운다
-  const play = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k].play && !isActive(s, k));
+  const play = Object.keys(D.SIDEJOBS).filter((k) => D.SIDEJOBS[k]?.play && !isActive(s, k));
   const a = play.filter((k) => isFound(s, k)).sort((x, y) => fit(s, y).v - fit(s, x).v).slice(0, PICK.max);
   if (a.length < fillTo) for (const k of play.filter((k) => !isFound(s, k)).sort((x, y) => (s.sj.int[y] || 0) - (s.sj.int[x] || 0))) { if (a.length >= fillTo) break; a.push(k); }
   return a;
@@ -301,7 +301,7 @@ export function month(s, r, notes) {
 export function todos(s) {
   const t = [];
   if (!s.sj.open) return t;
-  const ready = Object.keys(s.sj.found).filter((k) => D.SIDEJOBS[k].play && !isActive(s, k));
+  const ready = Object.keys(s.sj.found).filter((k) => D.SIDEJOBS[k]?.play && !isActive(s, k));
   if (ready.length && s.sj.active.length < D.SJ_SLOTS) t.push(pickOpen(s) ? { lv: 1, text: `발견한 투잡: ${ready.map((k) => D.SIDEJOBS[k].n).join(", ")} · 시작할 수 있어요`, go: "sj" } : { lv: 0, text: `투잡 후보: ${ready.map((k) => D.SIDEJOBS[k].n).join(", ")} · 고르는 건 ${PICK.t}개월을 채운 뒤(${PICK.t - s.t}달 남음)`, go: "sj" });
   if (!s.sj.active.length && !ready.length && s.t >= 2) t.push({ lv: 0, text: "투잡 탐색: 너튜브·리포트·취미에서 찾아보기", go: "sj" });
   for (const id of s.hb.joined) if (s.hb.lastT[id] !== s.t) t.push({ lv: 0, text: `${D.HOBBIES[id].n} 이번 달 모임 아직(회비 ${D.HOBBIES[id].fee}만)`, go: "hobby" });
@@ -377,7 +377,7 @@ export const ENTRY = {
     ask: "\"머신 청소는 매일 10분. 곰팡이 한 번 나면 그 동네에서 끝이에요.\"", help: ["hands", "주말에 선배 매장 마감을 도왔다. 원두 채우고, 얼음통 닦고, 쓰레기 세 봉지."],
     next: "동네 단골이 생겼어요. 이제 별점을 지키면서 객단가 높은 메뉴를 하나 더 넣어 봐요." },
   chicken: { st: "num", need: 40, f0: 0.88, rm: 10, pt: 40, disc: 30, who: "c120", whoN: "치킨집 6년 차 점주",
-    prep: { cost: 10, list: ["정보공개서 읽는 법 상담받기", "치킨집 주말 알바 체험", "원가표 만들기(재료비 47%·수수료 15%)"] },
+    prep: { cost: 10, list: ["정보공개서 읽는 법 상담받기", "치킨집 주말 알바 체험", "원가표 만들기(재료비 47%·수수료와 배달비 17%)"] },
     acts: { ch_market: "mkt", ch_shift: "qual", ch_crew: "qual" },
     shock: "오픈발 주문이 끝나자 배달앱 순위가 쭉 밀렸다. 리뷰 수는 옆 가게의 10분의 1. 매출은 본사가 말한 '초보 평균'에 한참 못 미치는데, 월세와 인건비는 그대로 나간다.",
     tips: [{ a: "ch_market", k: "mkt", t: "배달앱 리뷰 답글이 순위예요. '배달퉁·플레이스 관리'를 매주 해요." }, { a: "ch_shift", k: "qual", t: "피크 타임엔 사장이 튀겨요. '매장 근무'로 맛과 속도를 잡아요." }, { a: "ch_crew", k: "qual", t: "알바가 그만두면 내가 튀겨야 해요. '알바 관리'로 빈자리부터 채워요." }],

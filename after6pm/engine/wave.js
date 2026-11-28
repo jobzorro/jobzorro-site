@@ -10,7 +10,7 @@ import * as D from "./defs.js";
 import * as SYN from "./syn.js";
 import { addMoney, log } from "./core.js";
 import { profitOf } from "./rival.js";
-import { CS_AI, aiDrop } from "./cs.js";
+import { CS_AI, aiDrop, c2Wave, c2PathA } from "./cs.js"; // c2*: 11-27 처방형 개편(스위치 CS2_ON 일 때만 쓴다)
 import { prWaveMonth } from "./prwave.js";
 import { prFill, eligible as clubOk } from "./jobs/club.js"; // 파티룸 2차 길 B: 모임으로 채운다
 import * as SJ from "./sj.js";
@@ -138,8 +138,9 @@ export const WAVES2 = {
     a: { head: "학교가 학습 관리 앱을 공짜로 푼다", n: "무료 관리 앱", pre: "교육청이 AI 학습 관리 앱을 전교생에게 나눠 준다는 계획이 나왔어요. 관리형 과외가 흔들릴 수 있어요",
       text: "교육청이 학습 관리 앱을 전교생에게 풀었다. 계획표를 짜 주고, 진도를 재고, 학부모에게 보고서를 보낸다. 내가 돈 받고 하던 일이다. 관리만 해 주는 과외는 해마다 줄 판이다.",
       deep: ["성인 수강생으로 간다(직장인 영어·자격증)", "퇴근 뒤 반을 열었다. 여섯 달 뒤 직장인 수강생이 학생 수를 넘었다.", 200], half: ["형제 할인과 그룹 수업을 만든다", "빈 시간 몇 개는 채웠다. 시간당 받는 돈은 줄었다.", 30], stay: ["하던 대로 가르친다", "지금 학생은 졸업까지 간다. 그 뒤가 비어 있다."] },
-    b: { head: "입시가 바뀌어 면접·논술이 사라진다", n: "입시 개편", pre: "교육부가 '면접·논술 축소'를 검토한다는 기사가 나와요. 면접·논술 전문 과외가 흔들릴 수 있어요",
-      text: "입시 개편안이 나왔다. 대학별 면접과 논술이 사라지고 시험 점수로만 뽑는다. \"말하고 쓰는 건 사람이 봐 줘야 한다\"던 내 간판이 쓸모없어졌다. 해마다 문의가 줄 판이다.",
+    b: { head: D.TU2_ON ? "입시가 바뀌어 면접·논술이 표준 문제가 된다" : "입시가 바뀌어 면접·논술이 사라진다", n: "입시 개편", pre: "교육부가 '면접·논술 축소'를 검토한다는 기사가 나와요. 면접·논술 전문 과외가 흔들릴 수 있어요",
+      text: D.TU2_ON ? "입시 개편안이 나왔다. 대학마다 따로 내던 면접과 논술 문항을 나라가 한 틀로 묶고 채점 기준을 모두 공개한다. 학교마다 달라서 사람이 봐 줘야 했던 것이 누구나 푸는 표준 문제가 됐다. \"말하고 쓰는 건 사람이 봐 줘야 한다\"던 내 간판이 흔해졌다. 해마다 문의가 줄 판이다. (수업안에서 '풀이 쓰기·말로 설명' 카드의 덤이 반으로 줄어요)" // 11-27 수업안(TU2_ON): 평가 개편 흐름(구술·대학 면접이 이어진다)과 말이 맞게
+        : "입시 개편안이 나왔다. 대학별 면접과 논술이 사라지고 시험 점수로만 뽑는다. \"말하고 쓰는 건 사람이 봐 줘야 한다\"던 내 간판이 쓸모없어졌다. 해마다 문의가 줄 판이다.",
       deep: ["학부모 진로 상담으로 간다", "학생 대신 학부모를 만나기 시작했다. 여섯 달 뒤 상담 한 번 값이 수업 네 번 값이 됐다.", 200], half: ["취업 면접 준비생을 받는다", "대학생 몇이 왔다. 고등학생만큼 오래 다니지는 않는다.", 30], stay: ["남은 전형에 매달린다", "지금 학생은 졸업까지 간다. 그 뒤가 비어 있다."] } },
   chicken: {
     a: { head: "동네 술자리가 사라졌다", n: "술자리 실종", pre: "젊은 층이 술을 안 마신다는 통계가 해마다 나와요. 홀 장사가 흔들릴 수 있어요",
@@ -207,7 +208,7 @@ export function waveInfo(s, job) {
     return { n: w2.n, head: w2.head, cut, mode, left, round: 2, req: need(2), dodge: !!x2.dodge };
   }
   const W = WAVES[job], x = s.wv?.[job]; if (!W || !x) return null;
-  if (W.own) { const d = aiDrop(s); return d >= 5 ? { n: W.n, head: W.head, cut: d / 100, mode: s.cs?.niches?.includes("career") ? "shift" : "stay", own: true } : null; }
+  if (W.own) { const d = aiDrop(s); return d >= 5 ? { n: W.n, head: W.head, cut: d / 100, mode: s.cs?.niches?.includes("career") || (D.CS2_ON && c2PathA(s)) ? "shift" : "stay", own: true } : null; }
   const left = x.mode === "shift" ? Math.max(0, WV_BAL.shiftMo - (s.t - x.mt)) : 0;
   return { n: W.n, head: W.head, cut, mode: x.mode, left, round: 1, req: need(1), path: x.path };
 }
@@ -262,6 +263,10 @@ function scene(s, job, n, late) {
   if (n === 1 && W.own) { // 컨설팅 1차: 줄어드는 건 cs.js. 길 A = 경력 이직 분야(분야 화면에서 연다), 길 B = 면접 전문
     const nc = D.NICHES.career.req, hasA = s.cs?.niches?.includes("career"), q = rq(s, WV_REQ.cs.b, "cs:b");
     const chB = !q || q.ok ? { t: W.b[0], eff: { mental: -1 }, text: W.b[1], wv: "csb" } : { t: `면접 전문을 준비한다 (${q.n} ${q.need} 필요 · 지금 ${q.cur})`, eff: { stat: { talk: 2 } }, text: "아직은 말이 모자라다. 모의 면접을 돌리며 그날을 준비하기로 했다.", wv: "cswantb" };
+    if (D.CS2_ON) { const X = c2Wave(s); // 11-27 처방형 개편: 길 A = 사람별 전략(종합·이직·공기업), 길 B = 면접 전문(면접 프리미엄 인원 +)
+      return { kind: "event", tag: "WARNING", warn: { head: W.head, sub: `${nm} · 판이 바뀐다` }, title: W.head, onChoose: "wv_ev", wvJob: job, wvN: n,
+        text: `${X.text}\n(자소서·면접 같은 가벼운 상품 문의가 해마다 ${pct(CS_AI.perYear)}%p씩, 최대 ${pct(1 - CS_AI.floor)}%까지 줄어요. 강의는 버팀목이지만 강의료와 섭외도 같이 줄어요)\n${X.a}\n${X.b}${q ? `. ${q.n} ${q.need} 필요 · 지금 ${q.cur}` : ""})\n(어느 길이 끝까지 안전할지는 아무도 몰라요. 몇 해 뒤 한쪽이 또 흔들려요)`,
+        choices: [{ t: X.ch0[0], eff: { stat: { career: 2 }, mental: -1 }, text: X.ch0[1] }, chB, { t: W.ch[1][0], eff: { hp: -3 }, text: W.ch[1][1], wv: "cslect" }, { t: "하던 대로 자소서를 본다", eff: {}, text: W.ch[2][1] }] }; }
     return { kind: "event", tag: "WARNING", warn: { head: W.head, sub: `${nm} · 판이 바뀐다` }, title: W.head, onChoose: "wv_ev", wvJob: job, wvN: n,
       text: `${W.text}\n(신입 취업 쪽 문의가 해마다 ${pct(CS_AI.perYear)}%p씩, 최대 ${pct(1 - CS_AI.floor)}%까지 줄어요. 강의는 버팀목이지만 강의료와 섭외도 같이 줄어요)\n(길 A 경력 이직: 줄지 않아요. 커리어 ${nc.career}·회사 경력 ${nc.years}년이 돼야 분야 화면에서 열려요. ${hasA ? "이미 열었어요" : `지금 커리어 ${Math.floor(s.st?.career || 0)}`})\n(길 B 면접 전문: 면접 코칭 문의가 줄지 않아요${q ? `. ${q.n} ${q.need} 필요 · 지금 ${q.cur}` : ""})\n(어느 길이 끝까지 안전할지는 아무도 몰라요. 몇 해 뒤 한쪽이 또 흔들려요)`,
       choices: [{ t: W.ch[0][0], eff: { stat: { career: 2 }, mental: -1 }, text: W.ch[0][1] }, chB, { t: W.ch[1][0], eff: { hp: -3 }, text: W.ch[1][1], wv: "cslect" }, { t: W.ch[2][0], eff: {}, text: W.ch[2][1] }] };
@@ -287,7 +292,7 @@ export const WV_CHOOSE = {
     if (c.wv === "go" || c.wv === "csb") { const req = n === 1 ? (c.wv === "csb" ? "b" : c.key) : c.key === "d" ? "d" + hitOf(s, job) : c.key === "xa" ? "a" : c.key === "xb" ? "b" : c.key; (s.wvTook = s.wvTook || []).push({ job, n, req, t: s.t, title: String(c.t || "").replace(/^길을 바꾼다: /, "").replace(/ \(.*\)$/, "") }); } // 11-25 이번 판에 간 길(엔딩·앨범, 다음 회차 특전)
     if (n === 1 && W.own) { // 컨설팅 1차
       x.mode = "own"; log(s, `[판 변화] ${W.head}`, "work");
-      if (c.wv === "csb") { x.path = "b"; return ["면접 전문으로 간판을 바꿨어요", "면접 코칭 문의는 AI 대세에도 줄지 않아요"]; }
+      if (c.wv === "csb") { x.path = "b"; return ["면접 전문으로 간판을 바꿨어요", D.CS2_ON ? c2Wave(s).bDone : "면접 코칭 문의는 AI 대세에도 줄지 않아요"]; }
       if (c.wv === "cswantb") { x.wantB = 1; return ["조건을 채우면 면접 전문으로 자리 잡아요"]; }
       if (c.wv === "cslect" && s.cs) { s.cs.offers = Math.min(D.CS_LECT.maxOffers, (s.cs.offers || 0) + 1); return ["강의 섭외 +1"]; }
       return [];

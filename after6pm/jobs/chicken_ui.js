@@ -6,12 +6,37 @@ const pct = (v, t) => (t > 0 ? Math.round((v / t) * 100) : 0);
 // 매출 100원이 어디로 가나: 재료·배달수수료·인건비·임차료·기타·남는 돈
 function costBar(c, L) {
   const { esc } = c, t = Math.max(1, L.rev);
-  const parts = [["재료", L.mat, "var(--orange)"], ["배달", L.fee, "var(--pink)"], ["인건", L.lab, "var(--blue)"], ["임차", L.rent, "var(--purple)"], ["기타", L.other, "var(--muted)"]];
+  // 11-27 현실화: 재료비 안의 본사 물류 마진, 배달 수수료와 배달비(점주 부담)를 따로 보여 준다. 예전 저장(L.hq 없음)은 예전처럼 다섯 칸
+  const hq = L.hq || 0, rd = L.rider || 0, split = L.hq !== undefined;
+  const parts = split ? [["재료 원가", L.mat - hq, "var(--orange)"], ["본사 물류", hq, "var(--gold)"], ["배달 수수료", L.fee - rd, "var(--pink)"], ["배달비", rd, "var(--red)"], ["인건", L.lab, "var(--blue)"], ["임차", L.rent, "var(--purple)"], ["기타", L.other, "var(--muted)"]].filter((x) => x[1] > 0)
+    : [["재료", L.mat, "var(--orange)"], ["배달", L.fee, "var(--pink)"], ["인건", L.lab, "var(--blue)"], ["임차", L.rent, "var(--purple)"], ["기타", L.other, "var(--muted)"]];
   const left = L.rev - L.mat - L.fee - L.lab - L.rent - L.other;
   const seg = parts.map(([n, v, col]) => `<i title="${n}" style="display:block;height:100%;width:${Math.max(0, pct(v, t))}%;background:${col}"></i>`).join("");
   const lp = pct(left, t);
-  return `<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--panel3);margin-top:6px">${seg}<i style="display:block;height:100%;width:${Math.max(0, lp)}%;background:${left >= 0 ? "var(--green)" : "var(--red)"}"></i></div>
+  return `<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--panel3);margin-top:6px">${seg}<i style="display:block;height:100%;width:${Math.max(0, lp)}%;background:var(--green)"></i></div>
     <div class="tiny muted" style="display:flex;flex-wrap:wrap;gap:2px 8px;margin-top:3px">${parts.map(([n, v]) => `<span>${esc(n)} ${pct(v, t)}%</span>`).join("")}<b class="${left >= 0 ? "good" : "bad"}">남는 돈 ${lp}%</b></div>`;
+}
+
+// 11-27 현실화: 손익 줄(본사 물류·배달 수수료·배달비·인건비를 돈으로) + 대출 원금을 낸 뒤 손에 남는 돈
+function plLines(c, st) {
+  const { won } = c, L = st.last; if (!L || L.hq === undefined) return "";
+  const prin = L.prin || 0, hand = L.profit - prin;
+  const ex = [L.waste ? `초보 로스 ${won(L.waste)}` : "", L.promo ? `오픈 행사비 ${won(L.promo)}` : "", L.ad ? `광고 분담금 ${won(L.ad)}` : ""].filter(Boolean).join(" · ");
+  return `<div class="tiny muted" style="margin-top:4px">본사 물류 ${won(L.hq)} · 배달 수수료 ${won(L.fee - (L.rider || 0))} · 배달비 ${won(L.rider || 0)} · 인건비 ${won(L.lab)}${ex ? ` · ${ex}` : ""}</div>${L.und ? `<div class="tiny" style="margin-top:2px"><span class="tag gold">업의 이해도 덕분</span> 폐기·숨은 인건비 −${won(L.und)}</div>` : "" /* 11-28 전문(600)부터 */}
+    ${prin ? `<div class="row small" style="margin-top:2px"><span>순익 ${won(L.profit)} − 창업대출 원금 ${won(prin)}</span><span class="grow"></span><span>손에 남는 돈 <b class="${hand >= 0 ? "good" : "bad"}">${won(hand)}</b></span></div>` : ""}`;
+}
+// 11-27 현실화: 매장 나이 단계(오픈 효과 → 빠짐 → 자리 잡는 중 → 단골)와 자리 성적
+function ageLine(c, st) {
+  const { esc } = c, A = CH.ageInfo(st), col = { open: "gold", dip: "red", reg: "green" }[A.k] || "";
+  const lk = st.luck === undefined ? "" : st.months >= 6 ? ` · 자리 성적 <b class="${st.luck >= 1 ? "good" : "bad"}">동네 평균 ${st.luck >= 1 ? "+" : "−"}${Math.abs(Math.round((st.luck - 1) * 100))}%</b>` : " · 자리 성적은 여섯 달 장사해 봐야 알아요";
+  return `<div class="tiny" style="margin-top:6px"><span class="tag ${col}">${esc(A.n)}</span> <span class="muted">${esc(A.t)}</span>${lk}</div>`;
+}
+function payLine(c, st) {
+  const { S, won } = c, p = CH.payback(S, st);
+  if (p.left <= 0) return `<div class="tiny good">투자금을 다 찾았어요. 이제부터 튀기는 닭은 내 몫이에요.</div>`;
+  if (p.m == null) return `<div class="tiny ${st.months >= 6 ? "bad" : "muted"}">${st.months < 4 ? "투자금 회수 예상은 석 달 장사한 뒤에 보여요." : `지금 흐름(여섯 달 평균 월 ${won(p.avg)})으로는 투자금 회수가 안 돼요.`}</div>`;
+  if (p.m > 120) return `<div class="tiny bad">지금 흐름(여섯 달 평균 월 ${won(p.avg)})으로는 투자금 회수에 10년이 넘게 걸려요.</div>`;
+  return `<div class="tiny ${p.m > 60 ? "bad" : "muted"}">지금 흐름(여섯 달 평균 월 ${won(p.avg)})이면 투자금 회수까지 <b>약 ${p.m}달</b>${p.m >= 24 ? `(${(p.m / 12).toFixed(1)}년)` : ""}</div>`;
 }
 
 function dangerCard(c) {
@@ -46,6 +71,7 @@ function prepCard(c) {
   return `<div class="card"><h3>창업 준비 <small>${C.step}/3</small></h3>
     ${steps.map((t, i) => `<div class="small" style="margin:2px 0">${i < C.step ? '<b class="good">✓</b>' : i === C.step ? '<b class="gold">▶</b>' : '<span class="muted">○</span>'} ${esc(t)}</div>`).join("")}
     <div class="tiny muted" style="margin-top:6px">정보공개서는 계약 14일 전에 받아야 해요(가맹거래사 동행 시 7일). 본사 공시 창업비는 5천만 원이지만 전기·가스·닥트·철거·소방·권리금이 붙어 실제는 2배가 넘어요. 모자라면 창업대출(최대 ${won(CH.LOAN_MAX)}, 5년 원금 상환) → 신용대출 순서로 빌려요.</div>
+    <div class="tiny muted" style="margin-top:4px">오픈 효과는 석 달이면 빠져요. 그 뒤 한두 해는 주문이 줄고, 대출 원금까지 내면 남는 게 거의 없어요. 자리가 좋은지는 열어 봐야 알아요(상권 분석을 하면 아주 나쁜 자리는 피해요). 투자금 회수는 보통 2~4년이에요.</div>
     <div class="small" style="margin-top:6px">내 현금 ${won(Math.max(0, S.cash))} · 빌릴 수 있는 돈 포함 <b>${won(cap)}</b></div></div>
     ${C.step >= 2 ? row(CH.TYPES.deliv.n, qd) + row(CH.TYPES.hall.n, qh) : ""}
     ${areaCard(c)}<div class="acts" style="padding:0">${C.step === 0 && !C.brand ? actRow("ch_survey") : ""}${actRow("ch_prep", undefined, C.step === 0 && !C.pickA && !C.brand ? "부동산 발품 (자리 고르기)" : C.step === 0 && !C.brand ? "브랜드 고르기 (창업 박람회)" : ["가맹 상담 받기 (정보공개서)", "점주 교육 받기", "견적 받고 계약·오픈"][C.step])}</div>`;
@@ -61,8 +87,9 @@ function storeCard(c, st) {
   return c.fold("ch-" + st.id, sum, `<div class="body">
     <div class="row"><div class="grow"><div class="nm">${esc(st.name)}</div><div class="tiny muted">${esc(st.area)} · ${st.months}개월째</div><div class="tiny">${tags}</div></div>
       <div style="text-align:right"><div class="gold" style="font-weight:900">배달퉁 ★ ${st.rating.toFixed(2)}</div><div class="tiny">플레이스 <b class="${st.rank <= 5 ? "good" : st.rank >= 20 ? "bad" : ""}">${st.rank}위</b>/30</div></div></div>
-    ${L ? `<div class="kv"><div><div class="k">월매출</div><div class="v">${won(L.rev)}</div></div><div><div class="k">주문</div><div class="v">${L.orders.toLocaleString()}건</div></div><div><div class="k">지난달 순익</div><div class="v ${L.profit >= 0 ? "good" : "bad"}">${won(L.profit)}</div></div></div>${costBar(c, L)}`
+    ${L ? `<div class="kv"><div><div class="k">월매출</div><div class="v">${won(L.rev)}</div></div><div><div class="k">주문</div><div class="v">${L.orders.toLocaleString()}건</div></div><div><div class="k">지난달 순익</div><div class="v ${L.profit >= 0 ? "good" : "bad"}">${won(L.profit)}</div></div></div>${costBar(c, L)}${plLines(c, st)}`
       : '<div class="tiny muted" style="margin-top:4px">이번 달은 공사·오픈 준비. 다음 정산부터 주문이 들어와요(첫 달은 반달 영업).</div>'}
+    ${ageLine(c, st)}
     <div class="row small" style="margin-top:6px"><span>알바 <b class="${st.crew < st.crewNeed ? "bad" : "good"}">${st.crew}/${st.crewNeed}명</b></span><span class="grow"></span><span class="tiny muted">사기 ${Math.round(st.morale)}</span></div>
     ${meter(st.morale, 100, st.morale < 35 ? "var(--red)" : st.morale < 55 ? "var(--gold)" : "var(--green)")}
     <div class="row small" style="margin-top:4px"><span>입소문 ${Math.round(st.buzz)}</span><span class="grow"></span><span>튀김 품질 ${Math.round(st.fry * 100)}</span></div>
@@ -77,6 +104,7 @@ function storeCard(c, st) {
       ${C.lv >= 3 ? `<button class="btn sm" data-chtg="${st.id}:fam">${st.fam ? "가족 빼기" : "가족 투입"}</button><button class="btn sm" data-chtg="${st.id}:inc">${st.inc ? "인센티브 끄기" : "인센티브 켜기"}</button>` : ""}</div>
     <div class="row small" style="margin-top:8px"><span>투자금 회수 <b class="gold">${pct(Math.max(0, st.cum), st.invested)}%</b></span><span class="grow"></span><span class="tiny muted">누적 ${won(Math.round(st.cum))} / 투자 ${won(st.invested)}</span></div>
     ${meter(Math.max(0, st.cum), st.invested, "var(--gold)")}
+    ${payLine(c, st)}
     ${st.months >= 1 ? `<details class="more"><summary>양수도·폐점 · 더 보기 ▾</summary><div class="more-b"><div class="row wrap"><span class="grow tiny muted">매장을 넘기거나 닫아요. 누르면 한 번 더 물어봐요.</span><button class="btn sm" data-chsell="${st.id}">양수도 ${won(sp)}</button><button class="btn sm danger" data-chclose="${st.id}">폐점${cc.pen ? `(위약금 ${won(cc.pen)})` : ""}</button></div></div></details>` : ""}
   </div>`, S.chicken.stores.length <= 1, "room", lowAp ? `<button class="btn sm" data-act="ch_shift" data-arg="${st.id}">근무 ⚡1</button>` : "");
 }
@@ -110,7 +138,7 @@ export default {
       <div class="kv"><div><div class="k">지난달 순이익</div><div class="v ${last >= 0 ? "good" : "bad"}">${won(last)}</div></div><div><div class="k">매장</div><div class="v">${C.stores.length}/3곳</div></div>
       <div><div class="k">회수</div><div class="v gold">${inv ? `${pct(Math.max(0, cum), inv)}%` : "-"}</div></div>${C.scandal ? `<div><div class="k">불매</div><div class="v bad">${C.scandal}달</div></div>` : ""}${C.costUp ? `<div><div class="k">닭값 급등</div><div class="v bad">${C.costUp}달</div></div>` : ""}</div>
       ${lv < 5 ? `<div class="small" style="margin-top:6px">다음 <b class="gold">Lv${lv + 1} ${esc(LV[lv + 1].n)}</b>: ${esc(nx.need)}</div>${meter(prog * 100, 100, "var(--gold)")}<div class="tiny muted">열리는 것: ${esc(LV[lv + 1].open)}</div>` : `<div class="small good" style="margin-top:6px">치킨 3형제 완성. 법인 전환·본업 전환을 고를 수 있어요.</div>`}
-      <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">매출 100원이 어디로 가나 · 자세히 ▾</summary><div class="tiny muted">월매출에서 재료 47%·배달수수료 15%·인건비 17%·임차료 10%를 빼면 11% 남아요. 직접 튀기면 인건비가 줄고 별점이 올라요. 알바가 그만두면 그 빈자리는 내가 튀겨야 해요. 연말·여름이 성수기, 2월이 비수기. 매년 1월 최저임금이 올라요.</div></details></div>
+      <details style="margin-top:6px"><summary class="tiny muted" style="cursor:pointer">매출 100원이 어디로 가나 · 자세히 ▾</summary><div class="tiny muted">월매출에서 재료 47%(그 가운데 본사 물류 마진이 매출의 ${Math.round(CH.CH_REAL.hq * 100)}%쯤)·배달 수수료와 배달비 15~17%·인건비 17%·임차료 10%를 빼면 11% 남아요. 직접 튀기면 한 번에 인건비가 ${won(Math.round(CH.CH_REAL.self.save * (S.pi || 1)))} 줄고 별점이 올라요. 한 달에 ${CH.CH_REAL.self.hpFrom}번째부터는 몸이 상해요. 알바가 그만두면 그 빈자리는 내가 튀겨야 해요. 연말·여름이 성수기, 2월이 비수기. 매년 1월 최저임금이 올라요.<br>오픈 효과는 석 달이에요. 그 뒤 주문이 꺼졌다가 ${CH.CH_REAL.dip.end}달째까지 조금씩 돌아오고, ${Math.round(CH.CH_REAL.reg.from / 12)}년 차부터 단골이 붙어요. 첫 해는 대출 원금을 내면 남는 게 거의 없고, 투자금 회수는 보통 2~4년이 걸려요. ${Math.round(CH.CH_REAL.loyal.from / 12)}년을 넘긴 가맹점은 본사가 물류 단가를 내려 줘요(리뉴얼을 거부한 매장은 빼고).</div></details></div>
       ${(C.stores.length || C.loan > 0) && (() => { const d = CH.danger(S); return d.late > 0 || d.loss > 0 || d.flow < 0 || d.runway <= 6 || d.lv >= 2; })() ? dangerCard(c) : ""}
       ${C.step < 3 ? prepCard(c) : ""}
       ${C.step >= 3 && C.stores.length ? `${areaCard(c)}${BR.surveyOpen(S) ? `<div class="acts" style="padding:0">${actRow("ch_survey")}</div>` : ""}` : ""}

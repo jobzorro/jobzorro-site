@@ -5,6 +5,7 @@
 //   같은 단계는 다시 묻지 않고(s.fullAsk), 더 높은 단계에 오르면 다시 묻는다. 비상금 6개월치는 안내만 한다(막지 않음).
 import { D, won, jo, salary, netWorth, fireInfo, monthlySpend, jobYear } from "./core.js";
 import * as HL from "./heroine.js"; // 11-25 올해 그 사람 한 줄
+import * as TU from "./jobs/tutoring.js"; // 11-28 과외 본업 체크 목록(스위치 TU2_ON 이 켜졌을 때만 쓴다)
 import { yearOffer } from "./cards.js"; // 연말 성장 카드(v4.25)
 
 export const FULL_STEPS = [1, 1.5, 2, 3];
@@ -108,11 +109,13 @@ function pickLine(s, r, key) {
 // 본잡 신호. 오를 때만 묻는다(같은 단계 반복 없음)
 function fullSignal(s, d) {
   if (!d.work || !d.hasJob || d.annual <= 0) return null;
-  const step = FULL_STEPS.filter((v) => d.x >= v).pop();
-  if (!step || step <= (s.fullAsk || 0)) return null;
-  const job = [...s.sj.active].sort((a, b) => jobYear(s, b) - jobYear(s, a))[0], jn = D.SIDEJOBS[job]?.n || "투잡";
+  const tu = !!D.TU2_ON && !FULL_STEPS.some((v) => d.x >= v) && [...s.sj.active].includes("tutoring") && TU.fullAskOk(s); // 11-28 과외: 연봉을 못 넘어도 본업 조건을 다 채우면 신호(거절하면 2년 뒤 다시)
+  const step = tu ? 1 : FULL_STEPS.filter((v) => d.x >= v).pop();
+  if (!step || (!tu && step <= (s.fullAsk || 0))) return null;
+  const ty = tu ? TU.fullYear(s) : null;
+  const job = tu ? "tutoring" : [...s.sj.active].sort((a, b) => jobYear(s, b) - jobYear(s, a))[0], jn = D.SIDEJOBS[job]?.n || "투잡";
   const need = Math.round(monthlySpend(s) * 6), have = Math.round(s.cash + s.invest);
-  return { step, job, jn, need, have, emer: have >= need, next: FULL_STEPS.find((v) => v > step) || null };
+  return { step, job, jn, need, have, tu, ty, emer: have >= need, next: FULL_STEPS.find((v) => v > step) || null };
 }
 const SIG = {
   1: { lv: "soft", head: "가능성이 보여요", body: (f, d) => `올해 투잡 이익이 연봉을 넘었어요(${d.x.toFixed(1)}배). 한 해 반짝일 수도 있으니 1년 더 지켜보는 것도 방법이에요. 그래도 마음이 정해졌다면, ${jo(f.jn, "을", "를")} 본잡으로?`, yes: (f) => `${jo(f.jn, "을", "를")} 본잡으로 해 본다`, no: "아직은 병행한다" },
@@ -133,12 +136,12 @@ export function yearScene(s, r) {
     choices: [{ t: "다음 해로", eff: {}, text: "" }] };
   if (f) {
     const g = SIG[f.step];
-    s.fullAsk = f.step; s.fullAskT = s.t; s._fullJob = f.job;
-    sc.full = { ...f, lv: g.lv, head: g.head, body: g.body(f, d) };
+    if (f.tu) TU.fullAskMark(s); else { s.fullAsk = f.step; s.fullAskT = s.t; } s._fullJob = f.job; // 11-28 과외 신호는 공통 s.fullAsk 를 올리지 않는다(나중에 연봉을 넘겼을 때의 신호가 막히지 않게)
+    sc.full = { ...f, lv: g.lv, head: f.tu ? "본업 조건을 다 채웠어요" : g.head, body: f.tu ? `화상과외의 '본업으로 가려면' 조건을 다 채웠어요. 최근 1년 과외 순이익은 ${won(f.ty.sum)}으로 연봉의 ${f.ty.pct}%예요. 본업이 되면 낮 타임 · 종합반 · 조교 반이 열리고 월급은 끊겨요. 자리는 모집 채널을 넓혀야 차요.` : g.body(f, d) };
     sc.onChoose = "full_ev";
     sc.choices = [
       { t: g.yes(f), eff: {}, text: `사직서를 냈다. 마지막 달까지 인수인계는 깔끔하게. 내일부터 출근지는 ${jo(f.jn, "이다", "다")}. 행동력 +5, 월급은 끊긴다.` },
-      { t: g.no, eff: { mental: 2 }, text: `조금 더 다니며 모으기로 했다. ${f.next ? `내년 결산에서 연봉의 ${f.next}배를 넘으면 다시 이야기해요.` : "언제든 퇴사 버튼은 회사 화면에 있어요."}` },
+      { t: g.no, eff: { mental: 2 }, text: `조금 더 다니며 모으기로 했다. ${f.tu ? "조건을 계속 채우고 있으면 2년 뒤 결산에서 다시 이야기해요." : f.next ? `내년 결산에서 연봉의 ${f.next}배를 넘으면 다시 이야기해요.` : "언제든 퇴사 버튼은 회사 화면에 있어요."}` },
     ];
   }
   try { sc.cards = yearOffer(s, r, d); } catch (e) { console.warn("[연말 카드]", e); } // 3장 중 1장(화면은 결산 뒤 cards_ui.js)

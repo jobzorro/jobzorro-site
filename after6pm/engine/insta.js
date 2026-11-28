@@ -8,6 +8,7 @@ import * as SYN from "./syn.js";
 import * as BIG from "./big.js";
 import * as SJ from "./sj.js"; // 초반 고생 배율(ramp)
 import { hashStr, makeRng } from "./rng.js";
+import * as UND from "./und.js"; // 11-28 업의 이해도 효과(함수 안에서만 쓴다. 스위치 UND_ON 이 꺼져 있으면 늘 0 · false)
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const fmt = (n) => Math.round(n).toLocaleString();
@@ -331,6 +332,13 @@ export function setNiche(s, k) {
 export function setFace(s, v) { const I = ens(s); if (!I.cc) { I.face = !!v; return { ok: true, msg: "" }; } I.cc.face = v ? "face" : "hand"; sync(I); return { ok: true, msg: v ? "얼굴 공개 컨셉: 매력이 조금 거들지만 회사가 알 수 있어요" : "얼굴 없는 컨셉: 조용히" }; }
 
 // ───────── 인사이트: 볼수록 숨은 수요가 드러난다(한 달에 한 번) ─────────
+// ───────── 11-28 업의 이해도 효과(스위치 UND_ON) ─────────
+// 숙련(300): 인사이트를 볼 때 숨은 수요 힌트가 한 줄 더 나온다(다른 조합 하나 더. 정보만).
+// 전문(600): 협찬 단가를 조금 더 받아 낸다(협찬함의 예상 금액과 실제 협찬비 ×1.04).
+export const IG_UND = { pay: 1.04, keep: 6 }; // pay: 협찬 단가 배율(전문) · keep: 숙련부터 힌트를 이만큼 쌓아 둔다(그 전에는 4줄)
+if (typeof process !== "undefined" && process.env?.IGUND) Object.assign(IG_UND, JSON.parse(process.env.IGUND)); // 봇 시험용 손잡이(예: IGUND='{"pay":1.08}')
+export const undFx = (s) => ({ on: UND.jobs().includes("insta"), v: UND.score(s, "insta"), see: UND.at(s, "insta", UND.TH.숙련), pro: UND.at(s, "insta", UND.TH.전문) });
+const UND_NOTE = [[300, "이제 인사이트를 볼 때 숨은 수요 힌트가 한 줄 더 보여요."], [600, "협찬 단가를 조금 더 받아 내요."]];
 export function viewInsight(s) {
   const I = ens(s); if (!I.cc) return { ok: false, msg: "컨셉부터" };
   if (I.insT === s.t) return { ok: false, msg: "이번 달 인사이트는 이미 봤어요" };
@@ -340,6 +348,11 @@ export function viewInsight(s) {
   const h = hashStr(I.seed + ":h" + s.t);
   const cc = { topic: keys[h % keys.length], tone: tones[(h >>> 4) % tones.length], fmt: fmts[(h >>> 8) % fmts.length], face: I.cc.face };
   const m = market(s, cc); I.hints = [{ cc, g: grade(m), d: +m.d.toFixed(2), c: +m.c.toFixed(2), t: s.t }, ...(I.hints || [])].slice(0, 4);
+  if (UND.at(s, "insta", UND.TH.숙련)) { // 11-28 이해도 숙련: 다른 조합 하나 더(난수를 쓰지 않는다. 겹치면 다음 주제로 민다)
+    const h2 = hashStr(I.seed + ":h2:" + s.t); let ti = h2 % keys.length; const c2 = { topic: keys[ti], tone: tones[(h2 >>> 4) % tones.length], fmt: fmts[(h2 >>> 8) % fmts.length], face: I.cc.face };
+    for (let n = 0; n < keys.length && (I.hints || []).some((x) => ccKey(x.cc) === ccKey(c2)); n++) c2.topic = keys[++ti % keys.length];
+    const m2 = market(s, c2); I.hints = [I.hints[0], { cc: c2, g: grade(m2), d: +m2.d.toFixed(2), c: +m2.c.toFixed(2), t: s.t, u: 1 }, ...I.hints.slice(1)].slice(0, IG_UND.keep);
+  }
   return { ok: true, msg: `인사이트를 꼼꼼히 봤다 · 내 컨셉 정보 ${I.reveal}/3`, lines: [] };
 }
 
@@ -433,7 +446,7 @@ function syncOffers(s, r) {
   if ((I.deals || 0) < I.offers.length && I.dealsSyncT !== s.t) I.offers = I.offers.slice(0, Math.max(0, I.deals || 0));
   I.deals = I.offers.length;
 }
-export function offerPay(s, o) { return Math.round(dealPay(s) * (o?.mul || 1) * (s.ins.cc?.tone === "lux" ? 1.1 : 1)); }
+export function offerPay(s, o) { return Math.round(dealPay(s) * (o?.mul || 1) * (s.ins.cc?.tone === "lux" ? 1.1 : 1) * (UND.at(s, "insta", UND.TH.전문) ? IG_UND.pay : 1)); } // 11-28 이해도 전문: 협찬 단가 ×1.04
 
 // ───────── DM ─────────
 // k: fan 팬 고민 · deal 진짜 협찬 · scam 사기 협찬 · revise 무리한 수정 요구 · celeb 유명인 연락
@@ -913,6 +926,7 @@ export function month(s, r, notes, scenes = []) {
   const I = ens(s); if (!I.cc) return 0;
   ensureKx(s, r); const before = I.f;
   // 0) 계정 정지 중: 올리기·댓글·협찬이 멈춘다. 팔로워는 얼어 있고 팬심만 식는다(부계정을 키웠으면 거기서 근황을 올려 덜 식는다)
+  UND.fxNote(s, "insta", I, notes, UND_NOTE); // 11-28 이해도 문턱을 넘은 달에 한 줄(스위치가 꺼져 있으면 아무 일도 안 한다)
   if (banned(s)) return banMonth(s, r, notes);
   if (I.ban && !(I.ban.left > 0)) { I.ban = null; notes.push("인별: 계정이 복구됐다! 다시 올릴 수 있어요"); }
   if (I.angry > 0) I.angry--;
